@@ -15,7 +15,6 @@ function LoginPage({setLoginTrue}) {
 
   const doLogin = (e) => {
     e.preventDefault()
-    console.log('e: ',e )
     if (user && pass) {
       fetch(`${api}login`, {
         method: "POST",
@@ -38,6 +37,8 @@ function LoginPage({setLoginTrue}) {
             toast.error(data.message);
           }
           console.log('data: ',data);
+        }).catch(e=> {
+          console.log(e)
         });
     } else {
       toast.error("data.message");
@@ -84,7 +85,7 @@ function LoginPage({setLoginTrue}) {
                   required
                 />
                 <br />
-                <button className="logsbmt" type="submit" onClick={doLogin}>
+                <button className="logsbmt" type="submit" onClick={doLogin} >
                   {loading && (
                     <div className="overlay">
                       <CircularProgress className="spinner" />

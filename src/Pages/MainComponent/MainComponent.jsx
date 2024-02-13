@@ -1,10 +1,9 @@
-import React, { Fragment, useState } from "react";
-import "./SideBar.css";
+import React, { Fragment } from "react";
+import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import { Accordion } from "react-bootstrap";
 
-function MainComponent({ component, currentPage }) {
-  // const [currentPage, setcurrentPage] = useState(1);
+function MainComponent(props) {
   return (
     <Fragment>
       <div className="fullscreen-div">
@@ -21,11 +20,7 @@ function MainComponent({ component, currentPage }) {
             <Accordion>
               <Accordion.Header>Master Data</Accordion.Header>
               <Accordion.Body>
-                  <li className="pb-2 pt-2">
-                    
-                  </li>
-
-                  
+                <li className="pb-2 pt-2"></li>
               </Accordion.Body>
             </Accordion>
           </div>
@@ -44,7 +39,7 @@ function MainComponent({ component, currentPage }) {
                 Overview
               </Breadcrumb.Item>
             </Breadcrumb>
-            {component}
+            {props.children}
           </div>
         </div>
       </div>

@@ -6,16 +6,17 @@ import './Dashboard.css'
 function Dashboard() {
   return (
     <>
-      <Container fluid>
+      <SideBar />
+
+      {/* <Container fluid>
         <Row>
           <Col xs={2} id="sidebar-wrapper">
-            <SideBar />
           </Col>
           <Col xs={10} id="page-content-wrapper">
             this is a test
           </Col>
         </Row>
-      </Container>
+      </Container> */}
     </>
   );
 }
