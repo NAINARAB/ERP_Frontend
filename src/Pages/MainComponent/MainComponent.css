@@ -5,12 +5,10 @@
 body {
     margin: 0 !important;
     padding: 0 !important;
-    /* overflow-x: hidden; */
-    overflow-y: hidden;
 }
 
 .fullscreen-div {
-    width: 100%;
+    min-width: 100%;
     min-height: 100vh;
     background-color: rgba(173, 216, 230, 0.164);
     display: flex;
@@ -18,7 +16,8 @@ body {
 }
 
 .fixed-fullheight-sidebar {
-    width: 25%;
+    width: 20%;
+    max-width: 250px;
     height: 100vh;
     background-color: #333;
     color: white;
@@ -26,19 +25,15 @@ body {
 }
 
 .sidebar-head {
-    text-align: center;
-    font-size: 14px;
     font-weight: bold;
-    padding: 25px 25px 15px 0px;
+    padding: 15px 15px 0px 15px;
     white-space: 'nowrap';
     overflow: 'hidden';
     text-overflow: 'ellipsis';
 }
 
 .sidebar-body-div {
-    text-align: left;
-    margin-left: 40px;
-    margin-bottom: 50px;
+    padding-bottom: 300px;
     padding: 0px 15px;
     height: 88vh;
     overflow-y: scroll;
@@ -56,12 +51,31 @@ body {
     text-overflow: 'ellipsis' !important;
 }
 
+.sidebar-body-div button {
+    border: none;
+    width: 100%;
+    padding: 12px;
+    background-color: transparent;
+    text-align: left;
+    color: white;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.sidebar-body-div button:hover {
+    background-color: rgb(107, 105, 105);
+}
+
 .content-div {
     height: 100vh;
     width: 100%;
     overflow-y: scroll;
-    padding: 13.5px 0px 13.5px 13.5px;
-    /* background-color: red; */
+    padding: 13.5px;
+    box-sizing: border-box;
+} 
+.content-div::-webkit-scrollbar{
+    display: none !important;
 }
 
 .navbar-div {
@@ -70,14 +84,18 @@ body {
     padding: 15px 10px;
     border-radius: 7px;
     margin-bottom: 10px;
-    width: 100%;
 }
 
 .content-body{
-    height: 88vh;
+    height: 90vh;
     width: 100%;
     overflow-y: scroll;
-    
+    padding: 0;
+    padding-bottom: 300px;
+}
+
+.content-body::-webkit-scrollbar {
+    display: none !important;
 }
 
 

@@ -261,7 +261,7 @@ function CompanyInfo() {
             ))}
           </div>
           <div className="card-footer d-flex justify-content-end">
-            <Button onClick={() => switchScreen(false)} className="rounded-5 px-4 shadow mx-1">{'Back'}</Button>
+            <Button onClick={() => switchScreen(false)} className="rounded-5 px-4 mx-1 btn-light">{'Back'}</Button>
             <Button onClick={isEdit ? editFun : createFun} className="rounded-5 px-4 shadow mx-1">{isEdit ? 'Update' : 'Create Company'}</Button>
           </div>
         </div>

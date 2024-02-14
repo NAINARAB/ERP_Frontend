@@ -7,6 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
 import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/Users";
+import BranchInfo from "./Pages/Masters/BranchInfo";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -57,8 +58,9 @@ function App() {
         ) : (
           <MainComponent>
             <Routes>
-              <Route path="/CompanyInfo" element={<CompanyInfo />}></Route>
-              <Route path="/users" element={<Users />}></Route>
+              <Route path="/masters/company" element={<CompanyInfo />}></Route>
+              <Route path="/masters/users" element={<Users />}></Route>
+              <Route path="/masters/branch" element={<BranchInfo />}></Route>
             </Routes>
           </MainComponent>
         )}

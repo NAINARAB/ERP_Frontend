@@ -1,22 +1,25 @@
 import React, { Fragment } from "react";
+import { useNavigate } from 'react-router-dom';
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import { Accordion } from "react-bootstrap";
 
 function MainComponent(props) {
+  const nav = useNavigate();
+
   return (
     <Fragment>
       <div className="fullscreen-div">
-        <aside className="fixed-fullheight-sidebar" id="sidebar-div">
+        <aside className="fixed-fullheight-sidebar">
           <div className="sidebar-head">
             <h4 className="my-0 ps-3">SMT Task</h4>
           </div>
           <hr className="my-2" />
           <div className="sidebar-body-div">
-            <p>DashBoard</p>
-            <p>Projct Overview</p>
-            <p>Task Overview</p>
-            <p>Calender</p>
+            <button onClick={() => nav('/')}>Home</button>
+            <button onClick={() => nav('/masters/company')}>Company</button>
+            <button onClick={() => nav('/masters/users')}>User</button>
+            <button onClick={() => nav('/masters/branch')}>Branches</button>
             <Accordion>
               <Accordion.Header>Master Data</Accordion.Header>
               <Accordion.Body>
