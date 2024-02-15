@@ -48,7 +48,6 @@ function BranchInfo() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.table(data.data);
           setBranchData(data.data);
         }
       });

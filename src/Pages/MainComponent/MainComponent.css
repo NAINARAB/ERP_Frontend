@@ -71,7 +71,6 @@ body {
     height: 100vh;
     width: 100%;
     overflow-y: scroll;
-    padding: 13.5px;
     box-sizing: border-box;
 } 
 .content-div::-webkit-scrollbar{
@@ -82,19 +81,22 @@ body {
     box-shadow: 2px 2px 16px rgb(209, 207, 207);
     background-color: white;
     padding: 15px 10px;
-    border-radius: 7px;
-    margin-bottom: 10px;
+    /* margin-bottom: 10px; */
 }
 
 .content-body{
     height: 90vh;
     width: 100%;
     overflow-y: scroll;
-    padding: 0;
+    padding: 13.5px;
     padding-bottom: 300px;
 }
 
 .content-body::-webkit-scrollbar {
+    display: none !important;
+}
+
+.open-icon {
     display: none !important;
 }
 
@@ -125,5 +127,9 @@ body {
 
     .content-div {
         width: 100%;
+    }
+
+    .open-icon {
+        display: inline !important;
     }
 }

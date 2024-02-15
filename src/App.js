@@ -9,6 +9,8 @@ import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/Users";
 import BranchInfo from "./Pages/Masters/BranchInfo";
 import ProjectList from "./Pages/Masters/ProjectList";
+import UserType from "./Pages/Masters/UserType";
+import BaseGroup from "./Pages/Masters/BaseGroup";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -63,6 +65,8 @@ function App() {
               <Route path="/masters/users" element={<Users />}></Route>
               <Route path="/masters/branch" element={<BranchInfo />}></Route>
               <Route path="/masters/project" element={<ProjectList />}></Route>
+              <Route path="/masters/usertype" element={<UserType />}></Route>
+              <Route path="/master/basegroup" element={<BaseGroup />}></Route>
             </Routes>
           </MainComponent>
         )}

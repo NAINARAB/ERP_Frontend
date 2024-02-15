@@ -266,6 +266,8 @@ function CompanyInfo() {
           </div>
         </div>
       )}
+
+      
       <Dialog
         open={deleteDialog}
         onClose={setDeleteRow}

@@ -39,7 +39,6 @@ function ProjectList() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.table(data.data);
           setProjectData(data.data);
         }
       });
@@ -295,6 +294,7 @@ function ProjectList() {
           </div>
         </div>
       )}
+
       <Dialog
         open={deleteDialog}
         onClose={setDeleteRow}
@@ -316,6 +316,7 @@ function ProjectList() {
           </MuiButton>
         </DialogActions>
       </Dialog>
+      
     </Fragment>
   );
 }

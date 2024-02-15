@@ -1,11 +1,67 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import { IconButton, Collapse } from '@mui/material';
+import { Menu, KeyboardArrowRight, KeyboardArrowDown,Circle } from '@mui/icons-material'
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import { Accordion } from "react-bootstrap";
+import api from "../../API";
+
+
+const DispNavButtons = ({ mainBtn, subMenus, nav }) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={
+          mainBtn?.PageUrl !== ""
+            ? () => nav(mainBtn?.PageUrl)
+            : () => setOpen(!open)}
+
+      >
+        {mainBtn?.MenuName} 
+        {mainBtn?.PageUrl === "" && <span className=" text-end">{open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}</span>}
+      </button>
+      {mainBtn?.PageUrl === ""
+        && (
+          <Collapse in={open} timeout="auto" unmountOnExit >
+            {subMenus.map((obj, i) => (
+              Number(mainBtn?.Main_Menu_Id) === Number(obj?.Main_Menu_Id) && Number(obj?.Read_Rights) === 1
+                ? <SubMenu key={i} subBtn={obj} nav={nav} />
+                : null
+            ))}
+          </Collapse>
+        )}
+    </>
+  )
+}
+
+const SubMenu = ({subBtn, nav}) => {
+  return (
+    <>
+        <button
+            className={''}
+            onClick={() => nav(subBtn?.PageUrl)} >
+            <Circle sx={{ fontSize: '6px', color: 'white', marginRight: '5px' }} />{' ' + subBtn?.SubMenuName}
+        </button>
+    </>
+);
+}
 
 function MainComponent(props) {
   const nav = useNavigate();
+  const localData = localStorage.getItem("user");
+  const parseData = JSON.parse(localData);
+  const [sidebar, setSidebar] = useState({ MainMenu: [], SubMenu: [] })
+
+  useEffect(() => {
+    fetch(`${api}appMenu?Auth=${parseData?.Autheticate_Id}`).then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setSidebar({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
+        }
+      })
+  }, [])
 
   return (
     <Fragment>
@@ -16,7 +72,11 @@ function MainComponent(props) {
           </div>
           <hr className="my-2" />
           <div className="sidebar-body-div">
-            <button onClick={() => nav('/')}>Home</button>
+            {sidebar.MainMenu.map((o, i) => (
+              <DispNavButtons key={i} mainBtn={o} subMenus={sidebar.SubMenu} nav={nav} />
+            ))}
+            {/* <Sidebar data={sidebar} /> */}
+            {/* <button onClick={() => nav('/')}>Home</button>
             <button onClick={() => nav('/masters/company')}>Company</button>
             <button onClick={() => nav('/masters/users')}>User</button>
             <button onClick={() => nav('/masters/branch')}>Branches</button>
@@ -26,14 +86,23 @@ function MainComponent(props) {
               <Accordion.Body>
                 <li className="pb-2 pt-2"></li>
               </Accordion.Body>
-            </Accordion>
+            </Accordion> */}
           </div>
           <div className="sidebar-bottom">
             <h4 className="my-0">footer text</h4>
           </div>
         </aside>
         <div className="content-div">
-          <div className="navbar-div">ERP</div>
+          <div className="navbar-div">
+            <p className="fa-16 fw-bold mb-0" >
+              <span className="open-icon">
+                <IconButton size="small">
+                  <Menu />
+                </IconButton>
+              </span>
+              Task Management
+            </p>
+          </div>
 
           <div className="content-body">
             <Breadcrumb>
