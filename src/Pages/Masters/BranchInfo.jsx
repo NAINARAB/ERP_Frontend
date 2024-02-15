@@ -251,12 +251,12 @@ function BranchInfo() {
     fetch(`${api}branch`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', },
-      body: JSON.stringify({BranchID: inputValue?.BranchId})
+      body: JSON.stringify({ BranchID: inputValue?.BranchId })
     }).then(res => res.json())
       .then(data => {
         if (data.success) {
           setReload(!reload);
-          toast.success(data.message); setInputValue(initialState);setDeleteDialog(false)
+          toast.success(data.message); setInputValue(initialState); setDeleteDialog(false)
         } else {
           toast.error(data.message);
         }
@@ -265,13 +265,13 @@ function BranchInfo() {
 
   return (
     <Fragment>
-
+      <ToastContainer />
       {!screen ? (
         <div className="card">
           <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
             Branches
             <div className="text-end">
-              <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">{!screen ? 'Create Branch' : 'Back'}</Button>
+              <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">Create Branch</Button>
             </div>
           </div>
           <div className="card-body overflow-scroll" style={{ maxHeight: '78vh' }}>
@@ -286,7 +286,7 @@ function BranchInfo() {
                     <th className="fa-14">State</th>
                     <th className="fa-14">City</th>
                     <th className="fa-14">Address</th>
-                    <th>Action</th>
+                    <th className="fa-14">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,9 +312,15 @@ function BranchInfo() {
         </div>
       ) : (
         <div className="card">
-          <div className="card-header bg-white fw-bold">
+          <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
             {isEdit ? 'Edit Branch' : 'Create Branch'}
+            <div className="text-end">
+              <Button onClick={() => { switchScreen(false) }} className="rounded-5 px-3 py-1 fa-13 shadow">Back</Button>
+            </div>
           </div>
+          {/* <div className="card-header bg-white fw-bold">
+            {isEdit ? 'Edit Branch' : 'Create Branch'}
+          </div> */}
           <div className="card-body">
             <div className="row">
               {input.map((field, index) => (
@@ -359,6 +365,8 @@ function BranchInfo() {
           </div>
         </div>
       )}
+
+
       <Dialog
         open={deleteDialog}
         onClose={setDeleteRow}
@@ -370,7 +378,7 @@ function BranchInfo() {
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            <b  >{`Do you want to delete the ${inputValue?.BranchName} Branch?`}</b>
+            <b  >{`Do you want to delete the ${inputValue?.BranchName && inputValue?.BranchName} Branch?`}</b>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -380,6 +388,7 @@ function BranchInfo() {
           </MuiButton>
         </DialogActions>
       </Dialog>
+
     </Fragment>
   );
 }

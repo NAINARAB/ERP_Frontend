@@ -20,6 +20,7 @@ function MainComponent(props) {
             <button onClick={() => nav('/masters/company')}>Company</button>
             <button onClick={() => nav('/masters/users')}>User</button>
             <button onClick={() => nav('/masters/branch')}>Branches</button>
+            <button onClick={() => nav('/masters/project')}>Projects</button>
             <Accordion>
               <Accordion.Header>Master Data</Accordion.Header>
               <Accordion.Body>
