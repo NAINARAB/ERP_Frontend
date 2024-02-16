@@ -10,7 +10,7 @@ import api from "../../API";
 const DispNavButtons = ({ mainBtn, subMenus, nav }) => {
   const [open, setOpen] = useState(false)
 
-  return (
+  return Number(mainBtn.Read_Rights) === 1 && (
     <>
       <button className="sidebutton"
         onClick={
