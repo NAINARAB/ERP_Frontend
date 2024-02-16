@@ -5,12 +5,17 @@ import LoginPage from "./Pages/LoginPage/LoginPage";
 import api from "./API";
 import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
+
 import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/Users";
 import BranchInfo from "./Pages/Masters/BranchInfo";
 import ProjectList from "./Pages/Masters/ProjectList";
 import UserType from "./Pages/Masters/UserType";
 import BaseGroup from "./Pages/Masters/BaseGroup";
+import TaskType from "./Pages/Masters/TaskType";
+
+import UserBased from "./Pages/Authorization/userBased";
+import UserTypeBased from "./Pages/Authorization/userTypeBased";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -59,14 +64,17 @@ function App() {
             </Routes>
           </>
         ) : (
-          <MainComponent>
+          <MainComponent setLoginTrue={setLoginTrue}>
             <Routes>
-              <Route path="/masters/company" element={<CompanyInfo />}></Route>
-              <Route path="/masters/users" element={<Users />}></Route>
-              <Route path="/masters/branch" element={<BranchInfo />}></Route>
-              <Route path="/masters/project" element={<ProjectList />}></Route>
-              <Route path="/masters/usertype" element={<UserType />}></Route>
-              <Route path="/master/basegroup" element={<BaseGroup />}></Route>
+              <Route path="/masters/company" element={<CompanyInfo />} />
+              <Route path="/masters/users" element={<Users />} />
+              <Route path="/masters/branch" element={<BranchInfo />} />
+              <Route path="/masters/project" element={<ProjectList />} />
+              <Route path="/master/usertype" element={<UserType />} />
+              <Route path="/master/basegroup" element={<BaseGroup />} />
+              <Route path="/master/tasktype" element={<TaskType />} />
+              <Route path="/authorization/user" element={<UserBased />} />
+              <Route path="/authorization/usertype" element={<UserTypeBased />} />
             </Routes>
           </MainComponent>
         )}

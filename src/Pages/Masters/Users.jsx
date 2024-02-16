@@ -1,29 +1,42 @@
 import React, { useState, useEffect, Fragment } from "react";
-import { Button, Table } from "react-bootstrap";
+import { Table, Button } from "react-bootstrap";
 import api from "../../API";
-import { IconButton } from "@mui/material";
+import {
+  IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button as MuiButton,
+} from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { json } from "react-router-dom";
+
+const initialState = {
+  Id: "",
+  Name: "",
+  UserName: "",
+  UserTypeId: "",
+  Password: "",
+  BranchId: "",
+  UserId: "",
+};
 
 function Users() {
   const [usersData, setUsersData] = useState([]);
-  const [screen, serScreen] = useState(false);
+  const [screen, setScreen] = useState(false);
   const localData = localStorage.getItem("user");
   const parseData = JSON.parse(localData);
+  const [reload, setReload] = useState(false);
+  const [inputValue, setInputValue] = useState(initialState);
+  const [editUser, setEditUser] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
   const [dropdown, setDropDown] = useState([]);
   const [userDropdown, setuserDropdown] = useState([]);
-
-  const [reload, setReload] = useState(false);
-  const [inptValue, setInptValue] = useState({
-    Id: "",
-    Name: "",
-    UserName: "",
-    UserTypeId: "",
-    Password: "",
-    BranchId: "",
-  });
 
   useEffect(() => {
     fetch(
@@ -32,7 +45,6 @@ function Users() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.log(data.data);
           setUsersData(data.data);
         }
       });
@@ -59,50 +71,30 @@ function Users() {
       .catch((e) => console.log(e));
   }, []);
 
-  const validation = () => {
-    if (!inptValue.Name) {
-      return "Name is  required";
-    }
-
-    if (!inptValue.UserName) {
-      return "Mobile number is required";
-    }
-
-    if (!inptValue.Password) {
-      return "Password is required";
-    }
-
-    if (!inptValue.BranchId) {
-      return "Select Branch";
-    }
-
-    if (!inptValue.UserTypeId) {
-      return "Select User Type";
-    }
-
-    return "Success";
-  };
-
-  // post
   const createUser = () => {
+    const postObj = {
+      Id: inputValue.UserId,
+      UserId: inputValue.UserId,
+      Name: inputValue.Name,
+      UserName: inputValue.UserName,
+      UserTypeId: inputValue.UserTypeId,
+      Password: inputValue.Password,
+      BranchId: inputValue.BranchId,
+    };
     if (validation() === "Success") {
       fetch(`${api}users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          Name: inptValue.Name,
-          UserName: inptValue.UserName,
-          UserTypeId: inptValue.UserTypeId,
-          Password: inptValue.Password,
-          BranchId: inptValue.BranchId,
-        }),
+        body: JSON.stringify(postObj),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
             console.log(data.data);
+            setReload(!reload);
+            switchScreen();
             toast.success(data.message);
           } else {
             toast.error(data.message);
@@ -113,8 +105,31 @@ function Users() {
     }
   };
 
+  const validation = () => {
+    if (!inputValue.Name && inputValue.Name.length == 0) {
+      return "Name can not be empty";
+    }
+
+    if (!inputValue.UserName && inputValue.UserName.match("[0-9]{10}")) {
+      return "Please provide valid phone number";
+    }
+
+    if (!inputValue.Password && inputValue.Password.length < 8) {
+      return "Password must contain greater than or equal to 8 characters.";
+    }
+
+    if (!inputValue.BranchId) {
+      return "Select Branch";
+    }
+
+    if (!inputValue.UserTypeId) {
+      return "Select User Type";
+    }
+    return "Success";
+  };
+
   const clearValues = () => {
-    setInptValue({
+    setInputValue({
       Id: "",
       Name: "",
       UserName: "",
@@ -126,79 +141,169 @@ function Users() {
 
   const switchScreen = () => {
     clearValues();
-    serScreen(!screen);
+    setScreen(!screen);
   };
 
+  const editUserFn = () => {
+    const postObj = {
+      Id: inputValue.UserId,
+      UserId: inputValue.UserId,
+      Name: inputValue.Name,
+      UserName: inputValue.UserName,
+      UserTypeId: inputValue.UserTypeId,
+      Password: inputValue.Password,
+      BranchId: inputValue.BranchId,
+    };
+    fetch(`${api}users`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(postObj),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          switchScreen();
+          setReload(!reload);
+          toast.success(data.message);
+        } else {
+          toast.error(data.message);
+        }
+      });
+  };
 
-  const [editUser, setEditUser] = useState(false);
   const editRow = (user) => {
-    
-    console.log(user.Name)
+    console.log(user.Name);
     setEditUser(true);
-    setInptValue({
+    setInputValue({
       Id: user.UserId,
+      UserId: user.UserId,
       Name: user.Name,
       UserName: user.UserName,
       UserTypeId: user.UserTypeId,
       Password: user.Password,
       BranchId: user.BranchId,
     });
-    serScreen(true);
+    setScreen(true);
+  };
+
+  const deleteRow = (user, stat) => {
+    setIsDialogOpen(!isDialogOpen);
+    if (stat === true) {
+      setSelectedRow(user);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    fetch(`${api}users`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        UserId: selectedRow.UserId,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setReload(!reload);
+          setIsDialogOpen(!isDialogOpen);
+          toast.success("User deleted successfully!");
+          setSelectedRow({});
+        } else {
+          toast.error("Failed to delete user:", data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error deleting user:", error);
+        toast.error("An error occurred. Please try again later.");
+      });
   };
 
   return (
     <Fragment>
       <ToastContainer />
-      <div className="float-end">
-        <Button onClick={switchScreen}>{screen ? "back" : "Add"}</Button>
-      </div>
-      <br />
-      <br />
+
       {!screen ? (
-        <div className="table-responsive">
-          <Table>
-            <thead>
-              <tr>
-                <th style={{ fontSize: "14px" }}>ID</th>
-                <th style={{ fontSize: "14px" }}>Name</th>
-                <th style={{ fontSize: "14px" }}>User Type</th>
-                <th style={{ fontSize: "14px" }}>Mobile</th>
-                <th style={{ fontSize: "14px" }}>Company</th>
-                <th style={{ fontSize: "14px" }}>Branch</th>
-                <th style={{ fontSize: "14px" }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usersData.map((obj, item) => (
-                <tr key={item}>
-                  <td style={{ fontSize: "12px" }}>{obj.UserId}</td>
-                  <td style={{ fontSize: "12px" }}>{obj.Name}</td>
-                  <td style={{ fontSize: "12px" }}>{obj.UserType}</td>
-                  <td style={{ fontSize: "12px" }}>{obj.UserName}</td>
-                  <td style={{ fontSize: "12px" }}>{obj.Company_Name}</td>
-                  <td style={{ fontSize: "12px" }}>{obj.BranchName}</td>
-                  <td style={{ fontSize: "12px" }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        editRow(obj);
-                      }}
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton size="small">
-                      <Delete sx={{ color: "#FF6865" }} />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+        <div className="card">
+          <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
+            Users
+            <div className="text-end">
+              <Button
+                onClick={() => switchScreen(false)}
+                className="rounded-5 px-3 py-1 fa-13 shadow"
+              >
+                {!screen ? "Add User" : "Back"}
+              </Button>
+            </div>
+          </div>
+          <div
+            className="card-body overflow-scroll"
+            style={{ maxHeight: "78vh" }}
+          >
+            <div className="table-responsive">
+              <Table className="">
+                <thead>
+                  <tr>
+                    <th className="fa-14">ID</th>
+                    <th className="fa-14">Name</th>
+                    <th className="fa-14">User Type</th>
+                    <th className="fa-14">Mobile</th>
+                    <th className="fa-14">Company</th>
+                    <th className="fa-14">Branch</th>
+                    <th className="fa-14">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersData.map((obj, index) => (
+                    <tr key={index}>
+                      <td className="fa-14">{obj.UserId}</td>
+                      <td className="fa-14">{obj.Name}</td>
+                      <td className="fa-14">{obj.UserType}</td>
+                      <td className="fa-14">{obj.UserName}</td>
+                      <td className="fa-14">{obj.Company_Name}</td>
+                      <td className="fa-14">{obj.BranchName}</td>
+                      <td className="fa-12" style={{ minWidth: "80px" }}>
+                        <IconButton
+                          onClick={() => {
+                            editRow(obj);
+                          }}
+                          size="small"
+                        >
+                          <Edit className="fa-in" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            deleteRow(obj, true);
+                          }}
+                          size="small"
+                        >
+                          <Delete className="fa-in del-red" />
+                        </IconButton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="card">
-          <div className="card-header bg-white">
-            {editUser ? "Edit User" : "Add Employee"}
+          <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
+            {editUser ? "Edit User" : "Add User"}
+            <div className="text-end">
+              <Button
+                onClick={() => {
+                  switchScreen(false);
+                }}
+                className="rounded-5 px-3 py-1 fa-13 shadow"
+              >
+                Back
+              </Button>
+            </div>
           </div>
           <div className="card-body">
             <div className="row">
@@ -206,9 +311,9 @@ function Users() {
                 <label>Name</label>
                 <input
                   className="form-control"
-                  value={inptValue.Name}
+                  value={inputValue.Name}
                   onChange={(e) =>
-                    setInptValue({ ...inptValue, Name: e.target.value })
+                    setInputValue({ ...inputValue, Name: e.target.value })
                   }
                 />
               </div>
@@ -217,9 +322,9 @@ function Users() {
                 <input
                   className="form-control"
                   type="password"
-                  value={inptValue.Password}
+                  value={inputValue.Password}
                   onChange={(e) =>
-                    setInptValue({ ...inptValue, Password: e.target.value })
+                    setInputValue({ ...inputValue, Password: e.target.value })
                   }
                 />
               </div>
@@ -228,9 +333,9 @@ function Users() {
                 <input
                   className="form-control"
                   type={"tel"}
-                  value={inptValue.UserName}
+                  value={inputValue.UserName}
                   onChange={(e) =>
-                    setInptValue({ ...inptValue, UserName: e.target.value })
+                    setInputValue({ ...inputValue, UserName: e.target.value })
                   }
                 />
               </div>
@@ -238,9 +343,9 @@ function Users() {
                 <label>Branch</label>
                 <select
                   className="form-control"
-                  value={inptValue.BranchId}
+                  value={inputValue.BranchId}
                   onChange={(e) =>
-                    setInptValue({ ...inptValue, BranchId: e.target.value })
+                    setInputValue({ ...inputValue, BranchId: e.target.value })
                   }
                 >
                   <option value={""}>select</option>
@@ -255,13 +360,12 @@ function Users() {
                 <label>User Type</label>
                 <select
                   className="form-control"
-                  value={inptValue.UserTypeId}
+                  value={inputValue.UserTypeId}
                   onChange={(e) =>
-                    setInptValue({ ...inptValue, UserTypeId: e.target.value })
+                    setInputValue({ ...inputValue, UserTypeId: e.target.value })
                   }
                 >
-                  <option value={1}>select</option>
-                  {/* <option value="2">admin</option> */}
+                  <option value=''>Select</option>
                   {dropdown?.map((o, i) => (
                     <option key={i} value={o.Id}>
                       {o.UserType}
@@ -271,28 +375,50 @@ function Users() {
               </div>
             </div>
           </div>
-          <div className="card-footer">
+          <div className="card-footer d-flex justify-content-end bg-white">
             <Button
-              className="px-2"
+              className="rounded-5 px-4 mx-1 btn-light bg-white"
               onClick={() => {
-                // switchScreen;
-                createUser();
+                switchScreen(false);
               }}
             >
-              {!editUser ? "Create User" : "Edit User"}
+              Back
             </Button>
-            {editUser && (
-              <Button
-                className="px-2 ms-2"
-                variant="secondary"
-                onClick={() => setEditUser(null)}
-              >
-                Cancel Edit
-              </Button>
-            )}  
+            <Button
+              className="rounded-5 px-4 shadow mx-1"
+              onClick={editUser ? editUserFn : createUser}
+            >
+              {editUser ? "Update" : "Create"}
+            </Button>
           </div>
         </div>
       )}
+
+      <Dialog
+        open={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Confirmation</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <b style={{ color: "black", padding: "0px 20px" }}>
+              Do you Want to Delete?
+            </b>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setIsDialogOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm}>Delete</Button>
+        </DialogActions>
+      </Dialog>
     </Fragment>
   );
 }

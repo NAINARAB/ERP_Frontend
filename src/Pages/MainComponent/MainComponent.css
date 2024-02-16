@@ -51,7 +51,7 @@ body {
     text-overflow: 'ellipsis' !important;
 }
 
-.sidebar-body-div button {
+.sidebutton {
     border: none;
     width: 100%;
     padding: 12px;
@@ -63,7 +63,7 @@ body {
     font-size: 14px;
 }
 
-.sidebar-body-div button:hover {
+.sidebutton:hover {
     background-color: rgb(107, 105, 105);
 }
 
@@ -131,5 +131,9 @@ body {
 
     .open-icon {
         display: inline !important;
+    }
+
+    .sidebutton {
+        color: black !important;
     }
 }
