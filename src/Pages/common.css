@@ -1,0 +1,42 @@
+.tab-container {
+    overflow-x: auto; 
+    white-space: nowrap;
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+  }
+  
+  .tab-container::-webkit-scrollbar {
+    display: none; 
+  }
+  
+  .tab-row {
+    display: flex;
+  }
+
+  .tab-row::-webkit-scrollbar {
+    display: none; 
+  }
+  
+  .tab-item {
+    padding: 10px 30px; 
+    margin-right: 10px; 
+    white-space: nowrap;
+  }
+  
+  .hidescroll::-webkit-scrollbar {
+    display: none !important; 
+  }
+
+
+  .task-card {
+    background: linear-gradient(to right, #5ced73, #5ced73);
+  }
+
+
+  .hrul{
+    border-right: 2px solid gray;
+  }
+
+  .rem1 {
+    font-size: 1rem;
+  }

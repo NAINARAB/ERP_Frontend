@@ -11,7 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function ProjectList() {
   const [projectData, setProjectData] = useState([]);
-  const localData = localStorage.getItem("loginResponse");
+  const localData = localStorage.getItem("user");
   const parseData = JSON.parse(localData);
   const initialState = {
     Project_Id: '',
@@ -59,7 +59,7 @@ function ProjectList() {
           setProStatus(data.data)
         }
       })
-    fetch(`${api}projectHead`)
+    fetch(`${api}userDropDown`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {

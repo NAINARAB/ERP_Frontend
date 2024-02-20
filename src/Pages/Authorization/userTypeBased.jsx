@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from "react";
 import api from "../../API";
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
-import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox, TextField, MenuItem } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
+import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox } from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
-
-const localData = localStorage.getItem("user");
-const parseData = JSON.parse(localData);
 
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
@@ -206,6 +203,8 @@ const STrow = (props) => {
 
 
 const UserTypeBased = () => {
+    const localData = localStorage.getItem("user");
+    const parseData = JSON.parse(localData);
     const [authData, setAuthData] = useState({ MainMenu: [], SubMenu: [] });
     const [usersType, setUserTypes] = useState([])
     const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType.toString() });

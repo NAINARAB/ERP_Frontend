@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../API";
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
-import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox, TextField, MenuItem } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
+import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox} from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -141,7 +141,7 @@ const TRow = ({ UserId, subMenu, data }) => {
                             </TableHead>
                             <TableBody>
                                 {subMenu.map(obj => (
-                                    obj.Main_Menu_Id === data.Main_Menu_Id && obj.headname !== 'Action' 
+                                    obj.Main_Menu_Id === data.Main_Menu_Id && obj.headname !== 'Action'
                                         ? <STrow key={obj.Sub_Menu_Id} data={obj} UserId={UserId} />
                                         : null
                                 ))}
@@ -227,8 +227,10 @@ const STrow = (props) => {
 const UserBased = () => {
     const [authData, setAuthData] = useState({ MainMenu: [], SubMenu: [] });
     const [users, setUsers] = useState([])
+    const localData = localStorage.getItem("user");
+    const parseData = JSON.parse(localData);
     const [currentAuthId, setCurrentAuthId] = useState({ value: parseData?.Autheticate_Id, label: parseData?.Name });
-    const [currentUserId, setCurrentUserId] = useState(parseData.UserId)
+    const [currentUserId, setCurrentUserId] = useState(parseData?.UserId)
 
     useEffect(() => {
         fetch(`${api}appMenu?Auth=${currentAuthId.value}`).then(res => res.json())
@@ -252,7 +254,7 @@ const UserBased = () => {
     const handleUserChange = (selectedOption) => {
         if (selectedOption) {
             const selectedUser = users.find(user => user.Autheticate_Id === selectedOption.value);
-            setCurrentAuthId({value: selectedUser?.Autheticate_Id, label: selectedUser.Name} || {value: parseData?.Autheticate_Id, label: parseData?.Name});
+            setCurrentAuthId({ value: selectedUser?.Autheticate_Id, label: selectedUser.Name } || { value: parseData?.Autheticate_Id, label: parseData?.Name });
             setCurrentUserId(selectedUser?.UserId || parseData.UserId);
         }
     };

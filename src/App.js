@@ -17,6 +17,8 @@ import TaskType from "./Pages/Masters/TaskType";
 import UserBased from "./Pages/Authorization/userBased";
 import UserTypeBased from "./Pages/Authorization/userTypeBased";
 
+import Tasks from "./Pages/Tasks/Tasks";
+
 function App() {
   const [login, setLogin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,12 @@ function App() {
     setLogin(true);
   };
 
+  const logout = () => {
+    localStorage.clear();
+    setLogin(false);
+    window.location = '/'
+  }
+
   return (
     <>
       <BrowserRouter>
@@ -64,7 +72,7 @@ function App() {
             </Routes>
           </>
         ) : (
-          <MainComponent setLoginTrue={setLoginTrue}>
+          <MainComponent logout={logout}>
             <Routes>
               <Route path="/masters/company" element={<CompanyInfo />} />
               <Route path="/masters/users" element={<Users />} />
@@ -73,8 +81,11 @@ function App() {
               <Route path="/master/usertype" element={<UserType />} />
               <Route path="/master/basegroup" element={<BaseGroup />} />
               <Route path="/master/tasktype" element={<TaskType />} />
+
               <Route path="/authorization/user" element={<UserBased />} />
               <Route path="/authorization/usertype" element={<UserTypeBased />} />
+
+              <Route path="/tasks/taskslist" element={<Tasks />} />
             </Routes>
           </MainComponent>
         )}

@@ -1,9 +1,6 @@
 import React, { useState, useEffect, Fragment } from "react";
 import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { Button as MuiButton } from "@mui/material/";
 import { ToastContainer, toast } from "react-toastify";
 import api from "../../API";
