@@ -40,3 +40,7 @@
   .rem1 {
     font-size: 1rem;
   }
+
+  .card {
+    box-shadow: 2px 2px 4px 0.2px rgb(211, 210, 210) !important;
+  }
