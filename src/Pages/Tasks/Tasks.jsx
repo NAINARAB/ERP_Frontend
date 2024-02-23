@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../../API";
 import '../common.css'
-import { InfoOutlined, OpenInNewOutlined, FilterAlt, Add, Edit, RemoveRedEye, Delete } from '@mui/icons-material';
-import { IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogTitle, Button, Menu, MenuItem } from '@mui/material';
+import { FilterAlt, Add, Edit, RemoveRedEye, Delete, PersonAdd } from '@mui/icons-material';
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, Menu, MenuItem } from '@mui/material';
 import TaskInfo from "./TaskInfo";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from 'react-bootstrap/Dropdown';
+import moment from "moment";
 
 const localData = localStorage.getItem("user");
 const parseData = JSON.parse(localData);
@@ -29,6 +30,23 @@ const initialState = {
     Status: 0
 }
 
+const initialVal = {
+    Id: "",
+    Task_Id: '',
+    T_Sub_Task_Id: "",
+    Sub_Task: "",
+    S_No: "",
+    Emp_Id: "",
+    Task_Assign_dt: "",
+    Emp_Name: "",
+    Prity: 1,
+    Sch_Time: "",
+    Ord_By: 1,
+    Timer_Based: 0,
+    Invovled_Stat: "",
+    Task_Name: "",
+}
+
 const formInitialValue = {
     Type_Task_Id: '',
     Task_Name: '',
@@ -47,53 +65,21 @@ const Tasks = () => {
 
     const [tasksData, setTaskData] = useState([]);
     const [filterValue, setFilterValue] = useState(initialState);
-    const [formValue, setFormValue] = useState({
-        Base_Group_Name: "TASK BASED",
-        Base_Type: 1,
-        BranchCode: "SMT",
-        BranchName: "SM TRADERS",
-        Branch_Id: 1,
-        Entry_By: 1,
-        Entry_Date: "2024-02-20T11:34:21.643Z",
-        Est_End_Dt: "2024-02-20T00:00:00.000Z",
-        Est_Start_Dt: "2024-02-20T00:00:00.000Z",
-        Filter_Task_Id: "232",
-        Main_Task_Name: "Test Week2222",
-        Project_Desc: "",
-        Project_Head: 1,
-        Project_Head_User_Name: "ADMIN",
-        Project_Id: 1,
-        Project_Name: "DAILY REGULAR WORK",
-        SStatus: "",
-        SrN: "5",
-        Status: "New",
-        Sub_Task: "",
-        Sub_Task_Desc: "",
-        Sub_Task_Id: "0",
-        Task_Desc: "test",
-        Task_Id: "232",
-        Task_Name: "Test Week2222",
-        Task_No: "TSK_0232",
-        Task_Stat_Id: 1,
-        Task_Type: "WEEKLY TASK",
-        Type_Task_Id: 3,
-        Update_By: 1,
-        Update_Date: "2024-02-21T04:37:29.393Z"
-    })
+    const [formValue, setFormValue] = useState(formInitialValue)
     const [screen, setScreen] = useState(true);
     const [dialog, setDialog] = useState(false);
     const [deleteDialog, setDeleteDialog] = useState(false);
     const [filterMenu, setFilterMenu] = useState(null);
     const open = Boolean(filterMenu);
     const [reload, setReload] = useState(false);
+    const [assignEmp, setAssignEmp] = useState(false);
+    const [clickedRow, setClickedRow] = useState(initialVal);
 
     const [branch, setBranch] = useState([]);
     const [users, setUsers] = useState([]);
-    const [baseGroup, setBaseGroup] = useState([]);
     const [taskType, setTaskType] = useState([]);
     const [project, setProject] = useState([]);
     const [status, setStatus] = useState([]);
-    const [projectHead, setProjectHead] = useState([]);
 
     const [isEdit, setIsEdit] = useState(false);
 
@@ -125,16 +111,15 @@ const Tasks = () => {
             .then(data => {
                 if (data.success) {
                     setUsers(data.data);
-                    setProjectHead(data.data);
                 }
             })
-        fetch(`${api}baseGroup`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setBaseGroup(data.data)
-                }
-            })
+        // fetch(`${api}baseGroup`)
+        //     .then(res => res.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             setBaseGroup(data.data)
+        //         }
+        //     })
         fetch(`${api}/projectDropDown`)
             .then(res => res.json())
             .then(data => {
@@ -171,15 +156,21 @@ const Tasks = () => {
     const DispTask = ({ o }) => {
         return (
             <>
-                <div className="p-3 mb-3 row rounded-4 task-card" >
+                <div 
+                    className="p-3 mb-3 row rounded-4" 
+                    style={
+                        Number(o.Sub_Task_Id) === 0 
+                        ? {background: 'linear-gradient(to right, #5ced73, #5ced73)'}
+                        : {background: '#CEE6F2'}
+                    }>
                     <div className="col-2 col-lg-1 col-md-1 d-flex justify-content-center align-items-center flex-column hrul">
-                        <Tooltip title="">
+                        {/* <Tooltip title="">
                             <IconButton
                                 size="small">
                                 <InfoOutlined className="h4 mb-0" />
                             </IconButton>
-                        </Tooltip>
-                        <span className="badge bg-secondary fa-10">{o?.Status}</span>
+                        </Tooltip> */}
+                        <span className="icon">{o?.Status}</span>
                     </div>
                     <div className="col-8 col-lg-10 col-md-10 d-flex flex-column align-items-start justify-content-center fw-bold hrul">
                         <p className="fa-13 mb-0 text-primary">{o?.Task_Name}</p>
@@ -201,15 +192,30 @@ const Tasks = () => {
                             </Dropdown.Toggle>
 
                             <Dropdown.Menu>
+                                <MenuItem onClick={() => { 
+                                    setClickedRow({
+                                        ...clickedRow, 
+                                        Task_Id: o.Task_Id, 
+                                        Sub_Task_Id: o.Sub_Task_Id, 
+                                        Task_Name: o.Task_Name,
+                                        Task_Assign_dt: o.Est_Start_Dt,
+                                        // T_Sub_Task_Id: o.T_Sub_Task_Id
+                                    }); 
+                                    setAssignEmp(true);
+                                    }}>
+                                    <PersonAdd className="fa-in me-2" /> Assign Employee
+                                </MenuItem>
                                 <MenuItem onClick={() => { setIsEdit(true); setFormValue(o); setDialog(true); }}>
                                     <Edit className="fa-in me-2" /> Edit
                                 </MenuItem>
                                 <MenuItem onClick={() => { setFormValue(o); setDeleteDialog(true) }}>
                                     <Delete className="fa-in me-2" /> Delete
                                 </ MenuItem>
-                                <MenuItem onClick={() => { setFormValue(o); setScreen(!screen); }}>
-                                    <RemoveRedEye className="fa-in me-2" /> Open
-                                </MenuItem>
+                                {Number(o.Sub_Task_Id) === 0 && (
+                                    <MenuItem onClick={() => { setFormValue(o); setScreen(!screen); }}>
+                                        <RemoveRedEye className="fa-in me-2" /> Open
+                                    </MenuItem>
+                                )}
                             </Dropdown.Menu>
                         </Dropdown>
                     </div>
@@ -264,11 +270,40 @@ const Tasks = () => {
         setFormValue(formInitialValue);
     }
 
+    const closeDialog = () => {
+        setAssignEmp(false);
+        setClickedRow(initialVal);
+    }
+
+    const timeFormat = (timeString12Hour) => {
+        const parsedTime = moment(timeString12Hour, 'h:mm A');
+        const time24Hour = parsedTime.format('HH:mm');
+        return time24Hour;
+    }
+
+    const assignEmployeeFun = () => {
+        fetch(`${api}assignEmployee`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(clickedRow)
+        }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    toast.success(data.message);
+                    setReload(!reload);
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
+            .finally(() => closeDialog())
+    }
 
     return (
         <>
             <ToastContainer />
-            {!screen ? (
+            {screen ? (
                 <div className="card">
                     <div className="card-header bg-white d-flex align-items-center justify-content-between">
                         <span className="fa-16 fw-bold text-uppercase">Tasks</span>
@@ -302,15 +337,8 @@ const Tasks = () => {
             ) : (
                 <TaskInfo
                     row={formValue}
-                    branch={branch}
                     users={users}
-                    baseGroup={baseGroup}
-                    taskType={taskType}
-                    project={project}
                     status={status}
-                    projectHead={projectHead}
-                    filterValue={filterValue}
-                    setFilterValue={setFilterValue}
                     setScreen={() => setScreen(!screen)}
                 />
             )}
@@ -473,7 +501,7 @@ const Tasks = () => {
                         </div>
                     </DialogContent>
                     <DialogActions sx={{ borderTop: "1px solid #f2f2f2" }}>
-                        <Button variant="outlined" type='button' onClick={clearValues}>Cancel</Button>
+                        <Button variant="outlined" type='reset' onClick={clearValues}>Cancel</Button>
                         <Button variant="contained" type='submit'>{isEdit ? 'Save' : 'Create task'}</Button>
                     </DialogActions>
                 </form>
@@ -495,6 +523,89 @@ const Tasks = () => {
                     <Button variant="contained" onClick={deleteTask} >yes</Button>
                 </DialogActions>
             </Dialog>
+
+            <Dialog
+                open={assignEmp} fullWidth maxWidth='lg'
+                onClose={closeDialog}>
+                <DialogTitle className='text-uppercase'>
+                    {'Assign Employee For '}
+                    <span className="text-primary text-decoration-underline">{clickedRow?.Task_Name}</span>
+                    {' Task'}
+                </DialogTitle>
+                <DialogContent>
+                    <div className="row">
+
+                        <div className="col-md-4">
+                            <label className="py-2">EMPLOYEE NAME</label>
+                            <select
+                                className="cus-inpt"
+                                value={clickedRow?.Emp_Id && clickedRow?.Emp_Id}
+                                onChange={(e) => setClickedRow({ ...clickedRow, Emp_Id: e.target.value })}>
+                                <option value={0}>-- Select --</option>
+                                {users.map((o, i) => Number(o.Project_Head) !== 0 && <option value={o?.Project_Head} key={i}>{o?.Project_Head_Name}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="col-md-4">
+                            <label className="py-2">ASSIGN DATE</label>
+                            <input
+                                type="date"
+                                className="cus-inpt"
+                                value={clickedRow?.Task_Assign_dt && new Date(clickedRow?.Task_Assign_dt).toISOString().split('T')[0]}
+                                onChange={(e) => setClickedRow({ ...clickedRow, Task_Assign_dt: e.target.value })} />
+                        </div>
+
+                        <div className="col-md-4">
+                            <label className="py-2">SCHEDULE TIME</label>
+                            <input
+                                type="time"
+                                className="cus-inpt"
+                                value={clickedRow?.Sch_Time && timeFormat(clickedRow?.Sch_Time)}
+                                onChange={(e) => setClickedRow({ ...clickedRow, Sch_Time: e.target.value })} />
+                        </div>
+
+                        <div className="col-md-4">
+                            <label className="py-2">ORDER BY</label>
+                            <input
+                                type="number"
+                                className="cus-inpt" placeholder='ex: 1, 2, 3...'
+                                value={clickedRow?.Ord_By && clickedRow?.Ord_By}
+                                onChange={(e) => setClickedRow({ ...clickedRow, Ord_By: e.target.value })} />
+                        </div>
+
+                        <div className="col-md-4">
+                            <label className="py-2">PRIORITY</label>
+                            <input
+                                type="number"
+                                className="cus-inpt"
+                                value={clickedRow?.Prity && clickedRow?.Prity} placeholder='ex: 1, 2, 3...'
+                                onChange={(e) => setClickedRow({ ...clickedRow, Prity: e.target.value })} />
+                        </div>
+
+                        <div className="col-md-4 py-3">
+                            <label className="pt-1 border-bottom m-0 fw-bold text-muted" htmlFor="timbsd">Time Based ?</label>
+                            <input
+                                className="form-check-input p-2 m-2"
+                                type="checkbox"
+                                value={clickedRow?.Timer_Based && clickedRow?.Timer_Based === 1}
+                                id="timbsd"
+                                onChange={(e) => {
+                                    setClickedRow({ ...clickedRow, Timer_Based: e.target.checked ? 1 : 0 })
+                                }} />
+                        </div>
+
+                    </div>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button variant='' onClick={closeDialog}>close</Button>
+                    <Button variant='contained'
+                        onClick={assignEmployeeFun}>
+                        Assign
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </>
     )
 }

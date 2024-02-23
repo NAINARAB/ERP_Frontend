@@ -290,7 +290,7 @@ function ProjectList() {
           </div>
           <div className="card-footer d-flex justify-content-end bg-white">
             <Button onClick={() => { switchScreen(false) }} className="rounded-5 px-4 mx-1 btn-light bg-white">{'Cancel'}</Button>
-            <Button onClick={isEdit ? editFun : createFun} className="rounded-5 px-4 shadow mx-1">{isEdit ? 'Update' : 'Create Branch'}</Button>
+            <Button onClick={isEdit ? editFun : createFun} className="rounded-5 px-4 shadow mx-1">{isEdit ? 'Update' : 'Create Project'}</Button>
           </div>
         </div>
       )}

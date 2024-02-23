@@ -207,7 +207,8 @@ const UserTypeBased = () => {
     const parseData = JSON.parse(localData);
     const [authData, setAuthData] = useState({ MainMenu: [], SubMenu: [] });
     const [usersType, setUserTypes] = useState([])
-    const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType.toString() });
+    console.log(parseData?.UserTypeId)
+    const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType });
 
     useEffect(() => {
         fetch(`${api}/appMenuUType?UserType=${currentTypeId?.value}`).then(res => res.json())
@@ -268,7 +269,7 @@ const UserTypeBased = () => {
                             <TRow
                                 key={index}
                                 data={obj}
-                                UserId={currentTypeId}
+                                UserId={currentTypeId.value}
                                 subMenu={authData?.SubMenu} />
                         ))}
                     </TableBody>
