@@ -42,7 +42,7 @@ body {
 }
 
 .sidebar-bottom {
-    z-index: 999999999;
+    /* z-index: 999999999; */
     /* position: fixed;
     width: 100%;
     bottom: 0;
@@ -55,18 +55,41 @@ body {
 
 .sidebutton {
     border: none;
+    background-color: transparent;
     width: 100%;
     padding: 12px;
-    background-color: transparent;
-    text-align: left;
-    color: white;
+    color: rgb(206, 201, 201);
     cursor: pointer;
     text-transform: uppercase;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;   
+    border-radius: 6px; 
+    margin-bottom: 3px;
 }
 
 .sidebutton:hover {
     background-color: rgb(107, 105, 105);
+    font-weight: bold;
+    color: white !important;
+}
+
+.btn-active {
+    background-color: rgb(107, 105, 105);
+    font-weight: bold;
+    color: white !important;
+}
+
+.sub-btn-active {
+    font-weight: bold;
+    color: white !important;
+}
+
+.tes:hover {
+    background-color: transparent !important;
+    font-weight: bold !important;
+    color: white !important;
 }
 
 .content-div {

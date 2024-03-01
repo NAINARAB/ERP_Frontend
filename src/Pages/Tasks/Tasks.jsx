@@ -45,13 +45,14 @@ const initialVal = {
     Timer_Based: 0,
     Invovled_Stat: "",
     Task_Name: "",
+    Assigned_Emp_Id: parseData?.UserId
 }
 
 const formInitialValue = {
     Type_Task_Id: '',
     Task_Name: '',
     Task_Desc: '',
-    Task_Stat_Id: '',
+    Task_Stat_Id: 1,
     Est_Start_Dt: new Date().toISOString().split('T')[0],
     Est_End_Dt: new Date().toISOString().split('T')[0],
     Branch_Id: parseData?.BranchId,
@@ -86,11 +87,7 @@ const Tasks = () => {
 
 
     useEffect(() => {
-        fetch(`${api}taskGet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(filterValue)
-        }).then(res => res.json())
+        fetch(`${api}tasks`).then(res => res.json())
             .then(data => {
                 if (data.success) {
                     setTaskData(data.data);
@@ -152,16 +149,15 @@ const Tasks = () => {
         setFilterMenu(null);
     };
 
-
     const DispTask = ({ o }) => {
         return (
             <>
-                <div 
-                    className="p-3 mb-3 row rounded-4" 
+                <div
+                    className="p-3 mb-3 row rounded-4"
                     style={
-                        Number(o.Sub_Task_Id) === 0 
-                        ? {background: 'linear-gradient(to right, #5ced73, #5ced73)'}
-                        : {background: '#CEE6F2'}
+                        Number(o.Sub_Task_Id) === 0
+                            ? { background: '#87CEEB' }
+                            : { background: '#CEE6F2' }
                     }>
                     <div className="col-2 col-lg-1 col-md-1 d-flex justify-content-center align-items-center flex-column hrul">
                         {/* <Tooltip title="">
@@ -192,17 +188,16 @@ const Tasks = () => {
                             </Dropdown.Toggle>
 
                             <Dropdown.Menu>
-                                <MenuItem onClick={() => { 
+                                <MenuItem onClick={() => {
                                     setClickedRow({
-                                        ...clickedRow, 
-                                        Task_Id: o.Task_Id, 
-                                        Sub_Task_Id: o.Sub_Task_Id, 
-                                        Task_Name: o.Task_Name,
-                                        Task_Assign_dt: o.Est_Start_Dt,
-                                        // T_Sub_Task_Id: o.T_Sub_Task_Id
-                                    }); 
+                                        ...clickedRow,
+                                        Task_Id: o?.Task_Id,
+                                        Sub_Task_Id: o?.Sub_Task_Id,
+                                        Task_Name: o?.Task_Name,
+                                        Task_Assign_dt: o?.Est_Start_Dt,
+                                    });
                                     setAssignEmp(true);
-                                    }}>
+                                }}>
                                     <PersonAdd className="fa-in me-2" /> Assign Employee
                                 </MenuItem>
                                 <MenuItem onClick={() => { setIsEdit(true); setFormValue(o); setDialog(true); }}>
@@ -317,7 +312,7 @@ const Tasks = () => {
                         </div>
                     </div>
                     <div className="card-body overflow-scroll" style={{ maxHeight: "78vh", padding: '20px 30px' }}>
-                        <div className="rounded-5 bg-primary p-1 text-uppercase tab-container">
+                        {/* <div className="rounded-5 bg-primary p-1 text-uppercase tab-container">
                             <div className="d-flex flex-nowrap overflow-auto hidescroll">
                                 {taskType?.map((o, i) => (
                                     <button
@@ -329,7 +324,7 @@ const Tasks = () => {
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
                         <br />
                         {tasksData?.map((o, i) => <DispTask key={i} o={o} />)}
                     </div>
@@ -339,7 +334,8 @@ const Tasks = () => {
                     row={formValue}
                     users={users}
                     status={status}
-                    setScreen={() => setScreen(!screen)}
+                    setScreen={() => { setScreen(!screen); clearValues(); }}
+                    doRefresh={() => setReload(!reload)}
                 />
             )}
 
@@ -375,7 +371,6 @@ const Tasks = () => {
                             className="cus-inpt"
                             onChange={(e) => setFilterValue({ ...filterValue, Project_Id: e.target.value })}
                             value={filterValue?.Project_Id}>
-                            <option value={''}>Select</option>
                             {project?.map((o, i) => <option key={i} value={o?.Project_Id}>{o?.Project_Name}</option>)}
                         </select>
                     </div>
@@ -385,7 +380,7 @@ const Tasks = () => {
                             className="cus-inpt"
                             onChange={(e) => setFilterValue({ ...filterValue, Status: e.target.value })}
                             value={filterValue?.Status}>
-                            <option value={''}>Select</option>
+                            <option value={''}>ALL</option>
                             {status?.map((o, i) => <option key={i} value={o?.Status_Id}>{o?.Status}</option>)}
                         </select>
                     </div>
@@ -410,95 +405,94 @@ const Tasks = () => {
 
 
             <Dialog
-                open={dialog} fullWidth maxWidth='lg'
+                open={dialog} fullWidth maxWidth='sm'
                 onClose={clearValues}
                 aria-labelledby="create-dialog-title"
                 aria-describedby="create-dialog-description">
                 <DialogTitle className="bg-primary text-white mb-2">{isEdit ? 'Edit Task' : 'Create Task'}</DialogTitle>
                 <form onSubmit={e => postTask(e)}>
                     <DialogContent>
-                        <div className="row">
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Branch</label>
-                                <select
-                                    className="cus-inpt"
-                                    onChange={(e) => setFormValue({ ...formValue, Branch_Id: e.target.value })}
-                                    value={formValue?.Branch_Id} required>
-                                    <option value={''}>Select</option>
-                                    {branch?.map((o, i) => <option key={i} value={o?.BranchId}>{o?.BranchName}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Project</label>
-                                <select
-                                    className="cus-inpt"
-                                    onChange={(e) => setFormValue({ ...formValue, Project_Id: e.target.value })}
-                                    value={formValue?.Project_Id} required>
-                                    <option value={''}>Select</option>
-                                    {project?.map((o, i) => Number(o.Project_Id) !== 0 && <option key={i} value={o?.Project_Id}>{o?.Project_Name}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Task Type</label>
-                                <select
-                                    className="cus-inpt"
-                                    onChange={(e) => setFormValue({ ...formValue, Type_Task_Id: e.target.value })}
-                                    value={formValue?.Type_Task_Id} required>
-                                    <option value={''}>Select</option>
-                                    {taskType?.map((o, i) => Number(o.Task_Type_Id) !== 0 && (
-                                        <option key={i} value={o?.Task_Type_Id}>{o?.Task_Type}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Status</label>
-                                <select
-                                    className="cus-inpt"
-                                    onChange={(e) => setFormValue({ ...formValue, Task_Stat_Id: e.target.value })}
-                                    value={formValue?.Task_Stat_Id} required>
-                                    <option value={''}>Select</option>
-                                    {status?.map((o, i) => Number(o.Status_Id) !== 0 && (
-                                        <option key={i} value={o?.Status_Id}>{o?.Status}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <hr />
-                        <div className="row">
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Task Name</label>
-                                <input
-                                    className="cus-inpt"
-                                    maxLength={100}
-                                    value={formValue?.Task_Name} required
-                                    onChange={e => setFormValue({ ...formValue, Task_Name: e.target.value })} />
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Start Time</label>
-                                <input
-                                    className="cus-inpt"
-                                    type='date'
-                                    value={isEdit ? new Date(formValue?.Est_Start_Dt).toISOString().split('T')[0] : formValue?.Est_Start_Dt} required
-                                    onChange={e => setFormValue({ ...formValue, Est_Start_Dt: e.target.value })}
-                                />
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>End Time</label>
-                                <input
-                                    className="cus-inpt"
-                                    type="date"
-                                    value={isEdit ? new Date(formValue?.Est_End_Dt).toISOString().split('T')[0] : formValue?.Est_End_Dt} required
-                                    onChange={e => setFormValue({ ...formValue, Est_End_Dt: e.target.value })}
-                                />
-                            </div>
-                            <div className="col-12 p-2">
-                                <label>Task Describtion</label>
-                                <textarea
-                                    className="cus-inpt" rows="3"
-                                    onChange={(e) => setFormValue({ ...formValue, Task_Desc: e.target.value })}
-                                    value={formValue?.Task_Desc} />
-                            </div>
-                        </div>
+                        <table className="table">
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Branch</td>
+                                <td className="p-2">
+                                    <select
+                                        className="cus-inpt"
+                                        onChange={(e) => setFormValue({ ...formValue, Branch_Id: e.target.value })}
+                                        value={formValue?.Branch_Id} required>
+                                        <option value={''}>Select</option>
+                                        {branch?.map((o, i) => <option key={i} value={o?.BranchId}>{o?.BranchName}</option>)}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Project</td>
+                                <td className="p-2">
+                                    <select
+                                        className="cus-inpt"
+                                        onChange={(e) => setFormValue({ ...formValue, Project_Id: e.target.value })}
+                                        value={formValue?.Project_Id} required>
+                                        <option value={''}>Select</option>
+                                        {project?.map((o, i) => Number(o.Project_Id) !== 0 && <option key={i} value={o?.Project_Id}>{o?.Project_Name}</option>)}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Task Type</td>
+                                <td className="p-2">
+                                    <select
+                                        className="cus-inpt"
+                                        onChange={(e) => setFormValue({ ...formValue, Type_Task_Id: e.target.value })}
+                                        value={formValue?.Type_Task_Id} required>
+                                        <option value={''}>Select</option>
+                                        {taskType?.map((o, i) => Number(o.Task_Type_Id) !== 0 && (
+                                            <option key={i} value={o?.Task_Type_Id}>{o?.Task_Type}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Task Name</td>
+                                <td className="p-2">
+                                    <input
+                                        className="cus-inpt"
+                                        maxLength={100}
+                                        value={formValue?.Task_Name} required
+                                        onChange={e => setFormValue({ ...formValue, Task_Name: e.target.value })} />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Start Date</td>
+                                <td className="p-2">
+                                    <input
+                                        className="cus-inpt"
+                                        type='date'
+                                        value={isEdit ? new Date(formValue?.Est_Start_Dt).toISOString().split('T')[0] : formValue?.Est_Start_Dt} required
+                                        onChange={e => setFormValue({ ...formValue, Est_Start_Dt: e.target.value })}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">End Date</td>
+                                <td className="p-2">
+                                    <input
+                                        className="cus-inpt"
+                                        type="date"
+                                        value={isEdit ? new Date(formValue?.Est_End_Dt).toISOString().split('T')[0] : formValue?.Est_End_Dt} required
+                                        onChange={e => setFormValue({ ...formValue, Est_End_Dt: e.target.value })}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 d-flex align-items-start pt-2">Task Describtion</td>
+                                <td className="p-2">
+                                    <textarea
+                                        className="cus-inpt" rows="3"
+                                        onChange={(e) => setFormValue({ ...formValue, Task_Desc: e.target.value })}
+                                        value={formValue?.Task_Desc} />
+                                </td>
+                            </tr>
+                        </table>
                     </DialogContent>
                     <DialogActions sx={{ borderTop: "1px solid #f2f2f2" }}>
                         <Button variant="outlined" type='reset' onClick={clearValues}>Cancel</Button>

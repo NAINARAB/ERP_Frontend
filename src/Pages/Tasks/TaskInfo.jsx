@@ -21,8 +21,9 @@ const CardDiv = ({ label, icon, data }) => (
 
 
 
-const TaskInfo = ({ row, users, setScreen, status }) => {
-    console.log(row)
+const TaskInfo = ({ row, users, setScreen, status, doRefresh }) => {
+    const localData = localStorage.getItem("user");
+    const parseData = JSON.parse(localData);
     const initialVal = {
         Id: "",
         Task_Id: row.Task_Id,
@@ -36,10 +37,9 @@ const TaskInfo = ({ row, users, setScreen, status }) => {
         Sch_Time: "",
         Ord_By: 1,
         Timer_Based: 0,
-        Invovled_Stat: ""
+        Invovled_Stat: "",
+        Assigned_Emp_Id: parseData.UserId
     }
-    const localData = localStorage.getItem("user");
-    const parseData = JSON.parse(localData);
     const [subTasks, setSubTasks] = useState([]);
     const [assignedEmployee, setAssignedEmployee] = useState([]);
     const [reload, setReload] = useState(false);
@@ -118,6 +118,7 @@ const TaskInfo = ({ row, users, setScreen, status }) => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
+                    doRefresh();
                 } else {
                     toast.error(data.message)
                 }
@@ -139,6 +140,7 @@ const TaskInfo = ({ row, users, setScreen, status }) => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
+                    doRefresh();
                 } else {
                     toast.error(data.message)
                 }
@@ -158,6 +160,7 @@ const TaskInfo = ({ row, users, setScreen, status }) => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
+                    doRefresh();
                 } else {
                     toast.error(data.message)
                 }

@@ -5,6 +5,7 @@ import LoginPage from "./Pages/LoginPage/LoginPage";
 import api from "./API";
 import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
+import { ContextDataProvider } from "./Components/context/contextProvider";
 
 import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/Users";
@@ -18,6 +19,7 @@ import UserBased from "./Pages/Authorization/userBased";
 import UserTypeBased from "./Pages/Authorization/userTypeBased";
 
 import Tasks from "./Pages/Tasks/Tasks";
+import MyTasks from "./Pages/Tasks/myTasks";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -72,22 +74,26 @@ function App() {
             </Routes>
           </>
         ) : (
-          <MainComponent logout={logout}>
-            <Routes>
-              <Route path="/masters/company" element={<CompanyInfo />} />
-              <Route path="/masters/users" element={<Users />} />
-              <Route path="/masters/branch" element={<BranchInfo />} />
-              <Route path="/masters/project" element={<ProjectList />} />
-              <Route path="/master/usertype" element={<UserType />} />
-              <Route path="/master/basegroup" element={<BaseGroup />} />
-              <Route path="/master/tasktype" element={<TaskType />} />
+          <ContextDataProvider>
+            <MainComponent logout={logout}>
+              <Routes>
+                <Route path="/masters/company" element={<CompanyInfo />} />
+                <Route path="/masters/users" element={<Users />} />
+                <Route path="/masters/branch" element={<BranchInfo />} />
+                <Route path="/masters/project" element={<ProjectList />} />
+                <Route path="/master/usertype" element={<UserType />} />
+                <Route path="/master/basegroup" element={<BaseGroup />} />
+                <Route path="/master/tasktype" element={<TaskType />} />
 
-              <Route path="/authorization/user" element={<UserBased />} />
-              <Route path="/authorization/usertype" element={<UserTypeBased />} />
+                <Route path="/authorization/user" element={<UserBased />} />
+                <Route path="/authorization/usertype" element={<UserTypeBased />} />
 
-              <Route path="/tasks/taskslist" element={<Tasks />} />
-            </Routes>
-          </MainComponent>
+                <Route path="/tasks/taskslist" element={<Tasks />} />
+                <Route path="/tasks/mytasks" element={<MyTasks />} />
+
+              </Routes>
+            </MainComponent>
+          </ContextDataProvider>
         )}
       </BrowserRouter>
     </>

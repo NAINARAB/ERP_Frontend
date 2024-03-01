@@ -1,15 +1,7 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { Table, Button } from "react-bootstrap";
 import api from "../../API";
-import {
-  IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button as MuiButton,
-} from "@mui/material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MuiButton} from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,7 +16,7 @@ const initialState = {
   UserId: "",
 };
 
-function Users() {
+const Users = () => {
   const [usersData, setUsersData] = useState([]);
   const [screen, setScreen] = useState(false);
   const localData = localStorage.getItem("user");
@@ -39,9 +31,7 @@ function Users() {
   const [userDropdown, setuserDropdown] = useState([]);
 
   useEffect(() => {
-    fetch(
-      `${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${parseData?.BranchId}`
-    )
+    fetch(`${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${parseData?.BranchId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -59,9 +49,8 @@ function Users() {
         }
       })
       .catch((e) => console.log(e));
-    fetch(
-      `${api}branch?User_Id=${parseData.UserId}&Company_id=${parseData.Company_id}`
-    )
+
+    fetch(`${api}branch?User_Id=${parseData.UserId}&Company_id=${parseData.Company_id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

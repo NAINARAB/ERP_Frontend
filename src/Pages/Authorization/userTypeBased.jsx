@@ -207,7 +207,7 @@ const UserTypeBased = () => {
     const parseData = JSON.parse(localData);
     const [authData, setAuthData] = useState({ MainMenu: [], SubMenu: [] });
     const [usersType, setUserTypes] = useState([])
-    console.log(parseData?.UserTypeId)
+    // console.log(parseData?.UserTypeId)
     const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType });
 
     useEffect(() => {

@@ -18,7 +18,7 @@
   }
   
   .tab-item {
-    padding: 10px 30px; 
+    padding: 7px 20px; 
     margin-right: 10px; 
     white-space: nowrap;
   }
@@ -43,6 +43,14 @@
 
   .card {
     box-shadow: 2px 2px 4px 0.2px rgb(211, 210, 210) !important;
+  }
+
+  .cus-shadow {
+    box-shadow: 2px 2px 4px 0.2px rgb(211, 210, 210) !important;
+  }
+
+  .cus-shadow:active {
+    box-shadow: none !important;
   }
 
   .icon {
@@ -71,3 +79,47 @@
     font-weight: bold;
     box-shadow: inset 2px 2px 4px 0.2 black;
   }
+
+  .rounded-select-container {
+    border-radius: 30px;
+    padding: 8px 14px;
+    background-color: #0d6efd;
+    margin: 2px 4px;
+  }
+
+  .rounded-select {
+    outline: none;
+    padding: 3px;
+    background-color: #0d6efd;
+    border: none;
+    color: white;
+  }
+
+  .cus-card {
+    box-sizing: border-box;
+    overflow: hidden;
+    margin: 15px 0px 0px 0px;
+    border-radius: 15px;
+    box-shadow: 2px 2px 4px 0.2px rgb(211, 210, 210);
+    background-color: white;
+    color: rgb(75, 67, 67);
+    font-size: 16px;
+  }
+
+  .multiple-colors-gradient {
+    background: linear-gradient(310deg, #b5cce6, #87CEEB, #D8BFD8, #b5e6dd);
+  }
+
+  .clock-btn {
+    margin-top: 1em;
+    text-align: center;
+    text-transform: uppercase;
+    background-color: #b5e6dd;
+    border: none;
+    border-radius: 50%;
+    height: 110px;
+    width: 110px;
+    
+  }
+  
+  
