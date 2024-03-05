@@ -11,8 +11,8 @@ const CardDiv = ({ label, icon, data }) => (
     <div className="col-xl-3 col-lg-4 col-md-6 px-2 py-1">
         <div className="bg-primary rounded-4 text-white p-3 fa-16">
             <div className="d-flex ">
-            <span className='smallicon fa-17 bg-dark'>{icon}</span>
-            <span className='ms-2 text-uppercase'>{label}</span>
+                <span className='smallicon fa-17 bg-dark'>{icon}</span>
+                <span className='ms-2 text-uppercase'>{label}</span>
             </div>
             <p className='w-100 text-end mb-0 fa-13 fw-bold'>{data}</p>
         </div>
@@ -250,7 +250,7 @@ const TaskInfo = ({ row, users, setScreen, status, doRefresh }) => {
             <div className="row m-0">
                 <CardDiv
                     label={'PROJECT'}
-                    icon={<BusinessCenter className='fa-in'  />}
+                    icon={<BusinessCenter className='fa-in' />}
                     data={row?.Project_Name} />
                 <CardDiv
                     label={'FROM'}

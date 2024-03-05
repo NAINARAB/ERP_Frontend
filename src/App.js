@@ -20,6 +20,10 @@ import UserTypeBased from "./Pages/Authorization/userTypeBased";
 
 import Tasks from "./Pages/Tasks/Tasks";
 import MyTasks from "./Pages/Tasks/myTasks";
+import ActiveProjects from "./Pages/CurrentProjects/projectsList";
+import ProjectDetails from "./Pages/CurrentProjects/projectInfo";
+import InvalidPageComp from "./Components/invalidCredential";
+import TaskMaster from "./Pages/Tasks/newTasksPage";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -88,8 +92,12 @@ function App() {
                 <Route path="/authorization/user" element={<UserBased />} />
                 <Route path="/authorization/usertype" element={<UserTypeBased />} />
 
-                <Route path="/tasks/taskslist" element={<Tasks />} />
+                <Route path="/tasks/taskslist" element={<TaskMaster />} />
                 <Route path="/tasks/mytasks" element={<MyTasks />} />
+                <Route path="/tasks/activeproject" element={<ActiveProjects />} />
+
+                <Route path="/invalid-credentials" element={<InvalidPageComp />} />
+                <Route path="*" element={<InvalidPageComp />} />
 
               </Routes>
             </MainComponent>

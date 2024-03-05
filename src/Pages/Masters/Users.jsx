@@ -95,16 +95,16 @@ const Users = () => {
   };
 
   const validation = () => {
-    if (!inputValue.Name && inputValue.Name.length == 0) {
+    if (!inputValue?.Name && inputValue.Name.length == 0) {
       return "Name can not be empty";
     }
 
-    if (!inputValue.UserName && inputValue.UserName.match("[0-9]{10}")) {
+    if (!inputValue.UserName && inputValue?.UserName?.match("[0-9]{10}")) {
       return "Please provide valid phone number";
     }
 
-    if (!inputValue.Password && inputValue.Password.length < 8) {
-      return "Password must contain greater than or equal to 8 characters.";
+    if (!inputValue?.Password && inputValue?.Password.length < 6) {
+      return "Password must contain greater than or equal to 6 characters.";
     }
 
     if (!inputValue.BranchId) {
@@ -299,7 +299,7 @@ const Users = () => {
               <div className="col-lg-4 p-2">
                 <label>Name</label>
                 <input
-                  className="form-control"
+                  className="cus-inpt"
                   value={inputValue.Name}
                   onChange={(e) =>
                     setInputValue({ ...inputValue, Name: e.target.value })
@@ -309,7 +309,7 @@ const Users = () => {
               <div className="col-lg-4 p-2">
                 <label>Password</label>
                 <input
-                  className="form-control"
+                  className="cus-inpt"
                   type="password"
                   value={inputValue.Password}
                   onChange={(e) =>
@@ -320,9 +320,10 @@ const Users = () => {
               <div className="col-lg-4 p-2">
                 <label>Mobile</label>
                 <input
-                  className="form-control"
-                  type={"tel"}
+                  className="cus-inpt"
+                  type={"number"}
                   value={inputValue.UserName}
+                  maxLength={10}
                   onChange={(e) =>
                     setInputValue({ ...inputValue, UserName: e.target.value })
                   }
@@ -331,7 +332,7 @@ const Users = () => {
               <div className="col-lg-4 p-2">
                 <label>Branch</label>
                 <select
-                  className="form-control"
+                  className="cus-inpt"
                   value={inputValue.BranchId}
                   onChange={(e) =>
                     setInputValue({ ...inputValue, BranchId: e.target.value })
@@ -348,7 +349,7 @@ const Users = () => {
               <div className="col-lg-4 p-2">
                 <label>User Type</label>
                 <select
-                  className="form-control"
+                  className="cus-inpt"
                   value={inputValue.UserTypeId}
                   onChange={(e) =>
                     setInputValue({ ...inputValue, UserTypeId: e.target.value })

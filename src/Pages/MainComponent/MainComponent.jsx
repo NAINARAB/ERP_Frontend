@@ -9,6 +9,10 @@ import Offcanvas from 'react-bootstrap/Offcanvas';
 import { MyContext } from "../../Components/context/contextProvider";
 
 
+const setLoclStoreage = (pageId, menu) => {
+  localStorage.setItem('CurrentPage', JSON.stringify({id: pageId, type: menu}));
+}
+
 const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) => {
   const [open, setOpen] = useState(page.Main_Menu_Id === mainBtn.Main_Menu_Id);
 
@@ -26,7 +30,8 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
             ? () => { 
               nav(mainBtn?.PageUrl); 
               sideClose(); 
-              setPage(mainBtn) 
+              setPage(mainBtn);
+              setLoclStoreage(mainBtn.Main_Menu_Id, 1)
             }
             : () => setOpen(!open)}
 
@@ -62,7 +67,8 @@ const SubMenu = ({ subBtn, nav, page, sideClose, setPage }) => {
         onClick={() => { 
           nav(subBtn?.PageUrl); 
           sideClose(); 
-          setPage(subBtn) 
+          setPage(subBtn);
+          setLoclStoreage(subBtn.Sub_Menu_Id, 2)
           }} >
         <Circle sx={{ fontSize: '6px', color: 'white', marginRight: '5px' }} />{' ' + subBtn?.SubMenuName}
       </button>
@@ -89,16 +95,40 @@ function MainComponent(props) {
         if (data.success) {
           setSidebar({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu });
           let navigated = false;
-          for (let o of data.MainMenu) {
-            if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && !navigated) {
-              setContextObj(o); nav(o.PageUrl);
-              navigated = true;
-              break;
+          if (localStorage.getItem('CurrentPage')) {
+            const getPageId = JSON.parse(localStorage.getItem('CurrentPage'))
+            if (Number(getPageId?.type) === 1) {
+              for (let o of data.MainMenu) {
+                if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && (parseInt(getPageId?.id) === parseInt(o.Main_Menu_Id))) {
+                  setContextObj(o); nav(o.PageUrl);
+                  navigated = true;
+                  break;
+                }
+              }
+            } else {
+              for (let o of data.SubMenu) {
+                if (Number(o.Read_Rights) === 1 && (parseInt(o?.Sub_Menu_Id) === parseInt(getPageId.id))) {
+                  setContextObj(o); nav(o.PageUrl);
+                  navigated = true;
+                  break;
+                }
+              }
+            }
+          }
+          if (!navigated) {
+            for (let o of data.MainMenu) {
+              if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && !navigated) {
+                setLoclStoreage(o?.Main_Menu_Id, 1)
+                setContextObj(o); nav(o.PageUrl);
+                navigated = true;
+                break;
+              }
             }
           }
           if (!navigated) {
             for (let o of data.SubMenu) {
               if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && !navigated) {
+                setLoclStoreage(o?.Sub_Menu_Id, 2)
                 setContextObj(o); nav(o.PageUrl);
                 navigated = true;
                 break;
@@ -107,6 +137,7 @@ function MainComponent(props) {
           }
 
           if (!navigated) {
+            navigated = true;
             nav('/invalid-credentials')
           }
 
@@ -140,8 +171,8 @@ function MainComponent(props) {
             ))}
           </div>
           <div className="sidebar-bottom">
-            <button className="btn btn-dark text-uppercase w-100" onClick={props.logout}>
-              loguout <Logout className="fa-in" />
+            <button className="btn btn-dark w-100" onClick={props.logout}>
+            <Logout className="fa-in" /> Logout 
             </button>
           </div>
         </aside>
@@ -180,10 +211,10 @@ function MainComponent(props) {
 
 
       <Offcanvas show={show} onHide={handleClose}>
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Menu</Offcanvas.Title>
+        <Offcanvas.Header style={{backgroundColor: '#333', color: 'white'}} closeButton>
+          <Offcanvas.Title >Menu</Offcanvas.Title>
         </Offcanvas.Header>
-        <Offcanvas.Body>
+        <Offcanvas.Body style={{backgroundColor: '#333'}}>
           {sidebar.MainMenu.map((o, i) => (
             <DispNavButtons
               key={i}
