@@ -256,9 +256,7 @@ const Users = () => {
                       <td className="fa-14">{obj.BranchName}</td>
                       <td className="fa-12" style={{ minWidth: "80px" }}>
                         <IconButton
-                          onClick={() => {
-                            editRow(obj);
-                          }}
+                          onClick={() => {editRow(obj)}}
                           size="small"
                         >
                           <Edit className="fa-in" />
@@ -296,7 +294,7 @@ const Users = () => {
           </div>
           <div className="card-body">
             <div className="row">
-              <div className="col-lg-4 p-2">
+              <div className="col-lg-4 col-md-6 p-2">
                 <label>Name</label>
                 <input
                   className="cus-inpt"
@@ -306,7 +304,7 @@ const Users = () => {
                   }
                 />
               </div>
-              <div className="col-lg-4 p-2">
+              <div className="col-lg-4 col-md-6 p-2">
                 <label>Password</label>
                 <input
                   className="cus-inpt"
@@ -317,7 +315,7 @@ const Users = () => {
                   }
                 />
               </div>
-              <div className="col-lg-4 p-2">
+              <div className="col-lg-4 col-md-6 p-2">
                 <label>Mobile</label>
                 <input
                   className="cus-inpt"
@@ -329,7 +327,7 @@ const Users = () => {
                   }
                 />
               </div>
-              <div className="col-lg-4 p-2">
+              <div className="col-lg-4 col-md-6 p-2">
                 <label>Branch</label>
                 <select
                   className="cus-inpt"
@@ -346,7 +344,7 @@ const Users = () => {
                   ))}
                 </select>
               </div>
-              <div className="col-lg-4 p-2">
+              <div className="col-lg-4 col-md-6 p-2">
                 <label>User Type</label>
                 <select
                   className="cus-inpt"

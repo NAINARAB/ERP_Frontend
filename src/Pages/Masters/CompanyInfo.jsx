@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useContext } from "react";
 import Table from "react-bootstrap/Table";
 import api from "../../API";
 import { Button } from "react-bootstrap";
@@ -6,6 +6,8 @@ import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, Di
 import { Edit, Delete } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 const initialState = {
   Company_Code: '',
@@ -45,6 +47,7 @@ function CompanyInfo() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const { contextObj } = useContext(MyContext)
 
   useEffect(() => {
     fetch(
@@ -191,7 +194,7 @@ function CompanyInfo() {
     fetch(`${api}company`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', },
-      body: JSON.stringify({Company_id: selectedRow?.Company_id})
+      body: JSON.stringify({ Company_id: selectedRow?.Company_id })
     }).then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -203,7 +206,7 @@ function CompanyInfo() {
       })
   }
 
-  return (
+  return Number(contextObj.Read_Rights) === 1 ? (
     <Fragment>
       <ToastContainer />
       <div className="d-flex justify-content-end mb-2">
@@ -220,7 +223,7 @@ function CompanyInfo() {
                 <th className="fa-14">Region</th>
                 <th className="fa-14">State</th>
                 <th className="fa-14">Pincode</th>
-                <th className="fa-14">Action</th>
+                {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <th className="fa-14">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -232,10 +235,16 @@ function CompanyInfo() {
                   <td className="fa-12">{obj.Region}</td>
                   <td className="fa-12">{obj.State}</td>
                   <td className="fa-12">{obj.Pincode}</td>
-                  <td className="fa-12" style={{ minWidth: '80px' }}>
-                    <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
-                    <IconButton onClick={() => { setDeleteRow(obj, true) }} size='small'><Delete className="fa-in del-red" /></IconButton>
-                  </td>
+                  {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && (
+                    <td className="fa-12" style={{ minWidth: '80px' }}>
+                      {Number(contextObj?.Edit_Rights) === 1 && (
+                        <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
+                      )}
+                      {Number(contextObj?.Delete_Rights) === 1 && (
+                        <IconButton onClick={() => { setDeleteRow(obj, true) }} size='small'><Delete className="fa-in del-red" /></IconButton>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -267,7 +276,7 @@ function CompanyInfo() {
         </div>
       )}
 
-      
+
       <Dialog
         open={deleteDialog}
         onClose={setDeleteRow}
@@ -290,7 +299,7 @@ function CompanyInfo() {
         </DialogActions>
       </Dialog>
     </Fragment>
-  );
+  ) : <InvalidPageComp />
 }
 
 export default CompanyInfo;

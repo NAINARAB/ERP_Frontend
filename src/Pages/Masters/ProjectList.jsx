@@ -1,15 +1,15 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useContext } from "react";
 import { Table, Button } from "react-bootstrap";
 import api from "../../API";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MuiButton } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 
-
-
-function ProjectList() {
+const ProjectList = () => {
   const [projectData, setProjectData] = useState([]);
   const localData = localStorage.getItem("user");
   const parseData = JSON.parse(localData);
@@ -32,7 +32,7 @@ function ProjectList() {
   const [proStatus, setProStatus] = useState([]);
   const [projectHead, setProjectHead] = useState([]);
   const [reload, setReload] = useState(false);
-
+  const { contextObj } = useContext(MyContext)
 
   useEffect(() => {
     fetch(`${api}project`)
@@ -178,7 +178,7 @@ function ProjectList() {
     fetch(`${api}project`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', },
-      body: JSON.stringify({Project_Id: inputValue?.Project_Id})
+      body: JSON.stringify({ Project_Id: inputValue?.Project_Id })
     }).then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -191,16 +191,18 @@ function ProjectList() {
   }
 
 
-  return (
+  return Number(contextObj?.Read_Rights) === 1 ? (
     <Fragment>
       <ToastContainer />
       {!screen ? (
         <div className="card">
           <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
             Projects
-            <div className="text-end">
-              <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">{!screen ? 'Create Project' : 'Back'}</Button>
-            </div>
+            {Number(contextObj?.Add_Rights) === 1 && (
+              <div className="text-end">
+                <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">{!screen ? 'Create Project' : 'Back'}</Button>
+              </div>
+            )}
           </div>
           <div className="card-body">
             <div className="table-responsive">
@@ -214,7 +216,7 @@ function ProjectList() {
                     <th className="fa-14">Head</th>
                     <th className="fa-14">Start At</th>
                     <th className="fa-14">End At</th>
-                    <th className="fa-14">Action</th>
+                    {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <th className="fa-14">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -231,10 +233,14 @@ function ProjectList() {
                       <td style={{ fontSize: "12px" }}>
                         {new Date(obj?.Est_End_Dt).toLocaleDateString("en-IN")}
                       </td>
-                      <td>
-                        <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
-                        <IconButton onClick={() => { setDeleteRow(obj) }} size='small'><Delete className="fa-in del-red" /></IconButton>
-                      </td>
+                      {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <td>
+                        {Number(contextObj?.Edit_Rights) === 1 && (
+                          <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
+                        )}
+                        {Number(contextObj?.Delete_Rights) === 1 && (
+                          <IconButton onClick={() => { setDeleteRow(obj) }} size='small'><Delete className="fa-in del-red" /></IconButton>
+                        )}
+                      </td>}
                     </tr>
                   ))}
                 </tbody>
@@ -316,9 +322,9 @@ function ProjectList() {
           </MuiButton>
         </DialogActions>
       </Dialog>
-      
+
     </Fragment>
-  );
+  ) : <InvalidPageComp />
 }
 
 export default ProjectList;

@@ -1,10 +1,12 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useContext } from "react";
 import { Table, Button } from "react-bootstrap";
 import api from "../../API";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MuiButton } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 const initialState = {
   BranchId: '',
@@ -40,6 +42,7 @@ function BranchInfo() {
   const [screen, setScreen] = useState(false)
   const [isEdit, setIsEdit] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const { contextObj } = useContext(MyContext);
 
   useEffect(() => {
     fetch(
@@ -262,7 +265,7 @@ function BranchInfo() {
       })
   }
 
-  return (
+  return Number(contextObj?.Read_Rights) === 1 ? (
     <Fragment>
       <ToastContainer />
       {!screen ? (
@@ -285,7 +288,7 @@ function BranchInfo() {
                     <th className="fa-14">State</th>
                     <th className="fa-14">City</th>
                     <th className="fa-14">Address</th>
-                    <th className="fa-14">Action</th>
+                    {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <th className="fa-14">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -298,10 +301,20 @@ function BranchInfo() {
                       <td className="fa-12">{obj.State}</td>
                       <td className="fa-12">{obj.BranchCity}</td>
                       <td className="fa-12">{obj.BranchAddress}</td>
-                      <td>
-                        <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
-                        <IconButton onClick={() => { setDeleteRow(obj) }} size='small'><Delete className="fa-in del-red" /></IconButton>
-                      </td>
+                      {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && (
+                        <td>
+                          {Number(contextObj?.Edit_Rights) === 1 && (
+                            <IconButton onClick={() => { setEditRow(obj) }} size='small'>
+                              <Edit className="fa-in" />
+                            </IconButton>
+                          )}
+                          {Number(contextObj?.Delete_Rights) === 1 && (
+                            <IconButton onClick={() => { setDeleteRow(obj) }} size='small'>
+                              <Delete className="fa-in del-red" />
+                            </IconButton>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -389,7 +402,7 @@ function BranchInfo() {
       </Dialog>
 
     </Fragment>
-  );
+  ) : <InvalidPageComp />
 }
 
 export default BranchInfo;

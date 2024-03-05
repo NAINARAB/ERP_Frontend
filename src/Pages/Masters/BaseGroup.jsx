@@ -1,10 +1,12 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Table, Button } from "react-bootstrap";
 import api from "../../API";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button as MuiButton, Chip } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 const initialState = {
     Base_Group_Id: '',
@@ -16,8 +18,9 @@ const BaseGroup = () => {
     const [open, setOpen] = useState(false);
     const [deleteDialog, setDeleteDialog] = useState(false)
     const [inputValue, setInputValue] = useState(initialState)
-    const [reload, setReload] = useState(false)
-    
+    const [reload, setReload] = useState(false);
+    const { contextObj } = useContext(MyContext);
+
 
     useEffect(() => {
         fetch(`${api}baseGroup`)
@@ -80,15 +83,17 @@ const BaseGroup = () => {
     }
 
 
-    return (
+    return Number(contextObj?.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
             <div className="card">
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     Base Group
-                    <div className="text-end">
-                        <Button onClick={() => {clearValue();setOpen(true)}} className="rounded-5 px-3 py-1 fa-13 shadow">Create Base Group</Button>
-                    </div>
+                    {Number(contextObj?.Add_Rights) === 1 && (
+                        <div className="text-end">
+                            <Button onClick={() => { clearValue(); setOpen(true) }} className="rounded-5 px-3 py-1 fa-13 shadow">Create Base Group</Button>
+                        </div>
+                    )}
                 </div>
                 <div className="card-body">
                     {baseGropup.map((o, i) => (
@@ -109,9 +114,9 @@ const BaseGroup = () => {
                 <DialogContent>
                     <div className="p-2">
                         <label>Base Group Name</label>
-                        <input 
-                            type="text" 
-                            onChange={(e) => setInputValue({...inputValue, Base_Group_Name: e.target.value})} 
+                        <input
+                            type="text"
+                            onChange={(e) => setInputValue({ ...inputValue, Base_Group_Name: e.target.value })}
                             placeholder="ex: PROJECT BASED"
                             value={inputValue.Base_Group_Name}
                             className="cus-inpt" />
@@ -145,7 +150,7 @@ const BaseGroup = () => {
                 </DialogActions>
             </Dialog>
         </>
-    )
+    ) : <InvalidPageComp />
 }
 
 export default BaseGroup;
