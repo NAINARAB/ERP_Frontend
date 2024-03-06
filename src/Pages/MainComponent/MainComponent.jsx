@@ -7,6 +7,7 @@ import Breadcrumb from "react-bootstrap/Breadcrumb";
 import api from "../../API";
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 
 const setLoclStoreage = (pageId, menu) => {
@@ -204,7 +205,7 @@ function MainComponent(props) {
                 </>
               )}
             </Breadcrumb>
-            {props.children}
+            {Number(contextObj?.Read_Rights) === 1 ? props.children : <InvalidPageComp />}
           </div>
         </div>
       </div>

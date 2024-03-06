@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import api from "../../API";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox} from "@mui/material";
@@ -6,30 +6,11 @@ import { UnfoldMore } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
+import { MyContext } from "../../Components/context/contextProvider";
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
+import InvalidPageComp from "../../Components/invalidCredential";
 
-const localData = localStorage.getItem("user");
-const parseData = JSON.parse(localData);
 
-const validate = (values) => {
-    const errors = {};
-    if (!values.name) {
-        errors.name = 'Name is required';
-    }
-    if (!values.mtype) {
-        errors.type = 'Select Menu Type';
-    }
-    if ((values.mtype === 2 && !values.mmenu) || (values.mtype === 3 && !values.mmenu)) {
-        errors.mmenu = 'Select Main Menu';
-    }
-    if (values.mtype === 3 && !values.smenu) {
-        errors.smenu = 'Select Sub-Menu'
-    }
-    if (values.mtype === 3 && !values.link) {
-        errors.link = 'Page Link Is Required';
-    }
-    return errors;
-};
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
     fetch(`${api}/userBasedRights`, {
@@ -231,6 +212,7 @@ const UserBased = () => {
     const parseData = JSON.parse(localData);
     const [currentAuthId, setCurrentAuthId] = useState({ value: parseData?.Autheticate_Id, label: parseData?.Name });
     const [currentUserId, setCurrentUserId] = useState(parseData?.UserId)
+    const { contextObj } = useContext(MyContext);
 
     useEffect(() => {
         fetch(`${api}appMenu?Auth=${currentAuthId.value}`).then(res => res.json())
@@ -260,7 +242,7 @@ const UserBased = () => {
     };
 
 
-    return (
+    return Number(contextObj?.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
             <div className="row">
@@ -305,7 +287,7 @@ const UserBased = () => {
                 </Table>
             </TableContainer>
         </>
-    )
+    ) : <InvalidPageComp />
 }
 
 export default UserBased;

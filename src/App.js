@@ -97,7 +97,7 @@ function App() {
                 <Route path="/tasks/activeproject" element={<ActiveProjects />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
-                <Route path="*" element={<InvalidPageComp />} />
+                <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
 
               </Routes>
             </MainComponent>

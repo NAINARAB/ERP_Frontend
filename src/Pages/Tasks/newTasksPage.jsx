@@ -137,7 +137,7 @@ const TaskMaster = () => {
     }
 
     const deleteTask = async () => {
-        if (inputValue?.Task_Id) {
+        if (inputValue?.Task_Id && Number(contextObj.Read_Rights) === 1) {
             const result = await fetch(`${api}tasks`, {
                 method: 'DELETE',
                 headers: {

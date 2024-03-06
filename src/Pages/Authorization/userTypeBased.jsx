@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import api from "../../API";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox } from "@mui/material";
@@ -7,6 +7,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
+import { MyContext } from "../../Components/context/contextProvider";
+import InvalidPageComp from "../../Components/invalidCredential";
 
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
@@ -207,7 +209,7 @@ const UserTypeBased = () => {
     const parseData = JSON.parse(localData);
     const [authData, setAuthData] = useState({ MainMenu: [], SubMenu: [] });
     const [usersType, setUserTypes] = useState([])
-    // console.log(parseData?.UserTypeId)
+    const { contextObj } = useContext(MyContext);
     const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType });
 
     useEffect(() => {
@@ -231,7 +233,7 @@ const UserTypeBased = () => {
 
 
 
-    return (
+    return Number(contextObj?.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
             <div className="row">
@@ -276,7 +278,7 @@ const UserTypeBased = () => {
                 </Table>
             </TableContainer>
         </>
-    )
+    ) : <InvalidPageComp />
 }
 
 export default UserTypeBased;
