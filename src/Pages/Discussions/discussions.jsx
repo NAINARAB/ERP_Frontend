@@ -13,7 +13,6 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import ChatsDisplayer from "./chats";
 import { useNavigate } from 'react-router-dom';
 
 
@@ -194,7 +193,6 @@ const Discussions = () => {
     return Number(contextObj.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
-            <ChatsDisplayer />
             <div className="cus-card">
                 <div className="p-3">
                     <div className="d-flex mb-4 ">
