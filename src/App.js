@@ -25,6 +25,9 @@ import ProjectDetails from "./Pages/CurrentProjects/projectInfo";
 import InvalidPageComp from "./Components/invalidCredential";
 import TaskMaster from "./Pages/Tasks/newTasksPage";
 
+import Discussions from "./Pages/Discussions/discussions";
+import ChatsDisplayer from "./Pages/Discussions/chats";
+
 function App() {
   const [login, setLogin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -95,6 +98,9 @@ function App() {
                 <Route path="/tasks/taskslist" element={<TaskMaster />} />
                 <Route path="/tasks/mytasks" element={<MyTasks />} />
                 <Route path="/tasks/activeproject" element={<ActiveProjects />} />
+
+                <Route path="/discussions" element={<Discussions />} />
+                <Route path="/discussions/chats" element={<ChatsDisplayer />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

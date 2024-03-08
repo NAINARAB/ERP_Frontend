@@ -1,10 +1,17 @@
 import React, { useState, useEffect, Fragment } from "react";
 import Chip from "@mui/material/Chip";
-import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
 import { Button as MuiButton } from "@mui/material/";
 import { ToastContainer, toast } from "react-toastify";
 import api from "../../API";
-import { Button } from 'react-bootstrap'
+import { Button, Table } from "react-bootstrap";
+import { Delete, Edit } from "@mui/icons-material";
 
 const initialState = {
   Id: "",
@@ -19,6 +26,7 @@ function UserType() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newChipType, setNewChipType] = useState("");
   const [inputValue, setInputValue] = useState(initialState);
+  const [editUser, setEditUser] = useState(false);
 
   useEffect(() => {
     fetch(`${api}userType`)
@@ -31,7 +39,6 @@ function UserType() {
   }, [reload]);
 
   const handleDelete = () => {
-    console.log("input", inputValue.Id);
     fetch(`${api}userType`, {
       method: "DELETE",
       headers: {
@@ -44,8 +51,8 @@ function UserType() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setReload(!reload); // Trigger data refresh
-          setOpen(false); // Close dialog
+          setReload(!reload);
+          setOpen(false);
           toast.success("Chip deleted successfully!");
         } else {
           toast.error("Failed to delete chip:", data.message);
@@ -71,16 +78,46 @@ function UserType() {
       .then((data) => {
         if (data.success) {
           setIsCreateDialogOpen(false);
-          setNewChipType(""); // Clear input
-          setReload(!reload); // Trigger data refresh
-          toast.success("Chip created successfully!");
+          setNewChipType("");
+          setReload(!reload);
+          toast.success(data.message);
         } else {
-          toast.error("Failed to create chip:", data.message);
+          toast.error(data.message);
         }
       })
       .catch((error) => {
         console.error("Error creating chip:", error);
         toast.error("An error occurred. Please try again later.");
+      });
+  };
+
+
+
+  const editRow = (user) => {
+    setEditUser(true);
+    setInputValue({
+      Id: user.Id,
+      UserType: user.UserType,
+    });
+  };
+
+  const editFun = (Id, UserType) => {
+    fetch(`${api}userType`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ Id, UserType }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          toast.success(data.message);
+          setReload(!reload);
+          setEditUser(false);
+        } else {
+          toast.error(data.message);
+        }
       });
   };
 
@@ -100,17 +137,53 @@ function UserType() {
           </div>
         </div>
         <div className="card-body">
-          {UserTypeData.map((obj, index) => (
-            <Chip
-              key={index}
-              className="m-1"
-              label={obj.UserType}
-              onDelete={obj.Id > 3 ? () => {
-                setOpen(true);
-                setInputValue({ Id: obj.Id });
-              } : undefined}
-            />
-          ))}
+          <div className="table-responsive">
+            <Table className="">
+              <thead>
+                <tr>
+                  <th className="fa-14">Id</th>
+                  <th className="fa-14">UserType</th>
+                  <th className="fa-14">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {UserTypeData.map((obj, index) => (
+                  <tr key={index}>
+                    <td className="fa-14">{obj.Id}</td>
+                    <td className="fa-14">{obj.UserType}</td>
+                    <td className="fa-12" style={{ minWidth: "80px" }}>
+                      <IconButton
+                        onClick={() => {
+                          editRow(obj);
+                        }}
+                        size="small"
+                      >
+                        <Edit className="fa-in" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => {
+                          setOpen(true);
+                          setInputValue({ Id: obj.Id });
+                        }}
+                        size="small"
+                      >
+                        <Delete className="fa-in del-red" />
+                      </IconButton>
+                    </td>
+                  </tr>
+                  // <Chip
+                  //   key={index}
+                  //   className="m-1"
+                  //   label={obj.UserType}
+                  //   onDelete={obj.Id > 3 ? () => {
+                  //     setOpen(true);
+                  //     setInputValue({ Id: obj.Id });
+                  //   } : undefined}
+                  // />
+                ))}
+              </tbody>
+            </Table>
+          </div>
         </div>
       </div>
 
@@ -139,6 +212,38 @@ function UserType() {
           </MuiButton>
           <MuiButton onClick={() => handleCreate()} color="success">
             CREATE
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={editUser}
+        onClose={() => setEditUser(false)}
+        aria-labelledby="create-dialog-title"
+        aria-describedby="create-dialog-description"
+      >
+        <DialogTitle id="create-dialog-title">UserType</DialogTitle>
+        <DialogContent>
+          <div className="p-2">
+            <label>UserType </label>
+            <input
+              type="text"
+              onChange={(event) =>
+                setInputValue({
+                  ...inputValue,
+                  UserType: event.target.value,
+                })
+              }
+              placeholder={inputValue.UserType}
+              value={inputValue.UserType}
+              className="cus-inpt"
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setEditUser(false)}>Cancel</MuiButton>
+          <MuiButton onClick={() => editFun(inputValue.Id, inputValue.UserType)} color="success">
+            Update
           </MuiButton>
         </DialogActions>
       </Dialog>

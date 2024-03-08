@@ -144,3 +144,7 @@
     min-height: 5.5em !important;
     background-color: #00000007;
   }
+
+  .under-blue:hover {
+    border-bottom: #0d6efd solid 1px ;
+  }

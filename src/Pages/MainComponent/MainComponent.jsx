@@ -1,7 +1,7 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { IconButton, Collapse } from '@mui/material';
-import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout } from '@mui/icons-material'
+import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, FiberSmartRecord, Tune } from '@mui/icons-material'
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import api from "../../API";
@@ -23,6 +23,35 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
     sideClose()
   }
 
+  const getIcon = () => {
+    const icon = [
+      {
+        id: 6,
+        IconComp: <Dashboard className="me-2 fa-20" style={{color: '#FDD017'}} />
+      },
+      {
+        id: 7,
+        IconComp: <Tune className="me-2 fa-20" style={{color: '#FDD017'}} />
+      },
+      {
+        id: 8,
+        IconComp: <ManageAccounts className="me-2 fa-20" style={{color: '#FDD017'}} />
+      },
+      {
+        id: 9,
+        IconComp: <WorkHistory className="me-2 fa-20" style={{color: '#FDD017'}} />
+      },
+      {
+        id: 10,
+        IconComp: <Chat className="me-2 fa-20" style={{color: '#FDD017'}} />
+      }
+    ];
+
+    const matchedIcon = icon.find(item => item.id === mainBtn.Main_Menu_Id);
+    return matchedIcon ? matchedIcon.IconComp : null; 
+}
+
+
   return Number(mainBtn.Read_Rights) === 1 && (
     <>
       <button className={page.Main_Menu_Id === mainBtn.Main_Menu_Id ? "sidebutton btn-active" : 'sidebutton'}
@@ -37,7 +66,10 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
             : () => setOpen(!open)}
 
       >
-        <span className="flex-grow-1 d-flex justify-content-start">{mainBtn?.MenuName}</span>
+        <span className="flex-grow-1 d-flex justify-content-start">
+          {getIcon()}
+          {mainBtn?.MenuName}
+        </span>
         {mainBtn?.PageUrl === "" && <span className=" text-end">{open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}</span>}
       </button>
       {mainBtn?.PageUrl === ""
@@ -71,7 +103,7 @@ const SubMenu = ({ subBtn, nav, page, sideClose, setPage }) => {
           setPage(subBtn);
           setLoclStoreage(subBtn.Sub_Menu_Id, 2)
           }} >
-        <Circle sx={{ fontSize: '6px', color: 'white', marginRight: '5px' }} />{' ' + subBtn?.SubMenuName}
+        <Circle sx={{ fontSize: '6px', color: '#FDD017', marginRight: '5px' }} />{' ' + subBtn?.SubMenuName}
       </button>
     </>
   );
@@ -146,7 +178,6 @@ function MainComponent(props) {
       })
   }, [])
 
-
   return (
     <Fragment>
       <div className="fullscreen-div">
@@ -168,7 +199,7 @@ function MainComponent(props) {
                 sideOpen={handleShow}
                 sideClose={handleClose}
                 page={contextObj}
-                setPage={setContextObj} />
+                setPage={setContextObj}/>
             ))}
           </div>
           <div className="sidebar-bottom">
