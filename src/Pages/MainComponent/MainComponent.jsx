@@ -1,6 +1,6 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { IconButton, Collapse } from '@mui/material';
+import { IconButton, Collapse, Tooltip } from '@mui/material';
 import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, FiberSmartRecord, Tune } from '@mui/icons-material'
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
@@ -113,6 +113,8 @@ function MainComponent(props) {
   const nav = useNavigate();
   const localData = localStorage.getItem("user");
   const parseData = JSON.parse(localData);
+  const localSessionData = localStorage.getItem("session");
+  const parseSessionData = JSON.parse(localSessionData);
   const [sidebar, setSidebar] = useState({ MainMenu: [], SubMenu: [] });
   const { contextObj, setContextObj } = useContext(MyContext);
 
@@ -211,14 +213,22 @@ function MainComponent(props) {
 
         <div className="content-div">
           <div className="navbar-div">
-            <p className="fa-16 fw-bold mb-0" >
+            <div className="fa-16 fw-bold mb-0 d-flex align-items-center" >
               <span className="open-icon">
-                <IconButton onClick={handleShow} size="small">
+                <IconButton onClick={handleShow} className="text-dark" size="small">
                   <Menu />
                 </IconButton>
               </span>
-              Task Management
-            </p>
+              <div className="ms-2 flex-grow-1 d-flex flex-column">
+                <span className="flex-grow-1 text-muted">Welcome {parseData?.Name + " !"}</span>
+                <span className="text-muted fa-12">Login Time: {new Date(parseSessionData?.InTime).toDateString()}</span>
+              </div>
+              <span>
+                <Tooltip title="Logout">
+                  <IconButton onClick={props.logout} color="primary" size="small"><Logout /></IconButton>
+                </Tooltip>
+              </span>
+            </div>
           </div>
 
           <div className="content-body">

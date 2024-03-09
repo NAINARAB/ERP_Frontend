@@ -158,7 +158,7 @@
 
   .chat-body {
     padding: 8px 16px;
-    height: 72vh;
+    height: 71vh;
     overflow: auto;
     background-color:#ADD7F6;
     display: flex;
@@ -173,6 +173,7 @@
     margin: 10px 0px;
     font-size: 13px;
     background-color: #FCFCFC;
+    box-shadow: 2px 2px 3px  rgba(117, 117, 117, 0.582) !important;
   }
 
   .date-badge {
@@ -191,7 +192,7 @@
   }
 
   .chat-footer {
-    background-color:#ADD7F6;
+    background-color:#82c3f1;
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -206,6 +207,10 @@
     display: flex;
     align-items: center;
     width: 100%; 
+  }
+
+  .outline-none {
+    outline: none !important;
   }
 
   

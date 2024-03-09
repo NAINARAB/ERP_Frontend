@@ -46,7 +46,15 @@ const Discussions = () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    setMyDiscussions(data.data)
+                    const temp = [];
+                    data.data.map(o => {
+                        o?.InvolvedUsers?.map(obj => {
+                            if (Number(obj?.UserId) === Number(parseData?.UserId)) {
+                                temp.push(o)
+                            }
+                        })
+                    })
+                    setMyDiscussions((Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1) ? data?.data : temp)
                 }
             })
     }, [reload])
@@ -201,78 +209,88 @@ const Discussions = () => {
                             Create Topic
                         </button>
                     </div>
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <td className="d-none"></td>
-                                <td className="d-none"></td>
-                                <td className="d-none"></td>
-                                <td className="d-none"></td>
-                                <td className="d-none"></td>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {myDiscussions.map((o, i) => (
-                                <tr key={i}>
-                                    <td className="fa-14 border-0" >
-                                        <span className="d-flex align-items-start justify-content-center flex-column">
-                                            <p
-                                                className={`mb-0 fw-bold fa-14 under-blue ${Number(o?.Project_Id) === 0 ? 'text-primary' : 'text-secondary'}`}>
-                                                {o?.Topic}
-                                            </p>
-                                            <p className="mb-0 py-2 text-muted">
-                                                {o?.Description}
-                                            </p>
-                                        </span>
-                                    </td>
-                                    <td className="fa-14 text-center border-0" >
-                                        <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
-                                    </td>
-                                    <td className="fa-14 text-center border-0" >
-                                        <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
-                                    </td>
-                                    <td className="fa-14 border-0">
-                                        <CalendarMonth className="fa-16 text-primary me-1" />
-                                        <div className="badge bg-light text-muted rounded-4 px-3">
-                                            {" " + new Date(o?.CreatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                                        </div>
-                                    </td>
-                                    <td className="fa-14 border-0">
-                                        <Dropdown>
-                                            <Dropdown.Toggle
-                                                variant="success"
-                                                id="actions"
-                                                className="rounded-5 bg-transparent text-dark border-0 btn"
-                                            >
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu>
-                                                {Number(contextObj.Edit_Rights) === 1 && (
-                                                    <MenuItem onClick={() => setTeamData(o)}>
-                                                        <GroupAdd className="fa-in text-primary me-2" /> Manage Team
-                                                    </MenuItem>
-                                                )}
-                                                {(Number(contextObj.Edit_Rights) === 1 && Number(o?.Project_Id) === 0) && (
-                                                    <MenuItem onClick={() => setUpdate(o)}>
-                                                        <Edit className="fa-in me-2" /> Edit
-                                                    </MenuItem>
-                                                )}
-                                                {(Number(contextObj.Delete_Rights) === 1 && Number(o?.Project_Id) === 0) && (
-                                                    <MenuItem onClick={() => setDelete(o)}>
-                                                        <Delete className="fa-in me-2 text-danger" /> Delete
-                                                    </ MenuItem>
-                                                )}
-                                                <MenuItem onClick={() => navigate('chats', { state: o })}>
-                                                    <Launch className="fa-in me-2 text-primary" />
-                                                    Open Chats
-                                                </MenuItem>
-
-                                            </Dropdown.Menu>
-                                        </Dropdown>
-                                    </td>
+                    {myDiscussions.length > 0 ? (
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <td className="d-none"></td>
+                                    <td className="d-none"></td>
+                                    <td className="d-none"></td>
+                                    <td className="d-none"></td>
+                                    <td className="d-none"></td>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {myDiscussions.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="fa-14 border-0" >
+                                            <div className="d-flex align-items-start justify-content-center flex-column">
+                                                <p
+                                                    className={`mb-0 fw-bold fa-14 under-blue ${Number(o?.Project_Id) === 0 ? 'text-primary' : 'text-secondary'}`}>
+                                                    {o?.Topic}
+                                                </p>
+                                                <p className="mb-0 py-2 text-muted">
+                                                    {o?.Description}
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td className="fa-14 text-center border-0" >
+                                            <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
+                                        </td>
+                                        <td className="fa-14 text-center border-0" >
+                                            <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
+                                        </td>
+                                        <td className="fa-14 border-0">
+                                            <CalendarMonth className="fa-16 text-primary me-1" />
+                                            <div className="badge bg-light text-muted rounded-4 px-3">
+                                                {" " + new Date(o?.CreatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                            </div>
+                                        </td>
+                                        <td className="fa-14 border-0">
+                                            <Dropdown>
+                                                <Dropdown.Toggle
+                                                    variant="success"
+                                                    id="actions"
+                                                    className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                >
+                                                </Dropdown.Toggle>
+                                                <Dropdown.Menu>
+                                                    {Number(contextObj.Edit_Rights) === 1 && (
+                                                        <MenuItem onClick={() => setTeamData(o)}>
+                                                            <GroupAdd className="fa-in text-primary me-2" /> Manage Team
+                                                        </MenuItem>
+                                                    )}
+                                                    {(Number(contextObj.Edit_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                        <MenuItem onClick={() => setUpdate(o)}>
+                                                            <Edit className="fa-in me-2" /> Edit
+                                                        </MenuItem>
+                                                    )}
+                                                    {(Number(contextObj.Delete_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                        <MenuItem onClick={() => setDelete(o)}>
+                                                            <Delete className="fa-in me-2 text-danger" /> Delete
+                                                        </ MenuItem>
+                                                    )}
+                                                    <MenuItem onClick={() => navigate('chats', { state: o })}>
+                                                        <Launch className="fa-in me-2 text-primary" />
+                                                        Open Chats
+                                                    </MenuItem>
+
+                                                </Dropdown.Menu>
+                                            </Dropdown>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <h5 className="text-center mb-5">
+                            {
+                                (Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1)
+                                    ? 'No Topics Available'
+                                    : 'You are not involved in any discussion'
+                            }
+                        </h5>
+                    )}
                 </div>
             </div>
 
