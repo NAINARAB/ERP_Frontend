@@ -224,6 +224,7 @@ function CompanyInfo() {
           setReload(!reload);
           toast.success(data.message);
           setSelectedRow({});
+          setDeleteRow()
         } else {
           toast.error(data.message);
         }
