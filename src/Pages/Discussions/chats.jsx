@@ -2,8 +2,8 @@ import React, { Fragment, useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../../API';
 import { useNavigate } from 'react-router-dom';
-import { IconButton, MenuItem, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Send, ArrowBackIos, Replay, Attachment } from '@mui/icons-material';
+import { IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Send, ArrowBackIos, Replay, Attachment, Group, Download, ArticleOutlined } from '@mui/icons-material';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -16,13 +16,16 @@ const ChatsDisplayer = () => {
     const locationData = location.state;
     const navigate = useNavigate();
     const [messageData, setMessageData] = useState([]);
+    const [documents, setDocuments] = useState([]);
     const chatBodyRef = useRef(null);
     const [messageInput, setMessageInput] = useState('');
     const [reload, setReload] = useState(false);
+
     const [uploadDialog, setUploadDialog] = useState(false);
     const [uploadFile, setUploadFile] = useState('');
     const [uploadPercentage, setUploadPercentage] = useState(0);
 
+    const [documentsDialog, setDocumentsDialog] = useState(false);
 
     useEffect(() => {
         if (!locationData) {
@@ -41,6 +44,13 @@ const ChatsDisplayer = () => {
                         return acc;
                     }, {});
                     setMessageData(groupedData);
+                }
+            }).catch(e => console.error(e));
+        fetch(`${api}files?Topic_Id=${locationData?.Id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setDocuments(data.data);
                 }
             }).catch(e => console.error(e));
     }, [reload])
@@ -100,9 +110,12 @@ const ChatsDisplayer = () => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('files', uploadFile);
+        formData.append('User_Id', parseData?.UserId);
+        formData.append('Project_Id', locationData?.Project_Id);
+        formData.append('Topic_Id', locationData?.Id);
 
         try {
-            axios.post(`${api}files?Project_Id=${locationData?.Id}&User_Id=${parseData?.UserId}`, formData, {
+            axios.post(`${api}files`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -112,6 +125,7 @@ const ChatsDisplayer = () => {
                 },
             }).then((data) => {
                 toast.success(data.data.message);
+                setReload(!reload)
             }).catch(e => {
                 toast.error('Failed to upload')
                 console.error(e)
@@ -124,13 +138,42 @@ const ChatsDisplayer = () => {
         }
     }
 
+    const downloadFile = async (id) => {
+        try {
+            const response = await fetch(`${api}files/download?FileId=${id}`);
+
+            if (!response.ok) {
+                return toast.error('Failed to download file')
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', id);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (e) {
+            console.error('Download error:', e);
+            toast.error('Failed to Download')
+        }
+    }
+
     return (
         <>
             <ToastContainer />
-            <div className="chat-header d-flex">
-                <p className='mb-0 fa-20 text-white text-uppercase flex-grow-1'>{locationData?.Topic}</p>
-                <IconButton size='small' onClick={() => navigate('/discussions')}><ArrowBackIos className='fa-18' /></IconButton>
-                <IconButton size='small' onClick={() => setReload(!reload)}><Replay className='fa-18' /></IconButton>
+            <div className="chat-header d-flex align-items-center">
+                <p className='mb-0 fa-14 text-white text-uppercase fw-bold flex-grow-1'>{locationData?.Topic}</p>
+                <Tooltip title="Back">
+                    <IconButton size='small' onClick={() => navigate('/discussions')}><ArrowBackIos className='fa-18' /></IconButton>
+                </Tooltip>
+                <Tooltip title="Refresh Chat">
+                    <IconButton size='small' onClick={() => setReload(!reload)}><Replay className='fa-18' /></IconButton>
+                </Tooltip>
+                <Tooltip title="Documnets Shared">
+                    <IconButton size='small' onClick={() => setDocumentsDialog(true)}><ArticleOutlined /></IconButton>
+                </Tooltip>
                 <Dropdown>
                     <Dropdown.Toggle
                         variant="success"
@@ -139,11 +182,9 @@ const ChatsDisplayer = () => {
                     >
                     </Dropdown.Toggle>
                     <Dropdown.Menu>
-                        <MenuItem>
-                            Team
-                        </MenuItem>
+                        <h5 className='mb-1 text-primary px-3 fa-18 border-bottom'> Teams</h5>
                         {locationData?.InvolvedUsers.map((o, i) => (
-                            <MenuItem key={i} className='fw-bold text-dark fa-13'>{o.Name}</MenuItem>
+                            <p key={i} className='fw-bold text-muted fa-13 mb-0 px-3 py-1 '>{o.Name}</p>
                         ))}
                     </Dropdown.Menu>
                 </Dropdown>
@@ -215,6 +256,51 @@ const ChatsDisplayer = () => {
                         <Button onClick={uploadFileFun} disabled={uploadPercentage !== 0} type='submit'>Upload</Button>
                     </DialogActions>
                 </form>
+            </Dialog>
+
+            <Dialog
+                open={documentsDialog}
+                onClose={() => setDocumentsDialog(false)}
+                fullWidth
+                maxWidth={documents.length > 0 ? "lg" : 'sm'} >
+                <DialogTitle>Shared Documents</DialogTitle>
+                <DialogContent>
+                    {documents.length > 0 ? (
+                        <div className="table-responsive">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th className='fa-14'>S.No</th>
+                                        <th className='fa-14'>File Name</th>
+                                        <th className='fa-14'>Size</th>
+                                        <th className='fa-14'>Type</th>
+                                        <th className='fa-14'>Date</th>
+                                        <th className='fa-14'></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {documents.map((o, i) => (
+                                        <tr>
+                                            <td className='fa-14'>{i + 1}</td>
+                                            <td className='fa-14'>{o?.FileName}</td>
+                                            <td className='fa-14'>{o?.FileSize ? (o?.FileSize / 1024 / 1024).toFixed(2) : 0} MB</td>
+                                            <td className='fa-14'>{o?.FileType}</td>
+                                            <td className='fa-14'>{o?.SendDate}</td>
+                                            <td className='fa-14'>
+                                                <IconButton className='text-primary' size="small" onClick={() => downloadFile(o.FileId)}><Download /></IconButton>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <h5 className='text-center text-muted my-5'>No Documents Available</h5>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDocumentsDialog(false)}>Close</Button>
+                </DialogActions>
             </Dialog>
         </>
     )

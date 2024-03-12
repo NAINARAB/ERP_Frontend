@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import api from "../../API";
-import { People, Message, CalendarMonth, Launch, Edit, Delete, GroupAdd } from '@mui/icons-material';
-import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem } from '@mui/material';
+import { People, Message, Launch, Edit, Delete, GroupAdd, Article } from '@mui/icons-material';
+import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Tooltip } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
 import InvalidPageComp from "../../Components/invalidCredential";
 import { toast, ToastContainer } from "react-toastify";
@@ -197,7 +197,6 @@ const Discussions = () => {
         }
     }
 
-
     return Number(contextObj.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
@@ -235,16 +234,23 @@ const Discussions = () => {
                                             </div>
                                         </td>
                                         <td className="fa-14 text-center border-0" >
-                                            <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
+                                            <Tooltip title="Team Size">
+                                                <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
+                                            </Tooltip>
                                         </td>
                                         <td className="fa-14 text-center border-0" >
-                                            <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
+                                            <Tooltip title="Messages Count">
+                                                <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
+                                            </Tooltip>
                                         </td>
                                         <td className="fa-14 border-0">
-                                            <CalendarMonth className="fa-16 text-primary me-1" />
+                                            {/* <CalendarMonth className="fa-16 text-primary me-1" />
                                             <div className="badge bg-light text-muted rounded-4 px-3">
                                                 {" " + new Date(o?.CreatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                                            </div>
+                                            </div> */}
+                                            <Tooltip title="Documents Shared">
+                                                <Article className="fa-18 text-primary me-1" /> {" " + o?.DocumentsShared}
+                                            </Tooltip>
                                         </td>
                                         <td className="fa-14 border-0">
                                             <Dropdown>
