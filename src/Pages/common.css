@@ -213,8 +213,24 @@
     outline: none !important;
   }
 
-  
-  
+  .vctr {
+    vertical-align: middle;
+  }
 
+  
+  .scrollable-lists {
+    min-width: 380px;
+    padding: 0.9em;
+  }
+
+  .res-width {
+    min-width: 380px;
+  }
+
+  @media only screen and (min-width: 991px) {
+    .res-width{
+      min-width: 450px;
+    }
+  }
   
   

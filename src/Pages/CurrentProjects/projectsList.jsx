@@ -22,13 +22,11 @@ const ActiveProjects = () => {
             });
     }, []);
 
-    const calcPercentage = (mainTask, subTask, mainCompleted, subCompleted) => {
-        const taskCount = parseInt(mainTask) + parseInt(subTask);
-        const completed = parseInt(mainCompleted) + parseInt(subCompleted);
-        if (taskCount === 0) {
+    const calcPercentage = (task, completed) => {
+        if (Number(task) === 0) {
             return 0;
         } else {
-            return (completed / taskCount) * 100;
+            return (Number(completed) / Number(task)) * 100;
         }
     }
 
@@ -49,7 +47,7 @@ const ActiveProjects = () => {
                                     <span className='text-uppercase fw-bold fa-16 text-muted'>progress</span>
                                 </div>
                                 <p className="text-end fa-20 mb-0 fw-bold" >
-                                    {calcPercentage(o?.InvolvedTasksCount, o?.InvolvedSubTasksCount, o?.CompletedTasks, o?.CompletedSubTasks)} %
+                                    {calcPercentage(o?.TasksInvolved, o?.CompletedTasks)} %
                                 </p>
                             </div>
                         </div>
@@ -57,10 +55,10 @@ const ActiveProjects = () => {
                         <div className="col-lg-4 col-md-6 mb-3">
                             <div className="p-3 rounded-3 mnh" >
                                 <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><Group className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>employee</span>
+                                    <span className='smallicon fa-17 me-2'><WorkHistory className="fa-in" /></span>
+                                    <span className='text-uppercase fw-bold fa-16 text-muted'>Schedule</span>
                                 </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.InvolvedEmployeesCount}</p>
+                                <p className="text-end fa-20 mb-0 fw-bold">{o?.SchedulesCount}</p>
                             </div>
                         </div>
 
@@ -70,17 +68,17 @@ const ActiveProjects = () => {
                                     <span className='smallicon fa-17 me-2'><WorkHistory className="fa-in" /></span>
                                     <span className='text-uppercase fw-bold fa-16 text-muted'>tasks / completed</span>
                                 </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.InvolvedTasksCount + " | " + o?.CompletedTasks}</p>
+                                <p className="text-end fa-20 mb-0 fw-bold">{o?.TasksInvolved + " | " + o?.CompletedTasks}</p>
                             </div>
                         </div>
 
                         <div className="col-lg-4 col-md-6 mb-3">
                             <div className="p-3 rounded-3 mnh" >
                                 <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><WorkHistory className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>sub tasks / completed</span>
+                                    <span className='smallicon fa-17 me-2'><Group className="fa-in" /></span>
+                                    <span className='text-uppercase fw-bold fa-16 text-muted'>employee</span>
                                 </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.InvolvedSubTasksCount + " | " + o?.CompletedSubTasks}</p>
+                                <p className="text-end fa-20 mb-0 fw-bold">{o?.EmployeesInvolved}</p>
                             </div>
                         </div>
 
@@ -111,7 +109,19 @@ const ActiveProjects = () => {
                     <hr className="m-0" />
 
                     <div className="text-end mt-2">
-                        <button className="btn btn-primary rounded-5 px-4 text-white fw-bold" onClick={() => { }}>
+                        <button className="btn btn-primary rounded-5 px-4 text-white fw-bold" onClick={() => { 
+                            nav('projectschedule', { 
+                                state: {
+                                    project: o, 
+                                    rights: {
+                                        read: contextObj.Read_Rights,
+                                        add: contextObj.Add_Rights,
+                                        edit: contextObj.Edit_Rights,
+                                        delete: contextObj.Delete_Rights
+                                    }
+                                }
+                            })}
+                            }>
                             OPEN
                         </button>
                     </div>
