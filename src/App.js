@@ -29,6 +29,7 @@ import TaskMaster from "./Pages/Tasks/newTasksPage";
 
 import Discussions from "./Pages/Discussions/discussions";
 import ChatsDisplayer from "./Pages/Discussions/chats";
+import TaskActivity from "./Pages/CurrentProjects/taskActivity";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -101,6 +102,7 @@ function App() {
                 <Route path="/tasks/mytasks" element={<MyTasks />} />
                 <Route path="/tasks/activeproject" element={<ActiveProjects />} />
                 <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
+                <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
 
                 <Route path="/discussions" element={<Discussions />} />
                 <Route path="/discussions/chats" element={<ChatsDisplayer />} />
