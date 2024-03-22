@@ -13,6 +13,7 @@ const TodayTasks = () => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const initialWorkSaveValue = {
+        Work_Id: '',
         Project_Id: '',
         Sch_Id: '',
         Task_Levl_Id: '',
@@ -38,6 +39,7 @@ const TodayTasks = () => {
     const [nonTimerWorkDialog, setNonTimerWorkDialog] = useState(false);
     const [selectedTask, setSelectedTask] = useState({});
     const [runningTaskId, setRunningTaskId] = useState(0);
+    const [isEdit, setIsEdit] = useState(false);
 
     const [startTime, setStartTime] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
@@ -274,6 +276,8 @@ const TodayTasks = () => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                Mode: isEdit ? 2 : 1,
+                Work_Id: isEdit ? workInput?.Work_Id : 0,
                 Project_Id: selectedTask?.Project_Id,
                 Sch_Id: selectedTask?.Sch_Id,
                 Task_Levl_Id: selectedTask?.Task_Levl_Id,
@@ -281,8 +285,8 @@ const TodayTasks = () => {
                 AN_No: selectedTask?.AN_No,
                 Emp_Id: parseData?.UserId,
                 Work_Done: workInput?.Work_Done,
-                Start_Time: millisecondsToTime(startTime),
-                End_Time: addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
+                Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
+                End_Time: isEdit? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
                 Work_Status: workInput?.Work_Status,
             })
         }).then(res => res.json())
@@ -290,8 +294,44 @@ const TodayTasks = () => {
                 if (data.success) {
                     setSelectedTask({});
                     toast.success(data.message);
-                    setWorkDialog(false)
-                    setReload(!reload);
+                    setWorkDialog(false); setIsEdit(false)
+                    setReload(!reload); setElapsedTime(0); setIsRunning(false);
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
+    }
+
+    const saveNonTimerBasedTask = (e) => {
+        e.preventDefault();
+        fetch(`${api}saveWork`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Mode: isEdit ? 2 : 1,
+                Work_Id: isEdit ? nonTimerInput?.Work_Id : 0,
+                Project_Id: selectedTask?.Project_Id,
+                Sch_Id: selectedTask?.Sch_Id,
+                Task_Levl_Id: selectedTask?.Task_Levl_Id,
+                Task_Id: selectedTask?.Task_Id,
+                AN_No: selectedTask?.AN_No,
+                Emp_Id: parseData?.UserId,
+
+                Work_Dt: nonTimerInput?.Work_Dt,
+                Work_Done: nonTimerInput?.Work_Done,
+                Start_Time: nonTimerInput?.Start_Time,
+                End_Time: nonTimerInput?.End_Time,
+                Work_Status: workInput?.Work_Status,
+            })
+        }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setSelectedTask({});
+                    toast.success(data.message);
+                    setNonTimerWorkDialog(false);
+                    setReload(!reload); setIsEdit(false)
                 } else {
                     toast.error(data.message)
                 }
@@ -459,6 +499,7 @@ const TodayTasks = () => {
                                     title: o?.Task_Name,
                                     start: queryDate.executedTaskDate + 'T' + o?.Start_Time,
                                     end: queryDate.executedTaskDate + 'T' + o?.End_Time,
+                                    objectData: o
                                 }))
                             }
                             headerToolbar={{
@@ -467,7 +508,7 @@ const TodayTasks = () => {
                                 right: 'timeGridDay, listWeek',
                             }}
                             slotDuration={'00:20:00'}
-                            slotMinTime={'08:00:00'}
+                            slotMinTime={'02:00:00'}
                             slotMaxTime={'22:00:00'}
                             showNonCurrentDates={false}
                             editable={false}
@@ -475,16 +516,18 @@ const TodayTasks = () => {
                             selectMirror
                             datesSet={obj => setQueryDate({ ...queryDate, executedTaskDate: new Date(obj.endStr).toISOString().split('T')[0] })}
                             eventClick={eve => {
-                                // if (Object.keys(selectedTask).length === 0) {
-                                //     console.log(eve.event.extendedProps.objectData);
-                                //     if (Number(eve.event.extendedProps.objectData?.Work_Status) !== 3) {
-                                //         setSelectedTask(eve.event.extendedProps.objectData); setDialog(true)
-                                //     } else {
-                                //         toast.warn('This task is already completed')
-                                //     }
-                                // } else {
-                                //     toast.warn('Complete running task')
-                                // }
+                                const eveObj = eve.event.extendedProps.objectData;
+                                console.log(eveObj);
+                                if (new Date(eveObj?.Entry_Date).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
+                                    setIsEdit(true)
+                                    if (Number(eveObj?.Timer_Based) === 0) {
+                                        setNonTimerInput(eveObj); setSelectedTask(eveObj); setNonTimerWorkDialog(true)
+                                    } else {
+                                        setWorkInput(eveObj); setSelectedTask(eveObj); setWorkDialog(true)
+                                    }
+                                } else {
+                                    toast.warn('You can only modify today works')
+                                }
                             }}
                         />
                     </TabPanel>
@@ -554,7 +597,7 @@ const TodayTasks = () => {
 
             <Dialog
                 open={workDialog}
-                onClose={() => setWorkDialog(false)}
+                onClose={() => { setWorkDialog(false); setIsEdit(false); }}
                 fullWidth maxWidth='sm'>
                 <DialogTitle>Save Work</DialogTitle>
                 <DialogContent>
@@ -577,7 +620,7 @@ const TodayTasks = () => {
                 <DialogActions>
                     <Button
                         variant='outlined'
-                        onClick={() => setWorkDialog(false)}>
+                        onClick={() => { setWorkDialog(false); setIsEdit(false) }}>
                         close
                     </Button>
                     <Button
@@ -591,9 +634,9 @@ const TodayTasks = () => {
 
             <Dialog
                 open={nonTimerWorkDialog} maxWidth="sm" fullWidth
-                onClose={() => setNonTimerWorkDialog(false)} >
+                onClose={() => { setNonTimerWorkDialog(false); setNonTimerInput(initialWorkSaveValue); setIsEdit(false) }} >
                 <DialogTitle>Save Task Progress</DialogTitle>
-                <form onSubmit={e => { e.preventDefault(); console.log('posted') }}>
+                <form onSubmit={saveNonTimerBasedTask}>
                     <DialogContent className="table-responsive">
                         <table className="table">
                             <tbody>
@@ -605,7 +648,7 @@ const TodayTasks = () => {
                                         <input
                                             type="date"
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Dt: e.target.value })}
-                                            value={nonTimerInput?.Work_Dt}
+                                            value={new Date(nonTimerInput?.Work_Dt).toISOString().split('T')[0]}
                                             className="cus-inpt" required />
                                     </td>
                                 </tr>
@@ -628,6 +671,7 @@ const TodayTasks = () => {
                                     <td className="border-0 fa-14">
                                         <input
                                             type="time"
+                                            min={nonTimerInput?.Start_Time}
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, End_Time: e.target.value })}
                                             value={nonTimerInput?.End_Time} required
                                             className="cus-inpt" />
@@ -656,7 +700,7 @@ const TodayTasks = () => {
                                         <textarea
                                             rows="4"
                                             className="cus-inpt" required
-                                            value={nonTimerInput.Work_Done}
+                                            value={nonTimerInput?.Work_Done}
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Done: e.target.value })} />
                                     </td>
                                 </tr>
@@ -666,7 +710,7 @@ const TodayTasks = () => {
                     <DialogActions>
                         <Button
                             variant='outlined' color="error" type='button'
-                            onClick={() => setNonTimerWorkDialog(false)}>
+                            onClick={() => { setNonTimerWorkDialog(false); setNonTimerInput(initialWorkSaveValue); setIsEdit(false) }}>
                             cancel
                         </Button>
                         <Button
