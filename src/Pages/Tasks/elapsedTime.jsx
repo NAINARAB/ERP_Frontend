@@ -7,7 +7,7 @@ const ElapsedTime = ({ trigger, view, endTime }) => {
   const parseData = JSON.parse(localData);
 
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [startTime, setStartTime] = useState({});
+  const [startTime, setStartTime] = useState(null);
   const [reload, setReload] = useState(false);
 
 
@@ -18,7 +18,7 @@ const ElapsedTime = ({ trigger, view, endTime }) => {
         if (data.success) {
           setStartTime(data?.data);
         } else {
-          setStartTime({})
+          setStartTime(null)
         }
       }).catch(e => console.error(e))
   }, [reload])

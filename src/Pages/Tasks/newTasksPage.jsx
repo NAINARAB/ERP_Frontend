@@ -73,25 +73,22 @@ const TaskMaster = () => {
             name: 'T.No',
             selector: (row) => row.Task_No,
             sortable: true,
-            // maxWidth: '50px'
         },
         {
             name: 'Task',
             selector: (row) => row.Task_Name,
             sortable: true,
-            // maxWidth: '130px'
         },
         {
             name: 'Task Describtion',
             selector: (row) => row.Task_Desc,
             sortable: true,
-            maxWidth: '170px'
+            width: '170px'
         },
         {
             name: 'Under Task',
             selector: (row) => row.Under_Task,
             sortable: true,
-            maxWidth: ''
         },
         {
             name: 'Created At',

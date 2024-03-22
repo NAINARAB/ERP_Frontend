@@ -30,6 +30,8 @@ import TaskMaster from "./Pages/Tasks/newTasksPage";
 import Discussions from "./Pages/Discussions/discussions";
 import ChatsDisplayer from "./Pages/Discussions/chats";
 import TaskActivity from "./Pages/CurrentProjects/taskActivity";
+import Dashboard from "./Pages/Dashboard/Dashboard";
+import TodayTasks from "./Pages/MyTasks/todaytasks";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -87,6 +89,9 @@ function App() {
           <ContextDataProvider>
             <MainComponent logout={logout}>
               <Routes>
+                
+                {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+
                 <Route path="/masters/company" element={<CompanyInfo />} />
                 <Route path="/masters/users" element={<Users />} />
                 <Route path="/masters/branch" element={<BranchInfo />} />
@@ -106,6 +111,8 @@ function App() {
 
                 <Route path="/discussions" element={<Discussions />} />
                 <Route path="/discussions/chats" element={<ChatsDisplayer />} />
+
+                <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
