@@ -1,7 +1,7 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { IconButton, Collapse, Tooltip } from '@mui/material';
-import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, FiberSmartRecord, Tune } from '@mui/icons-material'
+import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune } from '@mui/icons-material'
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import api from "../../API";
@@ -44,6 +44,10 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
       {
         id: 10,
         IconComp: <Chat className="me-2 fa-20" style={{color: '#FDD017'}} />
+      },
+      {
+        id: 11,
+        IconComp: <TaskAlt className="me-2 fa-20" style={{color: '#FDD017'}} />
       }
     ];
 

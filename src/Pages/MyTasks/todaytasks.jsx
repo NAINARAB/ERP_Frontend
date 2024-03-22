@@ -508,7 +508,7 @@ const TodayTasks = () => {
                                 right: 'timeGridDay, listWeek',
                             }}
                             slotDuration={'00:20:00'}
-                            slotMinTime={'02:00:00'}
+                            slotMinTime={'08:00:00'}
                             slotMaxTime={'22:00:00'}
                             showNonCurrentDates={false}
                             editable={false}
