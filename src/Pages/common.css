@@ -253,5 +253,16 @@
       min-width: 450px;
     }
   }
+
+.calendar {
+  height: 600px; 
+}
+
+@media (max-width: 768px) {
+  .calendar {
+      height: 80vh; 
+  }
+}
+
   
   

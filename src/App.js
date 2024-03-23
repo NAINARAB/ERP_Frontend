@@ -32,6 +32,7 @@ import ChatsDisplayer from "./Pages/Discussions/chats";
 import TaskActivity from "./Pages/CurrentProjects/taskActivity";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import TodayTasks from "./Pages/MyTasks/todaytasks";
+import WorkDoneHistory from "./Pages/MyTasks/employeeAbstract";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -113,6 +114,7 @@ function App() {
                 <Route path="/discussions/chats" element={<ChatsDisplayer />} />
 
                 <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
+                <Route path="/mytasks/alltasks" element={<WorkDoneHistory />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

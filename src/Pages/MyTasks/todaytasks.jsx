@@ -323,7 +323,7 @@ const TodayTasks = () => {
                 Work_Done: nonTimerInput?.Work_Done,
                 Start_Time: nonTimerInput?.Start_Time,
                 End_Time: nonTimerInput?.End_Time,
-                Work_Status: workInput?.Work_Status,
+                Work_Status: nonTimerInput?.Work_Status,
             })
         }).then(res => res.json())
             .then(data => {
@@ -461,7 +461,7 @@ const TodayTasks = () => {
                             headerToolbar={{
                                 left: 'prev next',
                                 center: 'title',
-                                right: 'timeGridDay, listWeek',
+                                right: 'timeGridDay, listDay',
                             }}
                             slotDuration={'00:20:00'}
                             slotMinTime={'08:00:00'}
@@ -473,7 +473,6 @@ const TodayTasks = () => {
                             eventClick={eve => {
                                 if (!startTime && elapsedTime === 0) {
                                     const selObj = eve.event.extendedProps?.objectData;
-                                    console.log(selObj);
                                     if (Number(selObj?.Work_Status) !== 3 && Number(selObj?.Timer_Based) === 1) {
                                         setSelectedTask(selObj); setDialog(true)
                                     } else if (Number(selObj?.Work_Status) !== 3 && Number(selObj?.Timer_Based) === 0) {
@@ -517,7 +516,6 @@ const TodayTasks = () => {
                             datesSet={obj => setQueryDate({ ...queryDate, executedTaskDate: new Date(obj.endStr).toISOString().split('T')[0] })}
                             eventClick={eve => {
                                 const eveObj = eve.event.extendedProps.objectData;
-                                console.log(eveObj);
                                 if (new Date(eveObj?.Entry_Date).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
                                     setIsEdit(true)
                                     if (Number(eveObj?.Timer_Based) === 0) {

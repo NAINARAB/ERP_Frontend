@@ -26,7 +26,7 @@ const ActiveProjects = () => {
         if (Number(task) === 0) {
             return 0;
         } else {
-            return (Number(completed) / Number(task)) * 100;
+            return ((Number(completed) / Number(task)) * 100).toFixed(0);
         }
     }
 
