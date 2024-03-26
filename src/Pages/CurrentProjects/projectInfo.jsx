@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Autocomplete, TextField, Checkbox } from '@mui/material';
 import { Add, Delete, Edit, KeyboardArrowLeft, Launch } from "@mui/icons-material";
@@ -20,7 +20,7 @@ const ProjectDetails = () => {
     const parseData = JSON.parse(localData);
     const location = useLocation();
     const projectData = location.state?.project;
-    const rights = location.state?.rights;  
+    const rights = location.state?.rights;
     const nav = useNavigate()
 
     const scheduleInitialValue = {
@@ -84,7 +84,7 @@ const ProjectDetails = () => {
                     setProjectSchedule(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [reload])
+    }, [reload, projectData?.Project_Id])
 
     useEffect(() => {
 
@@ -129,7 +129,7 @@ const ProjectDetails = () => {
                 }
             }).catch(e => console.error(e))
 
-    }, [])
+    }, [parseData?.BranchId])
 
     useEffect(() => {
         const getScheduleDates = scheduleType.find(obj => Number(obj?.Sch_Type_Id) === Number(scheduleInput?.Sch_Type_Id));
@@ -137,7 +137,7 @@ const ProjectDetails = () => {
         const getDay = findEndDate.getDate();
         findEndDate.setDate(getDay + Number(getScheduleDates?.Sch_Days) || 0);
         const changeFormat = findEndDate.toISOString().split('T')[0]
-        setScheduleInput({ ...scheduleInput, Sch_Est_End_Date: changeFormat })
+        setScheduleInput(opt => ({ ...opt, Sch_Est_End_Date: changeFormat }))
     }, [scheduleInput?.Sch_Est_Start_Date, scheduleInput?.Sch_Type_Id, scheduleType])
 
     useEffect(() => {
@@ -147,15 +147,15 @@ const ProjectDetails = () => {
         const endMinutes = (startMinutes + durationMinutes) % 60;
         const endHours = (startHours + durationHours + Math.floor((startMinutes + durationMinutes) / 60)) % 24;
 
-        setTaskScheduleInput({ ...taskScheduleInput, Task_End_Time: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}` })
+        setTaskScheduleInput(opt => ({ ...opt, Task_End_Time: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}` }))
     }, [taskScheduleInput?.Task_Start_Time, taskScheduleInput?.Task_Sch_Duaration, taskScheduleInput?.Task_Id])
 
     useEffect(() => {
         if (selectedDependencyTasks.length > 0) {
             const numStr = selectedDependencyTasks.map(obj => obj?.Task_Levl_Id).join(',');
-            setTaskScheduleInput({ ...taskScheduleInput, Task_Depend_Level_Id: numStr });
+            setTaskScheduleInput(opt => ({ ...opt, Task_Depend_Level_Id: numStr }));
         } else {
-            setTaskScheduleInput({ ...taskScheduleInput, Task_Depend_Level_Id: '' });
+            setTaskScheduleInput(opt => ({ ...opt, Task_Depend_Level_Id: '' }));
         }
     }, [selectedDependencyTasks]);
 
@@ -163,8 +163,7 @@ const ProjectDetails = () => {
         if (!projectData || !rights) {
             nav('/tasks/activeproject')
         }
-    }, [projectData, rights])
-
+    }, [projectData, rights, nav]);
 
     const scheduleDialogSwitch = (val) => {
         if (val) {
@@ -188,6 +187,8 @@ const ProjectDetails = () => {
 
         if (!val && dialog.taskSchedule === true && bool === true) {
             setTaskScheduleInput(scheduleTaskInitalValue);
+            setDependencyTasks([])
+            setSelectedDependencyTasks([])
             setIsEdit(false)
         }
 
@@ -254,7 +255,7 @@ const ProjectDetails = () => {
 
     const postAndPutTaskFun = () => {
         if (taskScheduleInput.Task_Id) {
-            if (taskScheduleInput.Task_Est_Start_Date <= taskScheduleInput.Task_Est_Start_Date) {
+            if (taskScheduleInput.Task_Est_Start_Date <= taskScheduleInput.Task_Est_End_Date) {
                 if (Number(taskScheduleInput?.Levl_Id) !== 1 && taskScheduleInput.Task_Depend_Level_Id === '') {
                     return toast.warn('Select Dependency Tasks')
                 }
@@ -504,10 +505,79 @@ const ProjectDetails = () => {
                                     {obj?.LevelTwoTasks.length > 0 ? (
                                         obj?.LevelTwoTasks?.map((o, i) => (
                                             <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
-                                                <span className="float-right fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
-                                                <span className="float-end fa-14">
-                                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                                </span>
+                                                <div className="mb-0 d-flex align-items-center">
+                                                    <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
+                                                    <span className="fa-14 d-flex align-items-center">
+                                                        {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                        {/* new code */}
+                                                        <span>
+                                                            <Dropdown>
+                                                                <Dropdown.Toggle
+                                                                    variant="success"
+                                                                    id="actions"
+                                                                    className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                                >
+                                                                </Dropdown.Toggle>
+                                                                <Dropdown.Menu>
+                                                                    {Number(rights?.edit) === 1 && (
+                                                                        <MenuItem
+                                                                            onClick={() => {
+                                                                                taskDialogSwitch(false, {
+                                                                                    Sch_Project_Id: projectData?.Project_Id,
+                                                                                    Sch_Id: obj?.Sch_Id,
+                                                                                    Task_Levl_Id: o?.Task_Levl_Id,
+                                                                                    Task_Id: o?.Task_Id,
+                                                                                    Type_Task_Id: o?.Type_Task_Id,
+                                                                                    Task_Sch_Duaration: o?.Task_Sch_Duaration,
+                                                                                    Task_Start_Time: o?.Task_Start_Time,
+                                                                                    Task_End_Time: o?.Task_End_Time,
+                                                                                    Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
+                                                                                    Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                                    Task_Sch_Status: o?.Task_Sch_Status,
+                                                                                    Levl_Id: 2,
+                                                                                    Task_Depend_Level_Id: '',
+                                                                                    TasksGet: o?.TaskNameGet,
+                                                                                })
+                                                                                setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
+                                                                                    Task_Levl_Id: depObj?.Task_Depend_Level_Id,
+                                                                                    TaskNameGet: depObj?.TaskNameGet
+                                                                                }))])
+                                                                                setDependencyTasks(obj?.LevelOneTasks)
+                                                                            }}>
+                                                                            <Edit className="fa-in me-2 text-primary" />
+                                                                            Edit
+                                                                        </MenuItem>
+                                                                    )}
+                                                                    {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
+                                                                        switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
+                                                                    }}>
+                                                                        <Delete className="fa-in me-2 text-danger " />
+                                                                        Delete
+                                                                    </MenuItem>)}
+                                                                    <MenuItem onClick={
+                                                                        () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                                                {
+                                                                                    state: {
+                                                                                        taskDetails: {
+                                                                                            ...o,
+                                                                                            Project_Id: projectData?.Project_Id,
+                                                                                            Sch_Id: obj?.Sch_Id,
+                                                                                        },
+                                                                                        rights: location.state?.rights,
+                                                                                        retObj: location.state
+                                                                                    }
+                                                                                }
+                                                                            )
+                                                                    }>
+                                                                        <Launch className="fa-in me-2 text-primary " />
+                                                                        Open Task
+                                                                    </MenuItem>
+                                                                </Dropdown.Menu>
+                                                            </Dropdown>
+                                                        </span>
+                                                    </span>
+                                                </div>
+
                                                 <hr className="mt-0 mb-2" />
                                                 {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
 
@@ -550,12 +620,80 @@ const ProjectDetails = () => {
 
                                     {obj?.LevelThreeTasks.length > 0 ? (
                                         obj?.LevelThreeTasks?.map((o, i) => (
-
                                             <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
-                                                <span className="float-right fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
-                                                <span className="float-end fa-14">
-                                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                                </span>
+                                                <div className="mb-0 d-flex align-items-center">
+                                                    <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
+                                                    <span className="fa-14 d-flex align-items-center">
+                                                        {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                        {/* new code */}
+                                                        <span>
+                                                            <Dropdown>
+                                                                <Dropdown.Toggle
+                                                                    variant="success"
+                                                                    id="actions"
+                                                                    className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                                >
+                                                                </Dropdown.Toggle>
+                                                                <Dropdown.Menu>
+                                                                    {Number(rights?.edit) === 1 && (
+                                                                        <MenuItem
+                                                                            onClick={() => {
+                                                                                taskDialogSwitch(false, {
+                                                                                    Sch_Project_Id: projectData?.Project_Id,
+                                                                                    Sch_Id: obj?.Sch_Id,
+                                                                                    Task_Levl_Id: o?.Task_Levl_Id,
+                                                                                    Task_Id: o?.Task_Id,
+                                                                                    Type_Task_Id: o?.Type_Task_Id,
+                                                                                    Task_Sch_Duaration: o?.Task_Sch_Duaration,
+                                                                                    Task_Start_Time: o?.Task_Start_Time,
+                                                                                    Task_End_Time: o?.Task_End_Time,
+                                                                                    Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
+                                                                                    Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                                    Task_Sch_Status: o?.Task_Sch_Status,
+                                                                                    Levl_Id: 3,
+                                                                                    Task_Depend_Level_Id: '',
+                                                                                    TasksGet: o?.TaskNameGet,
+                                                                                })
+                                                                                setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
+                                                                                    Task_Levl_Id: depObj?.Task_Depend_Level_Id,
+                                                                                    TaskNameGet: depObj?.TaskNameGet
+                                                                                }))])
+                                                                                setDependencyTasks(obj?.LevelTwoTasks)
+                                                                            }}>
+                                                                            <Edit className="fa-in me-2 text-primary" />
+                                                                            Edit
+                                                                        </MenuItem>
+                                                                    )}
+                                                                    {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
+                                                                        switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
+                                                                    }}>
+                                                                        <Delete className="fa-in me-2 text-danger " />
+                                                                        Delete
+                                                                    </MenuItem>)}
+                                                                    <MenuItem onClick={
+                                                                        () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                                                {
+                                                                                    state: {
+                                                                                        taskDetails: {
+                                                                                            ...o,
+                                                                                            Project_Id: projectData?.Project_Id,
+                                                                                            Sch_Id: obj?.Sch_Id,
+                                                                                        },
+                                                                                        rights: location.state?.rights,
+                                                                                        retObj: location.state
+                                                                                    }
+                                                                                }
+                                                                            )
+                                                                    }>
+                                                                        <Launch className="fa-in me-2 text-primary " />
+                                                                        Open Task
+                                                                    </MenuItem>
+                                                                </Dropdown.Menu>
+                                                            </Dropdown>
+                                                        </span>
+                                                    </span>
+                                                </div>
+
                                                 <hr className="mt-0 mb-2" />
                                                 {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
 
@@ -680,7 +818,7 @@ const ProjectDetails = () => {
 
             <Dialog
                 open={dialog?.taskSchedule}
-                onClose={() => taskDialogSwitch()}
+                onClose={() => taskDialogSwitch(true)}
                 maxWidth='sm' fullWidth>
                 <DialogTitle>{isEdit ? 'Manage Task' : 'Assign Task'}</DialogTitle>
                 <DialogContent>
@@ -774,7 +912,7 @@ const ProjectDetails = () => {
                                     </li>
                                 )}
                                 style={{ width: '100%' }}
-                                isOptionEqualToValue={(opt, val) => opt?.Task_Id === val?.Task_Id}
+                                isOptionEqualToValue={(opt, val) => Number(opt?.Task_Levl_Id) === Number(val?.Task_Levl_Id)}
                                 renderInput={(params) => (
                                     <TextField {...params} label="Tasks" placeholder="Select Dependency Tasks" />
                                 )}
@@ -783,7 +921,7 @@ const ProjectDetails = () => {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => taskDialogSwitch()}>close</Button>
+                    <Button onClick={() => taskDialogSwitch(true)}>close</Button>
                     <Button onClick={postAndPutTaskFun}>
                         {isEdit ? 'Update' : 'Assign Task'}
                     </Button>

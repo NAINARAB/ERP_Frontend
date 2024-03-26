@@ -279,7 +279,7 @@ const ChatsDisplayer = () => {
                                 </thead>
                                 <tbody>
                                     {documents.map((o, i) => (
-                                        <tr>
+                                        <tr key={i}>
                                             <td className='fa-14'>{i + 1}</td>
                                             <td className='fa-14'>{o?.FileName}</td>
                                             <td className='fa-14'>{o?.FileSize ? (o?.FileSize / 1024 / 1024).toFixed(2) : 0} MB</td>

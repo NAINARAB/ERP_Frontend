@@ -30,7 +30,7 @@ import TaskMaster from "./Pages/Tasks/newTasksPage";
 import Discussions from "./Pages/Discussions/discussions";
 import ChatsDisplayer from "./Pages/Discussions/chats";
 import TaskActivity from "./Pages/CurrentProjects/taskActivity";
-import Dashboard from "./Pages/Dashboard/Dashboard";
+import CommonDashboard from "./Pages/Dashboard/commonDashboard";
 import TodayTasks from "./Pages/MyTasks/todaytasks";
 import WorkDoneHistory from "./Pages/MyTasks/employeeAbstract";
 
@@ -91,7 +91,7 @@ function App() {
             <MainComponent logout={logout}>
               <Routes>
                 
-                {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+                <Route path="/dashboard" element={<CommonDashboard />} />
 
                 <Route path="/masters/company" element={<CompanyInfo />} />
                 <Route path="/masters/users" element={<Users />} />

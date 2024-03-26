@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import api from "../../API";
 import { People, Message, Launch, Edit, Delete, GroupAdd, Article } from '@mui/icons-material';
-import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Tooltip } from '@mui/material';
+import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Tooltip, IconButton } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
 import InvalidPageComp from "../../Components/invalidCredential";
 import { toast, ToastContainer } from "react-toastify";
@@ -47,8 +47,8 @@ const Discussions = () => {
             .then(data => {
                 if (data.success) {
                     const temp = [];
-                    data.data.map(o => {
-                        o?.InvolvedUsers?.map(obj => {
+                    data.data.forEach(o => {
+                        o?.InvolvedUsers?.forEach(obj => {
                             if (Number(obj?.UserId) === Number(parseData?.UserId)) {
                                 temp.push(o)
                             }
@@ -57,7 +57,7 @@ const Discussions = () => {
                     setMyDiscussions((Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1) ? data?.data : temp)
                 }
             })
-    }, [reload])
+    }, [reload, parseData?.UserId, parseData?.UserTypeId])
 
     useEffect(() => {
         fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
@@ -67,7 +67,7 @@ const Discussions = () => {
                     setUsers(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [])
+    }, [parseData?.BranchId])
 
     const closeCreateDialog = () => {
         setCreateDialog(false);
@@ -225,7 +225,8 @@ const Discussions = () => {
                                         <td className="fa-14 border-0" >
                                             <div className="d-flex align-items-start justify-content-center flex-column">
                                                 <p
-                                                    className={`mb-0 fw-bold fa-14 under-blue ${Number(o?.Project_Id) === 0 ? 'text-primary' : 'text-secondary'}`}>
+                                                    className={`mb-0 fw-bold fa-14 under-blue ${Number(o?.Project_Id) === 0 ? 'text-primary' : 'text-secondary'}`}
+                                                    onClick={() => navigate('chats', { state: o })}>
                                                     {o?.Topic}
                                                 </p>
                                                 <p className="mb-0 py-2 text-muted">
@@ -235,54 +236,65 @@ const Discussions = () => {
                                         </td>
                                         <td className="fa-14 text-center border-0" >
                                             <Tooltip title="Team Size">
-                                                <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
+                                                <>
+                                                    <People className="fa-18 text-primary mx-1" /> {o?.InvolvedUsersCount}
+                                                </>
                                             </Tooltip>
                                         </td>
                                         <td className="fa-14 text-center border-0" >
                                             <Tooltip title="Messages Count">
-                                                <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
+                                                <>
+                                                    <Message className="fa-18 text-primary mx-1" /> {o?.TotalMessages}
+                                                </>
                                             </Tooltip>
                                         </td>
                                         <td className="fa-14 border-0">
-                                            {/* <CalendarMonth className="fa-16 text-primary me-1" />
-                                            <div className="badge bg-light text-muted rounded-4 px-3">
-                                                {" " + new Date(o?.CreatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                                            </div> */}
                                             <Tooltip title="Documents Shared">
-                                                <Article className="fa-18 text-primary me-1" /> {" " + o?.DocumentsShared}
+                                                <>
+                                                    <Article className="fa-18 text-primary me-1" /> {" " + o?.DocumentsShared}
+                                                </>
                                             </Tooltip>
                                         </td>
                                         <td className="fa-14 border-0">
-                                            <Dropdown>
-                                                <Dropdown.Toggle
-                                                    variant="success"
-                                                    id="actions"
-                                                    className="rounded-5 bg-transparent text-dark border-0 btn"
-                                                >
-                                                </Dropdown.Toggle>
-                                                <Dropdown.Menu>
-                                                    {Number(contextObj.Edit_Rights) === 1 && (
-                                                        <MenuItem onClick={() => setTeamData(o)}>
-                                                            <GroupAdd className="fa-in text-primary me-2" /> Manage Team
-                                                        </MenuItem>
-                                                    )}
-                                                    {(Number(contextObj.Edit_Rights) === 1 && Number(o?.Project_Id) === 0) && (
-                                                        <MenuItem onClick={() => setUpdate(o)}>
-                                                            <Edit className="fa-in me-2" /> Edit
-                                                        </MenuItem>
-                                                    )}
-                                                    {(Number(contextObj.Delete_Rights) === 1 && Number(o?.Project_Id) === 0) && (
-                                                        <MenuItem onClick={() => setDelete(o)}>
-                                                            <Delete className="fa-in me-2 text-danger" /> Delete
-                                                        </ MenuItem>
-                                                    )}
-                                                    <MenuItem onClick={() => navigate('chats', { state: o })}>
-                                                        <Launch className="fa-in me-2 text-primary" />
-                                                        Open Chats
-                                                    </MenuItem>
+                                            <span className="d-flex">
+                                                <IconButton size="small" onClick={() => navigate('chats', { state: o })}>
+                                                    <Launch className=" text-primary" />
+                                                </IconButton>
+                                                {
+                                                    (Number(contextObj.Edit_Rights) === 1 || Number(contextObj.Delete_Rights) === 1)
+                                                    &&
+                                                    <Dropdown>
+                                                        <Dropdown.Toggle
+                                                            variant="success"
+                                                            id="actions"
+                                                            className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                        >
+                                                        </Dropdown.Toggle>
+                                                        <Dropdown.Menu>
+                                                            {Number(contextObj.Edit_Rights) === 1 && (
+                                                                <MenuItem onClick={() => setTeamData(o)}>
+                                                                    <GroupAdd className="fa-in text-primary me-2" /> Manage Team
+                                                                </MenuItem>
+                                                            )}
+                                                            {(Number(contextObj.Edit_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                                <MenuItem onClick={() => setUpdate(o)}>
+                                                                    <Edit className="fa-in me-2" /> Edit
+                                                                </MenuItem>
+                                                            )}
+                                                            {(Number(contextObj.Delete_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                                <MenuItem onClick={() => setDelete(o)}>
+                                                                    <Delete className="fa-in me-2 text-danger" /> Delete
+                                                                </ MenuItem>
+                                                            )}
+                                                        </Dropdown.Menu>
+                                                    </Dropdown>
+                                                }
+                                            </span>
 
-                                                </Dropdown.Menu>
-                                            </Dropdown>
+                                            {/* <MenuItem onClick={() => navigate('chats', { state: o })}>
+                                                <Launch className="fa-in me-2 text-primary" />
+                                                Open Chats
+                                            </MenuItem> */}
                                         </td>
                                     </tr>
                                 ))}
@@ -302,7 +314,7 @@ const Discussions = () => {
 
             <Dialog
                 open={createDialog}
-                onClose={closeCreateDialog}>
+                onClose={closeCreateDialog} maxWidth='sm' fullWidth>
                 <DialogTitle>{!isEdit ? 'Create Discussion Topic' : 'Modify Topic'}</DialogTitle>
                 <DialogContent>
                     <table className="table">
@@ -358,9 +370,9 @@ const Discussions = () => {
 
             <Dialog
                 open={teamDialog}
-                onClose={closeTeamDialog} >
+                onClose={closeTeamDialog} maxWidth='sm' fullWidth>
                 <DialogTitle>Manage Team</DialogTitle>
-                <DialogContent style={{ minWidth: '350px', minHeight: '50px' }}>
+                <DialogContent >
                     <Autocomplete
                         multiple
                         id="checkboxes-tags-demo"
@@ -380,7 +392,7 @@ const Discussions = () => {
                                 {option?.Name}
                             </li>
                         )}
-                        style={{ width: 300 }} className="p-4"
+                         className="pt-2"
                         isOptionEqualToValue={(opt, val) => opt?.UserId === val?.UserId}
                         renderInput={(params) => (
                             <TextField {...params} label="Users" placeholder="Select Team Members" />
