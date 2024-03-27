@@ -45,7 +45,8 @@ const TaskActivity = () => {
     const [userDropDown, setUsersDropdown] = useState([])
     const [assignEmpInpt, setAssignEmpInpt] = useState(assignEmpInitialValue);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
-    const [reload, setReload] = useState(false)
+    const [reload, setReload] = useState(false);
+    const [workDetails, setWorkDetails] = useState([])
 
     useEffect(() => {
         fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
@@ -55,6 +56,13 @@ const TaskActivity = () => {
                     setUsersDropdown(data.data)
                 }
             }).catch(e => console.error(e))
+        fetch(`${api}task/workedDetails?Task_Levl_Id=${taskInfo?.Task_Levl_Id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setWorkDetails(data.data)
+                }
+            }).catch(e => console.log(e))
     }, [])
 
     useEffect(() => {
@@ -64,7 +72,7 @@ const TaskActivity = () => {
                 if (data.success) {
                     setAssignedEmployees(data.data)
                 }
-            })
+            }).catch(e => console.error(e))
     }, [reload])
 
     useEffect(() => {
@@ -110,6 +118,25 @@ const TaskActivity = () => {
         } else {
             toast.warn('Select Employee')
         }
+    }
+
+    const formatTime24 = (time24) => {
+        const [hours, minutes] = time24.split(':').map(Number);
+
+        let hours12 = hours % 12;
+        hours12 = hours12 || 12;
+        const period = hours < 12 ? 'AM' : 'PM';
+        const formattedHours = hours12 < 10 ? '0' + hours12 : hours12;
+        const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+        const time12 = `${formattedHours}:${formattedMinutes} ${period}`;
+
+        return time12;
+    }
+
+    const statusColor = (id) => {
+        const numId = Number(id);
+        const color = ['bg-dark', 'bg-info', 'bg-warning', 'bg-success', 'bg-danger'];
+        return color[numId]
     }
 
     return Number(rights?.read) === 1 && (
@@ -219,6 +246,56 @@ const TaskActivity = () => {
                     <h6 className="mt-3">No Data</h6>
                 )}
 
+
+
+            </div>
+
+            <div className="cus-card py-2 ps-3">
+                <h5 className="m-0 mt-2 fa-17">Task Activity</h5>
+
+                {workDetails.length > 0 ? (
+                    <div className="table-responsive mt-3">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th className="fa-14 text-center">Employee</th>
+                                    <th className="fa-14 text-center">Date</th>
+                                    <th className="fa-14 text-center">Time</th>
+                                    <th className="fa-14 text-center">Duration (Mins)</th>
+                                    <th className="fa-14 text-center">Status</th>
+                                    <th className="fa-14">Assigned By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {workDetails.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="fa-13 text-center">{o?.EmployeeName}</td>
+                                        <td className="fa-13 text-center">
+                                            {new Date(o?.Work_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        </td>
+                                        <td className="fa-14 text-center">
+                                            <span className="badge rounded-4 px-3 bg-light text-primary">
+                                                <QueryBuilder className="fa-18 me-2" />
+                                                {formatTime24(o?.Start_Time)}
+                                                {' - '}
+                                                {formatTime24(o?.End_Time)}
+                                            </span>
+                                        </td>
+                                        <td className="fa-13 text-center">{o?.Tot_Minutes}</td>
+                                        <td className="fa-13 text-center">
+                                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Status)}`}>
+                                                {o?.WorkStatus}
+                                            </span>
+                                        </td>
+                                        <td className="fa-13">{o?.Work_Done}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <h6 className="mt-3">No Data</h6>
+                )}
             </div>
 
 

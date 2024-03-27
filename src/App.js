@@ -34,6 +34,8 @@ import CommonDashboard from "./Pages/Dashboard/commonDashboard";
 import TodayTasks from "./Pages/MyTasks/todaytasks";
 import WorkDoneHistory from "./Pages/MyTasks/employeeAbstract";
 
+import ReportCalendar from "./Pages/Reports/calendar";
+
 function App() {
   const [login, setLogin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -115,6 +117,8 @@ function App() {
 
                 <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
                 <Route path="/mytasks/alltasks" element={<WorkDoneHistory />} />
+
+                <Route path="/reports/calendar" element={<ReportCalendar />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

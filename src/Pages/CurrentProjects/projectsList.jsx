@@ -1,10 +1,11 @@
 import { useEffect, useState, useContext } from "react";
 import api from "../../API";
-import '../common.css'
+import '../common.css';
+import { IconButton } from '@mui/material'
+import { Launch } from '@mui/icons-material'
 import { BarChart, Group, WorkHistory, CalendarMonth } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { MyContext } from "../../Components/context/contextProvider";
-import InvalidPageComp from '../../Components/invalidCredential';
 
 
 const ActiveProjects = () => {
@@ -30,8 +31,65 @@ const ActiveProjects = () => {
         }
     }
 
-    return parseInt(contextObj.Read_Rights) === 1 ? (
+    return (
         <>
+            {/* <div className="table-responsive">
+                <table className="table">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Progress</th>
+                            <th>Estimation</th>
+                            <th>Schedule</th>
+                            <th>Completed Tasks</th>
+                            <th>Employees Involved</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {projects.map((o, i) => (
+                            <tr key={i}>
+                                <td>{o.Project_Name}</td>
+                                <td>{calcPercentage(o?.TasksInvolved, o?.CompletedTasks)} %</td>
+                                <td>
+                                    {o?.Est_Start_Dt && (
+                                        new Date(o.Est_Start_Dt)
+                                            .toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                    )}
+                                    {" - "}
+                                    {o?.Est_End_Dt && (
+                                        new Date(o.Est_End_Dt)
+                                            .toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                    )}
+                                    {" "}
+                                    {"\(" + ((new Date(o.Est_End_Dt) - new Date(o.Est_Start_Dt)) / (1000 * 60 * 60 * 24) + 1) + " Days\)"}
+                                </td>
+                                <td>{o?.SchedulesCount}</td>
+                                <td>{o?.CompletedTasks + " | " + o?.TasksInvolved}</td>
+                                <td>{o?.EmployeesInvolved}</td>
+                                <td>
+                                    <IconButton className="btn btn-primary text-white " onClick={() => {
+                                        nav('projectschedule', {
+                                            state: {
+                                                project: o,
+                                                rights: {
+                                                    read: contextObj.Read_Rights,
+                                                    add: contextObj.Add_Rights,
+                                                    edit: contextObj.Edit_Rights,
+                                                    delete: contextObj.Delete_Rights
+                                                }
+                                            }
+                                        })
+                                    }
+                                    }>
+                                        <Launch className="text-dark" />
+                                    </IconButton>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div> */}
             {projects.map((o, i) => (
                 <div className="project-card" key={i}>
                     <p className="fa-18 text-dark text-uppercase fw-bold">
@@ -109,10 +167,10 @@ const ActiveProjects = () => {
                     <hr className="m-0" />
 
                     <div className="text-end mt-2">
-                        <button className="btn btn-primary rounded-5 px-4 text-white fw-bold" onClick={() => { 
-                            nav('projectschedule', { 
+                        <button className="btn btn-primary rounded-5 px-4 text-white fw-bold" onClick={() => {
+                            nav('projectschedule', {
                                 state: {
-                                    project: o, 
+                                    project: o,
                                     rights: {
                                         read: contextObj.Read_Rights,
                                         add: contextObj.Add_Rights,
@@ -120,8 +178,9 @@ const ActiveProjects = () => {
                                         delete: contextObj.Delete_Rights
                                     }
                                 }
-                            })}
-                            }>
+                            })
+                        }
+                        }>
                             OPEN
                         </button>
                     </div>
@@ -130,7 +189,6 @@ const ActiveProjects = () => {
             ))}
         </>
     )
-        : <InvalidPageComp />
 }
 
 export default ActiveProjects;

@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from "react";
 import api from "../../API";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import "react-toastify/dist/ReactToastify.css";
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 
-const WorkDoneHistory = () => {
-    const localData = localStorage.getItem("user");
-    const parseData = JSON.parse(localData);
+const ReportCalendar = () => {
     const [workedDetais, setWorkedDetais] = useState([]);
     const [selectedTask, setSelectedTask] = useState({});
-    const [dialog, setDialog] = useState(false)
+    const [dialog, setDialog] = useState(false);
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${parseData?.UserId}`)
+        fetch(`${api}workReport`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -40,7 +39,8 @@ const WorkDoneHistory = () => {
     return (
         <>
             <div className="px-3 py-2 calendar" >
-                <h5 className="mb-3 text-center">Completed Tasks</h5>
+                <h4 className="mb-3 text-center text-primary">Completed Tasks</h4>
+
                 <FullCalendar
                     plugins={[timeGridPlugin, listPlugin, dayGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"
@@ -67,7 +67,6 @@ const WorkDoneHistory = () => {
                     selectMirror
                     eventClick={eve => {
                         const eveObj = eve.event.extendedProps.objectData;
-                        console.log(eveObj)
                         setSelectedTask(eveObj);
                         setDialog(true)
                     }}
@@ -86,11 +85,15 @@ const WorkDoneHistory = () => {
                         <table className="table mb-0">
                             <tbody>
                                 <tr>
-                                    <td className="border-1 fa-14">Task Name</td>
+                                    <td className="border-1 fa-14">EmpName</td>
+                                    <td className="border-1 fa-14">{selectedTask?.EmployeeName}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-1 fa-14">Task</td>
                                     <td className="border-1 fa-14">{selectedTask?.Task_Name}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border-1 fa-14">Work Done At</td>
+                                    <td className="border-1 fa-14">Date</td>
                                     <td className="border-1 fa-14">
                                         {selectedTask?.Work_Dt && new Date(selectedTask?.Work_Dt).toLocaleDateString('en-IN', {
                                             day: '2-digit', month: '2-digit', year: 'numeric'
@@ -100,7 +103,7 @@ const WorkDoneHistory = () => {
                                 <tr>
                                     <td className="border-1 fa-14">Start Time</td>
                                     <td className="border-1 fa-14">
-                                        {selectedTask?.Start_Time && formatTime24(selectedTask?.Start_Time)} 
+                                        {selectedTask?.Start_Time && formatTime24(selectedTask?.Start_Time)}
                                     </td>
                                 </tr>
                                 <tr>
@@ -110,9 +113,15 @@ const WorkDoneHistory = () => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border-1 fa-14">Total Minutes</td>
+                                    <td className="border-1 fa-14">Duration</td>
                                     <td className="border-1 fa-14">
-                                        {selectedTask?.Tot_Minutes}
+                                        {selectedTask?.Tot_Minutes} ( Minutes )
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-1 fa-14">Status</td>
+                                    <td className="border-1 fa-14">
+                                        {selectedTask?.WorkStatus}
                                     </td>
                                 </tr>
                                 <tr>
@@ -131,4 +140,4 @@ const WorkDoneHistory = () => {
     );
 }
 
-export default WorkDoneHistory;
+export default ReportCalendar;

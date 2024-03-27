@@ -26,6 +26,20 @@ const TodayTasks = () => {
         Work_Status: 2,
         Work_Dt: new Date().toISOString().split('T')[0]
     }
+    const additionalTaskInitialValue = {
+        Work_Id: '',
+        Project_Id: 3,
+        Sch_Id: 8,
+        Task_Levl_Id: 35,
+        Task_Id: 14,
+        AN_No: 0,
+        Emp_Id: parseData?.UserId,
+        Work_Done: '',
+        Start_Time: '12:00',
+        End_Time: '14:00',
+        Work_Status: 3,
+        Work_Dt: new Date().toISOString().split('T')[0]
+    }
     const [myTasks, setMyTasks] = useState([]);
     const [workedDetais, setWorkedDetais] = useState([]);
     const [queryDate, setQueryDate] = useState({
@@ -37,6 +51,7 @@ const TodayTasks = () => {
     const [dialog, setDialog] = useState(false);
     const [workDialog, setWorkDialog] = useState(false);
     const [nonTimerWorkDialog, setNonTimerWorkDialog] = useState(false);
+    const [additionalTaskDialog, setAdditionalTaskDialog] = useState(false);
     const [selectedTask, setSelectedTask] = useState({});
     const [runningTaskId, setRunningTaskId] = useState(0);
     const [isEdit, setIsEdit] = useState(false);
@@ -45,6 +60,7 @@ const TodayTasks = () => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [workInput, setWorkInput] = useState(initialWorkSaveValue);
+    const [additionalTaskInput, setAdditionalTaskInput] = useState(additionalTaskInitialValue)
     const [nonTimerInput, setNonTimerInput] = useState({
         ...initialWorkSaveValue,
         Start_Time: '10:00',
@@ -264,7 +280,7 @@ const TodayTasks = () => {
         return formattedHours + ':' + formattedMinutes;
     }
 
-    const openWorkDialog = () => {
+    const openWorkDialog = (val) => {
         setWorkInput(initialWorkSaveValue);
         setWorkDialog(true)
     }
@@ -286,7 +302,7 @@ const TodayTasks = () => {
                 Emp_Id: parseData?.UserId,
                 Work_Done: workInput?.Work_Done,
                 Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
-                End_Time: isEdit? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
+                End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
                 Work_Status: workInput?.Work_Status,
             })
         }).then(res => res.json())
@@ -331,6 +347,31 @@ const TodayTasks = () => {
                     setSelectedTask({});
                     toast.success(data.message);
                     setNonTimerWorkDialog(false);
+                    setReload(!reload); setIsEdit(false)
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
+    }
+
+    const openUnAssignedTaskDialog = () => {
+        setAdditionalTaskInput(additionalTaskInitialValue);
+        setAdditionalTaskDialog(true);
+    }
+
+    const saveUnAssignedTask = (e) => {
+        e.preventDefault();
+        fetch(`${api}saveWork`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(additionalTaskInput)
+        }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    toast.success(data.message);
+                    setAdditionalTaskDialog(false);
                     setReload(!reload); setIsEdit(false)
                 } else {
                     toast.error(data.message)
@@ -475,7 +516,7 @@ const TodayTasks = () => {
                                     const selObj = eve.event.extendedProps?.objectData;
                                     if (Number(selObj?.Work_Status) !== 3 && Number(selObj?.Timer_Based) === 1) {
                                         setSelectedTask(selObj); setDialog(true)
-                                    } else if (Number(selObj?.Work_Status) !== 3 && Number(selObj?.Timer_Based) === 0) {
+                                    } else if (Number(selObj?.Work_Status) !== 3) {
                                         setSelectedTask(selObj); setNonTimerWorkDialog(true)
                                     } else {
                                         toast.warn('This task is already completed')
@@ -489,6 +530,11 @@ const TodayTasks = () => {
                         />
                     </TabPanel>
                     <TabPanel value={'2'} sx={{ p: 0, pt: 2 }}>
+
+                        <div className="d-flex justify-content-end mb-3" onClick={openUnAssignedTaskDialog}>
+                            <button className="btn btn-primary">Add Additional Work Details</button>
+                        </div>
+
                         <FullCalendar
                             plugins={[timeGridPlugin, listPlugin]}
                             initialView="timeGridDay"
@@ -712,8 +758,96 @@ const TodayTasks = () => {
                             cancel
                         </Button>
                         <Button
-                            variant='contained' color='success' type='submit'
-                            onClick={() => { }}>
+                            variant='contained' color='success' type='submit'>
+                            Save
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            <Dialog
+                open={additionalTaskDialog} maxWidth="sm" fullWidth
+                onClose={() => setAdditionalTaskDialog(false)} >
+                <DialogTitle>Additional Tasks</DialogTitle>
+                <form onSubmit={saveUnAssignedTask}>
+                    <DialogContent className="table-responsive">
+                        <table className="table">
+                            <tbody>
+                                <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        Completed Date
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <input
+                                            type="date"
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, Work_Dt: e.target.value })}
+                                            value={new Date(additionalTaskInput?.Work_Dt).toISOString().split('T')[0]}
+                                            className="cus-inpt" required />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        Start Time
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <input
+                                            type="time"
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, Start_Time: e.target.value })}
+                                            value={additionalTaskInput?.Start_Time}
+                                            className="cus-inpt" required />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        End Time
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <input
+                                            type="time"
+                                            min={additionalTaskInput?.Start_Time}
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, End_Time: e.target.value })}
+                                            value={additionalTaskInput?.End_Time} required
+                                            className="cus-inpt" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        Work Status
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <select
+                                            className="cus-inpt"
+                                            value={additionalTaskInput?.Work_Status}
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, Work_Status: e.target.value })}
+                                        >
+                                            <option value={2}>PENDING</option>
+                                            <option value={3}>COMPLETED</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-0 fa-14 pt-3">
+                                        Work Summary
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <textarea
+                                            rows="4"
+                                            className="cus-inpt" required
+                                            value={additionalTaskInput?.Work_Done}
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, Work_Done: e.target.value })} />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            variant='outlined' color="error" type='button'
+                            onClick={() => setAdditionalTaskDialog(false)}>
+                            cancel
+                        </Button>
+                        <Button
+                            variant='contained' color='success' type='submit'>
                             Save
                         </Button>
                     </DialogActions>

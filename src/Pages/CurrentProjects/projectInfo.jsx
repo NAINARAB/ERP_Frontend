@@ -556,18 +556,18 @@ const ProjectDetails = () => {
                                                                     </MenuItem>)}
                                                                     <MenuItem onClick={
                                                                         () => nav('/tasks/activeproject/projectschedule/taskActivity',
-                                                                                {
-                                                                                    state: {
-                                                                                        taskDetails: {
-                                                                                            ...o,
-                                                                                            Project_Id: projectData?.Project_Id,
-                                                                                            Sch_Id: obj?.Sch_Id,
-                                                                                        },
-                                                                                        rights: location.state?.rights,
-                                                                                        retObj: location.state
-                                                                                    }
+                                                                            {
+                                                                                state: {
+                                                                                    taskDetails: {
+                                                                                        ...o,
+                                                                                        Project_Id: projectData?.Project_Id,
+                                                                                        Sch_Id: obj?.Sch_Id,
+                                                                                    },
+                                                                                    rights: location.state?.rights,
+                                                                                    retObj: location.state
                                                                                 }
-                                                                            )
+                                                                            }
+                                                                        )
                                                                     }>
                                                                         <Launch className="fa-in me-2 text-primary " />
                                                                         Open Task
@@ -672,18 +672,18 @@ const ProjectDetails = () => {
                                                                     </MenuItem>)}
                                                                     <MenuItem onClick={
                                                                         () => nav('/tasks/activeproject/projectschedule/taskActivity',
-                                                                                {
-                                                                                    state: {
-                                                                                        taskDetails: {
-                                                                                            ...o,
-                                                                                            Project_Id: projectData?.Project_Id,
-                                                                                            Sch_Id: obj?.Sch_Id,
-                                                                                        },
-                                                                                        rights: location.state?.rights,
-                                                                                        retObj: location.state
-                                                                                    }
+                                                                            {
+                                                                                state: {
+                                                                                    taskDetails: {
+                                                                                        ...o,
+                                                                                        Project_Id: projectData?.Project_Id,
+                                                                                        Sch_Id: obj?.Sch_Id,
+                                                                                    },
+                                                                                    rights: location.state?.rights,
+                                                                                    retObj: location.state
                                                                                 }
-                                                                            )
+                                                                            }
+                                                                        )
                                                                     }>
                                                                         <Launch className="fa-in me-2 text-primary " />
                                                                         Open Task
@@ -887,6 +887,21 @@ const ProjectDetails = () => {
                                         onChange={e => setTaskScheduleInput({ ...taskScheduleInput, Task_Sch_Duaration: e.target.value })} />
                                 </td>
                             </tr>
+                            {isEdit && (
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Status</td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <select
+                                            className="cus-inpt"
+                                            value={taskScheduleInput.Task_Sch_Status}
+                                            onChange={e => setTaskScheduleInput({ ...taskScheduleInput, Task_Sch_Status: e.target.value })}>
+                                            {workStatus.map((o, i) => (
+                                                <option key={i} value={o?.Status_Id}>{o?.Status}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                     {Number(taskScheduleInput?.Levl_Id) !== 1 && (
@@ -928,7 +943,6 @@ const ProjectDetails = () => {
                 </DialogActions>
             </Dialog>
 
-
             <Dialog
                 open={dialog?.scheduleDelete}
                 onClose={() => switchScheduleDeleteDialog()}>
@@ -941,7 +955,6 @@ const ProjectDetails = () => {
                     <Button onClick={deleteScheduleFun} >Delete</Button>
                 </DialogActions>
             </Dialog>
-
 
             <Dialog
                 open={dialog?.taskDelete}

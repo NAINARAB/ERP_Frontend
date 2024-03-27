@@ -18,9 +18,10 @@ const CommonDashboard = () => {
     const [dashboardData, setDashboardData] = useState({});
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
+    const isAdmin = Number(parseData?.UserTypeId) === 0 || Number(parseData?.UserTypeId) === 1
 
     useEffect(() => {
-        fetch(`${api}dashboardData?UserType=${parseData?.UserId}`)
+        fetch(`${api}dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -29,13 +30,13 @@ const CommonDashboard = () => {
                     setDashboardData({})
                 }
             }).catch(e => console.error(e))
-    }, [parseData?.UserId]);
+    }, [parseData?.UserId, parseData?.UserTypeId]);
 
 
     const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
         return (
             <>
-                <div className="col-xxl-3 col-lg-4 col-md-6 col-sm-12 p-2">
+                <div className={`${isAdmin && 'col-xxl-3'} col-lg-4 col-md-6 col-sm-12 p-2`}>
                     <div className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
                         <div className="flex-grow-1 p-3">
                             <h5 >{title}</h5>
@@ -52,12 +53,12 @@ const CommonDashboard = () => {
     }
 
     const minFormat = (val) => {
-        let hour = Math.floor(Number(val) / 60);
-        let minutes = Number(val) % 60;
-        let formatHour = hour < 10 ? '0' + hour : hour;
-        let formatMinute = minutes < 10 ? '0' + minutes : minutes;
+        const hour = Math.floor(Number(val) / 60);
+        const minutes = Number(val) % 60;
+        const formatHour = hour < 10 ? '0' + hour : hour;
+        const formatMinute = minutes < 10 ? '0' + minutes : minutes;
 
-        return formatHour + ':' + formatMinute;
+        return (formatHour && formatMinute) ? formatHour + ':' + formatMinute : '00:00';
     }
 
 
@@ -65,51 +66,73 @@ const CommonDashboard = () => {
     return (
         <>
             <div className="px-3">
-                <div className="row">
+                {isAdmin ? (
+                    <div className="row">
 
-                    <CardComp
-                        title={'Projects'}
-                        icon={<TbTargetArrow style={{ fontSize: '80px' }} />}
-                        firstVal={dashboardData?.ActiveProjects}
-                        secondVal={dashboardData?.AllProjects}
-                        classCount={'1'} />
+                        <CardComp
+                            title={'Projects'}
+                            icon={<TbTargetArrow style={{ fontSize: '80px' }} />}
+                            firstVal={dashboardData?.ActiveProjects}
+                            secondVal={dashboardData?.AllProjects}
+                            classCount={'1'} />
 
-                    <CardComp
-                        title={'Schedule'}
-                        icon={<CiCalendarDate style={{ fontSize: '80px' }} />}
-                        firstVal={dashboardData?.ActiveSchedule}
-                        secondVal={dashboardData?.AllSchedule}
-                        classCount={'2'} />
+                        <CardComp
+                            title={'Schedule'}
+                            icon={<CiCalendarDate style={{ fontSize: '80px' }} />}
+                            firstVal={dashboardData?.ActiveSchedule}
+                            secondVal={dashboardData?.AllSchedule}
+                            classCount={'2'} />
 
-                    <CardComp
-                        title={'Completed Tasks'}
-                        icon={<BiTask style={{ fontSize: '80px' }} />}
-                        firstVal={dashboardData?.TaskCompleted}
-                        secondVal={dashboardData?.TaskAssigned}
-                        classCount={'3'} />
+                        <CardComp
+                            title={'Completed Tasks'}
+                            icon={<BiTask style={{ fontSize: '80px' }} />}
+                            firstVal={dashboardData?.TaskCompleted}
+                            secondVal={dashboardData?.TaskAssigned}
+                            classCount={'3'} />
 
-                    <CardComp
-                        title={'Employee'}
-                        icon={<HiUsers style={{ fontSize: '80px' }} />}
-                        firstVal={dashboardData?.EmployeeCounts}
-                        secondVal={Number(dashboardData?.EmployeeCounts) + dashboardData?.OtherUsers}
-                        classCount={'4'} />
+                        <CardComp
+                            title={'Employee'}
+                            icon={<HiUsers style={{ fontSize: '80px' }} />}
+                            firstVal={dashboardData?.EmployeeCounts}
+                            secondVal={Number(dashboardData?.EmployeeCounts) + dashboardData?.OtherUsers}
+                            classCount={'4'} />
 
-                    <CardComp
-                        title={'Worked Hours'}
-                        icon={<RxLapTimer style={{ fontSize: '80px' }} />}
-                        firstVal={minFormat(dashboardData?.TotalMinutes)}
-                        classCount={'5'} />
+                        <CardComp
+                            title={'Worked Hours'}
+                            icon={<RxLapTimer style={{ fontSize: '80px' }} />}
+                            firstVal={minFormat(dashboardData?.TotalMinutes)}
+                            classCount={'5'} />
 
-                    <CardComp
-                        title={'Today Tasks'}
-                        icon={<CgSandClock style={{ fontSize: '80px' }} />}
-                        firstVal={dashboardData?.TodayTaskCompleted}
-                        secondVal={dashboardData?.TodayTasks}
-                        classCount={'6'} />
+                        <CardComp
+                            title={'Today Tasks'}
+                            icon={<CgSandClock style={{ fontSize: '80px' }} />}
+                            firstVal={dashboardData?.TodayTaskCompleted}
+                            secondVal={dashboardData?.TodayTasks}
+                            classCount={'6'} />
 
-                </div>
-            </div>
+                    </div>
+                ) : (
+                    <div className="row">
+                        <CardComp
+                            title={'Completed Tasks'}
+                            firstVal={dashboardData?.TaskCompleted}
+                            secondVal={dashboardData?.TotalTasks}
+                            icon={<BiTask style={{ fontSize: '80px' }} />}
+                            classCount={'1'} />
+                        <CardComp
+                            title={'Today Tasks'}
+                            firstVal={dashboardData?.TodayTaskCompleted}
+                            secondVal={dashboardData?.TodayTasks}
+                            icon={<CgSandClock style={{ fontSize: '80px' }} />}
+                            classCount={'2'} />
+                        <CardComp
+                            title={'Total Work Hours'}
+                            firstVal={minFormat(dashboardData?.WorkedMinutes)}
+                            icon={<CgSandClock style={{ fontSize: '80px' }} />}
+                            classCount={'3'} />
+                    </div>
+                )}
+            </div >
         </>
     )
 }

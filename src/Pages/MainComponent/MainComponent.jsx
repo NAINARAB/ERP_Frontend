@@ -1,7 +1,8 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add } from '@mui/icons-material'
+import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add, BarChart} from '@mui/icons-material'
+// import { GrAnalytics } from "react-icons/gr";
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import api from "../../API";
@@ -50,7 +51,11 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
       {
         id: 11,
         IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      }
+      },
+      {
+        id: 12,
+        IconComp: <BarChart className="me-2 fa-20" style={{ color: '#FDD017' }} />
+      },
     ];
 
     const matchedIcon = icon.find(item => item.id === mainBtn.Main_Menu_Id);
