@@ -302,6 +302,13 @@ const ProjectDetails = () => {
             .finally(() => switchTaskDeleteDialog())
     }
 
+    const getSignal = (status) => {
+        const numStatus = Number(status);
+        const color = ['', 'bg-primary', 'bg-warning', 'bg-success', 'bg-danger']
+
+        return color[numStatus]
+    }
+
     const ScheduleComp = ({ obj, SNo }) => {
         const myDivRef = useRef(null);
         const [height, setHeight] = useState(0)
@@ -316,7 +323,6 @@ const ProjectDetails = () => {
             const index = arr.findIndex((o) => Number(o.Task_Levl_Id) === Number(num));
             return index >= 0 ? (index + 1) + '. ' : '';
         }
-
 
         return (
             <>
@@ -384,8 +390,8 @@ const ProjectDetails = () => {
 
                     <hr className="mt-0" />
 
-                    <div className="overflow-x-auto text-nowrap">
-                        <div className="d-flex">
+                    {/* <div className="overflow-x-auto text-nowrap"> */}
+                        <div className="d-flex flex-nowrap overflow-scroll" style={{paddingBottom: '4.6em'}}>
 
                             {/* LevelOneTasks */}
                             <div className="res-width px-3 py-2">
@@ -411,7 +417,11 @@ const ProjectDetails = () => {
                                             <div key={i} className="rounded-4 bg-light p-2 px-3 d-flex align-items-center mt-2">
                                                 <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                                 <span className="fa-14 d-flex align-items-center">
+
                                                     {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+
+                                                    <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
                                                     <span>
                                                         <Dropdown>
                                                             <Dropdown.Toggle
@@ -508,7 +518,11 @@ const ProjectDetails = () => {
                                                 <div className="mb-0 d-flex align-items-center">
                                                     <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                                     <span className="fa-14 d-flex align-items-center">
+
                                                         {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+
+                                                        <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
                                                         {/* new code */}
                                                         <span>
                                                             <Dropdown>
@@ -624,7 +638,11 @@ const ProjectDetails = () => {
                                                 <div className="mb-0 d-flex align-items-center">
                                                     <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                                     <span className="fa-14 d-flex align-items-center">
+
                                                         {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+
+                                                        <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
                                                         {/* new code */}
                                                         <span>
                                                             <Dropdown>
@@ -716,7 +734,7 @@ const ProjectDetails = () => {
 
 
                         </div>
-                    </div>
+                    {/* </div> */}
                 </div>
 
             </>
@@ -726,16 +744,31 @@ const ProjectDetails = () => {
     return Number(rights?.read) === 1 && (
         <>
             <ToastContainer />
-            <div className="cus-card p-3 d-flex align-items-center ">
-                <h5 className=" flex-grow-1 mb-0 text-muted fa-16 ps-2">Create New Schedule</h5>
-                {Number(rights?.add) === 1 && (
-                    <button className="btn btn-primary rounded-5 px-3 fa-13 shadow d-flex align-items-center me-2" onClick={() => scheduleDialogSwitch()}>
-                        <Add className="fa-in me-2" /> Add
+            <div className="cus-card p-3">
+
+                <div className="d-flex align-items-center">
+                    <h5 className=" flex-grow-1 mb-0 text-muted fa-16 ps-2">Create New Schedule</h5>
+                    {Number(rights?.add) === 1 && (
+                        <button className="btn btn-primary rounded-5 px-3 fa-13 shadow d-flex align-items-center me-2" onClick={() => scheduleDialogSwitch()}>
+                            <Add className="fa-in me-2" /> Add
+                        </button>
+                    )}
+                    <button className="btn btn-secondary rounded-5 px-3 fa-13 shadow d-flex align-items-center" onClick={() => nav('/tasks/activeproject')}>
+                        <KeyboardArrowLeft className="fa-in me-2" /> Back
                     </button>
-                )}
-                <button className="btn btn-secondary rounded-5 px-3 fa-13 shadow d-flex align-items-center" onClick={() => nav('/tasks/activeproject')}>
-                    <KeyboardArrowLeft className="fa-in me-2" /> Back
-                </button>
+                </div>
+
+                <h6 className="my-2 d-flex align-items-center">
+                    <span className={`rounded-5 mx-2 ${getSignal(1)}`} style={{ padding: '5.2px' }} />
+                    New
+                    <span className={`rounded-5 mx-2 ${getSignal(2)}`} style={{ padding: '5.2px' }} />
+                    Progress
+                    <span className={`rounded-5 mx-2 ${getSignal(3)}`} style={{ padding: '5.2px' }} />
+                    Completed
+                    <span className={`rounded-5 mx-2 ${getSignal(4)}`} style={{ padding: '5.2px' }} />
+                    Canceled
+                </h6>
+
             </div>
 
             {projectSchedule.map((o, i) => <ScheduleComp key={i} obj={o} SNo={i + 1} />)}

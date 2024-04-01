@@ -230,8 +230,8 @@ const UserBased = () => {
                 if (data.success) {
                     setUsers(data.data);
                 }
-            });
-    }, [])
+            }).catch(e => console.log(e))
+    }, [parseData?.UserId, parseData?.Company_id, parseData?.BranchId])
 
     const handleUserChange = (selectedOption) => {
         if (selectedOption) {

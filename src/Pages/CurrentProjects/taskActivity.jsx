@@ -7,6 +7,7 @@ import { toast, ToastContainer } from "react-toastify";
 import api from "../../API";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
+
 // import CalenderComp from "./calender";
 
 
@@ -258,17 +259,19 @@ const TaskActivity = () => {
                         <table className="table">
                             <thead>
                                 <tr>
+                                    <th className="fa-14 text-center">Sno</th>
                                     <th className="fa-14 text-center">Employee</th>
                                     <th className="fa-14 text-center">Date</th>
                                     <th className="fa-14 text-center">Time</th>
                                     <th className="fa-14 text-center">Duration (Mins)</th>
                                     <th className="fa-14 text-center">Status</th>
-                                    <th className="fa-14">Assigned By</th>
+                                    <th className="fa-14">Work Description</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {workDetails.map((o, i) => (
                                     <tr key={i}>
+                                        <td className="fa-13 text-center">{i+1}</td>
                                         <td className="fa-13 text-center">{o?.EmployeeName}</td>
                                         <td className="fa-13 text-center">
                                             {new Date(o?.Work_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}

@@ -1,7 +1,7 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add, BarChart} from '@mui/icons-material'
+import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add, BarChart, Home } from '@mui/icons-material'
 // import { GrAnalytics } from "react-icons/gr";
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
@@ -226,18 +226,18 @@ function MainComponent(props) {
     fetch(`${api}notification`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json', 
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(notificationInput)
     }).then(res => res.json())
-    .then(data => {
-      if (data.success) {
+      .then(data => {
+        if (data.success) {
           toast.success(data.message);
           setNotificationInput({ ...notificationInput, notificationDialog: false })
-      } else {
-        toast.error(data.message)
-      }
-    }).catch(e => console.error(e))
+        } else {
+          toast.error(data.message)
+        }
+      }).catch(e => console.error(e))
   }
 
   return (
@@ -253,6 +253,14 @@ function MainComponent(props) {
           </div>
           <hr className="my-2" />
           <div className="sidebar-body-div">
+
+            <button className={'sidebutton'} onClick={() => window.location.href = `${process.env.REACT_APP_ERP_ADDRESS}?Auth=${parseData?.Autheticate_Id}`}>
+              <span className="flex-grow-1 d-flex justify-content-start">
+                <Home className="me-2 fa-20" style={{ color: '#FDD017' }} />
+                {'ERP HOME'}
+              </span>
+            </button>
+
             {sidebar.MainMenu.map((o, i) => (
               <DispNavButtons
                 key={i}
@@ -266,8 +274,9 @@ function MainComponent(props) {
             ))}
           </div>
           <div className="sidebar-bottom">
-            <button className="btn btn-dark w-100" onClick={props.logout}>
-              <Logout className="fa-in" /> Logout
+            <button className="btn btn-dark w-100 d-flex align-items-center " onClick={props.logout}>
+              <span className=" flex-grow-1 text-start">Logout</span>
+              <Logout className="fa-in" /> 
             </button>
           </div>
         </aside>
@@ -359,6 +368,14 @@ function MainComponent(props) {
           <Offcanvas.Title >Menu</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body style={{ backgroundColor: '#333' }}>
+
+          <button className={'sidebutton'} onClick={() => window.location.href = `${process.env.REACT_APP_ERP_ADDRESS}?Auth=${parseData?.Autheticate_Id}`}>
+            <span className="flex-grow-1 d-flex justify-content-start">
+              <Home className="me-2 fa-20" style={{ color: '#FDD017' }} />
+              {'ERP HOME'}
+            </span>
+          </button>
+
           {sidebar.MainMenu.map((o, i) => (
             <DispNavButtons
               key={i}

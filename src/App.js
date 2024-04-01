@@ -19,7 +19,7 @@ import UserBased from "./Pages/Authorization/userBased";
 import UserTypeBased from "./Pages/Authorization/userTypeBased";
 
 // import Tasks from "./Pages/Tasks/Tasks";
-import MyTasks from "./Pages/Tasks/myTasks";
+// import MyTasks from "./Pages/Tasks/myTasks";
 
 import ActiveProjects from "./Pages/CurrentProjects/projectsList";
 import ProjectDetails from "./Pages/CurrentProjects/projectInfo";
@@ -40,25 +40,59 @@ function App() {
   const [login, setLogin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const clearQueryParameters = () => {
+    const newUrl = window.location.pathname;
+    window.history.pushState({}, document.title, newUrl);
+  };
+
+  const doLoginIfDataAvailable = () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    setLoading(true);
+    if (user?.Autheticate_Id) {
+      fetch(`${api}authentication?AuthId=${user?.Autheticate_Id}`)
+        .then((response) => response.json())
+        .then((auth) => {
+          setLogin(Boolean(auth?.isValidUser));
+        })
+        .catch((e) => {
+          console.error(e);
+        }).finally(() => setLoading(false))
+    }
+  }
+
   useEffect(() => {
-    if (localStorage.getItem("user")) {
-      const user = JSON.parse(localStorage.getItem("user"));
-      setLoading(true);
-      if (user.Autheticate_Id) {
-        fetch(`${api}authentication?AuthId=${user.Autheticate_Id}`)
-          .then((response) => response.json())
-          .then((auth) => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const Auth = queryParams.get('Auth');
+
+    if (Auth) {
+
+      fetch(`${api}getUserByAuth?Auth=${Auth}`)
+        .then(res => res.json())
+        .then(data => {
+
+          if (data.success) {
+
+            const { Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId, session } = data.data[0]
+            const user = {
+              Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId
+            }
+            
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('session', JSON.stringify(session[0]));
+            setLogin(true);
             setLoading(false);
-            setLogin(auth?.isValidUser);
-          })
-          .catch((e) => {
-            console.error(e);
+          } else {
             setLoading(false);
-          });
-      }
+          }
+        }).catch(e => {console.error(e); setLoading(false);})
+        .finally(() => clearQueryParameters())
+
+    } else if (localStorage.getItem("user")) {
+      doLoginIfDataAvailable()
     } else {
       setLoading(false);
     }
+
   }, []);
 
   const setLoginTrue = () => {
@@ -68,7 +102,8 @@ function App() {
   const logout = () => {
     localStorage.clear();
     setLogin(false);
-    window.location = '/'
+    // window.location = '/'
+    window.location = process.env.REACT_APP_ERP_ADDRESS
   }
 
   return (
@@ -81,19 +116,15 @@ function App() {
         ) : !login ? (
           <>
             <Routes>
-              <Route
-                exact
-                path="/"
-                element={<LoginPage setLoginTrue={setLoginTrue} />}
-              ></Route>
+              <Route exact path="/" element={<LoginPage setLoginTrue={setLoginTrue} />} />
             </Routes>
           </>
         ) : (
           <ContextDataProvider>
             <MainComponent logout={logout}>
               <Routes>
-                
-                <Route path="/dashboard" element={<CommonDashboard />} />
+
+                <Route exact path="/dashboard" element={<CommonDashboard />} />
 
                 <Route path="/masters/company" element={<CompanyInfo />} />
                 <Route path="/masters/users" element={<Users />} />
@@ -107,7 +138,7 @@ function App() {
                 <Route path="/authorization/usertype" element={<UserTypeBased />} />
 
                 <Route path="/tasks/taskslist" element={<TaskMaster />} />
-                <Route path="/tasks/mytasks" element={<MyTasks />} />
+                {/* <Route path="/tasks/mytasks" element={<MyTasks />} /> */}
                 <Route path="/tasks/activeproject" element={<ActiveProjects />} />
                 <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
                 <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />

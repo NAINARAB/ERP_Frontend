@@ -111,16 +111,21 @@ body {
 }
 
 .content-body{
-    height: 90vh;
+    height: 92vh;
     width: 100%;
     overflow-y: scroll;
-    padding: 13.5px;
+    padding: 13.5px 12.3px 13.5px 13.5px;
     padding-bottom: 300px;
 }
 
 .content-body::-webkit-scrollbar {
-    display: none !important;
+    display: unset !important;
 }
+
+.content-body::-webkit-scrollbar-thumb {
+    background-color: #c5c1c1;
+    width: 10px !important;
+} 
 
 .open-icon {
     display: none !important;

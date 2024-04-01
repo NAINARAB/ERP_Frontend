@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { Table, Button } from "react-bootstrap";
 import api from "../../API";
-import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MuiButton} from "@mui/material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -95,7 +95,7 @@ const Users = () => {
   };
 
   const validation = () => {
-    if (!inputValue?.Name && inputValue.Name.length == 0) {
+    if (!inputValue?.Name && inputValue.Name.length === 0) {
       return "Name can not be empty";
     }
 

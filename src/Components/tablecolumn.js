@@ -2,9 +2,25 @@ const customSelectStyles = {
     control: (provided, state) => ({
         ...provided,
         height: '45px',
+        background: 'rgba(255, 255, 255, 0.322)'
     }),
     menu: (provided, state) => ({
         ...provided,
+        zIndex: 9999,
+    }),
+};
+
+const customSelectStyles2 = {
+    control: (provided, state) => ({
+        ...provided,
+        background: 'transparent',
+        border: 'none',
+        color: 'rgba(255, 255, 255, 0.322)',
+        // minWidth: '160px'
+    }),
+    menu: (provided, state) => ({
+        ...provided,
+        color: 'black',
         zIndex: 9999,
     }),
 };
@@ -50,5 +66,5 @@ const MainMenu = [
 export {
     MainMenu,
     customSelectStyles,
-    
+    customSelectStyles2
 }

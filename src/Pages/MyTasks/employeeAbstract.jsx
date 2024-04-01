@@ -22,7 +22,7 @@ const WorkDoneHistory = () => {
                     setWorkedDetais(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [])
+    }, [parseData?.UserId])
 
     const formatTime24 = (time24) => {
         const [hours, minutes] = time24.split(':').map(Number);
@@ -67,10 +67,10 @@ const WorkDoneHistory = () => {
                     selectMirror
                     eventClick={eve => {
                         const eveObj = eve.event.extendedProps.objectData;
-                        console.log(eveObj)
                         setSelectedTask(eveObj);
                         setDialog(true)
                     }}
+                    height={1200}
                 />
             </div>
 

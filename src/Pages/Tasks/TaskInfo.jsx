@@ -406,7 +406,7 @@ const TaskInfo = ({ row, users, setScreen, status, doRefresh }) => {
                                 type="time"
                                 className="cus-inpt"
                                 value={clickedRow?.Sch_Time && timeFormat(clickedRow?.Sch_Time)}
-                                onChange={(e) => setClickedRow({ ...clickedRow, Sch_Time: e.target.value })} />
+                                onChange={(e) => setClickedRow(opt => ({ ...opt, Sch_Time: e.target.value }))} />
                         </div>
 
                         <div className="col-md-4">

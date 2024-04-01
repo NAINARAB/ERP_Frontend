@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useState, useRef } from 'react';
 import api from '../../API';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Send, ArrowBackIos, Replay, Attachment, Group, Download, ArticleOutlined } from '@mui/icons-material';
+import { Send, ArrowBackIos, Replay, Attachment, Download, ArticleOutlined } from '@mui/icons-material';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from 'react-bootstrap/Dropdown';

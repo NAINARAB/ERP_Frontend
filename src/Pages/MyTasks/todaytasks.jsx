@@ -28,10 +28,10 @@ const TodayTasks = () => {
     }
     const additionalTaskInitialValue = {
         Work_Id: '',
-        Project_Id: 3,
-        Sch_Id: 8,
-        Task_Levl_Id: 35,
-        Task_Id: 14,
+        Project_Id: 1,
+        Sch_Id: 1,
+        Task_Levl_Id: 1,
+        Task_Id: 1,
         AN_No: 0,
         Emp_Id: parseData?.UserId,
         Work_Done: '',
@@ -75,7 +75,7 @@ const TodayTasks = () => {
                     setMyTasks(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [reload, queryDate.myTaskDate])
+    }, [reload, queryDate.myTaskDate, parseData?.UserId])
 
     useEffect(() => {
         fetch(`${api}myTodayWorks?Emp_Id=${parseData?.UserId}&reqDate=${queryDate.executedTaskDate}`)
@@ -85,7 +85,7 @@ const TodayTasks = () => {
                     setWorkedDetais(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [reload, queryDate.executedTaskDate])
+    }, [reload, queryDate.executedTaskDate, parseData?.UserId])
 
     useEffect(() => {
         fetch(`${api}startTask?Emp_Id=${parseData?.UserId}`)
@@ -100,7 +100,7 @@ const TodayTasks = () => {
                     setStartTime(null)
                 }
             }).catch(e => console.log(e))
-    }, [reload])
+    }, [reload, parseData?.UserId])
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -119,7 +119,7 @@ const TodayTasks = () => {
             const setRunning = myTasks.find(task => Number(task.Task_Levl_Id) === Number(runningTaskId))
             setSelectedTask(setRunning)
         }
-    }, [startTime, myTasks, reload])
+    }, [startTime, myTasks, reload, runningTaskId])
 
 
     const formatTime24 = (time24) => {
@@ -387,8 +387,8 @@ const TodayTasks = () => {
                 <TabContext value={tabValue}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <TabList indicatorColor='secondary' textColor='secondary' onChange={(e, n) => setTabValue(n)} aria-label="">
-                            <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={'TODAY TASKS' + ' (' + myTasks.length + ')'} value='1' />
-                            <Tab sx={tabValue === '2' ? { backgroundColor: '#c6d7eb' } : {}} label={"EXECUTED" + ' (' + workedDetais.length + ')'} value='2' />
+                            <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={`TODAY TASKS (${myTasks.length})`} value='1' />
+                            <Tab sx={tabValue === '2' ? { backgroundColor: '#c6d7eb' } : {}} label={`EXECUTED (${workedDetais.length})`} value='2' />
                         </TabList>
                     </Box>
                     <TabPanel value={'1'} sx={{ p: 0, pt: 2 }}>
@@ -527,6 +527,7 @@ const TodayTasks = () => {
                             }}
                             eventContent={renderEventContent}
                             datesSet={obj => setQueryDate({ ...queryDate, myTaskDate: new Date(obj.endStr).toISOString().split('T')[0] })}
+                            height={1200}
                         />
                     </TabPanel>
                     <TabPanel value={'2'} sx={{ p: 0, pt: 2 }}>
@@ -573,6 +574,7 @@ const TodayTasks = () => {
                                     toast.warn('You can only modify today works')
                                 }
                             }}
+                            height={1200}
                         />
                     </TabPanel>
                 </TabContext>

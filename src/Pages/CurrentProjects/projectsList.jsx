@@ -4,6 +4,7 @@ import '../common.css';
 import { IconButton } from '@mui/material'
 import { Launch } from '@mui/icons-material'
 import { BarChart, Group, WorkHistory, CalendarMonth } from '@mui/icons-material';
+import { CgUserList } from "react-icons/cg";
 import { useNavigate } from 'react-router-dom';
 import { MyContext } from "../../Components/context/contextProvider";
 
@@ -31,9 +32,29 @@ const ActiveProjects = () => {
         }
     }
 
+    const CardDisplay = ({ icon, label, value, value2 }) => {
+        return (
+            <div className="col-xxl-3 col-lg-4 col-md-6 mb-3">
+                <div className="p-3 rounded-3 mnh">
+                    <div className="d-flex">
+                        <span className='smallicon fa-17 me-2'>{icon}</span>
+                        <span className={`text-uppercase fw-bold text-muted fa-16`}>
+                            {label}
+                        </span>
+                    </div>
+                    <p className={`text-end mb-0 fw-bold`} style={{ fontSize: '26px' }} >
+                        {value}
+                        <span className="fa-20">{value2 && ' /' + value2}</span>
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <>
-            {/* <div className="table-responsive">
+            <>
+                {/* <div className="table-responsive">
                 <table className="table">
                     <thead>
                         <tr>
@@ -90,57 +111,81 @@ const ActiveProjects = () => {
                     </tbody>
                 </table>
             </div> */}
+            </>
+
+
             {projects.map((o, i) => (
-                <div className="project-card" key={i}>
-                    <p className="fa-18 text-dark text-uppercase fw-bold">
-                        <span>{o.Project_Name} </span>
-                    </p>
+                <div className="project-card p-0"
+                    key={i}
+                    onClick={() => {
+                        nav('projectschedule', {
+                            state: {
+                                project: o,
+                                rights: {
+                                    read: contextObj.Read_Rights,
+                                    add: contextObj.Add_Rights,
+                                    edit: contextObj.Edit_Rights,
+                                    delete: contextObj.Delete_Rights
+                                }
+                            }
+                        })
+                    }} >
+                    <div className="fa-18 mb-3 text-dark text-uppercase fw-bold d-flex align-items-center px-3 py-2 border-bottom ">
+                        <span className="flex-grow-1">{o.Project_Name} </span>
+                        <IconButton className="bg-light" onClick={() => {
+                            nav('projectschedule', {
+                                state: {
+                                    project: o,
+                                    rights: {
+                                        read: contextObj.Read_Rights,
+                                        add: contextObj.Add_Rights,
+                                        edit: contextObj.Edit_Rights,
+                                        delete: contextObj.Delete_Rights
+                                    }
+                                }
+                            })
+                        }
+                        }>
+                            <Launch className="text-dark" />
+                        </IconButton>
+                    </div>
 
-                    <div className="row">
+                    <div className="row px-3">
 
-                        <div className="col-lg-4 col-md-6 mb-3">
-                            <div className="p-3 rounded-3 mnh">
-                                <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><BarChart className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>progress</span>
-                                </div>
-                                <p className="text-end fa-20 mb-0 fw-bold" >
-                                    {calcPercentage(o?.TasksInvolved, o?.CompletedTasks)} %
-                                </p>
-                            </div>
-                        </div>
+                        <CardDisplay
+                            icon={<BarChart className="fa-in" />}
+                            label={'progress'}
+                            value={calcPercentage(o?.TasksScheduled, o?.CompletedTasks) + ' %'}
+                        />
 
-                        <div className="col-lg-4 col-md-6 mb-3">
-                            <div className="p-3 rounded-3 mnh" >
-                                <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><WorkHistory className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>Schedule</span>
-                                </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.SchedulesCount}</p>
-                            </div>
-                        </div>
+                        <CardDisplay
+                            icon={<WorkHistory className="fa-in" />}
+                            label={'schedule / completed'}
+                            value={o?.SchedulesCompletedCount}
+                            value2={o?.SchedulesCount}
+                        />
 
-                        <div className="col-lg-4 col-md-6 mb-3">
-                            <div className="p-3 rounded-3 mnh" >
-                                <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><WorkHistory className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>tasks / completed</span>
-                                </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.TasksInvolved + " | " + o?.CompletedTasks}</p>
-                            </div>
-                        </div>
+                        <CardDisplay
+                            icon={<WorkHistory className="fa-in" />}
+                            label={'task / Completed'}
+                            value={o?.CompletedTasks}
+                            value2={o?.TasksScheduled}
+                        />
 
-                        <div className="col-lg-4 col-md-6 mb-3">
-                            <div className="p-3 rounded-3 mnh" >
-                                <div className="d-flex">
-                                    <span className='smallicon fa-17 me-2'><Group className="fa-in" /></span>
-                                    <span className='text-uppercase fw-bold fa-16 text-muted'>employee</span>
-                                </div>
-                                <p className="text-end fa-20 mb-0 fw-bold">{o?.EmployeesInvolved}</p>
-                            </div>
-                        </div>
+                        <CardDisplay
+                            icon={<CgUserList className="fa-in" />}
+                            label={'task process / assigned'}
+                            value={o?.TasksProgressCount}
+                            value2={o?.TasksAssignedToEmployee}
+                        />
 
-                        <div className="col-lg-4 col-md-6 mb-3">
+                        <CardDisplay
+                            icon={<Group className="fa-in" />}
+                            label={'employee involved'}
+                            value={o?.EmployeesInvolved}
+                        />
+
+                        <div className="col-xxl-3 col-lg-4 col-md-6 mb-3">
                             <div className="p-3 rounded-3 mnh" >
                                 <div className="d-flex">
                                     <span className='smallicon fa-17 me-2'><CalendarMonth className="fa-in" /></span>
@@ -164,9 +209,9 @@ const ActiveProjects = () => {
 
                     </div>
 
-                    <hr className="m-0" />
+                    {/* <hr className="m-0" /> */}
 
-                    <div className="text-end mt-2">
+                    {/* <div className="text-end mt-2">
                         <button className="btn btn-primary rounded-5 px-4 text-white fw-bold" onClick={() => {
                             nav('projectschedule', {
                                 state: {
@@ -183,7 +228,7 @@ const ActiveProjects = () => {
                         }>
                             OPEN
                         </button>
-                    </div>
+                    </div> */}
 
                 </div>
             ))}

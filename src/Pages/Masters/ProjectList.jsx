@@ -19,8 +19,8 @@ const ProjectList = () => {
     Project_Desc: '',
     Base_Type: '',
     Project_Head: '',
-    Est_Start_Dt: '',
-    Est_End_Dt: '',
+    Est_Start_Dt: new Date().toISOString().split('T')[0],
+    Est_End_Dt: new Date().toISOString().split('T')[0],
     Project_Status: '',
     Entry_By: parseData?.UserId
   };
