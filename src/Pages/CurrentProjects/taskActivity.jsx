@@ -77,14 +77,26 @@ const TaskActivity = () => {
     }, [reload])
 
     useEffect(() => {
-        const [startHours, startMinutes] = assignEmpInpt?.Sch_Time.split(':').map(Number);
-        const [durationHours, durationMinutes] = assignEmpInpt?.Sch_Period.split(':').map(Number);
+        const [hours1, minutes1] = assignEmpInpt?.Sch_Time.split(':').map(Number);
+        const [hours2, minutes2] = assignEmpInpt?.EN_Time.split(':').map(Number);
 
-        const endMinutes = (startMinutes + durationMinutes) % 60;
-        const endHours = (startHours + durationHours + Math.floor((startMinutes + durationMinutes) / 60)) % 24;
+        const date1 = new Date(0, 0, 0, hours1, minutes1);
+        const date2 = new Date(0, 0, 0, hours2, minutes2);
 
-        setAssignEmpInpt({ ...assignEmpInpt, EN_Time: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}` })
-    }, [assignEmpInpt?.Sch_Time, assignEmpInpt?.Sch_Period])
+        if (date2 > date1) {
+            let difference = Math.abs(date2 - date1);
+
+            const hours = Math.floor(difference / (1000 * 60 * 60));
+            difference %= (1000 * 60 * 60);
+            const minutes = Math.floor(difference / (1000 * 60));
+
+            const formattedHours = String(hours).padStart(2, '0');
+            const formattedMinutes = String(minutes).padStart(2, '0');
+            console.log(`${formattedHours}:${formattedMinutes}`)
+
+            setAssignEmpInpt(opt => ({ ...opt, Sch_Period: `${formattedHours}:${formattedMinutes}` }));
+        }
+    }, [assignEmpInpt?.Sch_Time, assignEmpInpt?.EN_Time])
 
 
     const switchEmpAssign = (val) => {
@@ -271,7 +283,7 @@ const TaskActivity = () => {
                             <tbody>
                                 {workDetails.map((o, i) => (
                                     <tr key={i}>
-                                        <td className="fa-13 text-center">{i+1}</td>
+                                        <td className="fa-13 text-center">{i + 1}</td>
                                         <td className="fa-13 text-center">{o?.EmployeeName}</td>
                                         <td className="fa-13 text-center">
                                             {new Date(o?.Work_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -306,110 +318,117 @@ const TaskActivity = () => {
                 open={dialog?.assignEmp}
                 onClose={() => switchEmpAssign()}>
                 <DialogTitle>{isEdit ? 'Modify Assigned Task' : 'Assign Task'}</DialogTitle>
-                <DialogContent className="table-responsive">
-                    <table className="table">
-                        <tbody>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    postAndPutAssignEmpFun()
+                }}>
+                    <DialogContent className="table-responsive">
+                        <table className="table">
+                            <tbody>
 
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Employee</td>
-                                <td className="border-bottom-0 fa-15">
-                                    <Select
-                                        value={{ value: assignEmpInpt?.Emp_Id, label: assignEmpInpt?.EmpGet }}
-                                        onChange={(e) => setAssignEmpInpt({ ...assignEmpInpt, Emp_Id: e.value, EmpGet: e.label })}
-                                        options={[
-                                            { value: '', label: '- Select Employee -' },
-                                            ...userDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))
-                                        ]}
-                                        styles={customSelectStyles}
-                                        isSearchable={true}
-                                        placeholder={"Select User"} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Start Time</td>
-                                <td className="border-bottom-0 fa-15">
-                                    <input
-                                        type='time'
-                                        className="cus-inpt"
-                                        value={assignEmpInpt?.Sch_Time}
-                                        onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Sch_Time: e.target.value })} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Duration </td>
-                                <td className="border-bottom-0 fa-15">
-                                    <input
-                                        type='time'
-                                        className="cus-inpt"
-                                        value={assignEmpInpt?.Sch_Period}
-                                        onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Sch_Period: e.target.value })} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Start Date </td>
-                                <td className="border-bottom-0 fa-15">
-                                    <input
-                                        type='date'
-                                        className="cus-inpt"
-                                        value={new Date(assignEmpInpt?.Est_Start_Dt).toISOString().split('T')[0]}
-                                        onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_Start_Dt: e.target.value })} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>End Date </td>
-                                <td className="border-bottom-0 fa-15">
-                                    <input
-                                        type='date'
-                                        className="cus-inpt"
-                                        value={new Date(assignEmpInpt?.Est_End_Dt).toISOString().split('T')[0]}
-                                        onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_End_Dt: e.target.value })} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Order BY </td>
-                                <td className="border-bottom-0 fa-15">
-                                    <input
-                                        type='number'
-                                        className="cus-inpt"
-                                        value={assignEmpInpt?.Ord_By}
-                                        onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Ord_By: e.target.value })} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>
-                                    {isEdit && (
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Employee</td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <Select
+                                            value={{ value: assignEmpInpt?.Emp_Id, label: assignEmpInpt?.EmpGet }}
+                                            onChange={(e) => setAssignEmpInpt({ ...assignEmpInpt, Emp_Id: e.value, EmpGet: e.label })}
+                                            options={[
+                                                { value: '', label: '- Select Employee -' },
+                                                ...userDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))
+                                            ]}
+                                            styles={customSelectStyles} required
+                                            isSearchable={true}
+                                            placeholder={"Select User"} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Start Time</td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <input
+                                            type='time'
+                                            className="cus-inpt"
+                                            value={assignEmpInpt?.Sch_Time} required
+                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Sch_Time: e.target.value })} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>End Time</td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <input
+                                            type='time'
+                                            className="cus-inpt"
+                                            value={assignEmpInpt?.EN_Time} required 
+                                            min={assignEmpInpt?.Sch_Time}
+                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, EN_Time: e.target.value })} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Start Date </td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <input
+                                            type='date'
+                                            className="cus-inpt" required
+                                            value={new Date(assignEmpInpt?.Est_Start_Dt).toISOString().split('T')[0]}
+                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_Start_Dt: e.target.value })} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>End Date </td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <input
+                                            type='date'
+                                            className="cus-inpt" required 
+                                            min={assignEmpInpt?.Est_Start_Dt}
+                                            value={assignEmpInpt?.Est_End_Dt && new Date(assignEmpInpt?.Est_End_Dt).toISOString().split('T')[0]}
+                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_End_Dt: e.target.value })} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>Order BY </td>
+                                    <td className="border-bottom-0 fa-15">
+                                        <input
+                                            type='number' required placeholder="1, 2, 3..."
+                                            className="cus-inpt"
+                                            value={assignEmpInpt?.Ord_By}
+                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Ord_By: e.target.value })} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle' }}>
+                                        {isEdit && (
+                                            <div>
+                                                <input
+                                                    className="form-check-input shadow-none"
+                                                    style={{ padding: '0.7em' }}
+                                                    type="checkbox"
+                                                    id="involve"
+                                                    checked={Boolean(Number(assignEmpInpt?.Invovled_Stat))}
+                                                    onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Invovled_Stat: e.target.checked })} />
+                                                <label className="form-check-label p-1 ps-2" htmlFor="involve">is Involved?</label>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="border-bottom-0 fa-15 text-end">
                                         <div>
                                             <input
                                                 className="form-check-input shadow-none"
                                                 style={{ padding: '0.7em' }}
                                                 type="checkbox"
-                                                id="involve"
-                                                checked={Boolean(Number(assignEmpInpt?.Invovled_Stat))}
-                                                onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Invovled_Stat: e.target.checked })} />
-                                            <label className="form-check-label p-1 ps-2" htmlFor="involve">is Involved?</label>
+                                                id="timerbased"
+                                                checked={Boolean(Number(assignEmpInpt?.Timer_Based))}
+                                                onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Timer_Based: e.target.checked })} />
+                                            <label className="form-check-label p-1 ps-2" htmlFor="timerbased">Timer Based Task?</label>
                                         </div>
-                                    )}
-                                </td>
-                                <td className="border-bottom-0 fa-15 text-end">
-                                    <div>
-                                        <input
-                                            className="form-check-input shadow-none"
-                                            style={{ padding: '0.7em' }}
-                                            type="checkbox"
-                                            id="timerbased"
-                                            checked={Boolean(Number(assignEmpInpt?.Timer_Based))}
-                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Timer_Based: e.target.checked })} />
-                                        <label className="form-check-label p-1 ps-2" htmlFor="timerbased">Timer Based Task?</label>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => switchEmpAssign()}>close</Button>
-                    <Button onClick={postAndPutAssignEmpFun} >submit</Button>
-                </DialogActions>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button type="button" onClick={() => switchEmpAssign()}>close</Button>
+                        <Button type="submit" >submit</Button>
+                    </DialogActions>
+                </form>
             </Dialog>
         </>
     )

@@ -103,7 +103,7 @@ function App() {
     localStorage.clear();
     setLogin(false);
     // window.location = '/'
-    window.location = process.env.REACT_APP_ERP_ADDRESS
+    window.location = process.env.REACT_APP_ERP_LOGOUT
   }
 
   return (
