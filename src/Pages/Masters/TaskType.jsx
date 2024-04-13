@@ -2,15 +2,7 @@ import React, { useState, useEffect, Fragment } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { Button } from "react-bootstrap";
 import api from "../../API";
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
-  Button as MuiButton,
-} from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Button as MuiButton } from "@mui/material";
 import { Table } from "react-bootstrap";
 import { Delete, Edit } from "@mui/icons-material";
 
@@ -24,9 +16,10 @@ function TaskType() {
   const [reload, setReload] = useState();
   const [inputValue, setInputValue] = useState(initialState);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedTaskType, setSelectedTaskType] = useState([]);
+  const [selectedTaskType, setSelectedTaskType] = useState({});
   const [newChipType, setNewChipType] = useState("");
   const [openNewDialog, setOpenNewDialog] = useState(false);
+  const [editBase, setEditBase] = useState(false);
 
   useEffect(() => {
     fetch(`${api}taskType`)
@@ -51,17 +44,18 @@ function TaskType() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setReload(!reload); // Trigger data refresh
-          setOpenDeleteDialog(false); // Close dialog
+          setReload(!reload);
+          setOpenDeleteDialog(false);
           toast.success("Chip deleted successfully!");
         } else {
+          setOpenDeleteDialog(false);
           toast.error("Failed to delete chip:", data.message);
         }
       })
-      .catch((error) => {
-        console.error("Error deleting chip:", error);
+      .catch((e) => {
+        console.error("Error deleting chip:", e);
         toast.error("An error occurred. Please try again later.");
-      });
+      }).finally(() => setSelectedTaskType({}))
   };
 
   const handleDeleteClick = (taskType) => {
@@ -74,8 +68,6 @@ function TaskType() {
   };
 
   const handleCreateChip = () => {
-    console.log("newChipType: ", newChipType);
-
     fetch(`${api}taskType`, {
       method: "POST",
       headers: {
@@ -89,18 +81,16 @@ function TaskType() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.log("data", data.message);
           setOpenNewDialog(false);
           setReload(!reload);
           toast.success(data.message);
         } else {
-          console.log("data", data.error);
+          setOpenNewDialog(false);
           toast.error(data.message);
         }
-      });
+      }).finally(() => setNewChipType(''))
   };
 
-  const [editBase, setEditBase] = useState(false);
   const editRow = (group) => {
     setEditBase(true);
     setInputValue({
@@ -115,7 +105,7 @@ function TaskType() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({Task_Type, Task_Type_Id}),
+      body: JSON.stringify({ Task_Type, Task_Type_Id }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -124,30 +114,29 @@ function TaskType() {
           setReload(!reload);
           setEditBase(false);
         } else {
+          setEditBase(false);
           toast.error(data.message);
         }
-      });
+      }).catch(e => console.error(e))
+      .finally(() => setInputValue(initialState))
   };
 
   return (
     <Fragment>
       <ToastContainer />
       <div className="card">
+
         <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
           Task Types
           <div className="text-end">
-            <Button
-              className="rounded-5 px-3 py-1 fa-13 shadow"
-              onClick={() => setOpenNewDialog(true)}
-            >
+            <Button className="rounded-5 px-3 py-1 fa-13 shadow" onClick={() => setOpenNewDialog(true)}>
               Create Task Type
             </Button>
           </div>
         </div>
-        <div
-          className="card-body overflow-scroll"
-          style={{ maxHeight: "78vh" }}
-        >
+
+        <div className="card-body overflow-scroll" style={{ maxHeight: "78vh" }}>
+
           <div className="table-responsive">
             <Table className="">
               <thead>
@@ -185,7 +174,9 @@ function TaskType() {
               </tbody>
             </Table>
           </div>
+
         </div>
+        
       </div>
 
       <Dialog
@@ -272,6 +263,7 @@ function TaskType() {
           </MuiButton>
         </DialogActions>
       </Dialog>
+
     </Fragment>
   );
 }

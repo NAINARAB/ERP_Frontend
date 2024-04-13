@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Fragment } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Autocomplete, TextField, Checkbox } from '@mui/material';
 import { Add, Delete, Edit, KeyboardArrowLeft, Launch } from "@mui/icons-material";
@@ -418,7 +418,6 @@ const ProjectDetails = () => {
 
                     <hr className="mt-0" />
 
-                    {/* <div className="overflow-x-auto text-nowrap"> */}
                     <div className="d-flex flex-nowrap overflow-scroll" style={{ paddingBottom: '4.6em' }}>
 
                         {/* LevelOneTasks */}
@@ -440,82 +439,85 @@ const ProjectDetails = () => {
                                     )}
                                 </div>
 
-                                {obj?.LevelOneTasks.length > 0 ? (
-                                    obj?.LevelOneTasks?.map((o, i) => (
-                                        <div key={i} className="rounded-4 bg-light p-2 px-3 d-flex align-items-center mt-2">
-                                            <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
-                                            <span className="fa-14 d-flex align-items-center">
+                                {obj?.LevelOneTasks?.map((gobj, indobj) => (
+                                    (gobj?.TaskGroup?.length > 0) &&
+                                    <Fragment key={indobj}>
+                                        <h5 className="mt-2 mb-3">{gobj?.Task_Type ? gobj?.Task_Type : 'Not Grouped'}</h5>
 
-                                                {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        {gobj?.TaskGroup?.map((o, i) => (
+                                            <div key={i} className="rounded-4 bg-light p-2 px-3 d-flex align-items-center mt-2">
+                                                <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
+                                                <span className="fa-14 d-flex align-items-center">
 
-                                                <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+                                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
 
-                                                <span>
-                                                    <Dropdown>
-                                                        <Dropdown.Toggle
-                                                            variant="success"
-                                                            id="actions"
-                                                            className="rounded-5 bg-transparent text-dark border-0 btn"
-                                                        >
-                                                        </Dropdown.Toggle>
-                                                        <Dropdown.Menu>
-                                                            {Number(rights?.edit) === 1 && (
-                                                                <MenuItem
-                                                                    onClick={() => {
-                                                                        taskDialogSwitch(false, {
-                                                                            Sch_Project_Id: projectData?.Project_Id,
-                                                                            Sch_Id: obj?.Sch_Id,
-                                                                            Task_Levl_Id: o?.Task_Levl_Id,
-                                                                            Task_Id: o?.Task_Id,
-                                                                            Type_Task_Id: o?.Type_Task_Id,
-                                                                            Task_Sch_Duaration: o?.Task_Sch_Duaration,
-                                                                            Task_Start_Time: o?.Task_Start_Time,
-                                                                            Task_End_Time: o?.Task_End_Time,
-                                                                            Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
-                                                                            Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
-                                                                            Task_Sch_Status: o?.Task_Sch_Status,
-                                                                            Levl_Id: 1,
-                                                                            Task_Depend_Level_Id: '',
-                                                                            TasksGet: o?.TaskNameGet,
-                                                                        })
-                                                                    }}>
-                                                                    <Edit className="fa-in me-2 text-primary" />
-                                                                    Edit
-                                                                </MenuItem>
-                                                            )}
-                                                            {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
-                                                                switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
-                                                            }}>
-                                                                <Delete className="fa-in me-2 text-danger " />
-                                                                Delete
-                                                            </MenuItem>)}
-                                                            <MenuItem onClick={
-                                                                () => nav('/tasks/activeproject/projectschedule/taskActivity',
-                                                                    {
-                                                                        state: {
-                                                                            taskDetails: {
-                                                                                ...o,
-                                                                                Project_Id: projectData?.Project_Id,
+                                                    <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
+                                                    <span>
+                                                        <Dropdown>
+                                                            <Dropdown.Toggle
+                                                                variant="success"
+                                                                id="actions"
+                                                                className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                            >
+                                                            </Dropdown.Toggle>
+                                                            <Dropdown.Menu>
+                                                                {Number(rights?.edit) === 1 && (
+                                                                    <MenuItem
+                                                                        onClick={() => {
+                                                                            taskDialogSwitch(false, {
+                                                                                Sch_Project_Id: projectData?.Project_Id,
                                                                                 Sch_Id: obj?.Sch_Id,
-                                                                            },
-                                                                            rights: location.state?.rights,
-                                                                            retObj: location.state
+                                                                                Task_Levl_Id: o?.Task_Levl_Id,
+                                                                                Task_Id: o?.Task_Id,
+                                                                                Type_Task_Id: o?.Type_Task_Id,
+                                                                                Task_Sch_Duaration: o?.Task_Sch_Duaration,
+                                                                                Task_Start_Time: o?.Task_Start_Time,
+                                                                                Task_End_Time: o?.Task_End_Time,
+                                                                                Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
+                                                                                Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                                Task_Sch_Status: o?.Task_Sch_Status,
+                                                                                Levl_Id: 1,
+                                                                                Task_Depend_Level_Id: '',
+                                                                                TasksGet: o?.TaskNameGet,
+                                                                            })
+                                                                        }}>
+                                                                        <Edit className="fa-in me-2 text-primary" />
+                                                                        Edit
+                                                                    </MenuItem>
+                                                                )}
+                                                                {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
+                                                                    switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
+                                                                }}>
+                                                                    <Delete className="fa-in me-2 text-danger " />
+                                                                    Delete
+                                                                </MenuItem>)}
+                                                                <MenuItem onClick={
+                                                                    () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                                        {
+                                                                            state: {
+                                                                                taskDetails: {
+                                                                                    ...o,
+                                                                                    Project_Id: projectData?.Project_Id,
+                                                                                    Sch_Id: obj?.Sch_Id,
+                                                                                },
+                                                                                rights: location.state?.rights,
+                                                                                retObj: location.state
+                                                                            }
                                                                         }
-                                                                    }
-                                                                )
-                                                            }>
-                                                                <Launch className="fa-in me-2 text-primary " />
-                                                                Open Task
-                                                            </MenuItem>
-                                                        </Dropdown.Menu>
-                                                    </Dropdown>
+                                                                    )
+                                                                }>
+                                                                    <Launch className="fa-in me-2 text-primary " />
+                                                                    Open Task
+                                                                </MenuItem>
+                                                            </Dropdown.Menu>
+                                                        </Dropdown>
+                                                    </span>
                                                 </span>
-                                            </span>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <h5 className="px-2 mb-0">No Tasks!</h5>
-                                )}
+                                            </div>
+                                        ))}
+                                    </Fragment>
+                                ))}
 
                             </div>
                         </div>
@@ -529,113 +531,117 @@ const ProjectDetails = () => {
                                     {Number(rights?.add) === 1 && (
                                         <button
                                             className="btn btn-primary rounded-5 px-3 fa-13 shadow d-flex align-items-center"
-                                            disabled={obj?.LevelOneTasks.length === 0}
+                                            disabled={obj?.LevelOneTasks.flatMap(item => item?.TaskGroup).length === 0}
                                             onClick={() => {
                                                 taskDialogSwitch(false);
                                                 setTaskScheduleInput({ ...taskScheduleInput, Sch_Id: obj?.Sch_Id, Levl_Id: 2 });
-                                                setDependencyTasks(obj?.LevelOneTasks)
+                                                setDependencyTasks(obj?.LevelOneTasks.flatMap(item => item?.TaskGroup))
                                             }}>
                                             Assign Task
                                         </button>
                                     )}
                                 </div>
 
-                                {obj?.LevelTwoTasks.length > 0 ? (
-                                    obj?.LevelTwoTasks?.map((o, i) => (
-                                        <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
-                                            <div className="mb-0 d-flex align-items-center">
-                                                <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
-                                                <span className="fa-14 d-flex align-items-center">
+                                {obj?.LevelTwoTasks.map((gobjlvl2, indexobj) => (
+                                    (gobjlvl2?.TaskGroup?.length > 0) && (
+                                        <Fragment key={indexobj}>
+                                            <h5 className="mt-2 mb-3">{gobjlvl2?.Task_Type ? gobjlvl2?.Task_Type : 'Not Grouped'}</h5>
 
-                                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                            {gobjlvl2?.TaskGroup?.map((o, i) => (
+                                                <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
+                                                    <div className="mb-0 d-flex align-items-center">
+                                                        <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
+                                                        <span className="fa-14 d-flex align-items-center">
 
-                                                    <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+                                                            {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
 
-                                                    {/* new code */}
-                                                    <span>
-                                                        <Dropdown>
-                                                            <Dropdown.Toggle
-                                                                variant="success"
-                                                                id="actions"
-                                                                className="rounded-5 bg-transparent text-dark border-0 btn"
-                                                            >
-                                                            </Dropdown.Toggle>
-                                                            <Dropdown.Menu>
-                                                                {Number(rights?.edit) === 1 && (
-                                                                    <MenuItem
-                                                                        onClick={() => {
-                                                                            taskDialogSwitch(false, {
-                                                                                Sch_Project_Id: projectData?.Project_Id,
-                                                                                Sch_Id: obj?.Sch_Id,
-                                                                                Task_Levl_Id: o?.Task_Levl_Id,
-                                                                                Task_Id: o?.Task_Id,
-                                                                                Type_Task_Id: o?.Type_Task_Id,
-                                                                                Task_Sch_Duaration: o?.Task_Sch_Duaration,
-                                                                                Task_Start_Time: o?.Task_Start_Time,
-                                                                                Task_End_Time: o?.Task_End_Time,
-                                                                                Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
-                                                                                Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
-                                                                                Task_Sch_Status: o?.Task_Sch_Status,
-                                                                                Levl_Id: 2,
-                                                                                Task_Depend_Level_Id: '',
-                                                                                TasksGet: o?.TaskNameGet,
-                                                                            })
-                                                                            setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
-                                                                                Task_Levl_Id: depObj?.Task_Depend_Level_Id,
-                                                                                TaskNameGet: depObj?.TaskNameGet
-                                                                            }))])
-                                                                            setDependencyTasks(obj?.LevelOneTasks)
+                                                            <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
+                                                            {/* new code */}
+                                                            <span>
+                                                                <Dropdown>
+                                                                    <Dropdown.Toggle
+                                                                        variant="success"
+                                                                        id="actions"
+                                                                        className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                                    >
+                                                                    </Dropdown.Toggle>
+                                                                    <Dropdown.Menu>
+                                                                        {Number(rights?.edit) === 1 && (
+                                                                            <MenuItem
+                                                                                onClick={() => {
+                                                                                    taskDialogSwitch(false, {
+                                                                                        Sch_Project_Id: projectData?.Project_Id,
+                                                                                        Sch_Id: obj?.Sch_Id,
+                                                                                        Task_Levl_Id: o?.Task_Levl_Id,
+                                                                                        Task_Id: o?.Task_Id,
+                                                                                        Type_Task_Id: o?.Type_Task_Id,
+                                                                                        Task_Sch_Duaration: o?.Task_Sch_Duaration,
+                                                                                        Task_Start_Time: o?.Task_Start_Time,
+                                                                                        Task_End_Time: o?.Task_End_Time,
+                                                                                        Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
+                                                                                        Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                                        Task_Sch_Status: o?.Task_Sch_Status,
+                                                                                        Levl_Id: 2,
+                                                                                        Task_Depend_Level_Id: '',
+                                                                                        TasksGet: o?.TaskNameGet,
+                                                                                    })
+                                                                                    setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
+                                                                                        Task_Levl_Id: depObj?.Task_Depend_Level_Id,
+                                                                                        TaskNameGet: depObj?.TaskNameGet
+                                                                                    }))])
+                                                                                    setDependencyTasks(obj?.LevelOneTasks.flatMap(item => item?.TaskGroup))
+                                                                                }}>
+                                                                                <Edit className="fa-in me-2 text-primary" />
+                                                                                Edit
+                                                                            </MenuItem>
+                                                                        )}
+                                                                        {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
+                                                                            switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
                                                                         }}>
-                                                                        <Edit className="fa-in me-2 text-primary" />
-                                                                        Edit
-                                                                    </MenuItem>
-                                                                )}
-                                                                {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
-                                                                    switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
-                                                                }}>
-                                                                    <Delete className="fa-in me-2 text-danger " />
-                                                                    Delete
-                                                                </MenuItem>)}
-                                                                <MenuItem onClick={
-                                                                    () => nav('/tasks/activeproject/projectschedule/taskActivity',
-                                                                        {
-                                                                            state: {
-                                                                                taskDetails: {
-                                                                                    ...o,
-                                                                                    Project_Id: projectData?.Project_Id,
-                                                                                    Sch_Id: obj?.Sch_Id,
-                                                                                },
-                                                                                rights: location.state?.rights,
-                                                                                retObj: location.state
-                                                                            }
-                                                                        }
-                                                                    )
-                                                                }>
-                                                                    <Launch className="fa-in me-2 text-primary " />
-                                                                    Open Task
-                                                                </MenuItem>
-                                                            </Dropdown.Menu>
-                                                        </Dropdown>
-                                                    </span>
-                                                </span>
-                                            </div>
+                                                                            <Delete className="fa-in me-2 text-danger " />
+                                                                            Delete
+                                                                        </MenuItem>)}
+                                                                        <MenuItem onClick={
+                                                                            () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                                                {
+                                                                                    state: {
+                                                                                        taskDetails: {
+                                                                                            ...o,
+                                                                                            Project_Id: projectData?.Project_Id,
+                                                                                            Sch_Id: obj?.Sch_Id,
+                                                                                        },
+                                                                                        rights: location.state?.rights,
+                                                                                        retObj: location.state
+                                                                                    }
+                                                                                }
+                                                                            )
+                                                                        }>
+                                                                            <Launch className="fa-in me-2 text-primary " />
+                                                                            Open Task
+                                                                        </MenuItem>
+                                                                    </Dropdown.Menu>
+                                                                </Dropdown>
+                                                            </span>
+                                                        </span>
+                                                    </div>
 
-                                            <hr className="mt-0 mb-2" />
-                                            {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
+                                                    <hr className="mt-0 mb-2" />
+                                                    {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
 
-                                            <div className="d-flex overflow-auto">
-                                                {o?.DependancyTasks?.map((depobj, depindex) => (
-                                                    <span key={depindex} className="rounded-4 mt-2 me-2 px-3 py-1 fa-13 fw-bold" style={{ backgroundColor: '#E7C8DD' }}>
-                                                        {findNum(obj?.LevelOneTasks, depobj.Task_Depend_Level_Id)}
-                                                        {depobj?.TaskNameGet}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <h5 className="px-2 mb-0">No Tasks!</h5>
-                                )}
+                                                    <div className="d-flex overflow-auto">
+                                                        {o?.DependancyTasks?.map((depobj, depindex) => (
+                                                            <span key={depindex} className="rounded-4 mt-2 me-2 px-3 py-1 fa-13 fw-bold" style={{ backgroundColor: '#E7C8DD' }}>
+                                                                {findNum(obj?.LevelOneTasks.flatMap(item => item?.TaskGroup), depobj.Task_Depend_Level_Id)}
+                                                                {depobj?.TaskNameGet}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </Fragment>
+                                    )
+                                ))}
 
                             </div>
                         </div>
@@ -649,120 +655,123 @@ const ProjectDetails = () => {
                                     {Number(rights?.add) === 1 && (
                                         <button
                                             className="btn btn-primary rounded-5 px-3 fa-13 shadow d-flex align-items-center"
-                                            disabled={obj?.LevelTwoTasks.length === 0}
+                                            disabled={obj?.LevelTwoTasks.flatMap(item => item?.TaskGroup).length === 0}
                                             onClick={() => {
                                                 taskDialogSwitch(false);
                                                 setTaskScheduleInput({ ...taskScheduleInput, Sch_Id: obj?.Sch_Id, Levl_Id: 3 });
-                                                setDependencyTasks(obj?.LevelTwoTasks)
+                                                setDependencyTasks(obj?.LevelTwoTasks.flatMap(item => item?.TaskGroup))
                                             }}>
                                             Assign Task
                                         </button>
                                     )}
                                 </div>
 
-                                {obj?.LevelThreeTasks.length > 0 ? (
-                                    obj?.LevelThreeTasks?.map((o, i) => (
-                                        <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
-                                            <div className="mb-0 d-flex align-items-center">
-                                                <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
-                                                <span className="fa-14 d-flex align-items-center">
+                                {obj.LevelThreeTasks.map((gobjlvl3, indexobj) => (
+                                    (gobjlvl3?.TaskGroup?.length > 0) && (
+                                        <Fragment key={indexobj}>
+                                            <h5 className="mt-2 mb-3">{gobjlvl3?.Task_Type ? gobjlvl3?.Task_Type : 'Not Grouped'}</h5>
 
-                                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                            {gobjlvl3?.TaskGroup?.map((o, i) => (
+                                                <div className="rounded-4 bg-light py-2 px-3 mt-2" key={i}>
+                                                    <div className="mb-0 d-flex align-items-center">
+                                                        <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
+                                                        <span className="fa-14 d-flex align-items-center">
 
-                                                    <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+                                                            {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
 
-                                                    {/* new code */}
-                                                    <span>
-                                                        <Dropdown>
-                                                            <Dropdown.Toggle
-                                                                variant="success"
-                                                                id="actions"
-                                                                className="rounded-5 bg-transparent text-dark border-0 btn"
-                                                            >
-                                                            </Dropdown.Toggle>
-                                                            <Dropdown.Menu>
-                                                                {Number(rights?.edit) === 1 && (
-                                                                    <MenuItem
-                                                                        onClick={() => {
-                                                                            taskDialogSwitch(false, {
-                                                                                Sch_Project_Id: projectData?.Project_Id,
-                                                                                Sch_Id: obj?.Sch_Id,
-                                                                                Task_Levl_Id: o?.Task_Levl_Id,
-                                                                                Task_Id: o?.Task_Id,
-                                                                                Type_Task_Id: o?.Type_Task_Id,
-                                                                                Task_Sch_Duaration: o?.Task_Sch_Duaration,
-                                                                                Task_Start_Time: o?.Task_Start_Time,
-                                                                                Task_End_Time: o?.Task_End_Time,
-                                                                                Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
-                                                                                Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
-                                                                                Task_Sch_Status: o?.Task_Sch_Status,
-                                                                                Levl_Id: 3,
-                                                                                Task_Depend_Level_Id: '',
-                                                                                TasksGet: o?.TaskNameGet,
-                                                                            })
-                                                                            setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
-                                                                                Task_Levl_Id: depObj?.Task_Depend_Level_Id,
-                                                                                TaskNameGet: depObj?.TaskNameGet
-                                                                            }))])
-                                                                            setDependencyTasks(obj?.LevelTwoTasks)
+                                                            <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
+
+                                                            {/* new code */}
+                                                            <span>
+                                                                <Dropdown>
+                                                                    <Dropdown.Toggle
+                                                                        variant="success"
+                                                                        id="actions"
+                                                                        className="rounded-5 bg-transparent text-dark border-0 btn"
+                                                                    >
+                                                                    </Dropdown.Toggle>
+                                                                    <Dropdown.Menu>
+                                                                        {Number(rights?.edit) === 1 && (
+                                                                            <MenuItem
+                                                                                onClick={() => {
+                                                                                    taskDialogSwitch(false, {
+                                                                                        Sch_Project_Id: projectData?.Project_Id,
+                                                                                        Sch_Id: obj?.Sch_Id,
+                                                                                        Task_Levl_Id: o?.Task_Levl_Id,
+                                                                                        Task_Id: o?.Task_Id,
+                                                                                        Type_Task_Id: o?.Type_Task_Id,
+                                                                                        Task_Sch_Duaration: o?.Task_Sch_Duaration,
+                                                                                        Task_Start_Time: o?.Task_Start_Time,
+                                                                                        Task_End_Time: o?.Task_End_Time,
+                                                                                        Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
+                                                                                        Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                                        Task_Sch_Status: o?.Task_Sch_Status,
+                                                                                        Levl_Id: 3,
+                                                                                        Task_Depend_Level_Id: '',
+                                                                                        TasksGet: o?.TaskNameGet,
+                                                                                    })
+                                                                                    setSelectedDependencyTasks([...o?.DependancyTasks?.map(depObj => ({
+                                                                                        Task_Levl_Id: depObj?.Task_Depend_Level_Id,
+                                                                                        TaskNameGet: depObj?.TaskNameGet
+                                                                                    }))])
+                                                                                    setDependencyTasks(obj?.LevelTwoTasks.flatMap(item => item?.TaskGroup))
+                                                                                }}>
+                                                                                <Edit className="fa-in me-2 text-primary" />
+                                                                                Edit
+                                                                            </MenuItem>
+                                                                        )}
+                                                                        {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
+                                                                            switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
                                                                         }}>
-                                                                        <Edit className="fa-in me-2 text-primary" />
-                                                                        Edit
-                                                                    </MenuItem>
-                                                                )}
-                                                                {Number(rights?.delete) === 1 && (<MenuItem onClick={() => {
-                                                                    switchTaskDeleteDialog({ ...taskScheduleInput, Task_Levl_Id: o?.Task_Levl_Id })
-                                                                }}>
-                                                                    <Delete className="fa-in me-2 text-danger " />
-                                                                    Delete
-                                                                </MenuItem>)}
-                                                                <MenuItem onClick={
-                                                                    () => nav('/tasks/activeproject/projectschedule/taskActivity',
-                                                                        {
-                                                                            state: {
-                                                                                taskDetails: {
-                                                                                    ...o,
-                                                                                    Project_Id: projectData?.Project_Id,
-                                                                                    Sch_Id: obj?.Sch_Id,
-                                                                                },
-                                                                                rights: location.state?.rights,
-                                                                                retObj: location.state
-                                                                            }
-                                                                        }
-                                                                    )
-                                                                }>
-                                                                    <Launch className="fa-in me-2 text-primary " />
-                                                                    Open Task
-                                                                </MenuItem>
-                                                            </Dropdown.Menu>
-                                                        </Dropdown>
-                                                    </span>
-                                                </span>
-                                            </div>
+                                                                            <Delete className="fa-in me-2 text-danger " />
+                                                                            Delete
+                                                                        </MenuItem>)}
+                                                                        <MenuItem onClick={
+                                                                            () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                                                {
+                                                                                    state: {
+                                                                                        taskDetails: {
+                                                                                            ...o,
+                                                                                            Project_Id: projectData?.Project_Id,
+                                                                                            Sch_Id: obj?.Sch_Id,
+                                                                                        },
+                                                                                        rights: location.state?.rights,
+                                                                                        retObj: location.state
+                                                                                    }
+                                                                                }
+                                                                            )
+                                                                        }>
+                                                                            <Launch className="fa-in me-2 text-primary " />
+                                                                            Open Task
+                                                                        </MenuItem>
+                                                                    </Dropdown.Menu>
+                                                                </Dropdown>
+                                                            </span>
+                                                        </span>
+                                                    </div>
 
-                                            <hr className="mt-0 mb-2" />
-                                            {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
+                                                    <hr className="mt-0 mb-2" />
+                                                    {o?.DependancyTasks?.length > 0 && <p className="mb-1 text-primary">Dependency Tasks ({o?.DependancyTasks?.length})</p>}
 
-                                            <div className="d-flex overflow-auto">
-                                                {o?.DependancyTasks?.map((depobj, depindex) => (
-                                                    <span key={depindex} className="rounded-4 mt-2 me-2 px-3 py-1 fa-13 fw-bold" style={{ backgroundColor: '#E2E4F6' }}>
-                                                        {findNum(obj?.LevelTwoTasks, depobj.Task_Depend_Level_Id)}
-                                                        {depobj?.TaskNameGet}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <h5 className="px-2 mb-0">No Tasks!</h5>
-                                )}
+                                                    <div className="d-flex overflow-auto">
+                                                        {o?.DependancyTasks?.map((depobj, depindex) => (
+                                                            <span key={depindex} className="rounded-4 mt-2 me-2 px-3 py-1 fa-13 fw-bold" style={{ backgroundColor: '#E2E4F6' }}>
+                                                                {findNum(obj?.LevelTwoTasks.flatMap(item => item?.TaskGroup), depobj.Task_Depend_Level_Id)}
+                                                                {depobj?.TaskNameGet}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </Fragment>
+                                    )
+                                ))}
 
                             </div>
                         </div>
 
 
                     </div>
-                    {/* </div> */}
                 </div>
 
             </>

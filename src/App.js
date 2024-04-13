@@ -62,7 +62,9 @@ function App() {
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    const Auth = queryParams.get('Auth');
+    const localData = localStorage.getItem("user");
+    const parseData = JSON.parse(localData);
+    const Auth = queryParams.get('Auth') || parseData?.Autheticate_Id;
 
     if (Auth) {
 
@@ -84,11 +86,10 @@ function App() {
           } else {
             setLoading(false);
           }
+          
         }).catch(e => {console.error(e); setLoading(false);})
         .finally(() => clearQueryParameters())
 
-    } else if (localStorage.getItem("user")) {
-      doLoginIfDataAvailable()
     } else {
       setLoading(false);
     }

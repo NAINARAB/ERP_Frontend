@@ -7,7 +7,7 @@ const InvalidPageComp = ({message}) => {
                 <h5>{ message || 'Invalid Credentials'} ☹️</h5>
                 <button 
                     className="btn btn-primary rounded-5 px-5"
-                    // onClick={() => window.location.reload()}
+                    onClick={() => window.location.reload()}
                     >
                         Refresh
                 </button>

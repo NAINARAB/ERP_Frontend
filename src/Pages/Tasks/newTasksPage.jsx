@@ -19,6 +19,7 @@ const TaskMaster = () => {
         Task_Name: "",
         Task_Desc: "",
         Under_Task_Id: 0,
+        Task_Group_Id: 0,
         Entry_By: parseData?.UserId,
         Entry_Date: "",
         Update_By: '',
@@ -26,6 +27,8 @@ const TaskMaster = () => {
         Under_Task: ""
     }
     const [taskData, setTaskData] = useState([]);
+    const [taskGroup, setTaskGroup] = useState([]);
+
     const [reload, setReload] = useState(false);
     const { contextObj } = useContext(MyContext);
     const [isEdit, setIsEdit] = useState(false);
@@ -43,6 +46,17 @@ const TaskMaster = () => {
             })
     }, [reload])
 
+    useEffect(() => {
+        fetch(`${api}taskTypeDropDown`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setTaskGroup(data.data)
+                }
+            })
+            .catch(e => console.error(e))
+    }, [])
+
     const switchScreen = (rel) => {
         setInputValue(initialValue)
         setScreen(!screen);
@@ -52,7 +66,7 @@ const TaskMaster = () => {
         }
     }
 
-    const handleEdit = (row) => {
+    const handleEdit = (row)     => {
         setInputValue(row);
         setIsEdit(true);
         setScreen(!screen);
@@ -71,31 +85,37 @@ const TaskMaster = () => {
     const tasksColumn = [
         {
             name: 'T.No',
-            selector: (row) => row.Task_No,
+            selector: (row) => row?.Task_No,
             sortable: true,
         },
         {
             name: 'Task',
-            selector: (row) => row.Task_Name,
+            selector: (row) => row?.Task_Name,
+            sortable: true,
+        },
+        {
+            name: 'Task Group',
+            selector: (row) => row?.Task_Group,
             sortable: true,
         },
         {
             name: 'Task Describtion',
-            selector: (row) => row.Task_Desc,
+            selector: (row) => row?.Task_Desc,
             sortable: true,
             width: '170px'
         },
         {
             name: 'Under Task',
-            selector: (row) => row.Under_Task,
+            selector: (row) => row?.Under_Task,
             sortable: true,
         },
         {
             name: 'Created At',
-            selector: (row) => row.Entry_Date,
+            selector: (row) => new Date(row?.Entry_Date),
             cell: (row) => {
-                return new Date(row.Entry_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            }
+                return new Date(row?.Entry_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            },
+            sortable: true
         },
         {
             name: 'Actions',
@@ -182,7 +202,7 @@ const TaskMaster = () => {
                             fixedHeaderScrollHeight={'68vh'} />
                     ) : (
                         <div className="row px-3 py-2">
-                            <div className="col-md-6 p-2">
+                            <div className="col-md-4 p-2">
                                 <label>Task Name</label>
                                 <input
                                     maxLength={150}
@@ -191,16 +211,38 @@ const TaskMaster = () => {
                                     placeholder="ex: File Checking"
                                     className="cus-inpt" />
                             </div>
-                            <div className="col-md-6 p-2">
+
+                            <div className="col-md-4 p-2">
+                                <label>Task Group</label>
+                                <select
+                                    value={inputValue.Task_Group_Id}
+                                    className="cus-inpt"
+                                    onChange={e => setInputValue({ ...inputValue, Task_Group_Id: e.target.value })}>
+                                        <option value={0} disabled>- select -</option>
+                                    {taskGroup.map((o, i) => (
+                                        Number(o?.Task_Type_Id) !== 0 &&
+                                        <option key={i} value={o?.Task_Type_Id}>
+                                            {o?.Task_Type}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="col-md-4 p-2">
                                 <label>Base Task</label>
                                 <select
                                     value={inputValue.Under_Task_Id}
                                     className="cus-inpt"
                                     onChange={e => setInputValue({ ...inputValue, Under_Task_Id: e.target.value })}>
                                     <option value={0}>Primary</option>
-                                    {taskData.map((o, i) => <option key={i} value={o?.Task_Id}>{o?.Task_Name}</option>)}
+                                    {taskData.map((o, i) => (
+                                        <option key={i} value={o?.Task_Id}>
+                                            {o?.Task_Name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
+
                             <div className="col-12">
                                 <label>Task Describtion</label>
                                 <textarea
@@ -248,7 +290,7 @@ const TaskMaster = () => {
                     <button
                         className="btn btn-primary rounded-5 px-3"
                         onClick={deleteTask}>
-                            Delete
+                        Delete
                     </button>
                 </DialogActions>
             </Dialog>
