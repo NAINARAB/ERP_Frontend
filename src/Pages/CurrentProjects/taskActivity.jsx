@@ -92,7 +92,6 @@ const TaskActivity = () => {
 
             const formattedHours = String(hours).padStart(2, '0');
             const formattedMinutes = String(minutes).padStart(2, '0');
-            console.log(`${formattedHours}:${formattedMinutes}`)
 
             setAssignEmpInpt(opt => ({ ...opt, Sch_Period: `${formattedHours}:${formattedMinutes}` }));
         }

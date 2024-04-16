@@ -31,7 +31,7 @@ const Users = () => {
   const [userDropdown, setuserDropdown] = useState([]);
 
   useEffect(() => {
-    fetch(`${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${parseData?.BranchId}`)
+    fetch(`${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${2}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

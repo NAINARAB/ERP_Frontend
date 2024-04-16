@@ -1,24 +1,23 @@
 import { useEffect, useState } from "react"
 import api from "../../API";
-
-// import { BusinessCenter } from '@mui/icons-material';
-// import { MdPunchClock } from "react-icons/md";
 import { CiCalendarDate } from "react-icons/ci";
 import { CgSandClock } from "react-icons/cg";
 import { HiUsers } from "react-icons/hi2";
 import { RxLapTimer } from "react-icons/rx";
-// import { GoTasklist } from "react-icons/go";
-// import { MdOutlineTaskAlt } from "react-icons/md";
 import { TbTargetArrow } from "react-icons/tb";
 import { BiTask } from "react-icons/bi";
+import PieChartComp from "./chartComp";
+import { Card, CardContent } from '@mui/material'
 
 
 
 const CommonDashboard = () => {
     const [dashboardData, setDashboardData] = useState({});
+    const [workedDetais, setWorkedDetais] = useState([]);
+    const [myTasks, setMyTasks] = useState([]);
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
-    const isAdmin = Number(parseData?.UserTypeId) === 0 || Number(parseData?.UserTypeId) === 1
+    const isAdmin = Number(parseData?.UserTypeId) === 0 || Number(parseData?.UserTypeId) === 1 || Number(parseData?.UserTypeId) === 2
 
     useEffect(() => {
         fetch(`${api}dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`)
@@ -31,6 +30,33 @@ const CommonDashboard = () => {
                 }
             }).catch(e => console.error(e))
     }, [parseData?.UserId, parseData?.UserTypeId]);
+
+    useEffect(() => {
+        if (!isAdmin) {
+            fetch(`${api}myTodayWorks?Emp_Id=${parseData?.UserId}&reqDate=${new Date().toISOString().split('T')[0]}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setWorkedDetais(data.data)
+                    }
+                }).catch(e => console.error(e))
+            fetch(`${api}task/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${new Date().toISOString().split('T')[0]}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        data.data.sort((a, b) => {
+                            const [aHours, aMinutes] = a?.Sch_Time.split(':').map(Number);
+                            const [bHours, bMinutes] = b?.Sch_Time.split(':').map(Number);
+                            if (aHours !== bHours) {
+                                return aHours - bHours;
+                            }
+                            return aMinutes - bMinutes;
+                        });
+                        setMyTasks(data.data);
+                    }
+                }).catch(e => console.error(e))
+        }
+    }, [isAdmin, parseData?.UserId])
 
 
     const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
@@ -61,11 +87,15 @@ const CommonDashboard = () => {
         return (formatHour && formatMinute) ? formatHour + ':' + formatMinute : '00:00';
     }
 
-
+    const statusColor = (id) => {
+        const numId = Number(id);
+        const color = ['bg-dark', 'bg-info', 'bg-warning', 'bg-success', 'bg-danger'];
+        return color[numId]
+    }
 
     return (
         <>
-            <div className="px-3">
+            <div className="px-1">
                 {isAdmin ? (
                     <div className="row">
 
@@ -112,27 +142,85 @@ const CommonDashboard = () => {
 
                     </div>
                 ) : (
-                    <div className="row">
-                        <CardComp
-                            title={'Completed Tasks'}
-                            firstVal={dashboardData?.TaskCompleted}
-                            secondVal={dashboardData?.TotalTasks}
-                            icon={<BiTask style={{ fontSize: '80px' }} />}
-                            classCount={'1'} />
-                        <CardComp
-                            title={'Today Tasks'}
-                            firstVal={dashboardData?.TodayTaskCompleted}
-                            secondVal={dashboardData?.TodayTasks}
-                            icon={<CgSandClock style={{ fontSize: '80px' }} />}
-                            classCount={'2'} />
-                        <CardComp
-                            title={'Total Work Hours'}
-                            firstVal={minFormat(dashboardData?.WorkedMinutes)}
-                            icon={<CgSandClock style={{ fontSize: '80px' }} />}
-                            classCount={'3'} />
-                    </div>
+                    <>
+                        <div className="row">
+                            <CardComp
+                                title={'Completed Tasks'}
+                                firstVal={dashboardData?.TaskCompleted}
+                                secondVal={dashboardData?.TotalTasks}
+                                icon={<BiTask style={{ fontSize: '80px' }} />}
+                                classCount={'1'} />
+                            <CardComp
+                                title={'Today Tasks'}
+                                firstVal={dashboardData?.TodayTaskCompleted}
+                                secondVal={dashboardData?.TodayTasks}
+                                icon={<CgSandClock style={{ fontSize: '80px' }} />}
+                                classCount={'2'} />
+                            <CardComp
+                                title={'Total Work Hours'}
+                                firstVal={minFormat(dashboardData?.WorkedMinutes)}
+                                icon={<CgSandClock style={{ fontSize: '80px' }} />}
+                                classCount={'3'} />
+                        </div>
+                    </>
                 )}
             </div >
+            <br />
+
+            {(!isAdmin && workedDetais.length > 0) && (
+                <>
+                    <Card>
+                        <CardContent>
+                            <h5>Today Activity</h5>
+                            <PieChartComp TasksArray={workedDetais} />
+                        </CardContent>
+                    </Card>
+                    <br />
+                </>
+            )}
+
+            {(!isAdmin && myTasks.length > 0) && (
+                <Card>
+                    <CardContent>
+                        <h5>Today Tasks: {myTasks.length}</h5>
+
+                        <div className="table-responsive mt-3">
+                            <table className="table mb-1">
+                                <thead>
+                                    <tr>
+                                        <th className="fa-13 border">SNo</th>
+                                        <th className="fa-13 border">Task</th>
+                                        <th className="fa-13 border">Timer Based</th>
+                                        <th className="fa-13 border">Schedule</th>
+                                        <th className="fa-13 border">Duration</th>
+                                        <th className="fa-13 border">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {myTasks.map((o, i) => (
+                                        <tr>
+                                            <td className="fa-13 border">{i + 1}</td>
+                                            <td className="fa-13 border">{o?.Task_Name}</td>
+                                            <td className="fa-13 border text-center">
+                                                <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(Number(o?.Timer_Based) === 1 ? 3 : 1)}`}>
+                                                    {Number(o?.Timer_Based) === 1 ? 'Yes' : 'No'}
+                                                </span>
+                                            </td>
+                                            <td className="fa-13 border text-center">{o?.Sch_Time} - {o?.EN_Time}</td>
+                                            <td className="fa-13 border text-center">{o?.Sch_Period}</td>
+                                            <td className="fa-13 border text-center">
+                                                <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Id ? 3 : 1)}`}>
+                                                    {o?.Work_Id ? 'Completed' : 'Pending'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </>
     )
 }

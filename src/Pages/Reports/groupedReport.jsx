@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../../API";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import "react-toastify/dist/ReactToastify.css";
@@ -10,7 +10,7 @@ import listPlugin from '@fullcalendar/list';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 
-const ReportCalendar = () => {
+const ReportTaskTypeBasedCalendar = () => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const initialValueFilter = {
@@ -21,26 +21,29 @@ const ReportCalendar = () => {
         to: new Date().toISOString().split('T')[0],
         EmpGet: 'All Employee',
         ProjectGet: 'All Project',
-        TaskGet: 'All Task'
+        TaskGet: 'All Task',
+        TaskTypeGet: '',
+        TaskType: '',
     }
-    const [workedDetais, setWorkedDetais] = useState([]);
+    const [groupedWorkDetais, setGroupedWorkDetais] = useState([])
     const [selectedTask, setSelectedTask] = useState({});
     const [dialog, setDialog] = useState(false);
     const [filters, setFileters] = useState(initialValueFilter);
     const [projects, setProjects] = useState([]);
     const [usersDropDown, setUsersDropdown] = useState([]);
     const [tasks, setTasks] = useState([]);
-
+    const [TaskTypeData, setTaskTypeData] = useState([]);
 
     useEffect(() => {
-        fetch(`${api}workReport?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`)
+        fetch(`${api}getGroupedTaskReport?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    setWorkedDetais(data.data)
+                    setGroupedWorkDetais(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [filters])
+
+    }, [filters.Emp_Id, filters.Project_Id, filters.Task_Id, filters.from, filters.to])
 
     useEffect(() => {
         fetch(`${api}projectDropDown`)
@@ -64,6 +67,14 @@ const ReportCalendar = () => {
                     setTasks(data.data)
                 }
             }).catch(e => console.error(e))
+        fetch(`${api}taskTypeGet`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success && data.data.length > 0) {
+                    setTaskTypeData(data.data);
+                    setFileters(pre => ({...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type}))
+                }
+            }).catch(e => console.error(e))
     }, [parseData?.BranchId])
 
     const formatTime24 = (time24) => {
@@ -78,6 +89,18 @@ const ReportCalendar = () => {
 
         return time12;
     }
+
+    const TaskTypeArray = useMemo(() => {
+        if (groupedWorkDetais.length > 0) {
+            for (let i = 0; i < groupedWorkDetais.length; i++) {
+                if (Number(groupedWorkDetais[i]?.Task_Type_Id) === Number(filters?.TaskType)) {
+                    return groupedWorkDetais[i]?.TASK_GROUP
+                }
+            }
+        } else {
+            return []
+        }
+    }, [filters.TaskType, groupedWorkDetais])
 
     return (
         <>
@@ -109,17 +132,26 @@ const ReportCalendar = () => {
                         isSearchable={true}
                         placeholder={"Select Task"} />
                 </div>
+                <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-4 p-2">
+                    <Select
+                        value={{ value: filters?.TaskType, label: filters?.TaskTypeGet }}
+                        onChange={(e) => setFileters({ ...filters, TaskType: e.value, TaskTypeGet: e.label })}
+                        options={[...TaskTypeData.map(obj => ({ value: obj.Task_Type_Id, label: obj.Task_Type }))]}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        placeholder={"Select Task Type"} />
+                </div>
             </div>
 
             <div className="px-3 py-2 calendar" >
-                <h4 className="mb-3 text-center text-primary">Completed Tasks</h4>
+                <h4 className="mb-3 text-center text-primary">Task Group - {filters?.TaskTypeGet}</h4>
 
                 <FullCalendar
                     plugins={[timeGridPlugin, listPlugin, dayGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"
                     initialDate={new Date()}
                     events={
-                        workedDetais.map(o => ({
+                        TaskTypeArray.map(o => ({
                             title: o?.Task_Name,
                             start: new Date(o?.Work_Dt).toISOString().split('T')[0] + 'T' + o?.Start_Time,
                             end: new Date(o?.Work_Dt).toISOString().split('T')[0] + 'T' + o?.End_Time,
@@ -136,7 +168,6 @@ const ReportCalendar = () => {
                     slotMaxTime={'22:00:00'}
                     showNonCurrentDates={false}
                     editable={false}
-                    // selectable
                     selectMirror
                     eventClick={eve => {
                         const eveObj = eve.event.extendedProps.objectData;
@@ -148,6 +179,7 @@ const ReportCalendar = () => {
                     }}
                     height={1200}
                 />
+
             </div>
 
             <Dialog
@@ -223,4 +255,4 @@ const ReportCalendar = () => {
     );
 }
 
-export default ReportCalendar;
+export default ReportTaskTypeBasedCalendar;
