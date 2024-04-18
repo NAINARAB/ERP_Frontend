@@ -407,6 +407,8 @@ const TodayTasks = () => {
 
     useEffect(() => console.log(workInput), [workInput])
 
+    useEffect(() => console.log(nonTimerInput), [nonTimerInput])
+
 
 
     return (
@@ -650,6 +652,7 @@ const TodayTasks = () => {
                                 </table>
                             </div>
                         </TabPanel>
+
                     </TabContext>
                 </CardContent>
             </Card>
@@ -758,7 +761,7 @@ const TodayTasks = () => {
                                         };
                                         setWorkInput({ ...workInput, Det_string: updatedDetString });
                                     }}
-                                    // value={param?.Default_Value}
+                                    defaultValue={param?.Current_Value}
                                     placeholder={param?.Paramet_Data_Type}
                                 />
                             </div>
@@ -861,7 +864,7 @@ const TodayTasks = () => {
                                                 type={param?.Paramet_Data_Type || 'text'}
                                                 className="cus-inpt"
                                                 onChange={(e) => {
-                                                    const updatedDetString = [...workInput.Det_string];
+                                                    const updatedDetString = [...nonTimerInput.Det_string];
                                                     updatedDetString[index] = {
                                                         ...updatedDetString[index],
                                                         Current_Value: e.target.value,
@@ -872,6 +875,8 @@ const TodayTasks = () => {
                                                     setNonTimerInput({ ...nonTimerInput, Det_string: updatedDetString });
                                                 }}
                                                 // value={param?.Default_Value}
+                                                // value={param?.Current_Value}
+                                                defaultValue={param?.Current_Value}
                                                 placeholder={param?.Paramet_Data_Type}
                                             />
                                         </td>

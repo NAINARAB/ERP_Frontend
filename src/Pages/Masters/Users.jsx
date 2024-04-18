@@ -27,6 +27,9 @@ const Users = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
+  const [filterInput, setFilterInput] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
+
   const [dropdown, setDropDown] = useState([]);
   const [userDropdown, setuserDropdown] = useState([]);
 
@@ -35,6 +38,7 @@ const Users = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
+          data?.data?.sort((a, b) => a.Name.localeCompare(b.Name));
           setUsersData(data.data);
         }
       });
@@ -211,72 +215,101 @@ const Users = () => {
       });
   };
 
+  function handleSearchChange(event) {
+    const term = event.target.value;
+    setFilterInput(term);
+    const filteredResults = usersData.filter(item => {
+      return Object.values(item).some(value =>
+        String(value).toLowerCase().includes(term.toLowerCase())
+      );
+    });
+
+    setFilteredData(filteredResults);
+  }
+
   return (
     <Fragment>
       <ToastContainer />
 
       {!screen ? (
-        <div className="card">
-          <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
-            Users
-            <div className="text-end">
-              <Button
-                onClick={() => switchScreen(false)}
-                className="rounded-5 px-3 py-1 fa-13 shadow"
-              >
-                {!screen ? "Add User" : "Back"}
-              </Button>
+        <>
+          <div className="card">
+
+            <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
+              Users
+              <div className="text-end">
+                <Button
+                  onClick={() => switchScreen(false)}
+                  className="rounded-5 px-3 py-1 fa-13 shadow"
+                >
+                  {!screen ? "Add User" : "Back"}
+                </Button>
+              </div>
             </div>
-          </div>
-          <div
-            className="card-body overflow-scroll"
-            style={{ maxHeight: "78vh" }}
-          >
-            <div className="table-responsive">
-              <Table className="">
-                <thead>
-                  <tr>
-                    <th className="fa-14">ID</th>
-                    <th className="fa-14">Name</th>
-                    <th className="fa-14">User Type</th>
-                    <th className="fa-14">Mobile</th>
-                    <th className="fa-14">Company</th>
-                    <th className="fa-14">Branch</th>
-                    <th className="fa-14">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersData.map((obj, index) => (
-                    <tr key={index}>
-                      <td className="fa-14">{obj.UserId}</td>
-                      <td className="fa-14">{obj.Name}</td>
-                      <td className="fa-14">{obj.UserType}</td>
-                      <td className="fa-14">{obj.UserName}</td>
-                      <td className="fa-14">{obj.Company_Name}</td>
-                      <td className="fa-14">{obj.BranchName}</td>
-                      <td className="fa-12" style={{ minWidth: "80px" }}>
-                        <IconButton
-                          onClick={() => {editRow(obj)}}
-                          size="small"
-                        >
-                          <Edit className="fa-in" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            deleteRow(obj, true);
-                          }}
-                          size="small"
-                        >
-                          <Delete className="fa-in del-red" />
-                        </IconButton>
-                      </td>
+
+            <div
+              className="card-body overflow-scroll"
+              style={{ maxHeight: "78vh" }}
+            >
+
+              <div className="d-flex justify-content-end">
+                <div className="col-md-4 pb-2">
+                  <input
+                    type="search"
+                    value={filterInput}
+                    className="cus-inpt"
+                    placeholder="Search"
+                    onChange={handleSearchChange}
+                  />
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <Table className="">
+                  <thead>
+                    <tr>
+                      <th className="fa-14">ID</th>
+                      <th className="fa-14">Name</th>
+                      <th className="fa-14">User Type</th>
+                      <th className="fa-14">Mobile</th>
+                      <th className="fa-14">Company</th>
+                      <th className="fa-14">Branch</th>
+                      <th className="fa-14">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
+                  </thead>
+                  <tbody>
+                    {(filteredData && filteredData.length ? filteredData : filterInput === '' ? usersData : []).map((obj, index) => (
+                      <tr key={index}>
+                        <td className="fa-14">{obj.UserId}</td>
+                        <td className="fa-14">{obj.Name}</td>
+                        <td className="fa-14">{obj.UserType}</td>
+                        <td className="fa-14">{obj.UserName}</td>
+                        <td className="fa-14">{obj.Company_Name}</td>
+                        <td className="fa-14">{obj.BranchName}</td>
+                        <td className="fa-12" style={{ minWidth: "80px" }}>
+                          <IconButton
+                            onClick={() => { editRow(obj) }}
+                            size="small"
+                          >
+                            <Edit className="fa-in" />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => {
+                              deleteRow(obj, true);
+                            }}
+                            size="small"
+                          >
+                            <Delete className="fa-in del-red" />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="card">
           <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
@@ -293,7 +326,9 @@ const Users = () => {
             </div>
           </div>
           <div className="card-body">
+
             <div className="row">
+
               <div className="col-lg-4 col-md-6 p-2">
                 <label>Name</label>
                 <input
@@ -304,6 +339,7 @@ const Users = () => {
                   }
                 />
               </div>
+
               <div className="col-lg-4 col-md-6 p-2">
                 <label>Password</label>
                 <input
@@ -315,6 +351,7 @@ const Users = () => {
                   }
                 />
               </div>
+
               <div className="col-lg-4 col-md-6 p-2">
                 <label>Mobile</label>
                 <input
@@ -327,6 +364,7 @@ const Users = () => {
                   }
                 />
               </div>
+
               <div className="col-lg-4 col-md-6 p-2">
                 <label>Branch</label>
                 <select
@@ -344,6 +382,7 @@ const Users = () => {
                   ))}
                 </select>
               </div>
+
               <div className="col-lg-4 col-md-6 p-2">
                 <label>User Type</label>
                 <select

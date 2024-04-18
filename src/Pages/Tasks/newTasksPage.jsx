@@ -38,6 +38,7 @@ const TaskMaster = () => {
         Det_string: [],
     }
     const [taskData, setTaskData] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
     const [taskGroup, setTaskGroup] = useState([]);
     const [taskParameters, setTaskParameters] = useState([]);
 
@@ -47,6 +48,7 @@ const TaskMaster = () => {
     const [screen, setScreen] = useState(true);
     const [inputValue, setInputValue] = useState(initialValue);
     const [dialog, setDialog] = useState(false);
+    const [filterInput, setFilterInput] = useState('');
 
     useEffect(() => {
         fetch(`${api}tasks`)
@@ -219,28 +221,17 @@ const TaskMaster = () => {
         }
     }
 
-    // const handleInputChange = (parametId, value) => {
-    //     const index = inputValue.Det_string.findIndex(param => param.Paramet_Id === parametId);
+    function handleSearchChange(event) {
+        const term = event.target.value;
+        setFilterInput(term);
+        const filteredResults = taskData.filter(item => {
+            return Object.values(item).some(value =>
+                String(value).toLowerCase().includes(term.toLowerCase())
+            );
+        });
 
-    //     const updatedDetString = [...inputValue.Det_string];
-    //     updatedDetString[index] = { ...updatedDetString[index], value };
-
-    //     setInputValue({ ...inputValue, Det_string: updatedDetString });
-
-    //     setJsonInputValue(prevValue => {
-    //         const updatedValue = { ...prevValue };
-    //         updatedValue[parametId.toString()] = value;
-    //         return updatedValue;
-    //     });
-    // };
-
-    // console.log(jsonInputValue)
-    // console.log(
-    //     inputValue?.Det_string?.map(param => ({
-    //         Param_Id: param?.Paramet_Id,
-    //         Default_Value: jsonInputValue[param?.Paramet_Id.toString()] || ''
-    //     })) || []
-    // )
+        setFilteredData(filteredResults);
+    }
 
     return Number(contextObj.Read_Rights) === 1 ? (
         <>
@@ -261,13 +252,27 @@ const TaskMaster = () => {
 
                 <div className="card-body p-0 overflow-hidden rounded-bottom-3">
                     {screen ? (
-                        <DataTable
-                            columns={tasksColumn}
-                            data={taskData}
-                            pagination
-                            highlightOnHover={true}
-                            fixedHeader={true}
-                            fixedHeaderScrollHeight={'68vh'} />
+                        <>
+                            <div className="d-flex justify-content-end">
+                                <div className="col-md-4 p-2">
+                                    <input
+                                        type="search"
+                                        value={filterInput}
+                                        className="cus-inpt"
+                                        placeholder="Search"
+                                        onChange={handleSearchChange}
+                                    />
+                                </div>
+                            </div>
+                            <DataTable
+                                columns={tasksColumn}
+                                data={filteredData && filteredData.length ? filteredData : filterInput === '' ? taskData : []}
+                                pagination
+                                highlightOnHover={true}
+                                fixedHeader={true}
+                                fixedHeaderScrollHeight={'68vh'}
+                            />
+                        </>
                     ) : (
                         <div className="row px-3 py-2">
                             <div className="col-md-4 p-2">
@@ -347,19 +352,6 @@ const TaskMaster = () => {
                                     )}
                                 />
                             </div>
-
-                            {/* {inputValue?.Det_string.map((param, index) => (
-                                <div key={index} className="col-md-4 p-2">
-                                    <label className="mb-2">{param?.Paramet_Name}</label>
-                                    <input
-                                        type={param?.Paramet_Data_Type || 'text'}
-                                        className="cus-inpt"
-                                        onChange={e => param?.Default_Value = e.target.value}
-                                        value={param?.Default_Value}
-                                        placeholder="Default Value"
-                                    />
-                                </div>
-                            ))} */}
 
                             {inputValue?.Det_string.map((param, index) => (
                                 <div key={index} className="col-md-4 p-2">
