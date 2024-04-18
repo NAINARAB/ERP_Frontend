@@ -117,7 +117,7 @@ const CommonDashboard = () => {
                             title={'Completed Tasks'}
                             icon={<BiTask style={{ fontSize: '80px' }} />}
                             firstVal={dashboardData?.TaskCompleted}
-                            secondVal={dashboardData?.TaskAssigned}
+                            // secondVal={dashboardData?.TaskAssigned}
                             classCount={'3'} />
 
                         <CardComp

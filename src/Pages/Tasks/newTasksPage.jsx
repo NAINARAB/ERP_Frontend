@@ -8,6 +8,16 @@ import { Edit, Delete } from '@mui/icons-material';
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import DataTable from "react-data-table-component";
 import InvalidPageComp from "../../Components/invalidCredential";
+import TaskParametersComp from "../MyTasks/taskParameters";
+
+import Checkbox from '@mui/material/Checkbox';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 
 const TaskMaster = () => {
@@ -24,10 +34,12 @@ const TaskMaster = () => {
         Entry_Date: "",
         Update_By: '',
         Update_Date: "",
-        Under_Task: ""
+        Under_Task: "",
+        Det_string: [],
     }
     const [taskData, setTaskData] = useState([]);
     const [taskGroup, setTaskGroup] = useState([]);
+    const [taskParameters, setTaskParameters] = useState([]);
 
     const [reload, setReload] = useState(false);
     const { contextObj } = useContext(MyContext);
@@ -55,10 +67,18 @@ const TaskMaster = () => {
                 }
             })
             .catch(e => console.error(e))
+        fetch(`${api}tasks/parameters`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setTaskParameters(data.data)
+                }
+            })
+            .catch(e => console.error(e))
     }, [])
 
     const switchScreen = (rel) => {
-        setInputValue(initialValue)
+        setInputValue(initialValue);
         setScreen(!screen);
         setIsEdit(false);
         if (rel) {
@@ -66,7 +86,7 @@ const TaskMaster = () => {
         }
     }
 
-    const handleEdit = (row)     => {
+    const handleEdit = (row) => {
         setInputValue(row);
         setIsEdit(true);
         setScreen(!screen);
@@ -128,14 +148,36 @@ const TaskMaster = () => {
         },
     ];
 
+    function arrayToXml(array) {
+        let xml = '<DocumentElement>';
+        for (let obj of array) {
+            xml += '<Data>';
+            xml += `<Param_Id>${obj.Param_Id}</Param_Id>`;
+            xml += `<Default_Value>${obj.Default_Value}</Default_Value>`;
+            xml += '</Data>';
+        }
+        xml += '</DocumentElement>';
+        return xml;
+    }
+
     const postAndPutTask = async () => {
+        const paramArr = inputValue?.Det_string?.map(param => ({
+            ...param,
+            Param_Id: param?.Paramet_Id
+        })) || [];
+
+        const PostObj = {
+            ...inputValue,
+            Det_string: arrayToXml(paramArr)
+        }
+        // console.log(PostObj)
         if (inputValue?.Task_Name && inputValue?.Task_Desc) {
             const result = await fetch(`${api}tasks`, {
                 method: isEdit ? 'PUT' : 'POST',
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(inputValue)
+                body: JSON.stringify(PostObj)
             })
             if (result.ok) {
                 const data = await result.json();
@@ -177,9 +219,35 @@ const TaskMaster = () => {
         }
     }
 
+    // const handleInputChange = (parametId, value) => {
+    //     const index = inputValue.Det_string.findIndex(param => param.Paramet_Id === parametId);
+
+    //     const updatedDetString = [...inputValue.Det_string];
+    //     updatedDetString[index] = { ...updatedDetString[index], value };
+
+    //     setInputValue({ ...inputValue, Det_string: updatedDetString });
+
+    //     setJsonInputValue(prevValue => {
+    //         const updatedValue = { ...prevValue };
+    //         updatedValue[parametId.toString()] = value;
+    //         return updatedValue;
+    //     });
+    // };
+
+    // console.log(jsonInputValue)
+    // console.log(
+    //     inputValue?.Det_string?.map(param => ({
+    //         Param_Id: param?.Paramet_Id,
+    //         Default_Value: jsonInputValue[param?.Paramet_Id.toString()] || ''
+    //     })) || []
+    // )
+
     return Number(contextObj.Read_Rights) === 1 ? (
         <>
             <ToastContainer />
+
+            <TaskParametersComp />
+
             <div className="card">
 
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
@@ -218,7 +286,7 @@ const TaskMaster = () => {
                                     value={inputValue.Task_Group_Id}
                                     className="cus-inpt"
                                     onChange={e => setInputValue({ ...inputValue, Task_Group_Id: e.target.value })}>
-                                        <option value={0} disabled>- select -</option>
+                                    <option value={0} disabled>- select -</option>
                                     {taskGroup.map((o, i) => (
                                         Number(o?.Task_Type_Id) !== 0 &&
                                         <option key={i} value={o?.Task_Type_Id}>
@@ -251,6 +319,67 @@ const TaskMaster = () => {
                                     rows="5"
                                     onChange={e => setInputValue({ ...inputValue, Task_Desc: e.target.value })} />
                             </div>
+
+                            <div className="col-md-12 p-2">
+                                <Autocomplete
+                                    multiple
+                                    id="checkboxes-tags-demo"
+                                    options={[...taskParameters.map(o => ({ ...o, Default_Value: '' }))]}
+                                    disableCloseOnSelect
+                                    getOptionLabel={(option) => option?.Paramet_Name}
+                                    value={inputValue?.Det_string || []}
+                                    onChange={(f, e) => setInputValue({ ...inputValue, Det_string: e })}
+                                    renderOption={(props, option, { selected }) => (
+                                        <li {...props}>
+                                            <Checkbox
+                                                icon={icon}
+                                                checkedIcon={checkedIcon}
+                                                style={{ marginRight: 8 }}
+                                                checked={selected}
+                                            />
+                                            {option?.Paramet_Name}
+                                        </li>
+                                    )}
+                                    className="pt-2"
+                                    isOptionEqualToValue={(opt, val) => Number(opt?.Paramet_Id) === Number(val?.Paramet_Id)}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Task Prarameters" placeholder="Choose Task Parameters" />
+                                    )}
+                                />
+                            </div>
+
+                            {/* {inputValue?.Det_string.map((param, index) => (
+                                <div key={index} className="col-md-4 p-2">
+                                    <label className="mb-2">{param?.Paramet_Name}</label>
+                                    <input
+                                        type={param?.Paramet_Data_Type || 'text'}
+                                        className="cus-inpt"
+                                        onChange={e => param?.Default_Value = e.target.value}
+                                        value={param?.Default_Value}
+                                        placeholder="Default Value"
+                                    />
+                                </div>
+                            ))} */}
+
+                            {inputValue?.Det_string.map((param, index) => (
+                                <div key={index} className="col-md-4 p-2">
+                                    <label className="mb-2">{param?.Paramet_Name}</label>
+                                    <input
+                                        type={param?.Paramet_Data_Type || 'text'}
+                                        className="cus-inpt"
+                                        onChange={(e) => {
+                                            const updatedDetString = [...inputValue.Det_string];
+                                            updatedDetString[index] = {
+                                                ...updatedDetString[index],
+                                                Default_Value: e.target.value,
+                                            };
+                                            setInputValue({ ...inputValue, Det_string: updatedDetString });
+                                        }}
+                                        value={param?.Default_Value}
+                                        placeholder="Default Value"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

@@ -25,7 +25,8 @@ const TodayTasks = () => {
         Start_Time: '',
         End_Time: '',
         Work_Status: 2,
-        Work_Dt: new Date().toISOString().split('T')[0]
+        Work_Dt: new Date().toISOString().split('T')[0],
+        Det_string: []
     }
     const additionalTaskInitialValue = {
         Work_Id: '',
@@ -286,6 +287,20 @@ const TodayTasks = () => {
         setWorkDialog(true)
     }
 
+    function arrayToXml(array) {
+        let xml = '<DocumentElement>';
+        for (let obj of array) {
+            xml += '<Data>';
+            xml += `<Task_Id>${obj.Task_Id}</Task_Id>`;
+            xml += `<Param_Id>${obj.Param_Id}</Param_Id>`;
+            xml += `<Default_Value>${obj.Default_Value}</Default_Value>`;
+            xml += `<Current_Value>${obj.Current_Value}</Current_Value>`;
+            xml += '</Data>';
+        }
+        xml += '</DocumentElement>';
+        return xml;
+    }
+
     const saveWork = () => {
         fetch(`${api}saveWork`, {
             method: 'POST',
@@ -305,6 +320,7 @@ const TodayTasks = () => {
                 Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
                 End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
                 Work_Status: workInput?.Work_Status,
+                Det_string: arrayToXml(workInput?.Det_string)
             })
         }).then(res => res.json())
             .then(data => {
@@ -341,6 +357,7 @@ const TodayTasks = () => {
                 Start_Time: nonTimerInput?.Start_Time,
                 End_Time: nonTimerInput?.End_Time,
                 Work_Status: nonTimerInput?.Work_Status,
+                Det_string: arrayToXml(nonTimerInput?.Det_string)
             })
         }).then(res => res.json())
             .then(data => {
@@ -385,6 +402,12 @@ const TodayTasks = () => {
         const color = ['bg-dark', 'bg-info', 'bg-warning', 'bg-success', 'bg-danger'];
         return color[numId]
     }
+
+    useEffect(() => console.log(selectedTask), [selectedTask])
+
+    useEffect(() => console.log(workInput), [workInput])
+
+
 
     return (
         <>
@@ -571,16 +594,20 @@ const TodayTasks = () => {
                                 selectMirror
                                 datesSet={obj => setQueryDate({ ...queryDate, executedTaskDate: new Date(obj.endStr).toISOString().split('T')[0] })}
                                 eventClick={eve => {
-                                    const eveObj = eve.event.extendedProps.objectData;
-                                    if (new Date(eveObj?.Entry_Date).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
-                                        setIsEdit(true)
-                                        if (Number(eveObj?.Timer_Based) === 0) {
-                                            setNonTimerInput(eveObj); setSelectedTask(eveObj); setNonTimerWorkDialog(true)
+                                    if (!startTime && elapsedTime === 0) {
+                                        const eveObj = eve.event.extendedProps.objectData;
+                                        if (new Date(eveObj?.Entry_Date).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
+                                            setIsEdit(true)
+                                            if (Number(eveObj?.Timer_Based) === 0) {
+                                                setNonTimerInput(eveObj); setSelectedTask(eveObj); setNonTimerWorkDialog(true)
+                                            } else {
+                                                setWorkInput(eveObj); setSelectedTask(eveObj); setWorkDialog(true)
+                                            }
                                         } else {
-                                            setWorkInput(eveObj); setSelectedTask(eveObj); setWorkDialog(true)
+                                            toast.warn('You can only modify today works')
                                         }
                                     } else {
-                                        toast.warn('You can only modify today works')
+                                        toast.warn('Complete running task')
                                     }
                                 }}
                                 height={1200}
@@ -693,36 +720,65 @@ const TodayTasks = () => {
                 onClose={() => { setWorkDialog(false); setIsEdit(false); }}
                 fullWidth maxWidth='sm'>
                 <DialogTitle>Save Work</DialogTitle>
-                <DialogContent>
-                    <label className="my-2">Work Status</label>
-                    <select
-                        className="cus-inpt"
-                        value={workInput.Work_Status}
-                        onChange={e => setWorkInput({ ...workInput, Work_Status: e.target.value })}
-                    >
-                        <option value={2}>PENDING</option>
-                        <option value={3}>COMPLETED</option>
-                    </select>
-                    <label className="my-2">Work Summary</label>
-                    <textarea
-                        rows="4"
-                        className="cus-inpt"
-                        value={workInput.Work_Done}
-                        onChange={e => setWorkInput({ ...workInput, Work_Done: e.target.value })} />
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant='outlined'
-                        onClick={() => { setWorkDialog(false); setIsEdit(false) }}>
-                        close
-                    </Button>
-                    <Button
-                        onClick={saveWork}
-                        color='success'
-                        variant='contained'>
-                        Save
-                    </Button>
-                </DialogActions>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    saveWork()
+                }}>
+                    <DialogContent>
+                        <label className="my-2">Work Status</label>
+                        <select
+                            className="cus-inpt"
+                            value={workInput.Work_Status} required
+                            onChange={e => setWorkInput({ ...workInput, Work_Status: e.target.value })}>
+                            <option value={2}>PENDING</option>
+                            <option value={3}>COMPLETED</option>
+                        </select>
+
+                        <label className="my-2">Work Summary</label>
+                        <textarea
+                            rows="4"
+                            className="cus-inpt" required
+                            value={workInput.Work_Done}
+                            onChange={e => setWorkInput({ ...workInput, Work_Done: e.target.value })} />
+
+                        {selectedTask?.Param_Dts?.map((param, index) => (
+                            <div key={index}>
+                                <label className="mb-2">{param?.Paramet_Name}</label>
+                                <input
+                                    type={param?.Paramet_Data_Type || 'text'}
+                                    className="cus-inpt"
+                                    onChange={(e) => {
+                                        const updatedDetString = [...workInput.Det_string];
+                                        updatedDetString[index] = {
+                                            ...updatedDetString[index],
+                                            Current_Value: e.target.value,
+                                            Param_Id: param.Param_Id,
+                                            Default_Value: param.Default_Value,
+                                            Task_Id: selectedTask?.Task_Id
+                                        };
+                                        setWorkInput({ ...workInput, Det_string: updatedDetString });
+                                    }}
+                                    // value={param?.Default_Value}
+                                    placeholder={param?.Paramet_Data_Type}
+                                />
+                            </div>
+                        ))}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            variant='outlined'
+                            type='button'
+                            onClick={() => { setWorkDialog(false); setIsEdit(false) }}>
+                            close
+                        </Button>
+                        <Button
+                            color='success'
+                            type='submit'
+                            variant='contained'>
+                            Save
+                        </Button>
+                    </DialogActions>
+                </form>
             </Dialog>
 
             <Dialog
@@ -797,6 +853,30 @@ const TodayTasks = () => {
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Done: e.target.value })} />
                                     </td>
                                 </tr>
+                                {selectedTask?.Param_Dts?.map((param, index) => (
+                                    <tr key={index}>
+                                        <td className="border-0 fa-14 pt-3">{param?.Paramet_Name}</td>
+                                        <td className="border-0 fa-14">
+                                            <input
+                                                type={param?.Paramet_Data_Type || 'text'}
+                                                className="cus-inpt"
+                                                onChange={(e) => {
+                                                    const updatedDetString = [...workInput.Det_string];
+                                                    updatedDetString[index] = {
+                                                        ...updatedDetString[index],
+                                                        Current_Value: e.target.value,
+                                                        Param_Id: param.Param_Id,
+                                                        Default_Value: param.Default_Value,
+                                                        Task_Id: selectedTask?.Task_Id
+                                                    };
+                                                    setNonTimerInput({ ...nonTimerInput, Det_string: updatedDetString });
+                                                }}
+                                                // value={param?.Default_Value}
+                                                placeholder={param?.Paramet_Data_Type}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </DialogContent>
