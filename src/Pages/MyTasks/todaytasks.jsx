@@ -403,13 +403,6 @@ const TodayTasks = () => {
         return color[numId]
     }
 
-    useEffect(() => console.log(selectedTask), [selectedTask])
-
-    useEffect(() => console.log(workInput), [workInput])
-
-    useEffect(() => console.log(nonTimerInput), [nonTimerInput])
-
-
 
     return (
         <>
@@ -417,6 +410,7 @@ const TodayTasks = () => {
             <Card variant='elevation'>
                 <CardContent className="p-1">
                     <TabContext value={tabValue}>
+                        
                         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                             <TabList indicatorColor='secondary' textColor='secondary' onChange={(e, n) => setTabValue(n)} aria-label="">
                                 <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={`TODAY TASKS (${myTasks.length})`} value='1' />

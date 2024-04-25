@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import Chart from 'chart.js/auto';
-import 'chartjs-plugin-datalabels';
+import { PieChart } from '@mui/x-charts';
 
-
-const PieChartComp = ({ TasksArray }) => {
-    const [chartData, setChartData] = useState(null);
-    const [chartInstance, setChartInstance] = useState(null);
+const MuiPieChart = ({ TasksArray }) => {
     const [totalTime, setTotalTime] = useState(null);
+    const [chartData, setChartData] = useState(null);
 
     useEffect(() => {
         if (TasksArray.length > 0) {
@@ -56,50 +53,6 @@ const PieChartComp = ({ TasksArray }) => {
         }
     }, [TasksArray]);
 
-    useEffect(() => {
-        if (chartData) {
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-
-            const ctx = document.getElementById('empWokHours');
-            const newChartInstance = new Chart(ctx, {
-                type: 'pie',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    const minutes = Math.round(value / (1000 * 60));
-                                    return `${minutes} minutes (${percentage}%)`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            color: '#fff',
-                            formatter: (value, context) => {
-                                const label = context.chart.data.labels[context.dataIndex];
-                                const value1 = context.parsed || 0;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = Math.round((value1 / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }                        
-                    }
-                }
-            });
-
-            setChartInstance(newChartInstance);
-        }
-    }, [chartData]);
-
-    // for Dynamic background colors
     const getRandomColor = () => {
         const letters = '0123456789ABCDEF';
         let color = '#';
@@ -109,14 +62,34 @@ const PieChartComp = ({ TasksArray }) => {
         return color;
     };
 
+    useEffect(() => {
+        if (TasksArray.length > 0) {
+            const firstTaskStart = new Date(new Date().toISOString().split('T')[0] + 'T' + TasksArray[0]?.Start_Time);
+            const lastTaskEnd = new Date(new Date().toISOString().split('T')[0] + 'T' + TasksArray[TasksArray.length - 1]?.End_Time);
+            const totalTime = lastTaskEnd - firstTaskStart;
+
+            const totalSeconds = Math.floor(totalTime / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            setTotalTime(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+        }
+    }, [TasksArray]);
+
     return TasksArray.length > 0 ? (
         <div className='d-flex flex-column align-items-center my-3' style={{ maxHeight: '500px' }}>
             {totalTime && <p className='my-2'>Total Time: {totalTime}</p>}
-            <canvas id="empWokHours" width="400" height="100"></canvas>
+            <PieChart
+                data={chartData?.map(task => ({
+                    name: `${task?.Task_Name} (${task.Start_Time} - ${task?.End_Time})`,
+                    value: new Date(task?.End_Time) - new Date(task?.Start_Time),
+                    color: getRandomColor()
+                }))}
+            />
         </div>
     ) : (
         <h5 className="text-center my-5">No Data For PieChart!</h5>
-    )
+    );
 };
 
-export default PieChartComp;
+export default MuiPieChart;

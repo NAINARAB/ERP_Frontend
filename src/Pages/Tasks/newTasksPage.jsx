@@ -275,6 +275,7 @@ const TaskMaster = () => {
                         </>
                     ) : (
                         <div className="row px-3 py-2">
+
                             <div className="col-md-4 p-2">
                                 <label>Task Name</label>
                                 <input
@@ -331,7 +332,7 @@ const TaskMaster = () => {
                                     id="checkboxes-tags-demo"
                                     options={[...taskParameters.map(o => ({ ...o, Default_Value: '' }))]}
                                     disableCloseOnSelect
-                                    getOptionLabel={(option) => option?.Paramet_Name}
+                                    getOptionLabel={(option) => option?.Paramet_Name + ' - ' + option?.Paramet_Data_Type}
                                     value={inputValue?.Det_string || []}
                                     onChange={(f, e) => setInputValue({ ...inputValue, Det_string: e })}
                                     renderOption={(props, option, { selected }) => (
@@ -342,7 +343,7 @@ const TaskMaster = () => {
                                                 style={{ marginRight: 8 }}
                                                 checked={selected}
                                             />
-                                            {option?.Paramet_Name}
+                                            {option?.Paramet_Name + ' - ' + option?.Paramet_Data_Type}
                                         </li>
                                     )}
                                     className="pt-2"

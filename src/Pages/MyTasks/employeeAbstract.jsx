@@ -5,24 +5,28 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import listPlugin from '@fullcalendar/list'
+import listPlugin from '@fullcalendar/list';
 
 const WorkDoneHistory = () => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const [workedDetais, setWorkedDetais] = useState([]);
     const [selectedTask, setSelectedTask] = useState({});
-    const [dialog, setDialog] = useState(false)
+    const [dialog, setDialog] = useState(false);
+    const [days, setDays] = useState({
+        Start: new Date().toISOString().split('T')[0],
+        End: new Date().toISOString().split('T')[0],
+    })
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${parseData?.UserId}`)
+        fetch(`${api}task/workDone?Emp_Id=${parseData?.UserId}&Start=${days.Start}&End=${days.End}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     setWorkedDetais(data.data)
                 }
             }).catch(e => console.error(e))
-    }, [parseData?.UserId])
+    }, [parseData?.UserId, days])
 
     const formatTime24 = (time24) => {
         const [hours, minutes] = time24.split(':').map(Number);
@@ -71,6 +75,9 @@ const WorkDoneHistory = () => {
                         setDialog(true)
                     }}
                     height={1200}
+                    datesSet={date => {
+                        setDays(pre => ({ ...pre, Start: date.startStr.split('T')[0], End: date.endStr.split('T')[0] }))
+                    }}
                 />
             </div>
 
@@ -100,7 +107,7 @@ const WorkDoneHistory = () => {
                                 <tr>
                                     <td className="border-1 fa-14">Start Time</td>
                                     <td className="border-1 fa-14">
-                                        {selectedTask?.Start_Time && formatTime24(selectedTask?.Start_Time)} 
+                                        {selectedTask?.Start_Time && formatTime24(selectedTask?.Start_Time)}
                                     </td>
                                 </tr>
                                 <tr>
@@ -119,6 +126,19 @@ const WorkDoneHistory = () => {
                                     <td className="border-1 fa-14">Project</td>
                                     <td className="border-1 fa-14">{selectedTask?.Project_Name}</td>
                                 </tr>
+                                {selectedTask?.Parameter_Details?.length > 0 && (
+                                    <tr>
+                                        <td colSpan={2} className="border-1 fa-14 text-center">Task Parameters ( {selectedTask?.Parameter_Details?.length} )</td>
+                                    </tr>
+                                )}
+                                {selectedTask?.Parameter_Details?.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="border-1 fa-14">{o?.Paramet_Name}</td>
+                                        <td className="border-1 fa-14">
+                                            {o?.Paramet_Data_Type === 'number' ? Number(o?.Current_Value).toLocaleString('en-IN') : o?.Current_Value}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

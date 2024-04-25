@@ -288,6 +288,12 @@
   background-image: none !important;
 }
 
+.task-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
 /* #actions::after{
   content: none !important;
 } */
@@ -297,6 +303,21 @@
 @media only screen and (min-width: 991px) {
   .res-width {
     min-width: 450px;
+  }
+  .day-abstract-table {
+    display: block !important;
+  }
+  .day-abstract-card {
+    display: none !important;
+  }
+}
+
+@media only screen and (max-width: 991px) {
+  .day-abstract-table {
+    display: none !important;
+  }
+  .day-abstract-card {
+    display: flex !important;
   }
 }
 

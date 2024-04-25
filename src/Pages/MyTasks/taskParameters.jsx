@@ -98,7 +98,7 @@ const TaskParametersComp = () => {
                     {parameters.map((o, i) => (
                         <Chip 
                             key={i} 
-                            label={o?.Paramet_Name} 
+                            label={o?.Paramet_Name + ' - ' + o?.Paramet_Data_Type} 
                             className='m-1' 
                             component={Paper}
                             onDelete={() => openDeleteConfirmationDialog(o)} />

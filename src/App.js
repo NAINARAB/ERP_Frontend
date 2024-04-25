@@ -37,6 +37,7 @@ import WorkDoneHistory from "./Pages/MyTasks/employeeAbstract";
 import ReportCalendar from "./Pages/Reports/calendar";
 import ReportTaskTypeBasedCalendar from "./Pages/Reports/groupedReport";
 import ChartsReport from "./Pages/Reports/chartReports";
+import EmployeeDayAbstract from "./Pages/Reports/workDocument";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -155,6 +156,7 @@ function App() {
                 <Route path="/reports/calendar" element={<ReportCalendar />} />
                 <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
                 <Route path="/reports/graphs" element={<ChartsReport />} />
+                <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
