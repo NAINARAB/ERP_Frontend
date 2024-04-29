@@ -294,6 +294,10 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
+.h-b:hover {
+  background-color: #f2f2f2 !important;
+}
+
 /* #actions::after{
   content: none !important;
 } */

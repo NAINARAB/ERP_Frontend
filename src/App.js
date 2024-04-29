@@ -38,6 +38,7 @@ import ReportCalendar from "./Pages/Reports/calendar";
 import ReportTaskTypeBasedCalendar from "./Pages/Reports/groupedReport";
 import ChartsReport from "./Pages/Reports/chartReports";
 import EmployeeDayAbstract from "./Pages/Reports/workDocument";
+import EmployeeAbstract from "./Pages/Reports/employeeAbstract";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -47,21 +48,6 @@ function App() {
     const newUrl = window.location.pathname;
     window.history.pushState({}, document.title, newUrl);
   };
-
-  const doLoginIfDataAvailable = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    setLoading(true);
-    if (user?.Autheticate_Id) {
-      fetch(`${api}authentication?AuthId=${user?.Autheticate_Id}`)
-        .then((response) => response.json())
-        .then((auth) => {
-          setLogin(Boolean(auth?.isValidUser));
-        })
-        .catch((e) => {
-          console.error(e);
-        }).finally(() => setLoading(false))
-    }
-  }
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -142,7 +128,6 @@ function App() {
                 <Route path="/authorization/usertype" element={<UserTypeBased />} />
 
                 <Route path="/tasks/taskslist" element={<TaskMaster />} />
-                {/* <Route path="/tasks/mytasks" element={<MyTasks />} /> */}
                 <Route path="/tasks/activeproject" element={<ActiveProjects />} />
                 <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
                 <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
@@ -157,6 +142,7 @@ function App() {
                 <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
                 <Route path="/reports/graphs" element={<ChartsReport />} />
                 <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
+                <Route path="/reprots/employee" element={<EmployeeAbstract />} />
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

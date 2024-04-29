@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import api from "../../API";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Card, CardHeader, CardContent, Paper, TextField } from '@mui/material';
+import { Card, CardHeader, CardContent, Paper } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
@@ -187,6 +187,7 @@ const EmployeeDayAbstract = () => {
                 <CardHeader title='Work Abstract' className="pb-0" />
 
                 <CardContent className="pt-2" style={{ minHeight: '500px' }}>
+                    
                     <div className="row">
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
                             <label className="pb-2">From: </label>
