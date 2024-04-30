@@ -63,7 +63,7 @@ const EmployeeAbstract = () => {
                         </div>
 
                     </td>
-                    <td className="h-b fa-14" style={{...sty, maxWidth: '550px'}}>
+                    <td className="h-b fa-13" style={{ ...sty, maxWidth: '550px' }}>
                         <span className="fw-bold text-muted">{o?.Task_Name}</span>
                         <br />
                         <span className="text-muted">&emsp;{o?.Task_Desc}</span>
@@ -130,17 +130,20 @@ const EmployeeAbstract = () => {
                 <div className="p-3 m-0 border-bottom row align-items-center" >
                     <div style={{ fontSize: '24px' }} className="flex-grow-1 col-lg-8 col-md-7 col-sm-4 col-12">USER INFO</div>
                     <div className="col-lg-4 col-md-5 col-sm-8 col-12">
-                        <Select
-                            value={{ value: filter?.UserId, label: filter?.Name }}
-                            onChange={(e) => setFilter({ ...filter, UserId: e.value, Name: e.label })}
-                            options={[
-                                { value: parseData?.UserId, label: parseData?.Name },
-                                ...userDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))
-                            ]}
-                            styles={customSelectStyles}
-                            isDisabled={Number(contextObj?.Print_Rights) === 0}
-                            isSearchable={true}
-                            placeholder={"User Name"} />
+                        {Number(contextObj?.Print_Rights) === 1 && (
+                            <Select
+                                value={{ value: filter?.UserId, label: filter?.Name }}
+                                onChange={(e) => setFilter({ ...filter, UserId: e.value, Name: e.label })}
+                                options={[
+                                    { value: parseData?.UserId, label: parseData?.Name },
+                                    ...userDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))
+                                ]}
+                                styles={customSelectStyles}
+                                isDisabled={Number(contextObj?.Print_Rights) === 0}
+                                isSearchable={true}
+                                placeholder={"User Name"}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -158,7 +161,7 @@ const EmployeeAbstract = () => {
                                 </div>
 
                                 <div className=" flex-grow-1">
-                                    <h6 className="mb-0">{empData?.Name}</h6>
+                                    <h6 className="mb-0 text-primary">{empData?.Name}</h6>
                                     <p className="mb-0 fa-14">{empData?.UserType}</p>
                                 </div>
 
