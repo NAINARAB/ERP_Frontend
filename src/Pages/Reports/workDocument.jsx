@@ -34,7 +34,6 @@ const EmployeeDayAbstract = () => {
                         acc[workDate].push(current);
                         return acc;
                     }, {});
-                    console.log(groupedData)
                     setWorkedDetails(groupedData)
                 }
             }).catch(e => console.error(e))
@@ -92,8 +91,8 @@ const EmployeeDayAbstract = () => {
                         <div className="table-responsive day-abstract-table">
                             <table className="table">
                                 <tbody>
-                                    {workedDetails[workDate].map(taskDetail => (
-                                        <tr>
+                                    {workedDetails[workDate].map((taskDetail, oi) => (
+                                        <tr key={oi}>
                                             <td className="fa-14 " style={{ verticalAlign: 'middle' }}>
                                                 {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
                                             </td>
