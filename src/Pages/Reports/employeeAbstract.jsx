@@ -52,16 +52,22 @@ const EmployeeAbstract = () => {
             <>
                 <tr>
                     <td className="fa-13 h-b border">
+
                         <div className="d-flex align-items-center justify-content-center flex-column">
                             <span>{sno}</span>
-                            {o?.Work_Details.length > 0 && (
+                            {o?.Work_Details?.length > 0 && (
                                 <IconButton size="small" className="border" onClick={() => setOpen(!open)}>
                                     {open ? <Remove /> : <Add />}
                                 </IconButton>
                             )}
                         </div>
+
                     </td>
-                    <td className="fa-13 h-b" style={sty}>{o?.Task_Name}</td>
+                    <td className="h-b fa-14" style={{...sty, maxWidth: '550px'}}>
+                        <span className="fw-bold text-muted">{o?.Task_Name}</span>
+                        <br />
+                        <span className="text-muted">&emsp;{o?.Task_Desc}</span>
+                    </td>
                     <td className="fa-13 h-b" style={sty}>
                         {locDate(o?.Est_Start_Dt)} - {locDate(o?.Est_End_Dt)}
                     </td>
@@ -79,16 +85,21 @@ const EmployeeAbstract = () => {
                                 <table className="table">
                                     <thead>
                                         <tr>
+                                            <th className="fa-13 border">SNo</th>
                                             <th className="fa-13 border">Date</th>
                                             <th className="fa-13 border">Time</th>
                                             <th className="fa-13 border">Duration</th>
                                             <th className="fa-13 border">Status</th>
                                             <th className="fa-13 border">Discribtion</th>
+                                            {o?.Work_Details[0]?.Parameter_Details?.map((oo, oi) => (
+                                                <th className="fa-13 border" key={oi}>{oo?.Paramet_Name}</th>
+                                            ))}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {o?.Work_Details?.map((ob, i) => (
                                             <tr key={i}>
+                                                <td className="fa-13 h-b border" style={sty}>{++i}</td>
                                                 <td className="fa-13 h-b border" style={sty}>{locDate(ob?.Work_Dt)}</td>
                                                 <td className="fa-13 h-b border" style={sty}>
                                                     {ob?.Start_Time} - {ob?.End_Time}
@@ -96,6 +107,9 @@ const EmployeeAbstract = () => {
                                                 <td className="fa-13 h-b border" style={sty}>{ob?.Tot_Minutes}</td>
                                                 <td className="fa-13 h-b border" style={sty}>{ob?.StatusGet}</td>
                                                 <td className="fa-13 h-b border" style={sty}>{ob?.Work_Done}</td>
+                                                {ob?.Parameter_Details?.map((oo, oi) => (
+                                                    <td className="fa-13 h-b border" key={oi} style={sty}>{oo?.Current_Value}</td>
+                                                ))}
                                             </tr>
                                         ))}
                                     </tbody>
