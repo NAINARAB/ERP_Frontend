@@ -138,7 +138,7 @@ const TaskParametersComp = () => {
                                         <th className='border fa-14'>Sno</th>
                                         <th className='border fa-14'>Parameter</th>
                                         <th className='border fa-14'>Data Type</th>
-                                        <th className='border fa-14'>Action</th>
+                                        {/* <th className='border fa-14'>Action</th> */}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -147,11 +147,11 @@ const TaskParametersComp = () => {
                                             <td className='border fa-14'>{i + 1}</td>
                                             <td className='border fa-14'>{o?.Paramet_Name}</td>
                                             <td className='border fa-14'>{o?.Paramet_Data_Type}</td>
-                                            <td className='border fa-14'>
+                                            {/* <td className='border fa-14'>
                                                 <IconButton onClick={() => openDeleteConfirmationDialog(o)}>
                                                     <Delete sx={{color: 'red', fontSize: '16px'}} />
                                                 </IconButton>
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     ))}
                                 </tbody>
