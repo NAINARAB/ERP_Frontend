@@ -96,7 +96,6 @@ const TaskParametersComp = () => {
                 String(value).toLowerCase().includes(term.toLowerCase())
             );
         });
-
         setFilteredData(filteredResults);
     }
 
