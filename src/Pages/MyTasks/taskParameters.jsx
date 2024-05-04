@@ -1,4 +1,4 @@
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Chip, Paper, Button, Collapse } from '@mui/material';
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, Collapse } from '@mui/material';
 import { useEffect, useState } from 'react';
 import api from '../../API';
 import { toast } from "react-toastify";
@@ -119,14 +119,6 @@ const TaskParametersComp = () => {
                 <Collapse in={open} unmountOnExit>
 
                     <div className="card-body" style={{ maxHeight: '40vh', overflowY: 'scroll' }}>
-                        {/* {parameters.map((o, i) => (
-                            <Chip
-                                key={i}
-                                label={o?.Paramet_Name + ' - ' + o?.Paramet_Data_Type}
-                                className='m-1'
-                                component={Paper}
-                                onDelete={() => openDeleteConfirmationDialog(o)} />
-                        ))} */}
 
                         <div className="row flex-row-reverse">
                             <div className="col-md-4 pb-2">
