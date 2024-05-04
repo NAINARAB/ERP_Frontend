@@ -215,7 +215,7 @@ const UserBased = () => {
     const { contextObj } = useContext(MyContext);
 
     useEffect(() => {
-        fetch(`${api}appMenu?Auth=${currentAuthId.value}`).then(res => res.json())
+        fetch(`${api}auth/user?Auth=${currentAuthId.value}`).then(res => res.json())
             .then(data => {
                 if (data.success) {
                     setAuthData({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
