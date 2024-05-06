@@ -211,6 +211,17 @@ const ReportCalendar = () => {
                                     <td className="border-1 fa-14">Project</td>
                                     <td className="border-1 fa-14">{selectedTask?.Project_Name}</td>
                                 </tr>
+                                {selectedTask?.Work_Param?.length > 0 && (
+                                    <tr>
+                                        <td colSpan={2} className="border-1 fa-14 text-center text-uppercase">Parameter Values</td>
+                                    </tr>
+                                )}
+                                {selectedTask?.Work_Param?.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="border-1 fa-14">{o?.Paramet_Name}</td>
+                                        <td className="border-1 fa-14">{o?.Current_Value}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

@@ -72,7 +72,7 @@ const ReportTaskTypeBasedCalendar = () => {
             .then((data) => {
                 if (data.success && data.data.length > 0) {
                     setTaskTypeData(data.data);
-                    setFileters(pre => ({...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type}))
+                    setFileters(pre => ({ ...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type }))
                 }
             }).catch(e => console.error(e))
     }, [parseData?.BranchId])
@@ -243,6 +243,23 @@ const ReportTaskTypeBasedCalendar = () => {
                                     <td className="border-1 fa-14">Project</td>
                                     <td className="border-1 fa-14">{selectedTask?.Project_Name}</td>
                                 </tr>
+                                {selectedTask?.Work_Param?.length > 0 && (
+                                    <tr>
+                                        <td colSpan={2} className="border-1 fa-14 text-center text-uppercase">Parameter Values</td>
+                                    </tr>
+                                )}
+                                {selectedTask?.Work_Param?.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="border-1 fa-14">{o?.Paramet_Name}</td>
+                                        <td className="border-1 fa-14">
+                                            {
+                                                (isNaN(o?.Current_Value) || (o?.Paramet_Data_Type) !== 'number')
+                                                    ? o?.Current_Value
+                                                    : Number(o?.Current_Value).toLocaleString('en-IN')
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

@@ -93,11 +93,12 @@ const EmployeeDayAbstract = () => {
                                 <tbody>
                                     {workedDetails[workDate].map((taskDetail, oi) => (
                                         <tr key={oi}>
+
+                                            <td style={{ verticalAlign: 'middle' }}><FiberManualRecord className='fa-in text-primary' /> {taskDetail.Task_Name}</td>
+                                            <td style={{ verticalAlign: 'middle' }}><AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes</td>
                                             <td className="fa-14 " style={{ verticalAlign: 'middle' }}>
                                                 {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
                                             </td>
-                                            <td style={{ verticalAlign: 'middle' }}><AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes</td>
-                                            <td style={{ verticalAlign: 'middle' }}><FiberManualRecord className='fa-in text-primary' /> {taskDetail.Task_Name}</td>
                                             <td style={{ verticalAlign: 'middle' }}>
                                                 <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
                                                     {taskDetail?.WorkStatus}
@@ -115,7 +116,13 @@ const EmployeeDayAbstract = () => {
                                                         {taskDetail?.Parameter_Details?.map((o, i) => (
                                                             <p className="mb-0 fa-14 d-flex" key={i}>
                                                                 <span className="flex-grow-1">{o?.Paramet_Name}:</span>
-                                                                <span> {o?.Current_Value}</span>
+                                                                <span className="text-primary">
+                                                                    {
+                                                                        (isNaN(o?.Current_Value) || (o?.Paramet_Data_Type) !== 'number')
+                                                                            ? o?.Current_Value
+                                                                            : Number(o?.Current_Value).toLocaleString('en-IN')
+                                                                    }
+                                                                </span>
                                                             </p>
                                                         ))}
                                                     </div>
@@ -186,7 +193,7 @@ const EmployeeDayAbstract = () => {
                 <CardHeader title='Work Abstract' className="pb-0" />
 
                 <CardContent className="pt-2" style={{ minHeight: '500px' }}>
-                    
+
                     <div className="row">
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
                             <label className="pb-2">From: </label>

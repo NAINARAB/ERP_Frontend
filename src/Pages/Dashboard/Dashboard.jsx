@@ -11,7 +11,7 @@ const Dashboard = () => {
   const localData = localStorage.getItem("user");
   const parseData = JSON.parse(localData);
   const [myTasks, setMyTasks] = useState([]);
-  const [reload, setReload] = useState(false);
+  // const [reload, setReload] = useState(false);
   const [tabValue, setTabValue] = useState('1');
   const [dialog, setDialog] = useState(false)
   const [selectedTask, setSelectedTask] = useState({})

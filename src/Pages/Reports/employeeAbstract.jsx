@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, Fragment } from "react";
 import api from "../../API";
 import { Card, CardContent, Paper, IconButton, Chip, Avatar, Collapse } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
@@ -48,6 +48,7 @@ const EmployeeAbstract = () => {
 
     const ExtendableRow = ({ o, sno }) => {
         const [open, setOpen] = useState(false)
+
         return (
             <>
                 <tr>
@@ -82,7 +83,7 @@ const EmployeeAbstract = () => {
                     <td colSpan={5} className="p-0 border-0">
                         <Collapse in={open} timeout="auto" unmountOnExit>
                             <div className="table-responsive p-2">
-                                <table className="table">
+                                <table className="table ">
                                     <thead>
                                         <tr>
                                             <th className="fa-13 border">SNo</th>
@@ -91,26 +92,49 @@ const EmployeeAbstract = () => {
                                             <th className="fa-13 border">Duration</th>
                                             <th className="fa-13 border">Status</th>
                                             <th className="fa-13 border">Discribtion</th>
-                                            {o?.Work_Details[0]?.Parameter_Details?.map((oo, oi) => (
-                                                <th className="fa-13 border" key={oi}>{oo?.Paramet_Name}</th>
-                                            ))}
+                                            {/* {o?.Task_Param?.map((oo, oi) => (
+                                                <th className="fa-12 border" key={oi}>{oo?.Paramet_Name}</th>
+                                            ))} */}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {o?.Work_Details?.map((ob, i) => (
-                                            <tr key={i}>
-                                                <td className="fa-13 h-b border" style={sty}>{++i}</td>
-                                                <td className="fa-13 h-b border" style={sty}>{locDate(ob?.Work_Dt)}</td>
-                                                <td className="fa-13 h-b border" style={sty}>
-                                                    {ob?.Start_Time} - {ob?.End_Time}
-                                                </td>
-                                                <td className="fa-13 h-b border" style={sty}>{ob?.Tot_Minutes}</td>
-                                                <td className="fa-13 h-b border" style={sty}>{ob?.StatusGet}</td>
-                                                <td className="fa-13 h-b border" style={sty}>{ob?.Work_Done}</td>
-                                                {ob?.Parameter_Details?.map((oo, oi) => (
+                                            <Fragment key={i}>
+                                                <tr>
+                                                    <td className="fa-13 h-b border" style={sty}>{++i}</td>
+                                                    <td className="fa-13 h-b border" style={sty}>{locDate(ob?.Work_Dt)}</td>
+                                                    <td className="fa-13 h-b border" style={sty}>
+                                                        {ob?.Start_Time} - {ob?.End_Time}
+                                                    </td>
+                                                    <td className="fa-13 h-b border" style={sty}>{ob?.Tot_Minutes}</td>
+                                                    <td className="fa-13 h-b border" style={sty}>{ob?.StatusGet}</td>
+                                                    <td className="fa-13 h-b border" style={sty}>{ob?.Work_Done}</td>
+                                                    {/* {ob?.Parameter_Details?.map((oo, oi) => (
                                                     <td className="fa-13 h-b border" key={oi} style={sty}>{oo?.Current_Value}</td>
-                                                ))}
-                                            </tr>
+                                                ))} */}
+                                                </tr>
+                                                {ob?.Parameter_Details.length > 0 && (
+                                                    <tr>
+                                                        <td colSpan={6} className="border">
+                                                            {ob?.Parameter_Details?.map((oo, oi) => (
+                                                                <Chip
+                                                                    key={oi}
+                                                                    className="m-2"
+                                                                    label={
+                                                                        oo?.Paramet_Name +
+                                                                            ": " +
+                                                                            ((isNaN(oo?.Current_Value) || (oo?.Paramet_Data_Type) !== 'number')
+                                                                            ? oo?.Current_Value
+                                                                            : Number(oo?.Current_Value).toLocaleString('en-IN'))
+                                                                    }
+                                                                    component={Paper}
+                                                                    sx={{ margin: '0px 5px' }}
+                                                                />
+                                                            ))}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
                                         ))}
                                     </tbody>
                                 </table>

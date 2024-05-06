@@ -7,16 +7,17 @@ import { RxLapTimer } from "react-icons/rx";
 import { TbTargetArrow } from "react-icons/tb";
 import { BiTask } from "react-icons/bi";
 import PieChartComp from "./chartComp";
-import { Card, CardContent } from '@mui/material'
+import { Card, CardHeader, CardContent, Paper } from '@mui/material'
 
 
 
 const CommonDashboard = () => {
+    const localData = localStorage.getItem("user");
+    const parseData = JSON.parse(localData);
     const [dashboardData, setDashboardData] = useState({});
     const [workedDetais, setWorkedDetais] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
-    const localData = localStorage.getItem("user");
-    const parseData = JSON.parse(localData);
+    const [tallyDetails, setTallyDetails] = useState([]);
     const isAdmin = Number(parseData?.UserTypeId) === 0 || Number(parseData?.UserTypeId) === 1 || Number(parseData?.UserTypeId) === 2
 
     useEffect(() => {
@@ -25,6 +26,15 @@ const CommonDashboard = () => {
             .then(data => {
                 if (data.success) {
                     setDashboardData(data.data[0]);
+                } else {
+                    setDashboardData({})
+                }
+            }).catch(e => console.error(e))
+        fetch(`${api}getTallyData?UserId=${parseData?.UserId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setTallyDetails(data.data);
                 } else {
                     setDashboardData({})
                 }
@@ -170,9 +180,10 @@ const CommonDashboard = () => {
             {(!isAdmin && workedDetais.length > 0) && (
                 <>
                     <Card>
-                        <CardContent>
+                        <CardContent sx={{pb: 2}}>
                             <h5>Today Activity</h5>
                             <PieChartComp TasksArray={workedDetais} />
+                            <br />
                         </CardContent>
                     </Card>
                     <br />
@@ -181,11 +192,11 @@ const CommonDashboard = () => {
 
             {(!isAdmin && myTasks.length > 0) && (
                 <Card>
+                    <CardHeader title={'Today Tasks:' + myTasks.length} sx={{pb: 0}} />
                     <CardContent>
-                        <h5>Today Tasks: {myTasks.length}</h5>
 
-                        <div className="table-responsive mt-3">
-                            <table className="table mb-1">
+                        <div className="table-responsive">
+                            <table className="table mb-1 ">
                                 <thead>
                                     <tr>
                                         <th className="fa-13 border">SNo</th>
@@ -213,6 +224,36 @@ const CommonDashboard = () => {
                                                     {o?.Work_Id ? 'Completed' : 'Pending'}
                                                 </span>
                                             </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            <br />
+
+            {(!isAdmin && tallyDetails?.length > 0) && (
+                <Card component={Paper}>
+                    <CardHeader title="Tally Entries" sx={{pb: 0}} />
+                    <CardContent>
+                        <div className="table-responsive">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th className="fa-13 border">Sno</th>
+                                        <th className="fa-13 border">Particulars</th>
+                                        <th className="fa-13 border">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tallyDetails?.map((o, i) => (
+                                        <tr>
+                                            <td className="fa-13 border">{i + 1}</td>
+                                            <td className="fa-13 border">{o?.Particulars}</td>
+                                            <td className="fa-13 border">{o?.Tally_Count}</td>
                                         </tr>
                                     ))}
                                 </tbody>
