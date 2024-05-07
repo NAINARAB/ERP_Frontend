@@ -291,10 +291,10 @@ const TodayTasks = () => {
         let xml = '<DocumentElement>';
         for (let obj of array) {
             xml += '<Data>';
-            xml += `<Task_Id>${obj.Task_Id}</Task_Id>`;
-            xml += `<Param_Id>${obj.Param_Id}</Param_Id>`;
-            xml += `<Default_Value>${obj.Default_Value}</Default_Value>`;
-            xml += `<Current_Value>${obj.Current_Value}</Current_Value>`;
+            xml += `<Task_Id>${obj?.Task_Id}</Task_Id>`;
+            xml += `<Param_Id>${obj?.Param_Id}</Param_Id>`;
+            xml += `<Default_Value>${obj?.Default_Value}</Default_Value>`;
+            xml += `<Current_Value>${obj?.Current_Value}</Current_Value>`;
             xml += '</Data>';
         }
         xml += '</DocumentElement>';
@@ -328,7 +328,7 @@ const TodayTasks = () => {
                     setSelectedTask({});
                     toast.success(data.message);
                     setWorkDialog(false); setIsEdit(false)
-                    setReload(!reload); setElapsedTime(0); setIsRunning(false);
+                    setReload(!reload); setElapsedTime(0); setIsRunning(false); setStartTime(null);
                 } else {
                     toast.error(data.message)
                 }
@@ -365,7 +365,7 @@ const TodayTasks = () => {
                     setSelectedTask({});
                     toast.success(data.message);
                     setNonTimerWorkDialog(false);
-                    setReload(!reload); setIsEdit(false)
+                    setReload(!reload); setIsEdit(false); setStartTime(null);
                 } else {
                     toast.error(data.message)
                 }
@@ -624,7 +624,7 @@ const TodayTasks = () => {
                                     </thead>
                                     <tbody>
                                         {workedDetais.map((o, i) => (
-                                            <tr>
+                                            <tr key={i}>
                                                 <td className="fa-13 border">{i + 1}</td>
                                                 <td className="fa-13 border">{o?.Task_Name}</td>
                                                 <td className="fa-13 border text-center">

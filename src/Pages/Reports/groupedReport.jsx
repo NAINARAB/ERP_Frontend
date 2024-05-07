@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../API";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Card, CardHeader, CardContent } from '@mui/material';
 import "react-toastify/dist/ReactToastify.css";
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -179,6 +179,8 @@ const ReportTaskTypeBasedCalendar = () => {
                     }}
                     height={1200}
                 />
+
+
 
             </div>
 

@@ -39,6 +39,7 @@ import ReportTaskTypeBasedCalendar from "./Pages/Reports/groupedReport";
 import ChartsReport from "./Pages/Reports/chartReports";
 import EmployeeDayAbstract from "./Pages/Reports/workDocument";
 import EmployeeAbstract from "./Pages/Reports/employeeAbstract";
+import TallyReports from "./Pages/Dashboard/tallyReport";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -143,6 +144,8 @@ function App() {
                 <Route path="/reports/graphs" element={<ChartsReport />} />
                 <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
                 <Route path="/reprots/employee" element={<EmployeeAbstract />} />
+                <Route path="/reports/tally" element={<TallyReports />} />
+                
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

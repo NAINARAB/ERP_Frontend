@@ -36,7 +36,7 @@ const CommonDashboard = () => {
                 if (data.success) {
                     setTallyDetails(data.data);
                 } else {
-                    setDashboardData({})
+                    setTallyDetails([])
                 }
             }).catch(e => console.error(e))
     }, [parseData?.UserId, parseData?.UserTypeId]);
@@ -180,7 +180,7 @@ const CommonDashboard = () => {
             {(!isAdmin && workedDetais.length > 0) && (
                 <>
                     <Card>
-                        <CardContent sx={{pb: 2}}>
+                        <CardContent sx={{ pb: 2 }}>
                             <h5>Today Activity</h5>
                             <PieChartComp TasksArray={workedDetais} />
                             <br />
@@ -192,7 +192,7 @@ const CommonDashboard = () => {
 
             {(!isAdmin && myTasks.length > 0) && (
                 <Card>
-                    <CardHeader title={'Today Tasks:' + myTasks.length} sx={{pb: 0}} />
+                    <CardHeader title={'Today Tasks:' + myTasks.length} sx={{ pb: 0 }} />
                     <CardContent>
 
                         <div className="table-responsive">
@@ -209,7 +209,7 @@ const CommonDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {myTasks.map((o, i) => (
-                                        <tr>
+                                        <tr key={i}>
                                             <td className="fa-13 border">{i + 1}</td>
                                             <td className="fa-13 border">{o?.Task_Name}</td>
                                             <td className="fa-13 border text-center">
@@ -237,7 +237,7 @@ const CommonDashboard = () => {
 
             {(!isAdmin && tallyDetails?.length > 0) && (
                 <Card component={Paper}>
-                    <CardHeader title="Tally Entries" sx={{pb: 0}} />
+                    <CardHeader title="Tally Entries" sx={{ pb: 0 }} />
                     <CardContent>
                         <div className="table-responsive">
                             <table className="table">
@@ -250,7 +250,7 @@ const CommonDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {tallyDetails?.map((o, i) => (
-                                        <tr>
+                                        <tr key={i}>
                                             <td className="fa-13 border">{i + 1}</td>
                                             <td className="fa-13 border">{o?.Particulars}</td>
                                             <td className="fa-13 border">{o?.Tally_Count}</td>
