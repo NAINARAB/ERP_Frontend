@@ -66,7 +66,7 @@ const ChartsReport = () => {
     }, [parseData?.BranchId])
 
     useEffect(() => {
-        fetch(`${api}taskActivityReportBarChart?Emp_Id=${barChartFilter.Emp_Id}&From=${barChartFilter.From}&To=${barChartFilter.To}&Task_Id=${barChartFilter.Task_Id}`)
+        fetch(`${api}taskActivityReportBarChart?Emp_Id=${barChartFilter?.Emp_Id}&From=${barChartFilter?.From}&To=${barChartFilter?.To}&Task_Id=${barChartFilter?.Task_Id}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -138,8 +138,8 @@ const ChartsReport = () => {
                         <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-4 p-2">
                             <Select
                                 value={{ value: barChartFilter?.Emp_Id, label: barChartFilter?.EmpGet }}
-                                onChange={(e) => setBarChartFilter({ ...barChartFilter, Emp_Id: e.value, EmpGet: e.label })}
-                                options={[{ value: '', label: 'All Employee' }, ...filteredUser.map(obj => ({ value: obj.UserId, label: obj.Name }))]}
+                                onChange={e => setBarChartFilter({ ...barChartFilter, Emp_Id: e.value, EmpGet: e.label })}
+                                options={[{ value: '', label: 'All Employee' }, ...filteredUser.map(obj => ({ value: obj?.Emp_Id, label: obj?.Name }))]}
                                 styles={customSelectStyles}
                                 isSearchable={true}
                                 placeholder={"Employee Name"} 
