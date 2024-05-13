@@ -93,8 +93,8 @@ function App() {
   const logout = () => {
     localStorage.clear();
     setLogin(false);
-    // window.location = '/'
-    window.location = process.env.REACT_APP_ERP_LOGOUT
+    window.location = '/'
+    // window.location = process.env.REACT_APP_ERP_LOGOUT
   }
 
   return (

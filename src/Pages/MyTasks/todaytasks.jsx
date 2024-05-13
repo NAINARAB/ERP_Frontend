@@ -291,10 +291,10 @@ const TodayTasks = () => {
         let xml = '<DocumentElement>';
         for (let obj of array) {
             xml += '<Data>';
-            xml += `<Task_Id>${obj?.Task_Id}</Task_Id>`;
-            xml += `<Param_Id>${obj?.Param_Id}</Param_Id>`;
-            xml += `<Default_Value>${obj?.Default_Value}</Default_Value>`;
-            xml += `<Current_Value>${obj?.Current_Value}</Current_Value>`;
+            xml += `<Task_Id>${String(obj?.Task_Id)}</Task_Id>`;
+            xml += `<Param_Id>${String(obj?.Param_Id)}</Param_Id>`;
+            xml += `<Default_Value>${String(obj?.Default_Value)}</Default_Value>`;
+            xml += `<Current_Value>${String(obj?.Current_Value)}</Current_Value>`;
             xml += '</Data>';
         }
         xml += '</DocumentElement>';
@@ -372,6 +372,9 @@ const TodayTasks = () => {
             }).catch(e => console.error(e))
     }
 
+    useEffect(() => console.log(workInput.Det_string), [workInput.Det_string])
+    useEffect(() => console.log(nonTimerInput.Det_string), [nonTimerInput.Det_string])
+
     const openUnAssignedTaskDialog = () => {
         setAdditionalTaskInput(additionalTaskInitialValue);
         setAdditionalTaskDialog(true);
@@ -410,7 +413,7 @@ const TodayTasks = () => {
             <Card variant='elevation'>
                 <CardContent className="p-1">
                     <TabContext value={tabValue}>
-                        
+
                         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                             <TabList indicatorColor='secondary' textColor='secondary' onChange={(e, n) => setTabValue(n)} aria-label="">
                                 <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={`TODAY TASKS (${myTasks.length})`} value='1' />
@@ -431,16 +434,12 @@ const TodayTasks = () => {
                                         </p>
 
                                         <div className="row mt-2 flex-row-reverse">
-
                                             <div className="col-md-6">
-
                                                 <div className="p-2 pb-0">
-
                                                     <p className="fa-20 d-flex mb-1">
                                                         <span className="flex-grow-1">Duration : </span>
                                                         <span className="text-primary">{formatTime(elapsedTime)}</span>
                                                     </p>
-
                                                     <p className="mb-0 d-flex">
                                                         <span className="flex-grow-1">Progress : </span>
                                                         {progressFun(selectedTask?.Sch_Period ? timeToMilliseconds(selectedTask?.Sch_Period) : 0)?.toFixed(2) + ' %'}
@@ -454,18 +453,15 @@ const TodayTasks = () => {
                                                                     height: '14px'
                                                                 }} />
                                                         </div>
-                                                        <p className="mb-0 d-flex fa-12">
-                                                            <span className="flex-grow-1">0%</span>
-                                                            100%
+                                                        <p className="mb-0 d-flex justify-content-between fa-12">
+                                                            <span   >0%</span>
+                                                            <span>100%</span>                                                            
                                                         </p>
                                                     </span>
                                                 </div>
                                             </div>
-
                                             <div className="col-md-6 d-flex">
-
                                                 <div className="p-2 flex-grow-1">
-
                                                     <p className="fa-14 mt-1 mb-0 d-flex">
                                                         <span className=" flex-grow-1">Scheduled Time</span>
                                                         <span>
@@ -474,14 +470,12 @@ const TodayTasks = () => {
                                                             {selectedTask?.EN_Time && formatTime24(selectedTask?.EN_Time)}
                                                         </span>
                                                     </p>
-
                                                     <p className="fa-14 mt-1 mb-0 d-flex">
                                                         <span className=" flex-grow-1">Total Hour</span>
                                                         <span className="text-primary">
                                                             {selectedTask?.Sch_Period} Hrs
                                                         </span>
                                                     </p>
-
                                                     <p className="fa-14 mt-1 mb-0 d-flex">
                                                         <span className=" flex-grow-1">Project</span>
                                                         <span className="text-primary">
@@ -489,21 +483,16 @@ const TodayTasks = () => {
                                                             {selectedTask?.Project_Name?.length > 25 && '...'}
                                                         </span>
                                                     </p>
-
                                                     <p className="fa-14 mt-1 mb-0 d-flex">
                                                         <span className=" flex-grow-1">Project Head</span>
                                                         <span className="text-primary">
                                                             {selectedTask?.Project_Head_Name}
                                                         </span>
                                                     </p>
-
                                                 </div>
-
                                                 <div className=" d-md-block vr" style={{ display: 'none' }}></div>
                                             </div>
                                         </div>
-
-
 
                                     </div>
 
@@ -714,7 +703,7 @@ const TodayTasks = () => {
 
             <Dialog
                 open={workDialog}
-                onClose={() => { setWorkDialog(false); setIsEdit(false); }}
+                onClose={() => { setWorkDialog(false); setWorkInput(initialWorkSaveValue); setIsEdit(false); }}
                 fullWidth maxWidth='sm'>
                 <DialogTitle>Save Work</DialogTitle>
                 <form onSubmit={e => {
@@ -765,7 +754,7 @@ const TodayTasks = () => {
                         <Button
                             variant='outlined'
                             type='button'
-                            onClick={() => { setWorkDialog(false); setIsEdit(false) }}>
+                            onClick={() => { setWorkDialog(false); setWorkInput(initialWorkSaveValue); setIsEdit(false) }}>
                             close
                         </Button>
                         <Button

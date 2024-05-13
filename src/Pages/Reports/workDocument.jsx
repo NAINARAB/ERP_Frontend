@@ -137,47 +137,45 @@ const EmployeeDayAbstract = () => {
                         <div className="row mb-2 px-3 day-abstract-card d-none">
 
                             {workedDetails[workDate].map(taskDetail => (
-                                <>
 
-                                    <div key={taskDetail.Work_Id} className="col-xl-3 col-lg-4 col-md-6 p-2 py-0">
-                                        <div className="cus-card shadow-sm p-3">
+                                <div key={taskDetail.Work_Id} className="col-xl-3 col-lg-4 col-md-6 p-2 py-0">
+                                    <div className="cus-card shadow-sm p-3">
 
-                                            <p className="mb-2 fa-15 fw-bold text-secondary">
-                                                {taskDetail.Task_Name + " "}
+                                        <p className="mb-2 fa-15 fw-bold text-secondary">
+                                            {taskDetail.Task_Name + " "}
+                                        </p>
+
+                                        <p className="mb-2 fa-14 text-secondary">
+                                            {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
+                                            <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
+                                                {taskDetail?.WorkStatus}
+                                            </span>
+                                        </p>
+
+                                        <p className="mb-2 fa-14 text-secondary">
+                                            <AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes
+                                        </p>
+
+                                        <p className="mb-0 fa-14 text-muted">
+                                            <span className="fw-bold">Summary : </span><br />
+                                            <span>&emsp;{taskDetail.Work_Done}</span>
+                                        </p>
+
+                                        {taskDetail?.Parameter_Details?.length > 0 && (
+                                            <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Parameter_Details?.length} )</p>
+                                        )}
+
+                                        {taskDetail?.Parameter_Details?.length > 0 && <hr className="m-0" />}
+
+                                        {taskDetail?.Parameter_Details?.map((o, i) => (
+                                            <p className="mb-0 fa-14 d-flex" key={i}>
+                                                <span className="flex-grow-1">{o?.Paramet_Name}:</span>
+                                                <span> {o?.Current_Value}</span>
                                             </p>
+                                        ))}
 
-                                            <p className="mb-2 fa-14 text-secondary">
-                                                {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
-                                                <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
-                                                    {taskDetail?.WorkStatus}
-                                                </span>
-                                            </p>
-
-                                            <p className="mb-2 fa-14 text-secondary">
-                                                <AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes
-                                            </p>
-
-                                            <p className="mb-0 fa-14 text-muted">
-                                                <span className="fw-bold">Summary : </span><br />
-                                                <span>&emsp;{taskDetail.Work_Done}</span>
-                                            </p>
-
-                                            {taskDetail?.Parameter_Details?.length > 0 && (
-                                                <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Parameter_Details?.length} )</p>
-                                            )}
-
-                                            {taskDetail?.Parameter_Details?.length > 0 && <hr className="m-0" />}
-
-                                            {taskDetail?.Parameter_Details?.map((o, i) => (
-                                                <p className="mb-0 fa-14 d-flex" key={i}>
-                                                    <span className="flex-grow-1">{o?.Paramet_Name}:</span>
-                                                    <span> {o?.Current_Value}</span>
-                                                </p>
-                                            ))}
-
-                                        </div>
                                     </div>
-                                </>
+                                </div>
                             ))}
                         </div>
 
