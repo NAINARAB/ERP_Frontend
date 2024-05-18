@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../API";
-import { Tab, Box, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Tab, Box, Dialog, DialogTitle, DialogContent, DialogActions, Button, CardHeader } from '@mui/material';
 import { TabPanel, TabList, TabContext } from '@mui/lab';
 import { AccessAlarm, } from "@mui/icons-material";
 import { toast, ToastContainer } from "react-toastify";
@@ -372,8 +372,8 @@ const TodayTasks = () => {
             }).catch(e => console.error(e))
     }
 
-    useEffect(() => console.log(workInput.Det_string), [workInput.Det_string])
-    useEffect(() => console.log(nonTimerInput.Det_string), [nonTimerInput.Det_string])
+    // useEffect(() => console.log(workInput.Det_string), [workInput.Det_string])
+    // useEffect(() => console.log(nonTimerInput.Det_string), [nonTimerInput.Det_string])
 
     const openUnAssignedTaskDialog = () => {
         setAdditionalTaskInput(additionalTaskInitialValue);
@@ -410,98 +410,94 @@ const TodayTasks = () => {
     return (
         <>
             <ToastContainer />
+
+            {startTime && (
+                <div className="cus-card rounded-2 shadow-none px-3 py-1 mb-3">
+                    <h5 className="mb-0 pt-2">Running Task</h5>
+
+                    <div className="cus-card bg-light p-3 shadow-none rounded-1">
+
+                        <p className="mb-0 fa-16 fw-bold pb-1 border-bottom">
+                            <span className="flex-grow-1">{selectedTask?.Task_Name || ' No Active Task '}</span>
+                        </p>
+
+                        <div className="row mt-2 flex-row-reverse">
+                            <div className="col-md-6">
+                                <div className="p-2 pb-0">
+                                    <p className="fa-20 d-flex mb-1">
+                                        <span className="flex-grow-1">Duration : </span>
+                                        <span className="text-primary">{formatTime(elapsedTime)}</span>
+                                    </p>
+                                    <p className="mb-0 d-flex">
+                                        <span className="flex-grow-1">Progress : </span>
+                                        {progressFun(selectedTask?.Sch_Period ? timeToMilliseconds(selectedTask?.Sch_Period) : 0)?.toFixed(2) + ' %'}
+                                    </p>
+                                    <span className="p-2 w-100">
+                                        <div style={{ backgroundColor: '#ddd' }} className="rounded-4 overflow-hidden">
+                                            <div
+                                                style={{
+                                                    width: `${progressFun(selectedTask?.Sch_Period ? timeToMilliseconds(selectedTask?.Sch_Period) : 0)}%`,
+                                                    backgroundColor: '#007bff',
+                                                    height: '14px'
+                                                }} />
+                                        </div>
+                                        <p className="mb-0 d-flex justify-content-between fa-12">
+                                            <span   >0%</span>
+                                            <span>100%</span>
+                                        </p>
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="col-md-6 d-flex">
+                                <div className="p-2 flex-grow-1">
+                                    <p className="fa-14 mt-1 mb-0 d-flex">
+                                        <span className=" flex-grow-1">Scheduled Time</span>
+                                        <span>
+                                            {selectedTask?.Sch_Time && formatTime24(selectedTask?.Sch_Time)}
+                                            &nbsp; - &nbsp;
+                                            {selectedTask?.EN_Time && formatTime24(selectedTask?.EN_Time)}
+                                        </span>
+                                    </p>
+                                    <p className="fa-14 mt-1 mb-0 d-flex">
+                                        <span className=" flex-grow-1">Total Hour</span>
+                                        <span className="text-primary">
+                                            {selectedTask?.Sch_Period} Hrs
+                                        </span>
+                                    </p>
+                                    <p className="fa-14 mt-1 mb-0 d-flex">
+                                        <span className=" flex-grow-1">Project</span>
+                                        <span className="text-primary">
+                                            {selectedTask?.Project_Name?.slice(0, 25)}
+                                            {selectedTask?.Project_Name?.length > 25 && '...'}
+                                        </span>
+                                    </p>
+                                    <p className="fa-14 mt-1 mb-0 d-flex">
+                                        <span className=" flex-grow-1">Project Head</span>
+                                        <span className="text-primary">
+                                            {selectedTask?.Project_Head_Name}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className=" d-md-block vr" style={{ display: 'none' }}></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="text-end mt-2 mb-1">
+                        <Button onClick={stopTimer} color='error' variant='outlined' sx={{ marginRight: '10px' }}>cancel</Button>
+                        <Button onClick={openWorkDialog} color='success' variant='contained'>Save</Button>
+                    </div>
+                </div>
+            )}
+
             <Card variant='elevation'>
                 <CardContent className="p-1">
-                    <TabContext value={tabValue}>
+                    <div className=" d-lg-flex">
 
-                        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                            <TabList indicatorColor='secondary' textColor='secondary' onChange={(e, n) => setTabValue(n)} aria-label="">
-                                <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={`TODAY TASKS (${myTasks.length})`} value='1' />
-                                <Tab sx={tabValue === '2' ? { backgroundColor: '#c6d7eb' } : {}} label={`EXECUTED (${workedDetais.length})`} value='2' />
-                            </TabList>
-                        </Box>
+                        <div className="flex-grow-1 p-2">
+                            <CardHeader title='Assigned Task' className="text-center text-decoration-underline" />
 
-                        <TabPanel value={'1'} sx={{ p: 0, pt: 2 }}>
-
-                            {startTime && (
-                                <div className="cus-card rounded-2 shadow-none px-3 py-1 mb-5">
-                                    <h5 className="mb-0 pt-2">Running Task</h5>
-
-                                    <div className="cus-card bg-light p-3 shadow-none rounded-1">
-
-                                        <p className="mb-0 fa-16 fw-bold pb-1 border-bottom">
-                                            <span className="flex-grow-1">{selectedTask?.Task_Name || ' No Active Task '}</span>
-                                        </p>
-
-                                        <div className="row mt-2 flex-row-reverse">
-                                            <div className="col-md-6">
-                                                <div className="p-2 pb-0">
-                                                    <p className="fa-20 d-flex mb-1">
-                                                        <span className="flex-grow-1">Duration : </span>
-                                                        <span className="text-primary">{formatTime(elapsedTime)}</span>
-                                                    </p>
-                                                    <p className="mb-0 d-flex">
-                                                        <span className="flex-grow-1">Progress : </span>
-                                                        {progressFun(selectedTask?.Sch_Period ? timeToMilliseconds(selectedTask?.Sch_Period) : 0)?.toFixed(2) + ' %'}
-                                                    </p>
-                                                    <span className="p-2 w-100">
-                                                        <div style={{ backgroundColor: '#ddd' }} className="rounded-4 overflow-hidden">
-                                                            <div
-                                                                style={{
-                                                                    width: `${progressFun(selectedTask?.Sch_Period ? timeToMilliseconds(selectedTask?.Sch_Period) : 0)}%`,
-                                                                    backgroundColor: '#007bff',
-                                                                    height: '14px'
-                                                                }} />
-                                                        </div>
-                                                        <p className="mb-0 d-flex justify-content-between fa-12">
-                                                            <span   >0%</span>
-                                                            <span>100%</span>                                                            
-                                                        </p>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-6 d-flex">
-                                                <div className="p-2 flex-grow-1">
-                                                    <p className="fa-14 mt-1 mb-0 d-flex">
-                                                        <span className=" flex-grow-1">Scheduled Time</span>
-                                                        <span>
-                                                            {selectedTask?.Sch_Time && formatTime24(selectedTask?.Sch_Time)}
-                                                            &nbsp; - &nbsp;
-                                                            {selectedTask?.EN_Time && formatTime24(selectedTask?.EN_Time)}
-                                                        </span>
-                                                    </p>
-                                                    <p className="fa-14 mt-1 mb-0 d-flex">
-                                                        <span className=" flex-grow-1">Total Hour</span>
-                                                        <span className="text-primary">
-                                                            {selectedTask?.Sch_Period} Hrs
-                                                        </span>
-                                                    </p>
-                                                    <p className="fa-14 mt-1 mb-0 d-flex">
-                                                        <span className=" flex-grow-1">Project</span>
-                                                        <span className="text-primary">
-                                                            {selectedTask?.Project_Name?.slice(0, 25)}
-                                                            {selectedTask?.Project_Name?.length > 25 && '...'}
-                                                        </span>
-                                                    </p>
-                                                    <p className="fa-14 mt-1 mb-0 d-flex">
-                                                        <span className=" flex-grow-1">Project Head</span>
-                                                        <span className="text-primary">
-                                                            {selectedTask?.Project_Head_Name}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div className=" d-md-block vr" style={{ display: 'none' }}></div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-
-                                    <div className="text-end mt-2 mb-1">
-                                        <Button onClick={stopTimer} color='error' variant='outlined' sx={{ marginRight: '10px' }}>cancel</Button>
-                                        <Button onClick={openWorkDialog} color='success' variant='contained'>Save</Button>
-                                    </div>
-                                </div>
-                            )}
 
                             <FullCalendar
                                 plugins={[timeGridPlugin, listPlugin]}
@@ -545,13 +541,10 @@ const TodayTasks = () => {
                                 datesSet={obj => setQueryDate({ ...queryDate, myTaskDate: new Date(obj.endStr).toISOString().split('T')[0] })}
                                 height={1200}
                             />
-                        </TabPanel>
+                        </div>
 
-                        <TabPanel value={'2'} sx={{ p: 0, pt: 2 }}>
-
-                            <div className="d-flex justify-content-end mb-3" onClick={openUnAssignedTaskDialog}>
-                                <button className="btn btn-primary">Add Additional Work Details</button>
-                            </div>
+                        <div className="flex-grow-1 p-2">
+                            <CardHeader title='Executed' className="text-center text-decoration-underline" />
 
                             <FullCalendar
                                 plugins={[timeGridPlugin, listPlugin]}
@@ -597,43 +590,70 @@ const TodayTasks = () => {
                                 }}
                                 height={1200}
                             />
+                        </div>
 
-                            <div className="table-responsive mt-3">
-                                <table className="table mb-1">
-                                    <thead>
-                                        <tr>
-                                            <th className="fa-13 border">SNo</th>
-                                            <th className="fa-13 border">Task</th>
-                                            <th className="fa-13 border">Timer Based</th>
-                                            <th className="fa-13 border">Start - End</th>
-                                            <th className="fa-13 border">Total Minutes</th>
-                                            <th className="fa-13 border">Status</th>
-                                            <th className="fa-13 border">Discription</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {workedDetais.map((o, i) => (
-                                            <tr key={i}>
-                                                <td className="fa-13 border">{i + 1}</td>
-                                                <td className="fa-13 border">{o?.Task_Name}</td>
-                                                <td className="fa-13 border text-center">
-                                                    <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(Number(o?.Timer_Based) === 1 ? 3 : 1)}`}>
-                                                        {Number(o?.Timer_Based) === 1 ? 'Yes' : 'No'}
-                                                    </span>
-                                                </td>
-                                                <td className="fa-13 border text-center">{o?.Start_Time} - {o?.End_Time}</td>
-                                                <td className="fa-13 border text-center">{o?.Tot_Minutes}</td>
-                                                <td className="fa-13 border text-center">
-                                                    <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Status)}`}>
-                                                        {o?.WorkStatus}
-                                                    </span>
-                                                </td>
-                                                <td className="fa-13 border">{o?.Work_Done}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                    </div>
+
+                    <div className="table-responsive mt-3">
+
+                        <div className="d-flex justify-content-between border align-items-center p-2 rounded-3 mb-3" onClick={openUnAssignedTaskDialog}>
+                            <span className="ps-2">Work Done At: {new Date(queryDate?.executedTaskDate).toLocaleDateString('en-IN')}</span>
+                            <button className="btn btn-primary fa-14"> Add Additional Work Details</button>
+                        </div>
+
+                        <table className="table mb-1">
+                            <thead>
+                                <tr>
+                                    <th className="fa-13 border">SNo</th>
+                                    <th className="fa-13 border">Task</th>
+                                    <th className="fa-13 border">Timer Based</th>
+                                    <th className="fa-13 border">Start - End</th>
+                                    <th className="fa-13 border">Total Minutes</th>
+                                    <th className="fa-13 border">Status</th>
+                                    <th className="fa-13 border">Discription</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {workedDetais.map((o, i) => (
+                                    <tr key={i}>
+                                        <td className="fa-13 border">{i + 1}</td>
+                                        <td className="fa-13 border">{o?.Task_Name}</td>
+                                        <td className="fa-13 border text-center">
+                                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(Number(o?.Timer_Based) === 1 ? 3 : 1)}`}>
+                                                {Number(o?.Timer_Based) === 1 ? 'Yes' : 'No'}
+                                            </span>
+                                        </td>
+                                        <td className="fa-13 border text-center">{o?.Start_Time} - {o?.End_Time}</td>
+                                        <td className="fa-13 border text-center">{o?.Tot_Minutes}</td>
+                                        <td className="fa-13 border text-center">
+                                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Status)}`}>
+                                                {o?.WorkStatus}
+                                            </span>
+                                        </td>
+                                        <td className="fa-13 border">{o?.Work_Done}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <TabContext value={tabValue} >
+
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'none' }}>
+                            <TabList indicatorColor='secondary' textColor='secondary' onChange={(e, n) => setTabValue(n)} aria-label="">
+                                <Tab sx={tabValue === '1' ? { backgroundColor: '#c6d7eb' } : {}} label={`TODAY TASKS (${myTasks.length})`} value='1' />
+                                <Tab sx={tabValue === '2' ? { backgroundColor: '#c6d7eb' } : {}} label={`EXECUTED (${workedDetais.length})`} value='2' />
+                            </TabList>
+                        </Box>
+
+                        <TabPanel value={'1'} sx={{ p: 0, pt: 2 }}>
+
+
+                        </TabPanel>
+
+                        <TabPanel value={'2'} sx={{ p: 0, pt: 2 }}>
+
+
                         </TabPanel>
 
                     </TabContext>

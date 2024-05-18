@@ -12,17 +12,21 @@ const EmployeeDayAbstract = () => {
     const parseData = JSON.parse(localData);
     const [workedDetails, setWorkedDetails] = useState([]);
     const [users, setUsers] = useState([]);
+    const [tasks, setTasks] = useState([]);
+
     const { contextObj } = useContext(MyContext);
     const [filter, setFilter] = useState({
         startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         Emp_Id: parseData?.UserId,
-        Emp_Name: parseData?.Name
+        Emp_Name: parseData?.Name,
+        Task_Id: '',
+        Task_Name: 'Select Task',
     });
     const printRef = useRef()
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}`)
+        fetch(`${api}task/workDone?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}&Task_Id=${filter?.Task_Id}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -38,6 +42,16 @@ const EmployeeDayAbstract = () => {
                 }
             }).catch(e => console.error(e))
     }, [parseData?.UserId, filter])
+
+    useEffect(() => {
+        fetch(`${api}task/employeeInvolved?Emp_Id=${filter?.Emp_Id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setTasks(data.data)
+                }
+            }).catch(e => console.error(e))
+    }, [filter?.Emp_Id])
 
     useEffect(() => {
         if (Number(contextObj?.Print_Rights) === 1) {
@@ -193,6 +207,7 @@ const EmployeeDayAbstract = () => {
                 <CardContent className="pt-2" style={{ minHeight: '500px' }}>
 
                     <div className="row">
+
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
                             <label className="pb-2">From: </label>
                             <input
@@ -202,6 +217,7 @@ const EmployeeDayAbstract = () => {
                                 onChange={e => setFilter({ ...filter, startDate: e.target.value })}
                             />
                         </div>
+
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
                             <label className="pb-2">To: </label>
                             <input
@@ -211,6 +227,7 @@ const EmployeeDayAbstract = () => {
                                 onChange={e => setFilter({ ...filter, endDate: e.target.value })}
                             />
                         </div>
+
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
                             <label className="pb-2">User </label>
                             <Select
@@ -225,9 +242,25 @@ const EmployeeDayAbstract = () => {
                                 isSearchable={true}
                                 placeholder={"User Name"} />
                         </div>
+
+                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                            <label className="pb-2">Task </label>
+                            <Select
+                                value={{ value: filter?.Task_Id, label: filter?.Task_Name }}
+                                onChange={(e) => setFilter({ ...filter, Task_Id: e.value, Task_Name: e.label })}
+                                options={[
+                                    { value: '', label: 'All Task' },
+                                    ...tasks.map(obj => ({ value: obj.Task_Id, label: obj.Task_Name }))
+                                ]}
+                                styles={customSelectStyles}
+                                isSearchable={true}
+                                placeholder={"Task Name"} />
+                        </div>
+
                         <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 d-flex align-items-end p-2">
                             <button className="btn btn-primary rounded-5 px-3" onClick={handlePrint}>Print PDF</button>
                         </div>
+
                     </div>
 
                     <CardAndTableComp />
