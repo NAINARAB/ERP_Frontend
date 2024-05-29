@@ -1,7 +1,7 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add, BarChart, Home } from '@mui/icons-material'
+import { Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt, Tune, Notifications, Add, BarChart, Home, SettingsAccessibility, Leaderboard, CurrencyRupee, VpnKey, HowToReg } from '@mui/icons-material'
 // import { GrAnalytics } from "react-icons/gr";
 import "./MainComponent.css";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
@@ -17,6 +17,62 @@ const setLoclStoreage = (pageId, menu) => {
   localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
 }
 
+const getIcon = (menuId) => {
+  const icon = [
+    {
+      id: 6,
+      IconComp: <Dashboard className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 7,
+      IconComp: <Tune className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 8,
+      IconComp: <SettingsAccessibility className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 9,
+      IconComp: <WorkHistory className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 10,
+      IconComp: <Chat className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 11,
+      IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 12,
+      IconComp: <BarChart className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 13,
+      IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 14,
+      IconComp: <ManageAccounts className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 15,
+      IconComp: <Leaderboard className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 16,
+      IconComp: <CurrencyRupee className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+    {
+      id: 17,
+      IconComp: <VpnKey className="me-2 fa-20" style={{ color: '#FDD017' }} />
+    },
+  ];
+
+  const matchedIcon = icon.find(item => item.id === menuId);
+  return matchedIcon ? matchedIcon.IconComp : null;
+}
+
 const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) => {
   const [open, setOpen] = useState(page.Main_Menu_Id === mainBtn.Main_Menu_Id);
 
@@ -25,43 +81,6 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
   const closeSide = () => {
     sideClose()
   }
-
-  const getIcon = () => {
-    const icon = [
-      {
-        id: 6,
-        IconComp: <Dashboard className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 7,
-        IconComp: <Tune className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 8,
-        IconComp: <ManageAccounts className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 9,
-        IconComp: <WorkHistory className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 10,
-        IconComp: <Chat className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 11,
-        IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-      {
-        id: 12,
-        IconComp: <BarChart className="me-2 fa-20" style={{ color: '#FDD017' }} />
-      },
-    ];
-
-    const matchedIcon = icon.find(item => item.id === mainBtn.Main_Menu_Id);
-    return matchedIcon ? matchedIcon.IconComp : null;
-  }
-
 
   return Number(mainBtn.Read_Rights) === 1 && (
     <>
@@ -75,10 +94,9 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
               setLoclStoreage(mainBtn.Main_Menu_Id, 1)
             }
             : () => setOpen(!open)}
-
       >
         <span className="flex-grow-1 d-flex justify-content-start">
-          {getIcon()}
+          {getIcon(mainBtn.Main_Menu_Id)}
           {mainBtn?.MenuName}
         </span>
         {mainBtn?.PageUrl === "" && <span className=" text-end">{open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}</span>}
@@ -146,8 +164,11 @@ function MainComponent(props) {
     fetch(`${api}appMenu?Auth=${parseData?.Autheticate_Id}`).then(res => res.json())
       .then(data => {
         if (data.success) {
+          data?.MainMenu?.sort((a, b) => a?.Main_Menu_Id - b?.Main_Menu_Id);
           setSidebar({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu });
+
           let navigated = false;
+
           if (localStorage.getItem('CurrentPage')) {
             const getPageId = JSON.parse(localStorage.getItem('CurrentPage'))
             if (Number(getPageId?.type) === 1) {
@@ -168,6 +189,7 @@ function MainComponent(props) {
               }
             }
           }
+
           if (!navigated) {
             for (let o of data.MainMenu) {
               if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && !navigated) {
@@ -178,6 +200,7 @@ function MainComponent(props) {
               }
             }
           }
+          
           if (!navigated) {
             for (let o of data.SubMenu) {
               if (Number(o.Read_Rights) === 1 && o.PageUrl !== '' && !navigated) {
@@ -196,6 +219,7 @@ function MainComponent(props) {
 
         }
       })
+
     fetch(`${api}notification?UserId=${parseData?.UserId}`)
       .then(res => res.json())
       .then(data => {
@@ -203,6 +227,7 @@ function MainComponent(props) {
           setNotificationData(data.data)
         }
       })
+
     fetch(`${api}userName?AllUser=true&BranchId=1`)
       .then(res => res.json())
       .then(data => {
@@ -210,6 +235,7 @@ function MainComponent(props) {
           setUsers(data.data);
         }
       })
+
   }, [parseData?.Autheticate_Id, parseData?.UserId])
 
   const openNotificationDialog = () => {
@@ -254,12 +280,12 @@ function MainComponent(props) {
           <hr className="my-2" />
           <div className="sidebar-body-div">
 
-            <button className={'sidebutton'} onClick={() => window.location.href = `${process.env.REACT_APP_ERP_ADDRESS}?Auth=${parseData?.Autheticate_Id}`}>
+            {/* <button className={'sidebutton'} onClick={() => window.location.href = `${process.env.REACT_APP_ERP_ADDRESS}?Auth=${parseData?.Autheticate_Id}`}>
               <span className="flex-grow-1 d-flex justify-content-start">
                 <Home className="me-2 fa-20" style={{ color: '#FDD017' }} />
                 {'ERP HOME'}
               </span>
-            </button>
+            </button> */}
 
             {sidebar.MainMenu.map((o, i) => (
               <DispNavButtons
@@ -276,7 +302,7 @@ function MainComponent(props) {
           <div className="sidebar-bottom">
             <button className="btn btn-dark w-100 d-flex align-items-center " onClick={props.logout}>
               <span className=" flex-grow-1 text-start">Logout</span>
-              <Logout className="fa-in" /> 
+              <Logout className="fa-in" />
             </button>
           </div>
         </aside>

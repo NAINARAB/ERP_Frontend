@@ -6,6 +6,8 @@ import api from "./API";
 import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
 import { ContextDataProvider } from "./Components/context/contextProvider";
+import { ToastContainer } from 'react-toastify';
+
 
 import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/Users";
@@ -40,6 +42,9 @@ import ChartsReport from "./Pages/Reports/chartReports";
 import EmployeeDayAbstract from "./Pages/Reports/workDocument";
 import EmployeeAbstract from "./Pages/Reports/employeeAbstract";
 import TallyReports from "./Pages/Dashboard/tallyReport";
+import ChangePassword from "./Pages/ERP/Home/changePassword";
+import AttendanceReport from "./Pages/Attendance/attendanceReport";
+import CustomerList from "./Pages/UserModule/customerList";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -68,7 +73,7 @@ function App() {
             const user = {
               Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId
             }
-            
+
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('session', JSON.stringify(session[0]));
             setLogin(true);
@@ -76,8 +81,8 @@ function App() {
           } else {
             setLoading(false);
           }
-          
-        }).catch(e => {console.error(e); setLoading(false);})
+
+        }).catch(e => { console.error(e); setLoading(false); })
         .finally(() => clearQueryParameters())
 
     } else {
@@ -99,6 +104,7 @@ function App() {
 
   return (
     <>
+      <ToastContainer />
       <BrowserRouter>
         {loading ? (
           <div className="overlay">
@@ -145,7 +151,15 @@ function App() {
                 <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
                 <Route path="/reprots/employee" element={<EmployeeAbstract />} />
                 <Route path="/reports/tally" element={<TallyReports />} />
-                
+
+                <Route path="/attendance/report" element={<AttendanceReport />} />
+
+
+                <Route path="/userModule/customer" element={<CustomerList />} />
+
+
+                <Route path="/changePassword" element={<ChangePassword />} />
+
 
                 <Route path="/invalid-credentials" element={<InvalidPageComp />} />
                 <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />

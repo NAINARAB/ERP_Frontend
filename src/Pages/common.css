@@ -302,6 +302,29 @@
   content: none !important;
 } */
 
+.comadbtn {
+  border: none;
+  border-radius: 3px;
+  background-color: rgb(66, 34, 225);
+  color: white;
+  padding: 0.5em 1.9em;
+  margin-bottom: 3em;
+}
+
+.cancelbtn {
+  background-color: transparent;
+  border: none;
+  border-radius: 3px;
+  padding: 0.5em 1.9em;
+  cursor: pointer;
+  color: rgb(66, 34, 225);
+  margin-right: 0.5em;
+}
+
+.cancelbtn:hover {
+  background-color: #d9d7d7;
+}
+
 
 
 @media only screen and (min-width: 991px) {
