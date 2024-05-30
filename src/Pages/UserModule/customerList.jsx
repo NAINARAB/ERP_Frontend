@@ -139,10 +139,8 @@ const CustomerList = () => {
                                 <Button variant='outlined' onClick={() => setScreen(!screen)} >Add</Button>
                             </span>
                         </div>
-                        <div className="card-body">
-                            <div className="box shadow-none bg-light">
-                                <MaterialReactTable table={table} />
-                            </div>
+                        <div className="card-body p-0">
+                            <MaterialReactTable table={table} />
                         </div>
                     </div>
                 </>
