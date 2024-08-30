@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import api from "../../API";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list';
+import { fetchLink } from "../../Components/fetchComponent";
+import { ISOString } from "../../Components/functions";
+
 
 const WorkDoneHistory = () => {
     const localData = localStorage.getItem("user");
@@ -14,18 +16,18 @@ const WorkDoneHistory = () => {
     const [selectedTask, setSelectedTask] = useState({});
     const [dialog, setDialog] = useState(false);
     const [days, setDays] = useState({
-        Start: new Date().toISOString().split('T')[0],
-        End: new Date().toISOString().split('T')[0],
+        Start: ISOString(),
+        End: ISOString(),
     })
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${parseData?.UserId}&Start=${days.Start}&End=${days.End}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setWorkedDetais(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work?Emp_Id=${parseData?.UserId}&from=${days.Start}&to=${days.End}`
+        }).then(data => {
+            if (data.success) {
+                setWorkedDetais(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [parseData?.UserId, days])
 
     const formatTime24 = (time24) => {
@@ -52,8 +54,8 @@ const WorkDoneHistory = () => {
                     events={
                         workedDetais.map(o => ({
                             title: o?.Task_Name,
-                            start: new Date(o?.Work_Dt).toISOString().split('T')[0] + 'T' + o?.Start_Time,
-                            end: new Date(o?.Work_Dt).toISOString().split('T')[0] + 'T' + o?.End_Time,
+                            start: ISOString(o?.Work_Dt) + 'T' + o?.Start_Time,
+                            end: ISOString(o?.Work_Dt) + 'T' + o?.End_Time,
                             objectData: o
                         }))
                     }

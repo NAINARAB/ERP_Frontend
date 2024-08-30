@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, Paper } from '@mui/material';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { MyContext } from "../../Components/context/contextProvider";
+import { fetchLink } from '../../Components/fetchComponent'
 
 
 const TallyReports = () => {
@@ -21,28 +22,24 @@ const TallyReports = () => {
 
 
     useEffect(() => {
-        fetch(`${api}getTallyData?UserId=${filters?.Emp_Id}&From=${filters?.From}&To=${filters?.To}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTallyDetails(data.data);
-                } else {
-                    setTallyDetails([])
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `dashboard/getTallyData?UserId=${filters?.Emp_Id}&From=${filters?.From}&To=${filters?.To}`
+        }).then(data => {
+            if (data.success) {
+                setTallyDetails(data.data);
+            } else {
+                setTallyDetails([])
+            }
+        }).catch(e => console.error(e))
     }, [filters?.Emp_Id, filters?.From, filters?.To]);
 
     useEffect(() => {
-        fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsers(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            setTallyDetails(data.success ? data.data : []);
+        }).catch(e => console.error(e))
     }, [])
-
-
 
     return (
         <>

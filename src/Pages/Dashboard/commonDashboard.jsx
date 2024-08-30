@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import api from "../../API";
 import { CiCalendarDate } from "react-icons/ci";
 import { CgSandClock } from "react-icons/cg";
 import { HiUsers } from "react-icons/hi2";
@@ -11,6 +10,8 @@ import { Card, CardHeader, CardContent, Paper, FormControlLabel, Switch } from '
 import SOAComp from "./erp/SOA";
 import AttendanceComp from "../Attendance/attendanceComp";
 import ManagementDashboard from "./managementDashboard";
+import { fetchLink } from '../../Components/fetchComponent'
+import { ISOString } from "../../Components/functions";
 
 
 
@@ -28,58 +29,66 @@ const CommonDashboard = () => {
 
     useEffect(() => {
         if (isAdmin || isEmp || isMangement) {
-            fetch(`${api}dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setDashboardData(data.data[0]);
-                    } else {
-                        setDashboardData({})
-                    }
-                }).catch(e => console.error(e))
+            fetchLink({
+                address: `dashboard/dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`
+            })
+            .then(data => {
+                if (data.success) {
+                    setDashboardData(data.data[0]);
+                } else {
+                    setDashboardData({});
+                }
+            })
+            .catch(e => {
+                console.error(e);
+            });
         }
     }, [parseData?.UserId, parseData?.UserTypeId, isAdmin, isMangement, isEmp]);
 
     useEffect(() => {
         if (isEmp) {
-            fetch(`${api}getTallyData?UserId=${parseData?.UserId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setTallyDetails(data.data);
-                    } else {
-                        setTallyDetails([])
-                    }
-                }).catch(e => console.error(e))
+            fetchLink({
+                address:`dashboard/getTallyData?UserId=${parseData?.UserId}`
+            }).then(data => {
+                if (data.success) {
+                    setTallyDetails(data.data);
+                } else {
+                    setTallyDetails([])
+                }
+            }).catch(e => console.error(e))
         }
     }, [isEmp])
 
     useEffect(() => {
         if (isEmp) {
+            fetchLink({
+                address:`taskManagement/task/work?Emp_Id=${parseData?.UserId}&from=${ISOString()}&to=${ISOString()}`
+            }).then(data => {
+                if (data.success) {
+                    setWorkedDetais(data.data);
+                } else {
+                    setTallyDetails([])
+                }
+            }).catch(e => console.error(e))
 
-            fetch(`${api}myTodayWorks?Emp_Id=${parseData?.UserId}&reqDate=${new Date().toISOString().split('T')[0]}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setWorkedDetais(data.data)
-                    }
-                }).catch(e => console.error(e))
-
-            fetch(`${api}task/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${new Date().toISOString().split('T')[0]}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        data.data.sort((a, b) => {
-                            const [aHours, aMinutes] = a?.Sch_Time.split(':').map(Number);
-                            const [bHours, bMinutes] = b?.Sch_Time.split(':').map(Number);
-                            if (aHours !== bHours) {
-                                return aHours - bHours;
-                            }
-                            return aMinutes - bMinutes;
-                        });
-                        setMyTasks(data.data);
-                    }
-                }).catch(e => console.error(e))
+            fetchLink({
+                address:`taskManagement/tasks/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${ISOString()}`
+            }).then(data => {
+                if (data.success) {
+                    console.log({res: data.data});
+                    data.data.sort((a, b) => {
+                        const [aHours, aMinutes] = a?.Sch_Time.split(':').map(Number);
+                        const [bHours, bMinutes] = b?.Sch_Time.split(':').map(Number);
+                        if (aHours !== bHours) {
+                            return aHours - bHours;
+                        }
+                        return aMinutes - bMinutes;
+                    });
+                    setMyTasks(data.data);
+                } else {
+                    setMyTasks([])
+                }
+            }).catch(e => console.error(e))
         }
     }, [isEmp, parseData?.UserId])
 
@@ -242,6 +251,7 @@ const CommonDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {console.log(myTasks)}
                                     {myTasks.map((o, i) => (
                                         <tr key={i}>
                                             <td className="fa-13 border">{i + 1}</td>

@@ -10,6 +10,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list';
 import { Card, CardContent } from '@mui/material';
 import { ISOString } from '../../Components/functions'
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const statusColor = (id) => {
@@ -135,38 +136,36 @@ const TodayTasks = () => {
     })
 
     useEffect(() => {
-        fetch(`${api}task/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${queryDate.myTaskDate}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setMyTasks(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/tasks/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${queryDate.myTaskDate}`
+        }).then(data => {
+            setMyTasks(data.success ? data.data : [])
+        }).catch(e => console.error(e))
     }, [reload, queryDate.myTaskDate, parseData?.UserId])
 
     useEffect(() => {
-        fetch(`${api}myTodayWorks?Emp_Id=${parseData?.UserId}&reqDate=${queryDate.executedTaskDate}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setWorkedDetais(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work?Emp_Id=${parseData?.UserId}&from=${queryDate.executedTaskDate}&to=${queryDate.executedTaskDate}`
+        }).then(data => {
+            setWorkedDetais(data.success ? data.data : [])
+        }).catch(e => console.error(e))
     }, [reload, queryDate.executedTaskDate, parseData?.UserId])
 
     useEffect(() => {
-        fetch(`${api}startTask?Emp_Id=${parseData?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const time = data.data[0].Time ? Number(data.data[0].Time) : null;
-                    const taskId = data?.data[0]?.Task_Id ? Number(data?.data[0]?.Task_Id) : 0
-                    setStartTime(time);
-                    setRunningTaskId(taskId)
-                } else {
-                    setStartTime(null)
-                }
-            }).catch(e => console.log(e))
+
+        fetchLink({
+            address: `taskManagement/task/startTask?Emp_Id=${parseData?.UserId}`
+        }).then(data => {
+            if (data.success) {
+                const time = data.data[0].Time ? Number(data.data[0].Time) : null;
+                const taskId = data?.data[0]?.Task_Id ? Number(data?.data[0]?.Task_Id) : 0
+                setStartTime(time);
+                setRunningTaskId(taskId)
+            } else {
+                setStartTime(null)
+            }
+        }).catch(e => console.error(e))
+
     }, [reload, parseData?.UserId])
 
     useEffect(() => {
@@ -191,53 +190,46 @@ const TodayTasks = () => {
 
 
     const startTimer = () => {
-        fetch(`${api}startTask`, {
+        fetchLink({
+            address: `taskManagement/task/startTask`,
             method: 'POST',
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Emp_Id: parseData.UserId,
                 Time: new Date().getTime(),
                 Task_Id: selectedTask?.Task_Levl_Id,
                 ForcePost: 0
-            })
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message)
-                    setReload(!reload)
-                    setIsRunning(true);
-                    setDialog(false)
-                } else {
-                    toast.error(data.message);
-                }
-            }).catch(e => console.error(e))
-
+            }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message)
+                setReload(!reload)
+                setIsRunning(true);
+                setDialog(false)
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e))
     };
 
     const stopTimer = () => {
-        fetch(`${api}startTask`, {
+        fetchLink({
+            address: `taskManagement/task/startTask`,
             method: 'DELETE',
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Emp_Id: parseData.UserId,
                 Mode: 1
-            })
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message)
-                    setStartTime(null);
-                    setIsRunning(false);
-                    setElapsedTime(0);
-                    setSelectedTask({})
-                } else {
-                    toast.error(data.message);
-                }
-            })
+            }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message)
+                setStartTime(null);
+                setIsRunning(false);
+                setElapsedTime(0);
+                setSelectedTask({})
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e))
     };
 
     const progressFun = (end) => {
@@ -383,12 +375,10 @@ const TodayTasks = () => {
     }
 
     const saveWork = () => {
-        fetch(`${api}saveWork`, {
+        fetchLink({
+            address: `taskManagement/task/work`,
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Mode: isEdit ? 2 : 1,
                 Work_Id: isEdit ? workInput?.Work_Id : 0,
                 Project_Id: selectedTask?.Project_Id,
@@ -402,28 +392,25 @@ const TodayTasks = () => {
                 End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
                 Work_Status: workInput?.Work_Status,
                 Det_string: arrayToXml(workInput?.Det_string)
-            })
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setSelectedTask({});
-                    toast.success(data.message);
-                    setWorkDialog(false); setIsEdit(false)
-                    setReload(!reload); setElapsedTime(0); setIsRunning(false); setStartTime(null);
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            }
+        }).then(data => {
+            if (data.success) {
+                setSelectedTask({});
+                toast.success(data.message);
+                setWorkDialog(false); setIsEdit(false)
+                setReload(!reload); setElapsedTime(0); setIsRunning(false); setStartTime(null);
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     const saveNonTimerBasedTask = (e) => {
         e.preventDefault();
-        fetch(`${api}saveWork`, {
+        fetchLink({
+            address: `taskManagement/task/work`,
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Mode: isEdit ? 2 : 1,
                 Work_Id: isEdit ? nonTimerInput?.Work_Id : 0,
                 Project_Id: selectedTask?.Project_Id,
@@ -439,18 +426,17 @@ const TodayTasks = () => {
                 End_Time: nonTimerInput?.End_Time,
                 Work_Status: nonTimerInput?.Work_Status,
                 Det_string: arrayToXml(nonTimerInput?.Det_string)
-            })
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setSelectedTask({});
-                    toast.success(data.message);
-                    setNonTimerWorkDialog(false);
-                    setReload(!reload); setIsEdit(false); setStartTime(null);
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            }
+        }).then(data => {
+            if (data.success) {
+                setSelectedTask({});
+                toast.success(data.message);
+                setNonTimerWorkDialog(false);
+                setReload(!reload); setIsEdit(false); setStartTime(null);
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     const openUnAssignedTaskDialog = () => {
@@ -460,22 +446,19 @@ const TodayTasks = () => {
 
     const saveUnAssignedTask = (e) => {
         e.preventDefault();
-        fetch(`${api}saveWork`, {
+        fetchLink({
+            address: `taskManagement/task/work`,
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(additionalTaskInput)
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setAdditionalTaskDialog(false);
-                    setReload(!reload); setIsEdit(false)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: additionalTaskInput
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setAdditionalTaskDialog(false);
+                setReload(!reload); setIsEdit(false)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
 
@@ -599,7 +582,7 @@ const TodayTasks = () => {
                                     if (!startTime && elapsedTime === 0) {
                                         const selObj = eve.event.extendedProps?.objectData;
                                         if (Number(selObj?.Work_Status) !== 3 && Number(selObj?.Timer_Based) === 1) {
-                                            setSelectedTask(selObj); 
+                                            setSelectedTask(selObj);
                                             setDialog(true);
                                             setWorkInput({
                                                 Work_Id: selObj?.Work_Id,
@@ -617,7 +600,7 @@ const TodayTasks = () => {
                                                 Det_string: selObj?.Param_Dts
                                             })
                                         } else if (Number(selObj?.Work_Status) !== 3) {
-                                            setSelectedTask(selObj); 
+                                            setSelectedTask(selObj);
                                             setNonTimerWorkDialog(true);
                                             setNonTimerInput({
                                                 Work_Id: selObj?.Work_Id ? selObj?.Work_Id : '',
@@ -631,7 +614,7 @@ const TodayTasks = () => {
                                                 Start_Time: selObj?.Start_Time ? selObj?.Start_Time : '10:00',
                                                 End_Time: selObj?.End_Time ? selObj?.End_Time : '11:00',
                                                 Work_Status: selObj?.Work_Status ? selObj?.Work_Status : 2,
-                                                Work_Dt: selObj?.Work_Dt ?  ISOString(selObj?.Work_Dt) : ISOString(),
+                                                Work_Dt: selObj?.Work_Dt ? ISOString(selObj?.Work_Dt) : ISOString(),
                                                 Det_string: selObj?.Param_Dts ? selObj?.Param_Dts : [],
                                             })
                                         } else {
@@ -681,7 +664,7 @@ const TodayTasks = () => {
                                         if (ISOString(selObj?.Entry_Date) === ISOString()) {
                                             setIsEdit(true)
                                             if (Number(selObj?.Timer_Based) === 0) {
-                                                setSelectedTask(selObj); 
+                                                setSelectedTask(selObj);
                                                 setNonTimerWorkDialog(true)
                                                 setNonTimerInput({
                                                     Work_Id: selObj?.Work_Id,
@@ -699,7 +682,7 @@ const TodayTasks = () => {
                                                     Det_string: selObj?.Param_Dts ? selObj?.Param_Dts : [],
                                                 })
                                             } else {
-                                                setSelectedTask(selObj); 
+                                                setSelectedTask(selObj);
                                                 setWorkDialog(true)
                                                 setWorkInput({
                                                     Work_Id: selObj?.Work_Id,

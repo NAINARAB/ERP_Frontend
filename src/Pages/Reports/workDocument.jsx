@@ -6,6 +6,7 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccessTime, FiberManualRecord, SmsOutlined } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
+import { fetchLink } from "../../Components/fetchComponent";
 
 const EmployeeDayAbstract = () => {
     const localData = localStorage.getItem("user");
@@ -26,44 +27,44 @@ const EmployeeDayAbstract = () => {
     const printRef = useRef()
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}&Task_Id=${filter?.Task_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const groupedData = data?.data?.reduce((acc, current) => {
-                        const workDate = new Date(current?.Work_Dt).toISOString().split('T')[0];
-                        if (!acc[workDate]) {
-                            acc[workDate] = [];
-                        }
-                        acc[workDate].push(current);
-                        return acc;
-                    }, {});
-                    setWorkedDetails(groupedData)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}&Task_Id=${filter?.Task_Id}`
+        }).then(data => {
+            if (data.success) {
+                const groupedData = data?.data?.reduce((acc, current) => {
+                    const workDate = new Date(current?.Work_Dt).toISOString().split('T')[0];
+                    if (!acc[workDate]) {
+                        acc[workDate] = [];
+                    }
+                    acc[workDate].push(current);
+                    return acc;
+                }, {});
+                setWorkedDetails(groupedData)
+            }
+        }).catch(e => console.error(e))            
     }, [parseData?.UserId, filter])
 
     useEffect(() => {
-        fetch(`${api}task/employeeInvolved?Emp_Id=${filter?.Emp_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTasks(data.data)
-                }
-            }).catch(e => console.error(e))
-    }, [filter?.Emp_Id])
+        fetchLink({
+            address: `taskManagement/task/assignEmployee/task/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setTasks(data.data)
+            }
+        }).catch(e => console.error(e))            
+    }, [])
 
     useEffect(() => {
         if (Number(contextObj?.Print_Rights) === 1) {
-            fetch(`${api}taskAssignedUsersDropdown`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setUsers(data.data)
-                    }
-                }).catch(e => console.error(e))
+            fetchLink({
+                address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+            }).then(data => {
+                if (data.success) {
+                    setUsers(data.data)
+                }
+            }).catch(e => console.error(e))                
         }
-    }, [contextObj?.Print_Rights])
+    }, [contextObj?.Print_Rights, parseData?.Company_id])
 
     const formatTime24 = (time24) => {
         const [hours, minutes] = time24.split(':').map(Number);
@@ -125,9 +126,9 @@ const EmployeeDayAbstract = () => {
                                                 </p>
                                             </td>
                                             <td style={{ verticalAlign: 'middle' }}>
-                                                {taskDetail?.Parameter_Details.length > 0 && (
+                                                {taskDetail?.Work_Param?.length > 0 && (
                                                     <div className="cus-card p-2 m-0">
-                                                        {taskDetail?.Parameter_Details?.map((o, i) => (
+                                                        {taskDetail?.Work_Param?.map((o, i) => (
                                                             <p className="mb-0 fa-14 d-flex" key={i}>
                                                                 <span className="flex-grow-1">{o?.Paramet_Name}:</span>
                                                                 <span className="text-primary">

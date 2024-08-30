@@ -5,7 +5,7 @@ import { MyContext } from "../../Components/context/contextProvider";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccountCircle, Add, Remove, TaskAlt } from '@mui/icons-material';
-
+import { fetchLink } from "../../Components/fetchComponent";
 
 const EmployeeAbstract = () => {
     const localData = localStorage.getItem("user");
@@ -23,23 +23,23 @@ const EmployeeAbstract = () => {
 
     useEffect(() => {
         setEmpData({})
-        fetch(`${api}employeeAbstract?UserId=${filter?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setEmpData(data.data[0])
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `dashboard/employeeAbstract?UserId=${filter?.UserId}`
+        }).then(data => {
+            if (data.success) {
+                setEmpData(data.data[0])
+            }
+        }).catch(e => console.error(e));
     }, [filter?.UserId])
 
     useEffect(() => {
-        fetch(`${api}userName?AllUser=true`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUserDropDown(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/user/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setUserDropDown(data.data)
+            }
+        }).catch(e => console.error(e))            
     }, [])
 
     const locDate = (inp) => {

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "../../API";
 import { LocalDate, LocalTime } from "../../Components/functions";
 import { toast } from "react-toastify";
+import { fetchLink } from '../../Components/fetchComponent'
 
 const AttendanceComp = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -20,14 +21,13 @@ const AttendanceComp = () => {
 
     useEffect(() => {
         setLastAttendance({})
-        fetch(`${api}getMyLastAttendance?UserId=${storage?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success && data?.data?.length > 0) {
-                    setLastAttendance(data?.data[0])
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `empAttendance/attendance?UserId=${storage?.UserId}`,
+        }).then(data => {
+            if (data?.success && data?.data?.length > 0) {
+                setLastAttendance(data?.data[0])
+            }
+        }).catch(e => console.error(e))            
     }, [storage?.UserId, reload])
 
     const getLocation = async () => {
@@ -76,27 +76,22 @@ const AttendanceComp = () => {
         getLocation().then(hasLocationAccess => {
             if (hasLocationAccess) {
                 if (inputValue?.Latitude && inputValue?.Longitude) {
-                    fetch(`${api}attendance`, {
+                    fetchLink({
+                        address: `empAttendance/attendance`,
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
+                        bodyData: {
                             UserId: inputValue?.UserId,
                             Latitude: inputValue?.Latitude,
                             Longitude: inputValue?.Longitude
-                        })
+                        }
+                    }).then(data => {
+                        setReload(!reload)
+                        if (data.success) {
+                            toast.success(data.message)
+                        } else {
+                            toast.error(data.message)
+                        }
                     })
-                        .then(res => res.json())
-                        .then(data => {
-                            setReload(!reload)
-                            if (data.success) {
-                                toast.success(data.message)
-                            } else {
-                                toast.error(data.message)
-                            }
-                        })
-                        .catch(e => console.error(e))
                 } else {
                     toast.warn('Please Retry')
                 }
@@ -107,27 +102,22 @@ const AttendanceComp = () => {
     };
 
     const EndDay = () => {
-        fetch(`${api}attendance`, {
+        fetchLink({
+            address: `empAttendance/attendance`,
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Id: lastAttendance?.Id,
                 Description: inputValue?.Description
-            })
+            }
+        }).then(data => {
+            if (data.success) {
+                setReload(!reload)
+                toast.success(data.message);
+                resetValues()
+            } else {
+                toast.error(data.message)
+            }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setReload(!reload)
-                    toast.success(data.message);
-                    resetValues()
-                } else {
-                    toast.error(data.message)
-                }
-            })
-            .catch(e => console.error(e))
     }
 
     const resetValues = () => {
