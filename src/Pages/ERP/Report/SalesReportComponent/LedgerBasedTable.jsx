@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
-import FilterableTable from "../../../Components/filterableTable2";
-import { isEqualNumber, checkIsNumber } from "../../../Components/functions";
+import FilterableTable from "../../../../Components/filterableTable2";
+import { isEqualNumber, checkIsNumber } from "../../../../Components/functions";
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
 import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, Download } from '@mui/icons-material'
 import { mkConfig, generateCsv, download } from 'export-to-csv';

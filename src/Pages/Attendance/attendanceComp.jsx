@@ -1,6 +1,5 @@
 import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, DialogActions } from "@mui/material"
 import { useEffect, useState } from "react";
-import api from "../../API";
 import { LocalDate, LocalTime } from "../../Components/functions";
 import { toast } from "react-toastify";
 import { fetchLink } from '../../Components/fetchComponent'

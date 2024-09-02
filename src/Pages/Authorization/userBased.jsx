@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import api from "../../API";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox} from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
@@ -9,13 +8,15 @@ import Select from 'react-select';
 import { MyContext } from "../../Components/context/contextProvider";
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
 import InvalidPageComp from "../../Components/invalidCredential";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
-    fetch(`${api}/userBasedRights`, {
+    fetchLink({
+        address: `authorization/userRights`,
         method: 'POST',
-        body: JSON.stringify({
+        bodyData: {
             MenuId: Menu_id,
             MenuType: Menu_Type,
             User: Number(UserId),
@@ -24,14 +25,13 @@ const postCheck = (param, Menu_id, Menu_Type, UserId) => {
             EditRights: param.editRights === true ? 1 : 0,
             DeleteRights: param.deleteRights === true ? 1 : 0,
             PrintRights: param.printRights === true ? 1 : 0
-        }),
+        },
         headers: { 'Content-Type': 'application/json' }
-    }).then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e));
+    }).then(data => {
+        if (!data.success) {
+            toast.error(data.message)
+        }
+    }).catch(e => console.error(e));        
 }
 
 const TRow = ({ UserId, subMenu, data }) => {
@@ -215,23 +215,24 @@ const UserBased = () => {
     const { contextObj } = useContext(MyContext);
 
     useEffect(() => {
-        fetch(`${api}auth/user?Auth=${currentAuthId.value}`).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setAuthData({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
-                }
-            })
+        fetchLink({
+            address: `authorization/appMenu?Auth=${currentAuthId.value}`
+        }).then(data => {
+            if (data.success) {
+                setAuthData({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
+            }
+        })            
     }, [currentAuthId])
 
     useEffect(() => {
-        fetch(`${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${parseData?.BranchId}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setUsers(data.data);
-                }
-            }).catch(e => console.log(e))
-    }, [parseData?.UserId, parseData?.Company_id, parseData?.BranchId])
+        fetchLink({
+            address: `masters/users?Company_id=${parseData?.Company_id}`
+        }).then((data) => {
+            if (data.success) {
+                setUsers(data.data);
+            }
+        }).catch(e => console.log(e))            
+    }, [parseData?.Company_id])
 
     const handleUserChange = (selectedOption) => {
         if (selectedOption) {

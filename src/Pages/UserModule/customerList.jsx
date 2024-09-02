@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
-import api from "../../API";
 import { Edit } from '@mui/icons-material';
 import { IconButton, Box, Tooltip, Button } from "@mui/material";
 import 'react-toastify/dist/ReactToastify.css';
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
 import CustomerAddScreen from "./customerCreation";
+import { fetchLink } from '../../Components/fetchComponent'
 // import '../../com.css';
 
 const CustomerList = () => {
@@ -14,11 +14,12 @@ const CustomerList = () => {
     const [screen, setScreen] = useState(true);
 
     useEffect(() => {
-        fetch(`${api}customer`)
-            .then(res => res.json())
-            .then(data => {
-                setCustomers(data.data ? data.data : [])
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `userModule/customer`,
+        }).then(data => {
+            setCustomers(data.data ? data.data : [])
+        }).catch(e => console.error(e))
+
     }, [refresh])
 
     useEffect(() => {
@@ -34,12 +35,14 @@ const CustomerList = () => {
             Cell: ({ renderedCellValue, row }) => (
                 <Box >
                     <Tooltip title="Edit">
-                        <IconButton onClick={() => {
-                            setRowValue(row.original);
-                            setScreen(!screen);
-                        }}>
-                            <Edit />
-                        </IconButton>
+                        <span>
+                            <IconButton onClick={() => {
+                                setRowValue(row.original);
+                                setScreen(!screen);
+                            }}>
+                                <Edit />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                     {/* <Tooltip title="Delete">
                         <IconButton color="error" onClick={() => console.log(row.original)}>

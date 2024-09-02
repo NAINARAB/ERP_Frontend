@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import api from "../../API";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox } from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
@@ -9,12 +8,14 @@ import Select from 'react-select';
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
 import { MyContext } from "../../Components/context/contextProvider";
 import InvalidPageComp from "../../Components/invalidCredential";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
-    fetch(`${api}/userTypeBasedRights`, {
+    fetchLink({
+        address: `authorization/userTypeRights`,
         method: 'POST',
-        body: JSON.stringify({
+        bodyData: {
             MenuId: Menu_id,
             MenuType: Menu_Type,
             UserType: Number(UserId),
@@ -23,14 +24,13 @@ const postCheck = (param, Menu_id, Menu_Type, UserId) => {
             EditRights: param.editRights === true ? 1 : 0,
             DeleteRights: param.deleteRights === true ? 1 : 0,
             PrintRights: param.printRights === true ? 1 : 0
-        }),
+        },
         headers: { 'Content-Type': 'application/json' }
-    }).then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e));
+    }).then(data => {
+        if (!data.success) {
+            toast.error(data.message)
+        }
+    }).catch(e => console.error(e));        
 }
 
 const TRow = ({ UserId, subMenu, data }) => {
@@ -139,7 +139,6 @@ const TRow = ({ UserId, subMenu, data }) => {
     );
 }
 
-
 const STrow = (props) => {
     const [open, setOpen] = useState(false);
     const { data, UserId } = props;
@@ -202,8 +201,6 @@ const STrow = (props) => {
     );
 }
 
-
-
 const UserTypeBased = () => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
@@ -213,22 +210,23 @@ const UserTypeBased = () => {
     const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType });
 
     useEffect(() => {
-        fetch(`${api}/appMenuUType?UserType=${currentTypeId?.value}`).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setAuthData({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
-                }
-            })
+        fetchLink({
+            address: `authorization/userTypeRights?UserType=${currentTypeId?.value}`
+        }).then(data => {
+            if (data.success) {
+                setAuthData({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu })
+            }
+        }).catch(e => console.error(e));            
     }, [currentTypeId])
 
     useEffect(() => {
-        fetch(`${api}userType`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setUserTypes(data.data);
-                }
-            });
+        fetchLink({
+            address: `masters/userType`
+        }).then((data) => {
+            if (data.success) {
+                setUserTypes(data.data);
+            }
+        }).catch(e => console.error(e));            
     }, [])
 
 
@@ -240,7 +238,7 @@ const UserTypeBased = () => {
                 <div className="col-sm-4 pt-1">
                     <Select
                         value={currentTypeId}
-                        onChange={(e) => setCurrentTypeId({value: e.value, label: e.label})}
+                        onChange={(e) => setCurrentTypeId({ value: e.value, label: e.label })}
                         options={[...usersType.map(obj => ({ value: obj?.Id, label: obj?.UserType }))]}
                         styles={customSelectStyles}
                         isSearchable={true}

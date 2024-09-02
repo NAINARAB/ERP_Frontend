@@ -7,6 +7,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from 'react-bootstrap/Dropdown';
 import axios from 'axios';
+import { fetchLink } from "../../Components/fetchComponent";
 
 const ChatsDisplayer = () => {
     const localData = localStorage.getItem("user");
@@ -30,28 +31,29 @@ const ChatsDisplayer = () => {
         if (!locationData) {
             return navigate('/discussions')
         }
-        fetch(`${api}messages?Topic_Id=${locationData?.Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const groupedData = data.data.reduce((acc, message) => {
-                        const date = new Date(message.CreatedAt).toDateString();
-                        if (!acc[date]) {
-                            acc[date] = [];
-                        }
-                        acc[date].push(message);
-                        return acc;
-                    }, {});
-                    setMessageData(groupedData);
-                }
-            }).catch(e => console.error(e));
-        fetch(`${api}files?Topic_Id=${locationData?.Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setDocuments(data.data);
-                }
-            }).catch(e => console.error(e));
+        fetchLink({
+            address: `discussionForum/messages?Topic_Id=${locationData?.Id}`,
+        }).then(data => {
+            if (data.success) {
+                const groupedData = data.data.reduce((acc, message) => {
+                    const date = new Date(message.CreatedAt).toDateString();
+                    if (!acc[date]) {
+                        acc[date] = [];
+                    }
+                    acc[date].push(message);
+                    return acc;
+                }, {});
+                setMessageData(groupedData);
+            }
+        }).catch(e => console.log(e))
+        
+        fetchLink({
+            address: `discussionForum/files?Topic_Id=${locationData?.Id}`,
+        }).then(data => {
+            if (data.success) {
+                setDocuments(data.data);
+            }
+        }).catch(e => console.log(e))
     }, [reload])
 
     useEffect(() => {
@@ -70,34 +72,22 @@ const ChatsDisplayer = () => {
             return;
         }
 
-        try {
-            const result = await fetch(`${api}messages`, {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    Topic_Id: locationData?.Id,
-                    User_Id: parseData?.UserId,
-                    Message: messageInput
-                })
-            });
-
-            if (result.ok) {
-                const data = await result.json();
-                if (data.success) {
-                    setReload(!reload);
-                    setMessageInput('');
-                } else {
-                    toast.error(data.message);
-                }
-            } else {
-                toast.error('Server Error');
+        fetchLink({
+            address: `discussionForum/messages`,
+            method: 'POST',
+            bodyData: {
+                Topic_Id: locationData?.Id,
+                User_Id: parseData?.UserId,
+                Message: messageInput
             }
-        } catch (e) {
-            console.error(e);
-            toast.error('An error occurred');
-        }
+        }).then(data => {
+            if (data.success) {
+                setReload(!reload);
+                setMessageInput('');
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.log(e))
     };
 
     const closeFileUploadDialog = () => {
@@ -114,9 +104,10 @@ const ChatsDisplayer = () => {
         formData.append('Topic_Id', locationData?.Id);
 
         try {
-            axios.post(`${api}files`, formData, {
+            axios.post(`${api}discussionForum/files`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                    "Authorization": parseData?.Autheticate_Id
                 },
                 onUploadProgress: progressEvent => {
                     let percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -139,25 +130,27 @@ const ChatsDisplayer = () => {
 
     const downloadFile = async (id) => {
         try {
-            const response = await fetch(`${api}files/download?FileId=${id}`);
-
-            if (!response.ok) {
-                return toast.error('Failed to download file')
-            }
-
+            const response = await fetchLink({
+                address: `discussionForum/files/download?FileId=${id}`,
+                headers: {
+                    "Content-Type": "application/octet-stream",  
+                    "Authorization": parseData.Autheticate_Id
+                }
+            });
+    
             const blob = await response.blob();
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.setAttribute('download', id);
+            link.setAttribute('download', `file_${id}`);  
             document.body.appendChild(link);
             link.click();
-            link.parentNode.removeChild(link);
+            link.parentNode.removeChild(link);  
         } catch (e) {
-            console.error('Download error:', e);
-            toast.error('Failed to Download')
+            console.error('Download Error', e);
         }
-    }
+    };
+    
 
     return (
         <>

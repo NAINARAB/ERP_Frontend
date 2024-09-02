@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import api from "../../API";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import "react-toastify/dist/ReactToastify.css";
 import FullCalendar from '@fullcalendar/react'
@@ -9,6 +8,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
+import { fetchLink } from '../../Components/fetchComponent'
 
 const ReportCalendar = () => {
     const localData = localStorage.getItem("user");
@@ -33,37 +33,37 @@ const ReportCalendar = () => {
 
 
     useEffect(() => {
-        fetch(`${api}workReport?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setWorkedDetais(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`
+        }).then(data => {
+            if (data.success) {
+                setWorkedDetais(data.data)
+            }
+        }).catch(e => console.error(e))    
     }, [filters])
 
     useEffect(() => {
-        fetch(`${api}projectDropDown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setProjects(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsersDropdown(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}tasksDropdown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTasks(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/project/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setProjects(data.data)
+            }
+        }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/user/dropDown?BranchId=${parseData?.BranchId}&Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setUsersDropdown(data.data)
+            }
+        }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/assignEmployee/task/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setTasks(data.data)
+            }
+        }).catch(e => console.error(e))            
     }, [parseData?.BranchId])
 
     const formatTime24 = (time24) => {

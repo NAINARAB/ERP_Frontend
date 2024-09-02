@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import api from '../../API';
 import { toast } from "react-toastify";
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { fetchLink } from '../../Components/fetchComponent';
 
 const TaskParametersComp = () => {
     const initialValue = {
@@ -21,56 +22,49 @@ const TaskParametersComp = () => {
     const [filteredData, setFilteredData] = useState([]);
 
     useEffect(() => {
-        fetch(`${api}tasks/parameters`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setParameters(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/parameters`
+        }).then(data => {
+            if (data.success) {
+                setParameters(data.data)
+            }
+        })
+        .catch(e => console.error(e))
+            
     }, [reload])
 
     const AddParameter = () => {
-        fetch(`${api}tasks/parameters`, {
+        fetchLink({
+            address: `taskManagement/parameters`,
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(inputValue)
+            bodyData: inputValue
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            })
-            .catch(e => console.error(e))
-            .finally(CloseAddDialog)
+        .catch(e => console.error(e))
+        .finally(CloseAddDialog)            
     }
 
     const DeleteParameter = () => {
-        fetch(`${api}tasks/parameters`, {
+        fetchLink({
+            address: `taskManagement/parameters`,
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ Paramet_Id: inputValue.Paramet_Id })
+            bodyData: { Paramet_Id: inputValue.Paramet_Id }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            })
-            .catch(e => console.error(e))
-            .finally(closeDeleteConfirmationDialog)
+        .catch(e => console.error(e))
+        .finally(closeDeleteConfirmationDialog)
     }
 
     const CloseAddDialog = () => {

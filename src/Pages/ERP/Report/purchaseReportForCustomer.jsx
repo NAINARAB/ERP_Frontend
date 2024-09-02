@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Close, LaunchOutlined, Visibility } from '@mui/icons-material';
 import InvoiceBill from "./billFormat";
 import { LocalDate, NumberFormat } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 const PurchaseReportForCustomer = () => {
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -21,12 +22,10 @@ const PurchaseReportForCustomer = () => {
     const printRef = useRef()
 
     useEffect(() => {
-        fetch(`${api}customerSalesReport?UserId=${storage?.UserId}`, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(res => res.json()).then(data => {
-            if (data.status === 'Success') {
+        fetchLink({
+            address: `userModule/customer/customerSalesReport?UserId=${storage?.UserId}`,
+        }).then(data => {
+            if (data.success) {
                 setSales(data.data)
                 let temp = 0;
                 data.data.forEach(obj => {
@@ -35,19 +34,20 @@ const PurchaseReportForCustomer = () => {
                 })
                 setTotal(temp)
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e));
+
     }, [])
 
     const getSalesDetials = (obj) => {
-        setSalesInfo([])
-        fetch(`${api}salesInfo?Cust_Id=${obj?.Cust_Id}&Acc_Id=${obj?.tally_id}&Company_Id=${obj?.Company_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'Success') {
-                    setSalesInfo(data.data);
-                    setDialog(pre => ({ ...pre, salesInfoDialog: true }))
-                }
-            }).catch(e => console.log(e))
+        setSalesInfo([]);
+        fetchLink({
+            address: `userModule/customer/salesInfo?Cust_Id=${obj?.Cust_Id}&Acc_Id=${obj?.tally_id}&Company_Id=${obj?.Company_Id}`
+        }).then(data => {
+            if (data.success) {
+                setSalesInfo(data.data);
+                setDialog(pre => ({ ...pre, salesInfoDialog: true }))
+            }
+        }).catch(e => console.log(e))
     }
 
     const fetchInvoiceDetails = (CompanyId, Invoice_No) => {
@@ -55,23 +55,23 @@ const PurchaseReportForCustomer = () => {
         setInvoiceInfo([]);
         setExpencesInfo([]);
         if (CompanyId && Invoice_No) {
-            fetch(`${api}invoiceDetails?Company_Id=${CompanyId}&UserId=${storage?.UserId}&Invoice_No=${Invoice_No}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "Success") {
-                        if (data?.data[0]?.length) {
-                            const company = data.data[0]
-                            setCompanyInfo(company[0])
-                        }
-                        if (data?.data[1]?.length) {
-                            setInvoiceInfo(data?.data[1]);
-                        }
-                        if (data?.data[2].length) {
-                            setExpencesInfo(data?.data[2])
-                        }
-                        setDialog(pre => ({ ...pre, billDialog: true }));
+            fetchLink({
+                address: `userModule/customer/invoiceDetails?Company_Id=${CompanyId}&UserId=${storage?.UserId}&Invoice_No=${Invoice_No}`
+            }).then(data => {
+                if (data.status === "Success") {
+                    if (data?.data[0]?.length) {
+                        const company = data.data[0]
+                        setCompanyInfo(company[0])
                     }
-                }).catch(e => console.log(e))
+                    if (data?.data[1]?.length) {
+                        setInvoiceInfo(data?.data[1]);
+                    }
+                    if (data?.data[2].length) {
+                        setExpencesInfo(data?.data[2])
+                    }
+                    setDialog(pre => ({ ...pre, billDialog: true }));
+                }
+            }).catch(e => console.log(e))
         }
     }
 

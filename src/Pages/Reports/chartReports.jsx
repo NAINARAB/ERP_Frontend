@@ -5,7 +5,8 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import PieChartComp from "../Dashboard/chartComp";
 import LineChartComp from "./barChartComp";
-import { Card, CardContent } from '@mui/material'
+import { Card, CardContent } from '@mui/material';
+import { fetchLink } from '../../Components/fetchComponent'
 
 const ChartsReport = () => {
     const localData = localStorage.getItem("user");
@@ -36,54 +37,57 @@ const ChartsReport = () => {
 
 
     useEffect(() => {
-        fetch(`${api}myTodayWorks?Emp_Id=${filters.Emp_Id}&reqDate=${filters.date}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setEmpData(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work?Emp_Id=${filters.Emp_Id}&from=${filters.date}&to=${filters.date}`
+        }).then(data => {
+            if (data.success) {
+                setEmpData(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [filters?.Emp_Id, filters?.date])
 
     useEffect(() => {
-        fetch(`${api}taskAssignedUsersDropdown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsersDropdown(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}assignedTasksDropdown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskDropDown(data.data)
-                }
-                if (data?.data?.length > 0) {
-                    setBarChartFilter(pre => ({ ...pre, Task_Id: data.data[0].Task_Id, TaskGet: data.data[0].Task_Name }))
-                }
-            }).catch(e => console.error(e))
-    }, [parseData?.BranchId])
+        fetchLink({
+            address: `taskManagement/task/assignEmployee/user/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setUsersDropdown(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `taskManagement/task/assignEmployee/task/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setTaskDropDown(data.data)
+            }
+            if (data?.data?.length > 0) {
+                setBarChartFilter(pre => ({ ...pre, Task_Id: data.data[0].Task_Id, TaskGet: data.data[0].Task_Name }))
+            }
+        }).catch(e => console.error(e))
+
+    }, [])
 
     useEffect(() => {
-        fetch(`${api}taskActivityReportBarChart?Emp_Id=${barChartFilter?.Emp_Id}&From=${barChartFilter?.From}&To=${barChartFilter?.To}&Task_Id=${barChartFilter?.Task_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskData(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/work/barChart?Emp_Id=${barChartFilter?.Emp_Id}&From=${barChartFilter?.From}&To=${barChartFilter?.To}&Task_Id=${barChartFilter?.Task_Id}`
+        }).then(data => {
+            if (data.success) {
+                setTaskData(data.data)
+            }
+        }).catch(e => console.error(e))
+
     }, [barChartFilter.Emp_Id, barChartFilter.From, barChartFilter.To, barChartFilter.Task_Id]);
 
     useEffect(() => {
         setFilteredUser([])
-        fetch(`${api}userFilter/taskBased?Task_Id=${barChartFilter.Task_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setFilteredUser(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/workedUsers/dropDown?Task_Id=${barChartFilter.Task_Id}`
+        }).then(data => {
+            if (data.success) {
+                setFilteredUser(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [barChartFilter?.Task_Id])
 
 
@@ -97,7 +101,10 @@ const ChartsReport = () => {
                             <Select
                                 value={{ value: filters?.Emp_Id, label: filters?.EmpGet }}
                                 onChange={(e) => setFileters({ ...filters, Emp_Id: e.value, EmpGet: e.label })}
-                                options={[{ value: '', label: 'All Employee' }, ...usersDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))]}
+                                options={[
+                                    { value: '', label: 'All Employee' }, 
+                                    ...usersDropDown.map(obj => ({ value: obj.UserId, label: obj.Name }))
+                                ]}
                                 styles={customSelectStyles}
                                 isSearchable={true}
                                 placeholder={"Employee Name"} />

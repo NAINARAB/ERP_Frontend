@@ -1,14 +1,14 @@
-import api from "../../API";
 import { MyContext } from "../../Components/context/contextProvider";
 import { useContext, useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import '../common.css'
 import { Edit, Delete, CheckBoxOutlineBlank, CheckBox } from '@mui/icons-material';
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, TextField, Autocomplete,  } from '@mui/material';
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, TextField, Autocomplete } from '@mui/material';
 import DataTable from "react-data-table-component";
-import InvalidPageComp from "../../Components/invalidCredential";
 import TaskParametersComp from "../MyTasks/taskParameters";
+import { fetchLink } from '../../Components/fetchComponent';
+import { checkIsNumber } from '../../Components/functions'
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -19,17 +19,14 @@ const TaskMaster = () => {
     const parseData = JSON.parse(localData);
     const initialValue = {
         Task_Id: "",
-        Task_No: "",
         Task_Name: "",
         Task_Desc: "",
-        Under_Task_Id: 0,
         Task_Group_Id: 0,
         Entry_By: parseData?.UserId,
         Entry_Date: "",
         Update_By: '',
         Update_Date: "",
-        Under_Task: "",
-        Det_string: [],
+        Task_Parameters: [],
     }
     const [taskData, setTaskData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -38,45 +35,55 @@ const TaskMaster = () => {
 
     const [reload, setReload] = useState(false);
     const { contextObj } = useContext(MyContext);
-    const [isEdit, setIsEdit] = useState(false);
     const [screen, setScreen] = useState(true);
     const [inputValue, setInputValue] = useState(initialValue);
     const [dialog, setDialog] = useState(false);
     const [filterInput, setFilterInput] = useState('');
 
     useEffect(() => {
-        fetch(`${api}tasks`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskData(data.data)
-                }
-            })
+        fetchLink({
+            address: `taskManagement/tasks?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setTaskData(data.data)
+            }
+        }).catch(e => console.error(e))
+
     }, [reload])
 
     useEffect(() => {
-        fetch(`${api}taskTypeDropDown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskGroup(data.data)
-                }
-            })
-            .catch(e => console.error(e))
-        fetch(`${api}tasks/parameters`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskParameters(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/taskType/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setTaskGroup(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `taskManagement/parameters`
+        }).then(data => {
+            if (data.success) {
+                setTaskParameters(data.data)
+            }
+        }).catch(e => console.error(e))
+
     }, [])
+
+    useEffect(() => {
+        const filteredResults = [...taskData].filter(item => {
+            return Object.values(item).some(value =>
+                String(value).toLowerCase().includes(filterInput.toLowerCase())
+            );
+        });
+        
+        setFilteredData(filteredResults);
+    }, [filterInput, taskData])
 
     const switchScreen = (rel) => {
         setInputValue(initialValue);
         setScreen(!screen);
-        setIsEdit(false);
         if (rel) {
             setReload(!reload)
         }
@@ -84,7 +91,6 @@ const TaskMaster = () => {
 
     const handleEdit = (row) => {
         setInputValue(row);
-        setIsEdit(true);
         setScreen(!screen);
     }
 
@@ -99,11 +105,6 @@ const TaskMaster = () => {
     }
 
     const tasksColumn = [
-        {
-            name: 'T.No',
-            selector: (row) => row?.Task_No,
-            sortable: true,
-        },
         {
             name: 'Task',
             selector: (row) => row?.Task_Name,
@@ -121,11 +122,6 @@ const TaskMaster = () => {
             width: '170px'
         },
         {
-            name: 'Under Task',
-            selector: (row) => row?.Under_Task,
-            sortable: true,
-        },
-        {
             name: 'Created At',
             selector: (row) => new Date(row?.Entry_Date),
             cell: (row) => {
@@ -137,55 +133,45 @@ const TaskMaster = () => {
             name: 'Actions',
             cell: (row) => (
                 <div>
-                    {Number(contextObj?.Edit_Rights) === 1 && <IconButton onClick={() => handleEdit(row)}><Edit /></IconButton>}
-                    {Number(contextObj?.Delete_Rights) === 1 && <IconButton onClick={() => handleDelete(row)}><Delete sx={{ color: '#FF6865' }} /></IconButton>}
+                    {Number(contextObj?.Edit_Rights) === 1 && (
+                        <IconButton onClick={() => handleEdit(row)}>
+                            <Edit />
+                        </IconButton>
+                    )}
+                    {Number(contextObj?.Delete_Rights) === 1 && (
+                        <IconButton onClick={() => handleDelete(row)}>
+                            <Delete sx={{ color: '#FF6865' }} />
+                        </IconButton>
+                    )}
                 </div>
             ),
         },
     ];
 
-    function arrayToXml(array) {
-        let xml = '<DocumentElement>';
-        for (let obj of array) {
-            xml += '<Data>';
-            xml += `<Param_Id>${obj.Param_Id}</Param_Id>`;
-            xml += `<Default_Value>${obj.Default_Value}</Default_Value>`;
-            xml += '</Data>';
-        }
-        xml += '</DocumentElement>';
-        return xml;
-    }
-
     const postAndPutTask = async () => {
-        const paramArr = inputValue?.Det_string?.map(param => ({
+        const paramArr = inputValue?.Task_Parameters?.map(param => ({
             ...param,
             Param_Id: param?.Paramet_Id
         })) || [];
 
         const PostObj = {
             ...inputValue,
-            Det_string: arrayToXml(paramArr)
+            Task_Parameters: paramArr
         }
-        // console.log(PostObj)
         if (inputValue?.Task_Name && inputValue?.Task_Desc) {
-            const result = await fetch(`${api}tasks`, {
-                method: isEdit ? 'PUT' : 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(PostObj)
-            })
-            if (result.ok) {
-                const data = await result.json();
+            fetchLink({
+                address: `taskManagement/tasks`,
+                method: checkIsNumber(PostObj.Task_Id) ? 'PUT' : 'POST',
+                bodyData: PostObj
+            }).then(data => {
                 if (data.success) {
                     toast.success(data.message);
                     switchScreen(true);
                 } else {
                     toast.error(data.message);
                 }
-            } else {
-                toast.error('Server Error');
-            }
+            }).catch(e => console.error(e))
+           
         } else {
             toast.error('Enter Task Name and Describtion')
         }
@@ -193,15 +179,11 @@ const TaskMaster = () => {
 
     const deleteTask = async () => {
         if (inputValue?.Task_Id && Number(contextObj.Delete_Rights) === 1) {
-            const result = await fetch(`${api}tasks`, {
+            fetchLink({
+                address: `taskManagement/tasks`,
                 method: 'DELETE',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ Task_Id: inputValue?.Task_Id })
-            })
-            if (result.ok) {
-                const data = await result.json();
+                bodyData: { Task_Id: inputValue?.Task_Id }
+            }).then(data => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
@@ -209,35 +191,24 @@ const TaskMaster = () => {
                 } else {
                     toast.error(data.message);
                 }
-            } else {
-                toast.error('Server Error');
-            }
+            }).catch(e => console.error(e))
         }
     }
 
     function handleSearchChange(event) {
         const term = event.target.value;
         setFilterInput(term);
-        const filteredResults = taskData.filter(item => {
-            return Object.values(item).some(value =>
-                String(value).toLowerCase().includes(term.toLowerCase())
-            );
-        });
-
-        setFilteredData(filteredResults);
     }
 
-    return Number(contextObj.Read_Rights) === 1 ? (
+    return (
         <>
-            {/* <ToastContainer /> */}
-
             <TaskParametersComp />
 
             <div className="card">
 
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     <div className="fa-15 flex-grow">
-                        {screen ? 'Task List' : isEdit ? 'Edit Task' : 'Create Task'}
+                        {screen ? 'Task List' : checkIsNumber(inputValue.Task_Id) ? 'Edit Task' : 'Create Task'}
                     </div>
                     <button onClick={() => { switchScreen(false) }} className="btn btn-primary rounded-5 px-3 py-1 fa-13 shadow">
                         {screen ? 'Create Task' : 'Back'}
@@ -287,7 +258,7 @@ const TaskMaster = () => {
                                     className="cus-inpt"
                                     onChange={e => setInputValue({ ...inputValue, Task_Group_Id: e.target.value })}>
                                     <option value={0} disabled>- select -</option>
-                                    {taskGroup.map((o, i) => (
+                                    {taskGroup?.map((o, i) => (
                                         Number(o?.Task_Type_Id) !== 0 &&
                                         <option key={i} value={o?.Task_Type_Id}>
                                             {o?.Task_Type}
@@ -303,7 +274,7 @@ const TaskMaster = () => {
                                     className="cus-inpt"
                                     onChange={e => setInputValue({ ...inputValue, Under_Task_Id: e.target.value })}>
                                     <option value={0}>Primary</option>
-                                    {taskData.map((o, i) => (
+                                    {taskData?.map((o, i) => (
                                         <option key={i} value={o?.Task_Id}>
                                             {o?.Task_Name}
                                         </option>
@@ -324,11 +295,11 @@ const TaskMaster = () => {
                                 <Autocomplete
                                     multiple
                                     id="checkboxes-tags-demo"
-                                    options={[...taskParameters.map(o => ({ ...o, Default_Value: '' }))]}
+                                    options={[...taskParameters?.map(o => ({ ...o, Default_Value: '' }))]}
                                     disableCloseOnSelect
                                     getOptionLabel={(option) => option?.Paramet_Name + ' - ' + option?.Paramet_Data_Type}
-                                    value={inputValue?.Det_string || []}
-                                    onChange={(f, e) => setInputValue({ ...inputValue, Det_string: e })}
+                                    value={inputValue?.Task_Parameters || []}
+                                    onChange={(f, e) => setInputValue({ ...inputValue, Task_Parameters: e })}
                                     renderOption={(props, option, { selected }) => (
                                         <li {...props}>
                                             <Checkbox
@@ -348,19 +319,19 @@ const TaskMaster = () => {
                                 />
                             </div>
 
-                            {inputValue?.Det_string.map((param, index) => (
+                            {inputValue?.Task_Parameters?.map((param, index) => (
                                 <div key={index} className="col-md-4 p-2">
                                     <label className="mb-2">{param?.Paramet_Name}</label>
                                     <input
                                         type={param?.Paramet_Data_Type || 'text'}
                                         className="cus-inpt"
                                         onChange={(e) => {
-                                            const updatedDetString = [...inputValue.Det_string];
+                                            const updatedDetString = [...inputValue.Task_Parameters];
                                             updatedDetString[index] = {
                                                 ...updatedDetString[index],
                                                 Default_Value: e.target.value,
                                             };
-                                            setInputValue({ ...inputValue, Det_string: updatedDetString });
+                                            setInputValue({ ...inputValue, Task_Parameters: updatedDetString });
                                         }}
                                         value={param?.Default_Value}
                                         placeholder="Default Value"
@@ -374,13 +345,13 @@ const TaskMaster = () => {
                     <div className="card-body text-end">
                         <button
                             className="btn btn-light rounded-5 px-3 me-2"
-                            onClick={switchScreen}>
+                            onClick={() => switchScreen(false)}>
                             Cancel
                         </button>
                         <button
                             className="btn btn-primary rounded-5 px-3"
                             onClick={postAndPutTask}>
-                            {isEdit ? "Update Task" : 'Create Task'}
+                            {checkIsNumber(inputValue.Task_Id) ? "Update Task" : 'Create Task'}
                         </button>
                     </div>
                 )}
@@ -412,8 +383,7 @@ const TaskMaster = () => {
             </Dialog>
 
         </>
-    ) :
-        <InvalidPageComp />
+    ) 
 }
 
 export default TaskMaster

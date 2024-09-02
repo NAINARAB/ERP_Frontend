@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Card, CardContent, Collapse, IconButton } from '@mui/material';
 import api from '../../API';
 import { ISOString, LocalDate } from '../../Components/functions';
-
+import { fetchLink } from '../../Components/fetchComponent';
 
 const DispEmployee = ({ emp, edit, del, setVal }) => {
     const [open, setOpen] = useState(false);
@@ -161,32 +161,29 @@ const EmployeeMaster = () => {
 
     useEffect(() => {
 
-        fetch(`${api}employee`)
-            .then(res => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setEmpData(data.data)
-                }
-            })
-            .catch(e => console.log(e));
+        fetchLink({
+            address: `userModule/employee`,
+        }).then((data) => {
+            if (data.success) {
+                setEmpData(data.data)
+            }
+        }).catch(e => console.log(e));
 
-        fetch(`${api}branchDropDown`)
-            .then(res => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setBranch(data.data)
-                }
-            })
-            .catch(e => console.log(e));
+        fetchLink({
+            address: `masters/branch/dropDown?User_Id=${storage?.UserId}&Company_id=${storage?.Company_id}`
+        }).then((data) => {
+            if (data.success) {
+                setBranch(data.data)
+            }
+        }).catch(e => console.log(e));
 
-        fetch(`${api}emp-designation`)
-            .then(res => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setDesignation(data.data)
-                }
-            })
-            .catch(e => console.log(e));
+        fetchLink({
+            address: `userModule/employee/designation`,
+        }).then((data) => {
+            if (data.success) {
+                setDesignation(data.data)
+            }
+        }).catch(e => console.log(e));
 
     }, [refresh])
 
@@ -237,6 +234,7 @@ const EmployeeMaster = () => {
             event: (e) => setEmpFormData({ ...empFormData, mobile: e.target.value }),
             required: true,
             value: empFormData.mobile,
+            max: 10
         },
         {
             label: 'Education',
@@ -357,6 +355,7 @@ const EmployeeMaster = () => {
             placeholder: "Enter Pincode",
             event: (e) => setEmpFormData({ ...empFormData, pincode: e.target.value }),
             value: empFormData.pincode,
+            max: 6
         },
         {
             label: 'Address Line 1',
@@ -392,26 +391,21 @@ const EmployeeMaster = () => {
     const postEmp = () => {
         const validate = validateForm();
         if (validate === 'Success') {
-            fetch(`${api}employee`, {
+            fetchLink({
+                address: `userModule/employee`,
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ data: empFormData, userMGT: userCreate })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        toast.success(data.message)
-                        setInitialValue()
-                        setPK('')
-                        setDispScreen(!dispScreen)
-                        setRefresh(!refresh)
-                    } else {
-                        toast.error(data.message)
-                    }
-                })
-                .catch(e => console.log(e));
+                bodyData: { data: empFormData, userMGT: userCreate }
+            }).then(data => {
+                if (data.success) {
+                    toast.success(data.message)
+                    setInitialValue()
+                    setPK('')
+                    setDispScreen(!dispScreen)
+                    setRefresh(!refresh)
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.log(e));
         } else {
             toast.error(validate)
         }
@@ -420,25 +414,21 @@ const EmployeeMaster = () => {
     const putEmp = () => {
         const validate = validateForm();
         if (validate === 'Success') {
-            fetch(`${api}employee`, {
+            fetchLink({
+                address: `userModule/employee`,
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ data: empFormData, ID: pk })
+                bodyData: { data: empFormData, ID: pk }
+            }).then(data => {
+                if (data.success) {
+                    toast.success(data.message)
+                    setInitialValue()
+                    setPK('')
+                    setDispScreen(!dispScreen)
+                    setRefresh(!refresh)
+                } else {
+                    toast.error(data.message)
+                }
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        toast.success(data.message)
-                        setInitialValue()
-                        setPK('')
-                        setDispScreen(!dispScreen)
-                        setRefresh(!refresh)
-                    } else {
-                        toast.error(data.message)
-                    }
-                })
                 .catch(e => console.error(e))
         } else {
             toast.error(validate)
@@ -519,6 +509,7 @@ const EmployeeMaster = () => {
                                                 onInput={field.oninput}
                                                 disabled={field.disabled}
                                                 value={field.value}
+                                                maxLength={field.max}
 
                                             />
                                         ) : field.elem === 'select' ? (
@@ -576,15 +567,15 @@ const EmployeeMaster = () => {
                         </div>
                         :
                         <div style={{ maxHeight: '74vh', overflowY: 'scroll' }} className='p-3 pe-2'>
-                            
+
                             <div className='text-end mb-2'>
-                            <input
-                                className='cus-inpt w-auto'
-                                type='search'
-                                placeholder="Search..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                            />
+                                <input
+                                    className='cus-inpt w-auto'
+                                    type='search'
+                                    placeholder="Search..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
                             </div>
 
                             {(filteredData && filteredData.length ? filteredData : search === '' ? empData : []).map(emp => (

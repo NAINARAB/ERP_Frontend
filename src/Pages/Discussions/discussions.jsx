@@ -1,5 +1,4 @@
 import { useEffect, useState, useContext } from "react";
-import api from "../../API";
 import { People, Message, Launch, Edit, Delete, GroupAdd, Article } from '@mui/icons-material';
 import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Tooltip, IconButton } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
@@ -14,6 +13,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import { useNavigate } from 'react-router-dom';
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const topicInitialValue = {
@@ -42,31 +42,31 @@ const Discussions = () => {
 
 
     useEffect(() => {
-        fetch(`${api}discussionTopic?UserId=${parseData?.UserId}&UserTypeId=${parseData?.UserTypeId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const temp = [];
-                    data.data.forEach(o => {
-                        o?.InvolvedUsers?.forEach(obj => {
-                            if (Number(obj?.UserId) === Number(parseData?.UserId)) {
-                                temp.push(o)
-                            }
-                        })
+        fetchLink({
+            address: `discussionForum/discussionTopic?UserId=${parseData?.UserId}&UserTypeId=${parseData?.UserTypeId}&Company_id=${parseData?.Company_id}`,
+        }).then(data => {
+            if (data.success) {
+                const temp = [];
+                data.data.forEach(o => {
+                    o?.InvolvedUsers?.forEach(obj => {
+                        if (Number(obj?.UserId) === Number(parseData?.UserId)) {
+                            temp.push(o)
+                        }
                     })
-                    setMyDiscussions((Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1) ? data?.data : temp)
-                }
-            })
+                })
+                setMyDiscussions((Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1) ? data?.data : temp)
+            }
+        }).catch(e => console.log(e))
     }, [reload, parseData?.UserId, parseData?.UserTypeId])
 
     useEffect(() => {
-        fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsers(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/user/dropDown?Company_id=${parseData?.Company_id}`,
+        }).then(data => {
+            if (data.success) {
+                setUsers(data.data)
+            }
+        }).catch(e => console.log(e))
     }, [parseData?.BranchId])
 
     const closeCreateDialog = () => {
@@ -103,15 +103,11 @@ const Discussions = () => {
 
     const postTopic = async () => {
         if (Number(contextObj?.Add_Rights) === 1) {
-            const result = await fetch(`${api}discussionTopic`, {
+            fetchLink({
+                address: `discussionForum/discussionTopic`,
                 method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(inputValue)
-            })
-            if (result.ok) {
-                const data = await result.json();
+                bodyData: inputValue
+            }).then(data => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
@@ -119,47 +115,37 @@ const Discussions = () => {
                 } else {
                     toast.error(data.message);
                 }
-            } else {
-                toast.error('Server Error');
-            }
+            }).catch(e => console.log(e))
         }
     }
 
     const putTopic = async () => {
         if (inputValue?.Id && Number(contextObj?.Edit_Rights) === 1) {
-            const result = await fetch(`${api}discussionTopic`, {
-                method: 'PUT',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(inputValue)
-            })
-            if (result.ok) {
-                const data = await result.json();
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload);
-                    closeCreateDialog();
-                } else {
-                    toast.error(data.message);
-                }
-            } else {
-                toast.error('Server Error');
+            if (Number(contextObj?.Add_Rights) === 1) {
+                fetchLink({
+                    address: `discussionForum/discussionTopic`,
+                    method: 'PUT',
+                    bodyData: inputValue
+                }).then(data => {
+                    if (data.success) {
+                        toast.success(data.message);
+                        setReload(!reload);
+                        closeCreateDialog();
+                    } else {
+                        toast.error(data.message);
+                    }
+                }).catch(e => console.log(e))
             }
         }
     }
 
     const deleteTopic = async () => {
         if (inputValue?.Id && Number(contextObj?.Delete_Rights) === 1) {
-            const result = await fetch(`${api}discussionTopic`, {
+            fetchLink({
+                address: `discussionForum/discussionTopic`,
                 method: 'DELETE',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(inputValue)
-            })
-            if (result.ok) {
-                const data = await result.json();
+                bodyData: inputValue
+            }).then(data => {
                 if (data.success) {
                     toast.success(data.message);
                     closeDeleteDialog();
@@ -167,23 +153,17 @@ const Discussions = () => {
                 } else {
                     toast.error(data.message);
                 }
-            } else {
-                toast.error('Server Error');
-            }
+            }).catch(e => console.log(e))
         }
     }
 
     const postTeamMembers = async () => {
         if (Number(contextObj?.Add_Rights) === 1) {
-            const result = await fetch(`${api}modifyTeam`, {
+            fetchLink({
+                address: `discussionForum/modifyTeam`,
                 method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ Teams: currentTeam?.InvolvedUsers, Topic_Id: currentTeam?.Id })
-            })
-            if (result.ok) {
-                const data = await result.json();
+                bodyData: { Teams: currentTeam?.InvolvedUsers, Topic_Id: currentTeam?.Id }
+            }).then(data => {
                 if (data.success) {
                     toast.success(data.message);
                     setReload(!reload);
@@ -191,9 +171,7 @@ const Discussions = () => {
                 } else {
                     toast.error(data.message);
                 }
-            } else {
-                toast.error('Server Error');
-            }
+            }).catch(e => console.log(e))
         }
     }
 
@@ -392,7 +370,7 @@ const Discussions = () => {
                                 {option?.Name}
                             </li>
                         )}
-                         className="pt-2"
+                        className="pt-2"
                         isOptionEqualToValue={(opt, val) => opt?.UserId === val?.UserId}
                         renderInput={(params) => (
                             <TextField {...params} label="Users" placeholder="Select Team Members" />

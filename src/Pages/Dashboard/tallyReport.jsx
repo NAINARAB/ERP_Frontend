@@ -37,7 +37,7 @@ const TallyReports = () => {
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
         }).then(data => {
-            setTallyDetails(data.success ? data.data : []);
+            setUsers(data.success ? data.data : []);
         }).catch(e => console.error(e))
     }, [])
 

@@ -1,3 +1,16 @@
+import CryptoJS from "crypto-js";
+
+const encryptionKey = "ly4@&gr$vnh905RyB>?%#@-(KSMT";
+
+export const encryptPasswordFun = (str) => {
+    return CryptoJS.AES.encrypt(str, encryptionKey).toString();
+}
+
+export const decryptPasswordFun = (str) => {
+    const decrypt = CryptoJS.AES.decrypt(str, encryptionKey);
+    const decryptedText = decrypt.toString(CryptoJS.enc.Utf8);
+    return decryptedText;
+}
 
 export const LocalDate = (dateObj) => {
     const receivedDate = dateObj ? new Date(dateObj) : new Date();

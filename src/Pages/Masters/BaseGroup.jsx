@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button } from "react-bootstrap";
-import api from "../../API";
-import {
-    IconButton,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Button as MuiButton,
-} from "@mui/material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button as MuiButton, } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
+import { fetchLink } from "../../Components/fetchComponent";
 
 const initialState = {
     Base_Group_Id: "",
@@ -26,13 +18,13 @@ const BaseGroup = () => {
     const [reload, setReload] = useState(false);
 
     useEffect(() => {
-        fetch(`${api}baseGroup`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setBaseGroup(data.data);
-                }
-            });
+        fetchLink({
+            address: `masters/baseGroup`
+        }).then((data) => {
+            if (data.success) {
+                setBaseGroup(data.data);
+            }
+        }).catch(e => console.error(e))
     }, [reload]);
 
     const clearValue = () => {
@@ -42,23 +34,19 @@ const BaseGroup = () => {
     };
 
     const createFun = () => {
-        fetch(`${api}baseGroup`, {
+        fetchLink({
+            address: `masters/baseGroup`,
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(inputValue),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    toast.success(data?.message);
-                    setReload(!reload);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .finally(() => {
-                clearValue();
-            });
+            bodyData: inputValue,
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data?.message);
+                setReload(!reload);
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e)).finally(() => clearValue());
     };
 
     const setDelete = (row) => {
@@ -68,23 +56,19 @@ const BaseGroup = () => {
     };
 
     const deleteFun = () => {
-        fetch(`${api}baseGroup`, {
+        fetchLink({
+            address: `masters/baseGroup`,
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(inputValue),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    toast.success(data?.message);
-                    setReload(!reload);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .finally(() => {
-                clearValue();
-            });
+            bodyData: inputValue,
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data?.message);
+                setReload(!reload);
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e)).finally(() => clearValue());
     };
 
     const [editBase, setEditBase] = useState(false);
@@ -97,36 +81,28 @@ const BaseGroup = () => {
     };
 
     const editFun = (baseGroupId, baseGroupName) => {
-        console.log("baseGroupId", baseGroupId);
-        console.log("baseGroupName", baseGroupName);
         const postObj = {
             Base_Group_Id: baseGroupId,
             Base_Group_Name: baseGroupName,
         };
-        fetch(`${api}baseGroup`, {
+        fetchLink({
+            address: `masters/baseGroup`,
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(postObj),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    console.log("Server Response:", data);
-                    toast.success(data.message);
-                    setReload(!reload);
-                    setEditBase(false);
-                } else {
-                    // console.error("Error:", data);
-                    toast.error(data.message);
-                }
-            });
+            bodyData: postObj,
+        }).then((data) => {
+            if (data.success) {
+                console.log("Server Response:", data);
+                toast.success(data.message);
+                setReload(!reload);
+                setEditBase(false);
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e));
     };
 
     return (
         <>
-            <ToastContainer />
             <div className="card">
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     Base Group
@@ -180,17 +156,6 @@ const BaseGroup = () => {
                             </tbody>
                         </Table>
                     </div>
-                    {/* {baseGropup.map((o, i) => (
-            <Chip
-              label={o.Base_Group_Name}
-              onClick={() => {
-                editRow(o);
-              }}
-              onDelete={() => setDelete(o)}
-              className="mx-1"
-              key={i}
-            />
-          ))} */}
                 </div>
             </div>
 
@@ -270,7 +235,7 @@ const BaseGroup = () => {
 
             <Dialog
                 open={deleteDialog}
-                onClose={() => {setDeleteDialog(false); setInputValue(initialState)}}
+                onClose={() => { setDeleteDialog(false); setInputValue(initialState) }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
@@ -280,7 +245,7 @@ const BaseGroup = () => {
                         } Base Group?`}</b>
                 </DialogContent>
                 <DialogActions>
-                    <MuiButton onClick={() => {setDeleteDialog(false); setInputValue(initialState)}}>Cancel</MuiButton>
+                    <MuiButton onClick={() => { setDeleteDialog(false); setInputValue(initialState) }}>Cancel</MuiButton>
                     <MuiButton onClick={deleteFun} autoFocus color="error">
                         Delete
                     </MuiButton>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import api from "../../API";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { fetchLink } from '../../Components/fetchComponent'
 
 function onlynum(e) {
     e.target.value = e.target.value.replace(/[^0-9]/g, '');
@@ -30,14 +30,34 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
         User_Mgt_Id: '',
         User_Type_Id: '',
         Entry_By: storage?.UserId,
-        Entry_Date: '',
     }
-    const [value, setValue] = useState(initialValue)
+    const [value, setValue] = useState(initialValue);
+    const [branchData, setBranchData] = useState([]);
+    // console.log(row)
 
     useEffect(() => {
-        if (row.Cust_Id) {
-            setValue(row)
-        }
+
+        fetchLink({
+            address: `masters/branch/dropDown?User_Id=${storage?.UserId}&Company_id=${storage?.Company_id}`
+        }).then((data) => {
+            if (data.success) {
+                setBranchData(data.data);
+            }
+        }).catch(e => console.error(e));
+    }, []);
+
+    useEffect(() => {
+        const {
+            Branch_Id, Company_Id, Cust_Id, Cust_No, Customer_name, Contact_Person,
+            Mobile_no, Email_Id, Address1, Address2, Address3, Address4, Pincode,
+            State, Country, Gstin, Under_Id, User_Mgt_Id, User_Type_Id
+        } = row;
+        setValue(pre => ({
+            ...pre,
+            Branch_Id, Company_Id, Cust_Id, Cust_No, Customer_name, Contact_Person, 
+            Mobile_no, Email_Id, Address1, Address2, Address3, Address4, Pincode, 
+            State, Country, Gstin, Under_Id, User_Mgt_Id, User_Type_Id
+        }))
     }, [row])
 
     const clearValue = () => {
@@ -66,6 +86,22 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
             required: true,
             value: value.Mobile_no,
             max: 10
+        },
+        {
+            label: 'Branch',
+            elem: 'select',
+            options: [
+                { value: 0, label: ' - Select - ', disabled: true, selected: true },
+                ...branchData.map(obj => ({
+                    value: Number(obj.BranchId),
+                    label: obj.BranchName
+                }))
+            ],
+            class: 'selectpicker',
+            data: true,
+            event: (e) => setValue({ ...value, Branch_Id: parseInt(e.target.value) }),
+            required: true,
+            value: value.Branch_Id,
         },
         {
             label: 'User Type',
@@ -100,7 +136,7 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
             label: 'Gstin',
             elem: 'input',
             placeholder: "",
-            oninput: (e) => onlynum(e),
+            // oninput: (e) => onlynum(e),
             event: (e) => setValue({ ...value, Gstin: e.target.value }),
             required: false,
             value: value.Gstin,
@@ -163,7 +199,7 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
             event: (e) => setValue({ ...value, Address4: e.target.value }),
             value: value.Address4,
         },
-    ]
+    ];
 
     const validateForm = () => {
         for (const field of input) {
@@ -203,21 +239,21 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
     const CreateCustomer = () => {
         const validate = validateForm();
         if (validate === 'Success') {
-            fetch(`${api}customer`, {
+            fetchLink({
+                address: `userModule/customer`,
                 method: 'POST',
-                body: JSON.stringify({ data: value }),
-                headers: { 'Content-Type': 'application/json' }
-            }).then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        clearValue()
-                        toast.success(data.message)
-                        refresh()
-                        setScreen(!screen)
-                    } else {
-                        toast.error(data.message)
-                    }
-                })
+                bodyData: { ...value }
+            }).then(data => {
+                if (data.success) {
+                    clearValue()
+                    toast.success(data.message)
+                    refresh()
+                    setScreen(!screen)
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
+
         } else {
             toast.error(validate)
         }
@@ -226,21 +262,20 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
     const UpdateCustomer = () => {
         const validate = validateForm();
         if (validate === 'Success') {
-            fetch(`${api}customer`, {
+            fetchLink({
+                address: `userModule/customer`,
                 method: 'PUT',
-                body: JSON.stringify({ data: value }),
-                headers: { 'Content-Type': 'application/json' }
-            }).then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        clearValue();
-                        toast.success(data.message)
-                        refresh()
-                        setScreen(!screen)
-                    } else {
-                        toast.error(data.message)
-                    }
-                })
+                bodyData: { ...value }
+            }).then(data => {
+                if (data.success) {
+                    clearValue();
+                    toast.success(data.message)
+                    refresh()
+                    setScreen(!screen)
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
         } else {
             toast.error(validate)
         }
@@ -264,7 +299,8 @@ const CustomerAddScreen = ({ screen, setScreen, underArray, row, refresh }) => {
                                     onChange={field.event}
                                     onInput={field.oninput}
                                     disabled={field.disabled}
-                                    value={field.value} maxLength={field.max}
+                                    value={field.value} 
+                                    maxLength={field.max}
                                 />
                             ) : field.elem === 'select' ? (
                                 <select

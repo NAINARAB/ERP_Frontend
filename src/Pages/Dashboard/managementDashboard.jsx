@@ -9,7 +9,7 @@ import { IoReceiptOutline } from "react-icons/io5";
 import { BsCartPlus } from "react-icons/bs";
 import { PiHandCoinsFill } from "react-icons/pi";
 import { FaCubesStacked } from "react-icons/fa6";
-
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const getIcons = (str) => {
@@ -83,37 +83,38 @@ const ManagementDashboard = () => {
     })
 
     useEffect(() => {
-        fetch(`${api}company/companysAccess?Auth=${storage?.Autheticate_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setComp(data.data);
-                    if ((!currentCompany?.id && !currentCompany?.CompName) && (data?.data[0] && Number(data?.data[0]?.View_Rights) === 1)) {
-                        setCurrentCompany(pre => ({
-                            ...pre,
-                            id: data?.data[0]?.Company_Id,
-                            CompName: data?.data[0]?.Company_Name
-                        }))
-                    }
-                } else {
-                    setComp([])
+        fetchLink({
+            address: `authorization/companysAccess?Auth=${storage?.Autheticate_Id}`
+        }).then(data => {
+            if (data.success) {
+                setComp(data.data);
+                if ((!currentCompany?.id && !currentCompany?.CompName) && (data?.data[0] && Number(data?.data[0]?.View_Rights) === 1)) {
+                    setCurrentCompany(pre => ({
+                        ...pre,
+                        id: data?.data[0]?.Company_Id,
+                        CompName: data?.data[0]?.Company_Name
+                    }))
                 }
-            })
-            .catch((e) => { console.log(e) })
+            } else {
+                setComp([])
+            }
+        })
+        .catch((e) => { console.log(e) })
     }, [storage?.Autheticate_Id])
 
     useEffect(() => {
         if (UserAccess && currentCompany.id) {
-            fetch(`${api}erp/dashboardData?Fromdate=${filter?.date}&Company_Id=${currentCompany?.id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setMangementReport(data?.data[0])
-                        setSecRow(data?.data[1])
-                        setTheredRow(data?.data[2]);
-                    }
-                })
-                .catch(e => console.error(e))
+            fetchLink({
+                address: `dashboard/erp/dashboardData?Fromdate=${filter?.date}&Company_Id=${currentCompany?.id}`
+            })
+            .then(data => {
+                if (data.success) {
+                    setMangementReport(data?.data[0])
+                    setSecRow(data?.data[1])
+                    setTheredRow(data?.data[2]);
+                }
+            })
+            .catch(e => console.error(e))
         }
     }, [UserAccess, currentCompany.id, filter.date])
 

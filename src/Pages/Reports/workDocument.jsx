@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import api from "../../API";
 import { Card, CardHeader, CardContent, Paper } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
 import Select from 'react-select';

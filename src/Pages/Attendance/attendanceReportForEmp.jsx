@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, IconButton, Dialog, DialogTitle, DialogContent, Tooltip } from "@mui/material";
 import '../common.css'
-import api from "../../API";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 
@@ -13,9 +12,11 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list';
+import { fetchLink } from '../../Components/fetchComponent'
 
 
 const AttendanceReportForEmployee = () => {
+    const storage = JSON.parse(localStorage.getItem('user'));
     const [employees, setEmployees] = useState([]);
     const [attendanceData, setAttendanceData] = useState([]);
     const [dialog, setDialog] = useState(false);
@@ -29,24 +30,24 @@ const AttendanceReportForEmployee = () => {
     });
 
     useEffect(() => {
-        fetch(`${api}myAttendanceHistory?From=${filter?.From}&To=${filter?.To}&UserId=${filter?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setAttendanceData(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `empAttendance/attendance/history?From=${filter?.From}&To=${filter?.To}&UserId=${filter?.UserId}&UserTypeID=3`
+        }).then(data => {
+            if (data.success) {
+                setAttendanceData(data.data)
+            }
+        }).catch(e => console.error(e))
+
     }, [filter.From, filter.To, filter?.UserId])
 
     useEffect(() => {
-
-        fetch(`${api}users/employee/dropDown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setEmployees(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${storage?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setEmployees(data.data)
+            }
+        }).catch(e => console.error(e))
 
     }, [])
 

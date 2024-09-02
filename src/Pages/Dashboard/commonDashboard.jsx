@@ -75,7 +75,6 @@ const CommonDashboard = () => {
                 address:`taskManagement/tasks/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${ISOString()}`
             }).then(data => {
                 if (data.success) {
-                    console.log({res: data.data});
                     data.data.sort((a, b) => {
                         const [aHours, aMinutes] = a?.Sch_Time.split(':').map(Number);
                         const [bHours, bMinutes] = b?.Sch_Time.split(':').map(Number);
@@ -251,7 +250,6 @@ const CommonDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {console.log(myTasks)}
                                     {myTasks.map((o, i) => (
                                         <tr key={i}>
                                             <td className="fa-13 border">{i + 1}</td>

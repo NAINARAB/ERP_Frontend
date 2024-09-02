@@ -12,26 +12,40 @@ export const fetchLink = async ({
     bodyData = null,
     others = {}
 }) => {
+
+    const defaultHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": token,
+    };
+
+    const finalHeaders = { ...defaultHeaders, ...headers };
+
     const options = {
         method,
-        headers: headers,
+        headers: finalHeaders,
         ...others
     };
-    if (method === "POST" || method === "PUT" || method === "DELETE") {
+
+    if (["POST", "PUT", "DELETE"].includes(method)) {
         options.body = JSON.stringify(bodyData || {});
-    };
+    }
 
     try {
         const response = await fetch(api + address, options);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // if (!response.ok) {
+        //     throw new Error(`HTTP error! status: ${response.status}`);
+        // }
 
-        const json = await response.json();
-        return json;
+        if (options.headers["Content-Type"] === "application/json") {
+            const json = await response.json();
+            return json;
+        } else {
+            return response;  
+        }
     } catch (e) {
         console.error('Fetch Error', e);
         throw e;
     }
 };
+

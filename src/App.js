@@ -6,7 +6,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
 import { ContextDataProvider } from "./Components/context/contextProvider";
 import { CompanyDataProvider } from "./Components/context/currentCompnayProvider";
-import { ToastContainer } from 'react-toastify';
 import { fetchLink } from "./Components/fetchComponent";
 
 
@@ -68,6 +67,8 @@ import DataEntryAttendance from "./Pages/DataEntry/dataEntryAttendance";
 import ReportTemplateCreation from "./Pages/Analytics/reportTemplateCreation";
 import ReportTemplates from "./Pages/Analytics/reportTemplates";
 import SalesReport from "./Pages/ERP/Report/LedgerTransaction";
+// import RetailersMaster from "./SalesAppPages/Masters/retailers";
+// import ProductsMaster from "./SalesAppPages/Masters/products";
 
 function App() {
   const [login, setLogin] = useState(false);
@@ -126,7 +127,6 @@ function App() {
 
   return (
     <>
-      <ToastContainer />
       <BrowserRouter>
         {loading ? (
           <div className="overlay">
@@ -189,7 +189,7 @@ function App() {
                   <Route path='/erp/salesReport' element={<SalesReport />} />
                   <Route path='/erp/myPruchase' element={<PurchaseReportForCustomer />} />
 
-                  
+
                   <Route path='/payments/pendingInvoice' element={<PendingInvoice />} />
                   <Route path='/payments/paymentReport' element={<PaymentReport />} />
 

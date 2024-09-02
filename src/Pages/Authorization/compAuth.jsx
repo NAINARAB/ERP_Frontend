@@ -1,30 +1,33 @@
 import React, { useEffect, useState } from "react";
-import api from "../../API";
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, Checkbox } from "@mui/material";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { toast } from 'react-toastify';
 import Select from 'react-select';
+import { fetchLink } from "../../Components/fetchComponent";
 import { isEqualNumber } from "../../Components/functions";
 
-
-const postCheck = (user, comp, rights) => {
-    fetch(`${api}company/companysAccess`, {
-        method: 'POST',
-        body: JSON.stringify({
-            UserId: user,
-            Company_Id: comp,
-            View_Rights: rights ? 1 : 0
-        }),
-        headers: {
-            "Content-type": "application/json",
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                toast.error(data.message)
+const postCheck = async (user, comp, rights) => {
+    try {
+        const data = await fetchLink({
+            address: `authorization/companysAccess`,
+            method: "POST",
+            bodyData: {
+                UserId: user,
+                Company_Id: comp,
+                View_Rights: rights ? 1 : 0
             }
-        }).catch(e => console.log(e))
+        });
+
+        if (!data.success) {
+            toast.error(data.message);
+            return false;  
+        }
+
+        return true;  
+    } catch (e) {
+        console.log(e);
+        return false;  
+    }
 }
 
 const TRow = ({ UserId, data, Sno }) => {
@@ -33,6 +36,17 @@ const TRow = ({ UserId, data, Sno }) => {
     useEffect(() => {
         setViewRights(Number(data.View_Rights) === 1);
     }, [data])
+
+    const handleCheckboxChange = async (event) => {
+        const newRights = event.target.checked;
+
+        const success = await postCheck(UserId, data.Company_Id, newRights);
+        if (success) {
+            setViewRights(newRights); 
+        } else {
+            event.target.checked = !newRights;  
+        }
+    };
 
     return (
         <>
@@ -43,10 +57,7 @@ const TRow = ({ UserId, data, Sno }) => {
                     <Checkbox
                         sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
                         checked={viewRights}
-                        onChange={pre => {  
-                            setViewRights(pre.target.checked); 
-                            postCheck(UserId, data.Company_Id, viewRights) 
-                        }} 
+                        onChange={handleCheckboxChange} 
                     />
                 </TableCell>
             </TableRow>
@@ -63,30 +74,29 @@ const CompanyAuth = () => {
         Name: storage?.Name
     });
     const [currentAuthId, setCurrentAuthId] = useState(storage?.Autheticate_Id);
-    console.log(currentAuthId)
 
     useEffect(() => {
-        fetch(`${api}userName?AllUser=${true}`)
-            .then(res => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setUsers(data.data);
-                }
-            })
-            .catch((e) => { console.log(e) })
-    }, [])
+        fetchLink({
+            address: `masters/user/dropDown?Company_id=${storage?.Company_id}&withAuth=true`
+        }).then((data) => {
+            if (data.success) {
+                setUsers(data.data);
+            }
+        })
+        .catch((e) => { console.log(e) })            
+    }, [storage?.Company_id])
 
     useEffect(() => {
-        fetch(`${api}company/companysAccess?Auth=${currentAuthId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setCompAuth(data.data)
-                } else {
-                    setCompAuth([])
-                }
-            })
-            .catch(e => console.log(e))
+        fetchLink({
+            address: `authorization/companysAccess?Auth=${currentAuthId}`
+        }).then(data => {
+            if (data.success) {
+                setCompAuth(data.data)
+            } else {
+                setCompAuth([])
+            }
+        })
+        .catch(e => console.log(e))            
     }, [currentAuthId])
 
     const headColumn = [

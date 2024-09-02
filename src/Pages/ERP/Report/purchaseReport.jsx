@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useContext } from "react";
-import api from "../../../API";
+import React, { useEffect, useState } from "react";
 import { Add, Remove } from '@mui/icons-material';
-import { CurretntCompany } from "../../../Components/context/currentCompnayProvider";
 import { Card, CardContent } from "@mui/material";
 import { firstDayOfMonth, ISOString } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 
 const calcTotal = (arr, column) => {
@@ -17,8 +16,8 @@ const calcTotal = (arr, column) => {
 }
 
 const PurchaseReport = () => {
+    const storage = JSON.parse(localStorage.getItem("user"));
     const [PurchaseData, setPurchaseData] = useState([]);
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
 
     const [selectedValue, setSelectedValue] = useState({
         Report_Type: 2,
@@ -29,24 +28,21 @@ const PurchaseReport = () => {
 
     useEffect(() => {
         setPurchaseData([]);
-        if (currentCompany?.id) {
-            fetch(`${api}PurchaseOrderReportCard?Report_Type=${selectedValue.Report_Type}&Fromdate=${selectedValue.Fromdate}&Todate=${selectedValue.Todate}`, {
+        if (storage?.Company_id) {
+            fetchLink({
+                address: `reports/PurchaseOrderReportCard?Report_Type=${selectedValue.Report_Type}&Fromdate=${selectedValue.Fromdate}&Todate=${selectedValue.Todate}`,
                 headers: {
-                    "Content-type": "application/json",
-                    'Db': currentCompany.id
+                    'Db': storage?.Company_id
+                },
+            }).then(data => {
+                if (data.success) {
+                    data.data.sort((a, b) => new Date(b.po_date) - new Date(a.po_date));
+                    setPurchaseData(data.data)
                 }
-            })
-                .then(res => { return res.json() })
-                .then(data => {
-                    if (data.success) {
-                        data.data.sort((a, b) => new Date(b.po_date) - new Date(a.po_date));
-                        setPurchaseData(data.data)
-                    }
-                }).catch(e => console.error(e))
-                .finally(() => setCurrentCompany({ ...currentCompany, CompanySettings: true }))
+            }).catch(e => console.error(e))
         }
 
-    }, [currentCompany?.id, selectedValue.Report_Type, selectedValue.Fromdate, selectedValue.Todate])
+    }, [selectedValue.Report_Type, selectedValue.Fromdate, selectedValue.Todate])
 
     const DispRows = ({ rowData }) => {
         const [open, setOpen] = useState(false);
@@ -200,7 +196,7 @@ const PurchaseReport = () => {
                 <div className="d-flex justify-content-between align-items-center px-3 py-2" style={{ backgroundColor: '#eae0cc' }}>
 
                     <div className="d-flex flex-column justify-content-center fw-bold text-dark">
-                        {currentCompany.CompName}
+                        {storage.Company_Name}
                         <span style={{ fontSize: '11px' }}>( {selectedValue.Report} )</span>
                     </div>
 

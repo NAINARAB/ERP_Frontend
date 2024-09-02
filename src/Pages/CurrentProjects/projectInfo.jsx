@@ -3,13 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle, DialogActions, Button, MenuItem, Autocomplete, TextField, Checkbox, IconButton, Collapse } from '@mui/material';
 import { Add, Delete, Edit, ExpandLess, ExpandMore, KeyboardArrowLeft, Launch } from "@mui/icons-material";
 import "react-toastify/dist/ReactToastify.css";
-import { toast, ToastContainer } from "react-toastify";
-import api from "../../API";
+import { toast } from "react-toastify";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import Dropdown from 'react-bootstrap/Dropdown';
+import { fetchLink } from '../../Components/fetchComponent';
+import { ISOString, LocalDate } from '../../Components/functions'
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -77,57 +78,57 @@ const ProjectDetails = () => {
     })
 
     useEffect(() => {
-        fetch(`${api}project/schedule?Project_Id=${projectData?.Project_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setProjectSchedule(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/project/schedule?Project_Id=${projectData?.Project_Id}`
+        }).then(data => {
+            if (data.success) {
+                setProjectSchedule(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [reload, projectData?.Project_Id])
 
     useEffect(() => {
 
-        fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsersDropdown(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/user/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setUsersDropdown(data.data)
+            }
+        }).catch(e => console.error(e))
 
-        fetch(`${api}project/schedule/scheduleType`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setScheleType(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/project/schedule/scheduleType`
+        }).then(data => {
+            if (data.success) {
+                setScheleType(data.data)
+            }
+        }).catch(e => console.error(e))
 
-        fetch(`${api}workstatus`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    data.data.sort((a, b) => a.Status_Id - b.Status_Id)
-                    setWorkStatus(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/statusList`
+        }).then(data => {
+            if (data.success) {
+                data.data.sort((a, b) => a.Status_Id - b.Status_Id)
+                setWorkStatus(data.data)
+            }
+        }).catch(e => console.error(e))
 
-        fetch(`${api}tasksDropdown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTasks(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/tasks/dropdown`
+        }).then(data => {
+            if (data.success) {
+                setTasks(data.data)
+            }
+        }).catch(e => console.error(e))    
 
-        fetch(`${api}taskTypeGet`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTaskType(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/taskType`
+        }).then(data => {
+            if (data.success) {
+                setTaskType(data.data)
+            }
+        }).catch(e => console.error(e))
 
     }, [parseData?.BranchId])
 
@@ -228,41 +229,41 @@ const ProjectDetails = () => {
     }
 
     const postAndPutScheduleFun = () => {
-        fetch(`${api}project/schedule`, {
+        fetchLink({
+            address: `taskManagement/project/schedule`,
             method: isEdit ? 'PUT' : 'POST',
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(scheduleInput)
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error)
-            .finally(() => scheduleDialogSwitch())
+            bodyData: scheduleInput
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error)
+        .finally(() => scheduleDialogSwitch())
     }
 
     const deleteScheduleFun = () => {
-        fetch(`${api}project/schedule`, {
+        fetchLink({
+            address: `taskManagement/project/schedule`,
             method: 'DELETE',
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(scheduleInput)
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error)
-            .finally(() => switchScheduleDeleteDialog())
+            bodyData: scheduleInput
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error)
+        .finally(() => switchScheduleDeleteDialog()) 
     }
 
     const postAndPutTaskFun = () => {
@@ -271,44 +272,44 @@ const ProjectDetails = () => {
                 return toast.warn('Select Dependency Tasks')
             }
 
-            fetch(`${api}project/schedule/scheduleTask`, {
+            fetchLink({
+                address: `taskManagement/project/schedule/scheduleTask`,
                 method: isEdit ? 'PUT' : 'POST',
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(taskScheduleInput)
-            }).then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        toast.success(data.message);
-                        taskDialogSwitch(true);
-                        setReload(!reload)
-                    } else {
-                        toast.error(data.message)
-                    }
-                }).catch(e => console.error(e))
+                bodyData: taskScheduleInput
+            }).then(data => {
+                if (data.success) {
+                    toast.success(data.message);
+                    taskDialogSwitch(true);
+                    setReload(!reload)
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(e => console.error(e))
         } else {
             toast.warn('Select Task')
         }
     }
 
     const deleteTaskFun = () => {
-        fetch(`${api}project/schedule/scheduleTask`, {
+        fetchLink({
+            address: `taskManagement/project/schedule/scheduleTask`,
             method: 'DELETE',
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(taskScheduleInput)
-        }).then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
-            .finally(() => switchTaskDeleteDialog())
+            bodyData: taskScheduleInput
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
+        .finally(() => switchTaskDeleteDialog())
     }
 
     const getSignal = (status) => {
@@ -340,7 +341,9 @@ const ProjectDetails = () => {
                 <Fragment>
                     <h5 className="mt-2 mb-3">
                         <IconButton onClick={() => setOpen(!open)}>
-                            {open ? <ExpandLess sx={{ fontSize: '20px', color: 'black' }} /> : <ExpandMore sx={{ fontSize: '20px', color: 'black' }} />}
+                            {open 
+                                ? <ExpandLess sx={{ fontSize: '20px', color: 'black' }} /> 
+                                : <ExpandMore sx={{ fontSize: '20px', color: 'black' }} />}
                         </IconButton>
                         <span onClick={() => setOpen(!open)}>{gobj?.Task_Type ? gobj?.Task_Type : 'Not Grouped'}</span>
                     </h5>
@@ -351,7 +354,7 @@ const ProjectDetails = () => {
                                 <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                 <span className="fa-14 d-flex align-items-center">
 
-                                    {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    {LocalDate(o?.Task_Est_Start_Date)}
 
                                     <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
 
@@ -442,7 +445,7 @@ const ProjectDetails = () => {
                                     <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                     <span className="fa-14 d-flex align-items-center">
 
-                                        {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        {LocalDate(o?.Task_Est_Start_Date)}
 
                                         <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
 
@@ -468,8 +471,8 @@ const ProjectDetails = () => {
                                                                     Task_Sch_Duaration: o?.Task_Sch_Duaration,
                                                                     Task_Start_Time: o?.Task_Start_Time,
                                                                     Task_End_Time: o?.Task_End_Time,
-                                                                    Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
-                                                                    Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                    Task_Est_Start_Date: ISOString(o?.Task_Est_Start_Date),
+                                                                    Task_Est_End_Date: ISOString(o?.Task_Est_End_Date),
                                                                     Task_Sch_Status: o?.Task_Sch_Status,
                                                                     Levl_Id: 2,
                                                                     Task_Depend_Level_Id: '',
@@ -552,7 +555,7 @@ const ProjectDetails = () => {
                                     <span className="flex-grow-1 fw-bold">{(i + 1) + '. '}{o?.TaskNameGet}</span>
                                     <span className="fa-14 d-flex align-items-center">
 
-                                        {new Date(o?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        {LocalDate(o?.Task_Est_Start_Date)}
 
                                         <span className={`rounded-5 ms-2 ${getSignal(o?.Task_Sch_Status)}`} style={{ padding: '5.2px' }} />
 
@@ -578,8 +581,8 @@ const ProjectDetails = () => {
                                                                     Task_Sch_Duaration: o?.Task_Sch_Duaration,
                                                                     Task_Start_Time: o?.Task_Start_Time,
                                                                     Task_End_Time: o?.Task_End_Time,
-                                                                    Task_Est_Start_Date: new Date(o?.Task_Est_Start_Date).toISOString().split('T')[0],
-                                                                    Task_Est_End_Date: new Date(o?.Task_Est_End_Date).toISOString().split('T')[0],
+                                                                    Task_Est_Start_Date: ISOString(o?.Task_Est_Start_Date),
+                                                                    Task_Est_End_Date: ISOString(o?.Task_Est_End_Date),
                                                                     Task_Sch_Status: o?.Task_Sch_Status,
                                                                     Levl_Id: 3,
                                                                     Task_Depend_Level_Id: '',
@@ -660,9 +663,9 @@ const ProjectDetails = () => {
                                 {obj?.SchTypGet + ' (' + obj?.SchDays + ') '}
                                 <br />
                                 <span className="fa-12">(
-                                    {new Date(obj?.Sch_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    {LocalDate(obj?.Sch_Est_Start_Date)}
                                     {' - '}
-                                    {new Date(obj?.Sch_Est_End_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    {LocalDate(obj?.Sch_Est_End_Date)}
                                     )
                                 </span>
                             </span>
@@ -679,15 +682,15 @@ const ProjectDetails = () => {
                                         <MenuItem onClick={() => {
                                             scheduleDialogSwitch({
                                                 Sch_Id: obj?.Sch_Id,
-                                                Sch_Date: new Date(obj?.Sch_Date).toISOString().split('T')[0],
+                                                Sch_Date: ISOString(obj?.Sch_Date),
                                                 Project_Id: projectData?.Project_Id,
                                                 Sch_By: obj?.Sch_By,
                                                 Sch_Type_Id: obj?.Sch_Type_Id,
-                                                Sch_Est_Start_Date: new Date(obj?.Sch_Est_Start_Date).toISOString().split('T')[0],
-                                                Sch_Est_End_Date: new Date(obj?.Sch_Est_End_Date).toISOString().split('T')[0],
+                                                Sch_Est_Start_Date: ISOString(obj?.Sch_Est_Start_Date),
+                                                Sch_Est_End_Date: ISOString(obj?.Sch_Est_End_Date),
                                                 Sch_Status: obj?.Sch_Status,
                                                 Entry_By: obj?.Entry_By,
-                                                Entry_Date: new Date(obj?.Entry_Date).toISOString().split('T')[0],
+                                                Entry_Date: ISOString(obj?.Entry_Date),
                                             });
                                         }}>
                                             <Edit className="fa-in me-2 text-primary" />
@@ -806,7 +809,6 @@ const ProjectDetails = () => {
 
     return Number(rights?.read) === 1 && (
         <>
-            <ToastContainer />
             <div className="cus-card p-3">
 
                 <div className="d-flex align-items-center">

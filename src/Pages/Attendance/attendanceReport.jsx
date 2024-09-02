@@ -13,7 +13,8 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list';
 import ImagePreviewDialog from "../../Components/imagePreview";
-import api from "../../API";
+import { fetchLink } from '../../Components/fetchComponent'
+
 
 
 const AttendanceReport = () => {
@@ -31,26 +32,24 @@ const AttendanceReport = () => {
     });
 
     useEffect(() => {
-        fetch(`${api}SaleApp/myAttendanceHistory?From=${filter?.From}&To=${filter?.To}&UserId=${filter?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setAttendanceData(data.data)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `empAttendance/attendance/history?From=${filter?.From}&To=${filter?.To}&UserId=${filter?.UserId}&UserTypeID=6`
+        }).then(data => {
+            if (data.success) {
+                setAttendanceData(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [filter.From, filter.To, filter?.UserId])
 
     useEffect(() => {
-
-        fetch(`${api}SaleApp/salesPersons?Company_id=${2}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setSalePerson(data.data)
-                }
-            }).catch(e => console.error(e))
-
-    }, [storage?.Company_id])
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${storage?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setSalePerson(data.data)
+            }
+        }).catch(e => console.error(e))
+    }, [])
 
     const closeDialg = () => {
         setDialog(false);

@@ -1,18 +1,17 @@
-import React, { useEffect, useState, useContext, Fragment } from "react";
-import api from "../../../API";
-import { CurretntCompany } from "../../../Components/context/currentCompnayProvider";
+import React, { useEffect, useState, Fragment } from "react";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
 import { calcAvg, calcTotal, DaysBetween, getPreviousDate, isEqualNumber, ISOString } from "../../../Components/functions";
-import LedgerBasedSalesReport from "./LedgerBasedTable";
-import ProductBasedSalesReport from "./ProductBasedTable";
-import ProductDayBasedSalesReport from "./ProductDayBasedTable";
+import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
+import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
+import ProductDayBasedSalesReport from "./SalesReportComponent//ProductDayBasedTable";
 import { FilterAlt, Refresh } from "@mui/icons-material";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 
 const SalesReport = () => {
+    const storage = JSON.parse(localStorage.getItem("user"));
     const [salesData, setSalesData] = useState(null);
     const [salesDataOFProduct, setSalesDataOfProduct] = useState(null);
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(1),
         Todate: ISOString(),
@@ -22,85 +21,79 @@ const SalesReport = () => {
     });
 
     const fetchData = () => {
-        fetch(`${api}combinedSalesReport?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`, {
-            method: 'GET',
+        fetchLink({
+            address: `reports/salesReport/ledger?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
             headers: {
-                "Content-type": "application/json; charset=UTF-8",
-                'Db': currentCompany?.id
+                'Db': storage?.Company_id
+            }
+        }).then(({ success, data, others }) => {
+            if (success) {
+                const { ledgerDetails } = others;
+                const combinedData = data.map(o => {
+                    const ledgerSales = ledgerDetails.filter(oo => isEqualNumber(o.Ledger_Tally_Id, oo.Ledger_Id));
+                    const billedQty = calcTotal(ledgerSales, 'bill_qty');
+                    return {
+                        ...o,
+                        LedgerSales: ledgerSales,
+                        Transaction: ledgerSales.length,
+                        Billed_Qty: billedQty,
+                        BilledQtyAvg: calcAvg(ledgerSales, 'bill_qty'),
+                        Ledger_Name: o.Ledger_Name,
+                        M2_Avg: o.ALL_Avg_M2,
+                        M3_Avg: o.ALL_Avg_M3,
+                        M6_Avg: o.ALL_Avg_M6,
+                        M9_Avg: o.ALL_Avg_M9,
+                        M12_Avg: o.ALL_Avg_One_Year,
+                        Q_Pay_Days: o.Q_Pay_Days,
+                        Freq_Days: o.Freq_Days,
+                        Ledger_Alias: o.Ledger_Alias,
+                        Actual_Party_Name_with_Brokers: o.Actual_Party_Name_with_Brokers,
+                        Party_Name: o.Party_Name,
+                        Party_Location: o.Party_Location,
+                        Party_Nature: o.Party_Nature,
+                        Party_Group: o.Party_Group,
+                        Ref_Brokers: o.Ref_Brokers,
+                        Ref_Owners: o.Ref_Owners,
+                        Party_Mobile_1: o.Party_Mobile_1,
+                        Party_Mobile_2: o.Party_Mobile_2,
+                        Party_District: o.Party_District,
+                        File_No: o.File_No,
+                        Ledger_Tally_Id: o.Ledger_Tally_Id
+                    };
+                });
+
+                setSalesData(combinedData);
+            } else {
+                setSalesData([]);
             }
         })
-            .then(res => res.json())
-            .then(({ success, data, others }) => {
-                if (success) {
-                    const { ledgerDetails } = others;
-                    const combinedData = data.map(o => {
-                        const ledgerSales = ledgerDetails.filter(oo => isEqualNumber(o.Ledger_Tally_Id, oo.Ledger_Id));
-                        const billedQty = calcTotal(ledgerSales, 'bill_qty');
-                        return {
-                            ...o,
-                            LedgerSales: ledgerSales,
-                            Transaction: ledgerSales.length,
-                            Billed_Qty: billedQty,
-                            BilledQtyAvg: calcAvg(ledgerSales, 'bill_qty'),
-                            Ledger_Name: o.Ledger_Name,
-                            M2_Avg: o.ALL_Avg_M2,
-                            M3_Avg: o.ALL_Avg_M3,
-                            M6_Avg: o.ALL_Avg_M6,
-                            M9_Avg: o.ALL_Avg_M9,
-                            M12_Avg: o.ALL_Avg_One_Year,
-                            Q_Pay_Days: o.Q_Pay_Days,
-                            Freq_Days: o.Freq_Days,
-                            Ledger_Alias: o.Ledger_Alias,
-                            Actual_Party_Name_with_Brokers: o.Actual_Party_Name_with_Brokers,
-                            Party_Name: o.Party_Name,
-                            Party_Location: o.Party_Location,
-                            Party_Nature: o.Party_Nature,
-                            Party_Group: o.Party_Group,
-                            Ref_Brokers: o.Ref_Brokers,
-                            Ref_Owners: o.Ref_Owners,
-                            Party_Mobile_1: o.Party_Mobile_1,
-                            Party_Mobile_2: o.Party_Mobile_2,
-                            Party_District: o.Party_District,
-                            File_No: o.File_No,
-                            Ledger_Tally_Id: o.Ledger_Tally_Id
-                        };
-                    });
+        .catch(console.error);
 
-                    setSalesData(combinedData);
-                } else {
-                    setSalesData([]);
-                }
-            })
-            .catch(console.error);
-
-        fetch(`${api}combinedSalesReport/products?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`, {
-            method: 'GET',
+        fetchLink({
+            address: `reports/salesReport/products??Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
             headers: {
-                "Content-type": "application/json; charset=UTF-8",
-                'Db': currentCompany?.id
+                'Db': storage?.Company_id
+
+            }
+        }).then(data => {
+            if (data.success) {
+                const combinedData = Array.isArray(data?.others?.LOSAbstract) ? data.others.LOSAbstract.map(los => ({
+                    ...los,
+                    StockTransaction: Array.isArray(data.data) ? [...data.data].filter(losDetails => losDetails.Stock_Group === los.Stock_Group) : []
+                })) : [];
+                setSalesDataOfProduct(combinedData);
+            } else {
+                setSalesDataOfProduct([])
             }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const combinedData = Array.isArray(data?.others?.LOSAbstract) ? data.others.LOSAbstract.map(los => ({
-                        ...los,
-                        StockTransaction: Array.isArray(data.data) ? [...data.data].filter(losDetails => losDetails.Stock_Group === los.Stock_Group) : []
-                    })) : [];
-                    setSalesDataOfProduct(combinedData);
-                } else {
-                    setSalesDataOfProduct([])
-                }
-            })
-            .catch(e => console.error(e))
+        .catch(e => console.error(e))
     }
 
     useEffect(() => {
         setSalesData(null);
         setSalesDataOfProduct(null);
-        setCurrentCompany(pre => ({ ...pre, CompanySettings: true }));
         fetchData();
-    }, [filters.reload, currentCompany?.id])
+    }, [filters.reload])
 
     const closeDialog = () => {
         setFilters(pre => ({ ...pre, filterDialog: false }))
@@ -113,7 +106,7 @@ const SalesReport = () => {
             <Card className="mt-3">
                 <div className="px-3 py-2 d-flex justify-content-between align-items-center fw-bold text-dark" style={{ backgroundColor: '#eae0cc' }}>
                     <span>
-                        {currentCompany?.CompName}
+                        {storage?.Company_Name}
                     </span>
                     <span>
                         <select

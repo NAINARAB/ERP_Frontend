@@ -1,14 +1,12 @@
-import React, { useEffect, useState, useContext, useMemo } from "react";
-import api from "../../../API";
+import React, { useEffect, useState, useMemo } from "react";
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import { CurretntCompany } from "../../../Components/context/currentCompnayProvider";
 import { Card, CardContent } from "@mui/material";
 import { NumberFormat } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 
 const StockReport = () => {
-    // const storage = JSON.parse(localStorage.getItem("user"));
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
+    const storage = JSON.parse(localStorage.getItem("user"));
     const [StockData, setStockData] = useState([])
     const [search, setSearch] = useState({
         zero: false,
@@ -18,26 +16,22 @@ const StockReport = () => {
     const [laks, setLaks] = useState(true)
 
     useEffect(() => {
-        if (currentCompany?.id) {
-            setStockData([])
-            fetch(`${api}stockReport?ReportDate=${search.date}`, {
-                method: 'GET',
+        if (storage?.Company_id) {
+            setStockData([]);
+            fetchLink({
+                address: `reports/stockReport?ReportDate=${search.date}`,
                 headers: {
-                    "Content-type": "application/json; charset=UTF-8",
-                    'Db': currentCompany?.id
+                    "Db": storage?.Company_id
                 }
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setStockData(data.data);
-                    } else {
-                        setStockData([])
-                    }
-                }).catch(e => console.error(e))
-                .finally(() => setCurrentCompany({ ...currentCompany, CompanySettings: true }))
+            }).then(data => {
+                if (data.success) {
+                    setStockData(data.data);
+                } else {
+                    setStockData([])
+                }
+            }).catch(e => console.error(e));
         }
-    }, [currentCompany?.id, search.date])
+    }, [search.date])
 
     const filteredStockData = useMemo(() => {
         if (StockData !== null) {
@@ -159,7 +153,7 @@ const StockReport = () => {
 
                 <div className="px-3 py-2 d-flex justify-content-between align-items-center fw-bold text-dark" style={{ backgroundColor: '#eae0cc' }}>
                     <span>
-                        {currentCompany?.CompName}
+                        {storage?.Company_Name}
                     </span>
                     <span>
                         <input

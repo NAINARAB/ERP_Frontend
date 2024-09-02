@@ -14,8 +14,9 @@ import Offcanvas from 'react-bootstrap/Offcanvas';
 import { MyContext } from "../../Components/context/contextProvider";
 import { CurretntCompany } from "../../Components/context/currentCompnayProvider";
 import InvalidPageComp from "../../Components/invalidCredential";
-import "react-toastify/dist/ReactToastify.css";
 import { fetchLink } from "../../Components/fetchComponent";
+import { ToastContainer } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -270,7 +271,7 @@ function MainComponent(props) {
 
     return (
         <Fragment>
-
+            <ToastContainer />
             <div className="fullscreen-div">
 
                 {/* sidebar */}

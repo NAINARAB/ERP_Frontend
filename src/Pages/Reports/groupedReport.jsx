@@ -9,6 +9,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
+import { fetchLink } from '../../Components/fetchComponent'
 
 const ReportTaskTypeBasedCalendar = () => {
     const localData = localStorage.getItem("user");
@@ -35,46 +36,45 @@ const ReportTaskTypeBasedCalendar = () => {
     const [TaskTypeData, setTaskTypeData] = useState([]);
 
     useEffect(() => {
-        fetch(`${api}getGroupedTaskReport?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setGroupedWorkDetais(data.data)
-                }
-            }).catch(e => console.error(e))
-
+        fetchLink({
+            address: `taskManagement/task/work/groupd?Emp_Id=${filters.Emp_Id}&Project_Id=${filters.Project_Id}&from=${filters.from}&to=${filters.to}&Task_Id=${filters.Task_Id}`
+        }).then(data => {
+            if (data.success) {
+                setGroupedWorkDetais(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [filters.Emp_Id, filters.Project_Id, filters.Task_Id, filters.from, filters.to])
 
     useEffect(() => {
-        fetch(`${api}projectDropDown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setProjects(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}userName?AllUser=${true}&BranchId=${parseData?.BranchId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUsersDropdown(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}tasksDropdown`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setTasks(data.data)
-                }
-            }).catch(e => console.error(e))
-        fetch(`${api}taskTypeGet`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success && data.data.length > 0) {
-                    setTaskTypeData(data.data);
-                    setFileters(pre => ({ ...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type }))
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/project/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setProjects(data.data)
+            }
+        }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setUsersDropdown(data.data)
+            }
+        }).catch(e => console.error(e))
+        fetchLink({
+            address: `taskManagement/task/assignEmployee/task/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setTasks(data.data)
+            }
+        }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/taskType`
+        }).then((data) => {
+            if (data.success && data.data.length > 0) {
+                setTaskTypeData(data.data);
+                setFileters(pre => ({ ...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type }))
+            }
+        }).catch(e => console.error(e))            
     }, [parseData?.BranchId])
 
     const formatTime24 = (time24) => {

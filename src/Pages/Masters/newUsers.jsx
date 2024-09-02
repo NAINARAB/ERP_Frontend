@@ -1,26 +1,27 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { Button } from "react-bootstrap";
-import api from "../../API";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DataTable from 'react-data-table-component'
-
-const initialState = {
-    UserId: "",
-    Name: "",
-    UserName: "",
-    UserTypeId: "",
-    Password: "",
-    BranchId: '',
-    Company_Id: "",
-};
+import { fetchLink } from "../../Components/fetchComponent";
+import { decryptPasswordFun, encryptPasswordFun } from "../../Components/functions";
 
 const Users = () => {
+    const parseData = JSON.parse(localStorage.getItem("user"));
+    const initialState = {
+        UserId: "",
+        Name: "",
+        UserName: "",
+        UserTypeId: "",
+        Password: "",
+        BranchId: '',
+        Company_id: parseData?.Company_id,
+    };
+
     const [usersData, setUsersData] = useState([]);
     const [screen, setScreen] = useState(false);
-    const parseData = JSON.parse(localStorage.getItem("user"));
     const [reload, setReload] = useState(false);
     const [inputValue, setInputValue] = useState(initialState);
     const [dialog, setDialog] = useState(false);
@@ -29,51 +30,40 @@ const Users = () => {
     const [filteredData, setFilteredData] = useState([]);
 
     const [userTypeDropDown, setUserTypeDropDown] = useState([]);
-    const [userDropdown, setuserDropdown] = useState([]);
-    const [companyData, setCompanyData] = useState([]);
-
+    const [branch, setBranch] = useState([]);
 
     useEffect(() => {
-        fetch(`${api}users?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}&Branch_Id=${2}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    data?.data?.sort((a, b) => a.Name.localeCompare(b.Name));
-                    setUsersData(data.data);
-                }
-            }).catch(e => console.error(e))
-    }, [reload]);
+        fetchLink({
+            address: `masters/users?Company_id=${parseData?.Company_id}`
+        }).then((data) => {
+            if (data.success) {
+                data?.data?.sort((a, b) => a.Name.localeCompare(b.Name));
+                setUsersData(data.data);
+            }
+        }).catch(e => console.error(e))
+    }, [reload, parseData?.Company_id]);
 
     useEffect(() => {
-        fetch(`${api}userType`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setUserTypeDropDown(data.data);
-                }
-            })
-            .catch((e) => console.log(e));
+        fetchLink({
+            address: `masters/userType?Company_id=${parseData?.Company_id}`,
+        }).then((data) => {
+            if (data.success) {
+                setUserTypeDropDown(data.data);
+            }
+        })
+        .catch((e) => console.error(e));
+    }, [parseData?.Company_id]);
 
-        fetch(`${api}branch?User_Id=${parseData.UserId}&Company_id=${parseData.Company_id}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setuserDropdown(data.data);
-                }
-            })
-            .catch((e) => console.log(e));
-
-        fetch(`${api}companyDropDown?User_Id=${parseData?.UserId}&Company_id=${parseData?.Company_id}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setCompanyData(data.data);
-                }
-            })
-            .catch((e) => {
-                console.log(e);
-            });
-    }, []);
+    useEffect(() => {
+        fetchLink({
+            address: `masters/branch/dropDown?Company_id=${parseData?.Company_id}`
+        }).then((data) => {
+            if (data.success) {
+                setBranch(data.data);
+            }
+        })
+        .catch((e) => console.error(e));
+    }, [parseData?.Company_id])
 
     const switchScreen = () => {
         setInputValue(initialState);
@@ -81,56 +71,47 @@ const Users = () => {
     };
 
     const saveUser = () => {
-        fetch(`${api}users`, {
-            method: inputValue.UserId ? 'PUT' : 'POST',
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(inputValue),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setReload(!reload);
-                    toast.success(data.message);
-                    switchScreen();
-                } else {
-                    toast.error(data.message);
-                }
-            });
+        fetchLink({
+            address: `masters/users`,
+            method: inputValue.UserId ? "PUT" : "POST",
+            bodyData: {...inputValue, Password: encryptPasswordFun(inputValue.Password)},
+        }).then((data) => {
+            if (data.success) {
+                setReload(!reload);
+                toast.success(data.message);
+                switchScreen();
+            } else {
+                toast.error(data.message);
+            }
+        });            
     };
 
     const editRow = (user) => {
-        const { UserId, Name, UserName, UserTypeId, Password, BranchId, Company_id } = user;
-        setInputValue({ UserId, Name, UserName, UserTypeId, Password, BranchId, Company_Id: Company_id });
+        const { UserId, Name, UserName, UserTypeId, Password, BranchId } = user;
+        const decryptedPassword = decryptPasswordFun(Password);
+        setInputValue(pre => ({ ...pre, UserId, Name, UserName, UserTypeId, Password: decryptedPassword, BranchId }));
         setScreen(true);
     };
 
     const handleDeleteConfirm = () => {
-        fetch(`${api}users`, {
+        fetchLink({
+            address: `masters/users`,
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                UserId: inputValue.UserId,
-            }),
+            bodyData: { UserId: inputValue.UserId, },
+        }).then((data) => {
+            if (data.success) {
+                setReload(!reload);
+                setDialog(pre => !pre);
+                setInputValue(initialState);
+                toast.success(data.message);
+            } else {
+                toast.error(data.message);
+            }
         })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    setReload(!reload);
-                    setDialog(pre => !pre);
-                    setInputValue(initialState);
-                    toast.success(data.message);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .catch((error) => {
-                console.error("Error deleting user:", error);
-                toast.error("An error occurred. Please try again later.");
-            });
+        .catch((error) => {
+            console.error("Error deleting user:", error);
+            toast.error("An error occurred. Please try again later.");
+        });
     };
 
     function handleSearchChange(event) {
@@ -144,11 +125,8 @@ const Users = () => {
 
         setFilteredData(filteredResults);
     }
-
     return (
         <Fragment>
-            <ToastContainer />
-
             <Card>
                 <div className="px-3 py-2 fw-bold d-flex align-items-center justify-content-between border-bottom">
                     USERS
@@ -217,8 +195,8 @@ const Users = () => {
                                                 </IconButton>
                                                 <IconButton
                                                     onClick={() => {
-                                                        const { UserId, Name, UserName, UserTypeId, Password, BranchId, Company_id } = val;
-                                                        setInputValue({ UserId, Name, UserName, UserTypeId, Password, BranchId, Company_Id: Company_id });
+                                                        const { UserId, Name, UserName, UserTypeId, Password, BranchId } = val;
+                                                        setInputValue(pre => ({ ...pre, UserId, Name, UserName, UserTypeId, Password, BranchId }));
                                                         setDialog(true);
                                                     }}
                                                     size="small"
@@ -300,13 +278,15 @@ const Users = () => {
                                             }
                                         >
                                             <option value={""}>select</option>
-                                            {userDropdown?.map((o, i) => (
+                                            {branch?.map((o, i) => (
                                                 <option key={i} value={o.BranchId}>
                                                     {o.BranchName}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
+
+                                    {/* 
 
                                     <div className="col-lg-4 col-md-6 p-2">
                                         <label>Company</label>
@@ -326,6 +306,7 @@ const Users = () => {
                                             ))}
                                         </select>
                                     </div>
+                                    */}
 
                                     <div className="col-lg-4 col-md-6 p-2">
                                         <label>User Type</label>
