@@ -2,14 +2,13 @@ import React, { useState, useEffect, useContext } from "react";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox} from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
 import { MyContext } from "../../Components/context/contextProvider";
 import { MainMenu, customSelectStyles } from "../../Components/tablecolumn";
 import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
-
 
 
 const postCheck = (param, Menu_id, Menu_Type, UserId) => {
@@ -245,7 +244,7 @@ const UserBased = () => {
 
     return Number(contextObj?.Read_Rights) === 1 ? (
         <>
-            <ToastContainer />
+            {/* <ToastContainer /> */}
             <div className="row">
                 <div className="col-sm-4 pt-1">
                     <Select

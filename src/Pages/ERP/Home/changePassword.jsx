@@ -3,7 +3,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { FormControl, InputLabel, OutlinedInput, InputAdornment, IconButton, Button, FormHelperText } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import api from "../../../API";
+import { fetchLink } from '../../../Components/fetchComponent';
 
 const ChangePassword = () => {
     const [enteredData, setEnteredData] = useState({ currentPassword: '', password: '', confirmPassword: '' });
@@ -18,23 +18,25 @@ const ChangePassword = () => {
     }
 
     const SubmitChangePassword = () => {
-        setIsLoading(true)
-        fetch(`${api}users/changePassword`, {
+        setIsLoading(true);
+        fetchLink({
+            address: `masters/users/changePassword`,
             method: 'PUT',
-            headers: { 'Authorization': locStore?.token, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ oldPassword: enteredData.currentPassword, newPassword: enteredData.password, userId: locStore?.UserId })
+            bodyData: { 
+                oldPassword: enteredData.currentPassword, 
+                newPassword: enteredData.password, 
+                userId: locStore?.UserId 
+            }
+        }).then(resdata => {
+            clear();
+            if (resdata.success) {
+                toast.success(resdata.message);
+            } else {
+                toast.error(resdata.message)
+            }
         })
-            .then(res => res.json())
-            .then(resdata => {
-                clear();
-                if (resdata.success) {
-                    toast.success(resdata.message);
-                } else {
-                    toast.error(resdata.message)
-                }
-            })
-            .catch(e => console.error(e))
-            .finally(() => setIsLoading(false))
+        .catch(e => console.error(e))
+        .finally(() => setIsLoading(false))
     }
 
     return (

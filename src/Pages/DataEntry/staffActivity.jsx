@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { isEqualNumber, ISOString, NumberFormat, onlynum, UTCTime } from '../../Components/functions';
-import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Tab, Box } from '@mui/material';
 import { TabPanel, TabList, TabContext } from '@mui/lab';
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 const StaffActivity = () => {
@@ -33,35 +33,32 @@ const StaffActivity = () => {
     })
 
     useEffect(() => {
-        fetch(`${api}staffActivities/staffs`)
-            .then(res => res.json())
-            .then(data => setStaffs(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/staffActivities/staffs`
+        }).then(data => setStaffs(data.data)).catch(e => console.error(e))
     }, [reload])
 
     useEffect(() => {
         if (filter.view === 'DATA ENTRY') {
             setActivityData([])
-            fetch(`${api}staffActivities?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setActivityData(data.data)
-                    }
-                })
-                .catch(e => console.error(e))
+            fetchLink({
+                address: `dataEntry/staffActivities?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+            }).then(data => {
+                if (data.success) {
+                    setActivityData(data.data)
+                }
+            }).catch(e => console.error(e))
         }
 
         if (filter.view === 'STAFF BASED') {
             setStaffBasedData([]);
-            fetch(`${api}staffActivities/staffBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setStaffBasedData(data.data)
-                    }
-                })
-                .catch(e => console.error(e))
+            fetchLink({
+                address: `dataEntry/staffActivities/staffBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`,
+            }).then(data => {
+                if (data.success) {
+                    setStaffBasedData(data.data)
+                }
+            }).catch(e => console.error(e))
         }
 
     }, [reload, filter.reqDate, filter.reqLocation, filter.view])
@@ -72,22 +69,21 @@ const StaffActivity = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}staffActivities`, {
-            method: inputValues.Id ? 'PUT' : 'POST',
+        fetchLink({
+            address: `dataEntry/staffActivities`,
+            method: inputValues.Id ? "PUT" : "POST",
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     const dispView = (scr) => {

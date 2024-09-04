@@ -382,7 +382,13 @@
   text-overflow: ellipsis;
 }
 
+.theme-color {
+  color: #6b9080f8 !important;
+}
 
+.theme-bg {
+  background-color: #6b9080f8 !important;
+}
 
 .hide-toggle {
   background-image: none !important;

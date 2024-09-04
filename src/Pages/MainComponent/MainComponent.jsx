@@ -4,11 +4,13 @@ import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, Dial
 import {
     Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt,
     Tune, BarChart, SettingsAccessibility, Leaderboard, CurrencyRupee, VpnKey, AccountCircle, Settings, HowToReg, Keyboard,
-    AutoGraph,
-    KeyboardDoubleArrowRight,
-    KeyboardDoubleArrowLeft
+    AutoGraph, KeyboardDoubleArrowRight, KeyboardDoubleArrowLeft
 } from '@mui/icons-material'
 import "./MainComponent.css";
+import { GrMoney } from "react-icons/gr";
+import { BsCart3 } from "react-icons/bs";
+import { BsBoxes } from "react-icons/bs";
+import { IoStorefrontOutline } from "react-icons/io5";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { MyContext } from "../../Components/context/contextProvider";
@@ -44,10 +46,10 @@ const getIcon = (menuId) => {
             id: 10,
             IconComp: <Chat className="me-2 fa-20" style={{ color: '#FDD017' }} />
         },
-        {
-            id: 11,
-            IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
-        },
+        // {
+        //     id: 11,
+        //     IconComp: <TaskAlt className="me-2 fa-20" style={{ color: '#FDD017' }} />
+        // },
         {
             id: 12,
             IconComp: <BarChart className="me-2 fa-20" style={{ color: '#FDD017' }} />
@@ -60,10 +62,10 @@ const getIcon = (menuId) => {
             id: 14,
             IconComp: <ManageAccounts className="me-2 fa-20" style={{ color: '#FDD017' }} />
         },
-        {
-            id: 15,
-            IconComp: <Leaderboard className="me-2 fa-20" style={{ color: '#FDD017' }} />
-        },
+        // {
+        //     id: 15,
+        //     IconComp: <Leaderboard className="me-2 fa-20" style={{ color: '#FDD017' }} />
+        // },
         {
             id: 16,
             IconComp: <CurrencyRupee className="me-2 fa-20" style={{ color: '#FDD017' }} />
@@ -80,9 +82,21 @@ const getIcon = (menuId) => {
             id: 19,
             IconComp: <AutoGraph className="me-2 fa-20" style={{ color: '#FDD017' }} />
         },
+        {
+            id: 21,
+            IconComp: <GrMoney className="me-2 fa-20" style={{ color: '#FDD017' }} />
+        },
+        {
+            id: 22,
+            IconComp: <BsCart3 className="me-2 fa-20" style={{ color: '#FDD017' }} />
+        },
+        {
+            id: 23,
+            IconComp: <IoStorefrontOutline className="me-2 fa-20" style={{ color: '#FDD017' }} />
+        },
     ];
 
-    const matchedIcon = icon.find(item => item.id === menuId);
+    const matchedIcon = icon.find(item => item.id === Number(menuId));
     return matchedIcon ? matchedIcon.IconComp : null;
 }
 
@@ -180,7 +194,7 @@ function MainComponent(props) {
             address: `authorization/appMenu?Auth=${parseData?.Autheticate_Id}`
         }).then(data => {
             if (data.success) {
-                data?.MainMenu?.sort((a, b) => a?.Main_Menu_Id - b?.Main_Menu_Id);
+                data?.MainMenu?.sort((a, b) => (a?.OrderNo && b?.OrderNo) ? a?.OrderNo - b?.OrderNo : b?.OrderNo - a?.OrderNo);
                 setSidebar({ MainMenu: data?.MainMenu, SubMenu: data?.SubMenu });
 
                 let navigated = false;

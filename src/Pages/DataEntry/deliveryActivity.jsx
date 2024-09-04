@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import { Edit } from '@mui/icons-material'
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 
@@ -32,11 +33,12 @@ const DeliveryActivity = () => {
     })
 
     useEffect(() => {
-        setDeliveryData([])
-        fetch(`${api}deliveryActivities?reqDate=${filter.reqDate}&reqLocation=${filter.LocationDetails}`)
-            .then(res => res.json())
-            .then(data => setDeliveryData(data?.data))
-            .catch(e => console.error(e))
+        setDeliveryData([]);
+        fetchLink({
+            address: `dataEntry/deliveryActivities?reqDate=${filter.reqDate}&reqLocation=${filter.LocationDetails}`
+        })
+        .then(data => setDeliveryData(data?.data))
+        .catch(e => console.error(e))
     }, [reload, filter.reqDate, filter.LocationDetails])
 
     const closeDialog = () => {
@@ -45,23 +47,23 @@ const DeliveryActivity = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}deliveryActivities`, {
-            method: inputValues.Id ? 'PUT' : 'POST',
+        fetchLink({
+            address: `dataEntry/deliveryActivities`,
+            method: inputValues.Id ? "PUT" : "POST",
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(inputValues)
+            bodyData: inputValues
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    closeDialog()
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+        .then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                closeDialog()
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
 

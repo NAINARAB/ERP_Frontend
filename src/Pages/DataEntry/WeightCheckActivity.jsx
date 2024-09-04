@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { customTimeDifference, extractHHMM, isEqualNumber, ISOString, NumberFormat, Subraction, timeToDate, UTCTime } from '../../Components/functions';
-import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { MyContext } from '../../Components/context/contextProvider';
-
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 const WeightCheckActivity = () => {
@@ -35,31 +34,30 @@ const WeightCheckActivity = () => {
     })
 
     useEffect(() => {
-        fetch(`${api}weightCheckActivity/getStaffs`)
-            .then(res => res.json())
-            .then(data => setStaffs(data.data))
-            .catch(e => console.error(e))
-        fetch(`${api}weightCheckActivity/getItems`)
-            .then(res => res.json())
-            .then(data => setStockItems(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/weightCheckActivity/getStaffs`
+        }).then(data => setStaffs(data.success ? data.data : [])).catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/weightCheckActivity/getItems`
+        }).then(data => setStockItems(data.success ? data.data : [])).catch(e => console.error(e))
     }, [reload])
 
     useEffect(() => {
-        fetch(`${api}weightCheckActivity?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const timeformat = data.data?.map(o => ({
-                        ...o,
-                        StartTime: extractHHMM(o?.StartTime),
-                        EndTime: extractHHMM(o?.EndTime),
-                    }))
-                    setActivityData(timeformat)
-                    
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/weightCheckActivity?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+        }).then(data => {
+            if (data.success) {
+                const timeformat = data.data?.map(o => ({
+                    ...o,
+                    StartTime: extractHHMM(o?.StartTime),
+                    EndTime: extractHHMM(o?.EndTime),
+                }))
+                setActivityData(timeformat)
+                
+            }
+        })
+        .catch(e => console.error(e))
     }, [reload, filter.reqDate, filter.reqLocation])
 
     const closeDialog = () => {
@@ -68,23 +66,22 @@ const WeightCheckActivity = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}weightCheckActivity`, {
+        fetchLink({
+            address: `dataEntry/weightCheckActivity`,
             method: inputValues.Id ? 'PUT' : 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    setReload(!reload);
-                    closeDialog()
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setReload(!reload);
+                closeDialog()
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e)) 
     }
 
     return (

@@ -2,12 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { LaunchOutlined, CurrencyRupee, ArrowBackIosNew, Visibility, Close } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import api from "../../../API";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, Card, CardContent, } from '@mui/material';
 import ShankarTraderQRC from './staticqrc.jpg';
 import InvoiceBill from "../Report/billFormat";
 import { useReactToPrint } from 'react-to-print';
 import { LocalDate, NumberFormat } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 
 const BillComponent = ({ props, bankDetails, reloadfun }) => {
@@ -117,19 +117,17 @@ const BillComponent = ({ props, bankDetails, reloadfun }) => {
             }
         })
 
-        fetch(`${api}manualPayment`, {
-            method: 'POST',
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-            body: JSON.stringify({
+        fetchLink({
+            address: `userModule/customer/payment`,
+            method: "POST",
+            bodyData: {
                 bills: selectedBillsData,
                 amount: totalAmount(),
                 UserId: storage?.UserId,
                 paymentType: 1,
                 TransactionId: TransactionID
-            })
-        }).then(res => res.json()).then(data => {
+            }
+        }).then(data => {
             if (data.success) {
                 toast.success(data.message);
                 setDetailsDialog(false); setRefresh(!refresh); reloadfun(); setTransactioId('')
@@ -144,23 +142,23 @@ const BillComponent = ({ props, bankDetails, reloadfun }) => {
         setInvoiceInfo([]);
         setExpencesInfo([]);
         if (CompanyId && Invoice_No) {
-            fetch(`${api}invoiceDetails?Company_Id=${CompanyId}&UserId=${storage?.UserId}&Invoice_No=${Invoice_No}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "Success") {
-                        if (data?.data[0]?.length) {
-                            const company = data.data[0]
-                            setCompanyInfo(company[0])
-                        }
-                        if (data?.data[1]?.length) {
-                            setInvoiceInfo(data?.data[1]);
-                            setInvoiceDialog(true);
-                        }
-                        if (data?.data[2].length) {
-                            setExpencesInfo(data?.data[2])
-                        }
+            fetchLink({
+                address: `userModule/customer/invoiceDetails?Company_Id=${CompanyId}&UserId=${storage?.UserId}&Invoice_No=${Invoice_No}`
+            }).then(data => {
+                if (data.success) {
+                    if (data?.data[0]?.length) {
+                        const company = data.data[0]
+                        setCompanyInfo(company[0])
                     }
-                }).catch(e => console.log(e))
+                    if (data?.data[1]?.length) {
+                        setInvoiceInfo(data?.data[1]);
+                        setInvoiceDialog(true);
+                    }
+                    if (data?.data[2].length) {
+                        setExpencesInfo(data?.data[2])
+                    }
+                }
+            }).catch(e => console.log(e))
         }
     }
 
@@ -390,63 +388,49 @@ const PendingInvoice = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
 
     useEffect(() => {
-        fetch(`${api}isCustomer?UserId=${storage?.UserId}`, {
-            headers: {
-                'Content-Type': 'application/json'
+        fetchLink({
+            address: `userModule/customer/isCustomer?UserId=${storage?.UserId}`,
+        }).then(data => {
+            if (data.success) {
+                setIsCustomer(true)
+            } else {
+                setIsCustomer(false)
             }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setIsCustomer(true)
-                } else {
-                    setIsCustomer(false)
-                }
-            }).catch(e => console.error(e))
+        }).catch(e => console.error(e)) 
     }, [])
 
     useEffect(() => {
 
         if (isCustomer) {
             setLoading(true);
-            fetch(`${api}paymentInvoiceList?UserId=${storage?.UserId}`, {
-                headers: {
-                    'Authorization': storage?.Autheticate_Id,
-                    'Content-Type': 'application/json'
+            fetchLink({
+                address: `userModule/customer/paymentInvoiceList?UserId=${storage?.UserId}`,
+            }).then(data => {
+                if (data.success) {
+                    const groupedData = data.data.reduce((acc, item) => {
+                        const companyName = item.Company_Name;
+                        const index = acc.findIndex((group) => group.CompName === companyName);
+
+                        if (index === -1) {
+                            acc.push({ CompName: companyName, CompanyBalanceInfo: [item] });
+                        } else {
+                            acc[index].CompanyBalanceInfo.push(item);
+                        }
+
+                        return acc;
+                    }, []);
+                    setBalance(groupedData);
                 }
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'Success') {
-                        const groupedData = data.data.reduce((acc, item) => {
-                            const companyName = item.Company_Name;
-                            const index = acc.findIndex((group) => group.CompName === companyName);
+            .catch(e => console.error(e))
+            .finally(() => setLoading(false)) 
 
-                            if (index === -1) {
-                                acc.push({ CompName: companyName, CompanyBalanceInfo: [item] });
-                            } else {
-                                acc[index].CompanyBalanceInfo.push(item);
-                            }
-
-                            return acc;
-                        }, []);
-                        setBalance(groupedData);
-                    }
-                })
-                .catch(e => console.error(e))
-                .finally(() => setLoading(false))
-
-            fetch(`${api}BankDetails`, {
-                headers: {
-                    'Authorization': storage?.Autheticate_Id,
-                    'Content-Type': 'application/json'
-                }
+            fetchLink({
+                address: `userModule/BankDetails`,
+            }).then(data => {
+                setBankDetails(data.data)
             })
-                .then(res => res.json())
-                .then(data => {
-                    setBankDetails(data.data)
-                })
-                .catch(e => console.error(e))
+            .catch(e => console.error(e))   
         }
 
     }, [reload, isCustomer])

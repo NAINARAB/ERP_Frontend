@@ -3,6 +3,7 @@ import api from '../../../API';
 import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Switch, Card, Paper } from "@mui/material";
 import { RotateLeft, Settings } from '@mui/icons-material';
 import { toast } from "react-toastify";
+import { fetchLink } from '../../../Components/fetchComponent'
 
 
 const QPayColumnVisiblitySettings = ({ CompanyId, refresh, columns, ReportId }) => {
@@ -16,31 +17,26 @@ const QPayColumnVisiblitySettings = ({ CompanyId, refresh, columns, ReportId }) 
 
     const saveColumnVisiblity = () => {
         setDialog(false);
-        fetch(`${api}TallyReports/qpay/columnVisiblity`, {
+        fetchLink({
+            address: `reports/tallyReports/qpay/columnVisiblity`,
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+            bodyData: {
                 dataArray: modifiedColumns,
                 CompanyId: CompanyId,
                 ReportId: ReportId ? ReportId : 1
-            })
+            }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (refresh) {
+                refresh()
+            }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message)
-                } else {
-                    toast.error(data.message)
-                }
-            })
-            .catch(e => console.error(e))
-            .finally(() => {
-                if (refresh) {
-                    refresh()
-                }
-            })
+            
     }
 
 

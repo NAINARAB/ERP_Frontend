@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useState } from 'react';
-import api from '../../API';
 import { Card, CardContent, Tab, Switch, Button, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBackIosNewOutlined, KeyboardArrowLeft, RemoveRedEyeOutlined, Save } from '@mui/icons-material'
 import { TabPanel, TabList, TabContext } from '@mui/lab';
@@ -8,6 +7,7 @@ import { isEqualNumber, isValidObject, Subraction } from '../../Components/funct
 import { toast } from 'react-toastify'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 const ReportTemplateCreation = () => {
@@ -64,13 +64,13 @@ const ReportTemplateCreation = () => {
     }, [])
 
     useEffect(() => {
-        fetch(`${api}reportTablesAndColumns`)
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    setReportTables(data?.data);
-                }
-            }).catch(e => console.log(e))
+        fetchLink({
+            address: `reports/tablesAndColumns`
+        }).then(data => {
+            if (data?.success) {
+                setReportTables(data?.data);
+            }
+        }).catch(e => console.log(e))   
     }, []);
 
     const handleTableCheck = (tableName, checked, aliasName) => {
@@ -217,29 +217,24 @@ const ReportTemplateCreation = () => {
             validateSet.add(item.Join_Second_Table_Id);
             return
         })
-        console.log(validateSet.size);
         if (validateSet.size !== (inputValues.tableJoins.length + 1)) {
             return toast.error('Invalid table joins')
         }
 
         setInputValues(pre => ({ ...pre, previewDialog: false }))
-        fetch(`${api}reportTemplate`, {
+        fetchLink({
+            address: `reports/template`,
             method: inputValues?.Report_Type_Id ? 'PUT' : 'POST',
-            headers: {
-                'Content-Type': "application/json",
-            },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    setInputValues(initialValue);
-                    nav(-1)
-                    toast.success(data.message)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.log(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data?.success) {
+                setInputValues(initialValue);
+                nav(-1)
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.log(e))
     }
 
 

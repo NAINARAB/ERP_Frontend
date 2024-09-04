@@ -6,6 +6,7 @@ import api from "../../../API";
 import DataTable from "react-data-table-component";
 import { MyContext } from "../../../Components/context/contextProvider";
 import { isEqualNumber, ISOString, LocalDate, NumberFormat } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 
 const PaymentReport = () => {
@@ -24,30 +25,32 @@ const PaymentReport = () => {
 
     useEffect(() => {
         setPHData([]);
-        fetch(`${api}isCustomer?UserId=${storage?.UserId}`)
-            .then(res => res.json())
-            .then(data => {
-                let fetchAPIAddress = '';
+        fetchLink({
+            address: `userModule/customer/isCustomer?UserId=${storage?.UserId}`
+        }).then(data => {
+            let fetchAPIAddress = '';
+            if (data.success) {
+                setIsCustomer(true);
+                fetchAPIAddress = `userModule/customer/payment?paymentType=1&customerId=${data.data[0].Cust_Id}&payStatus=${search.payStatus}`;
+            } else {
+                setIsCustomer(false);
+                fetchAPIAddress = `userModule/customer/payment?paymentType=1&payStatus=${search.payStatus}`;
+            }
+
+            fetchLink({
+                address: fetchAPIAddress,
+            }).then(data => {
                 if (data.success) {
-                    setIsCustomer(true);
-                    fetchAPIAddress = `${api}PaymentHistory?paymentType=1&customerId=${data.data[0].Cust_Id}&payStatus=${search.payStatus}`;
-                } else {
-                    setIsCustomer(false);
-                    fetchAPIAddress = `${api}PaymentHistory?paymentType=1&payStatus=${search.payStatus}`;
-                }
-                fetch(fetchAPIAddress, { headers: { 'Authorization': storage?.Autheticate_Id } })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            data.data.forEach(o => {
-                                o.Created_At = new Date(o.Created_At)
-                                o.Total_Amount = Number(o.Total_Amount)
-                            })
-                            setPHData(data.data)
-                        }
+                    data.data.forEach(o => {
+                        o.Created_At = new Date(o.Created_At)
+                        o.Total_Amount = Number(o.Total_Amount)
                     })
-                    .catch(e => console.error(e))
+                    setPHData(data.data)
+                }
             })
+            .catch(e => console.error(e))
+                
+        }).catch(e => console.error(e))
     }, [reload, search.payStatus])
 
     useEffect(() => {
@@ -208,31 +211,26 @@ const PaymentReport = () => {
 
     const postVefification = () => {
         if (!isCustomer) {
-            fetch(`${api}manualPaymentVerification`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': storage?.Autheticate_Id,
-                    "Content-type": "application/json; charset=UTF-8",
-                },
-                body: JSON.stringify({
+            fetchLink({
+                address: `userModule/customer/payment/verification`,
+                method:  'POST',
+                bodyData: {
                     Pay_Id: verifyDetails.Pay_Id,
                     description: verifyDetails.discribtion,
                     verifiedDate: verifyDetails.date,
                     verifyStatus: verifyDetails.verifyStatus
-                })
+                }
+            }).then(data => {
+                if (data.success) {
+                    toast.success(data.message);
+                    clearVerifyDetails();
+                    setOpen(false);
+                    setReload(!reload)
+                } else {
+                    toast.error(data.message)
+                }
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        toast.success(data.message);
-                        clearVerifyDetails();
-                        setOpen(false);
-                        setReload(!reload)
-                    } else {
-                        toast.error(data.message)
-                    }
-                })
-                .catch(e => console.error(e))
+            .catch(e => console.error(e))
         }
     }
 
@@ -278,8 +276,8 @@ const PaymentReport = () => {
                     <div >
                         <label>Discrition</label>
                         <textarea
-                            rows="3" 
-                            className="cus-inpt shadow-none" 
+                            rows="3"
+                            className="cus-inpt shadow-none"
                             maxLength={330}
                             onChange={(e) => setVerifyDetails({ ...verifyDetails, discribtion: e.target.value })}
                             value={verifyDetails.discribtion}

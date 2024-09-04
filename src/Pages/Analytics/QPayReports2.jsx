@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import api from "../../API";
 import { Card, FormControlLabel, Switch, Tab, Box, Checkbox, TextField, Autocomplete, IconButton, Dialog, DialogContent, DialogActions, Button, Tooltip } from "@mui/material";
 import { CheckBoxOutlineBlank, CheckBox, FilterAlt, FilterAltOff } from '@mui/icons-material'
 import { TabPanel, TabList, TabContext } from '@mui/lab';
@@ -12,6 +11,8 @@ import QPayGroupingList from './QPayComps/qpayGroupingList'
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import { GrTransaction } from "react-icons/gr";
+import { fetchLink } from "../../Components/fetchComponent";
+
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -49,14 +50,13 @@ const QPayReports = () => {
 
     useEffect(() => {
         setRepData([])
-        fetch(`${api}TallyReports/qPay?Company_Id=${cusFilter?.company}&Consolidate=${cusFilter?.consolidate}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setRepData(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `reports/tallyReports/qPay?Company_Id=${cusFilter?.company}&Consolidate=${cusFilter?.consolidate}`
+        }).then(data => {
+            if (data.success) {
+                setRepData(data.data)
+            }
+        }).catch(e => console.error(e))
     }, [cusFilter?.company, cusFilter?.consolidate, reload])
 
     useEffect(() => {
@@ -67,15 +67,15 @@ const QPayReports = () => {
     }, [repData, cusFilter.zeros]);
 
     useEffect(() => {
-        fetch(`${api}TallyReports/qpay/columnVisiblity?CompanyId=${cusFilter.company}&Report_Type_Id=${Boolean(cusFilter?.consolidate) ? 1 : 2}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    data?.data?.sort((a, b) => a?.Field_Name?.localeCompare(b?.Field_Name));
-                    setColumns(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `reports/tallyReports/qpay/columnVisiblity?CompanyId=${cusFilter.company}&Report_Type_Id=${Boolean(cusFilter?.consolidate) ? 1 : 2}`
+        }).then(data => {
+            if (data.success) {
+                data?.data?.sort((a, b) => a?.Field_Name?.localeCompare(b?.Field_Name));
+                setColumns(data.data)
+            }
+        })
+        .catch(e => console.error(e))   
     }, [cusFilter.company, cusFilter?.consolidate, reload])
 
     useEffect(() => {

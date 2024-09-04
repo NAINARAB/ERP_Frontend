@@ -1,11 +1,11 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { calcAvg, calcTotal, DaysBetween, getPreviousDate, isEqualNumber, ISOString } from "../../../Components/functions";
+import { calcAvg, calcTotal, DaysBetween, getPreviousDate, isEqualNumber, ISOString } from "../../Components/functions";
 import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
 import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
 import ProductDayBasedSalesReport from "./SalesReportComponent//ProductDayBasedTable";
 import { FilterAlt, Refresh } from "@mui/icons-material";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const SalesReport = () => {

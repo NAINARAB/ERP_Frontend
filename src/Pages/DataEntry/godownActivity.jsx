@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { firstDayOfMonth, isEqualNumber, ISOString, LocalDate, LocalDateWithTime, validValue, onlynum, Addition, NumberFormat } from '../../Components/functions';
-import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tab, Box } from '@mui/material';
 import { TabPanel, TabList, TabContext } from '@mui/lab';
 import { Edit } from '@mui/icons-material'
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 const GodownActivity = () => {
@@ -40,10 +40,9 @@ const GodownActivity = () => {
 
 
     useEffect(() => {
-        fetch(`${api}godownActivities?Fromdate=${filter.Fromdate}&Todate=${filter.Todate}&LocationDetails=${filter.LocationDetails}`)
-            .then(res => res.json())
-            .then(data => setGodownData(data?.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/godownActivities?Fromdate=${filter.Fromdate}&Todate=${filter.Todate}&LocationDetails=${filter.LocationDetails}`
+        }).then(data => setGodownData(data?.data)).catch(e => console.error(e))
     }, [reload, filter.Fromdate, filter.Todate, filter.LocationDetails])
 
     const closeDialog = () => {
@@ -52,23 +51,22 @@ const GodownActivity = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}godownActivities`, {
-            method: inputValues.Id ? 'PUT' : 'POST',
+        fetchLink({
+            address: `dataEntry/godownActivities`,
+            method: inputValues.Id ? "PUT" : "POST",
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    closeDialog()
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                closeDialog()
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     const RowComp = ({ o, sno }) => {

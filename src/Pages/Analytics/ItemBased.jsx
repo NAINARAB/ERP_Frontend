@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Autocomplete, Button, Card, CardContent, Checkbox, Dialog, DialogActions, DialogContent, IconButton, TextField, Tooltip } from "@mui/material";
 import { firstDayOfMonth, isEqualNumber, ISOString } from "../../Components/functions";
-import api from "../../API";
 import MaterialTableComponent from "../../Components/materialTableComponent";
 import { FilterAltOff, CheckBoxOutlineBlank, CheckBox, FilterAlt, } from "@mui/icons-material";
+import { fetchLink } from "../../Components/fetchComponent";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -28,20 +28,19 @@ const ItemBasedReport = () => {
     const [cusFilter, setCusFilter] = useState(initialFilterState);
 
     useEffect(() => {
-        fetch(`${api}TallyReports/productBased?Company_Id=${cusFilter?.company}&Fromdate=${cusFilter?.Fromdate}&Todate=${cusFilter?.Todate}`, {
+        fetchLink({
+            address: `reports/tallyReports/productBased?Company_Id=${cusFilter?.company}&Fromdate=${cusFilter?.Fromdate}&Todate=${cusFilter?.Todate}`,
             method: 'GET',
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
                 'Db': cusFilter?.company
             }
+        }).then(data => {
+            if (data.success) {
+                setRepData(data.data)
+            }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setRepData(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+        .catch(e => console.error(e))
     }, [cusFilter]);
 
     useEffect(() => {

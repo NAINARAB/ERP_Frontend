@@ -1,5 +1,28 @@
 
-import SMT_LOGO from './smt.png'
+import SMT_LOGO from './smt.png';
+
+export const customTableStyles = {
+    table: {
+        style: {
+            width: 'auto',
+            backgroundColor: 'transparent',
+            // borderRadius: '5px',
+        }
+    },
+    rows: {
+        style: {
+            backgroundColor: 'transparent',
+        },
+    },
+    headCells: {
+        style: {
+            backgroundColor: '#6b9080f8',
+            color: 'white',
+            fontSize: '14px',
+            // borderRadius: '5px',
+        },
+    },
+};
 
 export const customSelectStyles = {
     control: (provided, state) => ({

@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useState } from 'react';
-import api from '../../API';
 import {
     Button, Card, CardContent, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tab, Tabs, Box, Typography,
     ListItemIcon, ListItemText, MenuItem, MenuList, Popover, TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper
@@ -9,8 +8,9 @@ import { isEqualNumber, UTCDateWithTime } from '../../Components/functions';
 import { MyContext } from '../../Components/context/contextProvider';
 import { useNavigate } from 'react-router-dom'
 import DynamicMuiTable from '../../Components/dynamicMuiTable';
-import { CurretntCompany } from '../../Components/context/currentCompnayProvider';
 import { toast } from 'react-toastify';
+import { fetchLink } from '../../Components/fetchComponent';
+
 
 
 const TabPanel = (props) => {
@@ -34,8 +34,8 @@ const TabPanel = (props) => {
 };
 
 const ReportTemplates = () => {
+    const storage = JSON.parse(localStorage.getItem('user'))
     const [templates, setTemplates] = useState([]);
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
     const variableState = {
         search: '',
         openFilterDialog: false,
@@ -55,14 +55,13 @@ const ReportTemplates = () => {
     };
 
     useEffect(() => {
-        fetch(`${api}reportTemplate`)
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    setTemplates(data?.data);
-                }
-            }).catch(e => console.log(e))
-            .finally(() => setCurrentCompany({ ...currentCompany, CompanySettings: true }))
+        fetchLink({
+            address: `reports/template`,
+        }).then(data => {
+            if (data?.success) {
+                setTemplates(data?.data);
+            }
+        }).catch(e => console.log(e))
     }, [reload])
 
     const handleFilterChange = (column, value) => {
@@ -216,7 +215,7 @@ const ReportTemplates = () => {
                             <MenuList>
 
                                 <MenuItem
-                                    onClick={!currentCompany?.id
+                                    onClick={!storage?.Company_id
                                         ? () => toast.warn('Select Company!')
                                         : () => {
                                             setLocalVariable(pre => ({
@@ -228,7 +227,7 @@ const ReportTemplates = () => {
                                             setFilters({})
                                         }
                                     }
-                                // disabled={!currentCompany?.id}
+                                // disabled={!storage?.Company_id}
                                 >
                                     <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
                                     <ListItemText>OPEN</ListItemText>
@@ -236,7 +235,7 @@ const ReportTemplates = () => {
 
                                 <MenuItem
                                     onClick={
-                                        !currentCompany?.id
+                                        !storage?.Company_id
                                             ? () => toast.warn('Select Company!')
                                             : () => {
                                                 setLocalVariable(pre => ({
@@ -338,25 +337,21 @@ const ReportTemplates = () => {
 
     const deleteTemplate = () => {
         setLocalVariable(pre => ({ ...pre, deleteConfirmationDialog: false }))
-        fetch(`${api}reportTemplate`, {
+        fetchLink({
+            address: `reports/template`,
             method: 'DELETE',
-            headers: {
-                'Content-Type': "application/json",
-            },
-            body: JSON.stringify({
+            bodyData: {
                 Report_Type_Id: localVariable?.filterTablesAndColumns?.Report_Type_Id
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    toast.success(data.message)
-                    setReload(pre => !pre)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.log(e))
-            .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
+            }
+        }).then(data => {
+            if (data?.success) {
+                toast.success(data.message)
+                setReload(pre => !pre)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.log(e))
+        .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
     }
 
     return (
@@ -429,8 +424,8 @@ const ReportTemplates = () => {
                     </span>
                 </DialogTitle>
                 <DialogContent>
-                    {(localVariable?.filterTablesAndColumns?.Report_Type_Id && currentCompany?.id) && (
-                        <DynamicMuiTable reportId={localVariable?.filterTablesAndColumns?.Report_Type_Id} company={currentCompany?.id} queryFilters={filters} />
+                    {(localVariable?.filterTablesAndColumns?.Report_Type_Id && storage?.Company_id) && (
+                        <DynamicMuiTable reportId={localVariable?.filterTablesAndColumns?.Report_Type_Id} company={storage?.Company_id} queryFilters={filters} />
                     )}
                 </DialogContent>
                 <DialogActions>

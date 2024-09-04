@@ -19,6 +19,7 @@ import TaskType from "./Pages/Masters/TaskType";
 
 import UserBased from "./Pages/Authorization/userBased";
 import UserTypeBased from "./Pages/Authorization/userTypeBased";
+import MenuManagement from "./Pages/Authorization/menuMangaement";
 
 // import Tasks from "./Pages/Tasks/Tasks";
 // import MyTasks from "./Pages/Tasks/myTasks";
@@ -66,162 +67,188 @@ import ItemBasedReport from "./Pages/Analytics/ItemBased";
 import DataEntryAttendance from "./Pages/DataEntry/dataEntryAttendance";
 import ReportTemplateCreation from "./Pages/Analytics/reportTemplateCreation";
 import ReportTemplates from "./Pages/Analytics/reportTemplates";
-import SalesReport from "./Pages/ERP/Report/LedgerTransaction";
-// import RetailersMaster from "./SalesAppPages/Masters/retailers";
-// import ProductsMaster from "./SalesAppPages/Masters/products";
+import SalesReport from "./Pages/Sales/LedgerTransaction";
+import RetailersMaster from "./Pages/UserModule/retailer/Retailer";
+import ProductsMaster from "./Pages/Masters/Product";
+import RetailerClosingStock from "./Pages/UserModule/retailer/closingStock";
+import VisitedLogs from "./Pages/Attendance/visitLogs";
+import SaleOrderList from "./Pages/Sales/saleOrder";
 
 function App() {
-  const [login, setLogin] = useState(false);
-  const [loading, setLoading] = useState(true);
+    const [login, setLogin] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-  const clearQueryParameters = () => {
-    const newUrl = window.location.pathname;
-    window.history.pushState({}, document.title, newUrl);
-  };
+    const clearQueryParameters = () => {
+        const newUrl = window.location.pathname;
+        window.history.pushState({}, document.title, newUrl);
+    };
 
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const localData = localStorage.getItem("user");
-    const parseData = JSON.parse(localData);
-    const Auth = queryParams.get('Auth') || parseData?.Autheticate_Id;
+    useEffect(() => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const localData = localStorage.getItem("user");
+        const parseData = JSON.parse(localData);
+        const Auth = queryParams.get('Auth') || parseData?.Autheticate_Id;
 
-    if (Auth) {
+        if (Auth) {
 
-      fetchLink({
-        address: `authorization/userAuth?Auth=${Auth}`
-      })
-        .then(data => {
+            fetchLink({
+                address: `authorization/userAuth?Auth=${Auth}`
+            }).then(data => {
 
-          if (data.success) {
+                if (data.success) {
 
-            const { Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId, session } = data.data[0]
-            const user = {
-              Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId
-            }
+                    const { Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId, session } = data.data[0]
+                    const user = {
+                        Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId
+                    }
 
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('session', JSON.stringify(session[0]));
-            setLogin(true);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    localStorage.setItem('session', JSON.stringify(session[0]));
+                    setLogin(true);
+                    setLoading(false);
+                } else {
+                    setLoading(false);
+                }
+
+            }).catch(e => { console.error(e); setLoading(false); }).finally(() => clearQueryParameters())
+
+        } else {
             setLoading(false);
-          } else {
-            setLoading(false);
-          }
+        }
+    }, []);
 
-        }).catch(e => { console.error(e); setLoading(false); })
-        .finally(() => clearQueryParameters())
+    const setLoginTrue = () => {
+        setLogin(true);
+    };
 
-    } else {
-      setLoading(false);
+    const logout = () => {
+        localStorage.clear();
+        setLogin(false);
+        window.location = '/'
     }
-  }, []);
 
-  const setLoginTrue = () => {
-    setLogin(true);
-  };
+    return (
+        <>
+            <BrowserRouter>
+                {loading ? (
+                    <div className="overlay">
+                        <CircularProgress className="spinner" />
+                    </div>
+                ) : !login ? (
+                    <>
+                        <Routes>
+                            <Route exact path="*" element={<LoginPage setLoginTrue={setLoginTrue} />} />
+                        </Routes>
+                    </>
+                ) : (
+                    <ContextDataProvider>
+                        <CompanyDataProvider>
+                            <MainComponent logout={logout}>
+                                <Routes>
 
-  const logout = () => {
-    localStorage.clear();
-    setLogin(false);
-    window.location = '/'
-  }
+                                    {/* DASHBOARD */}
+                                    <Route exact path="/dashboard" element={<CommonDashboard />} />
 
-  return (
-    <>
-      <BrowserRouter>
-        {loading ? (
-          <div className="overlay">
-            <CircularProgress className="spinner" />
-          </div>
-        ) : !login ? (
-          <>
-            <Routes>
-              <Route exact path="*" element={<LoginPage setLoginTrue={setLoginTrue} />} />
-            </Routes>
-          </>
-        ) : (
-          <ContextDataProvider>
-            <CompanyDataProvider>
-              <MainComponent logout={logout}>
-                <Routes>
+                                    {/* MASTERS */}
+                                    <Route path="/masters/company" element={<CompanyInfo />} />
+                                    <Route path="/masters/users" element={<Users />} />
+                                    <Route path="/masters/branch" element={<BranchInfo />} />
+                                    <Route path="/masters/project" element={<ProjectList />} />
+                                    <Route path="/master/usertype" element={<UserType />} />
+                                    <Route path="/master/basegroup" element={<BaseGroup />} />
+                                    <Route path="/master/tasktype" element={<TaskType />} />
+                                    <Route path="/masters/products" element={<ProductsMaster />} />
 
-                  <Route exact path="/dashboard" element={<CommonDashboard />} />
+                                    {/* AUTHORIZATION */}
+                                    <Route path="/authorization/user" element={<UserBased />} />
+                                    <Route path="/authorization/usertype" element={<UserTypeBased />} />
+                                    <Route path="/authorization/company" element={<CompanyAuth />} />
+                                    <Route path="/authorization/menuManagement" element={<MenuManagement />} />
 
-                  <Route path="/masters/company" element={<CompanyInfo />} />
-                  <Route path="/masters/users" element={<Users />} />
-                  <Route path="/masters/branch" element={<BranchInfo />} />
-                  <Route path="/masters/project" element={<ProjectList />} />
-                  <Route path="/master/usertype" element={<UserType />} />
-                  <Route path="/master/basegroup" element={<BaseGroup />} />
-                  <Route path="/master/tasktype" element={<TaskType />} />
+                                    {/* TASKS */}
+                                    <Route path="/tasks/taskslist" element={<TaskMaster />} />
+                                    <Route path="/tasks/activeproject" element={<ActiveProjects />} />
+                                    <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
+                                    <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
 
-                  <Route path="/authorization/user" element={<UserBased />} />
-                  <Route path="/authorization/usertype" element={<UserTypeBased />} />
-                  <Route path="/authorization/company" element={<CompanyAuth />} />
+                                    {/* DISCUSSION FORUM */}
+                                    <Route path="/discussions" element={<Discussions />} />
+                                    <Route path="/discussions/chats" element={<ChatsDisplayer />} />
 
-                  <Route path="/tasks/taskslist" element={<TaskMaster />} />
-                  <Route path="/tasks/activeproject" element={<ActiveProjects />} />
-                  <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
-                  <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
+                                    {/* MY TASKS */}
+                                    <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
+                                    <Route path="/mytasks/alltasks" element={<WorkDoneHistory />} />
 
-                  <Route path="/discussions" element={<Discussions />} />
-                  <Route path="/discussions/chats" element={<ChatsDisplayer />} />
+                                    {/* REPORTS */}
+                                    <Route path="/reports/calendar" element={<ReportCalendar />} />
+                                    <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
+                                    <Route path="/reports/graphs" element={<ChartsReport />} />
+                                    <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
+                                    <Route path="/reprots/employee" element={<EmployeeAbstract />} />
+                                    <Route path="/reports/tally" element={<TallyReports />} />
 
-                  <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
-                  <Route path="/mytasks/alltasks" element={<WorkDoneHistory />} />
+                                    {/* ATTENDANCE */}
+                                    <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
+                                    <Route path="/attendance/employee" element={<AttendanceReportForEmployee />} />
+                                    <Route path="/attendance/visitLogs" element={<VisitedLogs />} />  {/* tes */}
 
-                  <Route path="/reports/calendar" element={<ReportCalendar />} />
-                  <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
-                  <Route path="/reports/graphs" element={<ChartsReport />} />
-                  <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
-                  <Route path="/reprots/employee" element={<EmployeeAbstract />} />
-                  <Route path="/reports/tally" element={<TallyReports />} />
-
-                  <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
-                  <Route path="/attendance/employee" element={<AttendanceReportForEmployee />} />
-
-
-                  <Route path="/userModule/customer" element={<CustomerList />} />
-                  <Route path="/userModule/employee" element={<EmployeeMaster />} />
-
-
-                  <Route path='/erp/stockReport' element={<StockReport />} />
-                  <Route path='/erp/purchaseReport' element={<PurchaseReport />} />
-                  <Route path='/erp/salesReport' element={<SalesReport />} />
-                  <Route path='/erp/myPruchase' element={<PurchaseReportForCustomer />} />
+                                    {/* USER MODULE */}
+                                    <Route path="/userModule/customer" element={<CustomerList />} />
+                                    <Route path="/userModule/employee" element={<EmployeeMaster />} />
+                                    <Route path="/userModule/retailers" element={<RetailersMaster />} />
 
 
-                  <Route path='/payments/pendingInvoice' element={<PendingInvoice />} />
-                  <Route path='/payments/paymentReport' element={<PaymentReport />} />
+                                    {/* SALES */}
+                                    <Route path='/sales/salesReport' element={<SalesReport />} />
+                                    <Route path='/sales/closingStock' element={<RetailerClosingStock />} />
+                                    <Route path='/sales/saleOrders' element={<SaleOrderList />} />
 
 
-                  <Route path="/changePassword" element={<ChangePassword />} />
+                                    {/* PURCHASE */}
+                                    <Route path='/purchase/purchaseReport' element={<PurchaseReport />} />
+                                    <Route path='/purchase/myPruchase' element={<PurchaseReportForCustomer />} />
 
-                  <Route path="/dataEntry/drivers" element={<DriverActivities />} />
-                  <Route path="/dataEntry/godown" element={<GodownActivity />} />
-                  <Route path="/dataEntry/delivery" element={<DeliveryActivity />} />
-                  <Route path="/dataEntry/staffs" element={<StaffActivity />} />
-                  <Route path="/dataEntry/fileUpload" element={<ActivityImagesUpload />} />
-                  <Route path="/dataEntry/wgCheck" element={<WeightCheckActivity />} />
-                  <Route path="/dataEntry/staffAttendance" element={<DataEntryAttendance />} />
 
-                  <Route path="/analytics/todayActiviy" element={<DataEntryAbstract />} />
-                  <Route path="/analytics/qPay" element={<QPayReports />} />
-                  <Route path="/analytics/qPay/SalesTransaction" element={<SalesTransaction />} />
-                  <Route path="/analytics/itemBasedReport" element={<ItemBasedReport />} />
-                  <Route path="/analytics/templates" element={<ReportTemplates />} />
-                  <Route path="/analytics/templates/create" element={<ReportTemplateCreation />} />
+                                    {/* INVENTRY */}
+                                    <Route path='/inventry/stockReport' element={<StockReport />} />
 
-                  <Route path="/invalid-credentials" element={<InvalidPageComp />} />
-                  <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
 
-                </Routes>
-              </MainComponent>
-            </CompanyDataProvider>
-          </ContextDataProvider>
-        )}
-      </BrowserRouter>
-    </>
-  );
+                                    {/* PAYMENTS */}
+                                    <Route path='/payments/pendingInvoice' element={<PendingInvoice />} />
+                                    <Route path='/payments/paymentReport' element={<PaymentReport />} />
+
+                                    {/* CHANGE PASSWORD */}
+                                    <Route path="/changePassword" element={<ChangePassword />} />
+
+                                    {/* DATA ENTRY */}
+                                    <Route path="/dataEntry/drivers" element={<DriverActivities />} />
+                                    <Route path="/dataEntry/godown" element={<GodownActivity />} />
+                                    <Route path="/dataEntry/delivery" element={<DeliveryActivity />} />
+                                    <Route path="/dataEntry/staffs" element={<StaffActivity />} />
+                                    <Route path="/dataEntry/fileUpload" element={<ActivityImagesUpload />} />
+                                    <Route path="/dataEntry/wgCheck" element={<WeightCheckActivity />} />
+                                    <Route path="/dataEntry/staffAttendance" element={<DataEntryAttendance />} />
+
+                                    {/* ANALYTICS */}
+                                    <Route path="/analytics/todayActiviy" element={<DataEntryAbstract />} />
+                                    <Route path="/analytics/qPay" element={<QPayReports />} />
+                                    <Route path="/analytics/qPay/SalesTransaction" element={<SalesTransaction />} />
+                                    <Route path="/analytics/itemBasedReport" element={<ItemBasedReport />} />
+                                    <Route path="/analytics/templates" element={<ReportTemplates />} />
+                                    <Route path="/analytics/templates/create" element={<ReportTemplateCreation />} />
+
+                                    {/* OTHERS */}
+                                    <Route path="/invalid-credentials" element={<InvalidPageComp />} />
+                                    <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
+
+                                </Routes>
+                            </MainComponent>
+                        </CompanyDataProvider>
+                    </ContextDataProvider>
+                )}
+            </BrowserRouter>
+        </>
+    );
 }
 
 export default App;

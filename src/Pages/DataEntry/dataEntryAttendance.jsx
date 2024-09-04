@@ -4,6 +4,7 @@ import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
 
 
 const DataEntryAttendance = () => {
@@ -36,16 +37,16 @@ const DataEntryAttendance = () => {
         setDistinctStaffType([]);
         setDistinctWorkDetails([]);
 
-        fetch(`${api}dataEntryAttendance?Fromdate=${filter.Fromdate}&Todate=${filter.Todate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    setAttendanceData(data?.data)
-                    setDistinctStaffType(data?.others?.StaffType ?? [])
-                    setDistinctWorkDetails(data?.others?.WorkDetails ?? [])
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/dataEntryAttendance?Fromdate=${filter.Fromdate}&Todate=${filter.Todate}&reqLocation=${filter.reqLocation}`
+        }).then(data => {
+            if (data?.success) {
+                setAttendanceData(data?.data)
+                setDistinctStaffType(data?.others?.StaffType ?? [])
+                setDistinctWorkDetails(data?.others?.WorkDetails ?? [])
+            }
+        })
+        .catch(e => console.error(e))
 
     }, [filter.Fromdate, filter.Todate, filter.reqLocation, reload])
 
@@ -56,23 +57,19 @@ const DataEntryAttendance = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}dataEntryAttendance`, {
+        fetchLink({
+            address: `dataEntry/dataEntryAttendance`,
             method: inputValues.Id ? 'PUT' : 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    closeDialog()
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                closeDialog()
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     return (

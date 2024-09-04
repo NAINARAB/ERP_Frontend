@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { isEqualNumber, LocalDateWithTime } from '../../Components/functions';
-import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip } from '@mui/material';
 import { Upload } from '@mui/icons-material'
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
+import api from '../../API';
 
 
 const MachineOuternActivity = () => {
@@ -19,10 +20,9 @@ const MachineOuternActivity = () => {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']
 
     useEffect(() => {
-        fetch(`${api}machineOutern`)
-            .then(res => res.json())
-            .then(data => setMachineOuternData(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/machineOutern`,
+        }).then(data => setMachineOuternData(data.data)).catch(e => console.error(e))
     }, [reload])
 
     const handlePaste = async (event) => {
@@ -39,11 +39,34 @@ const MachineOuternActivity = () => {
         }
     };
 
+    // const uploadMachineOuternImage = () => {
+    //     const formData = new FormData();
+    //     formData.append('image', inputValues.image);
+    //     if (inputValues?.image) {
+    //         fetchLink({
+    //             address: `dataEntry/machineOutern`,
+    //             method: 'POST',
+    //             headers: {
+    //                 "Content-Type": 'multipart/form-data'
+    //             },
+    //             bodyData: formData
+    //         }).then(data => {
+    //             if (data.success) {
+    //                 toast.success(data.message);
+    //                 imageUploadDialogClose()
+    //                 setReload(!reload)
+    //             } else {
+    //                 toast.error(data.message)
+    //             }
+    //         }).catch(e => console.error(e))
+    //     }
+    // }
+
     const uploadMachineOuternImage = () => {
         const formData = new FormData();
         formData.append('image', inputValues.image);
         if (inputValues?.image) {
-            fetch(`${api}machineOutern`, {
+            fetch(`${api}dataEntry/machineOutern`, {
                 method: 'POST',
                 body: formData
             }).then(res => res.json())
@@ -83,10 +106,10 @@ const MachineOuternActivity = () => {
             <div className="p-3 pt-0 fa-16 fw-bold d-flex justify-content-between align-items-center">
                 <span>Machine Outern Activities</span>
                 {isEqualNumber(contextObj?.Add_Rights, 1) && (
-                    <Button 
-                        variant='outlined' 
+                    <Button
+                        variant='outlined'
                         onClick={() => setInputValues(pre => ({ ...pre, dialog: true }))}
-                        startIcon={<Upload />} 
+                        startIcon={<Upload />}
                     >
                         Upload Image
                     </Button>

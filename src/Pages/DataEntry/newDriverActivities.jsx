@@ -5,6 +5,8 @@ import { toast } from 'react-toastify'
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Tab, Box } from '@mui/material';
 import { TabPanel, TabList, TabContext } from '@mui/lab';
 import { MyContext } from '../../Components/context/contextProvider';
+import { fetchLink } from '../../Components/fetchComponent';
+
 
 const ContCard = ({ Value, Label }) => (
     <div className="grid-card d-flex align-items-center justify-content-center flex-column cus-shadow">
@@ -44,34 +46,33 @@ const DriverActivities = () => {
         view: 'LIST',
     })
 
+
     useEffect(() => {
-        fetch(`${api}driverActivities/drivers`)
-            .then(res => res.json())
-            .then(data => setDrivers(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/driverActivities/drivers`
+        }).then(data => setDrivers(data.success ? data.data : [])).catch(e => console.error(e))
     }, [reload])
 
     useEffect(() => {
-        fetch(`${api}driverActivities?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setActivityData(data.data)
-                }
-            })
-            .catch(e => console.error(e))
-        fetch(`${api}driverActivities/tripBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => setDriverBased(data.data))
-            .catch(e => console.error(e))
-        fetch(`${api}driverActivities/timeBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => setTimeBased(data.data))
-            .catch(e => console.error(e))
-        fetch(`${api}driverActivities/view2?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`)
-            .then(res => res.json())
-            .then(data => setListBased(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/driverActivities?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+        }).then(data => {
+            if (data.success) {
+                setActivityData(data.success ? data.data : [])
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/driverActivities/tripBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+        }).then(data => setDriverBased(data.success ? data.data : [])).catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/driverActivities/timeBased?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+        }).then(data => setTimeBased(data.success ? data.data : [])).catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/driverActivities/view2?reqDate=${filter.reqDate}&reqLocation=${filter.reqLocation}`
+        }).then(data => setListBased(data.success ? data.data : [])).catch(e => console.error(e))
     }, [reload, filter.reqDate, filter.reqLocation])
 
     const closeDialog = () => {
@@ -80,23 +81,19 @@ const DriverActivities = () => {
     }
 
     const saveActivity = () => {
-        fetch(`${api}driverActivities`, {
+        fetchLink({
+            address: `dataEntry/driverActivities`,
             method: inputValues.Id ? 'PUT' : 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(inputValues)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    toast.success(data.message);
-                    closeDialog()
-                    setReload(!reload)
-                } else {
-                    toast.error(data.message)
-                }
-            }).catch(e => console.error(e))
+            bodyData: inputValues
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                closeDialog()
+                setReload(!reload)
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
     }
 
     const DriverDispComp = ({ obj }) => {

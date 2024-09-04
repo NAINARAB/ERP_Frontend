@@ -1,10 +1,10 @@
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
 import { isEqualNumber, LocalDate, NumberFormat } from './functions';
 import { useEffect, useMemo, useState } from 'react';
-import api from '../API';
 import { Autocomplete, IconButton, Tooltip, TextField, Checkbox, Dialog, DialogContent, DialogTitle, DialogActions, Button, Box } from '@mui/material';
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, FileDownload, SettingsOutlined } from '@mui/icons-material';
 import { mkConfig, generateCsv, download } from 'export-to-csv';
+import { fetchLink } from './fetchComponent';
 
 const formatString = (val, dataType) => {
     switch (dataType) {
@@ -69,61 +69,60 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
     })
 
     useEffect(() => {
-        fetch(`${api}reportTemplate?ReportId=${reportId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data?.success) {
-                    if (data.data[0]) {
-                        const o = data.data[0];
-                        const strucre = {
-                            Report_Type_Id: o?.Report_Type_Id,
-                            reportName: o?.Report_Name,
-                            tables: o?.tablesList?.map(table => ({
-                                Table_Id: table?.Table_Id,
-                                Table_Name: table?.Table_Name,
-                                AliasName: table?.AliasName,
-                                Table_Accronym: table?.Table_Accronym,
-                                isChecked: true,
-                                columns: table?.columnsList?.map(column => ({
-                                    Column_Data_Type: column?.Column_Data_Type,
-                                    Column_Name: column?.Column_Name,
-                                    IS_Default: column?.IS_Default,
-                                    IS_Join_Key: column?.IS_Join_Key,
-                                    Order_By: column?.Order_By,
-                                    Table_Id: column?.Table_Id,
-                                    isVisible: true,
-                                    accessColumnName: `${table?.Table_Accronym}_${column?.Column_Name}`
-                                }))
+        fetchLink({
+            address: `reports/template?ReportId=${reportId}`
+        }).then(data => {
+            if (data?.success) {
+                if (data.data[0]) {
+                    const o = data.data[0];
+                    const strucre = {
+                        Report_Type_Id: o?.Report_Type_Id,
+                        reportName: o?.Report_Name,
+                        tables: o?.tablesList?.map(table => ({
+                            Table_Id: table?.Table_Id,
+                            Table_Name: table?.Table_Name,
+                            AliasName: table?.AliasName,
+                            Table_Accronym: table?.Table_Accronym,
+                            isChecked: true,
+                            columns: table?.columnsList?.map(column => ({
+                                Column_Data_Type: column?.Column_Data_Type,
+                                Column_Name: column?.Column_Name,
+                                IS_Default: column?.IS_Default,
+                                IS_Join_Key: column?.IS_Join_Key,
+                                Order_By: column?.Order_By,
+                                Table_Id: column?.Table_Id,
+                                isVisible: true,
+                                accessColumnName: `${table?.Table_Accronym}_${column?.Column_Name}`
                             }))
-                        }
-                        const allColumns = strucre.tables?.reduce((colArr, table) => {
-                            return colArr.concat(table.columns);
-                        }, []);
-                        setColumns(allColumns);
+                        }))
                     }
+                    const allColumns = strucre.tables?.reduce((colArr, table) => {
+                        return colArr.concat(table.columns);
+                    }, []);
+                    setColumns(allColumns);
                 }
-            }).catch(e => console.log(e))
+            }
+        }).catch(e => console.log(e))
+            
     }, [reportId])
 
     useEffect(() => {
         if (reportId) {
-            fetch(`${api}reportTemplate/executeQuery`, {
+            fetchLink({
+                address: `reports/template/executeQuery`,
                 method: 'POST',
                 headers: {
-                    "Content-type": "application/json; charset=UTF-8",
                     'Db': company,
                 },
-                body: JSON.stringify({
+                bodyData: {
                     filterReq: queryFilters,
                     ReportID: reportId
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data?.success) {
-                        setDataArray(data?.data);
-                    }
-                }).catch(e => console.log(e))
+                }
+            }).then(data => {
+                if (data?.success) {
+                    setDataArray(data?.data);
+                }
+            }).catch(e => console.log(e))
         }
     }, [company, reportId])
 

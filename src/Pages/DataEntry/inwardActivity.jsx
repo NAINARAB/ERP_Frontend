@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { isEqualNumber, LocalDateWithTime } from '../../Components/functions';
-import api from '../../API';
 import { toast } from 'react-toastify'
 import { Button, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip } from '@mui/material';
 import { Upload } from '@mui/icons-material'
 import { MyContext } from '../../Components/context/contextProvider';
-
+import { fetchLink } from '../../Components/fetchComponent';
+import api from '../../API';
 
 const InwardActivity = () => {
     const { contextObj } = useContext(MyContext);
@@ -19,10 +19,10 @@ const InwardActivity = () => {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']
 
     useEffect(() => {
-        fetch(`${api}inwardActivity`)
-            .then(res => res.json())
-            .then(data => setInwardActivity(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/inwardActivity`,
+        }).then(data => setInwardActivity(data.data)).catch(e => console.error(e))
+
     }, [reload])
 
     const handlePaste = async (event) => {
@@ -39,11 +39,34 @@ const InwardActivity = () => {
         }
     };
 
+    // const uploadInwardImage = () => {
+    //     const formData = new FormData();
+    //     formData.append('image', inputValues.image);
+    //     if (inputValues?.image) {
+    //         fetchLink({
+    //             address: `dataEntry/inwardActivity`,
+    //             method: 'POST',
+    //             headers: {
+    //                 "Content-Type": 'multipart/form-data'
+    //             },
+    //             bodyData: formData
+    //         }).then(data => {
+    //             if (data.success) {
+    //                 toast.success(data.message);
+    //                 imageUploadDialogClose()
+    //                 setReload(!reload)
+    //             } else {
+    //                 toast.error(data.message)
+    //             }
+    //         }).catch(e => console.error(e))
+    //     }
+    // }
+
     const uploadInwardImage = () => {
         const formData = new FormData();
         formData.append('image', inputValues.image);
         if (inputValues?.image) {
-            fetch(`${api}inwardActivity`, {
+            fetch(`${api}dataEntry/inwardActivity`, {
                 method: 'POST',
                 body: formData
             }).then(res => res.json())
@@ -70,7 +93,7 @@ const InwardActivity = () => {
             const objectUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = objectUrl;
-            a.download = 'pasted-image.png';
+            a.download = 'Inward_Activity_Image_' + LocalDateWithTime();
             a.click();
             URL.revokeObjectURL(objectUrl);
         } catch (error) {

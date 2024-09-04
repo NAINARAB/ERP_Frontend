@@ -1,31 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../../API';
 import CardComp from './numCardComp';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { getMonth } from '../../../Components/functions';
+import { fetchLink } from '../../../Components/fetchComponent';
 
 const ContCard = ({ Value, Label }) => <CardComp Value={Value} Label={Label} />
 
 const DriverInfoComp = ({ reqDate, reqLocation }) => {
     const [activityData, setActivityData] = useState([]);
-    const [driverBased, setDriverBased] = useState([]);
+    const [tripBased, setTripBased] = useState([]);
     const [filter, setFilter] = useState({
         currentMonth: getMonth(),
     });
 
     useEffect(() => {
-        fetch(`${api}driverActivities?reqDate=${reqDate}&reqLocation=${reqLocation}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setActivityData(data.data)
-                }
-            })
-            .catch(e => console.error(e))
-        fetch(`${api}driverActivities/tripBased?reqDate=${reqDate}&reqLocation=${reqLocation}`)
-            .then(res => res.json())
-            .then(data => setDriverBased(data.data))
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/driverActivities?reqDate=${reqDate}&reqLocation=${reqLocation}`
+        }).then(data => {
+            if (data.success) {
+                setActivityData(data.data)
+            }
+        })
+        .catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/driverActivities/tripBased?reqDate=${reqDate}&reqLocation=${reqLocation}`
+        }).then(data => setTripBased(data.data))
+        .catch(e => console.error(e))
     }, [reqDate, reqLocation])
 
     const calculateCategoryTotals = (data) => {
@@ -55,7 +56,7 @@ const DriverInfoComp = ({ reqDate, reqLocation }) => {
                 <div className='cus-grid text-dark'>
                     <ContCard Value={activityData?.length} Label={'DRIVERS'} />
                     <ContCard
-                        Value={driverBased?.reduce((sum, obj) => {
+                        Value={tripBased?.reduce((sum, obj) => {
                             let total = 0;
                             total += obj?.Trips?.length || 0
                             return total + sum;
@@ -76,11 +77,11 @@ const DriverInfoComp = ({ reqDate, reqLocation }) => {
 
             <div className="my-3 d-flex justify-content-center flex-wrap">
                 <BarChart
-                    xAxis={[{ scaleType: 'band', data: driverBased?.map(o => o?.DriverName) }]}
+                    xAxis={[{ scaleType: 'band', data: tripBased?.map(o => o?.DriverName) }]}
                     series={[
-                        { data: driverBased?.map(o => o?.Trips?.length), label: 'TRIPS',  },
+                        { data: tripBased?.map(o => o?.Trips?.length), label: 'TRIPS',  },
                         {
-                            data: driverBased?.map(o => Number(o?.Trips?.reduce((sum, obj) => {
+                            data: tripBased?.map(o => Number(o?.Trips?.reduce((sum, obj) => {
                                 let total = 0;
                                 total += obj?.Categories?.reduce((catSum, catObj) => {
                                     let catTotal = 0;

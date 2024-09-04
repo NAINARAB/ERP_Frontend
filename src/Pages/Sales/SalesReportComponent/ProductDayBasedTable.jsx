@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useState } from "react";
-import FilterableTable from "../../../../Components/filterableTable2";
-import { calcTotal } from "../../../../Components/functions";
+import FilterableTable from "../../../Components/filterableTable2";
+import { calcTotal, getDaysInPreviousMonths, Division } from "../../../Components/functions";
 
-const ProductBasedSalesReport = ({ dataArray }) => {
+const ProductDayBasedSalesReport = ({ dataArray, days }) => {
     const [showData, setShowData] = useState([]);
 
     useEffect(() => {
@@ -10,19 +10,21 @@ const ProductBasedSalesReport = ({ dataArray }) => {
 
         const modifyCol = temp.map(o => ({
             ...o,
-            M2_Avg: o.ALL_Avg_M2 ?? 0,
-            M3_Avg: o.ALL_Avg_M3 ?? 0,
-            M6_Avg: o.ALL_Avg_M6 ?? 0,
-            M9_Avg: o.ALL_Avg_M9 ?? 0,
-            M12_Avg: o.ALL_Avg_One_Year ?? 0,
+            M2_Avg: Division(o.ALL_Avg_M2, (getDaysInPreviousMonths(2) / 2)) ?? 0,
+            M3_Avg: Division(o.ALL_Avg_M3, (getDaysInPreviousMonths(3) / 3)) ?? 0,
+            M6_Avg: Division(o.ALL_Avg_M6, (getDaysInPreviousMonths(6) / 6)) ?? 0,
+            M9_Avg: Division(o.ALL_Avg_M9, (getDaysInPreviousMonths(9) / 9)) ?? 0,
+            M12_Avg: Division(o.ALL_Avg_One_Year, (getDaysInPreviousMonths(12) / 12)) ?? 0,
             Billed_Qty: calcTotal(o.StockTransaction, 'bill_qty'),
+            Billed_Avg: calcTotal(o.StockTransaction, 'bill_qty') / days,
             StockTransaction: o.StockTransaction.map(st => ({
                 ...st,
-                M2_Avg: st.M2_AVG_Qty ?? 0,
-                M3_Avg: st.M3_AVG_Qty ?? 0,
-                M6_Avg: st.M6_AVG_Qty ?? 0,
-                M9_Avg: st.M9_AVG_Qty ?? 0,
-                M12_Avg: st.One_Year_AVG_Qty ?? 0,
+                Grade_Item_Group: st.Item_Name_Modified,
+                M2_Avg: Division(st.M2_AVG_Qty, (getDaysInPreviousMonths(2) / 2)) ?? 0,
+                M3_Avg: Division(st.M3_AVG_Qty, (getDaysInPreviousMonths(3) / 3)) ?? 0,
+                M6_Avg: Division(st.M6_AVG_Qty, (getDaysInPreviousMonths(6) / 6)) ?? 0,
+                M9_Avg: Division(st.M9_AVG_Qty, (getDaysInPreviousMonths(9) / 9)) ?? 0,
+                M12_Avg: Division(st.One_Year_AVG_Qty, (getDaysInPreviousMonths(12) / 12)) ?? 0,
             }))
         }));
 
@@ -48,6 +50,11 @@ const ProductBasedSalesReport = ({ dataArray }) => {
                     },
                     {
                         Field_Name: 'Billed_Qty',
+                        isVisible: 1,
+                        Fied_Data: 'number',
+                    },
+                    {
+                        Field_Name: 'Billed_Avg',
                         isVisible: 1,
                         Fied_Data: 'number',
                     },
@@ -84,7 +91,7 @@ const ProductBasedSalesReport = ({ dataArray }) => {
                             dataArray={Array.isArray(row.StockTransaction) ? row.StockTransaction : []}
                             columns={[
                                 {
-                                    Field_Name: 'Item_Name_Modified',
+                                    Field_Name: 'Grade_Item_Group',
                                     isVisible: 1,
                                     Fied_Data: 'string',
                                 },
@@ -130,4 +137,4 @@ const ProductBasedSalesReport = ({ dataArray }) => {
 
 }
 
-export default ProductBasedSalesReport;
+export default ProductDayBasedSalesReport;

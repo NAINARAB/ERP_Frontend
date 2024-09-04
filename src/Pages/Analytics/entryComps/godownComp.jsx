@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../../API';
 import { UTCTime } from '../../../Components/functions';
 import CardComp from './numCardComp';
+import { fetchLink } from '../../../Components/fetchComponent';
 
 const ContCard = ({ Value, Label }) => <CardComp Value={Value} Label={Label} />
 
@@ -9,14 +10,14 @@ const GodownInfo = ({reqDate, reqLocation}) => {
     const [activityData, setActivityData] = useState([]);
 
     useEffect(() => {
-        fetch(`${api}godownActivities/abstract?reqDate=${reqDate}&reqLocation=${reqLocation}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setActivityData(data.data)
-                }
-            })
-            .catch(e => console.error(e))
+        fetchLink({
+            address: `dataEntry/godownActivities/abstract?reqDate=${reqDate}&reqLocation=${reqLocation}`
+        }).then(data => {
+            if (data.success) {
+                setActivityData(data.data)
+            }
+        })
+        .catch(e => console.error(e))
     }, [reqDate, reqLocation])
 
     return (
