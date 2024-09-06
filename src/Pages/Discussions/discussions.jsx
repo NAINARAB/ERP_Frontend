@@ -61,7 +61,7 @@ const Discussions = () => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/user/dropDown?Company_id=${parseData?.Company_id}`,
+            address: `masters/users/employeeAndSalesPerson/dropDown?Company_id=${parseData?.Company_id}`,
         }).then(data => {
             if (data.success) {
                 setUsers(data.data)

@@ -5,7 +5,6 @@ import { Edit, Delete } from '@mui/icons-material'
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { MyContext } from "../../Components/context/contextProvider";
-import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
 import { ISOString } from '../../Components/functions'
 
@@ -180,7 +179,7 @@ const ProjectList = () => {
     }
 
 
-    return Number(contextObj?.Read_Rights) === 1 ? (
+    return (
         <Fragment>
             {!screen ? (
                 <div className="card">
@@ -310,7 +309,7 @@ const ProjectList = () => {
             </Dialog>
 
         </Fragment>
-    ) : <InvalidPageComp />
+    )
 }
 
 export default ProjectList;

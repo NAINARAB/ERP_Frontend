@@ -3,10 +3,19 @@ import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, Tab
 import { isEqualNumber, LocalDate, NumberFormat } from './functions';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 
-const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expandableComp, tableMaxHeight, initialPageCount }) => {
+const FilterableTable = ({
+    dataArray = [],
+    columns = [],
+    onClickFun = null,
+    isExpendable = false,
+    expandableComp = null,
+    tableMaxHeight = 550,
+    initialPageCount = 20,
+    EnableSerialNumber = false
+}) => {
 
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(initialPageCount ?? 20);
+    const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
     const [sortCriteria, setSortCriteria] = useState([]);
 
     const handleChangePage = (event, newPage) => {
@@ -82,27 +91,14 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
                 <TableRow>
 
                     {(isExpendable === true && expandableComp) && (
-                        <TableCell className='fa-13 border-end'>
+                        <TableCell className='fa-13 border-end text-center'>
                             <IconButton size='small' onClick={() => setOpen(pre => !pre)}>{open ? <KeyboardArrowUp sx={{ fontSize }} /> : <KeyboardArrowDown sx={{ fontSize }} />}</IconButton>
                         </TableCell>
                     )}
-                    {/* 
-                    {columns?.map(column => (Boolean(column?.isCustomCell) === true) && (
-                        Object.keys(row).map((key, index) => (
-                            (
-                                (column.Field_Name === key)
-                                &&
-                                (isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1))
-                            ) && (
-                                <TableCell
-                                    key={column + index}
-                                    className='fa-13 border-end'
-                                >
-                                    {column.Cell({ row, Field_Name: column.Field_Name })}
-                                </TableCell>
-                            )
-                        ))
-                    ))} */}
+
+                    {EnableSerialNumber === true && (
+                        <TableCell className='fa-13 border-end text-center'>{(rowsPerPage * page) + index + 1}</TableCell>
+                    )}
 
                     {columns?.map(column => (
                         isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1)
@@ -131,13 +127,14 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
                                     {column.Cell({ row, Field_Name: column.Field_Name })}
                                 </TableCell>
                             )
-                        ))}
+                        )
+                    )}
 
                 </TableRow>
 
                 {(isExpendable === true && expandableComp && open) && (
                     <TableRow>
-                        <TableCell colSpan={Number(columns?.length) + 1}>{expandableComp({ row, index })}</TableCell>
+                        <TableCell colSpan={Number(columns?.length) + (EnableSerialNumber === true ? 2 : 1)}>{expandableComp({ row, index })}</TableCell>
                     </TableRow>
                 )}
             </Fragment>
@@ -146,7 +143,7 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
 
     return (
         <div>
-            <TableContainer component={Paper} sx={{ maxHeight: tableMaxHeight ?? 550 }}>
+            <TableContainer component={Paper} sx={{ maxHeight: tableMaxHeight }}>
 
                 <Table stickyHeader size="small">
 
@@ -154,9 +151,15 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
                         <TableRow>
                             {(isExpendable === true && expandableComp) && (
                                 <TableCell
-                                    className='fa-13 fw-bold border-end border-top'
+                                    className='fa-13 fw-bold border-end border-top text-center'
                                     style={{ backgroundColor: '#EDF0F7' }}
-                                ></TableCell>
+                                >#</TableCell>
+                            )}
+                            {EnableSerialNumber === true && (
+                                <TableCell
+                                    className='fa-13 fw-bold border-end border-top text-center'
+                                    style={{ backgroundColor: '#EDF0F7' }}
+                                >SNo</TableCell>
                             )}
                             {columns.map((column, ke) => {
                                 return (isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1)) && (
@@ -194,16 +197,6 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
                                     )
                                 )
                             })}
-
-                            {/* {columns.map((column, ke) => (Boolean(column?.isCustomCell) === true && column.Cell) && (
-                                <TableCell
-                                    key={ke}
-                                    className='fa-13 fw-bold border-end border-top'
-                                    style={{ backgroundColor: '#EDF0F7' }}
-                                >
-                                    {column?.Field_Name?.replace(/_/g, ' ')}
-                                </TableCell>
-                            ))} */}
                         </TableRow>
                     </TableHead>
 
@@ -226,7 +219,7 @@ const FilterableTable = ({ dataArray, columns, onClickFun, isExpendable, expanda
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
-                    rowsPerPageOptions={[initialPageCount ?? 5, 20, 50, 100, 200, 500]}
+                    rowsPerPageOptions={Array.from(new Set([initialPageCount, 5, 20, 50, 100, 200, 500])).sort((a, b) => a - b)}
                     labelRowsPerPage="Rows per page"
                     showFirstButton
                     showLastButton

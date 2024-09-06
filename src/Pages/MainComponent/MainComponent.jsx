@@ -9,7 +9,7 @@ import {
 import "./MainComponent.css";
 import { GrMoney } from "react-icons/gr";
 import { BsCart3 } from "react-icons/bs";
-import { BsBoxes } from "react-icons/bs";
+// import { BsBoxes } from "react-icons/bs";
 import { IoStorefrontOutline } from "react-icons/io5";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Offcanvas from 'react-bootstrap/Offcanvas';
@@ -285,8 +285,8 @@ function MainComponent(props) {
 
     return (
         <Fragment>
-            <ToastContainer />
             <div className="fullscreen-div">
+            <ToastContainer />
 
                 {/* sidebar */}
                 {desktopMenu && (

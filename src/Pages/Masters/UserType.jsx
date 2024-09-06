@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { Button as MuiButton } from "@mui/material/";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { Button, Table } from "react-bootstrap";
 import { Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -35,9 +35,6 @@ function UserType() {
         fetchLink({
             address: `masters/userType`,
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
             bodyData: { Id: inputValue.Id },
         }).then((data) => {
             if (data.success) {
@@ -54,7 +51,6 @@ function UserType() {
         fetchLink({
             address: `masters/userType`,
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             bodyData: { UserType: newChipType },
         }).then((data) => {
             if (data.success) {
@@ -68,8 +64,6 @@ function UserType() {
         }).catch(e => console.error(e))
     };
 
-
-
     const editRow = (user) => {
         setEditUser(true);
         setInputValue({
@@ -82,7 +76,6 @@ function UserType() {
         fetchLink({
             address: `masters/userType`,
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
             bodyData: { Id, UserType },
         }).then((data) => {
             if (data.success) {
@@ -97,7 +90,7 @@ function UserType() {
 
     return (
         <Fragment>
-            <ToastContainer />
+            {/* <ToastContainer /> */}
             <div className="card">
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     UserType
@@ -142,8 +135,9 @@ function UserType() {
                                                 }}
                                                 disabled={Number(obj.Id) <= 6}
                                                 size="small"
+                                                color='error'
                                             >
-                                                <Delete className="fa-in del-red" />
+                                                <Delete className="fa-in " />
                                             </IconButton>
                                         </td>
                                     </tr>

@@ -208,7 +208,6 @@ function BranchInfo() {
         fetchLink({
             address: `masters/branch`,
             method: "POST",
-            headers: { 'Content-Type': 'application/json', },
             bodyData: inputValue
         }).then(data => {
             if (data.success) {
@@ -225,7 +224,6 @@ function BranchInfo() {
         fetchLink({
             address: `masters/branch`,
             method: "PUT",
-            headers: { "Content-Type": "application/json", },
             bodyData: inputValue
         }).then(data => {
             if (data.success) {
@@ -251,7 +249,6 @@ function BranchInfo() {
         fetchLink({
             address: `masters/branch`,
             method: "DELETE",
-            headers: { "Content-Type": "application/json", },
             bodyData: { BranchID: inputValue?.BranchId }
         }).then(data => {
             if (data.success) {
@@ -278,7 +275,7 @@ function BranchInfo() {
                             <Table className="">
                                 <thead>
                                     <tr>
-                                        <th className="fa-14">ID</th>
+                                        <th className="fa-14">Sno</th>
                                         <th className="fa-14">Code</th>
                                         <th className="fa-14">Branch</th>
                                         <th className="fa-14">Phone</th>
@@ -291,7 +288,7 @@ function BranchInfo() {
                                 <tbody>
                                     {branchData.map((obj, item) => (
                                         <tr key={item}>
-                                            <td className="fa-12">{obj.Company_id}</td>
+                                            <td className="fa-12">{item + 1}</td>
                                             <td className="fa-12">{obj.BranchCode}</td>
                                             <td className="fa-12">{obj.BranchName}</td>
                                             <td className="fa-12">{obj.BranchTel1}</td>

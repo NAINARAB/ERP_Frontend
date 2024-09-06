@@ -1,6 +1,5 @@
 import CryptoJS from "crypto-js";
-
-const encryptionKey = "ly4@&gr$vnh905RyB>?%#@-(KSMT";
+import { encryptionKey } from "../encryptionKey";
 
 export const encryptPasswordFun = (str) => {
     return CryptoJS.AES.encrypt(str, encryptionKey).toString();

@@ -25,7 +25,6 @@ const postCheck = (param, Menu_id, Menu_Type, UserId) => {
             DeleteRights: param.deleteRights === true ? 1 : 0,
             PrintRights: param.printRights === true ? 1 : 0
         },
-        headers: { 'Content-Type': 'application/json' }
     }).then(data => {
         if (!data.success) {
             toast.error(data.message)

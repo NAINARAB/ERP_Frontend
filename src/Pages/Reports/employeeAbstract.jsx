@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useContext, Fragment } from "react";
-import api from "../../API";
 import { Card, CardContent, Paper, IconButton, Chip, Avatar, Collapse } from '@mui/material';
 import { MyContext } from "../../Components/context/contextProvider";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccountCircle, Add, Remove, TaskAlt } from '@mui/icons-material';
 import { fetchLink } from "../../Components/fetchComponent";
+import FilterableTable from "../../Components/filterableTable2";
+import { checkIsNumber } from "../../Components/functions";
 
 const EmployeeAbstract = () => {
     const localData = localStorage.getItem("user");
@@ -34,12 +35,12 @@ const EmployeeAbstract = () => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/user/dropDown?Company_id=${parseData?.Company_id}`
+            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
         }).then(data => {
             if (data.success) {
                 setUserDropDown(data.data)
             }
-        }).catch(e => console.error(e))            
+        }).catch(e => console.error(e))
     }, [])
 
     const locDate = (inp) => {
@@ -122,8 +123,8 @@ const EmployeeAbstract = () => {
                                                                     className="m-2"
                                                                     label={
                                                                         oo?.Paramet_Name +
-                                                                            ": " +
-                                                                            ((isNaN(oo?.Current_Value) || (oo?.Paramet_Data_Type) !== 'number')
+                                                                        ": " +
+                                                                        ((isNaN(oo?.Current_Value) || (oo?.Paramet_Data_Type) !== 'number')
                                                                             ? oo?.Current_Value
                                                                             : Number(oo?.Current_Value).toLocaleString('en-IN'))
                                                                     }
@@ -243,6 +244,116 @@ const EmployeeAbstract = () => {
 
                     <h6 className="mt-2 mb-3 ps-3">Tasks ( {empData?.AssignedTasks?.length} )</h6>
 
+                    <FilterableTable
+                        columns={[
+                            {
+                                Field_Name: "Task_Name",
+                                Fied_Data: "string",
+                                isVisible: 1,
+                                OrderBy: 1,
+                            },
+                            {
+                                Field_Name: "Task_Desc",
+                                Fied_Data: "string",
+                                isVisible: 1,
+                                OrderBy: 2,
+                            },
+                            {
+                                Field_Name: "Est_Start_Dt",
+                                Fied_Data: "date",
+                                isVisible: 1,
+                                OrderBy: 3,
+                            },
+                            {
+                                Field_Name: "Est_End_Dt",
+                                Fied_Data: "date",
+                                isVisible: 1,
+                                OrderBy: 4,
+                            },
+                            {
+                                Field_Name: "Sch_Time",
+                                Fied_Data: "string",
+                                isVisible: 1,
+                                OrderBy: 1,
+                            },
+                            {
+                                Field_Name: "EN_Time",
+                                Fied_Data: "string",
+                                isVisible: 1,
+                                OrderBy: 1,
+                            },
+                            {
+                                Field_Name: "Sch_Period",
+                                Fied_Data: "string",
+                                isVisible: 1,
+                                OrderBy: 1,
+                            },
+                        ]}
+                        dataArray={Array.isArray(empData.AssignedTasks) ? empData.AssignedTasks : []}
+                        isExpendable={true}
+                        EnableSerialNumber={true}
+                        expandableComp={({ row }) => {
+                            return (
+                                <FilterableTable
+                                    initialPageCount={15}
+                                    dataArray={Array.isArray(row.Work_Details) ? row.Work_Details : []}
+                                    EnableSerialNumber={true}
+                                    columns={[
+                                        {
+                                            Field_Name: 'Work_Dt',
+                                            isVisible: 1,
+                                            Fied_Data: 'date',
+                                        },
+                                        {
+                                            Field_Name: 'Start_Time',
+                                            isVisible: 1,
+                                            Fied_Data: 'string',
+                                        },
+                                        {
+                                            Field_Name: 'End_Time',
+                                            isVisible: 1,
+                                            Fied_Data: 'string',
+                                        },
+                                        {
+                                            Field_Name: 'Tot_Minutes',
+                                            isVisible: 1,
+                                            Fied_Data: 'number',
+                                        },
+                                        {
+                                            Field_Name: 'Work_Done',
+                                            isVisible: 1,
+                                            Fied_Data: 'string',
+                                        },
+                                        {
+                                            Field_Name: 'Parameters',
+                                            isVisible: 1,
+                                            Fied_Data: 'string',
+                                            isCustomCell: true,
+                                            Cell: ({ row }) => (
+                                                <div className=" d-flex align-items-center flex-wrap p-2 pb-0">
+                                                    {Array.isArray(row.Parameter_Details) && row.Parameter_Details.map((oo, oi) => (
+                                                        <div className="d-flex align-items-center me-2">
+                                                            <p key={oi} className="me-2">
+                                                                {oo?.Paramet_Name}: 
+                                                            </p>
+                                                            <p className=" fw-bold px-3 py-1 border rounded-3 ">
+                                                                {((!checkIsNumber(oo?.Current_Value) || oo?.Paramet_Data_Type !== 'number')
+                                                                    ? oo?.Current_Value
+                                                                    : Number(oo?.Current_Value).toLocaleString('en-IN'))
+                                                                }
+                                                            </p> 
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )
+                                        },
+                                    ]}
+                                />
+                            )
+                        }}
+                        tableMaxHeight={740}
+                    />
+                    {/* 
                     {empData?.AssignedTasks?.length > 0 && (
                         <div className="table-responsive">
                             <table className="table">
@@ -262,7 +373,7 @@ const EmployeeAbstract = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
+                    )} */}
                 </CardContent>
             </Card>
         </>

@@ -70,9 +70,9 @@ import ReportTemplates from "./Pages/Analytics/reportTemplates";
 import SalesReport from "./Pages/Sales/LedgerTransaction";
 import RetailersMaster from "./Pages/UserModule/retailer/Retailer";
 import ProductsMaster from "./Pages/Masters/Product";
-import RetailerClosingStock from "./Pages/UserModule/retailer/closingStock";
 import VisitedLogs from "./Pages/Attendance/visitLogs";
 import SaleOrderList from "./Pages/Sales/saleOrder";
+import ClosingStockReports from "./Pages/UserModule/retailer/closingStockReport";
 
 function App() {
     const [login, setLogin] = useState(false);
@@ -200,7 +200,7 @@ function App() {
 
                                     {/* SALES */}
                                     <Route path='/sales/salesReport' element={<SalesReport />} />
-                                    <Route path='/sales/closingStock' element={<RetailerClosingStock />} />
+                                    <Route path='/sales/closingStock' element={<ClosingStockReports />} />
                                     <Route path='/sales/saleOrders' element={<SaleOrderList />} />
 
 

@@ -51,17 +51,17 @@ const ReportCalendar = () => {
             }
         }).catch(e => console.error(e))
         fetchLink({
-            address: `masters/user/dropDown?BranchId=${parseData?.BranchId}&Company_id=${parseData?.Company_id}`
+            address: `masters/users/employee/dropDown?BranchId=${parseData?.BranchId}&Company_id=${parseData?.Company_id}`
         }).then(data => {
             if (data.success) {
-                setUsersDropdown(data.data)
+                setUsersDropdown(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
             }
         }).catch(e => console.error(e))
         fetchLink({
             address: `taskManagement/task/assignEmployee/task/dropDown`
         }).then(data => {
             if (data.success) {
-                setTasks(data.data)
+                setTasks(data?.data?.sort((a, b) => String(a?.Task_Name).localeCompare(b?.Task_Name)))
             }
         }).catch(e => console.error(e))            
     }, [parseData?.BranchId])
