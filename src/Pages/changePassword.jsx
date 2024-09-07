@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { FormControl, InputLabel, OutlinedInput, InputAdornment, IconButton, Button, FormHelperText } from '@mui/material';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { fetchLink } from '../../../Components/fetchComponent';
+import { toast } from 'react-toastify';
+import { fetchLink } from '../Components/fetchComponent';
 
 const ChangePassword = () => {
     const [enteredData, setEnteredData] = useState({ currentPassword: '', password: '', confirmPassword: '' });
@@ -41,7 +40,6 @@ const ChangePassword = () => {
 
     return (
         <>
-            <ToastContainer />
             <div className="col-lg-6 card">
                 <div className="card-header bg-white">
                     <h5 className="mb-0 py-2">CHANGE PASSWORD</h5>

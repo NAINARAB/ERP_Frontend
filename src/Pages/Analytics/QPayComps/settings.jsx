@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import api from '../../../API';
 import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Switch, Card, Paper } from "@mui/material";
 import { RotateLeft, Settings } from '@mui/icons-material';
 import { toast } from "react-toastify";

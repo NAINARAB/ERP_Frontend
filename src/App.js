@@ -9,6 +9,10 @@ import { CompanyDataProvider } from "./Components/context/currentCompnayProvider
 import { fetchLink } from "./Components/fetchComponent";
 
 
+// Dashboard
+import CommonDashboard from "./Pages/Dashboard/commonDashboard";
+
+// masters
 import CompanyInfo from "./Pages/Masters/CompanyInfo"
 import Users from "./Pages/Masters/newUsers";
 import BranchInfo from "./Pages/Masters/BranchInfo";
@@ -16,104 +20,131 @@ import ProjectList from "./Pages/Masters/ProjectList";
 import UserType from "./Pages/Masters/UserType";
 import BaseGroup from "./Pages/Masters/BaseGroup";
 import TaskType from "./Pages/Masters/TaskType";
+import ProductsMaster from "./Pages/Masters/Product";
 
+
+// Authorization
 import UserBased from "./Pages/Authorization/userBased";
 import UserTypeBased from "./Pages/Authorization/userTypeBased";
+import CompanyAuth from "./Pages/Authorization/compAuth";
 import MenuManagement from "./Pages/Authorization/menuMangaement";
 
-// import Tasks from "./Pages/Tasks/Tasks";
-// import MyTasks from "./Pages/Tasks/myTasks";
 
+
+// Tasks
+import TaskMaster from "./Pages/Tasks/newTasksPage";
 import ActiveProjects from "./Pages/CurrentProjects/projectsList";
 import ProjectDetails from "./Pages/CurrentProjects/projectInfo";
+import TaskActivity from "./Pages/CurrentProjects/taskActivity";
+import TodayTasks from "./Pages/Tasks/todaytasks";
+import WorkDoneHistory from "./Pages/Tasks/employeeAbstract";
 
-import InvalidPageComp from "./Components/invalidCredential";
-import TaskMaster from "./Pages/Tasks/newTasksPage";
 
+
+// Discussion Forum
 import Discussions from "./Pages/Discussions/discussions";
 import ChatsDisplayer from "./Pages/Discussions/chats";
-import TaskActivity from "./Pages/CurrentProjects/taskActivity";
-import CommonDashboard from "./Pages/Dashboard/commonDashboard";
-import TodayTasks from "./Pages/MyTasks/todaytasks";
-import WorkDoneHistory from "./Pages/MyTasks/employeeAbstract";
 
+
+import ChangePassword from "./Pages/changePassword";
+
+// Reports
 import ReportCalendar from "./Pages/Reports/calendar";
 import ReportTaskTypeBasedCalendar from "./Pages/Reports/groupedReport";
 import ChartsReport from "./Pages/Reports/chartReports";
 import EmployeeDayAbstract from "./Pages/Reports/workDocument";
 import EmployeeAbstract from "./Pages/Reports/employeeAbstract";
 import TallyReports from "./Pages/Dashboard/tallyReport";
-import ChangePassword from "./Pages/ERP/Home/changePassword";
-import AttendanceReport from "./Pages/Attendance/attendanceReport";
-import CustomerList from "./Pages/UserModule/customerList";
-import CompanyAuth from "./Pages/Authorization/compAuth";
-import StockReport from "./Pages/ERP/Report/stockReport";
-import PurchaseReport from "./Pages/ERP/Report/purchaseReport";
-import PurchaseReportForCustomer from "./Pages/ERP/Report/purchaseReportForCustomer";
-import PendingInvoice from "./Pages/ERP/Payments/pendingInvoice";
-import PaymentReport from "./Pages/ERP/Payments/paymentReport";
+
+
+// Attendance
 import AttendanceReportForEmployee from "./Pages/Attendance/attendanceReportForEmp";
+import AttendanceReport from "./Pages/Attendance/attendanceReport";
+import VisitedLogs from "./Pages/Attendance/visitLogs";
+
+
+//User Module
+import CustomerList from "./Pages/UserModule/customerList";
 import EmployeeMaster from "./Pages/UserModule/employee";
+import RetailersMaster from "./Pages/UserModule/retailer/Retailer";
+
+
+// Sales
+import SalesReport from "./Pages/Sales/LedgerTransaction";
+import SalesTransaction from "./Pages/Analytics/SalesReport";
+import SaleOrderList from "./Pages/Sales/saleOrder";
+
+
+// Inventry
+import StockReport from "./Pages/Inventry/stockReport";
+
+
+// Purchase
+import PurchaseReport from "./Pages/Purchase/purchaseReport";
+import PurchaseReportForCustomer from "./Pages/Purchase/purchaseReportForCustomer";
+
+
+
+// Payments
+import PendingInvoice from "./Pages/Payments/pendingInvoice";
+import PaymentReport from "./Pages/Payments/paymentReport";
+
+
+// Data Entry
 import DriverActivities from "./Pages/DataEntry/newDriverActivities";
 import GodownActivity from "./Pages/DataEntry/godownActivity";
 import DeliveryActivity from "./Pages/DataEntry/deliveryActivity";
 import StaffActivity from "./Pages/DataEntry/staffActivity";
 import ActivityImagesUpload from "./Pages/DataEntry/fileUploads";
 import WeightCheckActivity from "./Pages/DataEntry/WeightCheckActivity";
+import DataEntryAttendance from "./Pages/DataEntry/dataEntryAttendance";
+
+
+
+// Analytics
 import DataEntryAbstract from "./Pages/Analytics/entryInfo";
 import QPayReports from "./Pages/Analytics/QPayReports2";
-import SalesTransaction from "./Pages/Analytics/SalesReport";
 import ItemBasedReport from "./Pages/Analytics/ItemBased";
-import DataEntryAttendance from "./Pages/DataEntry/dataEntryAttendance";
 import ReportTemplateCreation from "./Pages/Analytics/reportTemplateCreation";
 import ReportTemplates from "./Pages/Analytics/reportTemplates";
-import SalesReport from "./Pages/Sales/LedgerTransaction";
-import RetailersMaster from "./Pages/UserModule/retailer/Retailer";
-import ProductsMaster from "./Pages/Masters/Product";
-import VisitedLogs from "./Pages/Attendance/visitLogs";
-import SaleOrderList from "./Pages/Sales/saleOrder";
 import ClosingStockReports from "./Pages/UserModule/retailer/closingStockReport";
+
+
+import InvalidPageComp from "./Components/invalidCredential";
+
+
+
 
 function App() {
     const [login, setLogin] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const clearQueryParameters = () => {
         const newUrl = window.location.pathname;
         window.history.pushState({}, document.title, newUrl);
+        setLoading(false);
     };
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
-        const localData = localStorage.getItem("user");
-        const parseData = JSON.parse(localData);
+        const parseData = JSON.parse(localStorage.getItem("user"));
         const Auth = queryParams.get('Auth') || parseData?.Autheticate_Id;
 
         if (Auth) {
-
+            setLoading(true);
             fetchLink({
                 address: `authorization/userAuth?Auth=${Auth}`
             }).then(data => {
-
                 if (data.success) {
-
                     const { Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId, session } = data.data[0]
                     const user = {
                         Autheticate_Id, BranchId, BranchName, Company_id, Name, UserId, UserName, UserType, UserTypeId
                     }
-
                     localStorage.setItem('user', JSON.stringify(user));
                     localStorage.setItem('session', JSON.stringify(session[0]));
                     setLogin(true);
-                    setLoading(false);
-                } else {
-                    setLoading(false);
-                }
-
-            }).catch(e => { console.error(e); setLoading(false); }).finally(() => clearQueryParameters())
-
-        } else {
-            setLoading(false);
+                } 
+            }).catch(e => console.error(e)).finally(clearQueryParameters)
         }
     }, []);
 
@@ -170,15 +201,15 @@ function App() {
                                     <Route path="/tasks/activeproject" element={<ActiveProjects />} />
                                     <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
                                     <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
+                                    <Route path="/tasks/todaytasks" element={<TodayTasks />} />
+                                    <Route path="/tasks/alltasks" element={<WorkDoneHistory />} />
+
 
                                     {/* DISCUSSION FORUM */}
                                     <Route path="/discussions" element={<Discussions />} />
                                     <Route path="/discussions/chats" element={<ChatsDisplayer />} />
 
-                                    {/* MY TASKS */}
-                                    <Route path="/mytasks/todaytasks" element={<TodayTasks />} />
-                                    <Route path="/mytasks/alltasks" element={<WorkDoneHistory />} />
-
+                                    
                                     {/* REPORTS */}
                                     <Route path="/reports/calendar" element={<ReportCalendar />} />
                                     <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
@@ -186,6 +217,7 @@ function App() {
                                     <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
                                     <Route path="/reprots/employee" element={<EmployeeAbstract />} />
                                     <Route path="/reports/tally" element={<TallyReports />} />
+
 
                                     {/* ATTENDANCE */}
                                     <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
@@ -236,6 +268,7 @@ function App() {
                                     <Route path="/analytics/itemBasedReport" element={<ItemBasedReport />} />
                                     <Route path="/analytics/templates" element={<ReportTemplates />} />
                                     <Route path="/analytics/templates/create" element={<ReportTemplateCreation />} />
+
 
                                     {/* OTHERS */}
                                     <Route path="/invalid-credentials" element={<InvalidPageComp />} />

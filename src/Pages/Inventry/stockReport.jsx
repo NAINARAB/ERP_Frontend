@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { Card, CardContent } from "@mui/material";
-import { NumberFormat } from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { NumberFormat } from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const StockReport = () => {

@@ -1,5 +1,5 @@
-import { numberToWords } from "../../../Components/functions";
-import { companyDetails } from "../../../Components/tablecolumn";
+import { numberToWords } from "../../Components/functions";
+import { companyDetails } from "../../Components/tablecolumn";
 
 
 const InvoiceBill = ({ companyInfo, invoieInfo, expencesInfo }) => {

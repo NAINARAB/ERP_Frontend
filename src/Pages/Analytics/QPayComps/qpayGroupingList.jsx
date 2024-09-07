@@ -27,7 +27,7 @@ const getFun = (key, dataType, dataArray) => {
                 filterVariant: 'text',
             };
         case 'string':
-            const distinctValues = [...new Set(dataArray.map(item => item[key]))].sort();
+            // const distinctValues = [...new Set(dataArray.map(item => item[key]))].sort();
             return {
                 filterVariant: 'text'
             };

@@ -1,11 +1,11 @@
-import api from "../../../API";
 import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Button } from "@mui/material";
 import { useReactToPrint } from 'react-to-print';
 import { useEffect, useRef, useState } from "react";
 import { Close, LaunchOutlined, Visibility } from '@mui/icons-material';
 import InvoiceBill from "./billFormat";
-import { LocalDate, NumberFormat } from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { LocalDate, NumberFormat } from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
+import FilterableTable from "../../Components/filterableTable2";
 
 const PurchaseReportForCustomer = () => {
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -58,7 +58,7 @@ const PurchaseReportForCustomer = () => {
             fetchLink({
                 address: `userModule/customer/invoiceDetails?Company_Id=${CompanyId}&UserId=${storage?.UserId}&Invoice_No=${Invoice_No}`
             }).then(data => {
-                if (data.status === "Success") {
+                if (data.success) {
                     if (data?.data[0]?.length) {
                         const company = data.data[0]
                         setCompanyInfo(company[0])
@@ -130,38 +130,42 @@ const PurchaseReportForCustomer = () => {
                         <Close />
                     </IconButton>
                 </DialogTitle>
-                <DialogContent>
-                    <div className="table-responsive">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>-</th>
-                                    <th>Date</th>
-                                    <th>Invoice No</th>
-                                    <th>Total Value</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {salesInfo?.map((o, i) => (
-                                    <tr key={i}>
-                                        <td>{i + 1}</td>
-                                        <td>{o?.invoice_date && LocalDate(o?.invoice_date)}</td>
-                                        <td>{o?.invoice_no}</td>
-                                        <td>{NumberFormat(o?.total_invoice_value)}</td>
-                                        <td>
-                                            <IconButton onClick={() => fetchInvoiceDetails(o?.Company_Id, o?.invoice_no)} size="small">
-                                                <Visibility />
-                                            </IconButton>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <DialogContent> 
+                    <FilterableTable
+                        dataArray={salesInfo}
+                        columns={[
+                            {
+                                Field_Name: 'invoice_date',
+                                isVisible: 1,
+                                Fied_Data: 'date',
+                            },
+                            {
+                                Field_Name: 'invoice_no',
+                                isVisible: 1,
+                                Fied_Data: 'string',
+                            },
+                            {
+                                Field_Name: 'total_invoice_value',
+                                isVisible: 1,
+                                Fied_Data: 'number',
+                            },
+                            {
+                                Field_Name: 'View_Bill',
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <IconButton onClick={() => fetchInvoiceDetails(row?.Company_Id, row?.invoice_no)} size="small">
+                                        <Visibility />
+                                    </IconButton>
+                                )
+                            },
+                        ]}
+                        EnableSerialNumber={true}
+                        tableMaxHeight={720}
+                    />
                 </DialogContent>
                 <DialogActions>
-
+                    <Button color='error' variant='outlined' onClick={() => setDialog(pre => ({ ...pre, salesInfoDialog: false }))}>close</Button>
                 </DialogActions>
             </Dialog>
 

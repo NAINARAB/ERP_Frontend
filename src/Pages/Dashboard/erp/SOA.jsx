@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import api from "../../../API";
 import { LaunchOutlined } from '@mui/icons-material'
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from "@mui/material";
 import { useReactToPrint } from 'react-to-print';
 import { utils as XLSXUtils, writeFile as writeXLSX } from 'xlsx';
 import logo from '../ic_launcher.png';
+import { fetchLink } from '../../../Components/fetchComponent'
 
 
 const SOAComp = () => {
@@ -30,16 +30,13 @@ const SOAComp = () => {
     const printRef = useRef()
 
     useEffect(() => {
-        fetch(`${api}getBalance?UserId=${UserId}`, {
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            }
-        }).then(res => res.json()).then(data => {
+        fetchLink({
+            address: `userModule/customer/getBalance?UserId=${UserId}`
+        }).then(data => {
             if (data.status === 'Success') {
                 setDataArray(data.data)
                 let temp = 0;
-                data.data.map(obj => {
+                data.data?.forEach(obj => {
                     temp += Number(obj.Bal_Amount)
                 })
                 setTotal(temp)
@@ -60,21 +57,18 @@ const SOAComp = () => {
             rowData = prop
         }
         setClickedRow(rowData)
-        setDialog(true)
-        fetch(`${api}StatementOfAccound?Cust_Id=${rowData?.Cust_Id}&Acc_Id=${rowData?.tally_id}&Company_Id=${rowData?.Company_Id}&Fromdate=${selectedRange?.from}&Todate=${selectedRange?.to}`, {
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            }
-        }).then(res => res.json()).then(data => {
+        setDialog(true);
+        fetchLink({
+            address: `userModule/customer/StatementOfAccound?Cust_Id=${rowData?.Cust_Id}&Acc_Id=${rowData?.tally_id}&Company_Id=${rowData?.Company_Id}&Fromdate=${selectedRange?.from}&Todate=${selectedRange?.to}`
+        }).then(data => {
             setSOA(data.data)
             let bal = { debit: 0, credit: 0 }
-            data.data.map(obj => {
+            data?.data?.forEach(obj => {
                 bal.debit += Number(obj.Debit_Amt)
                 bal.credit += Number(obj.Credit_Amt)
             })
             setClosingBalance(bal)
-        })
+        }).catch(e => console.error(e))
     }
 
     const handleClose = () => {

@@ -2,11 +2,10 @@ import React, { useContext, useEffect, useState } from "react";
 import { UnfoldMoreOutlined } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Card, CardContent } from '@mui/material';
-import api from "../../../API";
 import DataTable from "react-data-table-component";
-import { MyContext } from "../../../Components/context/contextProvider";
-import { isEqualNumber, ISOString, LocalDate, NumberFormat } from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { MyContext } from "../../Components/context/contextProvider";
+import { isEqualNumber, ISOString, LocalDate, NumberFormat } from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const PaymentReport = () => {
@@ -18,7 +17,7 @@ const PaymentReport = () => {
     const initialValue = { date: ISOString(), discribtion: '', verifyStatus: 0, Pay_Id: '' }
     const [verifyDetails, setVerifyDetails] = useState(initialValue);
     const [reload, setReload] = useState(false);
-    const [isCustomer, setIsCustomer] = useState(false);
+    const [isCustomer, setIsCustomer] = useState(null);
     const [filteredData, setFilteredData] = useState([]);
     const [showData, setShowData] = useState([])
 
@@ -28,17 +27,19 @@ const PaymentReport = () => {
         fetchLink({
             address: `userModule/customer/isCustomer?UserId=${storage?.UserId}`
         }).then(data => {
-            let fetchAPIAddress = '';
             if (data.success) {
                 setIsCustomer(true);
-                fetchAPIAddress = `userModule/customer/payment?paymentType=1&customerId=${data.data[0].Cust_Id}&payStatus=${search.payStatus}`;
             } else {
                 setIsCustomer(false);
-                fetchAPIAddress = `userModule/customer/payment?paymentType=1&payStatus=${search.payStatus}`;
             }
+        }).catch(e => console.error(e));
+    }, [])
 
+    useEffect(() => {
+        if (isCustomer !== null && (isCustomer === true || isCustomer === false)) {
+            setPHData([]);
             fetchLink({
-                address: fetchAPIAddress,
+                address: `userModule/customer/payment?payStatus=${search.payStatus}&Auth=${storage.Autheticate_Id}`,
             }).then(data => {
                 if (data.success) {
                     data.data.forEach(o => {
@@ -47,11 +48,9 @@ const PaymentReport = () => {
                     })
                     setPHData(data.data)
                 }
-            })
-            .catch(e => console.error(e))
-                
-        }).catch(e => console.error(e))
-    }, [reload, search.payStatus])
+            }).catch(e => console.error(e))
+        }
+    }, [reload, search.payStatus, isCustomer])
 
     useEffect(() => {
         const filteredResults = PHData.filter(item => {
@@ -213,7 +212,7 @@ const PaymentReport = () => {
         if (!isCustomer) {
             fetchLink({
                 address: `userModule/customer/payment/verification`,
-                method:  'POST',
+                method: 'POST',
                 bodyData: {
                     Pay_Id: verifyDetails.Pay_Id,
                     description: verifyDetails.discribtion,
@@ -229,8 +228,7 @@ const PaymentReport = () => {
                 } else {
                     toast.error(data.message)
                 }
-            })
-            .catch(e => console.error(e))
+            }).catch(e => console.error(e))
         }
     }
 

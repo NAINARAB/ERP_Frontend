@@ -6,7 +6,7 @@ import '../common.css'
 import { Edit, Delete, CheckBoxOutlineBlank, CheckBox } from '@mui/icons-material';
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, TextField, Autocomplete } from '@mui/material';
 import DataTable from "react-data-table-component";
-import TaskParametersComp from "../MyTasks/taskParameters";
+import TaskParametersComp from "./taskParameters";
 import { fetchLink } from '../../Components/fetchComponent';
 import { checkIsNumber } from '../../Components/functions'
 

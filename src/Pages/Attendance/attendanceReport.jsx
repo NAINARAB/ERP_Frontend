@@ -169,7 +169,7 @@ const AttendanceReport = () => {
                                                 <span>{o?.Start_KM}</span><br />
                                                 <div className="w-100 d-flex justify-content-center">
                                                     <ImagePreviewDialog url={o?.startKmImageUrl}>
-                                                        <img src={o?.startKmImageUrl} alt="Preview" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                                                        <img src={o?.startKmImageUrl} alt="imgPreview" style={{ maxWidth: '100px', maxHeight: '100px' }} />
                                                     </ImagePreviewDialog>
                                                 </div>
                                             </td>
@@ -177,7 +177,7 @@ const AttendanceReport = () => {
                                                 <span>{o?.End_KM}</span><br />
                                                 <div className="w-100 d-flex justify-content-center">
                                                     <ImagePreviewDialog url={o?.endKmImageUrl}>
-                                                        <img src={o?.endKmImageUrl} alt="Preview" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                                                        <img src={o?.endKmImageUrl} alt="imgPreview" style={{ maxWidth: '100px', maxHeight: '100px' }} />
                                                     </ImagePreviewDialog>
                                                 </div>
                                             </td>
@@ -246,7 +246,7 @@ const AttendanceReport = () => {
                                         <span>Start KM Photo</span><br />
                                         <div className="w-100 d-flex justify-content-center">
                                             <ImagePreviewDialog url={objDetails?.startKmImageUrl}>
-                                                <img src={objDetails?.startKmImageUrl} alt="Preview" style={{ maxWidth: '170px', maxHeight: '170px' }} />
+                                                <img src={objDetails?.startKmImageUrl} alt="imgPreview" style={{ maxWidth: '170px', maxHeight: '170px' }} />
                                             </ImagePreviewDialog>
                                         </div>
                                     </td>
@@ -254,7 +254,7 @@ const AttendanceReport = () => {
                                         <span>End KM Photo</span><br />
                                         <div className="w-100 d-flex justify-content-center">
                                             <ImagePreviewDialog url={objDetails?.endKmImageUrl}>
-                                                <img src={objDetails?.endKmImageUrl} alt="Preview" style={{ maxWidth: '170px', maxHeight: '170px' }} />
+                                                <img src={objDetails?.endKmImageUrl} alt="imgPreview" style={{ maxWidth: '170px', maxHeight: '170px' }} />
                                             </ImagePreviewDialog>
                                         </div>
                                     </td>

@@ -4,10 +4,10 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, Card, CardContent, } from '@mui/material';
 import ShankarTraderQRC from './staticqrc.jpg';
-import InvoiceBill from "../Report/billFormat";
+import InvoiceBill from "../Purchase/billFormat";
 import { useReactToPrint } from 'react-to-print';
-import { LocalDate, NumberFormat } from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { LocalDate, NumberFormat } from '../../Components/functions' 
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const BillComponent = ({ props, bankDetails, reloadfun }) => {
@@ -420,6 +420,7 @@ const PendingInvoice = () => {
                         return acc;
                     }, []);
                     setBalance(groupedData);
+                    console.log(data.data)
                 }
             })
             .catch(e => console.error(e))

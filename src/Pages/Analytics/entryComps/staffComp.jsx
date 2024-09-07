@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../../API';
 import CardComp from './numCardComp';
 import { fetchLink } from '../../../Components/fetchComponent';
 

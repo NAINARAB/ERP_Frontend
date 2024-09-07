@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Add, Remove } from '@mui/icons-material';
 import { Card, CardContent } from "@mui/material";
-import { firstDayOfMonth, ISOString } from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { firstDayOfMonth, ISOString } from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
 
 
 const calcTotal = (arr, column) => {
