@@ -3,7 +3,7 @@ import { useReactToPrint } from 'react-to-print';
 import { useEffect, useRef, useState } from "react";
 import { Close, LaunchOutlined, Visibility } from '@mui/icons-material';
 import InvoiceBill from "./billFormat";
-import { LocalDate, NumberFormat } from "../../Components/functions";
+import { NumberFormat } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
 

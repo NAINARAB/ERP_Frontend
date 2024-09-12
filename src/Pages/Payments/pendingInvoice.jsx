@@ -6,7 +6,7 @@ import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Button, 
 import ShankarTraderQRC from './staticqrc.jpg';
 import InvoiceBill from "../Purchase/billFormat";
 import { useReactToPrint } from 'react-to-print';
-import { LocalDate, NumberFormat } from '../../Components/functions' 
+import { isEqualNumber, LocalDate, NumberFormat } from '../../Components/functions' 
 import { fetchLink } from "../../Components/fetchComponent";
 
 
@@ -54,7 +54,7 @@ const BillComponent = ({ props, bankDetails, reloadfun }) => {
     useEffect(() => {
         const comp = props?.CompanyBalanceInfo[0]?.Company_Id;
         bankDetails?.forEach(obj => {
-            if (obj.Company_Id == comp) {
+            if (isEqualNumber(obj.Company_Id, comp)) {
                 setBankObj(obj);
             }
         })
@@ -111,7 +111,7 @@ const BillComponent = ({ props, bankDetails, reloadfun }) => {
 
     const postManualPay = () => {
         const selectedBillsData = [];
-        selectedBill.map((obj, index) => {
+        selectedBill?.forEach((obj, index) => {
             if (Boolean(obj.check) === true) {
                 selectedBillsData.push(props.CompanyBalanceInfo[index])
             }
@@ -179,7 +179,7 @@ const BillComponent = ({ props, bankDetails, reloadfun }) => {
                 <td className="border fa-14 text-end text-primary fw-bold">
                     {(() => {
                         let amount = 0;
-                        props.CompanyBalanceInfo.map(cobj => {
+                        props?.CompanyBalanceInfo?.forEach(cobj => {
                             amount += parseInt(cobj.Bal_Amount)
                         })
                         return amount.toLocaleString();

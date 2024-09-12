@@ -10,15 +10,15 @@ export const fetchLink = async ({
         'Authorization': token,
     },
     bodyData = null,
-    others = {}
+    others = {},
+    autoHeaders = false
 }) => {
 
-    const defaultHeaders = {
-        "Content-Type": "application/json",
-        "Authorization": token,
-    };
+    const isFormData = bodyData instanceof FormData;
 
-    const finalHeaders = { ...defaultHeaders, ...headers };
+    const finalHeaders = autoHeaders
+        ? headers 
+        : { ...{ "Content-Type": "application/json", "Authorization": token }, ...headers }; 
 
     const options = {
         method,
@@ -26,8 +26,16 @@ export const fetchLink = async ({
         ...others
     };
 
+    // if (["POST", "PUT", "DELETE"].includes(method)) {
+    //     options.body = JSON.stringify(bodyData || {});
+    // }
+
     if (["POST", "PUT", "DELETE"].includes(method)) {
-        options.body = JSON.stringify(bodyData || {});
+        if (!isFormData) {
+            options.body = JSON.stringify(bodyData || {});
+        } else {
+            options.body = bodyData;  // FormData should be passed as is
+        }
     }
 
     try {

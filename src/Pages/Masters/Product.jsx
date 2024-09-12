@@ -6,7 +6,7 @@ import { AddPhotoAlternate } from "@mui/icons-material";
 import api from '../../API';
 import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../Components/imagePreview";
-import {fetchLink} from '../../Components/fetchComponent';
+import { fetchLink } from '../../Components/fetchComponent';
 
 const ProductsMaster = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -128,6 +128,21 @@ const ProductsMaster = () => {
         formData.append('Product_Image', productInputValue.Product_Image);
         formData.append('Product_Id', productInputValue?.Product_Id);
         if (productInputValue?.Product_Image && productInputValue?.Product_Id) {
+            // fetchLink({
+            //     address: `masters/products/productImage`,
+            //     method: 'PUT',
+            //     bodyData: formData,
+            //     autoHeaders: true,
+            // }).then(data => {
+            //     if (data.success) {
+            //         toast.success(data.message);
+            //         imageUploadDialogClose()
+            //         setReload(!reload)
+            //     } else {
+            //         toast.error(data.message)
+            //     }
+            // }).catch(e => console.error(e))
+
             fetch(`${api}masters/products/productImage`, {
                 method: 'PUT',
                 body: formData

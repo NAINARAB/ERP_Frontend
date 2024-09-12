@@ -1,20 +1,18 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem } from '@mui/material';
+import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import {
-    Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat, TaskAlt,
-    Tune, BarChart, SettingsAccessibility, Leaderboard, CurrencyRupee, VpnKey, AccountCircle, Settings, HowToReg, Keyboard,
+    Menu, KeyboardArrowRight, KeyboardArrowDown, Circle, Logout, Dashboard, ManageAccounts, WorkHistory, Chat,
+    Tune, BarChart, SettingsAccessibility, CurrencyRupee, VpnKey, AccountCircle, Settings, HowToReg, Keyboard,
     AutoGraph, KeyboardDoubleArrowRight, KeyboardDoubleArrowLeft
 } from '@mui/icons-material'
 import "./MainComponent.css";
 import { GrMoney } from "react-icons/gr";
 import { BsCart3 } from "react-icons/bs";
-// import { BsBoxes } from "react-icons/bs";
 import { IoStorefrontOutline } from "react-icons/io5";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { MyContext } from "../../Components/context/contextProvider";
-import { CurretntCompany } from "../../Components/context/currentCompnayProvider";
 import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
 import { ToastContainer } from 'react-toastify';
@@ -100,7 +98,7 @@ const getIcon = (menuId) => {
     return matchedIcon ? matchedIcon.IconComp : null;
 }
 
-const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage, setCompanySettings }) => {
+const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) => {
     const [open, setOpen] = useState(page.Main_Menu_Id === mainBtn.Main_Menu_Id);
 
     useEffect(() => setOpen(page.Main_Menu_Id === mainBtn.Main_Menu_Id), [page, page.Main_Menu_Id, mainBtn.Main_Menu_Id])
@@ -119,7 +117,6 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage, setC
                             sideClose();
                             setPage(mainBtn);
                             setLoclStoreage(mainBtn.Main_Menu_Id, 1)
-                            setCompanySettings(false)
                         }
                         : () => setOpen(!open)}
             >
@@ -141,7 +138,6 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage, setC
                                     sideClose={closeSide}
                                     page={page}
                                     setPage={setPage}
-                                    setCompanySettings={setCompanySettings}
                                 />
                                 : null
                         ))}
@@ -151,7 +147,7 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage, setC
     )
 }
 
-const SubMenu = ({ subBtn, nav, page, sideClose, setPage, setCompanySettings }) => {
+const SubMenu = ({ subBtn, nav, page, sideClose, setPage }) => {
     return (
         <>
             <button
@@ -161,7 +157,6 @@ const SubMenu = ({ subBtn, nav, page, sideClose, setPage, setCompanySettings }) 
                     sideClose();
                     setPage(subBtn);
                     setLoclStoreage(subBtn.Sub_Menu_Id, 2);
-                    setCompanySettings(false)
                 }}
             >
                 <Circle sx={{ fontSize: '6px', color: '#FDD017', marginRight: '5px' }} />{' ' + subBtn?.SubMenuName}
@@ -177,12 +172,10 @@ function MainComponent(props) {
     const [sidebar, setSidebar] = useState({ MainMenu: [], SubMenu: [] });
 
     const { contextObj, setContextObj } = useContext(MyContext);
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
 
     const [settings, setSettings] = useState(false);
 
     const [show, setShow] = useState(false);
-    const [comp, setComp] = useState([]);
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
@@ -252,37 +245,6 @@ function MainComponent(props) {
 
     }, [parseData?.Autheticate_Id, parseData?.UserId])
 
-    useEffect(() => {
-        fetchLink({
-            address: `authorization/companysAccess?Auth=${parseData?.Autheticate_Id}`
-        }).then((data) => {
-            if (data.success) {
-                setComp(data.data);
-                if (data?.data[0] && Number(data?.data[0]?.View_Rights) === 1) {
-                    setCurrentCompany({
-                        ...currentCompany,
-                        id: data?.data[0]?.Company_Id,
-                        CompName: data?.data[0]?.Company_Name,
-                    });
-                }
-            } else {
-                setComp([]);
-            }
-        }).catch(e => console.error('Fetch Error:', e));
-
-    }, []);
-
-    const companyOnChange = (e) => {
-        const id = e.target.value;
-        const matchingCompany = comp.find(obj => Number(obj?.Company_Id) === Number(id));
-        setCurrentCompany({ ...currentCompany, id: matchingCompany?.Company_Id, CompName: matchingCompany?.Company_Name })
-    };
-
-    const changeCompanySettings = (val) => {
-        setCurrentCompany({ ...currentCompany, CompanySettings: val })
-    }
-
-
     return (
         <Fragment>
             <div className="fullscreen-div">
@@ -307,7 +269,6 @@ function MainComponent(props) {
                                     sideClose={handleClose}
                                     page={contextObj}
                                     setPage={setContextObj}
-                                    setCompanySettings={changeCompanySettings}
                                 />
                             ))}
                         </div>
@@ -395,7 +356,6 @@ function MainComponent(props) {
                             sideClose={handleClose}
                             page={contextObj}
                             setPage={setContextObj}
-                            setCompanySettings={changeCompanySettings}
                         />
                     ))}
                 </Offcanvas.Body>
@@ -418,39 +378,6 @@ function MainComponent(props) {
                     </center>
 
                     <hr />
-
-                    {currentCompany?.CompanySettings === true && (
-                        <div className="row mb-3">
-                            <div className="col-sm-4 ">
-                                <TextField
-                                    fullWidth
-                                    select
-                                    label="Company"
-                                    variant="outlined"
-                                    onChange={e => companyOnChange(e)}
-                                    value={Number(currentCompany?.id)}
-                                    placeholder='SELECT COMPANY'
-                                    InputProps={{
-                                        inputProps: {
-                                            style: { padding: '26px' }
-                                        }
-                                    }}
-                                >
-                                    <MenuItem value=''>SELECT COMPANY</MenuItem>
-
-                                    {comp.map((obj, i) =>
-                                        Number(obj?.View_Rights) === 1 && (
-                                            <MenuItem key={i} value={Number(obj?.Company_Id)} >
-                                                {obj?.Company_Name}
-                                            </MenuItem>
-                                        )
-                                    )}
-
-                                </TextField>
-
-                            </div>
-                        </div>
-                    )}
 
                 </DialogContent>
 

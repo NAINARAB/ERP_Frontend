@@ -5,7 +5,6 @@ import LoginPage from "./Pages/LoginPage/LoginPage";
 import CircularProgress from "@mui/material/CircularProgress";
 import MainComponent from "./Pages/MainComponent/MainComponent";
 import { ContextDataProvider } from "./Components/context/contextProvider";
-import { CompanyDataProvider } from "./Components/context/currentCompnayProvider";
 import { fetchLink } from "./Components/fetchComponent";
 
 
@@ -143,7 +142,7 @@ function App() {
                     localStorage.setItem('user', JSON.stringify(user));
                     localStorage.setItem('session', JSON.stringify(session[0]));
                     setLogin(true);
-                } 
+                }
             }).catch(e => console.error(e)).finally(clearQueryParameters)
         }
     }, []);
@@ -173,110 +172,108 @@ function App() {
                     </>
                 ) : (
                     <ContextDataProvider>
-                        <CompanyDataProvider>
-                            <MainComponent logout={logout}>
-                                <Routes>
+                        <MainComponent logout={logout}>
+                            <Routes>
 
-                                    {/* DASHBOARD */}
-                                    <Route exact path="/dashboard" element={<CommonDashboard />} />
+                                {/* DASHBOARD */}
+                                <Route exact path="/dashboard" element={<CommonDashboard />} />
 
-                                    {/* MASTERS */}
-                                    <Route path="/masters/company" element={<CompanyInfo />} />
-                                    <Route path="/masters/users" element={<Users />} />
-                                    <Route path="/masters/branch" element={<BranchInfo />} />
-                                    <Route path="/masters/project" element={<ProjectList />} />
-                                    <Route path="/master/usertype" element={<UserType />} />
-                                    <Route path="/master/basegroup" element={<BaseGroup />} />
-                                    <Route path="/master/tasktype" element={<TaskType />} />
-                                    <Route path="/masters/products" element={<ProductsMaster />} />
+                                {/* MASTERS */}
+                                <Route path="/masters/company" element={<CompanyInfo />} />
+                                <Route path="/masters/users" element={<Users />} />
+                                <Route path="/masters/branch" element={<BranchInfo />} />
+                                <Route path="/masters/project" element={<ProjectList />} />
+                                <Route path="/master/usertype" element={<UserType />} />
+                                <Route path="/master/basegroup" element={<BaseGroup />} />
+                                <Route path="/master/tasktype" element={<TaskType />} />
+                                <Route path="/masters/products" element={<ProductsMaster />} />
 
-                                    {/* AUTHORIZATION */}
-                                    <Route path="/authorization/user" element={<UserBased />} />
-                                    <Route path="/authorization/usertype" element={<UserTypeBased />} />
-                                    <Route path="/authorization/company" element={<CompanyAuth />} />
-                                    <Route path="/authorization/menuManagement" element={<MenuManagement />} />
+                                {/* AUTHORIZATION */}
+                                <Route path="/authorization/user" element={<UserBased />} />
+                                <Route path="/authorization/usertype" element={<UserTypeBased />} />
+                                <Route path="/authorization/company" element={<CompanyAuth />} />
+                                <Route path="/authorization/menuManagement" element={<MenuManagement />} />
 
-                                    {/* TASKS */}
-                                    <Route path="/tasks/taskslist" element={<TaskMaster />} />
-                                    <Route path="/tasks/activeproject" element={<ActiveProjects />} />
-                                    <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
-                                    <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
-                                    <Route path="/tasks/todaytasks" element={<TodayTasks />} />
-                                    <Route path="/tasks/alltasks" element={<WorkDoneHistory />} />
-
-
-                                    {/* DISCUSSION FORUM */}
-                                    <Route path="/discussions" element={<Discussions />} />
-                                    <Route path="/discussions/chats" element={<ChatsDisplayer />} />
-
-                                    
-                                    {/* REPORTS */}
-                                    <Route path="/reports/calendar" element={<ReportCalendar />} />
-                                    <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
-                                    <Route path="/reports/graphs" element={<ChartsReport />} />
-                                    <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
-                                    <Route path="/reprots/employee" element={<EmployeeAbstract />} />
-                                    <Route path="/reports/tally" element={<TallyReports />} />
+                                {/* TASKS */}
+                                <Route path="/tasks/taskslist" element={<TaskMaster />} />
+                                <Route path="/tasks/activeproject" element={<ActiveProjects />} />
+                                <Route path="/tasks/activeproject/projectschedule" element={<ProjectDetails />} />
+                                <Route path="/tasks/activeproject/projectschedule/taskActivity" element={<TaskActivity />} />
+                                <Route path="/tasks/todaytasks" element={<TodayTasks />} />
+                                <Route path="/tasks/alltasks" element={<WorkDoneHistory />} />
 
 
-                                    {/* ATTENDANCE */}
-                                    <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
-                                    <Route path="/attendance/employee" element={<AttendanceReportForEmployee />} />
-                                    <Route path="/attendance/visitLogs" element={<VisitedLogs />} />  {/* tes */}
-
-                                    {/* USER MODULE */}
-                                    <Route path="/userModule/customer" element={<CustomerList />} />
-                                    <Route path="/userModule/employee" element={<EmployeeMaster />} />
-                                    <Route path="/userModule/retailers" element={<RetailersMaster />} />
+                                {/* DISCUSSION FORUM */}
+                                <Route path="/discussions" element={<Discussions />} />
+                                <Route path="/discussions/chats" element={<ChatsDisplayer />} />
 
 
-                                    {/* SALES */}
-                                    <Route path='/sales/salesReport' element={<SalesReport />} />
-                                    <Route path='/sales/closingStock' element={<ClosingStockReports />} />
-                                    <Route path='/sales/saleOrders' element={<SaleOrderList />} />
+                                {/* REPORTS */}
+                                <Route path="/reports/calendar" element={<ReportCalendar />} />
+                                <Route path="/reports/taskTypeBased" element={<ReportTaskTypeBasedCalendar />} />
+                                <Route path="/reports/graphs" element={<ChartsReport />} />
+                                <Route path="/reprots/dayAbstract" element={<EmployeeDayAbstract />} />
+                                <Route path="/reprots/employee" element={<EmployeeAbstract />} />
+                                <Route path="/reports/tally" element={<TallyReports />} />
 
 
-                                    {/* PURCHASE */}
-                                    <Route path='/purchase/purchaseReport' element={<PurchaseReport />} />
-                                    <Route path='/purchase/myPruchase' element={<PurchaseReportForCustomer />} />
+                                {/* ATTENDANCE */}
+                                <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
+                                <Route path="/attendance/employee" element={<AttendanceReportForEmployee />} />
+                                <Route path="/attendance/visitLogs" element={<VisitedLogs />} />  {/* tes */}
+
+                                {/* USER MODULE */}
+                                <Route path="/userModule/customer" element={<CustomerList />} />
+                                <Route path="/userModule/employee" element={<EmployeeMaster />} />
+                                <Route path="/userModule/retailers" element={<RetailersMaster />} />
 
 
-                                    {/* INVENTRY */}
-                                    <Route path='/inventry/stockReport' element={<StockReport />} />
+                                {/* SALES */}
+                                <Route path='/sales/salesReport' element={<SalesReport />} />
+                                <Route path='/sales/closingStock' element={<ClosingStockReports />} />
+                                <Route path='/sales/saleOrders' element={<SaleOrderList />} />
 
 
-                                    {/* PAYMENTS */}
-                                    <Route path='/payments/pendingInvoice' element={<PendingInvoice />} />
-                                    <Route path='/payments/paymentReport' element={<PaymentReport />} />
-
-                                    {/* CHANGE PASSWORD */}
-                                    <Route path="/changePassword" element={<ChangePassword />} />
-
-                                    {/* DATA ENTRY */}
-                                    <Route path="/dataEntry/drivers" element={<DriverActivities />} />
-                                    <Route path="/dataEntry/godown" element={<GodownActivity />} />
-                                    <Route path="/dataEntry/delivery" element={<DeliveryActivity />} />
-                                    <Route path="/dataEntry/staffs" element={<StaffActivity />} />
-                                    <Route path="/dataEntry/fileUpload" element={<ActivityImagesUpload />} />
-                                    <Route path="/dataEntry/wgCheck" element={<WeightCheckActivity />} />
-                                    <Route path="/dataEntry/staffAttendance" element={<DataEntryAttendance />} />
-
-                                    {/* ANALYTICS */}
-                                    <Route path="/analytics/todayActiviy" element={<DataEntryAbstract />} />
-                                    <Route path="/analytics/qPay" element={<QPayReports />} />
-                                    <Route path="/analytics/qPay/SalesTransaction" element={<SalesTransaction />} />
-                                    <Route path="/analytics/itemBasedReport" element={<ItemBasedReport />} />
-                                    <Route path="/analytics/templates" element={<ReportTemplates />} />
-                                    <Route path="/analytics/templates/create" element={<ReportTemplateCreation />} />
+                                {/* PURCHASE */}
+                                <Route path='/purchase/purchaseReport' element={<PurchaseReport />} />
+                                <Route path='/purchase/myPruchase' element={<PurchaseReportForCustomer />} />
 
 
-                                    {/* OTHERS */}
-                                    <Route path="/invalid-credentials" element={<InvalidPageComp />} />
-                                    <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
+                                {/* INVENTRY */}
+                                <Route path='/inventry/stockReport' element={<StockReport />} />
 
-                                </Routes>
-                            </MainComponent>
-                        </CompanyDataProvider>
+
+                                {/* PAYMENTS */}
+                                <Route path='/payments/pendingInvoice' element={<PendingInvoice />} />
+                                <Route path='/payments/paymentReport' element={<PaymentReport />} />
+
+                                {/* CHANGE PASSWORD */}
+                                <Route path="/changePassword" element={<ChangePassword />} />
+
+                                {/* DATA ENTRY */}
+                                <Route path="/dataEntry/drivers" element={<DriverActivities />} />
+                                <Route path="/dataEntry/godown" element={<GodownActivity />} />
+                                <Route path="/dataEntry/delivery" element={<DeliveryActivity />} />
+                                <Route path="/dataEntry/staffs" element={<StaffActivity />} />
+                                <Route path="/dataEntry/fileUpload" element={<ActivityImagesUpload />} />
+                                <Route path="/dataEntry/wgCheck" element={<WeightCheckActivity />} />
+                                <Route path="/dataEntry/staffAttendance" element={<DataEntryAttendance />} />
+
+                                {/* ANALYTICS */}
+                                <Route path="/analytics/todayActiviy" element={<DataEntryAbstract />} />
+                                <Route path="/analytics/qPay" element={<QPayReports />} />
+                                <Route path="/analytics/qPay/SalesTransaction" element={<SalesTransaction />} />
+                                <Route path="/analytics/itemBasedReport" element={<ItemBasedReport />} />
+                                <Route path="/analytics/templates" element={<ReportTemplates />} />
+                                <Route path="/analytics/templates/create" element={<ReportTemplateCreation />} />
+
+
+                                {/* OTHERS */}
+                                <Route path="/invalid-credentials" element={<InvalidPageComp />} />
+                                <Route path="*" element={<InvalidPageComp message={'404 Page Not Found'} />} />
+
+                            </Routes>
+                        </MainComponent>
                     </ContextDataProvider>
                 )}
             </BrowserRouter>

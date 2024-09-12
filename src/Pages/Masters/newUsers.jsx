@@ -63,7 +63,19 @@ const Users = () => {
             }
         })
         .catch((e) => console.error(e));
-    }, [parseData?.Company_id])
+    }, [parseData?.Company_id]);
+
+    useEffect(() => {
+        if (filterInput) {
+            const filteredResults = usersData.filter(item => {
+                return Object.values(item).some(value =>
+                    String(value).toLowerCase().includes(filterInput.toLowerCase())
+                );
+            });
+    
+            setFilteredData(filteredResults);
+        }
+    }, [filterInput, usersData])
 
     const switchScreen = () => {
         setInputValue(initialState);
@@ -114,17 +126,6 @@ const Users = () => {
         });
     };
 
-    function handleSearchChange(event) {
-        const term = event.target.value;
-        setFilterInput(term);
-        const filteredResults = usersData.filter(item => {
-            return Object.values(item).some(value =>
-                String(value).toLowerCase().includes(term.toLowerCase())
-            );
-        });
-
-        setFilteredData(filteredResults);
-    }
     return (
         <Fragment>
             <Card>
@@ -151,7 +152,7 @@ const Users = () => {
                                         value={filterInput}
                                         className="cus-inpt w-auto"
                                         placeholder="Search"
-                                        onChange={handleSearchChange}
+                                        onChange={e => setFilterInput(e.target.value)}
                                     />
                                 </div>
                             </div>

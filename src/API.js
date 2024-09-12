@@ -1,5 +1,5 @@
-// const api = 'https://erpsmt.in/api/';
-const api = "http://localhost:9001/api/";
+const api = 'https://erpsmt.in/api/';
+// const api = "http://localhost:9001/api/";
 
 
 export default api;

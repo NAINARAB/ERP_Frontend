@@ -12,7 +12,7 @@ const SOAComp = () => {
     const [isCustomer, setIsCustomer] = useState(false)
     const [dataArray, setDataArray] = useState([]);
     const UserId = parseData?.UserId;
-    const token = parseData?.Autheticate_Id;
+    // const token = parseData?.Autheticate_Id;
     const [total, setTotal] = useState(0)
     const [dialog, setDialog] = useState(false)
     const [SOA, setSOA] = useState([])

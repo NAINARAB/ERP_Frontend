@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import api from "../../API";
 import "react-toastify/dist/ReactToastify.css";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";

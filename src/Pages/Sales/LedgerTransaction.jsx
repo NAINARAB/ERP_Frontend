@@ -70,7 +70,7 @@ const SalesReport = () => {
         .catch(console.error);
 
         fetchLink({
-            address: `reports/salesReport/products??Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
+            address: `reports/salesReport/products?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
             headers: {
                 'Db': storage?.Company_id
 

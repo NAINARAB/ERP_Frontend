@@ -276,6 +276,7 @@ const MenuManagement = () => {
                                         onChange={e => setInputValue(pre => ({ ...pre, isActive: Number(e.target.value) }))}
                                         className="cus-inpt"
                                         required
+                                        disabled={isEqualNumber(inputValue.Id, 8)}
                                     >
                                         <option value=""> - Select -</option>
                                         <option value={Number(1)}>Active</option>

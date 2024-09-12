@@ -1,7 +1,5 @@
-import { useEffect, useState, useContext } from "react"
-import api from "../../API";
+import { useEffect, useState } from "react"
 import { ISOString, NumberFormat } from "../../Components/functions";
-import { CurretntCompany } from "../../Components/context/currentCompnayProvider";
 import { ShoppingCart } from "@mui/icons-material";
 import { LuArrowUpWideNarrow } from "react-icons/lu";
 import { HiOutlineCurrencyRupee } from "react-icons/hi";
@@ -70,81 +68,40 @@ const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
 
 const ManagementDashboard = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
-    const { currentCompany, setCurrentCompany } = useContext(CurretntCompany);
     const UserAccess = Number(storage?.UserTypeId) === 2 || Number(storage?.UserTypeId) === 0 || Number(storage?.UserTypeId) === 1;
 
     const [mangementReport, setMangementReport] = useState([]);
     const [secRow, setSecRow] = useState([]);
     const [theredRow, setTheredRow] = useState([]);
-    const [comp, setComp] = useState([]);
 
     const [filter, setFilter] = useState({
         date: ISOString(),
     })
 
     useEffect(() => {
-        fetchLink({
-            address: `authorization/companysAccess?Auth=${storage?.Autheticate_Id}`
-        }).then(data => {
-            if (data.success) {
-                setComp(data.data);
-                if ((!currentCompany?.id && !currentCompany?.CompName) && (data?.data[0] && Number(data?.data[0]?.View_Rights) === 1)) {
-                    setCurrentCompany(pre => ({
-                        ...pre,
-                        id: data?.data[0]?.Company_Id,
-                        CompName: data?.data[0]?.Company_Name
-                    }))
-                }
-            } else {
-                setComp([])
-            }
-        })
-        .catch((e) => { console.log(e) })
-    }, [storage?.Autheticate_Id])
-
-    useEffect(() => {
-        if (UserAccess && currentCompany.id) {
+        if (UserAccess && storage.Company_id) {
             fetchLink({
-                address: `dashboard/erp/dashboardData?Fromdate=${filter?.date}&Company_Id=${currentCompany?.id}`
+                address: `dashboard/erp/dashboardData?Fromdate=${filter?.date}&Company_Id=${storage.Company_id}`
             })
-            .then(data => {
-                if (data.success) {
-                    setMangementReport(data?.data[0])
-                    setSecRow(data?.data[1])
-                    setTheredRow(data?.data[2]);
-                }
-            })
-            .catch(e => console.error(e))
+                .then(data => {
+                    if (data.success) {
+                        setMangementReport(data?.data[0])
+                        setSecRow(data?.data[1])
+                        setTheredRow(data?.data[2]);
+                    }
+                })
+                .catch(e => console.error(e))
         }
-    }, [UserAccess, currentCompany.id, filter.date])
-
-    const companyOnChange = (e) => {
-        const id = e.target.value;
-        const matchingCompany = comp.find(obj => Number(obj?.Company_Id) === Number(id));
-        setCurrentCompany({ ...currentCompany, id: matchingCompany?.Company_Id, CompName: matchingCompany?.Company_Name })
-    };
+    }, [UserAccess, filter.date])
 
     return (
         <>
-            <div className="d-flex">
-                <input
-                    type="date"
-                    className="cus-inpt w-auto m-1"
-                    value={filter.date}
-                    onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
-                />
-
-                <select
-                    value={currentCompany.id}
-                    onChange={e => companyOnChange(e)}
-                    className="cus-inpt w-auto m-1"
-                >
-                    <option value=''>Select Company</option>
-                    {comp?.map((o, i) => (
-                        <option key={i} value={o?.Company_Id}>{o?.Company_Name}</option>
-                    ))}
-                </select>
-            </div>
+            <input
+                type="date"
+                className="cus-inpt w-auto m-1"
+                value={filter.date}
+                onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
+            />
 
             <div className="p-1 row">
                 {theredRow?.map((o, i) => (
