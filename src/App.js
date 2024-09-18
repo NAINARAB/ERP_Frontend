@@ -60,6 +60,7 @@ import TallyReports from "./Pages/Dashboard/tallyReport";
 import AttendanceReportForEmployee from "./Pages/Attendance/attendanceReportForEmp";
 import AttendanceReport from "./Pages/Attendance/attendanceReport";
 import VisitedLogs from "./Pages/Attendance/visitLogs";
+import FingerPrintAttendanceReport from "./Pages/Attendance/fingerPrintAttendance";
 
 
 //User Module
@@ -221,6 +222,7 @@ function App() {
                                 <Route path="/attendance/salesPersons" element={<AttendanceReport />} />
                                 <Route path="/attendance/employee" element={<AttendanceReportForEmployee />} />
                                 <Route path="/attendance/visitLogs" element={<VisitedLogs />} />  {/* tes */}
+                                <Route path="/attendance/fingerPrintAttendance" element={<FingerPrintAttendanceReport />} />  
 
                                 {/* USER MODULE */}
                                 <Route path="/userModule/customer" element={<CustomerList />} />

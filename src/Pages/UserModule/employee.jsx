@@ -145,6 +145,7 @@ const EmployeeMaster = () => {
         due_loan: 0,
         user_manage_id: '',
         enter_by: parseInt(storage?.UserId),
+        fingerPrintEmpId: null
     }
     const [empFormData, setEmpFormData] = useState(initialEmpValue);
     const [empData, setEmpData] = useState([]);
@@ -234,6 +235,15 @@ const EmployeeMaster = () => {
             required: true,
             value: empFormData.mobile,
             max: 10
+        },
+        {
+            label: 'Attendance Id (Finger Print)',
+            elem: 'input',
+            oninput: (e) => onlynum(e),
+            class: inputclass,
+            placeholder: "Enter Employee Attendance Master Id",
+            event: (e) => setEmpFormData({ ...empFormData, fingerPrintEmpId: e.target.value }),
+            value: empFormData.fingerPrintEmpId,
         },
         {
             label: 'Education',
@@ -462,6 +472,7 @@ const EmployeeMaster = () => {
                 due_loan: emp?.Due_Loan,
                 user_manage_id: emp?.User_Mgt_Id,
                 enter_by: parseInt(storage?.UserId),
+                fingerPrintEmpId: emp?.fingerPrintEmpId
             }))
             setDispScreen(!dispScreen);
         }

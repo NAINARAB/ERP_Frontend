@@ -14,12 +14,14 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import { useNavigate } from 'react-router-dom';
 import { fetchLink } from "../../Components/fetchComponent";
+import { isEqualNumber } from '../../Components/functions';
 
 
 const topicInitialValue = {
     Description: '',
     Id: "",
-    Topic: ""
+    Topic: "",
+    Company_id: JSON.parse(localStorage.getItem("user"))?.Company_id
 }
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
@@ -57,6 +59,8 @@ const Discussions = () => {
                 setMyDiscussions((Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1) ? data?.data : temp)
             }
         }).catch(e => console.log(e))
+
+        // pending:  if the user is asssingned any one of the tasks in the project that project's discussion forum will be accessable for the user
     }, [reload, parseData?.UserId, parseData?.UserTypeId])
 
     useEffect(() => {
@@ -182,13 +186,15 @@ const Discussions = () => {
                 <div className="p-3">
                     <div className="d-flex mb-4 ">
                         <p className="fw-bold fa-18 px-2 flex-grow-1">Topics</p>
-                        <button className="btn btn-primary rounded-5 px-3 fa-13 shadow" onClick={() => setCreateDialog(true)}>
-                            Create Topic
-                        </button>
+                        {isEqualNumber(contextObj.Add_Rights, 1) && (
+                            <button className="btn btn-primary rounded-5 px-3 fa-13 shadow" onClick={() => setCreateDialog(true)}>
+                                Create Topic
+                            </button>
+                        )}
                     </div>
                     {myDiscussions.length > 0 ? (
                         <table className="table">
-                            <thead>
+                            {/* <thead>
                                 <tr>
                                     <td className="d-none"></td>
                                     <td className="d-none"></td>
@@ -196,7 +202,7 @@ const Discussions = () => {
                                     <td className="d-none"></td>
                                     <td className="d-none"></td>
                                 </tr>
-                            </thead>
+                            </thead> */}
                             <tbody>
                                 {myDiscussions.map((o, i) => (
                                     <tr key={i}>
@@ -239,7 +245,7 @@ const Discussions = () => {
                                                     <Launch className=" text-primary" />
                                                 </IconButton>
                                                 {
-                                                    (Number(contextObj.Edit_Rights) === 1 || Number(contextObj.Delete_Rights) === 1)
+                                                    (isEqualNumber(contextObj.Edit_Rights, 1) || isEqualNumber(contextObj.Delete_Rights, 1))
                                                     &&
                                                     <Dropdown>
                                                         <Dropdown.Toggle
@@ -249,17 +255,17 @@ const Discussions = () => {
                                                         >
                                                         </Dropdown.Toggle>
                                                         <Dropdown.Menu>
-                                                            {Number(contextObj.Edit_Rights) === 1 && (
+                                                            {isEqualNumber(contextObj.Edit_Rights, 1) && (
                                                                 <MenuItem onClick={() => setTeamData(o)}>
                                                                     <GroupAdd className="fa-in text-primary me-2" /> Manage Team
                                                                 </MenuItem>
                                                             )}
-                                                            {(Number(contextObj.Edit_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                            {(isEqualNumber(contextObj.Edit_Rights, 1) && isEqualNumber(o?.Project_Id, 0)) && (
                                                                 <MenuItem onClick={() => setUpdate(o)}>
                                                                     <Edit className="fa-in me-2" /> Edit
                                                                 </MenuItem>
                                                             )}
-                                                            {(Number(contextObj.Delete_Rights) === 1 && Number(o?.Project_Id) === 0) && (
+                                                            {(isEqualNumber(contextObj.Delete_Rights, 1) && isEqualNumber(o?.Project_Id, 0)) && (
                                                                 <MenuItem onClick={() => setDelete(o)}>
                                                                     <Delete className="fa-in me-2 text-danger" /> Delete
                                                                 </ MenuItem>
@@ -281,7 +287,7 @@ const Discussions = () => {
                     ) : (
                         <h5 className="text-center mb-5">
                             {
-                                (Number(parseData.UserTypeId) === 0 || Number(parseData.UserTypeId) === 1)
+                                (isEqualNumber(parseData.UserTypeId, 0) || isEqualNumber(parseData.UserTypeId, 1))
                                     ? 'No Topics Available'
                                     : 'You are not involved in any discussion'
                             }

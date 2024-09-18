@@ -187,19 +187,19 @@ const SOAComp = () => {
                             <table className="table border-0">
                                 <tbody>
                                     <tr>
-                                        <td className="border-0" scope="row">Company</td>
+                                        <td className="border-0">Company</td>
                                         <td className="border-0">{clickedRow?.Company_Name}</td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0" scope="row">Ledger Name</td>
+                                        <td className="border-0">Ledger Name</td>
                                         <td className="border-0">{clickedRow?.ledger_name}</td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0" scope="row">Contact Person</td>
+                                        <td className="border-0">Contact Person</td>
                                         <td className="border-0">{SOA[0]?.Contact_Person}</td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0" scope="row">Mobile</td>
+                                        <td className="border-0">Mobile</td>
                                         <td className="border-0">{SOA[0]?.Mobile_no}</td>
                                     </tr>
                                 </tbody>
