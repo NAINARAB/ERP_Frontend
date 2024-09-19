@@ -1,6 +1,6 @@
 import React, { Fragment, useState } from 'react';
 import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton } from '@mui/material';
-import { isEqualNumber, LocalDate, NumberFormat } from './functions';
+import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 
 const FilterableTable = ({
@@ -75,6 +75,8 @@ const FilterableTable = ({
                 return NumberFormat(val)
             case 'date':
                 return LocalDate(val);
+            case 'time':
+                return LocalTime(val);
             case 'string':
                 return val;
             default:
@@ -183,7 +185,7 @@ const FilterableTable = ({
                                                 }
                                                 onClick={() => handleSortRequest(column.Field_Name)}
                                             >
-                                                {column?.Field_Name?.replace(/_/g, ' ')}
+                                                {column.ColumnHeader ? column.ColumnHeader : column?.Field_Name?.replace(/_/g, ' ')}
                                             </TableSortLabel>
                                         </TableCell>
                                     ) : (
@@ -192,7 +194,7 @@ const FilterableTable = ({
                                             className='fa-13 fw-bold border-end border-top'
                                             style={{ backgroundColor: '#EDF0F7' }}
                                         >
-                                            {column?.Field_Name?.replace(/_/g, ' ')}
+                                            {column.ColumnHeader ? column.ColumnHeader : column?.Field_Name?.replace(/_/g, ' ')}
                                         </TableCell>
                                     )
                                 )

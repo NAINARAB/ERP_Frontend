@@ -145,16 +145,18 @@ const EmployeeMaster = () => {
         due_loan: 0,
         user_manage_id: '',
         enter_by: parseInt(storage?.UserId),
-        fingerPrintEmpId: null
+        fingerPrintEmpId: null,
+        Department_ID: '',
     }
     const [empFormData, setEmpFormData] = useState(initialEmpValue);
     const [empData, setEmpData] = useState([]);
+    const [departments, setDepartments] = useState([])
     const [filteredData, setFilteredData] = useState([]);
     const [branch, setBranch] = useState([]);
     const [designation, setDesignation] = useState([]);
     const inputclass = 'cus-inpt b-0';
     const [dispScreen, setDispScreen] = useState(false);
-    const [userCreate, setUserCreate] = useState(false);
+    // const [userCreate, setUserCreate] = useState(false);
     const [search, setSearch] = useState('')
     const [pk, setPK] = useState('')
     const [refresh, setRefresh] = useState(false)
@@ -168,6 +170,10 @@ const EmployeeMaster = () => {
                 setEmpData(data.data)
             }
         }).catch(e => console.log(e));
+
+    }, [refresh])
+
+    useEffect(() => {
 
         fetchLink({
             address: `masters/branch/dropDown?User_Id=${storage?.UserId}&Company_id=${storage?.Company_id}`
@@ -185,7 +191,14 @@ const EmployeeMaster = () => {
             }
         }).catch(e => console.log(e));
 
-    }, [refresh])
+        fetchLink({
+            address: `userModule/employee/department`
+        }).then((data) => {
+            if (data.success) {
+                setDepartments(data.data)
+            }
+        }).catch(e => console.log(e));
+    }, [])
 
     useEffect(() => {
         const filteredResults = empData.filter(item => {
@@ -244,6 +257,15 @@ const EmployeeMaster = () => {
             placeholder: "Enter Employee Attendance Master Id",
             event: (e) => setEmpFormData({ ...empFormData, fingerPrintEmpId: e.target.value }),
             value: empFormData.fingerPrintEmpId,
+        },
+        {
+            label: 'Salary Type',
+            elem: 'select',
+            class: inputclass,
+            options: [{ value: '', label: ' - Select - ', disabled: true, selected: true }, ...departments.map(obj => ({ value: obj.DepartmentId, label: obj.DepartmentFName }))],
+            event: (e) => setEmpFormData({ ...empFormData, Department_ID: e.target.value }),
+            required: true,
+            value: empFormData.Department_ID,
         },
         {
             label: 'Education',
@@ -403,7 +425,7 @@ const EmployeeMaster = () => {
             fetchLink({
                 address: `userModule/employee`,
                 method: 'POST',
-                bodyData: { data: empFormData, userMGT: userCreate }
+                bodyData: { data: empFormData, userMGT: true }
             }).then(data => {
                 if (data.success) {
                     toast.success(data.message)
@@ -472,7 +494,8 @@ const EmployeeMaster = () => {
                 due_loan: emp?.Due_Loan,
                 user_manage_id: emp?.User_Mgt_Id,
                 enter_by: parseInt(storage?.UserId),
-                fingerPrintEmpId: emp?.fingerPrintEmpId
+                fingerPrintEmpId: emp?.fingerPrintEmpId,
+                Department_ID: emp?.Department_ID,
             }))
             setDispScreen(!dispScreen);
         }
@@ -537,13 +560,13 @@ const EmployeeMaster = () => {
                                             <textarea
                                                 className={field.class}
                                                 onChange={field.event}
-                                                rows={4} value={field.value}>
+                                                rows={1} value={field.value}>
                                             </textarea>
                                         ) : null}
                                     </div>
                                 ))}
 
-                                {!pk && (
+                                {/* {!pk && (
                                     <div className='col-lg-4 col-md-6 d-flex align-items-center'>
                                         <div>
                                             <label className="form-check-label p-1 pe-2" htmlFor="muser">Create as a User</label>
@@ -557,7 +580,7 @@ const EmployeeMaster = () => {
                                             />
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                             </div>
 
