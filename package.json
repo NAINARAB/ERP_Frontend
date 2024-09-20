@@ -51,7 +51,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "analyze": "npm run build && webpack-bundle-analyzer build/static/js/main.*.js"
   },
   "eslintConfig": {
     "extends": [
@@ -72,6 +73,7 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "webpack-bundle-analyzer": "^4.10.2"
   }
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, IconButton, Dialog, DialogTitle, DialogContent, Button, Tooltip } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { checkIsNumber, DaysBetween, firstDayOfMonth, formatTime24, isEqualNumber, ISOString, LocalDate, LocalTime } from "../../Components/functions";
+import { DaysBetween, firstDayOfMonth, formatTime24, isEqualNumber, ISOString, LocalDate, LocalTime } from "../../Components/functions";
 import { Close, FileDownload } from "@mui/icons-material";
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'

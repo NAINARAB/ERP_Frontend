@@ -156,7 +156,7 @@ const EmployeeMaster = () => {
     const [designation, setDesignation] = useState([]);
     const inputclass = 'cus-inpt b-0';
     const [dispScreen, setDispScreen] = useState(false);
-    // const [userCreate, setUserCreate] = useState(false);
+    const [userCreate, setUserCreate] = useState(false);
     const [search, setSearch] = useState('')
     const [pk, setPK] = useState('')
     const [refresh, setRefresh] = useState(false)
@@ -245,7 +245,7 @@ const EmployeeMaster = () => {
             class: inputclass,
             placeholder: "Enter Mobile Number",
             event: (e) => setEmpFormData({ ...empFormData, mobile: e.target.value }),
-            required: true,
+            required: userCreate,
             value: empFormData.mobile,
             max: 10
         },
@@ -425,7 +425,7 @@ const EmployeeMaster = () => {
             fetchLink({
                 address: `userModule/employee`,
                 method: 'POST',
-                bodyData: { data: empFormData, userMGT: true }
+                bodyData: { data: {...empFormData, createAsUser: userCreate}, userMGT: true }
             }).then(data => {
                 if (data.success) {
                     toast.success(data.message)
@@ -448,7 +448,7 @@ const EmployeeMaster = () => {
             fetchLink({
                 address: `userModule/employee`,
                 method: 'PUT',
-                bodyData: { data: empFormData, ID: pk }
+                bodyData: { data: {...empFormData, createAsUser: userCreate}, ID: pk }
             }).then(data => {
                 if (data.success) {
                     toast.success(data.message)
@@ -566,7 +566,7 @@ const EmployeeMaster = () => {
                                     </div>
                                 ))}
 
-                                {/* {!pk && (
+                                {!pk && (
                                     <div className='col-lg-4 col-md-6 d-flex align-items-center'>
                                         <div>
                                             <label className="form-check-label p-1 pe-2" htmlFor="muser">Create as a User</label>
@@ -580,7 +580,7 @@ const EmployeeMaster = () => {
                                             />
                                         </div>
                                     </div>
-                                )} */}
+                                )}
 
                             </div>
 
