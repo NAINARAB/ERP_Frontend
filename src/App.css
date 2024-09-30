@@ -1,3 +1,7 @@
+.pointer {
+    cursor: pointer !important;
+}
+
 .overlay {
     position: fixed;
     top: 0;

@@ -26,6 +26,7 @@ function LoginPage({ setLoginTrue }) {
 
                 localStorage.setItem("user", JSON.stringify(user));
                 localStorage.setItem("session", JSON.stringify(session));
+                localStorage.setItem('loginAt', new Date());
 
                 setLoginTrue()
             } else {

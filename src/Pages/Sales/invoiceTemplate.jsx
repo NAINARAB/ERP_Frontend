@@ -34,6 +34,12 @@ const InvoiceBillTemplate = (props) => {
     }, [storage?.Company_id])
 
     useEffect(() => {
+        if (props.open) {
+            setOpen(true);
+        }
+    }, [props.open])
+
+    useEffect(() => {
         if (orderDetails?.Retailer_Id) {
             fetchLink({
                 address: `masters/retailers/info?Retailer_Id=${orderDetails?.Retailer_Id}`
@@ -51,6 +57,9 @@ const InvoiceBillTemplate = (props) => {
 
     const handleClose = () => {
         setOpen(false);
+        if (props.clearDetails) {
+            props.clearDetails();
+        }
     };
 
     const includedProducts = products.filter(product => {

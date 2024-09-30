@@ -1,34 +1,33 @@
 import api from "../API";
-const storage = JSON.parse(localStorage.getItem("user"));
-const token = storage?.Autheticate_Id;
 
 export const fetchLink = async ({
     address,
     method = "GET",
-    headers = {
-        "Content-Type": "application/json",
-        'Authorization': token,
-    },
+    headers,
     bodyData = null,
     others = {},
     autoHeaders = false
 }) => {
 
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const token = storage?.Autheticate_Id;
+
     const isFormData = bodyData instanceof FormData;
 
+    const defaultHeaders = {
+        "Content-Type": "application/json",
+        'Authorization': token,
+    }
+
     const finalHeaders = autoHeaders
-        ? headers 
-        : { ...{ "Content-Type": "application/json", "Authorization": token }, ...headers }; 
+        ? defaultHeaders
+        : { ...defaultHeaders, ...headers };
 
     const options = {
         method,
         headers: finalHeaders,
         ...others
     };
-
-    // if (["POST", "PUT", "DELETE"].includes(method)) {
-    //     options.body = JSON.stringify(bodyData || {});
-    // }
 
     if (["POST", "PUT", "DELETE"].includes(method)) {
         if (!isFormData) {
@@ -49,7 +48,7 @@ export const fetchLink = async ({
             const json = await response.json();
             return json;
         } else {
-            return response;  
+            return response;
         }
     } catch (e) {
         console.error('Fetch Error', e);

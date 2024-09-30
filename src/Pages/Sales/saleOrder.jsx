@@ -2,15 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import '../common.css'
 import Select from "react-select";
-import { customSelectStyles, customTableStyles } from "../../Components/tablecolumn";
+import { customSelectStyles } from "../../Components/tablecolumn";
 // import { toast } from 'react-toastify';
-import { getPreviousDate, ISOString, isValidObject, LocalDate, NumberFormat } from "../../Components/functions";
+import { getPreviousDate, ISOString, isValidObject } from "../../Components/functions";
 import InvoiceBillTemplate from "./invoiceTemplate";
-import { AddShoppingCart, Edit, FilterAlt, KeyboardArrowLeft, Visibility } from "@mui/icons-material";
-import SaleOrderCreation from "./saleOrderCreation";
-import DataTable from "react-data-table-component";
+import { AddShoppingCart, Clear, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+// import SaleOrderCreation from "./saleOrderCreation";
 import { convertedStatus } from "./convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
+import FilterableTable from "../../Components/filterableTable2";
+import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation";
+
 
 const SaleOrderList = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -20,6 +22,7 @@ const SaleOrderList = () => {
     const [users, setUsers] = useState([]);
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
+    const [viewOrder, setViewOrder] = useState({})
 
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
@@ -40,14 +43,14 @@ const SaleOrderList = () => {
 
     useEffect(() => {
         fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Company_Id=${storage?.Company_id}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
             }
         }).catch(e => console.error(e))
-            
-    }, [storage?.Company_id, filters])
+
+    }, [filters.Fromdate, filters?.Todate, filters?.Retailer_Id, filters?.Sales_Person_Id, filters?.Created_by, filters?.Cancel_status])
 
     useEffect(() => {
 
@@ -75,73 +78,88 @@ const SaleOrderList = () => {
             }
         }).catch(e => console.error(e))
 
-    }, [storage?.Company_id])
+    }, [])
 
     const saleOrderColumn = [
         {
-            name: 'SNo',
-            selector: (row, i) => i + 1,
-            sortable: true,
-            maxWidth: '10px'
+            Field_Name: 'Retailer_Name',
+            ColumnHeader: 'Customer',
+            Fied_Data: 'string',
+            isVisible: 1,
         },
         {
-            name: 'Date',
-            selector: (row) => row?.So_Date ? LocalDate(row?.So_Date) : null,
-            sortable: true,
-            maxWidth: '10px'
+            Field_Name: 'So_Date',
+            ColumnHeader: 'Date',
+            Fied_Data: 'date',
+            isVisible: 1,
+            align: 'center',
         },
         {
-            name: 'Ledger',
-            selector: (row) => row?.Retailer_Name,
-            sortable: true,
-            minWidth: '200px'
+            Field_Name: 'Products',
+            ColumnHeader: 'Products / Quantity',
+            isVisible: 1,
+            align: 'center',
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <>
+                    <span>{row?.Products_List?.length ?? 0}</span> /&nbsp;
+                    <span>{row?.Products_List?.reduce((sum, item) => sum += item?.Bill_Qty ?? 0, 0) ?? 0}</span>
+                </>
+            )
         },
         {
-            name: 'Order No',
-            selector: (row) => row?.Sales_Order_No,
-            sortable: true,
-            minWidth: '100px',
-            maxWidth: '150px',
+            Field_Name: 'Total_Invoice_value',
+            ColumnHeader: 'Invoice Value',
+            Fied_Data: 'string',
+            isVisible: 1,
+            align: 'center',
         },
         {
-            name: 'Products',
-            selector: (row) => row?.Products_List?.length,
-            sortable: true,
-        },
-        {
-            name: 'Total',
-            selector: (row) => row.Total_Invoice_value ? NumberFormat(row.Total_Invoice_value) : null,
-            sortable: true,
-        },
-        {
-            name: 'Status',
-            cell: (row) => {
-                const convert = convertedStatus[Number(row.isConverted)];
+            ColumnHeader: 'Status',
+            isVisible: 1,
+            align: 'center',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
                 return (
-                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color}>{convert?.label}</span>
+                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
+                        {convert?.label ?? 'Undefined'}
+                    </span>
                 )
             },
         },
         {
-            name: 'Sales Person',
-            selector: (row) => row.Sales_Person_Name,
-            sortable: true,
+            Field_Name: 'Sales_Person_Name',
+            ColumnHeader: 'Sales Person',
+            Fied_Data: 'string',
+            isVisible: 1,
         },
         {
-            name: 'Action',
-            cell: (row) => {
+            Field_Name: 'Action',
+            isVisible: 1,
+            isCustomCell: true,
+            Cell: ({ row }) => {
                 return (
                     <>
                         <Tooltip title='View Order'>
-                            <InvoiceBillTemplate orderDetails={row} orderProducts={row?.Products_List ? row?.Products_List : []} download={true}>
-                                <IconButton color='primary' size="small" ><Visibility className="fa-16" /></IconButton>
-                            </InvoiceBillTemplate>
+                            <IconButton
+                                onClick={() => {
+                                    setViewOrder({
+                                        orderDetails: row,
+                                        orderProducts: row?.Products_List ? row?.Products_List : [],
+                                    })
+                                }}
+                                color='primary' size="small"
+                            >
+                                <Visibility className="fa-16" />
+                            </IconButton>
                         </Tooltip>
 
-                        <Tooltip title='View Order'>
+                        <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
                                     switchScreen();
+                                    console.log(row);
                                     setOrderInfo({ ...row, isEdit: true });
                                 }}
                                 size="small"
@@ -176,38 +194,47 @@ const SaleOrderList = () => {
                 <div className="p-3 pb-2 d-flex align-items-center justify-content-between border-bottom">
                     <h6 className="fa-18">{screen ? 'Sale Orders' : isValidObject(orderInfo) ? 'Modify Sale Order' : 'Create Sale Order'}</h6>
                     <span>
-                        {screen && (
-                            <Tooltip title='Filters'>
-                                <IconButton onClick={() => setDialog({ ...dialog, filters: true })}><FilterAlt /></IconButton>
-                            </Tooltip>
-                        )}
                         <Button
                             variant='outlined'
-                            startIcon={!screen && <KeyboardArrowLeft />}
+                            startIcon={!screen && <Clear />}
                             endIcon={screen && <AddShoppingCart />}
                             onClick={switchScreen}
                         >
                             {screen ? 'Create Sale Order' : 'Cancel'}
                         </Button>
+                        {screen && (
+                            <Tooltip title='Filters'>
+                                <IconButton size="small" onClick={() => setDialog({ ...dialog, filters: true })}><FilterAlt /></IconButton>
+                            </Tooltip>
+                        )}
                     </span>
                 </div>
 
                 {screen ? (
-                    <CardContent>
-                        <div className="rounded-4">
-                            <DataTable
-                                columns={saleOrderColumn}
-                                data={saleOrders}
-                                pagination
-                                highlightOnHover={true}
-                                fixedHeader={true}
-                                fixedHeaderScrollHeight={'60vh'}
-                                customStyles={customTableStyles}
-                            />
-                        </div>
+                    <CardContent className="p-0 pt-3">
+                        <FilterableTable
+                            dataArray={saleOrders}
+                            columns={saleOrderColumn}
+                            EnableSerialNumber={true}
+                            isExpendable={true}
+                            tableMaxHeight={550}
+
+                        />
                     </CardContent>
-                ) : <SaleOrderCreation editValues={orderInfo} />}
+                ) : <NewSaleOrderCreation editValues={orderInfo} />}
             </Card>
+
+
+            {Object.keys(viewOrder).length > 0 && (
+                <InvoiceBillTemplate 
+                    orderDetails={viewOrder?.orderDetails} 
+                    orderProducts={viewOrder?.orderProducts} 
+                    download={true} 
+                    open={true}
+                    clearDetails={() => setViewOrder({})}
+                />
+            )}
+
 
             <Dialog
                 open={dialog.filters}

@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { fetchLink } from '../../Components/fetchComponent';
 
-const TaskParametersComp = () => {
+const TaskParametersComp = ({ isOpened, disableCollapse }) => {
     const initialValue = {
         Paramet_Id: '',
         Paramet_Name: '',
@@ -15,7 +15,7 @@ const TaskParametersComp = () => {
     const [deleteDialog, setDeleteDialog] = useState(false);
     const [inputValue, setInputValue] = useState(initialValue);
     const [reload, setReload] = useState(false);
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(isOpened ? true : false);
 
     const [filterInput, setFilterInput] = useState('');
     const [filteredData, setFilteredData] = useState([]);
@@ -28,8 +28,8 @@ const TaskParametersComp = () => {
                 setParameters(data.data)
             }
         })
-        .catch(e => console.error(e))
-            
+            .catch(e => console.error(e))
+
     }, [reload])
 
     const AddParameter = () => {
@@ -45,8 +45,8 @@ const TaskParametersComp = () => {
                 toast.error(data.message)
             }
         })
-        .catch(e => console.error(e))
-        .finally(CloseAddDialog)            
+            .catch(e => console.error(e))
+            .finally(CloseAddDialog)
     }
 
     const DeleteParameter = () => {
@@ -62,8 +62,8 @@ const TaskParametersComp = () => {
                 toast.error(data.message)
             }
         })
-        .catch(e => console.error(e))
-        .finally(closeDeleteConfirmationDialog)
+            .catch(e => console.error(e))
+            .finally(closeDeleteConfirmationDialog)
     }
 
     const CloseAddDialog = () => {
@@ -98,9 +98,11 @@ const TaskParametersComp = () => {
 
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     <div className="flex-grow-1 mb-0">
-                        <IconButton size='small' onClick={() => setOpen(!open)}>
-                            {open ? <ExpandLess style={{ fontSize: '18px', color: 'black' }} /> : <ExpandMore style={{ fontSize: '18px', color: 'black' }} />}
-                        </IconButton>
+                        {!disableCollapse && (
+                            <IconButton size='small' onClick={() => setOpen(!open)}>
+                                {open ? <ExpandLess style={{ fontSize: '18px', color: 'black' }} /> : <ExpandMore style={{ fontSize: '18px', color: 'black' }} />}
+                            </IconButton>
+                        )}
                         Task Parameters
                     </div>
                     <button onClick={() => setAddDialog(true)} className="btn btn-primary rounded-5 px-3 py-1 fa-13 shadow">

@@ -533,7 +533,7 @@ const EmployeeMaster = () => {
 
                                 {input.map((field, index) => (
                                     <div key={index} className="col-lg-4 col-md-6 p-2 px-3">
-                                        <label className='mb-1 text-dark'>{field.label}{field.required && <p style={{ color: 'red', display: 'inline', fontWeight: 'bold', fontSize: '1em' }}> *</p>}</label>
+                                        <label className='mb-1 text-dark'>{field.label}{field.required && <span style={{ color: 'red', fontWeight: 'bold', fontSize: '1em' }}> *</span>}</label>
                                         {field.elem === 'input' ? (
                                             <input
                                                 type={field.type || 'text'}

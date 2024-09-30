@@ -453,3 +453,21 @@ export const calcAvg = (arr, column) => {
     return total
 }
 
+export const getUniqueData = (arr = [], key = '', returnObjectKeys = []) => {
+    const uniqueArray = [];
+    const uniqueSet = new Set();
+
+    arr.forEach(o => {
+        if (!uniqueSet.has(o[key])) {
+            const uniqueObject = { [key]: o[key] };
+            returnObjectKeys.forEach(returnKey => {
+                uniqueObject[returnKey] = o[returnKey];
+            });
+
+            uniqueArray.push(uniqueObject);
+            uniqueSet.add(o[key]);
+        }
+    });
+
+    return uniqueArray.sort((a, b) => String(a[key]).localeCompare(b[key]));
+};

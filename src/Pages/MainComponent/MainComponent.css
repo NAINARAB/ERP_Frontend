@@ -19,12 +19,16 @@ body {
 .fixed-fullheight-sidebar {
     width: 20%;
     max-width: 250px;
-    height: 100vh;
+    height: 100dvh;
     background-color: #333;
     color: white;
     box-sizing: border-box !important;
     display: flex;
     flex-direction: column;
+}
+
+.linkColor {
+    color: #1068eb;
 }
 
 .sidebar-head {
@@ -36,10 +40,14 @@ body {
 }
 
 .sidebar-body-div {
-    padding-bottom: 300px;
-    padding: 0px 15px;
+    padding-bottom: 200px;
+    padding: 0px 12px;
     height: 88vh;
-    overflow-y: scroll;
+    overflow-y: auto;
+    /* display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: auto; */
 }
 
 .sidebar-bottom {
@@ -58,11 +66,11 @@ body {
     border: none;
     background-color: transparent;
     width: 100%;
-    padding: 12px;
+    padding: 12px 5px;
     color: rgb(206, 201, 201);
     cursor: pointer;
     text-transform: uppercase;
-    font-size: 14px;
+    font-size: 13px;
     display: flex;
     align-items: center;
     transition: all 0.3s;   

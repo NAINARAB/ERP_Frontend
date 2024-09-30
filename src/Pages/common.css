@@ -291,6 +291,17 @@
   font-weight: bold;
 }
 
+.childNavs {
+  min-width: 300px;
+  /* text-align: center; */
+  border: 1px solid #b9b3b3;
+  padding: 13px;
+  margin: 13px;
+  border-radius: 6px;
+  border-top-right-radius: 30px;
+  border-bottom-right-radius: 30px;
+}
+
 .coloredDiv {
   padding: 1em;
   border-radius: 4px;

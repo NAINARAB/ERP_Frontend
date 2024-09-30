@@ -126,23 +126,22 @@ const DispNavButtons = ({ mainBtn, subMenus, nav, sideClose, page, setPage }) =>
                 </span>
                 {mainBtn?.PageUrl === "" && <span className=" text-end">{open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}</span>}
             </button>
-            {mainBtn?.PageUrl === ""
-                && (
-                    <Collapse in={open} timeout="auto" unmountOnExit >
-                        {subMenus.map((obj, i) => (
-                            Number(mainBtn?.Main_Menu_Id) === Number(obj?.Main_Menu_Id) && Number(obj?.Read_Rights) === 1
-                                ? <SubMenu
-                                    key={i}
-                                    subBtn={obj}
-                                    nav={nav}
-                                    sideClose={closeSide}
-                                    page={page}
-                                    setPage={setPage}
-                                />
-                                : null
-                        ))}
-                    </Collapse>
-                )}
+            {mainBtn?.PageUrl === "" && (
+                <Collapse in={open} timeout="auto" unmountOnExit >
+                    {subMenus.map((obj, i) => (
+                        Number(mainBtn?.Main_Menu_Id) === Number(obj?.Main_Menu_Id) && Number(obj?.Read_Rights) === 1
+                            ? <SubMenu
+                                key={i}
+                                subBtn={obj}
+                                nav={nav}
+                                sideClose={closeSide}
+                                page={page}
+                                setPage={setPage}
+                            />
+                            : null
+                    ))}
+                </Collapse>
+            )}
         </>
     )
 }
@@ -248,7 +247,7 @@ function MainComponent(props) {
     return (
         <Fragment>
             <div className="fullscreen-div">
-            <ToastContainer />
+                <ToastContainer />
 
                 {/* sidebar */}
                 {desktopMenu && (
