@@ -172,10 +172,6 @@ const MainComponent = (props) => {
     const { contextObj, setContextObj } = useContext(MyContext);
     const [settings, setSettings] = useState(false);
     const [show, setShow] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const loadingOn = () => setIsLoading(true)
-    const loadingOff = () => setIsLoading(false)
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
@@ -206,15 +202,28 @@ const MainComponent = (props) => {
             return null;
         };
 
+        const findSubRoutings = (menuData, path) => {
+            for (let subRoute of menuData) {
+                console.log(subRoute.url, path)
+                if (subRoute.url === path) {
+                    return subRoute;
+                }
+            }
+            return null;
+        }
+
         const matchedItem = findMenuItem(sidebar, location.pathname);
+        const subRouteMatchItem = findSubRoutings(subRoutings, location.pathname)
 
         if (matchedItem) {
             setContextObj(matchedItem);
+        } else if (subRouteMatchItem) {
+            setContextObj(subRouteMatchItem)
         } else {
             setContextObj({});
         }
 
-    }, [location.pathname, sidebar]);
+    }, [location.pathname, sidebar, subRoutings]);
 
     useEffect(() => {
         const navigateToPage = (menuItem) => {
@@ -289,6 +298,7 @@ const MainComponent = (props) => {
             if (data.success) {
                 setSidebar(data.data);
                 if (data.others.subRoutings) {
+                    console.log(data.others.subRoutings)
                     setSubRoutings(data.others.subRoutings);
                 }
 
@@ -424,12 +434,6 @@ const MainComponent = (props) => {
 
                 </div>
             </div>
-
-            {isLoading && (
-                <div className="overlay">
-                    <CircularProgress className="spinner" />
-                </div>
-            )}
 
             <Offcanvas show={show} onHide={handleClose}>
                 <Offcanvas.Header style={{ backgroundColor: '#333', color: 'white' }} closeButton>

@@ -101,7 +101,7 @@ const QPayReports = () => {
                 }
                 return idStr;
             }, '');
-            nav('SalesTransaction', {
+            nav('transaction', {
                 state: {
                     Ledger_Tally_Id: Ledger_Tally_Id,
                     isObj: false,
@@ -113,7 +113,7 @@ const QPayReports = () => {
 
         } else if (isObject(obj) && checkIsNumber(obj.Ledger_Tally_Id)) {
 
-            nav('SalesTransaction', {
+            nav('transaction', {
                 state: {
                     Ledger_Tally_Id: obj.Ledger_Tally_Id,
                     isObj: true,

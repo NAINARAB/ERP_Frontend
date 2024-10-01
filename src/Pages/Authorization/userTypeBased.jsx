@@ -270,6 +270,15 @@ const CTrow = (props) => {
     const [pflag, setpFlag] = useState(false);
 
     useEffect(() => {
+        setReadRights(data.Read_Rights === 1);
+        setAddRights(data.Add_Rights === 1);
+        setEditRights(data.Edit_Rights === 1);
+        setDeleteRights(data.Delete_Rights === 1);
+        setPrintRights(data.Print_Rights === 1);
+        setpFlag(false);
+    }, [data])
+
+    useEffect(() => {
         if (pflag === true) {
             postCheck({ readRights, addRights, editRights, deleteRights, printRights }, data.id, UserTypeId, loadingOn, loadingOff)
         }

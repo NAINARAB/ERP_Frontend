@@ -7,9 +7,10 @@ import MainComponent from "./Pages/MainComponent/newMainComponent";
 import { ContextDataProvider } from "./Components/context/contextProvider";
 import { fetchLink } from "./Components/fetchComponent";
 import { Suspense } from 'react';
-import InvalidPageComp from "./Components/invalidCredential"
+import InvalidPageComp from "./Components/invalidCredential";
+import LoadingScreen from './Components/loading/3dloading'
 
-import RoutingArray from "./appRoutings";
+import RoutingArray from "./appRoutings"
 
 
 const App = () => {
@@ -65,9 +66,7 @@ const App = () => {
         <>
             <BrowserRouter>
                 {loading ? (
-                    <div className="overlay">
-                        <CircularProgress className="spinner" />
-                    </div>
+                    <LoadingScreen />
                 ) : !login ? (
                     <>
                         <Routes>

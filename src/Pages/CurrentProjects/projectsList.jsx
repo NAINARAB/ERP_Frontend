@@ -60,7 +60,7 @@ const ActiveProjects = () => {
                 <div className="project-card p-0"
                     key={i}
                     onClick={() => {
-                        nav('projectschedule', {
+                        nav('projectDetails', {
                             state: {
                                 project: o,
                                 rights: {

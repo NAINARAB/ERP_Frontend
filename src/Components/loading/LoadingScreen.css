@@ -1,0 +1,63 @@
+/* Ensure the loading screen takes 100% of the viewport */
+.loading-screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #282c34; /* Dark background for better visibility */
+  }
+  
+  /* 3D cube container */
+  .cube {
+    width: 100px;
+    height: 100px;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotateCube 3s infinite linear;
+  }
+  
+  /* Style for each face of the cube */
+  .cube .face {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #282c34;
+  }
+  
+  /* Position each face of the cube in 3D space */
+  .cube .face1 {
+    transform: rotateY(0deg) translateZ(50px);
+  }
+  .cube .face2 {
+    transform: rotateY(90deg) translateZ(50px);
+  }
+  .cube .face3 {
+    transform: rotateY(180deg) translateZ(50px);
+  }
+  .cube .face4 {
+    transform: rotateY(-90deg) translateZ(50px);
+  }
+  .cube .face5 {
+    transform: rotateX(90deg) translateZ(50px);
+  }
+  .cube .face6 {
+    transform: rotateX(-90deg) translateZ(50px);
+  }
+  
+  /* Keyframe animation for the rotating cube */
+  @keyframes rotateCube {
+    0% {
+      transform: rotateX(0deg) rotateY(0deg);
+    }
+    100% {
+      transform: rotateX(360deg) rotateY(360deg);
+    }
+  }
+  

@@ -7,6 +7,7 @@ import { toast, ToastContainer } from "react-toastify";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { fetchLink } from '../../Components/fetchComponent'
+import { ISOString, LocalDate } from "../../Components/functions";
 
 // import CalenderComp from "./calender";
 
@@ -166,9 +167,9 @@ const TaskActivity = () => {
                             {taskInfo?.TaskTypeGet}
                             <br />
                             <span className="fa-12">(
-                                {new Date(taskInfo?.Task_Est_Start_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                {LocalDate(taskInfo?.Task_Est_Start_Date)}
                                 {' - '}
-                                {new Date(taskInfo?.Task_Est_End_Date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                {LocalDate(taskInfo?.Task_Est_End_Date)}
                                 )
                             </span>
                         </span>
@@ -188,7 +189,7 @@ const TaskActivity = () => {
                         </button>
                         <button
                             className="btn btn-secondary rounded-5 px-3 fa-13 shadow d-flex align-items-center"
-                            onClick={() => nav('/tasks/activeproject/projectschedule', { state: location.state?.retObj })}>
+                            onClick={() => nav('/taskManagement/projectActivity/projectDetails', { state: location.state?.retObj })}>
                             <KeyboardArrowLeft className="fa-in me-2" /> Back
                         </button>
                     </span>
@@ -218,9 +219,9 @@ const TaskActivity = () => {
                                         <td className="fa-14 text-center">
                                             <span className="badge rounded-4 px-3 bg-light text-primary">
                                                 <CalendarMonth className="fa-18 me-2" />
-                                                {new Date(o?.Est_Start_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                {LocalDate(o?.Est_Start_Dt)}
                                                 {' - '}
-                                                {new Date(o?.Est_End_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                {LocalDate(o?.Est_End_Dt)}
                                             </span>
                                         </td>
                                         <td className="fa-14 text-center">
@@ -286,7 +287,7 @@ const TaskActivity = () => {
                                         <td className="fa-13 text-center">{i + 1}</td>
                                         <td className="fa-13 text-center">{o?.EmployeeName}</td>
                                         <td className="fa-13 text-center">
-                                            {new Date(o?.Work_Dt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                            {LocalDate(o?.Work_Dt)}
                                         </td>
                                         <td className="fa-14 text-center">
                                             <span className="badge rounded-4 px-3 bg-light text-primary">
@@ -368,7 +369,7 @@ const TaskActivity = () => {
                                         <input
                                             type='date'
                                             className="cus-inpt" required
-                                            value={new Date(assignEmpInpt?.Est_Start_Dt).toISOString().split('T')[0]}
+                                            value={ISOString(assignEmpInpt?.Est_Start_Dt)}
                                             onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_Start_Dt: e.target.value })} />
                                     </td>
                                 </tr>
@@ -379,7 +380,7 @@ const TaskActivity = () => {
                                             type='date'
                                             className="cus-inpt" required 
                                             min={assignEmpInpt?.Est_Start_Dt}
-                                            value={assignEmpInpt?.Est_End_Dt && new Date(assignEmpInpt?.Est_End_Dt).toISOString().split('T')[0]}
+                                            value={assignEmpInpt?.Est_End_Dt && ISOString(assignEmpInpt?.Est_End_Dt)}
                                             onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_End_Dt: e.target.value })} />
                                     </td>
                                 </tr>

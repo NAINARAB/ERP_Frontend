@@ -155,7 +155,8 @@ const RoutingArray = [
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
     { component: <PaymentReport />, path: '/erp/payments/paymentReport' },
     // ERP - CRM
-    { component: <VisitedLogs />, path: '' },   // TO BE ADDED
+    { component: <DisplayNavigations />, path: '/erp/crm' },
+    { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED
     { component: <ClosingStockReports />, path: '/erp/crm/closingStock' },
 
 
@@ -166,7 +167,6 @@ const RoutingArray = [
     { component: <AttendanceReport />, path: '/taskManagement/attendance/salesPerson' },
     { component: <FingerPrintAttendanceReport />, path: '/taskManagement/attendance/fingerPrints' },
     // Task Management - discussions
-    { component: <DisplayNavigations />, path: '/taskManagement/discussions' },
     { component: <Discussions />, path: '/taskManagement/discussions' },
     { component: <ChatsDisplayer />, path: '/taskManagement/discussions/chats' },
     // Task Management - master

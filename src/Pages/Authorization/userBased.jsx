@@ -7,7 +7,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
 import { MyContext } from "../../Components/context/contextProvider";
 import { customSelectStyles, MainMenu } from "../../Components/tablecolumn";
-import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
 
 
@@ -362,8 +361,7 @@ const UserBased = (props) => {
         }
     };
 
-
-    return Number(contextObj?.Read_Rights) === 1 ? (
+    return (
         <>
             {/* <ToastContainer /> */}
             <div className="row">
@@ -414,39 +412,39 @@ const UserBased = (props) => {
             <br />
             <h6 style={{ marginBottom: '0.5em', borderBottom: '2px solid blue', width: 'fit-content' }}>Sub-Routings Access Control</h6>
 
-            <TableContainer component={Paper} sx={{ maxHeight: 650 }} title="Sub-Routings Access Control">
-                <Table stickyHeader aria-label="simple table">
-                    <TableHead>
-                        <TableRow>
-                            {MainMenu.map(obj => (
-                                <TableCell
-                                    key={obj.id}
-                                    variant={obj.variant}
-                                    align={obj.align}
-                                    width={obj.width}
-                                    sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
-                                    {obj.headname === "Action" ? 'Sub Menu' : obj.headname}
-                                </TableCell>
+            {subRoutings.length > 0 && (
+                <TableContainer component={Paper} sx={{ maxHeight: 650 }} title="Sub-Routings Access Control">
+                    <Table stickyHeader aria-label="simple table">
+                        <TableHead>
+                            <TableRow>
+                                {MainMenu.map(obj => (
+                                    <TableCell
+                                        key={obj.id}
+                                        variant={obj.variant}
+                                        align={obj.align}
+                                        width={obj.width}
+                                        sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
+                                        {obj.headname === "Action" ? 'Sub Menu' : obj.headname}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {subRoutings.map((obj, index) => (
+                                <CTrow
+                                    key={index}
+                                    data={obj}
+                                    UserId={currentUserId}
+                                    loadingOn={props.loadingOn}
+                                    loadingOff={props.loadingOff}
+                                />
                             ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {subRoutings.map((obj, index) => (
-                            <CTrow
-                                key={index}
-                                data={obj}
-                                UserId={currentUserId}
-                                loadingOn={props.loadingOn}
-                                loadingOff={props.loadingOff}
-                            />
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
         </>
-    ) : <InvalidPageComp />
+    )
 }
 
 export default UserBased;

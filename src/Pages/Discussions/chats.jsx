@@ -29,7 +29,7 @@ const ChatsDisplayer = () => {
 
     useEffect(() => {
         if (!locationData) {
-            return navigate('/discussions')
+            return navigate('/taskManagement/discussions')
         }
         fetchLink({
             address: `discussionForum/messages?Topic_Id=${locationData?.Id}`,
@@ -158,7 +158,7 @@ const ChatsDisplayer = () => {
             <div className="chat-header d-flex align-items-center">
                 <p className='mb-0 fa-14 text-white text-uppercase fw-bold flex-grow-1'>{locationData?.Topic}</p>
                 <Tooltip title="Back">
-                    <IconButton size='small' onClick={() => navigate('/discussions')}><ArrowBackIos className='fa-18' /></IconButton>
+                    <IconButton size='small' onClick={() => navigate('/taskManagement/discussions')}><ArrowBackIos className='fa-18' /></IconButton>
                 </Tooltip>
                 <Tooltip title="Refresh Chat">
                     <IconButton size='small' onClick={() => setReload(!reload)}><Replay className='fa-18' /></IconButton>

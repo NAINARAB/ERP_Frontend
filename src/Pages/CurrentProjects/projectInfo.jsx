@@ -174,7 +174,7 @@ const ProjectDetails = () => {
 
     useEffect(() => {
         if (!projectData || !rights) {
-            nav('/tasks/activeproject')
+            nav('/taskManagement/projectActivity')
         }
     }, [projectData, rights, nav]);
 
@@ -398,7 +398,7 @@ const ProjectDetails = () => {
                                                     Delete
                                                 </MenuItem>)}
                                                 <MenuItem onClick={
-                                                    () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                    () => nav('taskActivity',
                                                         {
                                                             state: {
                                                                 taskDetails: {
@@ -495,7 +495,7 @@ const ProjectDetails = () => {
                                                         Delete
                                                     </MenuItem>)}
                                                     <MenuItem onClick={
-                                                        () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                        () => nav('taskActivity',
                                                             {
                                                                 state: {
                                                                     taskDetails: {
@@ -605,7 +605,7 @@ const ProjectDetails = () => {
                                                         Delete
                                                     </MenuItem>)}
                                                     <MenuItem onClick={
-                                                        () => nav('/tasks/activeproject/projectschedule/taskActivity',
+                                                        () => nav('taskActivity',
                                                             {
                                                                 state: {
                                                                     taskDetails: {
@@ -818,7 +818,7 @@ const ProjectDetails = () => {
                             <Add className="fa-in me-2" /> Add
                         </button>
                     )}
-                    <button className="btn btn-secondary rounded-5 px-3 fa-13 shadow d-flex align-items-center" onClick={() => nav('/tasks/activeproject')}>
+                    <button className="btn btn-secondary rounded-5 px-3 fa-13 shadow d-flex align-items-center" onClick={() => nav('/taskManagement/projectActivity')}>
                         <KeyboardArrowLeft className="fa-in me-2" /> Back
                     </button>
                 </div>
