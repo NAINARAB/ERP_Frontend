@@ -68,32 +68,32 @@ const TRow = ({ UserTypeId, data, loadingOn, loadingOff }) => {
                 <TableCell>{data.name}</TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={readRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={readRights} size='small'
                         onChange={() => { setpFlag(true); setReadRights(!readRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={addRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={addRights} size='small'
                         onChange={() => { setpFlag(true); setAddRights(!addRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={editRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={editRights} size='small'
                         onChange={() => { setpFlag(true); setEditRights(!editRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={deleteRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={deleteRights} size='small'
                         onChange={() => { setpFlag(true); setDeleteRights(!deleteRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={printRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={printRights} size='small'
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
@@ -179,32 +179,32 @@ const STrow = ({ data, UserTypeId, loadingOn, loadingOff }) => {
                 <TableCell>{data.name}</TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={readRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={readRights} size='small'
                         onChange={() => { setpFlag(true); setReadRights(!readRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={addRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={addRights} size='small'
                         onChange={() => { setpFlag(true); setAddRights(!addRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={editRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={editRights} size='small'
                         onChange={() => { setpFlag(true); setEditRights(!editRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={deleteRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={deleteRights} size='small'
                         onChange={() => { setpFlag(true); setDeleteRights(!deleteRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={printRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={printRights} size='small'
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
@@ -291,32 +291,32 @@ const CTrow = (props) => {
                 <TableCell>{data.name}</TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={readRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={readRights} size='small'
                         onChange={() => { setpFlag(true); setReadRights(!readRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={addRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={addRights} size='small'
                         onChange={() => { setpFlag(true); setAddRights(!addRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={editRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={editRights} size='small'
                         onChange={() => { setpFlag(true); setEditRights(!editRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={deleteRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={deleteRights} size='small'
                         onChange={() => { setpFlag(true); setDeleteRights(!deleteRights) }} />
                 </TableCell>
                 <TableCell>
                     <Checkbox
-                        sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
-                        checked={printRights}
+                        sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }}
+                        checked={printRights} size='small'
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
@@ -374,7 +374,7 @@ const UserTypeBased = ({ loadingOn, loadingOff }) => {
             <br />
             <h6 style={{ marginBottom: '0.5em', borderBottom: '2px solid blue', width: 'fit-content' }}>Main Menu</h6>
             <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
-                <Table stickyHeader aria-label="simple table">
+                <Table stickyHeader aria-label="simple table" >
                     <TableHead>
                         <TableRow>
                             {MainMenu.map(obj => (

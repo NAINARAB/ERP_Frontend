@@ -2,7 +2,7 @@ import { MyContext } from "../../Components/context/contextProvider";
 import React, { useContext } from "react";
 import { KeyboardDoubleArrowRight } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom';
-
+import { isEqualNumber } from '../../Components/functions.js'
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -15,7 +15,7 @@ const DisplayNavigations = () => {
     return (
         <>
             <div className="d-flex align-items-center flex-wrap justify-content-start">
-                {contextObj?.ChildMenu?.map((o, i) => (
+                {contextObj?.ChildMenu?.map((o, i) => isEqualNumber(o?.Read_Rights, 1) && (
                     <button 
                         className={`childNavs d-flex justify-content-between`} 
                         key={i}
