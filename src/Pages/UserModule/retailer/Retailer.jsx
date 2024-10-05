@@ -533,7 +533,7 @@ const RetailersMaster = () => {
                                     {field.elem === 'input' ? (
                                         <input
                                             type={field.type || 'text'}
-                                            className='cus-inpt p-3 b-0'
+                                            className='cus-inpt b-0'
                                             onChange={field.event}
                                             onInput={field.oninput}
                                             required={field.required || false}
@@ -542,7 +542,7 @@ const RetailersMaster = () => {
                                         />
                                     ) : field.elem === 'select' ? (
                                         <select
-                                            className={'cus-inpt p-3 b-0'}
+                                            className={'cus-inpt b-0'}
                                             onChange={field.event}
                                             value={field.value}
                                             required={field.required || false}
