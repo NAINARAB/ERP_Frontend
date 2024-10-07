@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { CardContent, Button, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat } from "../../../Components/functions";
+import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, LocalDateWithTime } from "../../../Components/functions";
 import InvoiceBillTemplate from "./../invoiceTemplate";
 import { Add, ClearAll, Delete, Edit, Visibility } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -13,7 +13,7 @@ import FilterableTable from "../../../Components/filterableTable2";
 const Required = () => <span style={{ color: 'red', fontWeight: 'bold', fontSize: '1em' }}> *</span>
 
 
-const NewSaleOrderCreation = ({ editValues }) => {
+const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
 
     const [retailers, setRetailers] = useState([]);
@@ -22,6 +22,7 @@ const NewSaleOrderCreation = ({ editValues }) => {
     const [productBrand, setProductBrand] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
     const [salesPerson, setSalePerson] = useState([]);
+    const [companyInfo, setCompanyInfo] = useState({});
 
     const initialValue = {
         Company_Id: storage?.Company_id,
@@ -35,7 +36,8 @@ const NewSaleOrderCreation = ({ editValues }) => {
         Created_by: storage?.UserId,
         Product_Array: [],
         So_Id: '',
-        TaxType: 0,
+        GST_Inclusive: 1,
+        IS_IGST: 0,
     }
 
     const productInitialDetails = {
@@ -129,6 +131,14 @@ const NewSaleOrderCreation = ({ editValues }) => {
             }
         }).catch(e => console.error(e))
 
+        fetchLink({
+            address: `masters/company?Company_id=${storage?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setCompanyInfo(data?.data[0] ? data?.data[0] : {})
+            }
+        }).catch(e => console.error(e))
+
     }, [storage?.Company_id])
 
     const handleProductInputChange = (productId, value, rate, obj, UOM_Id) => {
@@ -157,7 +167,7 @@ const NewSaleOrderCreation = ({ editValues }) => {
 
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
-
+            loadingOn();
             fetchLink({
                 address: `sales/saleOrder`,
                 method: isEdit ? 'PUT' : 'POST',
@@ -174,8 +184,7 @@ const NewSaleOrderCreation = ({ editValues }) => {
                 } else {
                     toast.error(data?.message)
                 }
-            })
-                .catch(e => console.error(e))
+            }).catch(e => console.error(e)).finally(() => loadingOff())
 
         } else {
             if (orderProducts.length <= 0) {
@@ -194,72 +203,162 @@ const NewSaleOrderCreation = ({ editValues }) => {
 
     return (
         <>
-            <CardContent style={{ maxHeight: '74vh', overflow: 'auto' }}>
 
-                <div className="row">
+            <div className="p-3 pt-0">
+                {/* CompnayInfo  */}
+                <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
+                    <h5 className="border-bottom">From:</h5>
+                    <div className="row">
+                        <div className="col-lg-8 col-md-7">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light" colSpan={2}>
+                                            {companyInfo?.Company_Name}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Address:</td>
+                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Phone:</td>
+                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="col-lg-4 col-md-5">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light">Date:</td>
+                                        <td className="border-0 bg-light">
+                                            <input
+                                                type="date"
+                                                value={orderDetails?.So_Date ? ISOString(orderDetails?.So_Date) : ''}
+                                                onChange={e => setOrderDetails({ ...orderDetails, So_Date: e.target.value })}
+                                                className="cus-inpt p-1 bg-light"
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Created By:</td>
+                                        <td className="border-0 bg-light">{storage.Name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Created Date:</td>
+                                        <td className="border-0 bg-light">{LocalDateWithTime()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Sales Person:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Sales_Person_Id, label: orderDetails?.Sales_Person_Name }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Sales_Person_Id: e.value, Sales_Person_Name: e.label })}
+                                                options={[
+                                                    { value: initialValue?.Sales_Person_Id, label: initialValue?.Sales_Person_Name },
+                                                    ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Sales Person Name"}
+                                            />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                    <div className="col-xl-3 col-sm-4 mb-2">
-                        <label>Date</label>
-                        <input
-                            type="date"
-                            value={orderDetails?.So_Date ? new Date(orderDetails?.So_Date).toISOString().split('T')[0] : ''}
-                            onChange={e => setOrderDetails({ ...orderDetails, So_Date: e.target.value })}
-                            className="cus-inpt" required
-                        />
+                        </div>
                     </div>
-
-                    <div className="col-xl-3 col-sm-4 mb-2">
-                        <label>Retailer Name</label>
-                        <Select
-                            value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
-                            onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
-                            options={[
-                                ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                            ]}
-                            styles={customSelectStyles}
-                            isSearchable={true}
-                            placeholder={"Retailer Name"}
-                            maxMenuHeight={200}
-                        />
-
-                    </div>
-
-                    <div className="col-xl-3 col-sm-4 mb-2">
-                        <label>Sales Person Name</label>
-                        <Select
-                            value={{ value: orderDetails?.Sales_Person_Id, label: orderDetails?.Sales_Person_Name }}
-                            onChange={(e) => setOrderDetails({ ...orderDetails, Sales_Person_Id: e.value, Sales_Person_Name: e.label })}
-                            options={[
-                                { value: initialValue?.Sales_Person_Id, label: initialValue?.Sales_Person_Name },
-                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                            ]}
-                            styles={customSelectStyles}
-                            isSearchable={true}
-                            placeholder={"Sales Person Name"}
-                        />
-                    </div>
-
-                    <div className="col-xl-3 col-sm-12 mb-2 d-flex align-items-end justify-content-end">
-                        {orderProducts.length > 0 && (
-                            <InvoiceBillTemplate
-                                orderDetails={orderDetails} orderProducts={orderProducts} postFun={postSaleOrder}
-                            >
-                                <Button
-                                    variant='outlined'
-                                    startIcon={<Visibility />}
-                                >Preview</Button>
-                            </InvoiceBillTemplate>
-                        )}
-                        <Button
-                            onClick={() => setAddProductDialog(true)}
-                            sx={{ ml: 1 }}
-                            variant='outlined'
-                            startIcon={<Add />}
-                        >Add Product</Button>
-                    </div>
-
                 </div>
-                <br />
+
+                {/* Customer Info */}
+
+                <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
+                    <h5 className="border-bottom">To:</h5>
+                    <div className="row ">
+                        <div className="col-md-6">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light">Retailer Name:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
+                                                options={[
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Retailer Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Address:</td>
+                                        <td className="border-0 bg-light">{storage.Name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Phone:</td>
+                                        <td className="border-0 bg-light">{ }</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="col-md-6">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light">Q-Pay:</td>
+                                        <td className="border-0 bg-light">{10}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Frequency Days:</td>
+                                        <td className="border-0 bg-light">{20}</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="d-flex align-items-end justify-content-end flex-wrap mb-3">
+                    <select 
+                        className="cus-inpt w-auto p-1 me-2" 
+                        onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
+                    >
+                        <option value={1}>Inclusive Tax</option>
+                        <option value={0}>Exclusive Tax</option>
+                    </select>
+                    <select 
+                        className="cus-inpt w-auto p-1 me-2" 
+                        onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
+                    >
+                        <option value={0}>GST</option>
+                        <option value={1}>IGST</option>
+                    </select>
+                    {orderProducts.length > 0 && (
+                        <InvoiceBillTemplate
+                            orderDetails={orderDetails} orderProducts={orderProducts} postFun={postSaleOrder}
+                        >
+                            <Button
+                                variant='outlined'
+                                startIcon={<Visibility />}
+                            >Preview</Button>
+                        </InvoiceBillTemplate>
+                    )}
+                    <Button
+                        onClick={() => setAddProductDialog(true)}
+                        sx={{ ml: 1 }}
+                        variant='outlined'
+                        startIcon={<Add />}
+                    >Add Product</Button>
+                </div>
 
                 <FilterableTable
                     dataArray={orderProducts}
@@ -341,8 +440,14 @@ const NewSaleOrderCreation = ({ editValues }) => {
                     CellSize="medium"
                 />
 
-            </CardContent>
 
+                <p className="fa-15 mt-3 m-0">Narration</p>
+                <textarea 
+                    className="cus-inpt "
+                    value={orderDetails.Narration}
+                    onChange={e => setOrderDetails(pre => ({...pre, Narration: e.target.value}))} 
+                />
+            </div>
 
             <Dialog
                 open={addProductDialog}

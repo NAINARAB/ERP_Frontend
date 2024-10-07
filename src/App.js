@@ -31,7 +31,7 @@ const App = () => {
         if (Auth) {
             setLoading(true);
             fetchLink({
-                address: `authorization/userAuth?Auth=${Auth}`,
+                address: `authorization/userAuth`,
                 headers: {
                     Authorization: Auth,
                 }

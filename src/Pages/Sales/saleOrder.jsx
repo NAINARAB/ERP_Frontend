@@ -3,18 +3,16 @@ import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, Di
 import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-// import { toast } from 'react-toastify';
 import { getPreviousDate, ISOString, isValidObject } from "../../Components/functions";
 import InvoiceBillTemplate from "./invoiceTemplate";
-import { AddShoppingCart, Clear, Edit, FilterAlt, Visibility } from "@mui/icons-material";
-// import SaleOrderCreation from "./saleOrderCreation";
+import { Add, Clear, Edit, FilterAlt, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "./convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
 import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation";
 
 
-const SaleOrderList = () => {
+const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -191,45 +189,49 @@ const SaleOrderList = () => {
     return (
         <>
             <Card>
-                <div className="p-3 pb-2 d-flex align-items-center justify-content-between border-bottom">
-                    <h6 className="fa-18">{screen ? 'Sale Orders' : isValidObject(orderInfo) ? 'Modify Sale Order' : 'Create Sale Order'}</h6>
+                <div className="p-3 py-2 d-flex align-items-center justify-content-between">
+                    <h6 className="fa-18 m-0 p-0">{
+                        screen
+                            ? 'Sale Orders'
+                            : isValidObject(orderInfo)
+                                ? 'Modify Sale Order'
+                                : 'Sale Order Creation'}
+                    </h6>
                     <span>
-                        <Button
-                            variant='outlined'
-                            startIcon={!screen && <Clear />}
-                            endIcon={screen && <AddShoppingCart />}
-                            onClick={switchScreen}
-                        >
-                            {screen ? 'Create Sale Order' : 'Cancel'}
-                        </Button>
                         {screen && (
                             <Tooltip title='Filters'>
                                 <IconButton size="small" onClick={() => setDialog({ ...dialog, filters: true })}><FilterAlt /></IconButton>
                             </Tooltip>
                         )}
+                        <Button
+                            variant='outlined'
+                            startIcon={!screen ? <Clear /> : <Add />}
+                            onClick={switchScreen}
+                        >
+                            {screen ? 'New' : 'Cancel'}
+                        </Button>
                     </span>
                 </div>
 
-                {screen ? (
-                    <CardContent className="p-0 pt-3">
+                <CardContent className="p-0 ">
+                    {screen ? (
                         <FilterableTable
                             dataArray={saleOrders}
                             columns={saleOrderColumn}
                             EnableSerialNumber={true}
                             isExpendable={true}
                             tableMaxHeight={550}
-
                         />
-                    </CardContent>
-                ) : <NewSaleOrderCreation editValues={orderInfo} />}
+                    ) : <NewSaleOrderCreation editValues={orderInfo} loadingOn={loadingOn} loadingOff={loadingOff} />}
+                </CardContent>
             </Card>
 
 
             {Object.keys(viewOrder).length > 0 && (
-                <InvoiceBillTemplate 
-                    orderDetails={viewOrder?.orderDetails} 
-                    orderProducts={viewOrder?.orderProducts} 
-                    download={true} 
+                <InvoiceBillTemplate
+                    orderDetails={viewOrder?.orderDetails}
+                    orderProducts={viewOrder?.orderProducts}
+                    download={true}
                     open={true}
                     clearDetails={() => setViewOrder({})}
                 />
