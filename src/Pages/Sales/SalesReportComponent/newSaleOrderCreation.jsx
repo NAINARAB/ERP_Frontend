@@ -3,9 +3,8 @@ import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton }
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, LocalDateWithTime } from "../../../Components/functions";
-import InvoiceBillTemplate from "./../invoiceTemplate";
-import { Add, ClearAll, Delete, Edit, Visibility } from "@mui/icons-material";
+import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat } from "../../../Components/functions";
+import { Add, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable from "../../../Components/filterableTable2";
 
@@ -13,7 +12,7 @@ import FilterableTable from "../../../Components/filterableTable2";
 const Required = () => <span style={{ color: 'red', fontWeight: 'bold', fontSize: '1em' }}> *</span>
 
 
-const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
+const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
 
     const [retailers, setRetailers] = useState([]);
@@ -21,7 +20,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
     const [productGroup, setProductGroup] = useState([]);
     const [productBrand, setProductBrand] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
+    // const [salesPerson, setSalePerson] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
 
     const initialValue = {
@@ -46,6 +45,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
         Bill_Qty: 0,
         Item_Rate: 0,
         UOM: '',
+        Units: '',
         Product: {},
         Group: 'Search Group',
         GroupID: '',
@@ -73,6 +73,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                 Narration: editValues?.Narration,
                 Created_by: editValues?.Created_by,
                 So_Id: editValues?.So_Id,
+                GST_Inclusive: editValues?.GST_Inclusive,
+                IS_IGST: editValues?.IS_IGST,
             }));
             setOrderProducts(editValues?.Products_List?.map(pro => ({
                 ...pro,
@@ -81,11 +83,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                 Bill_Qty: pro?.Bill_Qty ?? 0,
                 Item_Rate: pro?.Item_Rate ?? 0,
                 UOM: pro?.Unit_Id ?? '',
+                Units: pro?.Units ?? '',
                 Product: pro ?? {},
                 Group: 'Search Group',
                 GroupID: '',
                 Brand: 'Search Brand',
                 BrandID: '',
+                Amount: pro?.Amount ?? 0
             })));
             setIsEdit(true)
         } else {
@@ -123,13 +127,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
 
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setSalePerson(data.data)
-            }
-        }).catch(e => console.error(e))
+        // fetchLink({
+        //     address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
+        // }).then(data => {
+        //     if (data.success) {
+        //         setSalePerson(data.data)
+        //     }
+        // }).catch(e => console.error(e))
 
         fetchLink({
             address: `masters/company?Company_id=${storage?.Company_id}`
@@ -141,7 +145,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
 
     }, [storage?.Company_id])
 
-    const handleProductInputChange = (productId, value, rate, obj, UOM_Id) => {
+    const handleProductInputChange = (productId, value, rate, obj, UOM_Id, Units) => {
         const productIndex = orderProducts.findIndex(item => isEqualNumber(item.Item_Id, productId));
 
         if (productIndex !== -1) {
@@ -149,6 +153,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
             updatedValues[productIndex].Bill_Qty = Number(value);
             updatedValues[productIndex].Item_Rate = Number(rate);
             updatedValues[productIndex].UOM = UOM_Id;
+            updatedValues[productIndex].Units = Units;
             updatedValues[productIndex].Amount = Multiplication(value, rate);
             updatedValues[productIndex] = { ...updatedValues[productIndex], Product: obj }
 
@@ -159,6 +164,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                 Bill_Qty: Number(value),
                 Item_Rate: Number(rate),
                 UOM: UOM_Id,
+                Units: Units,
                 Amount: Multiplication(value, rate),
                 Product: obj
             }]);
@@ -178,7 +184,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
             }).then(data => {
                 if (data.success) {
                     toast.success(data?.message);
-                    // setReload(!reload)
+                    reload()
                     setOrderDetails(initialValue);
                     setOrderProducts([])
                 } else {
@@ -238,32 +244,32 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                                 type="date"
                                                 value={orderDetails?.So_Date ? ISOString(orderDetails?.So_Date) : ''}
                                                 onChange={e => setOrderDetails({ ...orderDetails, So_Date: e.target.value })}
-                                                className="cus-inpt p-1 bg-light"
+                                                className="cus-inpt p-1"
                                             />
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Created By:</td>
-                                        <td className="border-0 bg-light">{storage.Name}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Created Date:</td>
-                                        <td className="border-0 bg-light">{LocalDateWithTime()}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Sales Person:</td>
+                                        <td className="border-0 bg-light">Invoice Type:</td>
                                         <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Sales_Person_Id, label: orderDetails?.Sales_Person_Name }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Sales_Person_Id: e.value, Sales_Person_Name: e.label })}
-                                                options={[
-                                                    { value: initialValue?.Sales_Person_Id, label: initialValue?.Sales_Person_Name },
-                                                    ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Sales Person Name"}
-                                            />
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
+                                            >
+                                                <option value={1}>Inclusive Tax</option>
+                                                <option value={0}>Exclusive Tax</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Tax Type:</td>
+                                        <td className="border-0 bg-light">
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
+                                            >
+                                                <option value={0}>GST</option>
+                                                <option value={1}>IGST</option>
+                                            </select>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -288,6 +294,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                                 value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
                                                 onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
                                                 options={[
+                                                    { value: '', label: 'select', isDisabled: true },
                                                     ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
                                                 ]}
                                                 styles={customSelectStyles}
@@ -319,7 +326,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                         <td className="border-0 bg-light">Frequency Days:</td>
                                         <td className="border-0 bg-light">{20}</td>
                                     </tr>
-                                    
+
                                 </tbody>
                             </table>
                         </div>
@@ -328,30 +335,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
 
                 {/* Actions */}
                 <div className="d-flex align-items-end justify-content-end flex-wrap mb-3">
-                    <select 
-                        className="cus-inpt w-auto p-1 me-2" 
-                        onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
-                    >
-                        <option value={1}>Inclusive Tax</option>
-                        <option value={0}>Exclusive Tax</option>
-                    </select>
-                    <select 
-                        className="cus-inpt w-auto p-1 me-2" 
-                        onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
-                    >
-                        <option value={0}>GST</option>
-                        <option value={1}>IGST</option>
-                    </select>
-                    {orderProducts.length > 0 && (
-                        <InvoiceBillTemplate
-                            orderDetails={orderDetails} orderProducts={orderProducts} postFun={postSaleOrder}
-                        >
-                            <Button
-                                variant='outlined'
-                                startIcon={<Visibility />}
-                            >Preview</Button>
-                        </InvoiceBillTemplate>
-                    )}
+
                     <Button
                         onClick={() => setAddProductDialog(true)}
                         sx={{ ml: 1 }}
@@ -438,15 +422,27 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                     ]}
                     EnableSerialNumber
                     CellSize="medium"
+                    disablePagination={true}
                 />
 
 
                 <p className="fa-15 mt-3 m-0">Narration</p>
-                <textarea 
+                <textarea
                     className="cus-inpt "
                     value={orderDetails.Narration}
-                    onChange={e => setOrderDetails(pre => ({...pre, Narration: e.target.value}))} 
+                    onChange={e => setOrderDetails(pre => ({ ...pre, Narration: e.target.value }))}
                 />
+
+                <div className="d-flex justify-content-end">
+                    <Button
+                        onClick={postSaleOrder}
+                        sx={{ ml: 1 }}
+                        variant='outlined'
+                        color='success'
+                        startIcon={<Save />}
+                        disabled={orderProducts?.length === 0 || !orderDetails?.Retailer_Id}
+                    >Save</Button>
+                </div>
             </div>
 
             <Dialog
@@ -465,7 +461,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                             productDetails.Bill_Qty,
                             productDetails.Item_Rate,
                             productDetails.Product,
-                            productDetails.UOM
+                            productDetails.UOM,
+                            productDetails.Units,
                         );
                         closeAddProduct();
                     } else {
@@ -480,7 +477,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                     value={{ value: productDetails.BrandID, label: productDetails.Brand }}
                                     onChange={(e) => setProductDetails(pre => ({ ...pre, BrandID: e.value, Brand: e.label }))}
                                     options={[
-                                        { value: '', label: 'ALL' },
+                                        { value: '', label: 'select', isDisabled: true },
                                         ...productBrand.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
                                     ]}
                                     styles={customSelectStyles}
@@ -495,7 +492,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                     value={{ value: productDetails.GroupID, label: productDetails.Group }}
                                     onChange={(e) => setProductDetails(pre => ({ ...pre, GroupID: e.value, Group: e.label }))}
                                     options={[
-                                        { value: '', label: 'ALL' },
+                                        { value: '', label: 'select', isDisabled: true },
                                         ...productGroup.map(obj => ({ value: obj?.Product_Group, label: obj?.Pro_Group }))
                                     ]}
                                     styles={customSelectStyles}
@@ -520,13 +517,14 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                             Brand: productInfo.Brand_Name ?? pre.Brand,
                                             BrandID: productInfo.Brand ?? pre.BrandID,
                                             UOM: productInfo.UOM_Id ?? pre.UOM,
+                                            Units: productInfo.Units ?? pre.Units,
                                             Item_Rate: productInfo.Item_Rate ?? 0,
                                             Amount: 0,
                                             Bill_Qty: 0,
                                         }));
                                     }}
                                     options={[
-                                        { value: '', label: 'ALL' },
+                                        { value: '', label: 'select', isDisabled: true },
                                         ...[
                                             ...products
                                                 .filter(pro => productDetails.BrandID ? isEqualNumber(pro.Brand, productDetails.BrandID) : true)
@@ -585,10 +583,15 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff }) => {
                                 <label>UOM</label>
                                 <select
                                     value={productDetails.UOM}
-                                    onChange={e => setProductDetails(pre => ({ ...pre, UOM: e.target.value }))}
+                                    onChange={e => {
+                                        const selectedIndex = e.target.selectedIndex;
+                                        const label = e.target.options[selectedIndex].text; 
+                                        const value = e.target.value;
+                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
+                                    }}
                                     className="cus-inpt"
                                 >
-                                    <option value="">select</option>
+                                    <option value="" disabled>select</option>
                                     {productUOM.map((o, i) => (
                                         <option value={o.UOM_Id} key={i} >{o.Units}</option>
                                     ))}

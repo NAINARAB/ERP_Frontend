@@ -20,7 +20,8 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [users, setUsers] = useState([]);
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
-    const [viewOrder, setViewOrder] = useState({})
+    const [viewOrder, setViewOrder] = useState({});
+    const [reload, setReload] = useState(false)
 
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
@@ -48,7 +49,15 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
 
-    }, [filters.Fromdate, filters?.Todate, filters?.Retailer_Id, filters?.Sales_Person_Id, filters?.Created_by, filters?.Cancel_status])
+    }, [
+        filters.Fromdate, 
+        filters?.Todate, 
+        filters?.Retailer_Id, 
+        filters?.Sales_Person_Id, 
+        filters?.Created_by, 
+        filters?.Cancel_status,
+        reload
+    ])
 
     useEffect(() => {
 
@@ -222,7 +231,17 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                             isExpendable={true}
                             tableMaxHeight={550}
                         />
-                    ) : <NewSaleOrderCreation editValues={orderInfo} loadingOn={loadingOn} loadingOff={loadingOff} />}
+                    ) : (
+                        <NewSaleOrderCreation 
+                            editValues={orderInfo} 
+                            loadingOn={loadingOn} 
+                            loadingOff={loadingOff} 
+                            reload={() => {
+                                setReload(pre => !pre);
+                                setScreen(pre => !pre)
+                            }}
+                        />
+                    )}
                 </CardContent>
             </Card>
 

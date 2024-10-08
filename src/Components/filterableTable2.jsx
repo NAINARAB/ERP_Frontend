@@ -14,7 +14,8 @@ const FilterableTable = ({
     tableMaxHeight = 550,
     initialPageCount = 20,
     EnableSerialNumber = false,
-    CellSize = 'small' || 'medium'
+    CellSize = 'small' || 'medium',
+    disablePagination = false
 }) => {
 
     const [page, setPage] = useState(0);
@@ -232,7 +233,7 @@ const FilterableTable = ({
 
 
                     <TableBody>
-                        {paginatedData.map((row, index) => (
+                        {(disablePagination ? dataArray : paginatedData).map((row, index) => (
                             <RowComp key={index} row={row} index={index} />
                         ))}
                         {dataArray.length === 0 && (
@@ -255,7 +256,7 @@ const FilterableTable = ({
                 </Table>
             </TableContainer>
 
-            {paginatedData.length !== 0 && (
+            {!disablePagination && paginatedData.length !== 0 && (
                 <div className="p-2 pb-0">
                     <TablePagination
                         component="div"
@@ -293,7 +294,8 @@ FilterableTable.propTypes = {
     tableMaxHeight: PropTypes.number,
     initialPageCount: PropTypes.number,
     EnableSerialNumber: PropTypes.bool,
-    CellSize: PropTypes.string
+    CellSize: PropTypes.string,
+    disablePagination: PropTypes.bool
 };
 
 FilterableTable.defaultProps = {
@@ -305,7 +307,8 @@ FilterableTable.defaultProps = {
     tableMaxHeight: 550,
     initialPageCount: 20,
     EnableSerialNumber: false,
-    CellSize: 'small'
+    CellSize: 'small',
+    disablePagination: false
 };
 
 
