@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import DynamicMuiTable from '../../Components/dynamicMuiTable';
 import { toast } from 'react-toastify';
 import { fetchLink } from '../../Components/fetchComponent';
+import FilterableTable from '../../Components/filterableTable2'
 
 
 
@@ -141,8 +142,7 @@ const ReportTemplates = () => {
         }
     };
 
-    const ExpandableRow = ({ o, i }) => {
-        const [open, setOpen] = useState(false);
+    const Actions = ({ o }) => {
         const [anchorEl, setAnchorEl] = useState(null);
 
         const dataToForward = {
@@ -179,147 +179,129 @@ const ReportTemplates = () => {
 
         return (
             <>
-                <TableRow hover={true}>
-                    <TableCell className=" fa-13 text-center vctr">{i}</TableCell >
-                    <TableCell className=" fa-13 text-center vctr">{o?.Report_Name}</TableCell >
-                    <TableCell className=" fa-13 text-center vctr">{o?.tablesList?.length}</TableCell >
-                    <TableCell className=" fa-13 text-center vctr">
-                        {o?.tablesList?.reduce((sum, item) => sum += Number(item?.columnsList?.length), 0)}
-                    </TableCell >
-                    <TableCell className=" fa-13 text-center vctr">{o?.CreatedByGet}</TableCell >
-                    <TableCell className=" fa-13 text-center vctr">{o?.CreatedAt ? UTCDateWithTime(o?.CreatedAt) : ' - '}</TableCell >
-                    <TableCell className=" fa-13 text-center vctr">
+                <IconButton aria-describedby={id} onClick={handleClick}>
+                    <List />
+                </IconButton>
 
-                        <IconButton aria-describedby={id} onClick={handleClick}>
-                            <List />
-                        </IconButton>
+                <Popover
+                    id={id}
+                    open={popOverOpen}
+                    anchorEl={anchorEl}
+                    onClose={handleClose}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                    }}
+                >
+                    <MenuList>
 
-                        <IconButton size='small' onClick={() => setOpen(pre => !pre)}>
-                            {open ? <ExpandLess className='text-primary' /> : <ExpandMore />}
-                        </IconButton>
-
-                        <Popover
-                            id={id}
-                            open={popOverOpen}
-                            anchorEl={anchorEl}
-                            onClose={handleClose}
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'left',
-                            }}
-                            transformOrigin={{
-                                vertical: 'top',
-                                horizontal: 'left',
-                            }}
+                        <MenuItem
+                            onClick={!storage?.Company_id
+                                ? () => toast.warn('Select Company!')
+                                : () => {
+                                    setLocalVariable(pre => ({
+                                        ...pre,
+                                        filterTablesAndColumns: dataToForward,
+                                        openFilterDialog: true,
+                                    }));
+                                    setSelectedTab(0);
+                                    setFilters({})
+                                }
+                            }
+                        // disabled={!storage?.Company_id}
                         >
-                            <MenuList>
+                            <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
+                            <ListItemText>OPEN</ListItemText>
+                        </MenuItem>
 
-                                <MenuItem
-                                    onClick={!storage?.Company_id
-                                        ? () => toast.warn('Select Company!')
-                                        : () => {
-                                            setLocalVariable(pre => ({
-                                                ...pre,
-                                                filterTablesAndColumns: dataToForward,
-                                                openFilterDialog: true,
-                                            }));
-                                            setSelectedTab(0);
-                                            setFilters({})
-                                        }
+                        <MenuItem
+                            onClick={
+                                !storage?.Company_id
+                                    ? () => toast.warn('Select Company!')
+                                    : () => {
+                                        setLocalVariable(pre => ({
+                                            ...pre,
+                                            filterTablesAndColumns: dataToForward,
+                                            preFilterDialog: true,
+                                        }));
+                                        setFilters({});
+                                        setSelectedTab(0);
                                     }
-                                // disabled={!storage?.Company_id}
-                                >
-                                    <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
-                                    <ListItemText>OPEN</ListItemText>
-                                </MenuItem>
+                            }
+                        >
+                            <ListItemIcon><FilterAlt fontSize="small" /></ListItemIcon>
+                            <ListItemText>FILTERS</ListItemText>
+                        </MenuItem>
 
-                                <MenuItem
-                                    onClick={
-                                        !storage?.Company_id
-                                            ? () => toast.warn('Select Company!')
-                                            : () => {
-                                                setLocalVariable(pre => ({
-                                                    ...pre,
-                                                    filterTablesAndColumns: dataToForward,
-                                                    preFilterDialog: true,
-                                                }));
-                                                setFilters({});
-                                                setSelectedTab(0);
-                                            }
-                                    }
-                                >
-                                    <ListItemIcon><FilterAlt fontSize="small" /></ListItemIcon>
-                                    <ListItemText>FILTERS</ListItemText>
-                                </MenuItem>
+                        <MenuItem
+                            onClick={() => nav('create', { state: { ReportState: dataToForward } })}
+                        >
+                            <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                            <ListItemText>EDIT</ListItemText>
+                        </MenuItem>
 
-                                <MenuItem
-                                    onClick={() => nav('create', { state: { ReportState: dataToForward } })}
-                                >
-                                    <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                                    <ListItemText>EDIT</ListItemText>
-                                </MenuItem>
+                        <MenuItem
+                            onClick={() => setLocalVariable(pre => ({ ...pre, deleteConfirmationDialog: true, filterTablesAndColumns: dataToForward }))}
+                        >
+                            <ListItemIcon><Delete fontSize="small" color='error' /></ListItemIcon>
+                            <ListItemText>DELETE</ListItemText>
+                        </MenuItem>
 
-                                <MenuItem
-                                    onClick={() => setLocalVariable(pre => ({ ...pre, deleteConfirmationDialog: true, filterTablesAndColumns: dataToForward }))}
-                                >
-                                    <ListItemIcon><Delete fontSize="small" color='error' /></ListItemIcon>
-                                    <ListItemText>DELETE</ListItemText>
-                                </MenuItem>
+                    </MenuList>
+                </Popover>
+            </>
+        )
+    }
 
-                            </MenuList>
-                        </Popover>
-
-                    </TableCell >
-                </TableRow >
-
-                <TableRow >
-                    <TableCell colSpan={7} className="p-0 border-0">
-                        <Collapse in={open} timeout="auto" className='py-3' unmountOnExit>
-                            <div className="table-responsive">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            {['SNo', 'Table', 'Column', 'Data-Type', 'Order'].map(o => (
-                                                <th className="border fa-14 text-center" key={o} style={{ backgroundColor: '#EDF0F7' }}>{o}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {o?.tablesList?.map((table, tableInd) => (
-                                            <React.Fragment key={tableInd}>
-                                                {table?.columnsList?.map((column, columnInd) => (
-                                                    <tr key={columnInd}>
-                                                        {columnInd === 0 && (
-                                                            <>
-                                                                <td className="border fa-13 text-center vctr" rowSpan={table?.columnsList?.length}>{tableInd + 1}</td>
-                                                                <td className="border fa-13 text-center blue-text vctr" rowSpan={table?.columnsList?.length}>
-                                                                    {table?.AliasName}
-                                                                </td>
-                                                            </>
-                                                        )}
-                                                        <td
-                                                            className={`
+    const RowComp = ({ o }) => {
+        return (
+            <>
+                <div className="table-responsive">
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                {['SNo', 'Table', 'Column', 'Data-Type', 'Order'].map(o => (
+                                    <th className="border fa-14 text-center" key={o} style={{ backgroundColor: '#EDF0F7' }}>{o}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {o?.tablesList?.map((table, tableInd) => (
+                                <React.Fragment key={tableInd}>
+                                    {table?.columnsList?.map((column, columnInd) => (
+                                        <tr key={columnInd}>
+                                            {columnInd === 0 && (
+                                                <>
+                                                    <td className="border fa-13 text-center vctr" rowSpan={table?.columnsList?.length}>{tableInd + 1}</td>
+                                                    <td className="border fa-13 text-center blue-text vctr" rowSpan={table?.columnsList?.length}>
+                                                        {table?.AliasName}
+                                                    </td>
+                                                </>
+                                            )}
+                                            <td
+                                                className={`
                                                                 border fa-13 vctr
                                                                 ${Boolean(Number(column?.IS_Default)) ? ' blue-text ' : ''}
                                                                 ${Boolean(Number(column?.IS_Join_Key)) ? ' fw-bold ' : ''}
                                                                 `}
-                                                        >
-                                                            {column?.Column_Name}
-                                                        </td>
-                                                        <td className="border fa-13 vctr">{column?.Column_Data_Type}</td>
-                                                        <td className="border fa-13 vctr">{column?.Order_By}</td>
-                                                    </tr>
-                                                ))}
-                                            </React.Fragment>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Collapse>
-                    </TableCell >
-                </TableRow >
+                                            >
+                                                {column?.Column_Name}
+                                            </td>
+                                            <td className="border fa-13 vctr">{column?.Column_Data_Type}</td>
+                                            <td className="border fa-13 vctr">{column?.Order_By}</td>
+                                        </tr>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </>
-        );
+        )
     }
 
     const closeDialog = () => {
@@ -351,7 +333,7 @@ const ReportTemplates = () => {
                 toast.error(data.message)
             }
         }).catch(e => console.log(e))
-        .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
+            .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
     }
 
     return (
@@ -359,52 +341,45 @@ const ReportTemplates = () => {
 
             <Card>
 
-                <div className="p-3 border-bottom fa-16 fw-bold d-flex justify-content-between align-items-center">
+                <div className="p-2 border-bottom fa-16 fw-bold d-flex justify-content-between align-items-center">
                     <span className="text-primary text-uppercase ps-3">Report Templates</span>
                     {isEqualNumber(contextObj?.Add_Rights, 1) && (
                         <Button variant='outlined' onClick={() => nav('create')}>Add Report</Button>
                     )}
                 </div>
 
-                <CardContent>
-                    {templates?.length > 0 && (
-                        <TableContainer component={Paper} sx={{ maxHeight: '72dvh' }}>
+                <div className="d-flex justify-content-end p-3">
+                    <input
+                        type="search"
+                        className='cus-inpt w-auto'
+                        placeholder='Search Report Name'
+                        value={localVariable?.search ?? ''}
+                        onChange={e => setLocalVariable(pre => ({ ...pre, search: String(e.target.value).toLowerCase() }))}
+                    />
+                </div>
 
-                            <div className="d-flex justify-content-end mb-3">
-                                <input
-                                    type="search"
-                                    className='cus-inpt w-auto'
-                                    placeholder='Search Report Name'
-                                    value={localVariable?.search ?? ''}
-                                    onChange={e => setLocalVariable(pre => ({ ...pre, search: String(e.target.value).toLowerCase() }))}
-                                />
-                            </div>
-
-                            <Table stickyHeader size="small">
-
-                                <TableHead>
-                                    <TableRow>
-                                        {['SNo', 'Report Name', 'Tables', 'Columns', 'Created-By', 'Created-At', 'Action'].map((o, i) => (
-                                            <TableCell className="text-center py-2" key={i} style={{ backgroundColor: '#EDF0F7' }}>{o}</TableCell>
-                                        ))}
-                                    </TableRow>
-                                </TableHead>
-
-                                <TableBody>
-                                    {!localVariable?.search ? (
-                                        templates?.map((o, i) => (
-                                            <ExpandableRow o={o} i={i + 1} key={i} />
-                                        ))
-                                    ) : (
-                                        [...templates].filter(fil =>
-                                            String(fil?.Report_Name).toLowerCase().includes(localVariable.search)
-                                        ).map((o, i) => <ExpandableRow o={o} i={i + 1} key={i} />)
-                                    )}
-                                </TableBody>
-
-                            </Table>
-                        </TableContainer>
-                    )}
+                <CardContent className='p-0'>
+                    <FilterableTable
+                        dataArray={
+                            !localVariable?.search ? templates : (
+                                [...templates].filter(fil =>
+                                    String(fil?.Report_Name).toLowerCase().includes(localVariable.search)
+                                )
+                            )
+                        }
+                        columns={[
+                            { Field_Name: 'Report_Name', ColumnHeader: 'Report Name', Fied_Data: 'string', isVisible: 1 },
+                            { ColumnHeader: 'Tables', isVisible: 1, isCustomCell: true, Cell: ({ row }) => row?.tablesList?.length },
+                            { ColumnHeader: 'Columns', isVisible: 1, isCustomCell: true, Cell: ({ row }) => row?.tablesList?.reduce((sum, item) => sum += Number(item?.columnsList?.length), 0) },
+                            { Field_Name: 'CreatedByGet', ColumnHeader: 'Created By', Fied_Data: 'string', isVisible: 1, },
+                            { ColumnHeader: 'Columns', isVisible: 1, isCustomCell: true, Cell: ({ row }) => row?.CreatedAt ? UTCDateWithTime(row?.CreatedAt) : ' - ' },
+                            { ColumnHeader: 'Action', isVisible: 1, isCustomCell: true, Cell: ({ row }) => <Actions o={row} /> },
+                        ]}
+                        EnableSerialNumber
+                        isExpendable={true}
+                        expandableComp={({ row }) => <RowComp o={row} />}
+                        tableMaxHeight={650}
+                    />
                 </CardContent>
             </Card>
 

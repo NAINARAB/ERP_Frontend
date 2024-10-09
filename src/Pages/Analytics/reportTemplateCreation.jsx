@@ -215,9 +215,8 @@ const ReportTemplateCreation = () => {
         inputValues.tableJoins?.forEach(item => {
             validateSet.add(item.Join_First_Table_Id);
             validateSet.add(item.Join_Second_Table_Id);
-            return
         })
-        if (validateSet.size !== (inputValues.tableJoins.length + 1)) {
+        if (validateSet.size !== (inputValues.tableJoins.length + 1) && inputValues.tables.length > 1) {
             return toast.error('Invalid table joins')
         }
 
@@ -242,7 +241,7 @@ const ReportTemplateCreation = () => {
         <>
             <Card>
 
-                <div className="p-3 border-bottom fa-16 fw-bold d-flex justify-content-between align-items-center">
+                <div className="p-2 border-bottom fa-16 fw-bold d-flex justify-content-between align-items-center">
                     <span className="text-primary text-uppercase ps-3">{inputValues?.Report_Type_Id ? 'Modify Report Template' : 'Report Templates Creation'}</span>
                     <Button variant='outlined' onClick={() => nav(-1)} startIcon={<KeyboardArrowLeft />}>Back</Button>
                 </div>
