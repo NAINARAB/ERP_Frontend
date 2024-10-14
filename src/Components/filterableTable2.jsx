@@ -5,6 +5,33 @@ import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 
 import PropTypes from 'prop-types';
 
+/**
+ * @typedef {Object} Column
+ * @property {string} Field_Name
+ * @property {'string'|'number'|'date'|'time'} Fied_Data
+ * @property {string} ColumnHeader
+ * @property {0|1} isVisible
+ * @property {'left'|'right'|'center'} align
+ * @property {boolean} [isCustomCell]
+ * @property {Function} [Cell]
+ */
+
+/**
+ * Filterable Table Component
+ * @param {Object} props
+ * @param {Array<Object>} props.dataArray
+ * @param {Array<Column>} props.columns
+ * @param {Function} [props.onClickFun]
+ * @param {boolean} [props.isExpendable]
+ * @param {React.ReactElement} [props.expandableComp]
+ * @param {number} [props.tableMaxHeight]
+ * @param {number} [props.initialPageCount]
+ * @param {boolean} [props.EnableSerialNumber]
+ * @param {'small'|'medium'|'large'} [props.CellSize]
+ * @param {boolean} [props.disablePagination]
+ */
+
+
 const FilterableTable = ({
     dataArray = [],
     columns = [],

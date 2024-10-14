@@ -57,7 +57,7 @@ const ReportTemplateCreation = () => {
                 ...pre,
                 Report_Type_Id: stateValue?.Report_Type_Id ?? '',
                 reportName: stateValue?.reportName ?? '',
-                tables: stateValue?.tables ?? [],
+                tables: [...stateValue?.tables] ?? [],
                 createdBy: stateValue?.createdBy ?? storage?.UserId
             }))
         }

@@ -71,11 +71,6 @@ const TaskParametersComp = ({ isOpened, disableCollapse }) => {
         setInputValue(initialValue)
     }
 
-    // const openDeleteConfirmationDialog = (obj) => {
-    //     setInputValue(obj);
-    //     setDeleteDialog(true);
-    // }
-
     const closeDeleteConfirmationDialog = () => {
         setInputValue(initialValue);
         setDeleteDialog(false)
@@ -112,7 +107,7 @@ const TaskParametersComp = ({ isOpened, disableCollapse }) => {
 
                 <Collapse in={open} unmountOnExit>
 
-                    <div className="card-body" style={{ maxHeight: '40vh', overflowY: 'scroll' }}>
+                    <div className="card-body" style={{ maxHeight: !disableCollapse ? '40vh' : 'auto', overflowY: 'auto' }}>
 
                         <div className="row flex-row-reverse">
                             <div className="col-md-4 pb-2">

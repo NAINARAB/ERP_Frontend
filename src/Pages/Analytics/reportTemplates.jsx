@@ -3,7 +3,7 @@ import {
     Button, Card, CardContent, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tab, Tabs, Box, Typography,
     ListItemIcon, ListItemText, MenuItem, MenuList, Popover, TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper
 } from '@mui/material';
-import { ArrowBackIosNewOutlined, Edit, ExpandLess, ExpandMore, Visibility, List, Delete, FilterAlt, Launch, Close } from '@mui/icons-material';
+import { ArrowBackIosNewOutlined, Edit, Visibility, List, Delete, FilterAlt, Launch, Close, FileDownload, Save } from '@mui/icons-material';
 import { isEqualNumber, UTCDateWithTime } from '../../Components/functions';
 import { MyContext } from '../../Components/context/contextProvider';
 import { useNavigate } from 'react-router-dom'
@@ -148,6 +148,7 @@ const ReportTemplates = () => {
         const dataToForward = {
             Report_Type_Id: o?.Report_Type_Id,
             reportName: o?.Report_Name,
+            ReportState: o?.ReportState,
             tables: o?.tablesList?.map(table => ({
                 Table_Id: table?.Table_Id,
                 Table_Name: table?.Table_Name,
@@ -200,9 +201,8 @@ const ReportTemplates = () => {
                     <MenuList>
 
                         <MenuItem
-                            onClick={!storage?.Company_id
-                                ? () => toast.warn('Select Company!')
-                                : () => {
+                            onClick={
+                                () => {
                                     setLocalVariable(pre => ({
                                         ...pre,
                                         filterTablesAndColumns: dataToForward,
@@ -212,7 +212,6 @@ const ReportTemplates = () => {
                                     setFilters({})
                                 }
                             }
-                        // disabled={!storage?.Company_id}
                         >
                             <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
                             <ListItemText>OPEN</ListItemText>
@@ -336,6 +335,23 @@ const ReportTemplates = () => {
             .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
     }
 
+    const saveReportGroupingState = (reportid, grouping) => {
+        fetchLink({
+            address: `reports/template/templateState`,
+            method: 'POST',
+            bodyData: {
+                Report_Type_Id: reportid,
+                ReportState: grouping
+            }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.error(e))
+    }
+
     return (
         <>
 
@@ -400,8 +416,27 @@ const ReportTemplates = () => {
                 </DialogTitle>
                 <DialogContent>
                     {(localVariable?.filterTablesAndColumns?.Report_Type_Id && storage?.Company_id) && (
-                        <DynamicMuiTable reportId={localVariable?.filterTablesAndColumns?.Report_Type_Id} company={storage?.Company_id} queryFilters={filters} />
+                        <DynamicMuiTable
+                            reportId={localVariable?.filterTablesAndColumns?.Report_Type_Id}
+                            company={storage?.Company_id}
+                            queryFilters={filters}
+                            // buttons={({ grouping }) => (
+                            //     <Button
+                            //         onClick={() => saveReportGroupingState(localVariable?.filterTablesAndColumns?.Report_Type_Id, grouping)}
+                            //         disabled={grouping.length === 0}
+                            //         startIcon={<Save />}
+                            //     >
+                            //         Save State
+                            //     </Button>
+                            // )}
+                            // groupingState={
+                            //     localVariable?.filterTablesAndColumns?.ReportState 
+                            //         ? JSON.parse(localVariable?.filterTablesAndColumns?.ReportState)
+                            //         : []
+                            // }
+                        />
                     )}
+                    {/* {console.log(localVariable)} */}
                 </DialogContent>
                 <DialogActions>
                     <Button

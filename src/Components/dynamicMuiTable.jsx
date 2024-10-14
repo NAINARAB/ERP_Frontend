@@ -1,3 +1,4 @@
+import React from 'react';
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
 import { isEqualNumber, LocalDate, NumberFormat } from './functions';
 import { useEffect, useMemo, useState } from 'react';
@@ -54,7 +55,7 @@ const csvConfig = mkConfig({
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
-const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
+const DynamicMuiTable = ({ reportId, company, queryFilters, buttons, groupingState }) => {
     const [dispColmn, setDispColmn] = useState([]);
     const [dataArray, setDataArray] = useState([]);
     const [columns, setColumns] = useState([]);
@@ -66,7 +67,8 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
     const [dialogs, setDialogs] = useState({
         filters: false,
         aggregations: false
-    })
+    });
+    console.log(groupingState)
 
     useEffect(() => {
         fetchLink({
@@ -74,6 +76,7 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
         }).then(data => {
             if (data?.success) {
                 if (data.data[0]) {
+
                     const o = data.data[0];
                     const strucre = {
                         Report_Type_Id: o?.Report_Type_Id,
@@ -103,7 +106,7 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
                 }
             }
         }).catch(e => console.log(e))
-            
+
     }, [reportId])
 
     useEffect(() => {
@@ -178,9 +181,16 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
         enableStickyFooter: true,
         enableColumnOrdering: true,
         enableRowNumbers: false,
-        enableRowSelection: true,
         initialState: {
             density: 'compact',
+            grouping: groupingState
+            .filter(o => typeof o === 'string')
+            .filter(o => {
+                const ind = dispColmn.findIndex(indVal => indVal?.accessorKey === o);
+                console.log(ind, 'index')
+                return ind !== -1; 
+            })
+            ,
             pagination: { pageIndex: 0, pageSize: 100 },
         },
         muiToolbarAlertBannerChipProps: { color: 'primary' },
@@ -223,16 +233,7 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
                     }
                     startIcon={<FileDownload />}
                 >
-                    All Rows
-                </Button>
-                <Button
-                    disabled={
-                        !table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()
-                    }
-                    onClick={() => handleExportRows(table.getSelectedRowModel().rows)}
-                    startIcon={<FileDownload />}
-                >
-                    Selected Rows
+                    Filtered Rows
                 </Button>
                 <Button
                     onClick={() => setDialogs(pre => ({ ...pre, aggregations: true }))}
@@ -240,6 +241,8 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
                 >
                     Aggregation
                 </Button>
+                {/*  */}
+                {buttons({grouping: table.getState().grouping})}
                 <Button
                     onClick={() => setDialogs(pre => ({ ...pre, filters: true }))}
                     className="d-md-none d-inline"
@@ -251,9 +254,7 @@ const DynamicMuiTable = ({ reportId, company, queryFilters }) => {
         ),
     })
 
-    const memoizedTableConfig = useMemo(() => {
-        return table;
-    }, [table, aggregationValues, showData]);
+    const memoizedTableConfig = useMemo(() => table, [table, aggregationValues, showData, groupingState]);
 
     const handleFilterChange = (column, value) => {
         setFilters(prevFilters => ({
