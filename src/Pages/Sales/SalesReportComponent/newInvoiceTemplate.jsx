@@ -22,7 +22,6 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
     const storage = JSON.parse(localStorage.getItem('user'));
     const [open, setOpen] = useState(false);
     const [products, setProducts] = useState([]);
-    const [productUOM, setProductUOM] = useState([]);
     const [retailerInfo, setRetailerInfo] = useState({});
     const [companyInfo, setCompanyInfo] = useState({});
     const printRef = useRef(null)
@@ -41,14 +40,6 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
         }).then(data => {
             if (data.success) {
                 setCompanyInfo(data?.data[0] ? data?.data[0] : {})
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/uom`
-        }).then(data => {
-            if (data.success) {
-                setProductUOM(data.data);
             }
         }).catch(e => console.error(e))
 
@@ -175,166 +166,6 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
             dataTwo: '',
         },
     ]
-
-    // const TaxData = orderProducts?.reduce((data, item) => {
-    //     const productDetails = findProductDetails(products, item.Item_Id);
-    //     const HSNindex = data.findIndex(obj => obj.hsnCode === item.HSN_Code);
-
-    //     if (HSNindex !== -1) {
-    //         const percentage = (orderDetails.IS_IGST ? productDetails?.Igst_P : productDetails?.Gst_P) ?? 0;
-    //         const quantity = Number(item?.Bill_Qty || 0);
-    //         const Item_Rate = Number(item?.Item_Rate || 0);
-    //         const amount = quantity * Item_Rate;
-    //         const amountTax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
-    //         const currentTaxableValue = isEqualNumber(orderDetails.GST_Inclusive, 1) ? (amount - amountTax) : amount;
-
-    //         const previousValue = data[HSNindex];
-    //         const totalTaxableValue = previousValue.taxableValue + currentTaxableValue;
-    //         const totalAmount = previousValue.totalAmount + amount;
-    //         const cgst = orderDetails.IS_IGST ? 0 : taxCalc(orderDetails.GST_Inclusive, totalAmount, previousValue.cgstPercentage);
-    //         const sgst = orderDetails.IS_IGST ? 0 : taxCalc(orderDetails.GST_Inclusive, totalAmount, previousValue.sgstPercentage);
-    //         const igst = orderDetails.IS_IGST ? taxCalc(orderDetails.GST_Inclusive, totalAmount, previousValue.igstPercentage) : 0
-
-    //         const newValue = {
-    //             ...previousValue,
-    //             taxableValue: totalTaxableValue,
-    //             totalAmount: totalAmount,
-    //             cgst: cgst,
-    //             sgst: sgst,
-    //             igst: igst,
-    //             totalTax: orderDetails.IS_IGST ? igst : cgst + sgst,
-    //         };
-
-    //         const updatedData = [...data];
-    //         updatedData[HSNindex] = newValue;
-    //         return updatedData;
-    //     } else {
-    //         return [...data, {
-    //             hsnCode: item.HSN_Code,
-    //             taxableValue: 0,
-    //             totalAmount: 0,
-    //             cgst: 0,
-    //             cgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //             sgst: 0,
-    //             sgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //             igst: 0,
-    //             igstPercentage: orderDetails.IS_IGST ? productDetails?.Igst_P : 0,
-    //             totalTax: 0,
-    //         }];
-    //     }
-    // }, []);
-
-    // const TaxData = orderProducts?.reduce((data, item) => {
-    //     const productDetails = findProductDetails(products, item.Item_Id);
-    //     const HSNindex = data.findIndex(obj => obj.hsnCode === item.HSN_Code);
-
-    //     const percentage = (orderDetails.IS_IGST ? productDetails?.Igst_P : productDetails?.Gst_P) ?? 0;
-    //     const quantity = Number(item?.Bill_Qty || 0);
-    //     const itemRate = Number(item?.Item_Rate || 0);
-    //     const amount = quantity * itemRate;
-    //     const amountTax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
-    //     const taxableValue = orderDetails.GST_Inclusive ? amount - amountTax : amount;
-    //     const finalAmount = isEqualNumber(orderDetails.GST_Inclusive, 1) ? amount : (amount + amountTax);
-
-    //     if (HSNindex !== -1) {
-    //         const prev = data[HSNindex];
-    //         const totalTaxableValue = prev.taxableValue + taxableValue;
-    //         const totalAmount = prev.totalAmount + finalAmount
-
-    //         const cgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Gst_P) / 2);
-    //         const sgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Gst_P) / 2);
-    //         const igst = orderDetails.IS_IGST ? taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Igst_P) : 0;
-
-    //         const newValue = {
-    //             ...prev,
-    //             taxableValue: totalTaxableValue,
-    //             totalAmount: totalAmount,
-    //             cgst: cgst,
-    //             sgst: sgst,
-    //             igst: igst,
-    //             totalTax: orderDetails.IS_IGST ? igst : cgst + sgst,
-    //         };
-
-    //         data[HSNindex] = newValue;
-    //         return data;
-    //     }
-
-    //     const cgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Gst_P) / 2);
-    //     const sgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Gst_P) / 2);
-    //     const igst = orderDetails.IS_IGST ? taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Igst_P) : 0;
-
-    //     const newEntry = {
-    //         hsnCode: item.HSN_Code,
-    //         taxableValue: taxableValue,
-    //         totalAmount: finalAmount,
-    //         cgst,
-    //         cgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //         sgst,
-    //         sgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //         igst,
-    //         igstPercentage: orderDetails.IS_IGST ? productDetails?.Igst_P : 0,
-    //         totalTax: orderDetails.IS_IGST ? igst : cgst + sgst,
-    //     };
-
-    //     return [...data, newEntry];
-    // }, []);
-
-    // const TaxData = orderProducts?.reduce((data, item) => {
-    //     const productDetails = findProductDetails(products, item.Item_Id);
-    //     const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
-    //     console.log(item)
-
-    //     const percentage = (orderDetails.IS_IGST ? productDetails?.Igst_P : productDetails?.Gst_P) ?? 0;
-    //     const quantity = Number(item?.Bill_Qty || 0);
-    //     const itemRate = Number(item?.Item_Rate || 0);
-    //     const amount = quantity * itemRate;
-
-    //     const amountTax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
-    //     const taxableValue = orderDetails.GST_Inclusive ? (amount - amountTax) : amount;
-    //     const finalAmount = orderDetails.GST_Inclusive ? amount : (amount + amountTax);
-
-    //     if (HSNindex !== -1) {
-    //         const prev = data[HSNindex];
-    //         const totalTaxableValue = prev.taxableValue + taxableValue;
-    //         const totalAmount = prev.totalAmount + finalAmount
-
-    //         const cgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Gst_P) / 2);
-    //         const sgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Gst_P) / 2);
-    //         const igst = orderDetails.IS_IGST ? taxCalc(orderDetails.GST_Inclusive, totalAmount, productDetails?.Igst_P) : 0;
-
-    //         const newValue = {
-    //             ...prev,
-    //             taxableValue: totalTaxableValue,
-    //             totalAmount: totalAmount,
-    //             cgst: cgst,
-    //             sgst: sgst,
-    //             igst: igst,
-    //             totalTax: prev.totalTax + (orderDetails.IS_IGST ? igst : cgst + sgst),
-    //         };
-
-    //         data[HSNindex] = newValue;
-    //         return data;
-    //     }
-
-    //     const cgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Gst_P) / 2);
-    //     const sgst = orderDetails.IS_IGST ? 0 : (taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Gst_P) / 2);
-    //     const igst = orderDetails.IS_IGST ? taxCalc(orderDetails.GST_Inclusive, finalAmount, productDetails?.Igst_P) : 0;
-
-    //     const newEntry = {
-    //         hsnCode: item.HSN_Code,
-    //         taxableValue: taxableValue,
-    //         totalAmount: finalAmount,
-    //         cgst,
-    //         cgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //         sgst,
-    //         sgstPercentage: orderDetails.IS_IGST ? 0 : productDetails?.Gst_P / 2,
-    //         igst,
-    //         igstPercentage: orderDetails.IS_IGST ? productDetails?.Igst_P : 0,
-    //         totalTax: orderDetails.IS_IGST ? igst : cgst + sgst,
-    //     };
-
-    //     return [...data, newEntry];
-    // }, []);
 
     const TaxData = orderProducts?.reduce((data, item) => {
         const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
