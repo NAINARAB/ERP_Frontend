@@ -320,6 +320,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                     download={true}
                     actionOpen={true}
                     clearDetails={() => setViewOrder({})}
+                    TitleText={'Sale Order'}
                 />
             )}
 
