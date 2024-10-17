@@ -4,8 +4,8 @@ import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { getPreviousDate, ISOString, isValidObject } from "../../Components/functions";
-import InvoiceBillTemplate from "./invoiceTemplate";
-import { Add, Clear, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
+import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "./convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
@@ -50,11 +50,11 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
 
     }, [
-        filters.Fromdate, 
-        filters?.Todate, 
-        filters?.Retailer_Id, 
-        filters?.Sales_Person_Id, 
-        filters?.Created_by, 
+        filters.Fromdate,
+        filters?.Todate,
+        filters?.Retailer_Id,
+        filters?.Sales_Person_Id,
+        filters?.Created_by,
         filters?.Cancel_status,
         reload
     ])
@@ -89,6 +89,12 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
     const saleOrderColumn = [
         {
+            Field_Name: 'So_Id',
+            ColumnHeader: 'Order ID',
+            Fied_Data: 'string',
+            isVisible: 1,
+        },
+        {
             Field_Name: 'Retailer_Name',
             ColumnHeader: 'Customer',
             Fied_Data: 'string',
@@ -101,23 +107,37 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             isVisible: 1,
             align: 'center',
         },
+        // {
+        //     Field_Name: 'Products',
+        //     ColumnHeader: 'Products / Quantity',
+        //     isVisible: 1,
+        //     align: 'center',
+        //     isCustomCell: true,
+        //     Cell: ({ row }) => (
+        //         <>
+        //             <span>{row?.Products_List?.length ?? 0}</span> /&nbsp;
+        //             <span>{row?.Products_List?.reduce((sum, item) => sum += item?.Bill_Qty ?? 0, 0) ?? 0}</span>
+        //         </>
+        //     )
+        // },
         {
-            Field_Name: 'Products',
-            ColumnHeader: 'Products / Quantity',
+            Field_Name: 'Total_Before_Tax',
+            ColumnHeader: 'Before Tax',
+            Fied_Data: 'number',
             isVisible: 1,
             align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <>
-                    <span>{row?.Products_List?.length ?? 0}</span> /&nbsp;
-                    <span>{row?.Products_List?.reduce((sum, item) => sum += item?.Bill_Qty ?? 0, 0) ?? 0}</span>
-                </>
-            )
+        },
+        {
+            Field_Name: 'Total_Tax',
+            ColumnHeader: 'Tax',
+            Fied_Data: 'number',
+            isVisible: 1,
+            align: 'center',
         },
         {
             Field_Name: 'Total_Invoice_value',
             ColumnHeader: 'Invoice Value',
-            Fied_Data: 'string',
+            Fied_Data: 'number',
             isVisible: 1,
             align: 'center',
         },
@@ -135,12 +155,12 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 )
             },
         },
-        {
-            Field_Name: 'Sales_Person_Name',
-            ColumnHeader: 'Sales Person',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
+        // {
+        //     Field_Name: 'Sales_Person_Name',
+        //     ColumnHeader: 'Sales Person',
+        //     Fied_Data: 'string',
+        //     isVisible: 1,
+        // },
         {
             Field_Name: 'Action',
             isVisible: 1,
@@ -181,6 +201,44 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         },
     ];
 
+    const ExpendableComponent = ({ row }) => {
+
+        return (
+            <>
+                <table className="table">
+                    <tbody>
+                        <tr>
+                            <td className="border p-2 bg-light">Branch</td>
+                            <td className="border p-2">{row.Branch_Name}</td>
+                            <td className="border p-2 bg-light">Sales Person</td>
+                            <td className="border p-2">{row.Sales_Person_Name}</td>
+                            <td className="border p-2 bg-light">Round off</td>
+                            <td className="border p-2">{row.Round_off}</td>
+                        </tr>
+                        <tr>
+                            <td className="border p-2 bg-light">Invoice Type</td>
+                            <td className="border p-2">
+                                {row.GST_Inclusive == 1 && 'Inclusive'}
+                                {row.GST_Inclusive == 0 && 'Exclusive'}
+                            </td>
+                            <td className="border p-2 bg-light">Tax Type</td>
+                            <td className="border p-2">
+                                {row.IS_IGST == 1 && 'IGST'}
+                                {row.IS_IGST == 0 && 'GST'}
+                            </td>
+                            <td className="border p-2 bg-light">Sales Person</td>
+                            <td className="border p-2">{row.Sales_Person_Name}</td>
+                        </tr>
+                        <tr>
+                            <td className="border p-2 bg-light">Narration</td>
+                            <td className="border p-2" colSpan={5}>{row.Narration}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </>
+        )
+    }
+
     const switchScreen = () => {
         setScreen(!screen)
         setOrderInfo({});
@@ -209,16 +267,23 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                     <span>
                         {screen && (
                             <Tooltip title='Filters'>
-                                <IconButton size="small" onClick={() => setDialog({ ...dialog, filters: true })}><FilterAlt /></IconButton>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setDialog({ ...dialog, filters: true })}
+                                >
+                                    <FilterAlt />
+                                </IconButton>
                             </Tooltip>
                         )}
-                        <Button
-                            variant='outlined'
-                            startIcon={!screen ? <Clear /> : <Add />}
-                            onClick={switchScreen}
-                        >
-                            {screen ? 'New' : 'Cancel'}
-                        </Button>
+                        {screen && (
+                            <Button
+                                variant='outlined'
+                                startIcon={<Add />}
+                                onClick={switchScreen}
+                            >
+                                {'New'}
+                            </Button>
+                        )}
                     </span>
                 </div>
 
@@ -227,19 +292,21 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                         <FilterableTable
                             dataArray={saleOrders}
                             columns={saleOrderColumn}
-                            EnableSerialNumber={true}
+                            // EnableSerialNumber={true}
                             isExpendable={true}
                             tableMaxHeight={550}
+                            expandableComp={ExpendableComponent}
                         />
                     ) : (
-                        <NewSaleOrderCreation 
-                            editValues={orderInfo} 
-                            loadingOn={loadingOn} 
-                            loadingOff={loadingOff} 
+                        <NewSaleOrderCreation
+                            editValues={orderInfo}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
                             reload={() => {
                                 setReload(pre => !pre);
                                 setScreen(pre => !pre)
                             }}
+                            switchScreen={switchScreen}
                         />
                     )}
                 </CardContent>
@@ -251,7 +318,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                     orderDetails={viewOrder?.orderDetails}
                     orderProducts={viewOrder?.orderProducts}
                     download={true}
-                    open={true}
+                    actionOpen={true}
                     clearDetails={() => setViewOrder({})}
                 />
             )}

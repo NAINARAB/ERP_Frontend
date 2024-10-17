@@ -3,16 +3,27 @@ import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton }
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat } from "../../../Components/functions";
-import { Add, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
+import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, Subraction, numberToWords, checkIsNumber } from "../../../Components/functions";
+import { Add, Clear, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable from "../../../Components/filterableTable2";
+import RequiredStar from "../../../Components/requiredStar";
+
+const taxCalc = (method = 1, amount = 0, percentage = 0) => {
+    if (method == 1 && checkIsNumber(amount) && checkIsNumber(percentage)) {
+        return amount - (amount * (100 / (100 + percentage)));
+    } else if (method == 0 && checkIsNumber(amount) && checkIsNumber(percentage)) {
+        return amount * (percentage / 100);
+    } else {
+        return 0;
+    }
+}
+
+const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 
-const Required = () => <span style={{ color: 'red', fontWeight: 'bold', fontSize: '1em' }}> *</span>
 
-
-const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => {
+const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
 
     const [retailers, setRetailers] = useState([]);
@@ -110,6 +121,14 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
         }).catch(e => console.error(e))
 
         fetchLink({
+            address: `masters/uom`
+        }).then(data => {
+            if (data.success) {
+                setProductUOM(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
             address: `masters/products?Company_Id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
@@ -118,8 +137,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                 setProductGroup(uniqueGroup);
                 const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
                 setProductBrand(uniqueBrand);
-                const uniqueUOM = getUniqueData(data.data, 'UOM_Id', ['Units']);
-                setProductUOM(uniqueUOM)
+                // const uniqueUOM = getUniqueData(data.data, 'UOM_Id', ['Units']);
+                // setProductUOM(uniqueUOM)
             } else {
                 setProducts([]);
                 setProductGroup([])
@@ -206,6 +225,44 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
         setAddProductDialog(false);
         setProductDetails(productInitialDetails);
     }
+
+    const Total_Invoice_value = orderProducts.reduce((o, item) => {
+        const product = findProductDetails(products, item.Item_Id);
+        const itemRate = parseFloat(item?.Item_Rate);
+        const billQty = parseInt(item?.Bill_Qty);
+        const Amount = Multiplication(billQty, itemRate)
+        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
+            return o += Amount;
+        } else {
+            const tax = taxCalc(0, itemRate, gstPercentage)
+            return o += (Amount + (tax * billQty));
+        }
+    }, 0);
+
+    const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
+        const product = findProductDetails(products, item.Item_Id);
+        const itemRate = parseFloat(item?.Item_Rate) || 0;
+        const billQty = parseInt(item?.Bill_Qty) || 0;
+        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
+            const itemTax = taxCalc(1, itemRate, gstPercentage)
+            const basePrice = Subraction(itemRate, itemTax);
+            acc.TotalTax += Multiplication(billQty, itemTax);
+            acc.TotalValue += Multiplication(billQty, basePrice);
+        } else {
+            const itemTax = taxCalc(0, itemRate, gstPercentage);
+            acc.TotalTax += Multiplication(billQty, itemTax);
+            acc.TotalValue += Multiplication(billQty, itemRate);
+        }
+
+        return acc;
+    }, {
+        TotalValue: 0,
+        TotalTax: 0
+    });
 
     return (
         <>
@@ -354,29 +411,65 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                             isVisible: 1,
                         },
                         {
-                            Field_Name: 'UOM',
-                            ColumnHeader: "Units",
-                            Fied_Data: 'string',
+                            isCustomCell: true,
+                            Cell: ({ row }) => row?.Product?.HSN_Code,
+                            ColumnHeader: 'HSN Code',
                             isVisible: 1,
-                            align: 'center',
                         },
                         {
-                            Field_Name: 'Bill_Qty',
+                            isCustomCell: true,
+                            Cell: ({ row }) => row?.Bill_Qty + ' ' + row?.Units,
                             ColumnHeader: 'Quantity',
-                            Fied_Data: 'string',
                             isVisible: 1,
+                            align: 'center'
                         },
                         {
                             Field_Name: 'Item_Rate',
                             ColumnHeader: "Rate",
                             Fied_Data: 'number',
                             isVisible: 1,
+                            align: 'right'
+                        },
+                        {
+                            ColumnHeader: 'Taxable Amount',
+                            isCustomCell: true,
+                            Cell: ({ row }) => {
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                const amount = row.Amount ?? 0;
+                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
+                                return NumberFormat(
+                                    isEqualNumber(orderDetails.GST_Inclusive, 1) ? (amount - tax) : amount
+                                )
+                            },
+                            isVisible: 1,
+                            align: 'right'
                         },
                         {
                             isCustomCell: true,
-                            Cell: ({ row }) => row?.Amount,
-                            ColumnHeader: 'Amount',
+                            Cell: ({ row }) => {
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                const amount = row.Amount ?? 0;
+                                return NumberFormat(
+                                    taxCalc(orderDetails.GST_Inclusive, amount, percentage)
+                                ) + ' (' + percentage + '%)'
+                            },
+                            ColumnHeader: 'Tax',
                             isVisible: 1,
+                            align: 'right'
+                        },
+                        {
+                            ColumnHeader: 'Amount',
+                            isCustomCell: true,
+                            Cell: ({ row }) => {
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                const amount = row.Amount ?? 0;
+                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
+                                return NumberFormat(
+                                    isEqualNumber(orderDetails.GST_Inclusive, 1) ? amount : (amount + tax)
+                                )
+                            },
+                            isVisible: 1,
+                            align: 'right'
                         },
                         {
                             isCustomCell: true,
@@ -421,9 +514,67 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                         },
                     ]}
                     EnableSerialNumber
-                    CellSize="medium"
+                    CellSize="small"
                     disablePagination={true}
                 />
+
+
+                {orderProducts.length > 0 && (
+                    <div className="d-flex justify-content-end py-2">
+                        <table className="table">
+                            <tbody>
+                                <tr>
+                                    <td className="border p-2" rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}>
+                                        Total in words: {numberToWords(parseInt(Total_Invoice_value))}
+                                    </td>
+                                    <td className="border p-2">Total Taxable Amount</td>
+                                    <td className="border p-2">
+                                        {NumberFormat(totalValueBeforeTax.TotalValue)}
+                                    </td>
+                                </tr>
+                                {!isEqualNumber(orderDetails.IS_IGST, 1) ? (
+                                    <>
+                                        <tr>
+                                            <td className="border p-2">CGST</td>
+                                            <td className="border p-2">
+                                                {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="border p-2">SGST</td>
+                                            <td className="border p-2">
+                                                {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
+                                            </td>
+                                        </tr>
+                                    </>
+                                ) : (
+                                    <tr>
+                                        <td className="border p-2">IGST</td>
+                                        <td className="border p-2">
+                                            {NumberFormat(totalValueBeforeTax.TotalTax)}
+                                        </td>
+                                    </tr>
+                                )}
+                                <tr>
+                                    <td className="border p-2">Round Off</td>
+                                    <td className="border p-2">
+                                        {NumberFormat(
+                                            Total_Invoice_value - (
+                                                totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax
+                                            )
+                                        )}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="border p-2">Total</td>
+                                    <td className="border p-2">
+                                        {NumberFormat(Total_Invoice_value)}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
 
                 <p className="fa-15 mt-3 m-0">Narration</p>
@@ -434,6 +585,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                 />
 
                 <div className="d-flex justify-content-end">
+                    <Button
+                        variant='outlined'
+                        startIcon={<Clear />}
+                        onClick={switchScreen}
+                    >
+                        {'cancel'}
+                    </Button>
                     <Button
                         onClick={postSaleOrder}
                         sx={{ ml: 1 }}
@@ -502,7 +660,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                 />
                             </div>
                             <div className="col-12 p-2">
-                                <label>Item Name <Required /></label>
+                                <label>Item Name <RequiredStar /></label>
                                 <Select
                                     value={{ value: productDetails.Item_Id, label: productDetails.ItemName }}
                                     onChange={e => {
@@ -529,7 +687,15 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                             ...products
                                                 .filter(pro => productDetails.BrandID ? isEqualNumber(pro.Brand, productDetails.BrandID) : true)
                                                 .filter(pro => productDetails.GroupID ? isEqualNumber(pro.Product_Group, productDetails.GroupID) : true)
-                                        ].map(obj => ({ value: obj?.Product_Id, label: obj?.Product_Name }))
+                                        ].map(obj => ({
+                                            value: obj?.Product_Id,
+                                            label: obj?.Product_Name,
+                                            isDisabled: (
+                                                orderProducts.findIndex(ind => isEqualNumber(
+                                                    ind?.Item_Id, obj?.Product_Id
+                                                ))
+                                            ) === -1 ? false : true
+                                        }))
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
@@ -539,9 +705,10 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                 />
                             </div>
                             <div className="col-lg-4 col-md-6 p-2">
-                                <label>Quantity <Required /></label>
+                                <label>Quantity <RequiredStar /></label>
                                 <input
                                     type="number"
+                                    required
                                     value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
                                     onChange={e => {
                                         if (productDetails.Item_Rate) {
@@ -564,6 +731,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                         }
                                     }}
                                     className="cus-inpt"
+                                    min={1}
                                 />
                             </div>
                             <div className="col-lg-4 col-md-6 p-2">
@@ -576,6 +744,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                         Item_Rate: e.target.value,
                                         Amount: pre.Bill_Qty ? Multiplication(e.target.value, pre.Bill_Qty) : pre.Amount
                                     }))}
+                                    min={1}
                                     className="cus-inpt"
                                 />
                             </div>
@@ -585,7 +754,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                     value={productDetails.UOM}
                                     onChange={e => {
                                         const selectedIndex = e.target.selectedIndex;
-                                        const label = e.target.options[selectedIndex].text; 
+                                        const label = e.target.options[selectedIndex].text;
                                         const value = e.target.value;
                                         setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
                                     }}
@@ -593,7 +762,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                 >
                                     <option value="" disabled>select</option>
                                     {productUOM.map((o, i) => (
-                                        <option value={o.UOM_Id} key={i} >{o.Units}</option>
+                                        <option value={o.Unit_Id} key={i} >{o.Units}</option>
                                     ))}
                                 </select>
                             </div>
@@ -608,6 +777,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload }) => 
                                         Item_Rate: pre.Bill_Qty ? Division(e.target.value, pre.Bill_Qty) : pre.Item_Rate
                                     }))}
                                     className="cus-inpt"
+                                    min={1}
                                 />
                             </div>
                         </div>

@@ -55,7 +55,7 @@ const FilterableTable = ({
             class: ''
         }, {
             type: 'right',
-            class: 'text-right'
+            class: 'text-end'
         }, {
             type: 'center',
             class: 'text-center'
