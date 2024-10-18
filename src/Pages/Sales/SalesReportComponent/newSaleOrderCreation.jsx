@@ -3,7 +3,7 @@ import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton }
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, Subraction, numberToWords, checkIsNumber } from "../../../Components/functions";
+import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, Subraction, numberToWords, checkIsNumber, Addition } from "../../../Components/functions";
 import { Add, Clear, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable from "../../../Components/filterableTable2";
@@ -28,7 +28,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
 
     const [retailers, setRetailers] = useState([]);
     const [products, setProducts] = useState([]);
-    const [productGroup, setProductGroup] = useState([]);
+    // const [productGroup, setProductGroup] = useState([]);
     const [productBrand, setProductBrand] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
     // const [salesPerson, setSalePerson] = useState([]);
@@ -95,7 +95,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                 Item_Rate: pro?.Item_Rate ?? 0,
                 UOM: pro?.Unit_Id ?? '',
                 Units: pro?.Units ?? '',
-                Product: pro ?? {},
+                Product: {
+                    ...pro,
+                    Cgst_P: Number(pro?.Cgst) ?? 0,
+                    Sgst_P: Number(pro?.Sgst) ?? 0,
+                    Igst_P: Number(pro?.Igst) ?? 0,
+                    Gst_P: Addition(pro?.Cgst, pro?.Sgst) ?? 0
+                } ?? {},
                 Group: 'Search Group',
                 GroupID: '',
                 Brand: 'Search Brand',
@@ -133,15 +139,15 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         }).then(data => {
             if (data.success) {
                 setProducts(data.data);
-                const uniqueGroup = getUniqueData(data.data, 'Product_Group', ['Pro_Group']);
-                setProductGroup(uniqueGroup);
+                // const uniqueGroup = getUniqueData(data.data, 'Product_Group', ['Pro_Group']);
+                // setProductGroup(uniqueGroup);
                 const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
                 setProductBrand(uniqueBrand);
                 // const uniqueUOM = getUniqueData(data.data, 'UOM_Id', ['Units']);
                 // setProductUOM(uniqueUOM)
             } else {
                 setProducts([]);
-                setProductGroup([])
+                // setProductGroup([])
                 setProductBrand([]);
             }
         }).catch(e => console.error(e))
@@ -311,6 +317,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                             <select
                                                 className="cus-inpt p-1"
                                                 onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
+                                                value={orderDetails.GST_Inclusive}
                                             >
                                                 <option value={1}>Inclusive Tax</option>
                                                 <option value={0}>Exclusive Tax</option>
@@ -323,9 +330,10 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                             <select
                                                 className="cus-inpt p-1"
                                                 onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
+                                                value={orderDetails.IS_IGST}
                                             >
-                                                <option value={0}>GST</option>
-                                                <option value={1}>IGST</option>
+                                                <option value='0'>GST</option>
+                                                <option value='1'>IGST</option>
                                             </select>
                                         </td>
                                     </tr>
@@ -434,7 +442,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             ColumnHeader: 'Taxable Amount',
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
                                 return NumberFormat(
@@ -447,7 +455,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                         {
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                console.log({row})
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 return NumberFormat(
                                     taxCalc(orderDetails.GST_Inclusive, amount, percentage)
@@ -461,7 +470,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             ColumnHeader: 'Amount',
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : row?.Product?.Gst_P) ?? 0;
+                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
                                 return NumberFormat(
@@ -644,7 +653,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     maxMenuHeight={200}
                                 />
                             </div>
-                            <div className="col-6 p-2">
+                            {/* <div className="col-6 p-2">
                                 <label>Group</label>
                                 <Select
                                     value={{ value: productDetails.GroupID, label: productDetails.Group }}
@@ -652,6 +661,40 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
                                         ...productGroup.map(obj => ({ value: obj?.Product_Group, label: obj?.Pro_Group }))
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Select Group"}
+                                    maxMenuHeight={200}
+                                />
+                            </div> */}
+                            <div className="col-6 p-2">
+                                <label>Group</label>
+                                <Select
+                                    value={{ value: productDetails.GroupID, label: productDetails.Group }}
+                                    onChange={(e) =>
+                                        setProductDetails((pre) => ({ ...pre, GroupID: e.value, Group: e.label }))
+                                    }
+                                    options={[
+                                        { value: '', label: 'select', isDisabled: true },
+                                        ...products
+                                            .filter(
+                                                (pro) =>
+                                                    productDetails.BrandID
+                                                        ? isEqualNumber(pro.Brand, productDetails.BrandID)
+                                                        : true
+                                            )
+                                            .reduce((acc, pro) => {
+                                                if (
+                                                    !acc.some((grp) => grp.value === pro.Product_Group)
+                                                ) {
+                                                    acc.push({
+                                                        value: pro.Product_Group,
+                                                        label: pro.Pro_Group,
+                                                    });
+                                                }
+                                                return acc;
+                                            }, []),
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
