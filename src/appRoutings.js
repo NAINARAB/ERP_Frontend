@@ -12,7 +12,7 @@ const ProjectList = lazy(() => import("./Pages/Masters/ProjectList"))
 const UserType = lazy(() => import("./Pages/Masters/UserType"))
 // const BaseGroup = lazy(() => import("./Pages/Masters/BaseGroup"))
 const TaskType = lazy(() => import("./Pages/Masters/TaskType"))
-const ProductsMaster = lazy(() => import("./Pages/Masters/Product"))
+const ProductsMaster = lazy(() => import("./Pages/Masters/newProduct"))
 
 
 // Authorization

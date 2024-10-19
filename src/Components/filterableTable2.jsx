@@ -244,7 +244,7 @@ const FilterableTable = ({
                                     ) : (
                                         <TableCell
                                             key={ke}
-                                            className={`fa-13 fw-bold border-end border-top ` + (
+                                            className={`${column.ColumnHeader ? 'fa-13 fw-bold border-end border-top' : ' p-0 '}` + (
                                                 column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
                                             )}
                                             style={{ backgroundColor: '#EDF0F7' }}
