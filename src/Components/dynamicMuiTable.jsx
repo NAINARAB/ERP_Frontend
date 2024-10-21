@@ -183,14 +183,12 @@ const DynamicMuiTable = ({ reportId, company, queryFilters, buttons, groupingSta
         enableRowNumbers: false,
         initialState: {
             density: 'compact',
-            grouping: groupingState
-            .filter(o => typeof o === 'string')
-            .filter(o => {
-                const ind = dispColmn.findIndex(indVal => indVal?.accessorKey === o);
-                console.log(ind, 'index')
-                return ind !== -1; 
-            })
-            ,
+            // grouping: groupingState?.filter(o => typeof o === 'string')
+            // .filter(o => {
+            //     const ind = dispColmn.findIndex(indVal => indVal?.accessorKey === o);
+            //     return ind !== -1; 
+            // })
+            // ,
             pagination: { pageIndex: 0, pageSize: 100 },
         },
         muiToolbarAlertBannerChipProps: { color: 'primary' },
@@ -242,7 +240,7 @@ const DynamicMuiTable = ({ reportId, company, queryFilters, buttons, groupingSta
                     Aggregation
                 </Button>
                 {/*  */}
-                {buttons({grouping: table.getState().grouping})}
+                {/* {buttons({grouping: table.getState().grouping})} */}
                 <Button
                     onClick={() => setDialogs(pre => ({ ...pre, filters: true }))}
                     className="d-md-none d-inline"

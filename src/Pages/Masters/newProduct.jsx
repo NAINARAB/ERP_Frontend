@@ -28,6 +28,7 @@ const initialInputValue = {
     Sgst_P: '',
     Igst_P: '',
     ERP_Id: '',
+    Product_Image: '',
 }
 
 const ProductCard = ({ product, setProductInputValue, setDialog }) => {
@@ -104,10 +105,6 @@ const ProductCard = ({ product, setProductInputValue, setDialog }) => {
                     <span className="units"> / {product?.Units}</span>
                 </div>
             </div>
-
-            {/* <div className="col-sm-2 p-2">
-                
-            </div> */}
         </div>
     );
 };
@@ -123,7 +120,6 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         imageUpload: false,
         createAndUpdate: false
     });
-
 
     useEffect(() => {
         fetchLink({
@@ -279,6 +275,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                     loadingOn={loadingOn}
                     loadingOff={loadingOff}
                     row={productInputValue}
+                    onCloseFun={() => setProductInputValue(initialInputValue)}
                 />
             )}
         </>
