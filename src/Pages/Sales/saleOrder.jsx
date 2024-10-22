@@ -3,7 +3,7 @@ import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, Di
 import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { getPreviousDate, ISOString, isValidObject } from "../../Components/functions";
+import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
 import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "./convertedStatus";
@@ -218,13 +218,13 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                         <tr>
                             <td className="border p-2 bg-light">Invoice Type</td>
                             <td className="border p-2">
-                                {row.GST_Inclusive == 1 && 'Inclusive'}
-                                {row.GST_Inclusive == 0 && 'Exclusive'}
+                                {isEqualNumber(row.GST_Inclusive, 1) && 'Inclusive'}
+                                {isEqualNumber(row.GST_Inclusive, 0) && 'Exclusive'}
                             </td>
                             <td className="border p-2 bg-light">Tax Type</td>
                             <td className="border p-2">
-                                {row.IS_IGST == 1 && 'IGST'}
-                                {row.IS_IGST == 0 && 'GST'}
+                                {isEqualNumber(row.IS_IGST, 1) && 'IGST'}
+                                {isEqualNumber(row.IS_IGST, 0) && 'GST'}
                             </td>
                             <td className="border p-2 bg-light">Sales Person</td>
                             <td className="border p-2">{row.Sales_Person_Name}</td>

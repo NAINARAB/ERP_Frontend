@@ -1,6 +1,6 @@
 import React, { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from '@mui/material';
+import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import {
     Menu, KeyboardArrowDown, Circle, Logout, Dashboard,
     BarChart, SettingsAccessibility, VpnKey, AccountCircle, Settings, Keyboard,
@@ -15,7 +15,7 @@ import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
 import { ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
-import { isEqualNumber } from "../../Components/functions";
+import { checkIsNumber, isEqualNumber } from "../../Components/functions";
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -168,7 +168,6 @@ const MainComponent = (props) => {
     const parseData = JSON.parse(localStorage.getItem("user"));
     const loginAt = localStorage.getItem('loginAt')
     const [sidebar, setSidebar] = useState([]);
-    const [subRoutings, setSubRoutings] = useState([]);
     const { contextObj, setContextObj } = useContext(MyContext);
     const [settings, setSettings] = useState(false);
     const [show, setShow] = useState(false);
@@ -179,57 +178,122 @@ const MainComponent = (props) => {
     const [desktopMenu, setDesktopMenu] = useState(true);
 
     useEffect(() => {
+
+        const getSubRoute = (menu, path) => {
+            if (Array.isArray(menu)) {
+                for (let menuObj of menu) {
+                    if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url === path) {
+                        setLoclStoreage(menuObj?.id, 0);
+                        return menuObj;
+                    }
+                    if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
+                        getSubRoute(menuObj?.SubRoutes, path)
+                    }
+                }
+                return false;
+            }
+        }
+
         const findMenuItem = (menuArray, path) => {
             for (let item of menuArray) {
+
                 if (item.url === path) {
+                    setLoclStoreage(item?.id, 1);
                     return item;
+                } 
+
+                if (Array.isArray(item.SubRoutes) && item.SubRoutes.length > 0) {
+                    const subRouteData = getSubRoute(item.SubRoutes, path);
+                    if (subRouteData) {
+                        return { ...subRouteData, MainMenuData: item }
+                    }
                 }
+
                 if (item.SubMenu) {
                     for (let subItem of item.SubMenu) {
+
                         if (subItem.url === path) {
+                            setLoclStoreage(subItem?.id, 2);
                             return { ...subItem, MainMenuData: item };
                         }
-                        if (subItem.ChildMenu) {
-                            for (let childItem of subItem.ChildMenu) {
-                                if (childItem.url === path) {
-                                    return { ...childItem, MainMenuData: item, SubMenuData: subItem };
-                                }
+
+                        if (Array.isArray(subItem.SubRoutes) && subItem.SubRoutes.length > 0) {
+                            const subRouteData = getSubRoute(subItem.SubRoutes, path);
+                            if (subRouteData) {
+                                return { ...subRouteData, MainMenuData: item, SubMenuData: subItem }
                             }
                         }
+
+                        if (subItem.ChildMenu) {
+                            for (let childItem of subItem.ChildMenu) {
+
+                                if (childItem.url === path) {
+                                    setLoclStoreage(childItem?.id, 3);
+                                    return { ...childItem, MainMenuData: item, SubMenuData: subItem };
+                                }
+
+                                if (Array.isArray(childItem.SubRoutes) && childItem.SubRoutes.length > 0) {
+                                    const subRouteData = getSubRoute(childItem.SubRoutes, path);
+                                    if (subRouteData) {
+                                        return { ...subRouteData, MainMenuData: item, SubMenuData: subItem, ChildMenuData: childItem }
+                                    }
+                                }
+        
+                            }
+                        }
+
                     }
                 }
             }
             return null;
         };
 
-        const findSubRoutings = (menuData, path) => {
-            for (let subRoute of menuData) {
-                console.log(subRoute.url, path)
-                if (subRoute.url === path) {
-                    return subRoute;
-                }
-            }
-            return null;
-        }
-
         const matchedItem = findMenuItem(sidebar, location.pathname);
-        const subRouteMatchItem = findSubRoutings(subRoutings, location.pathname)
 
         if (matchedItem) {
             setContextObj(matchedItem);
-        } else if (subRouteMatchItem) {
-            setContextObj(subRouteMatchItem)
         } else {
             setContextObj({});
         }
 
-    }, [location.pathname, sidebar, subRoutings]);
+    }, [location.pathname, sidebar]);
 
     useEffect(() => {
+
         const navigateToPage = (menuItem) => {
-            setContextObj(menuItem);
             nav(menuItem.url);
         };
+
+        const navToSubRoute = (menu) => {
+            if (Array.isArray(menu)) {
+                for (let menuObj of menu) {
+                    if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url) {
+                        navigateToPage(menuObj.url);
+                        setLoclStoreage(menuObj?.id, 0);
+                        return true;
+                    }
+                    if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
+                        navToSubRouteIfMenuId(menuObj?.SubRoutes)
+                    }
+                }
+                return false;
+            }
+        }
+
+        const navToSubRouteIfMenuId = (menuId, menu) => {
+            if (Array.isArray(menu) && checkIsNumber(menuId)) {
+                for (let menuObj of menu) {
+                    if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url && isEqualNumber(menuId, menuObj.id)) {
+                        navigateToPage(menuObj.url);
+                        return true;
+                    }
+                    if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
+                        navToSubRouteIfMenuId(menuId, menuObj?.SubRoutes)
+                    }
+                }
+                return false;
+            }
+        }
 
         const findAndNavigate = (menuData, getPageId) => {
             for (let o of menuData) {
@@ -238,16 +302,38 @@ const MainComponent = (props) => {
                     return true;
                 }
 
+
+                if (Array.isArray(o?.SubRoutes) && o?.SubRoutes?.length > 0) {
+                    const navigatedDone = navToSubRouteIfMenuId(getPageId?.id, o?.SubRoutes);
+                    if (navigatedDone) {
+                        return true;
+                    }
+                }
+
                 for (let oo of o.SubMenu || []) {
                     if (isEqualNumber(oo.Read_Rights, 1) && isEqualNumber(getPageId?.id, oo.id)) {
                         navigateToPage(oo);
                         return true;
                     }
 
+                    if (Array.isArray(oo?.SubRoutes) && oo?.SubRoutes?.length > 0) {
+                        const navigatedDone = navToSubRouteIfMenuId(getPageId?.id, oo?.SubRoutes);
+                        if (navigatedDone) {
+                            return true;
+                        }
+                    }
+
                     for (let ooo of oo.ChildMenu || []) {
                         if (isEqualNumber(ooo.Read_Rights, 1) && isEqualNumber(getPageId?.id, ooo.id)) {
                             navigateToPage(ooo);
                             return true;
+                        }
+
+                        if (Array.isArray(ooo?.SubRoutes) && ooo?.SubRoutes?.length > 0) {
+                            const navigatedDone = navToSubRouteIfMenuId(getPageId?.id, ooo?.SubRoutes);
+                            if (navigatedDone) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -258,9 +344,15 @@ const MainComponent = (props) => {
         const findFirstNavigablePage = (menuData) => {
             for (let o of menuData) {
                 if (isEqualNumber(o.Read_Rights, 1) && o.url !== '') {
-                    setLoclStoreage(o?.id, 1);
                     navigateToPage(o);
                     return true;
+                }
+
+                if (Array.isArray(o?.SubRoutes) && o?.SubRoutes?.length > 0) {
+                    const isNavigateDone = navToSubRoute(o?.SubRoutes);
+                    if (isNavigateDone) {
+                        return true;
+                    }
                 }
 
                 for (let oo of o.SubMenu || []) {
@@ -269,10 +361,24 @@ const MainComponent = (props) => {
                         return true;
                     }
 
+                    if (Array.isArray(oo?.SubRoutes) && oo?.SubRoutes?.length > 0) {
+                        const isNavigateDone = navToSubRoute(oo?.SubRoutes);
+                        if (isNavigateDone) {
+                            return true;
+                        }
+                    }
+
                     for (let ooo of oo.ChildMenu || []) {
                         if (isEqualNumber(ooo.Read_Rights, 1) && ooo.url !== '') {
                             navigateToPage(ooo);
                             return true;
+                        }
+
+                        if (Array.isArray(ooo?.SubRoutes) && ooo?.SubRoutes?.length > 0) {
+                            const isNavigateDone = navToSubRoute(ooo?.SubRoutes);
+                            if (isNavigateDone) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -280,27 +386,11 @@ const MainComponent = (props) => {
             return false;
         };
 
-        const findSubRoutings = (menuData, path) => {
-            for (let subRoute of menuData) {
-                if (isEqualNumber(subRoute.Read_Rights, 1) && subRoute.url === path) {
-                    setLoclStoreage(subRoute?.id, 0);
-                    navigateToPage(subRoute);  // need to add more script based on multi level sub routes and save main menu and sub menu data also childmenu data
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         fetchLink({
             address: `authorization/newAppMenu?Auth=${parseData?.Autheticate_Id}`
         }).then(data => {
             if (data.success) {
                 setSidebar(data.data);
-                if (data.others.subRoutings) {
-                    console.log(data.others.subRoutings)
-                    setSubRoutings(data.others.subRoutings);
-                }
 
                 const getPageId = localStorage.getItem('CurrentPage')
                     ? JSON.parse(localStorage.getItem('CurrentPage'))
@@ -316,15 +406,12 @@ const MainComponent = (props) => {
                     navigated = findFirstNavigablePage(data.data);
                 }
 
-                if (!navigated && Array.isArray(data?.others?.subRoutings) && data?.others?.subRoutings?.length > 0) {
-                    navigated = findSubRoutings(data?.others?.subRoutings)
-                }
-
                 if (!navigated) {
                     nav('/invalid-credentials');
                 }
             }
         }).catch(e => console.error(e));
+
     }, []);
 
 

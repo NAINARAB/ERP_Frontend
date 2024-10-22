@@ -7,9 +7,9 @@ import { fetchLink } from '../../../Components/fetchComponent';
 
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    if (method == 1 && checkIsNumber(amount) && checkIsNumber(percentage)) {
+    if (isEqualNumber(method, 1) && checkIsNumber(amount) && checkIsNumber(percentage)) {
         return amount - (amount * (100 / (100 + percentage)));
-    } else if (method == 0 && checkIsNumber(amount) && checkIsNumber(percentage)) {
+    } else if (isEqualNumber(method, 0) && checkIsNumber(amount) && checkIsNumber(percentage)) {
         return amount * (percentage / 100);
     } else {
         return 0;

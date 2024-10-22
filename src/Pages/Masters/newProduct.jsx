@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent } from "@mui/material";
-import { Add, Edit } from "@mui/icons-material";
+import { Add, AddPhotoAlternate, Edit } from "@mui/icons-material";
 import api from '../../API';
 import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../Components/imagePreview";
@@ -8,7 +8,7 @@ import { fetchLink } from '../../Components/fetchComponent';
 import ProductAddEditComp from "./Components/productAddEdit";
 import FilterableTable from "../../Components/filterableTable2";
 import './Components/productCss.css';
-import { indianCurrency, isValidObject } from "../../Components/functions";
+import { indianCurrency } from "../../Components/functions";
 
 const initialInputValue = {
     Product_Id: '',
@@ -36,7 +36,8 @@ const ProductCard = ({ product, setProductInputValue, setDialog }) => {
         <div className="row">
 
             <div className="col-sm-2 p-0">
-                <div className="product-card-image">
+                <div className="product-card-image d-flex align-items-center flex-column">
+
                     <ImagePreviewDialog url={product?.productImageUrl}>
                         <img
                             src={product?.productImageUrl}
@@ -44,6 +45,19 @@ const ProductCard = ({ product, setProductInputValue, setDialog }) => {
                             style={{ maxWidth: '150px' }}
                         />
                     </ImagePreviewDialog>
+
+                    <Button
+                        onClick={() => {
+                            setDialog(pre => ({ ...pre, imageUpload: true }));
+                            setProductInputValue(pre => ({ ...pre, Product_Id: product.Product_Id, Product_Name: product?.Product_Name }))
+                        }}
+                        size="small"
+                        variant='outlined'
+                        startIcon={<AddPhotoAlternate sx={{ fontSize: '15px' }} />}
+                        className="w-100 mt-2"
+                    >
+                        Change Photo
+                    </Button>
                 </div>
             </div>
 
@@ -61,7 +75,7 @@ const ProductCard = ({ product, setProductInputValue, setDialog }) => {
                                     return inputVAL
                                 });
 
-                                setDialog();
+                                setDialog(pre => ({ ...pre, createAndUpdate: true }));
                             }}
                         ><Edit /></IconButton>
                     </span>
@@ -179,7 +193,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
     }
 
     const imageUploadDialogClose = () => {
-        setDialog({ ...dialog, imageUpload: false });
+        setDialog({ imageUpload: false, createAndUpdate: false });
         setProductInputValue(initialInputValue);
     }
 
@@ -193,6 +207,10 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                         reload={() => setReload(pre => !pre)}
                         loadingOn={loadingOn}
                         loadingOff={loadingOff}
+                        onCloseFun={() => {
+                            setProductInputValue(initialInputValue);
+                            setDialog(pre => ({ ...pre, createAndUpdate: false }))
+                        }}
                     >
                         <Button
                             variant='outlined'
@@ -221,9 +239,9 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                                 isVisible: 1,
                                 isCustomCell: true,
                                 Cell: ({ row }) => (
-                                    <ProductCard 
-                                        product={row} 
-                                        setDialog={() => setDialog(pre => ({...pre, createAndUpdate: true}))} 
+                                    <ProductCard
+                                        product={row}
+                                        setDialog={setDialog}
                                         setProductInputValue={setProductInputValue}
                                     />
                                 ),
@@ -269,13 +287,17 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                 </form>
             </Dialog>
 
-            {(dialog.createAndUpdate && isValidObject(productInputValue)) && (
+            {dialog.createAndUpdate && (
                 <ProductAddEditComp
                     reload={() => setReload(pre => !pre)}
                     loadingOn={loadingOn}
                     loadingOff={loadingOff}
                     row={productInputValue}
-                    onCloseFun={() => setProductInputValue(initialInputValue)}
+                    openAction={dialog.createAndUpdate}
+                    onCloseFun={() => {
+                        setProductInputValue(initialInputValue);
+                        setDialog(pre => ({ ...pre, createAndUpdate: false }))
+                    }}
                 />
             )}
         </>

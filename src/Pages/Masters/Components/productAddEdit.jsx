@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent } from "@mui/material";
-import api from '../../../API';
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from "@mui/material";
 import { toast } from 'react-toastify';
-import ImagePreviewDialog from "../../../Components/imagePreview";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { isValidObject, onlynum } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
