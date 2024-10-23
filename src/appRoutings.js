@@ -19,7 +19,7 @@ const ProductsMaster = lazy(() => import("./Pages/Masters/newProduct"))
 const UserBased = lazy(() => import("./Pages/Authorization/userBased"))
 const UserTypeBased = lazy(() => import("./Pages/Authorization/userTypeBased"))
 // const CompanyAuth = lazy(() => import("./Pages/Authorization/compAuth"))
-const MenuManagement = lazy(() => import("./Pages/Authorization/menuMangaement"))
+const MenuManagement = lazy(() => import("./Pages/Authorization/newMenuManagement"))
 
 
 
