@@ -7,14 +7,13 @@ import { toast, ToastContainer } from "react-toastify";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { fetchLink } from '../../Components/fetchComponent'
-import { ISOString, LocalDate } from "../../Components/functions";
+import { ISOString, isValidObject, LocalDate } from "../../Components/functions";
 
 // import CalenderComp from "./calender";
 
 
 const TaskActivity = () => {
     const location = useLocation();
-    const rights = location.state?.rights;
     const taskInfo = location.state?.taskDetails;
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
@@ -28,12 +27,12 @@ const TaskActivity = () => {
         Task_Id: taskInfo?.Task_Id,
         Assigned_Emp_Id: parseData?.UserId,
         Emp_Id: '',
-        Task_Assign_dt: new Date().toISOString().split('T')[0],
+        Task_Assign_dt: ISOString(),
         Sch_Period: taskInfo?.Task_Sch_Duaration,
         Sch_Time: taskInfo?.Task_Start_Time,
         EN_Time: taskInfo?.Task_End_Time,
-        Est_Start_Dt: new Date(taskInfo?.Task_Est_Start_Date).toISOString().split('T')[0],
-        Est_End_Dt: new Date(taskInfo?.Task_Est_End_Date).toISOString().split('T')[0],
+        Est_Start_Dt: taskInfo?.Task_Est_Start_Date ? ISOString(taskInfo?.Task_Est_Start_Date) : ISOString(),
+        Est_End_Dt: taskInfo?.Task_Est_End_Date ? ISOString(taskInfo?.Task_Est_End_Date) : ISOString(),
         Ord_By: 1,
         Timer_Based: true,
         Invovled_Stat: true,
@@ -48,57 +47,68 @@ const TaskActivity = () => {
     const [assignEmpInpt, setAssignEmpInpt] = useState(assignEmpInitialValue);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
     const [reload, setReload] = useState(false);
-    const [workDetails, setWorkDetails] = useState([])
+    const [workDetails, setWorkDetails] = useState([]);
 
     useEffect(() => {
-        fetchLink({
-            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
-        }).then(data => {
-            if (data.success) {                    
-                setUsersDropdown(data.data)
-            }
-        }).catch(e => console.error(e)) 
-
-        fetchLink({
-            address: `taskManagement/task/workedDetails?Task_Levl_Id=${taskInfo?.Task_Levl_Id}`
-        }).then(data => {
-            if (data.success) {
-                setWorkDetails(data.data)
-            }
-        }).catch(e => console.error(e)) 
-    }, [])
+        if (!isValidObject(taskInfo)) {
+            nav('/taskManagement/projectActivity');
+        }
+    }, [taskInfo])
 
     useEffect(() => {
-        fetchLink({
-            address: `taskManagement/task/assignEmployee?Task_Levl_Id=${taskInfo?.Task_Levl_Id}`
-        }).then(data => {
-            if (data.success) {
-                setAssignedEmployees(data.data)
-            }
-        }).catch(e => console.error(e)) 
-    }, [reload])
+        if (taskInfo?.Task_Levl_Id) {
+            fetchLink({
+                address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+            }).then(data => {
+                if (data.success) {
+                    setUsersDropdown(data.data)
+                }
+            }).catch(e => console.error(e))
+
+            fetchLink({
+                address: `taskManagement/task/workedDetails?Task_Levl_Id=${taskInfo?.Task_Levl_Id}`
+            }).then(data => {
+                if (data.success) {
+                    setWorkDetails(data.data)
+                }
+            }).catch(e => console.error(e))
+        }
+    }, [taskInfo])
 
     useEffect(() => {
-        const [hours1, minutes1] = assignEmpInpt?.Sch_Time.split(':').map(Number);
-        const [hours2, minutes2] = assignEmpInpt?.EN_Time.split(':').map(Number);
+        if (taskInfo?.Task_Levl_Id) {
+            fetchLink({
+                address: `taskManagement/task/assignEmployee?Task_Levl_Id=${taskInfo?.Task_Levl_Id}`
+            }).then(data => {
+                if (data.success) {
+                    setAssignedEmployees(data.data)
+                }
+            }).catch(e => console.error(e))
+        }
+    }, [reload, taskInfo])
 
-        const date1 = new Date(0, 0, 0, hours1, minutes1);
-        const date2 = new Date(0, 0, 0, hours2, minutes2);
+    useEffect(() => {
+        if (assignEmpInpt?.Sch_Time && assignEmpInpt?.EN_Time) {
+            const [hours1, minutes1] = assignEmpInpt?.Sch_Time?.split(':')?.map(Number);
+            const [hours2, minutes2] = assignEmpInpt?.EN_Time?.split(':')?.map(Number);
 
-        if (date2 > date1) {
-            let difference = Math.abs(date2 - date1);
+            const date1 = new Date(0, 0, 0, hours1, minutes1);
+            const date2 = new Date(0, 0, 0, hours2, minutes2);
 
-            const hours = Math.floor(difference / (1000 * 60 * 60));
-            difference %= (1000 * 60 * 60);
-            const minutes = Math.floor(difference / (1000 * 60));
+            if (date2 > date1) {
+                let difference = Math.abs(date2 - date1);
 
-            const formattedHours = String(hours).padStart(2, '0');
-            const formattedMinutes = String(minutes).padStart(2, '0');
+                const hours = Math.floor(difference / (1000 * 60 * 60));
+                difference %= (1000 * 60 * 60);
+                const minutes = Math.floor(difference / (1000 * 60));
 
-            setAssignEmpInpt(opt => ({ ...opt, Sch_Period: `${formattedHours}:${formattedMinutes}` }));
+                const formattedHours = String(hours).padStart(2, '0');
+                const formattedMinutes = String(minutes).padStart(2, '0');
+
+                setAssignEmpInpt(opt => ({ ...opt, Sch_Period: `${formattedHours}:${formattedMinutes}` }));
+            }
         }
     }, [assignEmpInpt?.Sch_Time, assignEmpInpt?.EN_Time])
-
 
     const switchEmpAssign = (val) => {
         if (val) {
@@ -110,7 +120,6 @@ const TaskActivity = () => {
         }
         setDialog({ ...dialog, assignEmp: !dialog.assignEmp })
     }
-
 
     const postAndPutAssignEmpFun = () => {
         if (assignEmpInpt?.Emp_Id) {
@@ -127,7 +136,7 @@ const TaskActivity = () => {
                 } else {
                     toast.error(data.message)
                 }
-            }).catch(e => console.error(e)) 
+            }).catch(e => console.error(e))
 
         } else {
             toast.warn('Select Employee')
@@ -153,7 +162,7 @@ const TaskActivity = () => {
         return color[numId]
     }
 
-    return Number(rights?.read) === 1 && (
+    return (
         <>
             <ToastContainer />
             <div className="cus-card p-2">
@@ -358,7 +367,7 @@ const TaskActivity = () => {
                                         <input
                                             type='time'
                                             className="cus-inpt"
-                                            value={assignEmpInpt?.EN_Time} required 
+                                            value={assignEmpInpt?.EN_Time} required
                                             min={assignEmpInpt?.Sch_Time}
                                             onChange={e => setAssignEmpInpt({ ...assignEmpInpt, EN_Time: e.target.value })} />
                                     </td>
@@ -378,7 +387,7 @@ const TaskActivity = () => {
                                     <td className="border-bottom-0 fa-15">
                                         <input
                                             type='date'
-                                            className="cus-inpt" required 
+                                            className="cus-inpt" required
                                             min={assignEmpInpt?.Est_Start_Dt}
                                             value={assignEmpInpt?.Est_End_Dt && ISOString(assignEmpInpt?.Est_End_Dt)}
                                             onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_End_Dt: e.target.value })} />

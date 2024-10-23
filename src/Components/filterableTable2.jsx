@@ -29,6 +29,7 @@ import PropTypes from 'prop-types';
  * @param {boolean} [props.EnableSerialNumber]
  * @param {'small'|'medium'|'large'} [props.CellSize]
  * @param {boolean} [props.disablePagination]
+ * @param {''} [props.title]
  */
 
 
@@ -42,7 +43,8 @@ const FilterableTable = ({
     initialPageCount = 20,
     EnableSerialNumber = false,
     CellSize = 'small' || 'medium',
-    disablePagination = false
+    disablePagination = false,
+    title = ''
 }) => {
 
     const [page, setPage] = useState(0);
@@ -193,6 +195,7 @@ const FilterableTable = ({
 
     return (
         <div>
+            {title && <h6 className='fw-bold text-muted'>{title}</h6>}
             <TableContainer component={Paper} sx={{ maxHeight: tableMaxHeight }}>
 
                 <Table stickyHeader size={CellSize}>
@@ -322,7 +325,8 @@ FilterableTable.propTypes = {
     initialPageCount: PropTypes.number,
     EnableSerialNumber: PropTypes.bool,
     CellSize: PropTypes.string,
-    disablePagination: PropTypes.bool
+    disablePagination: PropTypes.bool,
+    title: PropTypes.string,
 };
 
 FilterableTable.defaultProps = {
@@ -335,7 +339,8 @@ FilterableTable.defaultProps = {
     initialPageCount: 20,
     EnableSerialNumber: false,
     CellSize: 'small',
-    disablePagination: false
+    disablePagination: false,
+    title: undefined
 };
 
 

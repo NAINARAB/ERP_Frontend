@@ -182,12 +182,16 @@ const MainComponent = (props) => {
         const getSubRoute = (menu, path) => {
             if (Array.isArray(menu)) {
                 for (let menuObj of menu) {
+                    console.log(menuObj.url, path, {menuObj})
                     if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url === path) {
                         setLoclStoreage(menuObj?.id, 0);
                         return menuObj;
                     }
                     if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
-                        getSubRoute(menuObj?.SubRoutes, path)
+                        const isFound = getSubRoute(menuObj?.SubRoutes, path);
+                        if (isFound) {
+                            return isFound
+                        }
                     }
                 }
                 return false;
@@ -273,7 +277,10 @@ const MainComponent = (props) => {
                         return true;
                     }
                     if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
-                        navToSubRouteIfMenuId(menuObj?.SubRoutes)
+                        const isNavigated = navToSubRouteIfMenuId(menuObj?.SubRoutes);
+                        if (isNavigated) {
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -288,7 +295,10 @@ const MainComponent = (props) => {
                         return true;
                     }
                     if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
-                        navToSubRouteIfMenuId(menuId, menuObj?.SubRoutes)
+                        const isNavigated = navToSubRouteIfMenuId(menuId, menuObj?.SubRoutes);
+                        if (isNavigated) {
+                            return true;
+                        }
                     }
                 }
                 return false;
