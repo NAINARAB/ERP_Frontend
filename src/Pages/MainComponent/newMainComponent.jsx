@@ -5,8 +5,7 @@ import {
     Menu, KeyboardArrowDown, Circle, Logout, Dashboard,
     BarChart, SettingsAccessibility, VpnKey, AccountCircle, Settings, Keyboard,
     AutoGraph, KeyboardDoubleArrowRight, KeyboardDoubleArrowLeft,
-    TaskAlt,
-    KeyboardArrowUp
+    TaskAlt, KeyboardArrowUp
 } from '@mui/icons-material'
 import "./MainComponent.css";
 import Offcanvas from 'react-bootstrap/Offcanvas';
@@ -182,7 +181,6 @@ const MainComponent = (props) => {
         const getSubRoute = (menu, path) => {
             if (Array.isArray(menu)) {
                 for (let menuObj of menu) {
-                    console.log(menuObj.url, path, {menuObj})
                     if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url === path) {
                         setLoclStoreage(menuObj?.id, 0);
                         return menuObj;

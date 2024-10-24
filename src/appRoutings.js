@@ -71,6 +71,7 @@ const SaleOrderList = lazy(() => import("./Pages/Sales/saleOrder"))
 
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
+const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"))
 
 
 // Purchase
@@ -150,6 +151,7 @@ const RoutingArray = [
     // ERP - inventory
     { component: <DisplayNavigations />, path: '/erp/inventory' },
     { component: <StockReport />, path: '/erp/inventory/stockReport' },
+    { component: <LiveStockReport />, path: '/erp/inventory/losStockReport' },
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },

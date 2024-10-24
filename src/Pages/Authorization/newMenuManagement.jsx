@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../Components/fetchComponent';
-import { checkIsNumber, isEqualNumber, isValidObject } from '../../Components/functions';
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { Add, Edit, KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import { isEqualNumber, isValidObject } from '../../Components/functions';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { Add, Edit } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import FilterableTable from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
@@ -32,107 +32,216 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                 setMenuData(data.data);
             }
         }).catch(e => console.error(e))
-    }, [reload])
+    }, [reload]);
+
+    const DisplaySubRoutings = ({ dataSource }) => (
+        <FilterableTable
+            dataArray={dataSource?.SubRoutes ?? []}
+            title='Sub Routes'
+            columns={[
+                {
+                    isVisible: 1,
+                    Field_Name: 'name',
+                    Fied_Data: 'string',
+                    ColumnHeader: 'Menu',
+                },
+                {
+                    isVisible: 1,
+                    Field_Name: 'url',
+                    Fied_Data: 'string',
+                    ColumnHeader: 'Address',
+                },
+                {
+                    isVisible: 1,
+                    isCustomCell: true,
+                    Cell: ({ row }) => (
+                        <Tooltip title='Add SubRouting'>
+                            <span>
+                                <Button
+                                    size="small"
+                                    className="bg-light"
+                                    onClick={() => {
+                                        setInputValues(pre => ({
+                                            ...pre,
+                                            menu_type: 0,
+                                            parent_id: row.id,
+                                            parantDetails: row,
+                                            url: (row?.url ?? '') + '/'
+                                        }));
+                                        setDialog(true);
+                                    }}
+                                    startIcon={<Add sx={{ fontSize: '18px' }} />}
+                                >
+                                    {row?.SubRoutes?.length ?? 0}
+                                </Button>
+                            </span>
+                        </Tooltip>
+                    ),
+                    ColumnHeader: 'Sub Routings',
+                },
+                {
+                    isVisible: 1,
+                    Field_Name: 'display_order',
+                    Fied_Data: 'number',
+                    ColumnHeader: 'Order',
+                },
+                {
+                    isVisible: 1,
+                    isCustomCell: true,
+                    Cell: ({ row }) => (
+                        isEqualNumber(row?.is_active, 1) ? (
+                            <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
+                        ) : (
+                            <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                        )
+                    ),
+                    ColumnHeader: 'Status',
+                },
+                {
+                    isVisible: 1,
+                    isCustomCell: true,
+                    Cell: ({ row }) => (
+                        <>
+                            <Tooltip title='Edit Menu'>
+                                <IconButton
+                                    size="small"
+                                    className="p-1"
+                                    onClick={() => {
+                                        setInputValues(pre => ({
+                                            ...pre,
+                                            id: row?.id,
+                                            name: row?.name ?? '',
+                                            menu_type: 0,
+                                            parent_id: row?.parent_id ?? '',
+                                            url: row?.url ?? '',
+                                            display_order: row?.display_order ?? '',
+                                            is_active: row?.is_active ?? '',
+                                        }));
+                                        setDialog(true);
+                                    }}
+                                >
+                                    <Edit sx={{ fontSize: '18px' }} />
+                                </IconButton>
+                            </Tooltip>
+                        </>
+                    ),
+                    ColumnHeader: 'Action',
+                }
+            ]}
+            tableMaxHeight={700}
+            isExpendable={true}
+            expandableComp={({ row }) => (row?.SubRoutes?.length > 0) && <DisplaySubRoutings dataSource={row} />}
+        />
+    )
 
     const DisplayChildMenu = ({ row }) => {
 
         return (
             <>
-                <FilterableTable
-                    dataArray={row?.ChildMenu ?? []}
-                    title='Child Menus'
-                    columns={[
-                        {
-                            isVisible: 1,
-                            Field_Name: 'name',
-                            Fied_Data: 'string',
-                            ColumnHeader: 'Child Menu',
-                        },
-                        {
-                            isVisible: 1,
-                            Field_Name: 'url',
-                            Fied_Data: 'string',
-                            ColumnHeader: 'Address',
-                        },
-                        {
-                            isVisible: 1,
-                            isCustomCell: true,
-                            Cell: ({ row }) => (
-                                <Tooltip title='Add SubRouting'>
-                                    <span>
-                                        <Button
-                                            size="small"
-                                            className="bg-light"
-                                            onClick={() => {
-                                                setInputValues(pre => ({
-                                                    ...pre,
-                                                    menu_type: 0,
-                                                    parent_id: row.id,
-                                                    parantDetails: row,
-                                                    url: (row?.ParantData?.url ? (row?.ParantData?.url + '/') : '') + (row?.url ?? '') + '/'
-                                                }));
-                                                setDialog(true);
-                                            }}
-                                            startIcon={<Add sx={{ fontSize: '18px' }} />}
-                                        >
-                                            {row?.SubRoutes?.length ?? 0}
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                            ),
-                            ColumnHeader: 'Sub Routings',
-                        },
-                        {
-                            isVisible: 1,
-                            Field_Name: 'display_order',
-                            Fied_Data: 'number',
-                            ColumnHeader: 'Order',
-                        },
-                        {
-                            isVisible: 1,
-                            isCustomCell: true,
-                            Cell: ({ row }) => (
-                                isEqualNumber(row?.is_active, 1) ? (
-                                    <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
-                                ) : (
-                                    <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
-                                )
-                            ),
-                            ColumnHeader: 'Status',
-                        },
-                        {
-                            isVisible: 1,
-                            isCustomCell: true,
-                            Cell: ({ row }) => (
-                                <>
-                                    <Tooltip title='Edit Menu'>
-                                        <IconButton
-                                            size="small"
-                                            className="p-1"
-                                            onClick={() => {
-                                                setInputValues(pre => ({
-                                                    ...pre,
-                                                    id: row?.id,
-                                                    name: row?.name ?? '',
-                                                    menu_type: 3,
-                                                    parent_id: row?.parent_id ?? '',
-                                                    url: row?.url ?? '',
-                                                    display_order: row?.display_order ?? '',
-                                                    is_active: row?.is_active ?? '',
-                                                }));
-                                                setDialog(true);
-                                            }}
-                                        >
-                                            <Edit sx={{ fontSize: '18px' }} />
-                                        </IconButton>
+                {row?.ChildMenu?.length > 0 && (
+                    <FilterableTable
+                        dataArray={row?.ChildMenu ?? []}
+                        title='Child Menus'
+                        columns={[
+                            {
+                                isVisible: 1,
+                                Field_Name: 'name',
+                                Fied_Data: 'string',
+                                ColumnHeader: 'Child Menu',
+                            },
+                            {
+                                isVisible: 1,
+                                Field_Name: 'url',
+                                Fied_Data: 'string',
+                                ColumnHeader: 'Address',
+                            },
+                            {
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <Tooltip title='Add SubRouting'>
+                                        <span>
+                                            <Button
+                                                size="small"
+                                                className="bg-light"
+                                                onClick={() => {
+                                                    setInputValues(pre => ({
+                                                        ...pre,
+                                                        menu_type: 0,
+                                                        parent_id: row.id,
+                                                        parantDetails: row,
+                                                        url: (row?.ParantData?.url ? (row?.ParantData?.url + '/') : '') + (row?.url ?? '') + '/'
+                                                    }));
+                                                    setDialog(true);
+                                                }}
+                                                startIcon={<Add sx={{ fontSize: '18px' }} />}
+                                            >
+                                                {row?.SubRoutes?.length ?? 0}
+                                            </Button>
+                                        </span>
                                     </Tooltip>
+                                ),
+                                ColumnHeader: 'Sub Routings',
+                            },
+                            {
+                                isVisible: 1,
+                                Field_Name: 'display_order',
+                                Fied_Data: 'number',
+                                ColumnHeader: 'Order',
+                            },
+                            {
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    isEqualNumber(row?.is_active, 1) ? (
+                                        <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
+                                    ) : (
+                                        <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                                    )
+                                ),
+                                ColumnHeader: 'Status',
+                            },
+                            {
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <>
+                                        <Tooltip title='Edit Menu'>
+                                            <IconButton
+                                                size="small"
+                                                className="p-1"
+                                                onClick={() => {
+                                                    setInputValues(pre => ({
+                                                        ...pre,
+                                                        id: row?.id,
+                                                        name: row?.name ?? '',
+                                                        menu_type: 3,
+                                                        parent_id: row?.parent_id ?? '',
+                                                        url: row?.url ?? '',
+                                                        display_order: row?.display_order ?? '',
+                                                        is_active: row?.is_active ?? '',
+                                                    }));
+                                                    setDialog(true);
+                                                }}
+                                            >
+                                                <Edit sx={{ fontSize: '18px' }} />
+                                            </IconButton>
+                                        </Tooltip>
 
-                                </>
-                            ),
-                            ColumnHeader: 'Action',
-                        }
-                    ]}
-                />
+                                    </>
+                                ),
+                                ColumnHeader: 'Action',
+                            }
+                        ]}
+                    />
+                )}
+
+                {row.SubRoutes.length > 0 && (
+                    <>
+                        <br />
+                        <DisplaySubRoutings dataSource={row} />
+                    </>
+                )}
             </>
         )
     }
@@ -266,8 +375,15 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                         ]}
                         tableMaxHeight={700}
                         isExpendable={true}
-                        expandableComp={DisplayChildMenu}
+                        expandableComp={({ row }) => (row?.ChildMenu?.length > 0 || row?.SubRoutes?.length > 0) && <DisplayChildMenu row={row} />}
                     />
+                )}
+
+                {row.SubRoutes.length > 0 && (
+                    <>
+                        <br />
+                        <DisplaySubRoutings dataSource={row} />
+                    </>
                 )}
             </>
         )
@@ -443,7 +559,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                 ]}
                 tableMaxHeight={700}
                 isExpendable={true}
-                expandableComp={DisplaySubMenu}
+                expandableComp={({ row }) => (row?.SubMenu?.length > 0 || row?.SubRoutes?.length > 0) && <DisplaySubMenu row={row} />}
             />
 
 
@@ -477,7 +593,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                     <DialogContent>
                         <div className="row">
                             {(isValidObject(inputValues.parantDetails) && inputValues.parantDetails.name) && (
-                                <div className="col-lg-4 p-2">
+                                <div className="col-lg-12 p-2">
                                     <label>Parant Name </label>
                                     <input
                                         className="cus-inpt"
@@ -486,7 +602,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     />
                                 </div>
                             )}
-                            <div className="col-lg-4 p-2">
+                            <div className="col-lg-6 p-2">
                                 <label>Name <RequiredStar /></label>
                                 <input
                                     className="cus-inpt"
@@ -497,15 +613,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     maxLength={20}
                                 />
                             </div>
-                            <div className="col-lg-4 p-2">
-                                <label>URL (Link)</label>
-                                <input
-                                    className="cus-inpt"
-                                    value={inputValues.url}
-                                    onChange={e => setInputValues(pre => ({ ...pre, url: e.target.value }))}
-                                />
-                            </div>
-                            <div className="col-lg-4 p-2">
+                            <div className="col-lg-6 p-2">
                                 <label>Order No</label>
                                 <input
                                     className="cus-inpt"
@@ -513,8 +621,17 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     onChange={e => setInputValues(pre => ({ ...pre, display_order: e.target.value }))}
                                 />
                             </div>
+                            <div className="col-lg-12 p-2">
+                                <label>URL (Link)</label>
+                                <input
+                                    className="cus-inpt"
+                                    value={inputValues.url}
+                                    onChange={e => setInputValues(pre => ({ ...pre, url: e.target.value }))}
+                                />
+                            </div>
+                            
                             {inputValues.id && (
-                                <div className="col-lg-4 p-2">
+                                <div className="col-lg-6 p-2">
                                     <label>Is Active</label>
                                     <select
                                         className="cus-inpt"
