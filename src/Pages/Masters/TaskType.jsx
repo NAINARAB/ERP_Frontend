@@ -1,54 +1,71 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { toast } from "react-toastify";
 import { Button } from "react-bootstrap";
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Button as MuiButton } from "@mui/material";
-import { Table } from "react-bootstrap";
+import {
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TableSortLabel,
+    Paper,
+} from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
+import AddEditTaskType from "../../Components/tasktype/addEditTaskType";
 
-const initialState = {
-    Task_Type: "",
-    Task_Type_Id: "",
-};
-
-function TaskType() {
-    const [TaskTypeData, setTaskTypeData] = useState([]);
-    const [reload, setReload] = useState();
-    const [inputValue, setInputValue] = useState(initialState);
+const TaskType = () => {
+    const [taskTypeData, setTaskTypeData] = useState([]);
+    const [reload, setReload] = useState(false);
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-    const [selectedTaskType, setSelectedTaskType] = useState({});
-    const [newChipType, setNewChipType] = useState("");
+    const [selectedTaskType, setSelectedTaskType] = useState(null);
     const [openNewDialog, setOpenNewDialog] = useState(false);
-    const [editBase, setEditBase] = useState(false);
+    const [order, setOrder] = useState("asc");
+    const [orderBy, setOrderBy] = useState("Task_Type_Id");
 
     useEffect(() => {
-        fetchLink({
-            address: `masters/taskType`
-        }).then((data) => {
-            if (data.success) {
-                setTaskTypeData(data.data);
+        const fetchData = async () => {
+            try {
+                const data = await fetchLink({ address: `masters/taskType` });
+                if (data.success) {
+                    setTaskTypeData(data.data);
+                } else {
+                    toast.error("Failed to fetch task types: " + data.message);
+                }
+            } catch (error) {
+                console.error(error);
+                toast.error("Error fetching task types.");
             }
-        }).catch((e) => console.error(e));
+        };
+
+        fetchData();
     }, [reload]);
 
-    const handleDelete = () => {
-        fetchLink({
-            address: `masters/taskType`,
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            bodyData: { Task_Type_Id: selectedTaskType.Task_Type_Id },
-        }).then((data) => {
+    const handleDelete = async () => {
+        try {
+            const data = await fetchLink({
+                address: `masters/taskType`,
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                bodyData: { Task_Type_Id: selectedTaskType.Task_Type_Id },
+            });
             if (data.success) {
                 setReload(!reload);
                 setOpenDeleteDialog(false);
-                toast.success("Chip deleted successfully!");
+                toast.success("Task type deleted successfully!");
             } else {
-                setOpenDeleteDialog(false);
-                toast.error("Failed to delete chip:", data.message);
+                toast.error("Failed to delete task type: " + data.message);
             }
-        }).catch((e) => console.error(e)).finally(() => setSelectedTaskType({}))
+        } catch (error) {
+            console.error(error);
+            toast.error("Error deleting task type.");
+        }
     };
 
     const handleDeleteClick = (taskType) => {
@@ -60,173 +77,141 @@ function TaskType() {
         setOpenDeleteDialog(false);
     };
 
-    const handleCreateChip = () => {
-        fetchLink({
-            address: `masters/taskType`,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            bodyData: { Task_Type: newChipType },
-        }).then((data) => {
-            if (data.success) {
-                setOpenNewDialog(false);
-                setReload(!reload);
-                toast.success(data.message);
-            } else {
-                setOpenNewDialog(false);
-                toast.error(data.message);
-            }
-        }).catch((e) => console.error(e)).finally(() => setNewChipType(''))
+    const handleOpenEditDialog = (taskType) => {
+        setSelectedTaskType(taskType);
+        setOpenNewDialog(true);
     };
 
-    const editRow = (group) => {
-        setEditBase(true);
-        setInputValue({
-            Task_Type: group.Task_Type,
-            Task_Type_Id: group.Task_Type_Id,
-        });
+    const handleOpenCreateDialog = () => {
+        setSelectedTaskType(null);
+        setOpenNewDialog(true);
     };
 
-    const editFun = (Task_Type, Task_Type_Id) => {
-        fetchLink({
-            address: `masters/taskType`,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            bodyData: { Task_Type, Task_Type_Id },
-        }).then((data) => {
+    const handleCreate = async (taskType) => {
+        try {
+            const data = await fetchLink({
+                address: `masters/taskType`,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                bodyData: { Task_Type: taskType },
+            });
             if (data.success) {
-                toast.success(data.message);
                 setReload(!reload);
-                setEditBase(false);
+                toast.success("Task type created successfully!");
+                setOpenNewDialog(false);
             } else {
-                setEditBase(false);
-                toast.error(data.message);
+                toast.error("Failed to create task type: " + data.message);
             }
-        }).catch(e => console.error(e)).finally(() => setInputValue(initialState))
+        } catch (error) {
+            console.error(error);
+            toast.error("Error creating task type.");
+        }
     };
+
+    const handleUpdate = async (updatedTaskType) => {
+        try {
+            const data = await fetchLink({
+                address: `masters/taskType`,
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                bodyData: { ...updatedTaskType },
+            });
+            if (data.success) {
+                setReload(!reload);
+                toast.success("Task type updated successfully!");
+                setOpenNewDialog(false);
+            } else {
+                toast.error("Failed to update task type: " + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error updating task type.");
+        }
+    };
+
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === "asc";
+        setOrder(isAsc ? "desc" : "asc");
+        setOrderBy(property);
+    };
+
+    const taskTypeColumns = [
+        { id: "index", label: "Id No", sort: false },
+        { id: "Task_Type", label: "Task Type", sort: true },
+        { id: "actions", label: "Actions", sort: false },
+    ];
+
+    const sortedData = [...taskTypeData].sort((a, b) => {
+        const aValue = a[orderBy];
+        const bValue = b[orderBy];
+        return order === "asc" ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
+    });
 
     return (
         <Fragment>
             <div className="card">
-
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     Task Types
-                    <div className="text-end">
-                        <Button className="rounded-5 px-3 py-1 fa-13 shadow" onClick={() => setOpenNewDialog(true)}>
-                            Create Task Type
-                        </Button>
-                    </div>
+                    <Button
+                        className="rounded-5 px-3 py-1 fa-13 shadow"
+                        onClick={handleOpenCreateDialog}
+                    >
+                        Create Task Type
+                    </Button>
                 </div>
 
                 <div className="card-body overflow-scroll" style={{ maxHeight: "78vh" }}>
+                <TableContainer>
+    <Table>
+        <TableHead>
+            <TableRow>
+                {taskTypeColumns.map((column) => (
+                    <TableCell key={column.id} sx={{ padding: '4px 8px' }}> 
+                        {column.sort ? (
+                            <TableSortLabel
+                                active={orderBy === column.id}
+                                direction={orderBy === column.id ? order : "asc"}
+                                onClick={() => handleRequestSort(column.id)}
+                            >
+                                {column.label}
+                            </TableSortLabel>
+                        ) : (
+                            column.label
+                        )}
+                    </TableCell>
+                ))}
+            </TableRow>
+        </TableHead>
 
-                    <div className="table-responsive">
-                        <Table className="">
-                            <thead>
-                                <tr>
-                                    <th className="fa-14">Id No</th>
-                                    <th className="fa-14">Task Type</th>
-                                    <th className="fa-14">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {TaskTypeData.map((obj, index) => (
-                                    <tr key={index}>
-                                        <td className="fa-14">{obj.Task_Type_Id}</td>
-                                        <td className="fa-14">{obj.Task_Type}</td>
-                                        <td className="fa-12" style={{ minWidth: "80px" }}>
-                                            <IconButton
-                                                onClick={() => {
-                                                    editRow(obj);
-                                                }}
-                                                size="small"
-                                            >
-                                                <Edit className="fa-in" />
-                                            </IconButton>
-                                            <IconButton
-                                                onClick={() => {
-                                                    handleDeleteClick(obj);
-                                                }}
-                                                size="small"
-                                            >
-                                                <Delete className="fa-in del-red" />
-                                            </IconButton>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </div>
+        <TableBody>
+            {sortedData.map((obj, index) => (
+                <TableRow key={obj.Task_Type_Id}>
+                    <TableCell sx={{ padding: '4px 8px' }}>{index + 1}</TableCell> 
+                    <TableCell sx={{ padding: '4px 8px' }}>{obj.Task_Type}</TableCell>
+                    <TableCell sx={{ padding: '4px 8px' }}>
+                        <IconButton onClick={() => handleOpenEditDialog(obj)} size="small">
+                            <Edit />
+                        </IconButton>
+                        <IconButton onClick={() => handleDeleteClick(obj)} sx={{ color: '#FF6865' }}>
+                            <Delete />
+                        </IconButton>
+                    </TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+</TableContainer>
 
                 </div>
-
             </div>
 
-            <Dialog
-                open={editBase}
-                onClose={() => setEditBase(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">
-                    {"Task Type"}
-                </DialogTitle>
-                <DialogContent>
-                    <div className="p-2">
-                        <label>Task Type</label>
-                        <input
-                            type="text"
-                            onChange={(event) => setInputValue({
-                                ...inputValue,
-                                Task_Type: event.target.value
-                            })}
-                            value={inputValue.Task_Type}
-                            className="cus-inpt"
-                        />
-                    </div>
-                </DialogContent>
-                <DialogActions>
-                    <MuiButton onClick={() => setEditBase(false)}>Cancel</MuiButton>
-                    <MuiButton
-                        onClick={() =>
-                            editFun(inputValue.Task_Type, inputValue.Task_Type_Id)
-                        }
-                        autoFocus
-                        color="success"
-                    >
-                        Update
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
-
-            <Dialog
+            <AddEditTaskType
                 open={openNewDialog}
                 onClose={() => setOpenNewDialog(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">{"Create new Task"}</DialogTitle>
-                <DialogContent>
-                    <div className="py-2">
-                        <label>UserType Name</label>
-                        <input
-                            type="text"
-                            onChange={(event) => setNewChipType(event.target.value)}
-                            value={newChipType}
-                            className="cus-inpt"
-                        />
-                    </div>
-                </DialogContent>
-                <DialogActions>
-                    <MuiButton onClick={() => setOpenNewDialog(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={() => handleCreateChip()} color="success">
-                        Create
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
+                existingTaskType={selectedTaskType}
+                onCreate={handleCreate}
+                onUpdate={handleUpdate}
+            />
 
             <Dialog
                 open={openDeleteDialog}
@@ -234,24 +219,22 @@ function TaskType() {
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
-                <DialogTitle id="alert-dialog-title">{"Confirmation"}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        <b>Do you want to delete the Task Type?</b>
-                    </DialogContentText>
+                <DialogTitle className="bg-primary text-white mb-4 px-3 py-2">{"Confirmation"}</DialogTitle>
+                <DialogContent className="p-4">
+                    Do you want to delete the Task Type
+                    <span className="text-primary">{" " + selectedTaskType?.Task_Type + " "}</span>?
                 </DialogContent>
                 <DialogActions>
-                    <MuiButton onClick={() => handleCloseDeleteDialog(false)}>
+                    <Button className="btn btn-light rounded-5 px-3 me-1" onClick={handleCloseDeleteDialog}>
                         Cancel
-                    </MuiButton>
-                    <MuiButton onClick={() => handleDelete()} autoFocus color="error">
+                    </Button>
+                    <Button className="btn btn-primary rounded-5 px-3" onClick={handleDelete}>
                         Delete
-                    </MuiButton>
+                    </Button>
                 </DialogActions>
             </Dialog>
-
         </Fragment>
     );
-}
+};
 
 export default TaskType;

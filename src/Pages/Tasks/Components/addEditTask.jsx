@@ -11,7 +11,7 @@ import RequiredStar from "../../../Components/requiredStar";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
-const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingOn, loadingOff }) => {
+const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingOn, loadingOff, onTaskAdded, onToast }) => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const initialValue = {
@@ -20,10 +20,12 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
         Task_Desc: "",
         Task_Group_Id: 0,
         Entry_By: parseData?.UserId,
+        Company_id: parseData?.Company_id,
         Entry_Date: "",
         Update_By: '',
         Update_Date: "",
         Task_Parameters: [],
+
     }
     const [dialog, setDialog] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -96,35 +98,45 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
 
         const PostObj = {
             ...inputValue,
-            Task_Parameters: paramArr
-        }
+            Task_Parameters: paramArr,
+        };
+
         if (loadingOn) {
             loadingOn();
         }
-        fetchLink({
-            address: `taskManagement/tasks`,
-            method: isEdit ? 'PUT' : 'POST',
-            bodyData: PostObj
-        }).then(data => {
-            if (data.success) {
-                toast.success(data.message);
-                closeDialog();  
+
+
+        try {
+            const response = await fetchLink({
+                address: `taskManagement/tasks`,
+                method: isEdit ? 'PUT' : 'POST',
+                bodyData: PostObj
+            });
+
+            if (response.success) {
+                toast.success(response.message);
+                closeDialog();
                 if (reload) {
                     reload();
                 }
+                onTaskAdded();
             } else {
-                toast.error(data.message);
+                toast.error(response.message);
             }
-        }).catch(e => console.error(e)).finally(() => {
+        } catch (error) {
+            console.error(error);
+            toast.error("An error occurred while processing your request.");
+        } finally {
             if (loadingOff) {
                 loadingOff();
             }
-        })
+        }
     }
+
 
     return (
         <>
-            
+
             <span onClick={() => setDialog(true)} style={{ cursor: 'pointer' }}>{children}</span>
 
             <Dialog

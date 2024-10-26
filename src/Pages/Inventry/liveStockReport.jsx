@@ -1,24 +1,151 @@
 import React, { useState, useEffect } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { getPreviousDate, groupData, calcTotal, calcAvg } from "../../Components/functions";
+import { getPreviousDate, groupData, calcTotal, ISOString, isEqualNumber } from "../../Components/functions";
 import FilterableTable from '../../Components/filterableTable2'
-import { Card, CardContent } from "@mui/material";
+import { Card, CardContent, Autocomplete, TextField, Checkbox, Tooltip, IconButton, Button, Dialog, DialogContent, DialogActions } from "@mui/material";
+import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff } from "@mui/icons-material";
+
+const icon = <CheckBoxOutlineBlank fontSize="small" />;
+const checkedIcon = <CheckBox fontSize="small" />;
 
 
 const LiveStockReport = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
     const [groupedData, setGroupedData] = useState([]);
-    const [filters, setFilters] = useState({
-        Fromdata: getPreviousDate(30),
-        Todate: getPreviousDate(24)
-    })
+    const [apiFilters, setAPIFilters] = useState({
+        Fromdata: getPreviousDate(7),
+        Todate: ISOString()
+    });
+    const [filters, setFilters] = useState({});
+    const [dialog, setDialog] = useState(false);
+    const [filteredData, setFilteredData] = useState(reportData);
+
+    const columns = [
+        { Field_Name: "Stock_Group", Fied_Data: "string", OrderBy: 1 },
+        { Field_Name: "Grade_Item_Group", Fied_Data: "string", OrderBy: 2 },
+        { Field_Name: "Group_Name", Fied_Data: "string", OrderBy: 3 },
+        { Field_Name: "stock_item_name", Fied_Data: "string", OrderBy: 4 },
+        { Field_Name: "godown_name", Fied_Data: "string", OrderBy: 5 },
+        // { Field_Name: "Act_Bags", Fied_Data: "number", OrderBy: 6 },
+        // { Field_Name: "Bal_Act_Qty", Fied_Data: "number", OrderBy: 7 },
+    ];
+
+    useEffect(() => {
+        applyFilters();
+    }, [filters]);
+
+    const handleFilterChange = (column, value) => {
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            [column]: value,
+        }));
+    };
+
+    const applyFilters = () => {
+        let filtered = [...reportData];
+        for (const column of columns) {
+            if (filters[column.Field_Name]) {
+                if (filters[column.Field_Name].type === 'range') {
+                    const { min, max } = filters[column.Field_Name];
+                    filtered = filtered.filter(item => {
+                        const value = item[column.Field_Name];
+                        return (min === undefined || value >= min) && (max === undefined || value <= max);
+                    });
+                } else if (filters[column.Field_Name].type === 'date') {
+                    const { start, end } = filters[column.Field_Name].value;
+                    filtered = filtered.filter(item => {
+                        const dateValue = new Date(item[column.Field_Name]);
+                        return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
+                    });
+                } else if (Array.isArray(filters[column.Field_Name])) {
+                    filtered = filters[column.Field_Name]?.length > 0 ? filtered.filter(item => filters[column.Field_Name].includes(item[column.Field_Name]?.toLowerCase().trim())) : filtered
+                }
+            }
+        }
+        setFilteredData(filtered);
+    };
+
+    const renderFilter = (column) => {
+        const { Field_Name, Fied_Data } = column;
+        if (Fied_Data === 'number') {
+            return (
+                <div className='d-flex justify-content-between px-2'>
+                    <input
+                        placeholder="Min"
+                        type="number"
+                        className="bg-light border-0 m-1 p-1 w-50"
+                        value={filters[Field_Name]?.min ?? ''}
+                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], min: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    />
+                    <input
+                        placeholder="Max"
+                        type="number"
+                        className="bg-light border-0 m-1 p-1 w-50"
+                        value={filters[Field_Name]?.max ?? ''}
+                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], max: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    />
+                </div>
+            );
+        } else if (Fied_Data === 'date') {
+            return (
+                <div className='d-flex justify-content-between px-2'>
+                    <input
+                        placeholder="Start Date"
+                        type="date"
+                        className="bg-light border-0 m-1 p-1 w-50"
+                        value={filters[Field_Name]?.value?.start ?? ''}
+                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, start: e.target.value || undefined } })}
+                    />
+                    <input
+                        placeholder="End Date"
+                        type="date"
+                        className="bg-light border-0 m-1 p-1 w-50"
+                        value={filters[Field_Name]?.value?.end ?? ''}
+                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, end: e.target.value || undefined } })}
+                    />
+                </div>
+            );
+        } else if (Fied_Data === 'string') {
+            const distinctValues = [...new Set(reportData.map(item => item[Field_Name]?.toLowerCase()?.trim()))];
+            return (
+                <Autocomplete
+                    multiple
+                    id={`${Field_Name}-filter`}
+                    options={distinctValues}
+                    disableCloseOnSelect
+                    getOptionLabel={option => option}
+                    value={filters[Field_Name] || []}
+                    onChange={(event, newValue) => handleFilterChange(Field_Name, newValue)}
+                    renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                            <Checkbox
+                                icon={icon}
+                                checkedIcon={checkedIcon}
+                                style={{ marginRight: 8 }}
+                                checked={selected}
+                            />
+                            {option}
+                        </li>
+                    )}
+                    isOptionEqualToValue={(opt, val) => opt === val}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label={Field_Name}
+                            placeholder={`Select ${Field_Name?.replace(/_/g, ' ')}`}
+                        />
+                    )}
+                />
+            );
+        }
+    };
 
     useEffect(() => {
         if (loadingOn) {
             loadingOn();
         }
         fetchLink({
-            address: `reports/liveStockReport?Fromdata=${filters.Fromdata}&Todate=${filters.Todate}`
+            address: `reports/liveStockReport?Fromdata=${apiFilters.Fromdata}&Todate=${apiFilters.Todate}`
         }).then(data => {
             if (data.success) {
                 setReportData(data.data);
@@ -28,50 +155,69 @@ const LiveStockReport = ({ loadingOn, loadingOff }) => {
                 loadingOff();
             }
         })
-    }, [filters.Fromdata, filters.Todate])
+    }, [apiFilters.Fromdata, apiFilters.Todate])
 
     useEffect(() => {
-        const grouped_Stock_Group = groupData(reportData, 'Stock_Group');
-        const aggregatedStockGroup = grouped_Stock_Group?.map(stockGroup => ({
-            ...stockGroup,
-            BagsTotal: calcTotal(stockGroup.groupedData, 'Act_Bags'),
-            BalQtyTotal: calcTotal(stockGroup.groupedData, 'Bal_Act_Qty'),
-        }));
+        const runLoading = async () => {
+            try {
+                const dataToUse = (Object.keys(filters).length > 0) ? filteredData : reportData;
 
-        const Grade_Item_Group = aggregatedStockGroup?.map(stockGroup => ({
-            ...stockGroup,
-            groupedData: groupData(stockGroup?.groupedData, 'Grade_Item_Group')
-        }));
-        const aggregatedGradeItemGroup = Grade_Item_Group.map(stockGroup => ({
-            ...stockGroup,
-            groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
-                ...gradeItemGroup,
-                BagsTotal: calcTotal(gradeItemGroup.groupedData, 'Act_Bags'),
-                BalQtyTotal: calcTotal(gradeItemGroup.groupedData, 'Bal_Act_Qty'),
-            }))
-        }));
+                if (loadingOn) {
+                    await loadingOn();
+                }
 
-        const GroupName = aggregatedGradeItemGroup.map(stockGroup => ({
-            ...stockGroup,
-            groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
-                ...gradeItemGroup,
-                groupedData: groupData(gradeItemGroup?.groupedData, 'Group_Name')
-            }))
-        }));
-        const aggregatedGroupName = GroupName.map(stockGroup => ({
-            ...stockGroup,
-            groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
-                ...gradeItemGroup,
-                groupedData: gradeItemGroup?.groupedData?.map(grouopName => ({
-                    ...grouopName,
-                    BagsTotal: calcTotal(grouopName.groupedData, 'Act_Bags'),
-                    BalQtyTotal: calcTotal(grouopName.groupedData, 'Bal_Act_Qty'),
-                }))
-            }))
-        }));
+                const grouped_Stock_Group = groupData(dataToUse, 'Stock_Group');
+                const aggregatedStockGroup = grouped_Stock_Group?.sort((a, b) => String(a.Stock_Group).localeCompare(b.Stock_Group ?? '')).map(stockGroup => ({
+                    ...stockGroup,
+                    BagsTotal: calcTotal(stockGroup.groupedData, 'Act_Bags'),
+                    BalQtyTotal: calcTotal(stockGroup.groupedData, 'Bal_Act_Qty'),
+                }));
 
-        setGroupedData(aggregatedGroupName);
-    }, [reportData])
+                const Grade_Item_Group = aggregatedStockGroup?.map(stockGroup => ({
+                    ...stockGroup,
+                    groupedData: groupData(stockGroup?.groupedData, 'Grade_Item_Group')
+                }));
+                const aggregatedGradeItemGroup = Grade_Item_Group.map(stockGroup => ({
+                    ...stockGroup,
+                    groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
+                        ...gradeItemGroup,
+                        BagsTotal: calcTotal(gradeItemGroup.groupedData, 'Act_Bags'),
+                        BalQtyTotal: calcTotal(gradeItemGroup.groupedData, 'Bal_Act_Qty'),
+                    }))
+                }));
+
+                const GroupName = aggregatedGradeItemGroup.map(stockGroup => ({
+                    ...stockGroup,
+                    groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
+                        ...gradeItemGroup,
+                        groupedData: groupData(gradeItemGroup?.groupedData, 'Group_Name')
+                    }))
+                }));
+                const aggregatedGroupName = GroupName.map(stockGroup => ({
+                    ...stockGroup,
+                    groupedData: stockGroup.groupedData?.map(gradeItemGroup => ({
+                        ...gradeItemGroup,
+                        groupedData: gradeItemGroup?.groupedData?.map(grouopName => ({
+                            ...grouopName,
+                            BagsTotal: calcTotal(grouopName.groupedData, 'Act_Bags'),
+                            BalQtyTotal: calcTotal(grouopName.groupedData, 'Bal_Act_Qty'),
+                        }))
+                    }))
+                }));
+
+                // setGroupedData(aggregatedGroupName);
+                setTimeout(() => setGroupedData(aggregatedGroupName), 500);
+            } catch (e) {
+                console.error(e)
+            } finally {
+                if (loadingOff) {
+                    setTimeout(() => loadingOff(), 500);
+                }
+            }
+        }
+
+        runLoading();
+    }, [reportData, filters, filteredData])
 
     const columnCells = (mainKey) => [
         {
@@ -102,85 +248,164 @@ const LiveStockReport = ({ loadingOn, loadingOff }) => {
                     <span>
                         <input
                             type="date"
-                            value={filters.Fromdata}
+                            value={apiFilters.Fromdata}
                             className="cus-inpt w-auto p-1"
-                            onChange={e => setFilters(pre => ({ ...pre, Fromdata: e.target.value }))}
+                            onChange={e => setAPIFilters(pre => ({ ...pre, Fromdata: e.target.value }))}
                         /> - TO -
                         <input
                             type="date"
-                            value={filters.Todate}
+                            value={apiFilters.Todate}
                             className="cus-inpt w-auto p-1"
-                            onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                            onChange={e => setAPIFilters(pre => ({ ...pre, Todate: e.target.value }))}
                         />
+                        <Tooltip title="Filters">
+                            <IconButton
+                                onClick={() => setDialog(true)}
+                                size="small"
+                                className="d-md-none d-inline"
+                            >
+                                <FilterAlt />
+                            </IconButton>
+                        </Tooltip>
                     </span>
                 </div>
 
                 <CardContent>
-                    <FilterableTable
-                        dataArray={groupedData}
-                        title="Stock Group"
-                        columns={columnCells('Stock_Group')}
-                        isExpendable={true}
-                        expandableComp={({ row }) => (
+                    <div className="row">
+
+                        <div className="col-xxl-10 col-lg-9 col-md-8">
                             <FilterableTable
-                                dataArray={row.groupedData}
-                                title="Grade Item Group"
-                                columns={columnCells('Grade_Item_Group')}
+                                dataArray={groupedData}
+                                title="Stock Group"
+                                columns={columnCells('Stock_Group')}
                                 isExpendable={true}
+                                EnableSerialNumber
                                 expandableComp={({ row }) => (
                                     <FilterableTable
                                         dataArray={row.groupedData}
-                                        title="Group Name"
-                                        columns={columnCells('Group_Name')}
+                                        title="Grade Item Group"
+                                        columns={columnCells('Grade_Item_Group')}
                                         isExpendable={true}
+                                        EnableSerialNumber
                                         expandableComp={({ row }) => (
                                             <FilterableTable
                                                 dataArray={row.groupedData}
-                                                title="Stock Item Name"
-                                                columns={[
-                                                    {
-                                                        Field_Name: 'stock_item_name',
-                                                        ColumnHeader: 'Stock Item Name',
-                                                        Fied_Data: 'string',
-                                                        isVisible: 1,
-                                                    },
-                                                    {
-                                                        Field_Name: 'Bags',
-                                                        Fied_Data: 'number',
-                                                        isVisible: 1,
-                                                    },
-                                                    {
-                                                        Field_Name: 'Bal_Act_Qty',
-                                                        ColumnHeader: 'Balance Quantity',
-                                                        Fied_Data: 'number',
-                                                        isVisible: 1,
-                                                    },
-                                                    {
-                                                        Field_Name: 'godown_name',
-                                                        ColumnHeader: 'Godown',
-                                                        Fied_Data: 'string',
-                                                        isVisible: 1,
-                                                    },
-                                                ]}
-                                                tableMaxHeight={2000}
+                                                title="Group Name"
+                                                columns={columnCells('Group_Name')}
+                                                isExpendable={true}
+                                                EnableSerialNumber
+                                                expandableComp={({ row }) => (
+                                                    <FilterableTable
+                                                        dataArray={row.groupedData}
+                                                        title="Stock Item Name"
+                                                        columns={[
+                                                            {
+                                                                Field_Name: 'stock_item_name',
+                                                                ColumnHeader: 'Stock Item Name',
+                                                                Fied_Data: 'string',
+                                                                isVisible: 1,
+                                                            },
+                                                            {
+                                                                Field_Name: 'Bags',
+                                                                Fied_Data: 'number',
+                                                                isVisible: 1,
+                                                            },
+                                                            {
+                                                                Field_Name: 'Bal_Act_Qty',
+                                                                ColumnHeader: 'Balance Quantity',
+                                                                Fied_Data: 'number',
+                                                                isVisible: 1,
+                                                            },
+                                                            {
+                                                                Field_Name: 'godown_name',
+                                                                ColumnHeader: 'Godown',
+                                                                Fied_Data: 'string',
+                                                                isVisible: 1,
+                                                            },
+                                                        ]}
+                                                        EnableSerialNumber
+                                                        tableMaxHeight={2000}
+                                                        disablePagination={true}
+                                                    />
+                                                )}
+                                                tableMaxHeight={3000}
                                                 disablePagination={true}
+
                                             />
                                         )}
-                                        tableMaxHeight={3000}
+                                        tableMaxHeight={4000}
                                         disablePagination={true}
-
                                     />
                                 )}
-                                tableMaxHeight={4000}
+                                tableMaxHeight={5000}
                                 disablePagination={true}
                             />
-                        )}
-                        tableMaxHeight={5000}
-                        disablePagination={true}
-                    />
+                        </div>
+
+                        <div className="col-xxl-2 col-lg-3 col-md-4 d-none d-md-block">
+                            <h5 className="d-flex justify-content-between px-2">
+                                <span>Filters</span>
+                                <span>
+                                    <Tooltip title='Clear Filters'>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => setFilters({})}
+                                        >
+                                            <FilterAltOff />
+                                        </IconButton>
+                                    </Tooltip>
+                                </span>
+                            </h5>
+                            <div className="border rounded-3 ">
+                                {columns.map((column, ke) => (
+                                    <div key={ke} className="py-3 px-3 hov-bg border-bottom">
+                                        <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
+                                        {renderFilter(column)}
+                                    </div>
+                                ))}
+                                <br />
+                            </div>
+                        </div>
+
+                    </div>
+
                 </CardContent>
 
             </Card>
+
+            <Dialog
+                open={dialog}
+                onClose={() => setDialog(false)}
+                maxWidth='sm' fullWidth
+            >
+                <DialogContent>
+                    <h5 className="d-flex justify-content-between px-2">
+                        <span>Filters</span>
+                        <span>
+                            <Tooltip title='Clear Filters'>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setFilters({})}
+                                >
+                                    <FilterAltOff />
+                                </IconButton>
+                            </Tooltip>
+                        </span>
+                    </h5>
+                    <div className="border rounded-3 " >
+                        {columns.map((column, ke) => (
+                            <div key={ke} className="py-3 px-3 hov-bg border-bottom">
+                                <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
+                                {renderFilter(column)}
+                            </div>
+                        ))}
+                        <br />
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDialog(false)} color='error'>close</Button>
+                </DialogActions>
+            </Dialog>
 
         </>
     )

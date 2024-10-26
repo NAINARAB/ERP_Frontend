@@ -54,7 +54,7 @@ const FilterableTable = ({
     const columnAlign = [
         {
             type: 'left',
-            class: ''
+            class: 'text-start'
         }, {
             type: 'right',
             class: 'text-end'
@@ -202,68 +202,64 @@ const FilterableTable = ({
 
                     <TableHead>
                         <TableRow>
-
-                            {(isExpendable === true && expandableComp) && (
-                                <TableCell
-                                    className='fa-13 fw-bold border-end border-top text-center'
-                                    style={{ backgroundColor: '#EDF0F7' }}
-                                >#</TableCell>
+                            {/* Expendable column */}
+                            {isExpendable && expandableComp && (
+                                <TableCell className='fa-13 fw-bold border-end border-top text-center' style={{ backgroundColor: '#EDF0F7' }}>
+                                    #
+                                </TableCell>
                             )}
 
-                            {EnableSerialNumber === true && (
-                                <TableCell
-                                    className='fa-13 fw-bold border-end border-top text-center'
-                                    style={{ backgroundColor: '#EDF0F7' }}
-                                >SNo</TableCell>
+                            {/* Serial number column */}
+                            {EnableSerialNumber && (
+                                <TableCell className='fa-13 fw-bold border-end border-top text-center' style={{ backgroundColor: '#EDF0F7' }}>
+                                    SNo
+                                </TableCell>
                             )}
 
+                            {/* Columns */}
                             {columns.map((column, ke) => {
-                                return (isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1)) && (
-                                    (Boolean(column?.isCustomCell) === false || !column.Cell) ? (
+                                const isColumnVisible = isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1);
+                                const isSortable = Boolean(column?.isCustomCell) === false || !column.Cell;
+                                const sortCriteriaMatch = sortCriteria.find(criteria => criteria.columnId === column.Field_Name);
+                                const sortDirection = sortCriteriaMatch ? sortCriteriaMatch.direction : 'asc';
+
+                                if (isColumnVisible) {
+                                    return isSortable ? (
                                         <TableCell
                                             key={ke}
-                                            className={`fa-13 fw-bold border-end border-top ` + (
-                                                column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
-                                            )}
+                                            className={`fa-13 fw-bold border-end border-top ` +
+                                                (column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : '')}
                                             style={{ backgroundColor: '#EDF0F7' }}
-                                            sortDirection={
-                                                sortCriteria.some(criteria => criteria.columnId === column.Field_Name)
-                                                    ? sortCriteria.find(criteria => criteria.columnId === column.Field_Name).direction
-                                                    : false
-                                            }
+                                            sortDirection={sortCriteriaMatch ? sortDirection : false}
                                         >
                                             <TableSortLabel
-                                                active={sortCriteria.some(criteria => criteria.columnId === column.Field_Name)}
-                                                direction={
-                                                    sortCriteria.some(criteria => criteria.columnId === column.Field_Name)
-                                                        ? sortCriteria.find(criteria => criteria.columnId === column.Field_Name).direction
-                                                        : 'asc'
-                                                }
+                                                active={!!sortCriteriaMatch}
+                                                direction={sortDirection}
                                                 onClick={() => handleSortRequest(column.Field_Name)}
                                             >
-                                                {column.ColumnHeader ? column.ColumnHeader : column?.Field_Name?.replace(/_/g, ' ')}
+                                                {column.ColumnHeader || column?.Field_Name?.replace(/_/g, ' ')}
                                             </TableSortLabel>
                                         </TableCell>
                                     ) : (
                                         <TableCell
                                             key={ke}
-                                            className={`${column.ColumnHeader ? 'fa-13 fw-bold border-end border-top' : ' p-0 '}` + (
-                                                column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
-                                            )}
+                                            className={`${(column.ColumnHeader || column?.Field_Name) ? ' fa-13 fw-bold border-end border-top p-2 appFont ' : ' p-0 '} ` +
+                                                (column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : '')}
                                             style={{ backgroundColor: '#EDF0F7' }}
                                         >
-                                            {column.ColumnHeader ? column.ColumnHeader : column?.Field_Name?.replace(/_/g, ' ')}
+                                            {column.ColumnHeader || column?.Field_Name?.replace(/_/g, ' ')}
                                         </TableCell>
-                                    )
-                                )
+                                    );
+                                }
+                                return null;
                             })}
-
                         </TableRow>
                     </TableHead>
 
 
+
                     <TableBody>
-                        {(disablePagination ? dataArray : paginatedData).map((row, index) => (
+                        {(disablePagination ? sortedData : paginatedData).map((row, index) => (
                             <RowComp key={index} row={row} index={index} />
                         ))}
                         {dataArray.length === 0 && (

@@ -1,315 +1,327 @@
-import React, { useState, useEffect, Fragment, useContext } from "react";
-import { Table, Button } from "react-bootstrap";
-import { IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MuiButton } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material'
+
+import React, { useState, useEffect, useContext } from "react";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Edit, Delete, Launch, People } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { MyContext } from "../../Components/context/contextProvider";
 import { fetchLink } from "../../Components/fetchComponent";
-import { ISOString } from '../../Components/functions'
+import ProjectForm from "../../Components/ProjectList/addEditProject";
+import EmployeeManagementDialog from "../../Components/employeeManagement/employeeManagement";
+import DataTable from "react-data-table-component";
+import ListingTask from "../../Components/taskDetails/listingTask";
+import SearchIcon from '@mui/icons-material/Search';
 
-
-const ProjectList = () => {
-    const [projectData, setProjectData] = useState([]);
+const ActiveProjects = () => {
+    const [reload, setReload] = useState(false);
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
-    const initialState = {
-        Project_Id: '',
-        Project_Name: '',
-        Project_Desc: '',
-        Project_Head: '',
-        Est_Start_Dt: ISOString(),
-        Est_End_Dt: ISOString(),
-        Project_Status: '',
-        Entry_By: parseData?.UserId,
-        Company_id: parseData?.Company_id
-    };
-    const [inputValue, setInputValue] = useState(initialState);
-    const [screen, setScreen] = useState(false)
+    const [projects, setProjects] = useState([]);
+    const [projectAlldata, setProjectAlldata] = useState([]);
+    const { contextObj } = useContext(MyContext);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedProject, setSelectedProject] = useState(null);
     const [isEdit, setIsEdit] = useState(false);
+    const [projectId, setProjectId] = useState(0);
     const [deleteDialog, setDeleteDialog] = useState(false);
-    const [proStatus, setProStatus] = useState([]);
-    const [projectHead, setProjectHead] = useState([]);
-    const [reload, setReload] = useState(false);
-    const { contextObj } = useContext(MyContext)
+    const [projectToDelete, setProjectToDelete] = useState(null);
+    const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
+    const [listingTaskDialogOpen, setListingTaskDialogOpen] = useState(false); 
+    const [filterInput, setFilterInput] = useState('');
 
     useEffect(() => {
-        fetchLink({
-            address: `taskManagement/project?Company_id=${parseData?.Company_id}`
-        }).then((data) => {
-            if (data.success) {
-                setProjectData(data.data);
-            }
-        });
-    }, [reload, parseData?.Company_id]);
+        fetchProjects();
+        fetchProjectData();
+    }, [parseData?.Company_id, reload]);
 
-    useEffect(() => {
-        fetchLink({
-            address: `taskManagement/statusList`
-        }).then(data => {
-            if (data.success) {
-                setProStatus(data.data)
-            }
-        })
-    }, [])
+    const handleReloadProjects = () => {
+        setReload(prev => !prev);
+    };
 
-    useEffect(() => {
-        fetchLink({
-            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
-        }).then(data => {
-            setProjectHead(data.success ? data.data : [])
-        }).catch(e => console.error('Fetch Error:', e));
-    }, [parseData?.Company_id])
-
-    const input = [
-        {
-            label: 'Project Name',
-            elem: 'input',
-            type: 'text',
-            event: (e) => setInputValue({ ...inputValue, Project_Name: e.target.value }),
-            required: true,
-            value: inputValue?.Project_Name,
-        },
-        {
-            label: "Project Head",
-            elem: "select",
-            options: [...projectHead.map(obj => ({ value: obj?.UserId, label: obj?.Name }))],
-            event: (e) => setInputValue({ ...inputValue, Project_Head: e.target.value }),
-            required: true,
-            value: inputValue?.Project_Head,
-        },
-        {
-            label: 'Estimated Start Date',
-            elem: 'input',
-            type: 'date',
-            event: (e) => setInputValue({ ...inputValue, Est_Start_Dt: e.target.value }),
-            required: true,
-            value: inputValue?.Est_Start_Dt,
-        },
-        {
-            label: 'Estimated End Date',
-            elem: 'input',
-            type: 'date',
-            event: (e) => setInputValue({ ...inputValue, Est_End_Dt: e.target.value }),
-            required: true,
-            value: inputValue?.Est_End_Dt,
-        },
-        {
-            label: 'Project Status',
-            elem: 'select',
-            options: [...proStatus?.map(obj => ({ value: obj.Status_Id, label: obj.Status }))],
-            event: (e) => setInputValue({ ...inputValue, Project_Status: e.target.value }),
-            required: true,
-            value: inputValue?.Project_Status,
-        },
-        {
-            label: 'Description',
-            elem: 'textarea',
-            type: 'text',
-            event: (e) => setInputValue({ ...inputValue, Project_Desc: e.target.value }),
-            required: true,
-            value: inputValue?.Project_Desc,
-        },
-    ]
-
-    const switchScreen = () => {
-        setInputValue(initialState)
-        setScreen(!screen); setIsEdit(false)
-    }
-
-    const setEditRow = (row) => {
-        switchScreen(true); 
-        setInputValue({
-            ...row, 
-            Est_Start_Dt: row.Est_Start_Dt ? ISOString(row.Est_Start_Dt) : '',
-            Est_End_Dt: row.Est_End_Dt ? ISOString(row.Est_End_Dt) : ''
-        }); 
-        setIsEdit(true)
-    }
-
-    const setDeleteRow = (row) => {
-        setDeleteDialog(!deleteDialog); setInputValue(row);
-    }
-
-    const createFun = () => {
-        fetchLink({
-            address: `taskManagement/project`,
-            method: 'POST',
-            bodyData: inputValue,
-        }).then(data => {
-            if (data.success) {
-                switchScreen(false);
-                setReload(!reload)
-                toast.success(data.message);
+    const fetchProjects = async () => {
+        try {
+            const data = await fetchLink({
+                address: `taskManagement/project/newProjectAbstract?Company_id=${parseData?.Company_id}`
+            });
+            if (data.success && Array.isArray(data.data)) {
+                setProjects(data.data);
             } else {
-                toast.error(data.message);
+                console.error("Unexpected data format:", data);
+                setProjects([]);
             }
-        }).catch(e => console.error('Fetch Error:', e));
-    }
+        } catch (e) {
+            console.error(e);
+            setProjects([]);
+        }
+    };
 
-    const editFun = () => {
-        fetchLink({
-            address: `taskManagement/project`,
-            method: 'PUT',
-            bodyData: inputValue,
-        }).then(data => {
-            if (data.success) {
-                switchScreen(false);
-                setReload(!reload)
-                toast.success(data.message);
+    const fetchProjectData = async () => {
+        try {
+            const data = await fetchLink({
+                address: `taskManagement/project?Company_id=${parseData?.Company_id}`
+            });
+            if (data.success && Array.isArray(data.data)) {
+                setProjectAlldata(data.data);
             } else {
-                toast.error(data.message);
+                console.error("Unexpected data format:", data);
+                setProjectAlldata([]);
             }
-        }).catch(e => console.error('Fetch Error:', e));
-    }
+        } catch (e) {
+            console.error(e);
+            setProjectAlldata([]);
+        }
+    };
 
     const deleteFun = () => {
-        fetchLink({
-            address: `taskManagement/project`,
-            method: 'DELETE',
-            bodyData: { Project_Id: inputValue?.Project_Id },
-        }).then(data => {
-            if (data.success) {
-                setReload(!reload);
-                toast.success(data.message); setInputValue(initialState); setDeleteDialog(false);
-            } else {
-                toast.error(data.message);
-            }
-        }).catch(e => console.error('Fetch Error:', e));
-    }
+        if (projectToDelete) {
+            fetchLink({
+                address: `taskManagement/project`,
+                method: 'DELETE',
+                bodyData: { Project_Id: projectToDelete?.Project_Id },
+            }).then(data => {
+                if (data.success) {
+                    setReload(!reload);
+                    toast.success(data.message);
+                 
+                } else {
+                    toast.error(data.message);
+                }
+            }).catch(e => console.error('Fetch Error:', e));
+        }
+        setDeleteDialog(false);
+    };
 
+    const columns = [
+        {
+            name: 'Project Name',
+            selector: row => row.Project_Name,
+            sortable: true,
+        },
+        {
+            name: 'Project Head',
+            selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Project_Head_Name,
+            sortable: true,
+        },
+        {
+            name: 'Status',
+            selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Status,
+            sortable: true,
+        },
+        {
+            name: 'Start Date',
+            selector: row => row.Est_Start_Dt ? new Date(row.Est_Start_Dt).toLocaleDateString('en-IN') : "N/A",
+            sortable: true,
+        },
+        {
+            name: 'End Date',
+            selector: row => row.Est_End_Dt ? new Date(row.Est_End_Dt).toLocaleDateString('en-IN') : "N/A",
+            sortable: true,
+        },
+        {
+            name: 'Progress',
+            selector: row => `${calcPercentage(row.TasksScheduled, row.CompletedTasks)}%`,
+            sortable: true,
+        },
+        {
+            name: 'Tasks / Completed',
+            cell: row => (
+                <>
+                    {row.CompletedTasks} / {row.TasksScheduled}
+                    <IconButton onClick={() => handleOpenListingTaskDialog(row)} style={{ marginLeft: '8px' }}>
+                        <Launch />
+                    </IconButton>
+                </>
+            ),
+        },
+        {
+            name: 'Tasks Assigned',
+            selector: row => row.TasksAssignedToEmployee,
+        },
+        {
+            name: 'Employees Involved',
+            cell: row => (
+                <>
+                    {row.EmployeesInvolved}
+                    {Number(contextObj?.Add_Rights) === 1 && (
+                        <IconButton onClick={() => handleOpenEmployeeDialog(row.Project_Id)}>
+                            <People />
+                        </IconButton>
+                    )}
+                </>
+            ),
+        },
+        {
+            name: 'Actions',
+            cell: row => (
+                <>
+                    {Number(contextObj?.Edit_Rights) === 1 && (
+                        <IconButton onClick={() => handleOpenEditDialog(row)}><Edit /></IconButton>
+                    )}
+                    {Number(contextObj?.Delete_Rights) === 1 && (
+                        <IconButton onClick={() => handleOpenDeleteDialog(row)}><Delete /></IconButton>
+                    )}
+                </>
+            ),
+        },
+    ];
+
+    const filteredProjects = projects.filter(project => {
+        const projectHead = projectAlldata.find(p => p.Project_Id === project.Project_Id)?.Project_Head_Name || "";
+        const status = projectAlldata.find(p => p.Project_Id === project.Project_Id)?.Status || "";
+        return (
+            project.Project_Name.toLowerCase().includes(filterInput.toLowerCase()) ||
+            projectHead.toLowerCase().includes(filterInput.toLowerCase()) ||
+            status.toLowerCase().includes(filterInput.toLowerCase())
+        );
+    });
+
+    const handleOpenCreateDialog = () => {
+        console.log("Opening Create Dialog");
+        setSelectedProject(null); 
+        setIsEdit(false); 
+        setDialogOpen(true); 
+        console.log("Dialog Open State:", dialogOpen);
+    };
+    
+    const handleOpenEditDialog = (project) => {
+        console.log("Opening Edit Dialog for project:", project);
+        setSelectedProject(project); 
+        setIsEdit(true); 
+        setDialogOpen(true); 
+        console.log("Dialog Open State:", dialogOpen);
+    };
+    
+    const handleOpenDeleteDialog = (project) => {
+        setProjectToDelete(project);
+        setDeleteDialog(true);
+        
+    };
+
+    const handleOpenListingTaskDialog = (project) => {
+        setSelectedProject(project);
+        setProjectId(project.Project_Id);
+        setListingTaskDialogOpen(true); 
+    };
+
+    const handleCloseDialogs = () => {
+        setDialogOpen(false);
+        setListingTaskDialogOpen(false); 
+        setSelectedProject(null);
+        setProjectToDelete(null);
+        setDeleteDialog(false)
+    };
+
+    const handleProjectCreated = () => {
+        setReload(prev => !prev);
+        handleCloseDialogs();
+    };
+
+    const handleOpenEmployeeDialog = (projectId) => {
+        setProjectId(projectId);
+        setEmployeeDialogOpen(true);
+    };
+
+    const calcPercentage = (task, completed) => {
+        return Number(task) === 0 ? 0 : ((Number(completed) / Number(task)) * 100).toFixed(0);
+    };
 
     return (
-        <Fragment>
-            {!screen ? (
-                <div className="card">
-                    <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
-                        Projects
-                        {Number(contextObj?.Add_Rights) === 1 && (
-                            <div className="text-end">
-                                <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">{!screen ? 'Create Project' : 'Back'}</Button>
-                            </div>
-                        )}
+        <>
+            <div className="fw-bold d-flex align-items-center justify-content-between mt-0">
+                <span>Projects</span>
+                <div className="mb-1" style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <SearchIcon style={{ position: 'absolute', left: 15, color: '#aaa' }} />
+                        <input
+                            type="text"
+                            placeholder="Search"
+                            onChange={e => setFilterInput(e.target.value)}
+                            style={{
+                                paddingLeft: 35,
+                                marginRight: 10,
+                                margin: 10,
+                                borderRadius: 4,
+                                border: '1px solid black'
+                            }}
+                        />
                     </div>
-                    <div className="card-body">
-                        <div className="table-responsive">
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <th className="fa-14">S.No</th>
-                                        <th className="fa-14">Project</th>
-                                        <th className="fa-14">Description</th>
-                                        <th className="fa-14">Head</th>
-                                        <th className="fa-14">Start At</th>
-                                        <th className="fa-14">End At</th>
-                                        {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <th className="fa-14">Action</th>}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {projectData.map((obj, index) => (
-                                        <tr key={index}>
-                                            <td className="fa-12">{index + 1}</td>
-                                            <td className="fa-12">{obj?.Project_Name}</td>
-                                            <td className="fa-12">{obj?.Project_Desc ? obj?.Project_Desc : ' - '}</td>
-                                            <td className="fa-12">{obj?.Project_Head_Name}</td>
-                                            <td className="fa-12">
-                                                {new Date(obj?.Est_Start_Dt).toLocaleDateString("en-IN")}
-                                            </td>
-                                            <td style={{ fontSize: "12px" }}>
-                                                {new Date(obj?.Est_End_Dt).toLocaleDateString("en-IN")}
-                                            </td>
-                                            {(Number(contextObj?.Edit_Rights) === 1 || Number(contextObj?.Delete_Rights) === 1) && <td>
-                                                {Number(contextObj?.Edit_Rights) === 1 && (
-                                                    <IconButton onClick={() => { setEditRow(obj) }} size='small'><Edit className="fa-in" /></IconButton>
-                                                )}
-                                                {Number(contextObj?.Delete_Rights) === 1 && (
-                                                    <IconButton onClick={() => { setDeleteRow(obj) }} size='small'><Delete className="fa-in del-red" /></IconButton>
-                                                )}
-                                            </td>}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </div>
-                    </div>
+                    {Number(contextObj?.Add_Rights) === 1 && (
+                        <button onClick={() => handleOpenCreateDialog(null)} className="btn btn-primary fa-13 shadow">
+                            Create Project
+                        </button>
+                    )}
                 </div>
-            ) : (
-                <div className="card">
-                    <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
-                        {isEdit ? "Edit Projects" : 'Create Project'}
-                        <div className="text-end">
-                            <Button onClick={() => switchScreen(false)} className="rounded-5 px-3 py-1 fa-13 shadow">{'Back'}</Button>
-                        </div>
-                    </div>
-                    <div className="card-body">
-                        <div className="row">
-                            {input.map((field, index) => (
-                                <div key={index} className="col-lg-4 col-md-6 p-2 px-3">
-                                    <label>{field.label}</label>
-                                    {field.elem === 'input' ? (
-                                        <input
-                                            type={field.type || 'text'}
-                                            className={'cus-inpt'}
-                                            onChange={field.event}
-                                            onInput={field.oninput}
-                                            disabled={field.disabled}
-                                            value={field.value}
+            </div>
 
-                                        />
-                                    ) : field.elem === 'select' ? (
-                                        <select
-                                            className={'cus-inpt'}
-                                            onChange={field.event}
-                                            value={field.value}>
-                                            <option value={''}>select</option>
-                                            {field.options.map((option, optionIndex) => (
-                                                <option key={optionIndex} value={option.value} disabled={option.disabled} defaultValue={option.selected}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    ) : field.elem === 'textarea' ? (
-                                        <textarea
-                                            className={'cus-inpt'}
-                                            onChange={field.event}
-                                            rows={4} value={field.value}>
-                                        </textarea>
-                                    ) : null}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="card-footer d-flex justify-content-end bg-white">
-                        <Button onClick={() => { switchScreen(false) }} className="rounded-5 px-4 mx-1 btn-light bg-white">{'Cancel'}</Button>
-                        <Button onClick={isEdit ? editFun : createFun} className="rounded-5 px-4 shadow mx-1">{isEdit ? 'Update' : 'Create Project'}</Button>
-                    </div>
+            <div className="card">
+                <div className="card-body2 p-0" style={{ marginTop: '0px', overflow: 'hidden' }}>
+                    <DataTable
+                        columns={columns}
+                        data={filteredProjects}
+                        pagination
+                        highlightOnHover
+                        fixedHeader
+                        fixedHeaderScrollHeight="58vh"
+                        persistTableHead
+                        noHeader={false}
+                        customStyles={{
+                            headCells: {
+                                style: {
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    padding: '10px',
+                                    backgroundColor: '#f7f7f7',
+                                },
+                            },
+                        }}
+                    />
                 </div>
-            )}
+            </div>
+
+            <ListingTask
+                // completedTasks={0}
+                onClose={handleCloseDialogs}
+                dialogOpen={listingTaskDialogOpen}
+                setDialogOpen={setListingTaskDialogOpen}
+                isEdit={false}
+                parseData={parseData}
+                projectid={projectId}
+                onReload={handleReloadProjects}
+            />
+
+        
+            <ProjectForm
+                open={dialogOpen}
+                onClose={handleCloseDialogs}
+                inputValue={selectedProject}
+                isEdit={isEdit}
+                setReload={handleReloadProjects}
+                projectData={projectId}
+            />
+
+            <EmployeeManagementDialog
+                open={employeeDialogOpen}
+                onClose={() => setEmployeeDialogOpen(false)}
+                projectId={projectId}
+                onReload={handleReloadProjects}
+            />
 
             <Dialog
                 open={deleteDialog}
-                onClose={setDeleteRow}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">
-                    {"Confirmation"}
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        <b  >{`Do you want to delete the ${inputValue?.Project_Name && inputValue?.Project_Name} Branch?`}</b>
-                    </DialogContentText>
+                onClose={handleCloseDialogs}
+                aria-labelledby="delete-dialog-title"
+                aria-describedby="delete-dialog-description">
+                <DialogTitle className="bg-primary text-white mb-2 px-3 py-2">Confirmation</DialogTitle>
+                <DialogContent className="p-4">
+                    Do you want to delete the project
+                    <span className="text-primary">{" " + projectToDelete?.Project_Name + " "}</span>?
                 </DialogContent>
                 <DialogActions>
-                    <MuiButton onClick={setDeleteRow}>Cancel</MuiButton>
-                    <MuiButton onClick={deleteFun} autoFocus sx={{ color: 'red' }}>
-                        Delete
-                    </MuiButton>
+                    <button className="btn btn-light rounded-5 px-3 me-1" onClick={handleCloseDialogs}>Cancel</button>
+                    <button className="btn btn-primary rounded-5 px-3" onClick={deleteFun}>Delete</button>
                 </DialogActions>
             </Dialog>
+        </>
+    );
+};
 
-        </Fragment>
-    )
-}
-
-export default ProjectList;
+export default ActiveProjects;
