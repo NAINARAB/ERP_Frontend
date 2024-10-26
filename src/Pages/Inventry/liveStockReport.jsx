@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
 import { getPreviousDate, groupData, calcTotal, ISOString, isEqualNumber } from "../../Components/functions";
 import FilterableTable from '../../Components/filterableTable2'
-import { Card, CardContent, Autocomplete, TextField, Checkbox, Tooltip, IconButton, Button, Dialog, DialogContent, DialogActions } from "@mui/material";
+import { Card, CardContent, Autocomplete, TextField, Checkbox, Tooltip, IconButton, Button, Dialog, DialogContent, DialogActions, Tab, Box } from "@mui/material";
+import { TabPanel, TabList, TabContext } from '@mui/lab';
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff } from "@mui/icons-material";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -14,25 +15,30 @@ const LiveStockReport = ({ loadingOn, loadingOff }) => {
     const [groupedData, setGroupedData] = useState([]);
     const [apiFilters, setAPIFilters] = useState({
         Fromdata: getPreviousDate(7),
-        Todate: ISOString()
+        Todate: ISOString(),
+        view: 'Grouped'
     });
     const [filters, setFilters] = useState({});
     const [dialog, setDialog] = useState(false);
     const [filteredData, setFilteredData] = useState(reportData);
 
     const columns = [
-        { Field_Name: "Stock_Group", Fied_Data: "string", OrderBy: 1 },
-        { Field_Name: "Grade_Item_Group", Fied_Data: "string", OrderBy: 2 },
-        { Field_Name: "Group_Name", Fied_Data: "string", OrderBy: 3 },
-        { Field_Name: "stock_item_name", Fied_Data: "string", OrderBy: 4 },
-        { Field_Name: "godown_name", Fied_Data: "string", OrderBy: 5 },
-        // { Field_Name: "Act_Bags", Fied_Data: "number", OrderBy: 6 },
-        // { Field_Name: "Bal_Act_Qty", Fied_Data: "number", OrderBy: 7 },
+        { Field_Name: "Stock_Group", Fied_Data: "string", isVisible: 1 },
+        { Field_Name: "Grade_Item_Group", Fied_Data: "string", isVisible: 1 },
+        { Field_Name: "Group_Name", Fied_Data: "string", isVisible: 1 },
+        { Field_Name: "stock_item_name", Fied_Data: "string", isVisible: 1 },
+        { Field_Name: "godown_name", Fied_Data: "string", isVisible: 1 },
+        ...(apiFilters.view === 'List' ? [
+            { Field_Name: "Act_Bags", Fied_Data: "number", ColumnHeader: 'Bags', isVisible: 1 },
+            { Field_Name: "Bal_Act_Qty", Fied_Data: "number", ColumnHeader: 'Balance Quantity', isVisible: 1 }
+        ] : [])
     ];
 
     useEffect(() => {
         applyFilters();
     }, [filters]);
+
+    useEffect(() => setFilters({}), [apiFilters.view])
 
     const handleFilterChange = (column, value) => {
         setFilters(prevFilters => ({
@@ -274,72 +280,98 @@ const LiveStockReport = ({ loadingOn, loadingOff }) => {
                     <div className="row">
 
                         <div className="col-xxl-10 col-lg-9 col-md-8">
-                            <FilterableTable
-                                dataArray={groupedData}
-                                title="Stock Group"
-                                columns={columnCells('Stock_Group')}
-                                isExpendable={true}
-                                EnableSerialNumber
-                                expandableComp={({ row }) => (
+
+                            <TabContext value={apiFilters.view}>
+                                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                                    <TabList
+                                        indicatorColor='transparant'
+                                        onChange={(e, n) => setAPIFilters(pre => ({ ...pre, view: n }))}
+                                        variant="scrollable"
+                                        scrollButtons="auto"
+                                        allowScrollButtonsMobile
+                                    >
+                                        <Tab sx={apiFilters.view === 'Grouped' ? { backgroundColor: '#c6d7eb' } : {}} label="Grouped" value='Grouped' />
+                                        <Tab sx={apiFilters.view === 'List' ? { backgroundColor: '#c6d7eb' } : {}} label="List" value='List' />
+                                    </TabList>
+                                </Box>
+
+                                <TabPanel value={'Grouped'} sx={{ px: 0, py: 2 }} >
                                     <FilterableTable
-                                        dataArray={row.groupedData}
-                                        title="Grade Item Group"
-                                        columns={columnCells('Grade_Item_Group')}
+                                        dataArray={groupedData}
+                                        title="Stock Group"
+                                        columns={columnCells('Stock_Group')}
                                         isExpendable={true}
                                         EnableSerialNumber
                                         expandableComp={({ row }) => (
                                             <FilterableTable
                                                 dataArray={row.groupedData}
-                                                title="Group Name"
-                                                columns={columnCells('Group_Name')}
+                                                title="Grade Item Group"
+                                                columns={columnCells('Grade_Item_Group')}
                                                 isExpendable={true}
                                                 EnableSerialNumber
                                                 expandableComp={({ row }) => (
                                                     <FilterableTable
                                                         dataArray={row.groupedData}
-                                                        title="Stock Item Name"
-                                                        columns={[
-                                                            {
-                                                                Field_Name: 'stock_item_name',
-                                                                ColumnHeader: 'Stock Item Name',
-                                                                Fied_Data: 'string',
-                                                                isVisible: 1,
-                                                            },
-                                                            {
-                                                                Field_Name: 'Bags',
-                                                                Fied_Data: 'number',
-                                                                isVisible: 1,
-                                                            },
-                                                            {
-                                                                Field_Name: 'Bal_Act_Qty',
-                                                                ColumnHeader: 'Balance Quantity',
-                                                                Fied_Data: 'number',
-                                                                isVisible: 1,
-                                                            },
-                                                            {
-                                                                Field_Name: 'godown_name',
-                                                                ColumnHeader: 'Godown',
-                                                                Fied_Data: 'string',
-                                                                isVisible: 1,
-                                                            },
-                                                        ]}
+                                                        title="Group Name"
+                                                        columns={columnCells('Group_Name')}
+                                                        isExpendable={true}
                                                         EnableSerialNumber
-                                                        tableMaxHeight={2000}
+                                                        expandableComp={({ row }) => (
+                                                            <FilterableTable
+                                                                dataArray={row.groupedData}
+                                                                title="Stock Item Name"
+                                                                columns={[
+                                                                    {
+                                                                        Field_Name: 'stock_item_name',
+                                                                        ColumnHeader: 'Stock Item Name',
+                                                                        Fied_Data: 'string',
+                                                                        isVisible: 1,
+                                                                    },
+                                                                    {
+                                                                        Field_Name: 'Bags',
+                                                                        Fied_Data: 'number',
+                                                                        isVisible: 1,
+                                                                    },
+                                                                    {
+                                                                        Field_Name: 'Bal_Act_Qty',
+                                                                        ColumnHeader: 'Balance Quantity',
+                                                                        Fied_Data: 'number',
+                                                                        isVisible: 1,
+                                                                    },
+                                                                    {
+                                                                        Field_Name: 'godown_name',
+                                                                        ColumnHeader: 'Godown',
+                                                                        Fied_Data: 'string',
+                                                                        isVisible: 1,
+                                                                    },
+                                                                ]}
+                                                                EnableSerialNumber
+                                                                tableMaxHeight={2000}
+                                                                disablePagination={true}
+                                                            />
+                                                        )}
+                                                        tableMaxHeight={3000}
                                                         disablePagination={true}
+
                                                     />
                                                 )}
-                                                tableMaxHeight={3000}
+                                                tableMaxHeight={4000}
                                                 disablePagination={true}
-
                                             />
                                         )}
-                                        tableMaxHeight={4000}
+                                        tableMaxHeight={5000}
                                         disablePagination={true}
                                     />
-                                )}
-                                tableMaxHeight={5000}
-                                disablePagination={true}
-                            />
+                                </TabPanel>
+
+                                <TabPanel value={'List'} sx={{ px: 0, py: 2 }} >
+                                    <FilterableTable
+                                        dataArray={(Object.keys(filters).length > 0) ? filteredData : reportData}
+                                        columns={columns}
+                                    />
+                                </TabPanel>
+                            </TabContext>
+
                         </div>
 
                         <div className="col-xxl-2 col-lg-3 col-md-4 d-none d-md-block">

@@ -447,9 +447,6 @@ const ReportTemplateCreation = () => {
                                                                             value={table?.Table_Id}
                                                                             disabled={
                                                                                 isEqualNumber(inputs?.Join_First_Table_Id, table?.Table_Id)
-                                                                                // inputValues?.tableJoins?.find(fil =>
-                                                                                //     isEqualNumber(fil.Join_First_Table_Id, table?.Table_Id)
-                                                                                // )
                                                                             }
                                                                         >
                                                                             {table?.AliasName}
@@ -516,7 +513,6 @@ const ReportTemplateCreation = () => {
                             Back
                         </Button>
                         <Button
-                            // onClick={() => setInputValues(pre => ({ ...pre, previewDialog: false }))}
                             type='submit'
                             startIcon={<Save />}
                         >
