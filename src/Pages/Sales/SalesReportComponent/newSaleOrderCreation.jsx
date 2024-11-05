@@ -245,7 +245,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
     const Total_Invoice_value = orderProducts.reduce((o, item) => {
         const itemRate = RoundNumber(item?.Item_Rate);
         const billQty = parseInt(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate)
+        const Amount = Multiplication(billQty, itemRate);
 
         if (isInclusive || isNotTaxableBill) {
             return o += Amount;
