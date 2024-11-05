@@ -6,6 +6,8 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccessTime, FiberManualRecord, SmsOutlined } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
+import { getPreviousDate, ISOString, LocalDate } from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
 
 const WorkDocumentTaskGroupBased = () => {
     const localData = localStorage.getItem("user");
@@ -14,40 +16,40 @@ const WorkDocumentTaskGroupBased = () => {
     const [users, setUsers] = useState([]);
     const { contextObj } = useContext(MyContext);
     const [filter, setFilter] = useState({
-        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: getPreviousDate(1),
+        endDate: ISOString(),
         Emp_Id: parseData?.UserId,
         Emp_Name: parseData?.Name
     });
     const printRef = useRef()
 
     useEffect(() => {
-        fetch(`${api}task/workDone?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const groupedData = data?.data?.reduce((acc, current) => {
-                        const workDate = new Date(current?.Work_Dt).toISOString().split('T')[0];
-                        if (!acc[workDate]) {
-                            acc[workDate] = [];
-                        }
-                        acc[workDate].push(current);
-                        return acc;
-                    }, {});
-                    setWorkedDetails(groupedData)
-                }
-            }).catch(e => console.error(e))
+        fetchLink({
+            address: `task/workDone?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}`
+        }).then(data => {
+            if (data.success) {
+                const groupedData = data?.data?.reduce((acc, current) => {
+                    const workDate = new Date(current?.Work_Dt).toISOString().split('T')[0];
+                    if (!acc[workDate]) {
+                        acc[workDate] = [];
+                    }
+                    acc[workDate].push(current);
+                    return acc;
+                }, {});
+                setWorkedDetails(groupedData)
+            }
+        }).catch(e => console.error(e))
     }, [parseData?.UserId, filter])
 
     useEffect(() => {
         if (Number(contextObj?.Print_Rights) === 1) {
-            fetch(`${api}taskAssignedUsersDropdown`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setUsers(data.data)
-                    }
-                }).catch(e => console.error(e))
+            fetchLink({
+                address: `taskAssignedUsersDropdown`
+            }).then(data => {
+                if (data.success) {
+                    setUsers(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
+                }
+            }).catch(e => console.error(e))
         }
     }, [contextObj?.Print_Rights])
 
@@ -195,7 +197,7 @@ const WorkDocumentTaskGroupBased = () => {
                 <CardContent className="pt-2" style={{ minHeight: '500px' }}>
 
                     <div className="row">
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">From: </label>
                             <input
                                 type="date"
@@ -204,7 +206,7 @@ const WorkDocumentTaskGroupBased = () => {
                                 onChange={e => setFilter({ ...filter, startDate: e.target.value })}
                             />
                         </div>
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">To: </label>
                             <input
                                 type="date"
@@ -213,7 +215,7 @@ const WorkDocumentTaskGroupBased = () => {
                                 onChange={e => setFilter({ ...filter, endDate: e.target.value })}
                             />
                         </div>
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">User </label>
                             <Select
                                 value={{ value: filter?.Emp_Id, label: filter?.Emp_Name }}
@@ -227,7 +229,7 @@ const WorkDocumentTaskGroupBased = () => {
                                 isSearchable={true}
                                 placeholder={"User Name"} />
                         </div>
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 d-flex align-items-end p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 d-flex align-items-end p-2">
                             <button className="btn btn-primary rounded-5 px-3" onClick={handlePrint}>Print PDF</button>
                         </div>
                     </div>
@@ -238,8 +240,8 @@ const WorkDocumentTaskGroupBased = () => {
                         <div className="px-3" ref={printRef}>
                             <h5>Work Abstract Of {filter.Emp_Name} </h5>
                             <p className="mb-0">
-                                From {new Date(filter.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                &nbsp; - To: {new Date(filter.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                From {LocalDate(filter.startDate)}
+                                &nbsp; - To: {LocalDate(filter.endDate)}
                             </p>
                             <CardAndTableComp />
                         </div>

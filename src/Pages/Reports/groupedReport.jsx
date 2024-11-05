@@ -9,6 +9,7 @@ import listPlugin from '@fullcalendar/list';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { fetchLink } from '../../Components/fetchComponent'
+import { ISOString } from "../../Components/functions";
 
 const ReportTaskTypeBasedCalendar = () => {
     const localData = localStorage.getItem("user");
@@ -17,8 +18,8 @@ const ReportTaskTypeBasedCalendar = () => {
         Emp_Id: '',
         Project_Id: 0,
         Task_Id: 0,
-        from: new Date().toISOString().split('T')[0],
-        to: new Date().toISOString().split('T')[0],
+        from: ISOString(),
+        to: ISOString(),
         EmpGet: 'All Employee',
         ProjectGet: 'All Project',
         TaskGet: 'All Task',
@@ -45,35 +46,41 @@ const ReportTaskTypeBasedCalendar = () => {
     }, [filters.Emp_Id, filters.Project_Id, filters.Task_Id, filters.from, filters.to])
 
     useEffect(() => {
+
         fetchLink({
             address: `taskManagement/project/dropDown?Company_id=${parseData?.Company_id}`
         }).then(data => {
             if (data.success) {
-                setProjects(data.data)
+                setProjects(data?.data?.sort((a, b) => String(a?.Project_Name).localeCompare(b?.Project_Name)))
             }
         }).catch(e => console.error(e))
+
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
         }).then(data => {
             if (data.success) {
-                setUsersDropdown(data.data)
+                setUsersDropdown(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
             }
         }).catch(e => console.error(e))
+
         fetchLink({
             address: `taskManagement/task/assignEmployee/task/dropDown`
         }).then(data => {
             if (data.success) {
-                setTasks(data.data)
+                setTasks(data?.data?.sort((a, b) => String(a?.Task_Name).localeCompare(b?.Task_Name)))
             }
         }).catch(e => console.error(e))
+
         fetchLink({
             address: `masters/taskType`
         }).then((data) => {
             if (data.success && data.data.length > 0) {
-                setTaskTypeData(data.data);
-                setFileters(pre => ({ ...pre, TaskType: data?.data[0]?.Task_Type_Id, TaskTypeGet: data?.data[0]?.Task_Type }))
+                const sorted = data?.data?.sort((a, b) => String(a?.Task_Type).localeCompare(b?.Task_Type))
+                setTaskTypeData(sorted);
+                setFileters(pre => ({ ...pre, TaskType: sorted[0]?.Task_Type_Id, TaskTypeGet: sorted[0]?.Task_Type }))
             }
-        }).catch(e => console.error(e))            
+        }).catch(e => console.error(e))
+
     }, [parseData?.BranchId])
 
     const formatTime24 = (time24) => {

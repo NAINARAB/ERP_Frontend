@@ -3,25 +3,30 @@ import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton }
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import { isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData, Multiplication, Division, NumberFormat, Subraction, numberToWords, checkIsNumber, Addition } from "../../../Components/functions";
+import {
+    isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData,
+    Multiplication, Division, NumberFormat, Subraction, numberToWords,
+    RoundNumber, Addition
+} from "../../../Components/functions";
 import { Add, Clear, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable from "../../../Components/filterableTable2";
 import RequiredStar from "../../../Components/requiredStar";
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    if (isEqualNumber(method, 1) && checkIsNumber(amount) && checkIsNumber(percentage)) {
-        return amount - (amount * (100 / (100 + percentage)));
-    } else if (isEqualNumber(method, 0) && checkIsNumber(amount) && checkIsNumber(percentage)) {
-        return amount * (percentage / 100);
-    } else {
-        return 0;
+    switch (method) {
+        case 0:
+            return RoundNumber(amount * (percentage / 100));
+        case 1:
+            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
+        case 2:
+            return 0;
+        default:
+            return 0;
     }
 }
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
-
-
 
 const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -71,6 +76,11 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
     const [isEdit, setIsEdit] = useState(false);
     const [addProductDialog, setAddProductDialog] = useState(false);
 
+    const isExclusiveBill = isEqualNumber(orderDetails.GST_Inclusive, 0);
+    const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
+    const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
+    const IS_IGST = isEqualNumber(orderDetails.IS_IGST, 1);
+
     useEffect(() => {
         if (isValidObject(editValues)) {
             setOrderDetails(pre => ({
@@ -97,10 +107,10 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                 Units: pro?.Units ?? '',
                 Product: {
                     ...pro,
-                    Cgst_P: Number(pro?.Cgst) ?? 0,
-                    Sgst_P: Number(pro?.Sgst) ?? 0,
-                    Igst_P: Number(pro?.Igst) ?? 0,
-                    Gst_P: Addition(pro?.Cgst, pro?.Sgst) ?? 0
+                    Cgst_P: Number(findProductDetails(products, pro.Item_Id)?.Cgst_P) ?? 0,
+                    Sgst_P: Number(findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0,
+                    Igst_P: Number(findProductDetails(products, pro.Item_Id)?.Igst_P) ?? 0,
+                    Gst_P: Addition(findProductDetails(products, pro.Item_Id)?.Cgst_P, findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0
                 } ?? {},
                 Group: 'Search Group',
                 GroupID: '',
@@ -114,7 +124,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
             setOrderProducts([])
             setIsEdit(false)
         }
-    }, [editValues])
+    }, [editValues, products])
 
     useEffect(() => {
 
@@ -233,32 +243,41 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
     }
 
     const Total_Invoice_value = orderProducts.reduce((o, item) => {
-        const product = findProductDetails(products, item.Item_Id);
-        const itemRate = parseFloat(item?.Item_Rate);
+        const itemRate = RoundNumber(item?.Item_Rate);
         const billQty = parseInt(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate)
-        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+        const Amount = Multiplication(billQty, itemRate);
 
-        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
+        if (isInclusive || isNotTaxableBill) {
             return o += Amount;
-        } else {
+        }
+
+        if (isExclusiveBill) {
+            const product = findProductDetails(products, item.Item_Id);
+            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
             const tax = taxCalc(0, itemRate, gstPercentage)
             return o += (Amount + (tax * billQty));
         }
     }, 0);
 
     const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
-        const product = findProductDetails(products, item.Item_Id);
-        const itemRate = parseFloat(item?.Item_Rate) || 0;
+        const itemRate = RoundNumber(item?.Item_Rate);
         const billQty = parseInt(item?.Bill_Qty) || 0;
-        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
-        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
-            const itemTax = taxCalc(1, itemRate, gstPercentage)
+        if (isNotTaxableBill) {
+            acc.TotalValue += Multiplication(billQty, itemRate);
+            return acc;
+        }
+
+        const product = findProductDetails(products, item.Item_Id);
+        const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+
+        if (isInclusive) {
+            const itemTax = taxCalc(1, itemRate, gstPercentage);
             const basePrice = Subraction(itemRate, itemTax);
             acc.TotalTax += Multiplication(billQty, itemTax);
             acc.TotalValue += Multiplication(billQty, basePrice);
-        } else {
+        }
+        if (isExclusiveBill) {
             const itemTax = taxCalc(0, itemRate, gstPercentage);
             acc.TotalTax += Multiplication(billQty, itemTax);
             acc.TotalValue += Multiplication(billQty, itemRate);
@@ -269,6 +288,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         TotalValue: 0,
         TotalTax: 0
     });
+
+    useEffect(() => {
+        setOrderProducts(pre => pre?.map(pro => ({
+            ...pro,
+            Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty)
+        })));
+    }, [orderDetails.GST_Inclusive])
 
     return (
         <>
@@ -321,6 +347,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                             >
                                                 <option value={1}>Inclusive Tax</option>
                                                 <option value={0}>Exclusive Tax</option>
+                                                <option value={2}>Not Taxable</option>
                                             </select>
                                         </td>
                                     </tr>
@@ -426,7 +453,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                         },
                         {
                             isCustomCell: true,
-                            Cell: ({ row }) => row?.Bill_Qty + ' ' + row?.Units,
+                            Cell: ({ row }) => row?.Bill_Qty + ' ' + (row?.Units ?? ''),
                             ColumnHeader: 'Quantity',
                             isVisible: 1,
                             align: 'center'
@@ -442,11 +469,13 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             ColumnHeader: 'Taxable Amount',
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
+                                const percentage = (
+                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
                                 const amount = row.Amount ?? 0;
-                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
+                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
+                                console.log({percentage, amount, tax, row})
                                 return NumberFormat(
-                                    isEqualNumber(orderDetails.GST_Inclusive, 1) ? (amount - tax) : amount
+                                    isInclusive ? (amount - tax) : amount
                                 )
                             },
                             isVisible: 1,
@@ -455,8 +484,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                         {
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                console.log({row})
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
+                                const percentage = (
+                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 return NumberFormat(
                                     taxCalc(orderDetails.GST_Inclusive, amount, percentage)
@@ -470,7 +499,12 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             ColumnHeader: 'Amount',
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (orderDetails.IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
+                                const igst = row?.Product?.Igst_P || row?.Igst
+                                const percentage = (
+                                    IS_IGST 
+                                    ? row?.Product?.Igst_P 
+                                    : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)
+                                ) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
                                 return NumberFormat(

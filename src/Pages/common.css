@@ -233,9 +233,16 @@
 }
 
 .vctr {
-  vertical-align: middle;
+  vertical-align: middle !important;
 }
 
+.vtop {
+  vertical-align: top !important;
+}
+
+.vbottom {
+  vertical-align: bottom !important;
+}
 
 .scrollable-lists {
   min-width: 380px;

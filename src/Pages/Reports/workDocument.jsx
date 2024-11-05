@@ -6,8 +6,9 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccessTime, FiberManualRecord, SmsOutlined } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
 import { fetchLink } from "../../Components/fetchComponent";
+import { getPreviousDate, ISOString, LocalDate } from "../../Components/functions";
 
-const EmployeeDayAbstract = () => {
+const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const [workedDetails, setWorkedDetails] = useState([]);
@@ -16,8 +17,8 @@ const EmployeeDayAbstract = () => {
 
     const { contextObj } = useContext(MyContext);
     const [filter, setFilter] = useState({
-        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: getPreviousDate(1),
+        endDate: ISOString(),
         Emp_Id: parseData?.UserId,
         Emp_Name: parseData?.Name,
         Task_Id: '',
@@ -26,12 +27,15 @@ const EmployeeDayAbstract = () => {
     const printRef = useRef()
 
     useEffect(() => {
+        if (loadingOn) {
+            loadingOn();
+        }
         fetchLink({
-            address: `taskManagement/task/work?Emp_Id=${filter?.Emp_Id}&Start=${filter.startDate}&End=${filter.endDate}&Task_Id=${filter?.Task_Id}`
+            address: `taskManagement/task/work?Emp_Id=${filter?.Emp_Id}&from=${filter.startDate}&to=${filter.endDate}&Task_Id=${filter?.Task_Id}`
         }).then(data => {
             if (data.success) {
                 const groupedData = data?.data?.reduce((acc, current) => {
-                    const workDate = new Date(current?.Work_Dt).toISOString().split('T')[0];
+                    const workDate = ISOString(current?.Work_Dt);
                     if (!acc[workDate]) {
                         acc[workDate] = [];
                     }
@@ -40,7 +44,11 @@ const EmployeeDayAbstract = () => {
                 }, {});
                 setWorkedDetails(groupedData)
             }
-        }).catch(e => console.error(e))            
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) {
+                loadingOff();
+            }
+        })
     }, [parseData?.UserId, filter])
 
     useEffect(() => {
@@ -50,7 +58,7 @@ const EmployeeDayAbstract = () => {
             if (data.success) {
                 setTasks(data.data)
             }
-        }).catch(e => console.error(e))            
+        }).catch(e => console.error(e))
     }, [])
 
     useEffect(() => {
@@ -59,9 +67,9 @@ const EmployeeDayAbstract = () => {
                 address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
             }).then(data => {
                 if (data.success) {
-                    setUsers(data.data)
+                    setUsers(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
                 }
-            }).catch(e => console.error(e))                
+            }).catch(e => console.error(e))
         }
     }, [contextObj?.Print_Rights, parseData?.Company_id])
 
@@ -96,7 +104,7 @@ const EmployeeDayAbstract = () => {
                     <div key={workDate} className="cus-card pb-0">
                         <h6 className="p-3 mb-0 bg-light">
                             Date:
-                            {new Date(workDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            {LocalDate(workDate)}
                             {" ( " + workedDetails[workDate]?.length + " Tasks )"}
                         </h6>
 
@@ -175,14 +183,14 @@ const EmployeeDayAbstract = () => {
                                             <span>&emsp;{taskDetail.Work_Done}</span>
                                         </p>
 
-                                        {taskDetail?.Parameter_Details?.length > 0 && (
-                                            <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Parameter_Details?.length} )</p>
+                                        {taskDetail?.Work_Param?.length > 0 && (
+                                            <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Work_Param?.length} )</p>
                                         )}
 
-                                        {taskDetail?.Parameter_Details?.length > 0 && <hr className="m-0" />}
+                                        {taskDetail?.Work_Param?.length > 0 && <hr className="m-0" />}
 
-                                        {taskDetail?.Parameter_Details?.map((o, i) => (
-                                            <p className="mb-0 fa-14 d-flex" key={i}>
+                                        {taskDetail?.Work_Param?.map((o, i) => (
+                                            <p className="mb-0 fa-14 d-flex flex-wrap" key={i}>
                                                 <span className="flex-grow-1">{o?.Paramet_Name}:</span>
                                                 <span> {o?.Current_Value}</span>
                                             </p>
@@ -208,7 +216,7 @@ const EmployeeDayAbstract = () => {
 
                     <div className="row">
 
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">From: </label>
                             <input
                                 type="date"
@@ -218,7 +226,7 @@ const EmployeeDayAbstract = () => {
                             />
                         </div>
 
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">To: </label>
                             <input
                                 type="date"
@@ -228,13 +236,14 @@ const EmployeeDayAbstract = () => {
                             />
                         </div>
 
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">User </label>
                             <Select
                                 value={{ value: filter?.Emp_Id, label: filter?.Emp_Name }}
                                 onChange={(e) => setFilter({ ...filter, Emp_Id: e.value, Emp_Name: e.label })}
                                 options={[
                                     { value: parseData?.UserId, label: parseData?.Name },
+                                    { value: '', label: "ALL EMPLOYEE" },
                                     ...users.map(obj => ({ value: obj.UserId, label: obj.Name }))
                                 ]}
                                 styles={customSelectStyles}
@@ -243,7 +252,7 @@ const EmployeeDayAbstract = () => {
                                 placeholder={"User Name"} />
                         </div>
 
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label className="pb-2">Task </label>
                             <Select
                                 value={{ value: filter?.Task_Id, label: filter?.Task_Name }}
@@ -257,7 +266,7 @@ const EmployeeDayAbstract = () => {
                                 placeholder={"Task Name"} />
                         </div>
 
-                        <div className="col-xxl-2 col-xl-3 col-lg-4 col-md-6 d-flex align-items-end p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 d-flex align-items-end p-2">
                             <button className="btn btn-primary rounded-5 px-3" onClick={handlePrint}>Print PDF</button>
                         </div>
 
@@ -269,8 +278,8 @@ const EmployeeDayAbstract = () => {
                         <div className="px-3" ref={printRef}>
                             <h5>Work Abstract Of {filter.Emp_Name} </h5>
                             <p className="mb-0">
-                                From {new Date(filter.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                &nbsp; - To: {new Date(filter.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                From {LocalDate(filter.startDate)}
+                                &nbsp; - To: {LocalDate(filter.endDate)}
                             </p>
                             <CardAndTableComp />
                         </div>
