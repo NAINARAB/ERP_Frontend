@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
  * @typedef {Object} Column
  * @property {string} Field_Name
  * @property {'string'|'number'|'date'|'time'} Fied_Data
+ * @property {'top'|'middle'|'bottom'} verticalAlign
  * @property {string} ColumnHeader
  * @property {0|1} isVisible
  * @property {'left'|'right'|'center'} align
@@ -63,6 +64,19 @@ const FilterableTable = ({
             class: 'text-center'
         }
     ];
+
+    const columnVerticalAlign = [
+        {
+            type: 'top',
+            class: ' vtop '
+        }, {
+            type: 'bottom',
+            class: ' vbottom '
+        }, {
+            type: 'center',
+            class: ' vctr '
+        }
+    ]
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -139,13 +153,13 @@ const FilterableTable = ({
                 <TableRow>
 
                     {(isExpendable === true && expandableComp) && (
-                        <TableCell className='fa-13 border-end text-center'>
+                        <TableCell className='fa-13 border-end text-center vtop'>
                             <IconButton size='small' onClick={() => setOpen(pre => !pre)}>{open ? <KeyboardArrowUp sx={{ fontSize }} /> : <KeyboardArrowDown sx={{ fontSize }} />}</IconButton>
                         </TableCell>
                     )}
 
                     {EnableSerialNumber === true && (
-                        <TableCell className='fa-13 border-end text-center'>{(rowsPerPage * page) + index + 1}</TableCell>
+                        <TableCell className='fa-13 border-end text-center vtop'>{(rowsPerPage * page) + index + 1}</TableCell>
                     )}
 
                     {columns?.map((column, columnInd) => (
@@ -162,6 +176,8 @@ const FilterableTable = ({
                                             key={columnInd}
                                             className={`fa-13 border-end ` + (
                                                 column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
+                                            ) + (
+                                                column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
                                             )}
                                             onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                         >
@@ -174,6 +190,8 @@ const FilterableTable = ({
                                     key={columnInd}
                                     className={`fa-13 border-end ` + (
                                         column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
+                                    ) + (
+                                        column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
                                     )}
                                 >
                                     {column.Cell({ row, Field_Name: column.Field_Name })}
@@ -311,6 +329,7 @@ FilterableTable.propTypes = {
         ColumnHeader: PropTypes.string,
         isVisible: PropTypes.oneOf([0, 1]),
         align: PropTypes.oneOf(['left', 'right', 'center']),
+        verticalAlign: PropTypes.oneOf(['top', 'center', 'bottom']),
         isCustomCell: PropTypes.bool,
         Cell: PropTypes.func
     })).isRequired,

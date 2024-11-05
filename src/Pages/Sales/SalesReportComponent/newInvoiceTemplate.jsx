@@ -1,39 +1,37 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, Button, DialogActions } from '@mui/material';
 import { Close, Download } from '@mui/icons-material';
-import { checkIsNumber, isEqualNumber, isGraterNumber, LocalDate, NumberFormat, numberToWords, Multiplication, Subraction, Addition } from '../../../Components/functions';
+import { isEqualNumber, isGraterNumber, LocalDate, NumberFormat, numberToWords, Multiplication, Subraction, Addition, RoundNumber } from '../../../Components/functions';
 import { useReactToPrint } from 'react-to-print';
 import { fetchLink } from '../../../Components/fetchComponent';
 
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    if (isEqualNumber(method, 1) && checkIsNumber(amount) && checkIsNumber(percentage)) {
-        return amount - (amount * (100 / (100 + percentage)));
-    } else if (isEqualNumber(method, 0) && checkIsNumber(amount) && checkIsNumber(percentage)) {
-        return amount * (percentage / 100);
-    } else {
-        return 0;
+    switch (method) {
+        case 0:
+            return RoundNumber(amount * (percentage / 100));
+        case 1:
+            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
+        case 2:
+            return 0;
+        default:
+            return 0;
     }
 }
-
-const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen, clearDetails, children, TitleText }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [open, setOpen] = useState(false);
-    const [products, setProducts] = useState([]);
     const [retailerInfo, setRetailerInfo] = useState({});
     const [companyInfo, setCompanyInfo] = useState({});
-    const printRef = useRef(null)
+    const printRef = useRef(null);
+
+    const isExclusiveBill = isEqualNumber(orderDetails.GST_Inclusive, 0);
+    const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
+    const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
+    const IS_IGST = isEqualNumber(orderDetails.IS_IGST, 1);
 
     useEffect(() => {
-        fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setProducts(data.data)
-            }
-        }).catch(e => console.error(e))
 
         fetchLink({
             address: `masters/company?Company_id=${storage?.Company_id}`
@@ -74,39 +72,26 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
         }
     };
 
-    const includedProducts = orderProducts.filter(orderProduct => {
-        return products?.some(product => isEqualNumber(
-            orderProduct?.Item_Id, product?.Product_Id
-        ) && isGraterNumber(orderProduct?.Bill_Qty, 0));
-    });
+    const includedProducts = orderProducts.filter(orderProduct => isGraterNumber(orderProduct?.Bill_Qty, 0));
 
-    const Total_Invoice_value = includedProducts.reduce((o, item) => {
-        const product = findProductDetails(products, item.Item_Id);
-        const itemRate = parseFloat(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate)
-        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
-
-        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
-            return o += Amount;
-        } else {
-            const tax = taxCalc(0, itemRate, gstPercentage)
-            return o += (Amount + (tax * billQty));
-        }
-    }, 0);
-
-    const totalValueBeforeTax = includedProducts.reduce((acc, item) => {
-        const product = findProductDetails(products, item.Item_Id);
-        const itemRate = parseFloat(item?.Item_Rate) || 0;
+    const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
+        const itemRate = RoundNumber(item?.Item_Rate);
         const billQty = parseInt(item?.Bill_Qty) || 0;
-        const gstPercentage = isEqualNumber(orderDetails.IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
-        if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
-            const itemTax = taxCalc(1, itemRate, gstPercentage)
+        if (isNotTaxableBill) {
+            acc.TotalValue += Multiplication(billQty, itemRate);
+            return acc;
+        }
+
+        const gstPercentage = IS_IGST ? item?.Igst : Addition(item?.Sgst, item?.Cgst);
+
+        if (isInclusive) {
+            const itemTax = taxCalc(1, itemRate, gstPercentage);
             const basePrice = Subraction(itemRate, itemTax);
             acc.TotalTax += Multiplication(billQty, itemTax);
             acc.TotalValue += Multiplication(billQty, basePrice);
-        } else {
+        }
+        if (isExclusiveBill) {
             const itemTax = taxCalc(0, itemRate, gstPercentage);
             acc.TotalTax += Multiplication(billQty, itemTax);
             acc.TotalValue += Multiplication(billQty, itemRate);
@@ -280,9 +265,9 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                         <td className='border bg-light fa-14 text-end'>
                                             <p className='m-2 '>Rate</p>
                                             <p className='m-0 '>
-                                                {isEqualNumber(
-                                                    orderDetails.GST_Inclusive, 1
-                                                ) ? '(Incl. of Tax)' : '(Excl. of Tax)'}
+                                                {isEqualNumber(orderDetails.GST_Inclusive, 1) && '(Incl. of Tax)'} 
+                                                {isEqualNumber(orderDetails.GST_Inclusive, 2) && '(Tax not applicable)'}
+                                                {isEqualNumber(orderDetails.GST_Inclusive, 0) && '(Excl. of Tax)'}
                                             </p>
                                         </td>
                                         <td className='border bg-light fa-14 text-end'>Amount</td>
@@ -292,23 +277,19 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                 <tbody>
 
                                     {includedProducts.map((o, i) => {
-                                        const productDetails = findProductDetails(products, o.Item_Id);
-                                        const percentage = (orderDetails.IS_IGST ? productDetails?.Igst_P : productDetails?.Gst_P) ?? 0;
-                                        const uom = o?.UOM;
+                                        const percentage = (IS_IGST ? o?.Igst_P : o?.Cgst + o?.Sgst) ?? 0;
                                         const quantity = Number(o?.Bill_Qty || 0);
                                         const Item_Rate = Number(o?.Item_Rate || 0);
                                         const itemTax = taxCalc(orderDetails.GST_Inclusive, Item_Rate, percentage)
-                                        const amount = quantity * Item_Rate;
-                                        const amountTax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
                                         return (
                                             <tr key={i}>
                                                 <td className='border fa-13'>{i + 1}</td>
-                                                <td className='border fa-13'>{productDetails?.Product_Name}</td>
-                                                <td className='border fa-13'>{productDetails?.HSN_Code}</td>
+                                                <td className='border fa-13'>{o?.Product_Name}</td>
+                                                <td className='border fa-13'>{o?.HSN_Code}</td>
 
                                                 <td className='border fa-13 text-end'>
                                                     {NumberFormat(quantity)}
-                                                    {uom && ' (' + uom + ') '}
+                                                    {o?.UOM && ' (' + o?.UOM + ') '}
                                                 </td>
 
                                                 <td className='border fa-13 text-end'> {/* taxable item value */}
@@ -324,13 +305,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                                 </td>
 
                                                 <td className='border fa-13 text-end'> {/* taxable amount (qty * rate) */}
-                                                    {/* {NumberFormat(isEqualNumber(
-                                                    orderDetails.GST_Inclusive, 1
-                                                ) ? amount : (amount + amountTax))} */}
-                                                    {NumberFormat(isEqualNumber(
-                                                        orderDetails.GST_Inclusive, 1
-                                                    ) ? (amount - amountTax) : amount)}
-                                                    {/* {NumberFormat(o?.Taxable_Amount)} */}
+                                                    {NumberFormat(o?.Taxable_Amount)}
                                                 </td>
 
                                             </tr>
@@ -340,11 +315,11 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                     <tr>
                                         <td
                                             className="border p-2"
-                                            rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}
+                                            rowSpan={IS_IGST ? 4 : 5}
                                             colSpan={4}
                                         >
                                             <p className='m-0'>Amount Chargeable (in words):</p>
-                                            <p className='m-0'>&emsp; INR {numberToWords(parseInt(Total_Invoice_value))} Only.</p>
+                                            <p className='m-0'>&emsp; INR {numberToWords(parseInt(orderDetails?.Total_Invoice_value))} Only.</p>
                                         </td>
                                         <td className="border p-2 fa-14" colSpan={2}>Total Taxable Amount</td>
                                         <td className="border p-2 text-end fa-14">
@@ -352,20 +327,18 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                         </td>
                                     </tr>
 
-                                    {!isEqualNumber(orderDetails.IS_IGST, 1) ? (
+                                    {!IS_IGST ? (
                                         <>
                                             <tr>
                                                 <td className="border p-2 fa-14" colSpan={2}>CGST</td>
                                                 <td className="border p-2 text-end fa-14">
-                                                    {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
-                                                    {/* {includedProducts.reduce((gst, item) => gst += item.Cgst_Amo, 0)} */}
+                                                    {NumberFormat(orderDetails?.CSGT_Total)}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td className="border p-2 fa-14" colSpan={2}>SGST</td>
                                                 <td className="border p-2 fa-14 text-end">
-                                                    {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
-                                                    {/* {includedProducts.reduce((gst, item) => gst += item.Sgst_Amo, 0)} */}
+                                                    {NumberFormat(orderDetails?.SGST_Total)}
                                                 </td>
                                             </tr>
                                         </>
@@ -373,8 +346,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                         <tr>
                                             <td className="border p-2 fa-14" colSpan={2}>IGST</td>
                                             <td className="border p-2 fa-14 text-end">
-                                                {NumberFormat(totalValueBeforeTax.TotalTax)}
-                                                {/* {includedProducts.reduce((gst, item) => gst += item.Igst_Amo, 0)} */}
+                                                {NumberFormat(orderDetails.IGST_Total)}
                                             </td>
                                         </tr>
                                     )}
@@ -382,18 +354,14 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                     <tr>
                                         <td className="border p-2 fa-14" colSpan={2}>Round Off</td>
                                         <td className="border p-2 fa-14 text-end">
-                                            {NumberFormat(
-                                                Total_Invoice_value - (
-                                                    totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax
-                                                )
-                                            )}
+                                            {NumberFormat(orderDetails?.Round_off)}
                                         </td>
                                     </tr>
 
                                     <tr>
                                         <td className="border p-2 fa-14" colSpan={2}>Total</td>
                                         <td className="border p-2 fa-14 text-end fw-bold">
-                                            {NumberFormat(Total_Invoice_value)}
+                                            {NumberFormat(orderDetails?.Total_Invoice_value)}
                                         </td>
                                     </tr>
 
@@ -493,7 +461,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td 
+                                        <td
                                             colSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 5 : 7}
                                             className='border fa-13 fw-bold'
                                         >

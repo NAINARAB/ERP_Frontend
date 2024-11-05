@@ -6,9 +6,9 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 import { AccountCircle, TaskAlt } from '@mui/icons-material';
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
-import { checkIsNumber } from "../../Components/functions";
+import { checkIsNumber, formatTime24 } from "../../Components/functions";
 
-const EmployeeAbstract = () => {
+const EmployeeAbstract = ({ loadingOn, loadingOff }) => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
     const [empData, setEmpData] = useState({});
@@ -20,24 +20,33 @@ const EmployeeAbstract = () => {
     });
 
     useEffect(() => {
-        setEmpData({})
+        setEmpData({});
+        if (loadingOn) {
+            loadingOn();
+        }
         fetchLink({
             address: `dashboard/employeeAbstract?UserId=${filter?.UserId}`
         }).then(data => {
             if (data.success) {
                 setEmpData(data.data[0])
             }
-        }).catch(e => console.error(e));
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) {
+                loadingOff();
+            }
+        })
     }, [filter?.UserId])
 
     useEffect(() => {
-        fetchLink({
-            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setUserDropDown(data.data)
-            }
-        }).catch(e => console.error(e))
+        if (Number(contextObj?.Print_Rights) === 1) {
+            fetchLink({
+                address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+            }).then(data => {
+                if (data.success) {
+                    setUserDropDown(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
+                }
+            }).catch(e => console.error(e))
+        }
     }, [])
 
     return (
@@ -146,36 +155,42 @@ const EmployeeAbstract = () => {
                             },
                             {
                                 Field_Name: "Task_Desc",
+                                ColumnHeader: 'Description',
                                 Fied_Data: "string",
                                 isVisible: 1,
                                 OrderBy: 2,
                             },
                             {
                                 Field_Name: "Est_Start_Dt",
+                                ColumnHeader: 'From Date',
                                 Fied_Data: "date",
                                 isVisible: 1,
                                 OrderBy: 3,
                             },
                             {
                                 Field_Name: "Est_End_Dt",
+                                ColumnHeader: 'To Date',
                                 Fied_Data: "date",
                                 isVisible: 1,
                                 OrderBy: 4,
                             },
                             {
-                                Field_Name: "Sch_Time",
-                                Fied_Data: "string",
+                                isCustomCell: true,
+                                Cell: ({ row }) => row?.Sch_Time ? formatTime24(row?.Sch_Time) : row?.Sch_Time,
+                                ColumnHeader: 'Start Time',
                                 isVisible: 1,
                                 OrderBy: 1,
                             },
                             {
-                                Field_Name: "EN_Time",
-                                Fied_Data: "string",
+                                isCustomCell: true,
+                                Cell: ({ row }) => row?.EN_Time ? formatTime24(row?.EN_Time) : row?.EN_Time,
+                                ColumnHeader: 'End Time',
                                 isVisible: 1,
                                 OrderBy: 1,
                             },
                             {
                                 Field_Name: "Sch_Period",
+                                ColumnHeader: 'Duration',
                                 Fied_Data: "string",
                                 isVisible: 1,
                                 OrderBy: 1,
@@ -226,14 +241,14 @@ const EmployeeAbstract = () => {
                                                     {Array.isArray(row.Parameter_Details) && row.Parameter_Details.map((oo, oi) => (
                                                         <div className="d-flex align-items-center me-2">
                                                             <p key={oi} className="me-2">
-                                                                {oo?.Paramet_Name}: 
+                                                                {oo?.Paramet_Name}:
                                                             </p>
                                                             <p className=" fw-bold px-3 py-1 border rounded-3 ">
                                                                 {((!checkIsNumber(oo?.Current_Value) || oo?.Paramet_Data_Type !== 'number')
                                                                     ? oo?.Current_Value
                                                                     : Number(oo?.Current_Value).toLocaleString('en-IN'))
                                                                 }
-                                                            </p> 
+                                                            </p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -243,29 +258,8 @@ const EmployeeAbstract = () => {
                                 />
                             )
                         }}
-                        tableMaxHeight={740}
+                        tableMaxHeight={5000}
                     />
-                    {/* 
-                    {empData?.AssignedTasks?.length > 0 && (
-                        <div className="table-responsive">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th className="fa-13 border">SNo</th>
-                                        <th className="fa-13 border">TaskName</th>
-                                        <th className="fa-13 border">From - To</th>
-                                        <th className="fa-13 border">Time</th>
-                                        <th className="fa-13 border">Duration</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {empData?.AssignedTasks?.map((o, i) => (
-                                        <ExtendableRow key={i} sno={++i} o={o} className="h-b" />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )} */}
                 </CardContent>
             </Card>
         </>
