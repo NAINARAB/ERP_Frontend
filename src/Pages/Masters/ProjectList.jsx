@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Edit, Delete, Launch, People } from '@mui/icons-material';
@@ -10,6 +9,7 @@ import EmployeeManagementDialog from "../../Components/employeeManagement/employ
 import DataTable from "react-data-table-component";
 import ListingTask from "../../Components/taskDetails/listingTask";
 import SearchIcon from '@mui/icons-material/Search';
+import { margin } from "@mui/system";
 
 const ActiveProjects = () => {
     const [reload, setReload] = useState(false);
@@ -25,7 +25,7 @@ const ActiveProjects = () => {
     const [deleteDialog, setDeleteDialog] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
-    const [listingTaskDialogOpen, setListingTaskDialogOpen] = useState(false); 
+    const [listingTaskDialogOpen, setListingTaskDialogOpen] = useState(false);
     const [filterInput, setFilterInput] = useState('');
 
     useEffect(() => {
@@ -81,7 +81,6 @@ const ActiveProjects = () => {
                 if (data.success) {
                     setReload(!reload);
                     toast.success(data.message);
-                 
                 } else {
                     toast.error(data.message);
                 }
@@ -92,62 +91,65 @@ const ActiveProjects = () => {
 
     const columns = [
         {
-            name: 'Project Name',
+            name: 'Project',
             selector: row => row.Project_Name,
             sortable: true,
+            width: '200px',
         },
         {
-            name: 'Project Head',
+            name: 'Head',
             selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Project_Head_Name,
             sortable: true,
+            width: '140px'
         },
         {
             name: 'Status',
             selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Status,
             sortable: true,
-        },
-        {
-            name: 'Start Date',
-            selector: row => row.Est_Start_Dt ? new Date(row.Est_Start_Dt).toLocaleDateString('en-IN') : "N/A",
-            sortable: true,
+            width: '120px'
         },
         {
             name: 'End Date',
             selector: row => row.Est_End_Dt ? new Date(row.Est_End_Dt).toLocaleDateString('en-IN') : "N/A",
             sortable: true,
+            width: '120px'
         },
         {
             name: 'Progress',
             selector: row => `${calcPercentage(row.TasksScheduled, row.CompletedTasks)}%`,
             sortable: true,
+            width: '120px'
         },
         {
-            name: 'Tasks / Completed',
+            name: 'Tasks',
             cell: row => (
                 <>
-                    {row.CompletedTasks} / {row.TasksScheduled}
-                    <IconButton onClick={() => handleOpenListingTaskDialog(row)} style={{ marginLeft: '8px' }}>
+                    <IconButton onClick={() => handleOpenListingTaskDialog(row)}>
                         <Launch />
                     </IconButton>
+                    {row.CompletedTasks} / {row.TasksScheduled}
                 </>
             ),
+            width: '120px'
         },
         {
-            name: 'Tasks Assigned',
-            selector: row => row.TasksAssignedToEmployee,
+            name: 'Assigned',
+            selector: row => row.TotalTaskAssignments,
+            width: '140px'
         },
         {
-            name: 'Employees Involved',
+            name: 'Employees',
             cell: row => (
                 <>
-                    {row.EmployeesInvolved}
                     {Number(contextObj?.Add_Rights) === 1 && (
                         <IconButton onClick={() => handleOpenEmployeeDialog(row.Project_Id)}>
                             <People />
                         </IconButton>
                     )}
+                    {row.EmployeesInvolved}
                 </>
             ),
+            width: '120px'
         },
         {
             name: 'Actions',
@@ -156,11 +158,9 @@ const ActiveProjects = () => {
                     {Number(contextObj?.Edit_Rights) === 1 && (
                         <IconButton onClick={() => handleOpenEditDialog(row)}><Edit /></IconButton>
                     )}
-                    {Number(contextObj?.Delete_Rights) === 1 && (
-                        <IconButton onClick={() => handleOpenDeleteDialog(row)}><Delete /></IconButton>
-                    )}
                 </>
             ),
+            width: '120px'
         },
     ];
 
@@ -175,39 +175,34 @@ const ActiveProjects = () => {
     });
 
     const handleOpenCreateDialog = () => {
-        console.log("Opening Create Dialog");
-        setSelectedProject(null); 
-        setIsEdit(false); 
-        setDialogOpen(true); 
-        console.log("Dialog Open State:", dialogOpen);
+        setSelectedProject(null);
+        setIsEdit(false);
+        setDialogOpen(true);
     };
-    
+
     const handleOpenEditDialog = (project) => {
-        console.log("Opening Edit Dialog for project:", project);
-        setSelectedProject(project); 
-        setIsEdit(true); 
-        setDialogOpen(true); 
-        console.log("Dialog Open State:", dialogOpen);
+        setSelectedProject(project);
+        setIsEdit(true);
+        setDialogOpen(true);
     };
-    
+
     const handleOpenDeleteDialog = (project) => {
         setProjectToDelete(project);
         setDeleteDialog(true);
-        
     };
 
     const handleOpenListingTaskDialog = (project) => {
         setSelectedProject(project);
         setProjectId(project.Project_Id);
-        setListingTaskDialogOpen(true); 
+        setListingTaskDialogOpen(true);
     };
 
     const handleCloseDialogs = () => {
         setDialogOpen(false);
-        setListingTaskDialogOpen(false); 
+        setListingTaskDialogOpen(false);
         setSelectedProject(null);
         setProjectToDelete(null);
-        setDeleteDialog(false)
+        setDeleteDialog(false);
     };
 
     const handleProjectCreated = () => {
@@ -226,8 +221,8 @@ const ActiveProjects = () => {
 
     return (
         <>
-            <div className="fw-bold d-flex align-items-center justify-content-between mt-0">
-                <span>Projects</span>
+            <div className="fw-bold d-flex align-items-center justify-content-between mt-0 ">
+                <span style={{marginLeft:'20px'}}>Projects</span>
                 <div className="mb-1" style={{ display: 'flex', alignItems: 'center' }}>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <SearchIcon style={{ position: 'absolute', left: 15, color: '#aaa' }} />
@@ -245,40 +240,47 @@ const ActiveProjects = () => {
                         />
                     </div>
                     {Number(contextObj?.Add_Rights) === 1 && (
-                        <button onClick={() => handleOpenCreateDialog(null)} className="btn btn-primary fa-13 shadow">
+                        <button onClick={handleOpenCreateDialog} className="btn btn-primary fa-13 shadow">
                             Create Project
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="card">
-                <div className="card-body2 p-0" style={{ marginTop: '0px', overflow: 'hidden' }}>
-                    <DataTable
-                        columns={columns}
-                        data={filteredProjects}
-                        pagination
-                        highlightOnHover
-                        fixedHeader
-                        fixedHeaderScrollHeight="58vh"
-                        persistTableHead
-                        noHeader={false}
-                        customStyles={{
-                            headCells: {
-                                style: {
-                                    fontSize: '16px',
-                                    fontWeight: 'bold',
-                                    padding: '10px',
-                                    backgroundColor: '#f7f7f7',
-                                },
+            <div className="card-body p-0" style={{ marginTop: '0px', overflow: 'hidden', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+
+                <DataTable
+                    columns={columns}
+                    data={filteredProjects}
+                    pagination
+                    highlightOnHover
+                    fixedHeader
+                    fixedHeaderScrollHeight="58vh"
+                    persistTableHead
+                    noHeader={false}
+                    style={{ width: '50%' }} 
+                    customStyles={{
+                        headCells: {
+                            style: {
+                                fontSize: '15px',
+                                fontWeight: 'bold',
+                                padding: '10px',
+                                backgroundColor: '#03a9f4',
                             },
-                        }}
-                    />
-                </div>
+                        },
+                        cells: {
+                            style: {
+                                padding: '3px',
+                                fontSize: '15px',
+                                
+                            },
+                        },
+                    }}
+                />
             </div>
 
+
             <ListingTask
-                // completedTasks={0}
                 onClose={handleCloseDialogs}
                 dialogOpen={listingTaskDialogOpen}
                 setDialogOpen={setListingTaskDialogOpen}
@@ -288,7 +290,6 @@ const ActiveProjects = () => {
                 onReload={handleReloadProjects}
             />
 
-        
             <ProjectForm
                 open={dialogOpen}
                 onClose={handleCloseDialogs}
