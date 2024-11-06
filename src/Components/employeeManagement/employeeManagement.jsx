@@ -21,7 +21,14 @@ import { MyContext } from "../../Components/context/contextProvider";
 import Popper from '@mui/material/Popper';
 
 const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
-    const [employees, setEmployees] = useState([]);
+
+    const initialValue = {
+        Name: '',
+        Designation_Name: '',
+        BranchName: ''
+    }
+
+    const [employees, setEmployees] = useState(initialValue);
     const [loading, setLoading] = useState(true);
     const [addEmployeeDialogOpen, setAddEmployeeDialogOpen] = useState(false);
     const [dropdownEmployees, setDropdownEmployees] = useState([]);
@@ -99,6 +106,8 @@ const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
 
     const handleAddEmployeeClose = () => {
         setAddEmployeeDialogOpen(false);
+        onClosed()
+        setEmployees(initialValue)
     };
 
     const handleAddEmployees = async () => {
@@ -128,16 +137,20 @@ const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
             }
         }
     };
+    const onClosed = () => {
 
+        onClose()
+        setEmployees(initialValue);
+    };
     return (
         <>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <Dialog open={open} maxWidth="sm" fullWidth>
                 <Box display="flex" justifyContent="space-between" alignItems="center" marginTop={2} marginInlineStart={2}>
                     <span>Employee Details</span>
                     <button
                         className='btn btn-light'
                         style={{ marginRight: '18px ' }}
-                        onClick={onClose}
+                        onClick={onClosed}
                     >
                         Close
                     </button>
@@ -156,14 +169,21 @@ const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {employees.map(user => (
-                                        <TableRow key={user.EmployeeId || user.UserId}>
-                                            <TableCell>{user.Name || 'N/A'}</TableCell>
-                                            <TableCell>{user.Designation_Name || '-'}</TableCell>
-                                            <TableCell>{user.BranchName || '-'}</TableCell>
+                                    {Array.isArray(employees) && employees.length > 0 ? (
+                                        employees.map(user => (
+                                            <TableRow key={user.EmployeeId || user.UserId}>
+                                                <TableCell>{user.Name || 'N/A'}</TableCell>
+                                                <TableCell>{user.Designation_Name || '-'}</TableCell>
+                                                <TableCell>{user.BranchName || '-'}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3}>No data available</TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
+
                             </Table>
                         </TableContainer>
                     )}
@@ -175,14 +195,14 @@ const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
                         onClick={handleAddEmployeeOpen}
                         sx={{ mr: 1 }}
                     >
-                        Modify
+                        Add
                     </button>
                 </DialogActions>
             </Dialog>
 
             <Dialog
                 open={addEmployeeDialogOpen}
-                onClose={handleAddEmployeeClose}
+                // onClose={handleAddEmployeeClose}
                 maxWidth="sm"
                 fullWidth
             >
@@ -203,6 +223,7 @@ const EmployeeManagementDialog = ({ open, onClose, projectId, onReload }) => {
                         }}
                         PopperComponent={CustomPopper}
                         value={selectedEmployees}
+                        onClose={onclose}
                         renderInput={(params) => (
                             <TextField {...params} placeholder="Employees" />
                         )}

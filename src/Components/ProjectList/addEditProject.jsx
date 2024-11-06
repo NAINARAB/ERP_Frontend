@@ -50,9 +50,13 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
     useEffect(() => {
 
         if (open) {
+            console.log('inputValue',inputValue)
+
             if (isEdit && inputValue) {
+                console.log(inputValue)
                 setFormData({
                     ...inputValue,
+                    Project_Head:inputValue.Proejct_Head|| '',
                     Est_Start_Dt: inputValue.Est_Start_Dt ? ISOString(inputValue.Est_Start_Dt) : '',
                     Est_End_Dt: inputValue.Est_End_Dt ? ISOString(inputValue.Est_End_Dt) : '',
                 });
@@ -84,7 +88,6 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
             'Est_Start_Dt',
             'Est_End_Dt',
             'Project_Status',
-            'Project_Desc',
         ];
 
         for (const field of requiredFields) {
@@ -191,7 +194,7 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
             label: 'Description',
             elem: 'textarea',
             name: 'Project_Desc',
-            value: formData.Project_Desc || '',
+            value: formData.Project_Desc || ' ',
         },
     ];
 
