@@ -103,7 +103,7 @@ const RetailersMaster = () => {
                 setArea(data.data);
             }
         }).catch(e => console.error(e));
-        
+
         fetchLink({
             address: `masters/outlets`
         }).then(data => {
@@ -111,7 +111,7 @@ const RetailersMaster = () => {
                 setOutlet(data.data);
             }
         }).catch(e => console.error(e));
-        
+
         fetchLink({
             address: `masters/routes`
         }).then(data => {
@@ -119,7 +119,7 @@ const RetailersMaster = () => {
                 setRoutes(data.data);
             }
         }).catch(e => console.error(e));
-        
+
         fetchLink({
             address: `masters/state`
         }).then(data => {
@@ -177,55 +177,63 @@ const RetailersMaster = () => {
             cell: (row) => (
                 <>
                     <Tooltip title='Edit Retailer'>
-                        <IconButton
-                            size="small"
-                            onClick={() => {
-                                setDialog(true);
-                                setIsEdit(true);
-                                const {
-                                    Company_Id, Retailer_Id, Retailer_Name, Contact_Person, Mobile_No,
-                                    Retailer_Channel_Id, Retailer_Class, Route_Id, Area_Id, Reatailer_Address,
-                                    Reatailer_City, PinCode, State_Id, Gstno,
-                                } = row;
-                                setRetailerInput(pre => ({
-                                    ...pre,
-                                    Company_Id, Retailer_Id, Retailer_Name, Contact_Person, Mobile_No,
-                                    Retailer_Channel_Id, Retailer_Class, Route_Id, Area_Id, Reatailer_Address,
-                                    Reatailer_City, PinCode, State_Id, Gstno
-                                }))
-                            }}
-                        >
-                            <Edit />
-                        </IconButton>
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setDialog(true);
+                                    setIsEdit(true);
+                                    const {
+                                        Company_Id, Retailer_Id, Retailer_Name, Contact_Person, Mobile_No,
+                                        Retailer_Channel_Id, Retailer_Class, Route_Id, Area_Id, Reatailer_Address,
+                                        Reatailer_City, PinCode, State_Id, Gstno,
+                                    } = row;
+                                    setRetailerInput(pre => ({
+                                        ...pre,
+                                        Company_Id, Retailer_Id, Retailer_Name, Contact_Person, Mobile_No,
+                                        Retailer_Channel_Id, Retailer_Class, Route_Id, Area_Id, Reatailer_Address,
+                                        Reatailer_City, PinCode, State_Id, Gstno
+                                    }))
+                                }}
+                            >
+                                <Edit />
+                            </IconButton>
+                        </span>
                     </Tooltip>
 
                     <Tooltip title='Verify Location'>
-                        <IconButton
-                            size="small"
-                            onClick={() => { setMultipleLocationDialogs(true); setSelectedRetailer(row); }}
-                            disabled={row?.AllLocations?.length === 0}
-                        >
-                            <Verified color={row?.AllLocations?.length === 0 ? 'disabled' : 'success'} />
-                        </IconButton>
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={() => { setMultipleLocationDialogs(true); setSelectedRetailer(row); }}
+                                disabled={row?.AllLocations?.length === 0}
+                            >
+                                <Verified color={row?.AllLocations?.length === 0 ? 'disabled' : 'success'} />
+                            </IconButton>
+                        </span>
                     </Tooltip>
 
                     {(row?.VERIFIED_LOCATION?.latitude && row?.VERIFIED_LOCATION?.longitude) ? (
                         <Tooltip title='Open in Google Map'>
-                            <IconButton
-                                size="small"
-                                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${row?.VERIFIED_LOCATION?.latitude},${row?.VERIFIED_LOCATION?.longitude}`, '_blank')}
-                                className="btn btn-info fa-14" color='primary'>
-                                <LocationOn />
-                            </IconButton>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${row?.VERIFIED_LOCATION?.latitude},${row?.VERIFIED_LOCATION?.longitude}`, '_blank')}
+                                    className="btn btn-info fa-14" color='primary'>
+                                    <LocationOn />
+                                </IconButton>
+                            </span>
                         </Tooltip>
                     ) : (row?.Latitude && row.Longitude) && (
                         <Tooltip title='Open in Google Map'>
-                            <IconButton
-                                size="small"
-                                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${row?.Latitude},${row?.Longitude}`, '_blank')}
-                                className="btn btn-info fa-14" color='primary'>
-                                <LocationOn />
-                            </IconButton>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${row?.Latitude},${row?.Longitude}`, '_blank')}
+                                    className="btn btn-info fa-14" color='primary'>
+                                    <LocationOn />
+                                </IconButton>
+                            </span>
                         </Tooltip>
                     )
                     }
@@ -623,12 +631,14 @@ const RetailersMaster = () => {
 
                                             {(o?.latitude && o.longitude) && (
                                                 <Tooltip title='Open in Google Map'>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${o?.latitude},${o?.longitude}`, '_blank')}
-                                                        className="btn btn-info fa-14" color='primary'>
-                                                        <LocationOn />
-                                                    </IconButton>
+                                                    <span>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${o?.latitude},${o?.longitude}`, '_blank')}
+                                                            className="btn btn-info fa-14" color='primary'>
+                                                            <LocationOn />
+                                                        </IconButton>
+                                                    </span>
                                                 </Tooltip>
                                             )}
                                         </td>

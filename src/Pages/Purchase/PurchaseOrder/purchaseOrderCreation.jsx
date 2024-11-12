@@ -28,7 +28,7 @@ const taxCalc = (method = 1, amount = 0, percentage = 0) => {
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
+const PurchaseOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
 
     const [retailers, setRetailers] = useState([]);
@@ -41,11 +41,15 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
 
     const initialValue = {
         Company_Id: storage?.Company_id,
-        So_Date: ISOString(),
+        Po_Date: ISOString(),
         Retailer_Id: '',
         Retailer_Name: 'Select',
-        Sales_Person_Id: storage?.UserId,
-        Sales_Person_Name: storage?.Name,
+        Loadman_Id: storage?.UserId,
+        Loadman: storage?.Name,
+        Broker_Id: storage?.UserId,
+        Broker: storage?.Name,
+        Transpoter_Id: storage?.UserId,
+        Transpoter: storage?.Name,
         Branch_Id: storage?.BranchId,
         Narration: '',
         Created_by: storage?.UserId,
@@ -85,9 +89,16 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         if (isValidObject(editValues)) {
             setOrderDetails(pre => ({
                 ...pre,
-                So_Date: editValues?.So_Date,
+                Po_Id: Number(editValues?.Po_Id),
+                Po_Date: editValues?.Po_Date,
                 Retailer_Id: editValues?.Retailer_Id,
                 Retailer_Name: editValues?.Retailer_Name,
+                Loadman_Id: editValues?.Loadman_Id,
+                Loadman: editValues?.Loadman,
+                Broker_Id: editValues?.Broker_Id,
+                Broker: editValues?.Broker,
+                Transpoter_Id: editValues?.Transpoter_Id,
+                Transpoter: editValues?.Transpoter,
                 Sales_Person_Id: editValues?.Sales_Person_Id,
                 Sales_Person_Name: editValues?.Sales_Person_Name,
                 Branch_Id: editValues?.Branch_Id,
@@ -129,10 +140,10 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
     useEffect(() => {
 
         fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
+            address: `masters/retailers?isVendor=1&isRetailer=0`
         }).then(data => {
             if (data.success) {
-                setRetailers(data.data);
+                setRetailers(data?.data?.sort((a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)));
             }
         }).catch(e => console.error(e))
 
@@ -145,7 +156,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         }).catch(e => console.error(e))
 
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
+            address: `masters/products?IS_Sold=0`
         }).then(data => {
             if (data.success) {
                 setProducts(data.data);
@@ -210,7 +221,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
             fetchLink({
-                address: `sales/saleOrder`,
+                address: `purchase/purchaseOrder`,
                 method: isEdit ? 'PUT' : 'POST',
                 bodyData: {
                     ...orderDetails,
@@ -248,14 +259,14 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         const Amount = Multiplication(billQty, itemRate);
 
         if (isInclusive || isNotTaxableBill) {
-            return o += Amount;
+            return o += Number(Amount);
         }
 
         if (isExclusiveBill) {
             const product = findProductDetails(products, item.Item_Id);
             const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
             const tax = taxCalc(0, itemRate, gstPercentage)
-            return o += (Amount + (tax * billQty));
+            return o += (Number(Amount) + (tax * billQty));
         }
     }, 0);
 
@@ -300,30 +311,107 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         <>
 
             <div className="p-3 pt-0">
-                {/* CompnayInfo  */}
+
+                {/* Order Info */}
+
                 <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
-                    <h5 className="border-bottom">From:</h5>
-                    <div className="row">
-                        <div className="col-lg-8 col-md-7">
+                    <h5 className="border-bottom">Purchase From:</h5>
+                    <div className="row ">
+                        <div className="col-md-4">
                             <table className="table">
                                 <tbody>
                                     <tr>
-                                        <td className="border-0 bg-light" colSpan={2}>
-                                            {companyInfo?.Company_Name}
+                                        <td className="border-0 bg-light vctr">Vendor Name:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Retailer Name"}
+                                                maxMenuHeight={200}
+                                            />
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Address:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
+                                        <td className="border-0 bg-light vctr">Address:</td>
+                                        <td className="border-0 bg-light">
+                                            {retailers?.find(ret => isEqualNumber(ret.Retailer_Id, orderDetails.Retailer_Id))?.Reatailer_Address}
+                                        </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Phone:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
+                                        <td className="border-0 bg-light vctr">Phone:</td>
+                                        <td className="border-0 bg-light">
+                                            {retailers?.find(ret => isEqualNumber(ret.Retailer_Id, orderDetails.Retailer_Id))?.Mobile_No}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div className="col-lg-4 col-md-5">
+
+                        <div className="col-md-4">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light vctr">Broker Name:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Broker_Id, label: orderDetails?.Broker }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Broker_Id: e.value, Broker: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Broker Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light vctr">Loadman:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Loadman_Id, label: orderDetails?.Loadman }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Loadman_Id: e.value, Loadman: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Loadman Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light vctr">Transpoter Name:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Transpoter_Id, label: orderDetails?.Transpoter }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Transpoter_Id: e.value, Transpoter: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Transpoter Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="col-md-4">
                             <table className="table">
                                 <tbody>
                                     <tr>
@@ -331,8 +419,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                         <td className="border-0 bg-light">
                                             <input
                                                 type="date"
-                                                value={orderDetails?.So_Date ? ISOString(orderDetails?.So_Date) : ''}
-                                                onChange={e => setOrderDetails({ ...orderDetails, So_Date: e.target.value })}
+                                                value={orderDetails?.Po_Date ? ISOString(orderDetails?.Po_Date) : ''}
+                                                onChange={e => setOrderDetails({ ...orderDetails, Po_Date: e.target.value })}
                                                 className="cus-inpt p-1"
                                             />
                                         </td>
@@ -366,62 +454,91 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     </tr>
                                 </tbody>
                             </table>
-
                         </div>
+
                     </div>
                 </div>
 
-                {/* Customer Info */}
-
+                {/* Other Info  */}
                 <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
-                    <h5 className="border-bottom">To:</h5>
-                    <div className="row ">
-                        <div className="col-md-6">
+                    <h5 className="border-bottom">Others:</h5>
+                    <div className="row">
+                        <div className="col-md-7">
                             <table className="table">
                                 <tbody>
                                     <tr>
-                                        <td className="border-0 bg-light">Retailer Name:</td>
+                                        <td className="border-0 bg-light" colSpan={2}>
+                                            {companyInfo?.Company_Name}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Address:</td>
+                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border-0 bg-light">Phone:</td>
+                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* <div className="col-md-5">
+                            <table className="table">
+                                <tbody>
+                                    <tr>
+                                        <td className="border-0 bg-light vctr">Broker Name:</td>
                                         <td className="border-0 bg-light">
                                             <Select
-                                                value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
+                                                value={{ value: orderDetails?.Broker_Id, label: orderDetails?.Broker }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Broker_Id: e.value, Broker: e.label })}
                                                 options={[
                                                     { value: '', label: 'select', isDisabled: true },
                                                     ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
                                                 ]}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
-                                                placeholder={"Retailer Name"}
+                                                placeholder={"Broker Name"}
                                                 maxMenuHeight={200}
                                             />
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Address:</td>
-                                        <td className="border-0 bg-light">{storage.Name}</td>
+                                        <td className="border-0 bg-light vctr">Loadman:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Loadman_Id, label: orderDetails?.Loadman }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Loadman_Id: e.value, Loadman: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Loadman Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Phone:</td>
-                                        <td className="border-0 bg-light">{ }</td>
+                                        <td className="border-0 bg-light vctr">Transpoter Name:</td>
+                                        <td className="border-0 bg-light">
+                                            <Select
+                                                value={{ value: orderDetails?.Transpoter_Id, label: orderDetails?.Transpoter }}
+                                                onChange={(e) => setOrderDetails({ ...orderDetails, Transpoter_Id: e.value, Transpoter: e.label })}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Transpoter Name"}
+                                                maxMenuHeight={200}
+                                            />
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                        <div className="col-md-6">
-                            <table className="table">
-                                <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light">Q-Pay:</td>
-                                        <td className="border-0 bg-light">{10}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Frequency Days:</td>
-                                        <td className="border-0 bg-light">{20}</td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 
@@ -499,9 +616,9 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             isCustomCell: true,
                             Cell: ({ row }) => {
                                 const percentage = (
-                                    IS_IGST 
-                                    ? row?.Product?.Igst_P 
-                                    : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)
+                                    IS_IGST
+                                        ? row?.Product?.Igst_P
+                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)
                                 ) ?? 0;
                                 const amount = row.Amount ?? 0;
                                 const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
@@ -872,4 +989,4 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
 }
 
 
-export default NewSaleOrderCreation;
+export default PurchaseOrderCreation;

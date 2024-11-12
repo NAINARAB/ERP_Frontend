@@ -335,7 +335,7 @@ FilterableTable.propTypes = {
     })).isRequired,
     onClickFun: PropTypes.func,
     isExpendable: PropTypes.bool,
-    expandableComp: PropTypes.element,
+    expandableComp: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
     tableMaxHeight: PropTypes.number,
     initialPageCount: PropTypes.number,
     EnableSerialNumber: PropTypes.bool,

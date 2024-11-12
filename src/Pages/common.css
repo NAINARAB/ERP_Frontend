@@ -118,7 +118,6 @@
 
 .cus-card {
   box-sizing: border-box;
-  overflow: hidden;
   margin: 15px 0px 0px 0px;
   border-radius: 15px;
   box-shadow: 2px 2px 4px 0.2px rgb(211, 210, 210);

@@ -3,7 +3,6 @@ import './Pages/common.css'
 
 // Dashboard
 const CommonDashboard = lazy(() => import("./Pages/Dashboard/commonDashboard"));
-
 // masters
 const CompanyInfo = lazy(() => import('./Pages/Masters/CompanyInfo'))
 const Users = lazy(() => import("./Pages/Masters/newUsers"))
@@ -77,7 +76,7 @@ const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"))
 // Purchase
 const PurchaseReport = lazy(() => import("./Pages/Purchase/purchaseReport"))
 const PurchaseReportForCustomer = lazy(() => import("./Pages/Purchase/purchaseReportForCustomer"))
-
+const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
 
 
 // Payments
@@ -148,6 +147,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/purchase' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
     { component: <PurchaseReportForCustomer />, path: '/erp/purchase/myPurchase' },
+    { component: <PurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
     // ERP - inventory
     { component: <DisplayNavigations />, path: '/erp/inventory' },
     { component: <StockReport />, path: '/erp/inventory/stockReport' },

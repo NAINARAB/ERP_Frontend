@@ -14,7 +14,7 @@ import InvalidPageComp from "../../Components/invalidCredential";
 import { fetchLink } from "../../Components/fetchComponent";
 import { ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
-import { checkIsNumber, isEqualNumber } from "../../Components/functions";
+import { checkIsNumber, isEqualNumber, LocalDateWithTime } from "../../Components/functions";
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -60,18 +60,59 @@ const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
+
+        const getSubRoute = (menu, path) => {
+            if (Array.isArray(menu)) {
+                for (let menuObj of menu) {
+                    if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url === path) {
+                        return true;
+                    }
+                    if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
+                        const isFound = getSubRoute(menuObj?.SubRoutes, path);
+                        if (isFound) {
+                            return isFound
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
         const findMenuItem = (menuObj, path) => {
             if (path === menuObj.url) {
                 return true
             }
+
+            if (Array.isArray(menuObj.SubRoutes) && menuObj.SubRoutes.length > 0) {
+                const isFound = getSubRoute(menuObj.SubRoutes, path);
+                if (isFound) {
+                    return isFound
+                }
+            }
+
             for (let subItem of menuObj.SubMenu) {
                 if (subItem.url === path) {
                     return true;
                 }
+
+                if (Array.isArray(subItem.SubRoutes) && subItem.SubRoutes.length > 0) {
+                    const isFound = getSubRoute(subItem.SubRoutes, path);
+                    if (isFound) {
+                        return isFound
+                    }
+                }
+
                 if (subItem.ChildMenu) {
                     for (let childItem of subItem.ChildMenu) {
                         if (childItem.url === path) {
                             return true;
+                        }
+
+                        if (Array.isArray(childItem.SubRoutes) && childItem.SubRoutes.length > 0) {
+                            const isFound = getSubRoute(childItem.SubRoutes, path);
+                            if (isFound) {
+                                return isFound
+                            }
                         }
                     }
                 }
@@ -127,14 +168,46 @@ const SubMenu = ({ subBtn, nav, page, sideClose }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
+
+        const getSubRoute = (menu, path) => {
+            if (Array.isArray(menu)) {
+                for (let menuObj of menu) {
+                    if (isEqualNumber(menuObj.Read_Rights, 1) && menuObj.url === path) {
+                        return true;
+                    }
+                    if (Array.isArray(menuObj?.SubRoutes) && menuObj?.SubRoutes?.length > 0) {
+                        const isFound = getSubRoute(menuObj?.SubRoutes, path);
+                        if (isFound) {
+                            return isFound
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
         const findMenuItem = (menuObj, path) => {
             if (path === menuObj.url) {
                 return true
             }
 
+            if (Array.isArray(menuObj.SubRoutes) && menuObj.SubRoutes.length > 0) {
+                const isFound = getSubRoute(menuObj.SubRoutes, path);
+                if (isFound) {
+                    return isFound
+                }
+            }
+
             for (let childItem of menuObj.ChildMenu) {
                 if (childItem.url === path) {
                     return true;
+                }
+
+                if (Array.isArray(childItem.SubRoutes) && childItem.SubRoutes.length > 0) {
+                    const isFound = getSubRoute(childItem.SubRoutes, path);
+                    if (isFound) {
+                        return isFound
+                    }
                 }
             }
             return false;
@@ -202,7 +275,7 @@ const MainComponent = (props) => {
                 if (item.url === path) {
                     setLoclStoreage(item?.id, 1);
                     return item;
-                } 
+                }
 
                 if (Array.isArray(item.SubRoutes) && item.SubRoutes.length > 0) {
                     const subRouteData = getSubRoute(item.SubRoutes, path);
@@ -240,7 +313,7 @@ const MainComponent = (props) => {
                                         return { ...subRouteData, MainMenuData: item, SubMenuData: subItem, ChildMenuData: childItem }
                                     }
                                 }
-        
+
                             }
                         }
 
@@ -422,7 +495,6 @@ const MainComponent = (props) => {
 
     }, []);
 
-
     return (
         <Fragment>
             <div className="fullscreen-div">
@@ -466,13 +538,15 @@ const MainComponent = (props) => {
                         <div className="fa-16 fw-bold mb-0 d-flex align-items-center" >
 
                             <Tooltip title={desktopMenu ? 'Minimize Sidebar' : 'Expand Sidebar'}>
-                                <IconButton
-                                    onClick={() => setDesktopMenu(pre => !pre)}
-                                    className="text-dark other-hide"
-                                    size="small"
-                                >
-                                    {desktopMenu ? <KeyboardDoubleArrowLeft /> : <KeyboardDoubleArrowRight />}
-                                </IconButton>
+                                <span>
+                                    <IconButton
+                                        onClick={() => setDesktopMenu(pre => !pre)}
+                                        className="text-dark other-hide"
+                                        size="small"
+                                    >
+                                        {desktopMenu ? <KeyboardDoubleArrowLeft /> : <KeyboardDoubleArrowRight />}
+                                    </IconButton>
+                                </span>
                             </Tooltip>
 
                             <span className="open-icon">
@@ -482,17 +556,21 @@ const MainComponent = (props) => {
                             </span>
 
                             <div className="ms-2 flex-grow-1 d-flex flex-column">
-                                <span className="flex-grow-1 text-dark" >Welcome {parseData?.Name + " !"}</span>
-                                <span className="text-muted fa-12">Login Time: {new Date(loginAt).toDateString()}</span>
+                                <span className="flex-grow-1 text-dark" >Welcome {parseData?.Name}</span>
+                                <span className="text-muted fa-12">Login Time: {LocalDateWithTime(loginAt)}</span>
                             </div>
 
 
                             <Tooltip title="Settings">
-                                <IconButton onClick={() => setSettings(true)} color="primary" size="small"><Settings /></IconButton>
+                                <span>
+                                    <IconButton onClick={() => setSettings(true)} color="primary" size="small"><Settings /></IconButton>
+                                </span>
                             </Tooltip>
 
                             <Tooltip title="Logout">
-                                <IconButton onClick={props.logout} color="primary" size="small"><Logout /></IconButton>
+                                <span>
+                                    <IconButton onClick={props.logout} color="primary" size="small"><Logout /></IconButton>
+                                </span>
                             </Tooltip>
 
                         </div>
@@ -511,6 +589,12 @@ const MainComponent = (props) => {
                                 <span
                                     className="fw-bold fa-15 pointer"
                                     onClick={() => nav(contextObj?.SubMenuData?.url)}> / {contextObj?.SubMenuData?.name}
+                                </span>
+                            )}
+                            {contextObj?.ChildMenuData && (
+                                <span
+                                    className="fw-bold fa-15 pointer"
+                                    onClick={() => nav(contextObj?.ChildMenuData?.url)}> / {contextObj?.ChildMenuData?.name}
                                 </span>
                             )}
                             {contextObj?.name && (
