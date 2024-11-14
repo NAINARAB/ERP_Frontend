@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ISOString, NumberFormat } from "../../Components/functions";
+import { groupData, ISOString, NumberFormat } from "../../Components/functions";
 import { ShoppingCart } from "@mui/icons-material";
 import { LuArrowUpWideNarrow } from "react-icons/lu";
 import { HiOutlineCurrencyRupee } from "react-icons/hi";
@@ -8,6 +8,9 @@ import { BsCartPlus } from "react-icons/bs";
 import { PiHandCoinsFill } from "react-icons/pi";
 import { FaCubesStacked } from "react-icons/fa6";
 import { fetchLink } from "../../Components/fetchComponent";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import FilterableTable from '../../Components/filterableTable2';
+import DisplayArrayData from "../Sales/SalesReportComponent/DataSetDisplay";
 
 
 const getIcons = (str) => {
@@ -46,11 +49,11 @@ const getIcons = (str) => {
 }
 
 
-const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
+const CardComp = ({ title, icon, firstVal, secondVal, classCount, onClick }) => {
     return (
         <>
             <div className={`col-xxl-3 col-lg-4 col-md-6 col-sm-12 p-2`}>
-                <div className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
+                <div onClick={onClick} className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
                     <div className="flex-grow-1 p-3">
                         <h5 >{title}</h5>
                         <h3 className="fa-16 text-end pe-3">
@@ -74,9 +77,17 @@ const ManagementDashboard = () => {
     const [secRow, setSecRow] = useState([]);
     const [theredRow, setTheredRow] = useState([]);
 
+    const [popUpDetails, setPopUpDetails] = useState({
+        salesDetails: [],
+    });
+
+    const [popUpDialogs, setPopUpDialogs] = useState({
+        salesDetails: false,
+    })
+
     const [filter, setFilter] = useState({
         date: ISOString(),
-    })
+    });
 
     useEffect(() => {
         if (UserAccess && storage.Company_id) {
@@ -92,7 +103,31 @@ const ManagementDashboard = () => {
                 })
                 .catch(e => console.error(e))
         }
-    }, [UserAccess, filter.date])
+    }, [UserAccess, filter.date]);
+
+    useEffect(() => {
+        if (UserAccess) {
+            fetchLink({
+                address: `dashboard/salesInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
+                headers: {
+                    'Db': storage?.Company_id
+                }
+            }).then(data => {
+                if (data.success) {
+                    setPopUpDetails(pre => ({
+                        ...pre,
+                        salesDetails: data.data ?? []
+                    }));
+                } else {
+                    setPopUpDetails(pre => ({ ...pre, salesDetails: []}));
+                }
+            }).catch(e => console.error(e))
+        }
+    }, [filter.date]);
+
+    const salesDetailsGrouped = groupData(popUpDetails?.salesDetails, 'Party_Group');
+    
+    console.log(salesDetailsGrouped)
 
     return (
         <>
@@ -117,6 +152,15 @@ const ManagementDashboard = () => {
                     <CardComp
                         key={i}
                         title={o?.Trans_Type}
+                        onClick={() => {
+                            switch (o?.Trans_Type) {
+                                case 'SALES':
+                                    setPopUpDialogs(pre => ({ ...pre, salesDetails: true }));
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }}
                         icon={o?.Trans_Type ? getIcons(o?.Trans_Type) : undefined}
                         classCount={i + 7}
                         firstVal={o?.Trans_Amount ? NumberFormat(parseInt(o?.Trans_Amount)) : 0}
@@ -133,6 +177,90 @@ const ManagementDashboard = () => {
                     />
                 ))}
             </div>
+
+            <Dialog
+                open={popUpDialogs.salesDetails}
+                onClose={() => setPopUpDialogs(pre => ({ ...pre, salesDetails: false }))}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Sales Details</DialogTitle>
+                <DialogContent>
+                    {/* <DisplayArrayData 
+                        dataArray={popUpDetails.salesDetails} 
+                        columns={Object.keys(popUpDetails?.salesDetails[0] ?? {}).map(head => ({
+                            Column_Name: head,
+                            Data_Type: 'string'
+                        }))} 
+                    /> */}
+                    <FilterableTable 
+                        dataArray={salesDetailsGrouped}
+                        columns={[
+                            {
+                                Field_Name: 'Party_Group',
+                                Fied_Data: 'string',
+                                isVisible: 1,
+                            },
+                            {
+                                isCustomCell: true,
+                                ColumnHeader: 'Payment Mode',
+                                Cell: ({ row }) => row?.groupedData?.length,
+                                isVisible: 1,
+                            },
+                            {
+                                isCustomCell: true,
+                                ColumnHeader: 'Total Amount',
+                                Cell: ({ row }) => NumberFormat(row?.groupedData?.reduce((acc, item) => acc + Number(item?.Amount), 0)),
+                                isVisible: 1,
+                            },
+                        ]}
+                        EnableSerialNumber
+                        isExpendable={true}
+                        expandableComp={({ row }) => (
+                            <FilterableTable 
+                                dataArray={row?.groupedData ?? []}
+                                columns={[
+                                    {
+                                        Field_Name: 'Party_Group',
+                                        Fied_Data: 'string',
+                                        isVisible: 1,
+                                    },
+                                    {
+                                        Field_Name: 'Payment_Mode',
+                                        Fied_Data: 'string',
+                                        isVisible: 1,
+                                    },
+                                    {
+                                        Field_Name: 'Amount',
+                                        Fied_Data: 'number',
+                                        isVisible: 1,
+                                    },
+                                ]}
+                            />
+                        )}
+                    />
+                    {/* <div className="table-responsive">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    {Object.keys(popUpDetails?.salesDetails[0] ?? {}).map(head => (
+                                        <th className="fa-14 border ">{head}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    {Object.keys(popUpDetails.salesDetails).map(head => (
+                                        <th className="fa-14 border ">{head}</th>
+                                    ))}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div> */}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPopUpDialogs(pre => ({ ...pre, salesDetails: false }))}></Button>
+                </DialogActions>
+            </Dialog>
         </>
     )
 }
