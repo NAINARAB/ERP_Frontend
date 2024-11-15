@@ -10,7 +10,6 @@ import { FaCubesStacked } from "react-icons/fa6";
 import { fetchLink } from "../../Components/fetchComponent";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import FilterableTable from '../../Components/filterableTable2';
-import DisplayArrayData from "../Sales/SalesReportComponent/DataSetDisplay";
 
 
 const getIcons = (str) => {
@@ -126,8 +125,6 @@ const ManagementDashboard = () => {
     }, [filter.date]);
 
     const salesDetailsGrouped = groupData(popUpDetails?.salesDetails, 'Party_Group');
-    
-    console.log(salesDetailsGrouped)
 
     return (
         <>
@@ -202,28 +199,18 @@ const ManagementDashboard = () => {
                             },
                             {
                                 isCustomCell: true,
-                                ColumnHeader: 'Payment Mode',
-                                Cell: ({ row }) => row?.groupedData?.length,
-                                isVisible: 1,
-                            },
-                            {
-                                isCustomCell: true,
                                 ColumnHeader: 'Total Amount',
                                 Cell: ({ row }) => NumberFormat(row?.groupedData?.reduce((acc, item) => acc + Number(item?.Amount), 0)),
                                 isVisible: 1,
                             },
                         ]}
+                        disablePagination={true}
                         EnableSerialNumber
                         isExpendable={true}
                         expandableComp={({ row }) => (
                             <FilterableTable 
                                 dataArray={row?.groupedData ?? []}
                                 columns={[
-                                    {
-                                        Field_Name: 'Party_Group',
-                                        Fied_Data: 'string',
-                                        isVisible: 1,
-                                    },
                                     {
                                         Field_Name: 'Payment_Mode',
                                         Fied_Data: 'string',
@@ -235,6 +222,7 @@ const ManagementDashboard = () => {
                                         isVisible: 1,
                                     },
                                 ]}
+                                disablePagination={true}
                             />
                         )}
                     />

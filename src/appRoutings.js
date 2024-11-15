@@ -66,6 +66,7 @@ const RetailersMaster = lazy(() => import("./Pages/UserModule/retailer/Retailer"
 const SalesReport = lazy(() => import("./Pages/Sales/LedgerTransaction"))
 const SalesTransaction = lazy(() => import("./Pages/Analytics/SalesReport"))
 const SaleOrderList = lazy(() => import("./Pages/Sales/saleOrder"))
+const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 
 
 // Inventry
@@ -143,6 +144,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/sales' },
     { component: <SalesReport />, path: '/erp/sales/salesReport' },
     { component: <SaleOrderList />, path: '/erp/sales/saleOrder' },
+    { component: <PartySalesReport />, path: '/erp/sales/partyBasedReport' },
     // ERP - purchase
     { component: <DisplayNavigations />, path: '/erp/purchase' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
