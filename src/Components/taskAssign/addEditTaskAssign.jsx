@@ -5,7 +5,6 @@ import { fetchLink } from '../fetchComponent';
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { toast } from 'react-toastify';
-import context from 'react-bootstrap/esm/AccordionContext';
 
 const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
     const localData = localStorage.getItem("user");

@@ -74,7 +74,7 @@ const PartySalesReport = () => {
             <Card className="mt-3">
                 <div className="px-3 py-2 d-flex justify-content-between align-items-center fw-bold text-dark" style={{ backgroundColor: '#eae0cc' }}>
                     <span>
-                        {storage?.Company_Name}
+                        PARTY BASED SALES
                     </span>
                 </div>
 

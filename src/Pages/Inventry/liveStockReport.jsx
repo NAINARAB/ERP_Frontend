@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { getPreviousDate, groupData, calcTotal, ISOString, isEqualNumber } from "../../Components/functions";
+import { getPreviousDate, groupData, calcTotal, ISOString } from "../../Components/functions";
 import FilterableTable from '../../Components/filterableTable2'
 import { Card, CardContent, Autocomplete, TextField, Checkbox, Tooltip, IconButton, Button, Dialog, DialogContent, DialogActions, Tab, Box } from "@mui/material";
 import { TabPanel, TabList, TabContext } from '@mui/lab';

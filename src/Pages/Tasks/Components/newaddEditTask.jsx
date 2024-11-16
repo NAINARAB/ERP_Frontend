@@ -120,14 +120,14 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
         }
     };
 
-    const openEditDialog = () => {
-        setEditInputValue({
-            ...inputValue,
-            Task_Group_Id: inputValue.Type_Task_Id, 
-        });
+    // const openEditDialog = () => {
+    //     setEditInputValue({
+    //         ...inputValue,
+    //         Task_Group_Id: inputValue.Type_Task_Id, 
+    //     });
 
-        setEditDialog(true);
-    };
+    //     setEditDialog(true);
+    // };
 
     const handleEditSubmit = async () => {
         const paramArr = editInputValue.Task_Parameters.map(param => ({

@@ -21,7 +21,7 @@ import TaskMasterMgt from '../../Pages/Tasks/Components/newaddEditTask';
 import TaskAssign from '../taskAssign/addEditTaskAssign';
 import { toast } from 'react-toastify';
 import ViewHeadlineSharpIcon from '@mui/icons-material/ViewHeadlineSharp';
-import { Edit, Delete } from "@mui/icons-material";
+import { Edit } from "@mui/icons-material";
 import TaskIndividual from './taskIndividual';
 
 function ListingTask({ dialogOpen, setDialogOpen, projectid, reload, onReload }) {
@@ -32,7 +32,6 @@ function ListingTask({ dialogOpen, setDialogOpen, projectid, reload, onReload })
     const [tasks, setTasks] = useState([]);
     const [taskDetails, setTaskDetails] = useState([]);
     const [taskDetailDialog, setTaskDetailsDialog] = useState(false);
-    const [isEdit, setIsEdit] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
 
     const initialValue = {

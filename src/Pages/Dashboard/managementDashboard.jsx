@@ -180,7 +180,18 @@ const ManagementDashboard = () => {
                 onClose={() => setPopUpDialogs(pre => ({ ...pre, salesDetails: false }))}
                 fullWidth maxWidth='sm'
             >
-                <DialogTitle>Sales Details</DialogTitle>
+                <DialogTitle>
+                    <span>
+                        <h4 className='d-flex justify-content-between flex-wrap'>
+                            <span>Sales Details</span>
+                            <span>
+                                {NumberFormat(
+                                    popUpDetails?.salesDetails?.reduce((sum, item) => sum += Number(item?.Amount), 0)
+                                )}
+                            </span>
+                        </h4>
+                    </span>
+                </DialogTitle>
                 <DialogContent>
                     {/* <DisplayArrayData 
                         dataArray={popUpDetails.salesDetails} 
