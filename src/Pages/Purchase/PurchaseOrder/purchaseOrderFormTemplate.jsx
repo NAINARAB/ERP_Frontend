@@ -5,7 +5,9 @@ import { customSelectStyles } from '../../../Components/tablecolumn';
 import RequiredStar from '../../../Components/requiredStar';
 import { fetchLink } from '../../../Components/fetchComponent';
 import { isEqualNumber } from '../../../Components/functions';
-import { Delete } from '@mui/icons-material'
+import { Delete, Add, Save, ClearAll } from '@mui/icons-material';
+
+const storage = JSON.parse(localStorage.getItem('user'));
 
 const initialOrderDetailsValue = {
     Id: '',
@@ -17,7 +19,7 @@ const initialOrderDetailsValue = {
     PartyAddress: '',
     PaymentCondition: '',
     Remarks: '',
-    CreatedBy: '',
+    CreatedBy: storage?.UserId,
 }
 
 const initialItemDetailsValue = {
@@ -50,7 +52,7 @@ const initialDeliveryDetailsValue = {
     Units: '',
     BatchLocation: '',
     PendingQuantity: '',
-    CreatedBy: ''
+    CreatedBy: storage?.UserId
 }
 
 const initialTranspoterDetailsValue = {
@@ -64,7 +66,7 @@ const initialTranspoterDetailsValue = {
     DriverName: '',
     VehicleNo: '',
     PhoneNumber: '',
-    CreatedBy: '',
+    CreatedBy: storage?.UserId,
 }
 
 const PurchaseOrderFormTemplate = (props) => {
@@ -88,6 +90,12 @@ const PurchaseOrderFormTemplate = (props) => {
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
     const storage = JSON.parse(localStorage.getItem('user'));
+
+    const [options, setOptions] = useState({
+        OrderItems: true,
+        DeliveryItems: false,
+        TransporterDetails: false,
+    })
 
     useEffect(() => {
         fetchLink({
@@ -147,6 +155,38 @@ const PurchaseOrderFormTemplate = (props) => {
 
     return (
         <>
+            <div className="d-flex justify-content-center flex-wrap p-2 mb-2">
+                <input
+                    className="form-check-input shadow-none pe-2"
+                    style={{ padding: '0.7em' }}
+                    type="checkbox"
+                    id="orderItems"
+                    checked={options.OrderItems}
+                    onChange={e => setOptions(pre => ({ ...pre, OrderItems: e.target.checked }))}
+                />
+                <label className="form-check-label p-1 me-3" htmlFor="orderItems">New Order</label>
+
+                <input
+                    className="form-check-input shadow-none pe-2"
+                    style={{ padding: '0.7em' }}
+                    type="checkbox"
+                    id="deliveryItems"
+                    checked={options.DeliveryItems}
+                    onChange={e => setOptions(pre => ({ ...pre, DeliveryItems: e.target.checked }))}
+                />
+                <label className="form-check-label p-1 me-3" htmlFor="deliveryItems">Include Delivery Details</label>
+
+                <input
+                    className="form-check-input shadow-none pe-2"
+                    style={{ padding: '0.7em' }}
+                    type="checkbox"
+                    id="transporterDetails"
+                    checked={options.TransporterDetails}
+                    onChange={e => setOptions(pre => ({ ...pre, TransporterDetails: e.target.checked }))}
+                />
+                <label className="form-check-label p-1 " htmlFor="transporterDetails">Include Transporter Details</label>
+            </div>
+
             <div className="table-responsive">
                 {/* General Info */}
                 <table className="table m-0">
@@ -254,174 +294,229 @@ const PurchaseOrderFormTemplate = (props) => {
                 </table>
 
                 {/* Item Details */}
-                <table className="table m-0">
-                    <thead>
-                        <tr>
-                            <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={5}>
-                                ORDER ITEMS
-                            </td>
-                            <td className={tdStyle + ' text-end bg-light'}>
-                                <Button
-                                    varient='outlined'
-                                    onClick={() => setDialogs(pre => ({ ...pre, itemsDialog: true }))}
-                                >Add Product</Button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th className={tdStyle + ' text-center'}>SNo</th>
-                            <th className={tdStyle + ' text-center'}>Item Name</th>
-                            <th className={tdStyle + ' text-center'}>Tonnage</th>
-                            <th className={tdStyle + ' text-center'}>
-                                Rate <br />
-                                Deliver/Spot
-                            </th>
-                            <th className={tdStyle + ' text-center'}>Discount</th>
-                            <th className={tdStyle + ' text-center'}>Quality Condition</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {OrderItemsArray.map((o, i) => (
-                            <tr key={i}>
-                                <td className={tdStyle}>{i + 1}</td>
-                                <td className={tdStyle}>{o?.ItemName}</td>
-                                <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
-                                <td className={tdStyle}>{o?.Rate}</td>
-                                <td className={tdStyle}>{o?.Discount}</td>
-                                <td className={tdStyle}>{o?.QualityCondition}</td>
-                            </tr>
-                        ))}
-
-                        <tr>
-                            <td className={'p-3'} colSpan={6}></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                {/* Delivery Details */}
-                <table className="table m-0">
-                    <thead>
-                        <tr>
-                            <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={10}>DELIVERY DETAILS</td>
-                            <td className={tdStyle + ' text-end bg-light'}>
-                                <Button
-                                    varient='outlined'
-                                    onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
-                                >Add Delivery</Button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th className={tdStyle + ' text-center'}>SNo</th>
-                            <th className={tdStyle + ' text-center'}>Location</th>
-                            <th className={tdStyle + ' text-center'}>Arrival Date</th>
-                            <th className={tdStyle + ' text-center'}>Item Name</th>
-                            <th className={tdStyle + ' text-center'}>Concern</th>
-
-                            <th className={tdStyle + ' text-center'}>Bill No</th>
-                            <th className={tdStyle + ' text-center'}>Bill Date</th>
-                            <th className={tdStyle + ' text-center'}>Quantity</th>
-                            <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
-                            <th className={tdStyle + ' text-center'}>Batch / Location</th>
-
-                            <th className={tdStyle + ' text-center'}>Pending Quantity</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {DeliveryArray.map((o, i) => (
-                            <tr key={i}>
-                                <td className={tdStyle}>{i + 1}</td>
-                                <td className={tdStyle}>{o?.Location}</td>
-                                <td className={tdStyle}>{o?.ArrivalDate}</td>
-                                <td className={tdStyle}>{o?.ItemName}</td>
-                                <td className={tdStyle}>{o?.Concern}</td>
-
-                                <td className={tdStyle}>{o?.BillNo}</td>
-                                <td className={tdStyle}>{o?.BillDate}</td>
-                                <td className={tdStyle}>{o?.Quantity}</td>
-                                <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
-                                <td className={tdStyle}>{o?.BatchLocation}</td>
-
-                                <td className={tdStyle}>{o?.PendingQuantity}</td>
-                            </tr>
-                        ))}
-
-                        <tr>
-                            <td className={'p-3'} colSpan={11}></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                {/* TRANSPOTER DETAILS */}
-                <table className="table m-0">
-                    <thead>
-                        <tr>
-                            <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={9}>
-                                OTHER DETAILS
-                            </td>
-                            <td className={tdStyle + ' text-end bg-light'}>
-                                <Button
-                                    varient='outlined'
-                                    onClick={() => setDialogs(pre => ({ ...pre, transporterDialog: true }))}
-                                >Add Transporter</Button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th className={tdStyle + ' text-center'} rowSpan={2}>SNo</th>
-                            <th className={tdStyle + ' text-center'} colSpan={2}>Loading Wt</th>
-                            <th className={tdStyle + ' text-center'} colSpan={2}>Unloading Wt</th>
-                            <th className={tdStyle + ' text-center'}>Weight</th>
-                            <th className={tdStyle + ' text-center'} colSpan={3}>Transport Details</th>
-                            <th className={tdStyle + ' text-center'} rowSpan={2}>Action</th>
-                        </tr>
-                        <tr>
-                            <th className={tdStyle + ' text-center'}>Load</th>
-                            <th className={tdStyle + ' text-center'}>Empty</th>
-                            <th className={tdStyle + ' text-center'}>Load</th>
-                            <th className={tdStyle + ' text-center'}>Empty</th>
-                            <th className={tdStyle + ' text-center'}>EX / SH</th>
-                            <th className={tdStyle + ' text-center'}>Name</th>
-                            <th className={tdStyle + ' text-center'}>Vehicle No</th>
-                            <th className={tdStyle + ' text-center'}>Phone Number</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {TranspoterArray.map((o, i) => (
-                            <tr key={i}>
-                                <td className={tdStyle}>{i + 1}</td>
-                                <td className={tdStyle}>{o?.Loading_Load}</td>
-                                <td className={tdStyle}>{o?.Loading_Empty}</td>
-                                <td className={tdStyle}>{o?.Unloading_Load}</td>
-                                <td className={tdStyle}>{o?.Unloading_Empty}</td>
-                                <td className={tdStyle}>{o?.EX_SH}</td>
-                                <td className={tdStyle}>{o?.DriverName}</td>
-                                <td className={tdStyle}>{o?.VehicleNo}</td>
-                                <td className={tdStyle}>{o?.PhoneNumber}</td>
-                                <td className={tdStyle + ' p-0'}>
-                                    <IconButton 
-                                        onClick={() => {
-                                            setTranspoterArray(prev => {
-                                                return prev.filter((_, index) => index !== i);
-                                            });
-                                        }}
-                                        size='small'
-                                    >
-                                        <Delete color='error' />
-                                    </IconButton>
+                {options.OrderItems && (
+                    <table className="table m-0">
+                        <thead>
+                            <tr>
+                                <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={6}>
+                                    ORDER ITEMS
+                                </td>
+                                <td className={tdStyle + ' text-end bg-light'}>
+                                    <Button
+                                        startIcon={<Add />}
+                                        varient='outlined'
+                                        onClick={() => setDialogs(pre => ({ ...pre, itemsDialog: true }))}
+                                    >Add Product</Button>
                                 </td>
                             </tr>
-                        ))}
-                        <tr>
-                            <td className={tdStyle + ' p-3'} colSpan={10}></td>
-                        </tr>
-                        <tr>
-                            <td className={tdStyle} colSpan={10}>
-                                <Button onClick={postOrder} variant='contained'>Save</Button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            <tr>
+                                <th className={tdStyle + ' text-center'}>SNo</th>
+                                <th className={tdStyle + ' text-center'}>Item Name</th>
+                                <th className={tdStyle + ' text-center'}>Tonnage</th>
+                                <th className={tdStyle + ' text-center'}>
+                                    Rate <br />
+                                    Deliver/Spot
+                                </th>
+                                <th className={tdStyle + ' text-center'}>Discount</th>
+                                <th className={tdStyle + ' text-center'}>Quality Condition</th>
+                                <th className={tdStyle + ' text-center'}>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {OrderItemsArray.map((o, i) => (
+                                <tr key={i}>
+                                    <td className={tdStyle}>{i + 1}</td>
+                                    <td className={tdStyle}>{o?.ItemName}</td>
+                                    <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
+                                    <td className={tdStyle}>{o?.Rate}</td>
+                                    <td className={tdStyle}>{o?.Discount}</td>
+                                    <td className={tdStyle}>{o?.QualityCondition}</td>
+                                    <td className={tdStyle + ' p-0 text-center'}>
+                                        <IconButton
+                                            onClick={() => {
+                                                setOrderItemArray(prev => {
+                                                    return prev.filter((_, index) => index !== i);
+                                                });
+                                            }}
+                                            size='small'
+                                        >
+                                            <Delete color='error' />
+                                        </IconButton>
+                                    </td>
+                                </tr>
+                            ))}
+
+                            <tr>
+                                <td className={'p-3'} colSpan={7}></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                )}
+
+                {/* Delivery Details */}
+                {options.DeliveryItems && (
+                    <table className="table m-0">
+                        <thead>
+                            <tr>
+                                <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={11}>DELIVERY DETAILS</td>
+                                <td className={tdStyle + ' text-end bg-light'}>
+                                    <Button
+                                        startIcon={<Add />}
+                                        varient='outlined'
+                                        onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
+                                    >Add Delivery</Button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th className={tdStyle + ' text-center'}>SNo</th>
+                                <th className={tdStyle + ' text-center'}>Location</th>
+                                <th className={tdStyle + ' text-center'}>Arrival Date</th>
+                                <th className={tdStyle + ' text-center'}>Item Name</th>
+                                <th className={tdStyle + ' text-center'}>Concern</th>
+
+                                <th className={tdStyle + ' text-center'}>Bill No</th>
+                                <th className={tdStyle + ' text-center'}>Bill Date</th>
+                                <th className={tdStyle + ' text-center'}>Quantity</th>
+                                <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
+                                <th className={tdStyle + ' text-center'}>Batch / Location</th>
+
+                                <th className={tdStyle + ' text-center'}>Pending Quantity</th>
+                                <th className={tdStyle + ' text-center'}>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {DeliveryArray.map((o, i) => (
+                                <tr key={i}>
+                                    <td className={tdStyle}>{i + 1}</td>
+                                    <td className={tdStyle}>{o?.Location}</td>
+                                    <td className={tdStyle}>{o?.ArrivalDate}</td>
+                                    <td className={tdStyle}>{o?.ItemName}</td>
+                                    <td className={tdStyle}>{o?.Concern}</td>
+
+                                    <td className={tdStyle}>{o?.BillNo}</td>
+                                    <td className={tdStyle}>{o?.BillDate}</td>
+                                    <td className={tdStyle}>{o?.Quantity}</td>
+                                    <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
+                                    <td className={tdStyle}>{o?.BatchLocation}</td>
+
+                                    <td className={tdStyle}>{o?.PendingQuantity}</td>
+                                    <td className={tdStyle + ' p-0 text-center'}>
+                                        <IconButton
+                                            onClick={() => {
+                                                setDeliveryArray(prev => {
+                                                    return prev.filter((_, index) => index !== i);
+                                                });
+                                            }}
+                                            size='small'
+                                        >
+                                            <Delete color='error' />
+                                        </IconButton>
+                                    </td>
+                                </tr>
+                            ))}
+
+                            <tr>
+                                <td className={'p-3'} colSpan={12}></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                )}
+
+                {/* TRANSPOTER DETAILS */}
+                {options.TransporterDetails && (
+                    <table className="table m-0">
+                        <thead>
+                            <tr>
+                                <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={9}>
+                                    OTHER DETAILS
+                                </td>
+                                <td className={tdStyle + ' text-end bg-light'}>
+                                    <Button
+                                        startIcon={<Add />}
+                                        varient='outlined'
+                                        onClick={() => setDialogs(pre => ({ ...pre, transporterDialog: true }))}
+                                    >Add Transporter</Button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th className={tdStyle + ' text-center'} rowSpan={2}>SNo</th>
+                                <th className={tdStyle + ' text-center'} colSpan={2}>Loading Wt</th>
+                                <th className={tdStyle + ' text-center'} colSpan={2}>Unloading Wt</th>
+                                <th className={tdStyle + ' text-center'}>Weight</th>
+                                <th className={tdStyle + ' text-center'} colSpan={3}>Transport Details</th>
+                                <th className={tdStyle + ' text-center'} rowSpan={2}>Action</th>
+                            </tr>
+                            <tr>
+                                <th className={tdStyle + ' text-center'}>Load</th>
+                                <th className={tdStyle + ' text-center'}>Empty</th>
+                                <th className={tdStyle + ' text-center'}>Load</th>
+                                <th className={tdStyle + ' text-center'}>Empty</th>
+                                <th className={tdStyle + ' text-center'}>EX / SH</th>
+                                <th className={tdStyle + ' text-center'}>Name</th>
+                                <th className={tdStyle + ' text-center'}>Vehicle No</th>
+                                <th className={tdStyle + ' text-center'}>Phone Number</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {TranspoterArray.map((o, i) => (
+                                <tr key={i}>
+                                    <td className={tdStyle}>{i + 1}</td>
+                                    <td className={tdStyle}>{o?.Loading_Load}</td>
+                                    <td className={tdStyle}>{o?.Loading_Empty}</td>
+                                    <td className={tdStyle}>{o?.Unloading_Load}</td>
+                                    <td className={tdStyle}>{o?.Unloading_Empty}</td>
+                                    <td className={tdStyle}>{o?.EX_SH}</td>
+                                    <td className={tdStyle}>{o?.DriverName}</td>
+                                    <td className={tdStyle}>{o?.VehicleNo}</td>
+                                    <td className={tdStyle}>{o?.PhoneNumber}</td>
+                                    <td className={tdStyle + ' p-0 text-center'}>
+                                        <IconButton
+                                            onClick={() => {
+                                                setTranspoterArray(prev => {
+                                                    return prev.filter((_, index) => index !== i);
+                                                });
+                                            }}
+                                            size='small'
+                                        >
+                                            <Delete color='error' />
+                                        </IconButton>
+                                    </td>
+                                </tr>
+                            ))}
+                            <tr>
+                                <td className={tdStyle + ' p-3'} colSpan={10}></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                )}
+
+                <div className="d-flex justify-content-end flex-wrap my-3">
+                    <Button
+                        onClick={() => {
+                            setOrderDetails(initialOrderDetailsValue);
+                            setOrderItemArray([]);
+                            setDeliveryArray([]);
+                            setTranspoterArray([]);
+                        }}
+                        className='me-2'
+                        variant='outlined'
+                        startIcon={<ClearAll />}
+                    >Clear Values</Button>
+                    <Button
+                        onClick={postOrder}
+                        variant='contained'
+                        startIcon={<Save />}
+                        disabled={
+                            isEqualNumber(OrderItemsArray, 0)
+                            || isEqualNumber(DeliveryArray, 0)
+                            || isEqualNumber(TranspoterArray, 0)
+                            || !OrderDetails.PartyName
+                        }
+                    >Save</Button>
+                </div>
 
             </div>
 
@@ -717,7 +812,7 @@ const PurchaseOrderFormTemplate = (props) => {
                     <DialogContent>
                         <table className="table m-0">
                             <tbody>
-                                
+
                                 <tr>
                                     <td className={tdStyle + ' text-center bg-light'} colSpan={4}>
                                         Loading Details
@@ -771,9 +866,9 @@ const PurchaseOrderFormTemplate = (props) => {
                                 <tr>
                                     <td className={tdStyle} colSpan={2}>EX SH</td>
                                     <td className={tdStyle + ' p-0'} colSpan={2}>
-                                        <input 
+                                        <input
                                             value={transpoterInput?.EX_SH}
-                                            onChange={e => setTransportInput(pre => ({...pre, EX_SH: e.target.value}))}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, EX_SH: e.target.value }))}
                                             className={inputStyle + ' border-0'}
                                         />
                                     </td>
@@ -781,9 +876,9 @@ const PurchaseOrderFormTemplate = (props) => {
                                 <tr>
                                     <td className={tdStyle} colSpan={2}>Driver Name</td>
                                     <td className={tdStyle + ' p-0'} colSpan={2}>
-                                        <input 
+                                        <input
                                             value={transpoterInput?.DriverName}
-                                            onChange={e => setTransportInput(pre => ({...pre, DriverName: e.target.value}))}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, DriverName: e.target.value }))}
                                             className={inputStyle + ' border-0'}
                                         />
                                     </td>
@@ -791,9 +886,9 @@ const PurchaseOrderFormTemplate = (props) => {
                                 <tr>
                                     <td className={tdStyle} colSpan={2}>Vehicle No</td>
                                     <td className={tdStyle + ' p-0'} colSpan={2}>
-                                        <input 
+                                        <input
                                             value={transpoterInput?.VehicleNo}
-                                            onChange={e => setTransportInput(pre => ({...pre, VehicleNo: e.target.value}))}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, VehicleNo: e.target.value }))}
                                             className={inputStyle + ' border-0'}
                                         />
                                     </td>
@@ -801,10 +896,10 @@ const PurchaseOrderFormTemplate = (props) => {
                                 <tr>
                                     <td className={tdStyle} colSpan={2}>Phone Number</td>
                                     <td className={tdStyle + ' p-0'} colSpan={2}>
-                                        <input 
+                                        <input
                                             type='number'
                                             value={transpoterInput?.PhoneNumber}
-                                            onChange={e => setTransportInput(pre => ({...pre, PhoneNumber: e.target.value}))}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, PhoneNumber: e.target.value }))}
                                             className={inputStyle + ' border-0'}
                                             maxLength={15}
                                         />
