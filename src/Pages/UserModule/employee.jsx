@@ -110,6 +110,17 @@ const DispEmployee = ({ emp, edit, del, setVal }) => {
                                     {emp.Address_2 ? emp.Address_2 : '-'}
                                 </span>
                             </h3>
+                            <br/>
+                            <h3 className="h6">
+                                <span className="float-start">Department Name</span>
+                                <span className="float-end">{emp.Department ? emp.Department : '-'}</span>
+                            </h3>
+                            <br/>
+                            
+                            <h3 className="h6">
+                                <span className="float-start">Location</span>
+                                <span className="float-end">{emp.Location ? emp.Location : '-'}</span>
+                            </h3>
                         </div>
 
                     </div>
@@ -147,6 +158,8 @@ const EmployeeMaster = () => {
         enter_by: parseInt(storage?.UserId),
         fingerPrintEmpId: null,
         Department_ID: '',
+        department:'',
+        location:''
     }
     const [empFormData, setEmpFormData] = useState(initialEmpValue);
     const [empData, setEmpData] = useState([]);
@@ -407,6 +420,24 @@ const EmployeeMaster = () => {
             event: (e) => setEmpFormData({ ...empFormData, address2: e.target.value }),
             value: empFormData.address2,
         },
+        {
+            label: 'Department Name',
+            elem: 'input',
+            type: 'text',
+            class: inputclass,
+            placeholder: "Enter Department Name",
+            event: (e) => setEmpFormData({ ...empFormData, department: e.target.value }),
+            value: empFormData.department,
+        },
+        {
+            label: 'Location',
+            elem: 'input',
+            type: 'text',
+            class: inputclass,
+            placeholder: "Enter Location",
+            event: (e) => setEmpFormData({ ...empFormData, location: e.target.value }),
+            value: empFormData.location,
+        },
     ];
 
     const validateForm = () => {
@@ -496,6 +527,8 @@ const EmployeeMaster = () => {
                 enter_by: parseInt(storage?.UserId),
                 fingerPrintEmpId: emp?.fingerPrintEmpId,
                 Department_ID: emp?.Department_ID,
+                department:emp?.Department,
+                location:emp?.Location
             }))
             setDispScreen(!dispScreen);
         }

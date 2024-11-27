@@ -12,7 +12,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
  
     const [usersDropdown, setUsersDropdown] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [schType, setSchType] = useState([]);
+    // const [schType, setSchType] = useState([]);
     const [selectedSch, setSelectedSch] = useState([])
     const intitalVlaue={
         AN_No: '',
@@ -41,15 +41,13 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const userResponse = await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
-                const schTypeResponse = await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
+                const userResponse =  await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
+                const schTypeResponse =  await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
 
 
                 if (userResponse.success) setUsersDropdown(userResponse.data || []);
                 if (schTypeResponse.success) {
-                    // Filter out schType values 0, 4, 5, and 6
-                  
-                    setSchType(schTypeResponse.data || []);
+                
        }
                 
             } catch (error) {
@@ -64,12 +62,12 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
 
 
     useEffect(() => {
-
+ 
         const fetchSelectedData = async () => {
             setLoading(true);
             try {
                 if (editData) {
-                    const selectedSchType = await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.Sch_Id}&Task_Id=${taskId.Task_Id}` });
+                    const selectedSchType =  await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.Sch_Id}&Task_Id=${taskId.Task_Id}` });
 
                     const selectedSchId = selectedSchType.data[0]?.Sch_Type_Id;
                     const selectedSchName = selectedSchType.data[0]?.Sch_Name;
@@ -105,7 +103,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
         };
 
         if (open) fetchSelectedData();
-    }, [open, editData, reload]);
+    }, [open, editData, reload,projectId]);
 
     useEffect(() => {
         if (editData) {
@@ -215,7 +213,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
                 setAssignEmpInpt({});
 
                 onClose();
-                reload()
+        
 
             } else {
 
@@ -236,6 +234,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
                 <DialogTitle>{editData ? 'Edit Task' : 'Employee Assign'}</DialogTitle>
                 <form onSubmit={handleSubmit}>
                     <DialogContent className="table-responsive">
+                           {loading && <div>Loading...</div>}
                         <table className="table" style={{ tableLayout: 'fixed' }}>
                             <tbody>
                                 <tr>

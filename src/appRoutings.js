@@ -47,7 +47,7 @@ const ChartsReport = lazy(() => import("./Pages/Reports/chartReports"))
 const EmployeeDayAbstract = lazy(() => import("./Pages/Reports/workDocument"))
 const EmployeeAbstract = lazy(() => import("./Pages/Reports/employeeAbstract"))
 const TallyReports = lazy(() => import("./Pages/Dashboard/tallyReport"))
-
+const UserActivities = lazy(() => import("./Pages/Dashboard/userActivities"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -93,6 +93,8 @@ const StaffActivity = lazy(() => import("./Pages/DataEntry/staffActivity"))
 const ActivityImagesUpload = lazy(() => import("./Pages/DataEntry/fileUploads"))
 const WeightCheckActivity = lazy(() => import("./Pages/DataEntry/WeightCheckActivity"))
 const DataEntryAttendance = lazy(() => import("./Pages/DataEntry/dataEntryAttendance"))
+const PurchaseOrderEntries = lazy(() => import("./Pages/DataEntry/purchaseOrderEntry"))
+const PurchaseOrderDataEntry = lazy(() => import("./Pages/DataEntry/purchaseOrderFormTemplate"))
 
 
 
@@ -133,6 +135,8 @@ const RoutingArray = [
     { component: <WeightCheckActivity />, path: '/dataEntry/weightCheckingActivity' },
     { component: <DataEntryAttendance />, path: '/dataEntry/staffAttendance' },
     { component: <DataEntryAbstract />, path: '/dataEntry/report' },
+    { component: <PurchaseOrderEntries />, path: '/dataEntry/purchaseOrder' },
+    { component: <PurchaseOrderDataEntry />, path: '/dataEntry/purchaseOrder/create' },
 
 
     // ERP 
@@ -192,7 +196,7 @@ const RoutingArray = [
     { component: <TallyReports />, path: '/taskManagement/report/tallyActivity' },
     { component: <ChartsReport />, path: '/taskManagement/report/activityGraph' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
-
+    { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
     
     // User Control
     { component: <CompanyInfo />, path: '/userControl/company' },

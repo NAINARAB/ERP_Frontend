@@ -62,6 +62,7 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
 
     useEffect(() => {
         if (isValidObject(row)) {
+            console.log(row)
             setInputValue(prev => ({
                 ...prev,
                 ...row,
@@ -103,12 +104,13 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
                 method: isEdit ? 'PUT' : 'POST',
                 bodyData: PostObj,
             });
-
+             
             if (response.success) {
                 toast.success(response.message);
+                setInputValue(initialValue)
                 closeDialog();
                 if (reload) reload();
-                if (onTaskAdded) onTaskAdded();
+                if (onTaskAdded) onTaskAdded(); 
             } else {
                 toast.error(response.message);
             }
@@ -154,7 +156,7 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
             if (response.success) {
                 toast.success(response.message);
                 closeEditDialog();
-                // if (reload) reload();
+                if (reload) reload();
                 if (onTaskAdded) onTaskAdded();
             } else {
                 toast.error(response.message);

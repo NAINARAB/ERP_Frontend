@@ -78,7 +78,7 @@ const ActiveProjects = () => {
     const calcPercentage = (task, completed) => (Number(task) === 0 ? 0 : ((Number(completed) / Number(task)) * 100).toFixed(0));
 
     const columns = [
-        { name: 'Project', selector: row => row.Project_Name, sortable: true, width: '350px' },
+        { name: 'Project', selector: row => row.Project_Name, sortable: true, width: '250px' },
         { name: 'Head', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Project_Head_Name, sortable: true },
         { name: 'Status', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Status, sortable: true },
         { name: 'End Date', selector: row => row.Est_End_Dt ? new Date(row.Est_End_Dt).toLocaleDateString('en-IN') : "N/A", sortable: true },
@@ -93,7 +93,7 @@ const ActiveProjects = () => {
                 </>
             )
         },
-        { name: 'Assigned', selector: row => row.TotalTaskAssignments },
+        { name: 'Assigned', selector: row => row.TasksAssignedToEmployee },
         {
             name: 'Employees', cell: row => (
                 <>

@@ -10,7 +10,6 @@ import { convertedStatus } from "../../Sales/convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
 import PurchaseOrderCreation from "./purchaseOrderCreation";
-import PurchaseOrderFormTemplate from './purchaseOrderFormTemplate'
 
 
 const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
@@ -255,7 +254,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
-            {/* <Card>
+            <Card>
                 <div className="p-3 py-2 d-flex align-items-center justify-content-between">
                     <h6 className="fa-18 m-0 p-0">{
                         screen
@@ -310,7 +309,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                         />
                     )}
                 </CardContent>
-            </Card> */}
+            </Card>
 
 
             {Object.keys(viewOrder).length > 0 && (
@@ -323,10 +322,6 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                     TitleText={'Purchase Order'}
                 />
             )}
-
-            <Card>
-                <CardContent><PurchaseOrderFormTemplate /></CardContent>
-            </Card>
 
 
             <Dialog

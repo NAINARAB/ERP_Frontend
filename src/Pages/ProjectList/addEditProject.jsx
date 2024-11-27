@@ -33,6 +33,7 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
             address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
         }).then(data => {
             setProjectHead(data.success ? data.data : []);
+            
         }).catch(e => console.error('Fetch Error:', e));
     }, [parseData?.Company_id]);
 
@@ -48,25 +49,23 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
     }, []);
 
     useEffect(() => {
-
         if (open) {
-            console.log('inputValue',inputValue)
-
+    
             if (isEdit && inputValue) {
-                console.log(inputValue)
                 setFormData({
                     ...inputValue,
-                    Project_Head:inputValue.Proejct_Head|| '',
+                    Project_Head: inputValue?.Project_Head_Id, 
                     Est_Start_Dt: inputValue.Est_Start_Dt ? ISOString(inputValue.Est_Start_Dt) : '',
                     Est_End_Dt: inputValue.Est_End_Dt ? ISOString(inputValue.Est_End_Dt) : '',
+                    Project_Status: inputValue?.Project_Status || '', 
+                    Project_Desc: inputValue?.Project_Desc || '-'
                 });
             } else if (!isEdit) {
-
+           
                 setFormData({
-                    Project_Id: '',
                     Project_Name: '',
                     Project_Desc: '',
-                    Project_Head: '',
+                    Project_Head: '', 
                     Est_Start_Dt: ISOString(),
                     Est_End_Dt: ISOString(),
                     Project_Status: '',
@@ -76,6 +75,8 @@ const ProjectForm = ({ open, onClose, inputValue, isEdit, setReload }) => {
             }
         }
     }, [inputValue, open, isEdit]);
+    
+    
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

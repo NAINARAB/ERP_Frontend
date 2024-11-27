@@ -40,7 +40,7 @@ const EmployeeAbstract = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (Number(contextObj?.Print_Rights) === 1) {
             fetchLink({
-                address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+                address: `masters/users/employee/employeeAllDropDown?Company_id=${parseData?.Company_id}`
             }).then(data => {
                 if (data.success) {
                     setUserDropDown(data?.data?.sort((a, b) => String(a?.Name).localeCompare(b?.Name)))
