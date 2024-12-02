@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, ISOString, LocalDate } from "../../Components/functions";
+import { checkIsNumber, getPreviousDate, ISOString } from "../../Components/functions";
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
 import { purchaseOrderDataSet, displayColumns } from "./purchaseOrderDataArray";
-import { toast } from 'react-toastify'
+import { toast } from 'react-toastify';
+import PurchaseOrderPreviewTemplate from "./purchaseOrderPreviewTemplate";
 
 
 const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
     const [purchaseOrderData, setPurchaseOrderData] = useState([]);
+    const [orderPreview, setOrderPreview] = useState({
+        OrderDetails: {},
+        OrderItemsArray: [],
+        DeliveryArray: [],
+        TranspoterArray: [],
+        display: false,
+    });
+
     const nav = useNavigate();
 
     const [filters, setFilters] = useState({
@@ -22,6 +31,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
+        view: 'PURCHASE ORDERS'
     })
 
     useEffect(() => {
@@ -36,20 +46,34 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
     const deleteOrder = (OrderId) => {
         if (!checkIsNumber(OrderId)) return;
-    
+
         fetchLink({
             address: 'dataEntry/purchaseOrderEntry',
             method: 'DELETE',
             bodyData: { OrderId }
         }).then(data => {
-            if (data.success){
-                setFilters(pre => ({...pre, deleteOrderDialog: false, deleteOrderId: '', refresh: !pre.refresh}));
+            if (data.success) {
+                setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '', refresh: !pre.refresh }));
                 toast.success(data.message);
             } else {
-                setFilters(pre => ({...pre, deleteOrderDialog: false, deleteOrderId: ''}));
+                setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }));
                 toast.error(data.message);
             }
         }).catch(e => console.error(e))
+    }
+
+    const onCloseDialog = () => {
+        setOrderPreview({
+            OrderDetails: {},
+            OrderItemsArray: [],
+            DeliveryArray: [],
+            TranspoterArray: [],
+            display: false,
+        })
+    }
+
+    const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
+        nav(page, { state: stateToTransfer });
     }
 
     return (
@@ -74,13 +98,30 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                             data: purchaseOrderData,
                             status: filters.OrderStatus
                         })}
-                        columns={displayColumns(filters.OrderStatus, setFilters)}
+                        columns={displayColumns({
+                            OrderStatus: filters.OrderStatus,
+                            dialogs: setFilters,
+                            setOrderPreview,
+                            navigation: navigateToPageWithState
+                        })}
                         tableMaxHeight={750}
                         EnableSerialNumber
                         title={filters.OrderStatus}
                     />
+
                 </CardContent>
             </Card>
+
+            {orderPreview.display && (
+                <PurchaseOrderPreviewTemplate
+                    OrderDetails={orderPreview.OrderDetails}
+                    OrderItemsArray={orderPreview.OrderItemsArray}
+                    DeliveryArray={orderPreview.DeliveryArray}
+                    TranspoterArray={orderPreview.TranspoterArray}
+                    display={orderPreview.display}
+                    onCloseDialog={() => onCloseDialog()}
+                />
+            )}
 
             <Dialog
                 open={filters.FilterDialog}
@@ -121,16 +162,16 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                         value={filters.OrderStatus}
                                         onChange={e => setFilters(pre => ({ ...pre, OrderStatus: e.target.value }))}
                                     >
-                                        <optgroup label="ITEM BASED">
                                             <option value={'ITEMS'}>ITEMS</option>
-                                            <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
                                             <option value={'ITEMS ARRIVED'}>ITEMS - ARRIVED</option>
-                                        </optgroup>
-                                        <optgroup label="ORDER BASED">
+                                        {/* <optgroup label="ITEM BASED">
+                                            <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
+                                        </optgroup> */}
                                             <option value={'ORDERS'}>ORDERS</option>
+                                        {/* <optgroup label="ORDER BASED">
                                             <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
                                             <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option>
-                                        </optgroup>
+                                        </optgroup> */}
                                     </select>
                                 </td>
                             </tr>
@@ -147,7 +188,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
             <Dialog
                 open={filters.deleteOrderDialog}
-                onClose={() => setFilters(pre => ({...pre, deleteOrderDialog: false, deleteOrderId: ''}))}
+                onClose={() => setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }))}
                 maxWidth='sm'
             >
                 <DialogTitle>Confirmation</DialogTitle>
@@ -155,8 +196,8 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     <h6>Do you want to delete the order permanently?</h6>
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                        onClick={() => setFilters(pre => ({...pre, deleteOrderDialog: false, deleteOrderId: ''}))}
+                    <Button
+                        onClick={() => setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }))}
                     >Cancel</Button>
                     <Button color='error' variant='outlined' onClick={() => deleteOrder(filters.deleteOrderId)}>Delete</Button>
                 </DialogActions>

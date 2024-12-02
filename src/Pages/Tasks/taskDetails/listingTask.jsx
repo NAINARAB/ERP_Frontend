@@ -1,454 +1,666 @@
-import React, { useEffect, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-
+import React, { useState, useCallback, useEffect, useContext } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Tab,
+  Table,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+  Box
+} from '@mui/material';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import ViewHeadlineSharpIcon from '@mui/icons-material/ViewHeadlineSharp';
 import { fetchLink } from '../../../Components/fetchComponent';
-import Select from 'react-select';
-import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
+import { Edit } from "@mui/icons-material";
 
-const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
-    const localData = localStorage.getItem("user");
-    const parseData = JSON.parse(localData);
- 
-    const [usersDropdown, setUsersDropdown] = useState([]);
-    const [loading, setLoading] = useState(false);
-    // const [schType, setSchType] = useState([]);
-    const [selectedSch, setSelectedSch] = useState([])
-    const intitalVlaue={
-        AN_No: '',
-        Project_Id: projectId,
-        Sch_Id: taskId,
-        Assigned_Emp_Id: parseData?.UserId,
-        Emp_Id: '',
-        Task_Assign_dt: new Date().toISOString().split('T')[0],
-        Sch_Period: '',
-        Sch_Time: '',
-        EN_Time: '',
-        Est_Start_Dt: '',
-        Est_End_Dt: '',
-        Ord_By: 1,
-        Timer_Based: false,
-        Sch_Type: '',
-        Invovled_Stat: true,
-        EmpGet: '- Select -',
-        Is_Repitative: false,
-        RepeatDays: { Mon: false, Tue: false, Wed: false, Thu: false, Fri: false, Sat: false, Sun: false }
+import TaskMasterMgt from '../Components/newaddEditTask';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+import TaskAssign from '../taskAssign/addEditTaskAssign';
+
+import TaskIndividual from './taskIndividual';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { MyContext } from "../../../Components/context/contextProvider";
+function ListingTask({ dialogOpen, setDialogOpen, projectid, reload, onReload, selectedProject }) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [taskAssignOpen, setTaskAssignOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [taskDetails, setTaskDetails] = useState([]);
+  const [taskDetailDialog, setTaskDetailsDialog] = useState(false);
+  const [taskScheduleInput, setTaskScheduleInput] = useState({});
+  const [taskData, setTaskData] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const userData = JSON.parse(localStorage.getItem('user'));
+  const entryBy = userData?.UserId;
+  const companyId = userData?.Company_id;
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [expandedAccordion, setExpandedAccordion] = useState(null);
+  // const [expandedAccordionSubTask, setExpandedAccordionSubTask] = useState(null);
+  // const [scheduleTypes, setScheduleTypes] = useState([]);
+  // const [selectedTab, setSelectedTab] = useState(0);
+  const [expandedAccordionTask, setExpandedAccordionTask] = useState(null);
+
+  const { contextObj } = useContext(MyContext);
+
+  const [isEdit, setIsedit] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+
+  // const [expandedItem, setExpandedItem] = useState({ schTypeId: null, taskId: null });
+
+
+
+  const [selectedTab, setSelectedTab] = useState('1');
+  const [scheduleTypes, setScheduleTypes] = useState([]);
+
+
+
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+  };
+
+
+  const handleAccordionChange = (taskId) => {
+    setExpandedAccordion((prev) => (prev === taskId ? null : taskId));
+  };
+
+  const handleAccordionChangeTask = (taskId) => {
+    setExpandedAccordionTask((prev) => (prev === taskId ? null : taskId));
+  };
+
+  const handleSelectedTask = async (task) => {
+    setSelectedTask(task);
+    setTaskAssignOpen(true);
+  }
+
+  const Schtype = async () => {
+    fetchLink({ address: `taskManagement/project/schedule/newscheduleType` }).then((data) => {
+      if (data.success) {
+        setScheduleTypes(data.data);
+
+      } else {
+        toast.error(data.message);
+      }
+    });
+  }
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const data = await fetchLink({ address: `taskManagement/tasks/dropdown?Company_id=${companyId}` });
+      if (data.success) {
+        setTasks(data.data);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [companyId]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const data = await fetchLink({
+        address: `taskManagement/project/schedule/ListingDetails?Project_Id=${projectid}`
+      });
+      if (data.success) {
+        setTaskData(data.data);
+      } else {
+        console.error('Failed to fetch task details:', data.message);
+      }
+    } catch (e) {
+      console.error('Error fetching task details:', e);
+    }
+  }, [projectid]);
+
+  useEffect(() => {
+    fetchTasks();
+    fetchData();
+    Schtype();
+  }, [reload, projectid, onReload, fetchTasks, fetchData]);
+
+
+
+  const taskOptions = tasks.map(obj => ({ value: obj.Task_Id, label: obj.Task_Name }));
+  const handleviewTaskDetail = async (task) => {
+    setTaskDetailsDialog(true);
+
+    if (!task.Task_Id || !projectid) {
+      toast.error('Task ID and Project ID are required');
+      return;
     }
 
-    const [assignEmpInpt, setAssignEmpInpt] = useState(intitalVlaue);
-    
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const userResponse =  await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
-                const schTypeResponse =  await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
+    try {
+      const data = await fetchLink({
+        address: `masters/employeedetails/assignedTaskDetails?Task_Id=${task.Task_Id}&ProjectId=${projectid}&LevelId=${task.Task_Levl_Id}`
+      });
 
-
-                if (userResponse.success) setUsersDropdown(userResponse.data || []);
-                if (schTypeResponse.success) {
-                
-       }
-                
-            } catch (error) {
-                toast.error("Failed to fetch data.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (open) fetchData();
-    }, [projectId, open, reload]);
-
-
-    useEffect(() => {
- 
-        const fetchSelectedData = async () => {
-            setLoading(true);
-            try {
-                if (editData) {
-                    const selectedSchType =  await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.Sch_Id}&Task_Id=${taskId.Task_Id}` });
-
-                    const selectedSchId = selectedSchType.data[0]?.Sch_Type_Id;
-                    const selectedSchName = selectedSchType.data[0]?.Sch_Name;
-
-                    if (selectedSchId && selectedSchName) {
-                        setSelectedSch({ value: selectedSchId, label: selectedSchName });
-                    } else {
-                        setSelectedSch({ value: '', label: '' });
-                    }
-
-
-                } else {
-                    const selectedSchType = await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.TaskSchId}&Task_Id=${taskId.Task_Id}` });
-
-
-                    const selectedSchId = selectedSchType.data[0]?.Sch_Type_Id;
-                    const selectedSchName = selectedSchType.data[0]?.Sch_Name;
-
-                    if (selectedSchId && selectedSchName) {
-                        setSelectedSch({ value: selectedSchId, label: selectedSchName });
-                    } else {
-                        setSelectedSch({ value: '', label: '' });
-                    }
-
-                }
-            } catch (error) {
-
-                toast.error("Failed to fetch data.");
-            } finally {
-                setLoading(false);
-            }
-
-        };
-
-        if (open) fetchSelectedData();
-    }, [open, editData, reload,projectId]);
-
-    useEffect(() => {
-        if (editData) {
-
-            setAssignEmpInpt(prev => ({
-                ...prev,
-                AN_No: editData.AN_No,
-                Emp_Id: editData.Emp_Id,
-                Sch_Time: editData.Sch_Time,
-                EN_Time: editData.EN_Time,
-                Est_Start_Dt: editData.Est_Start_Dt.split('T')[0],
-                Est_End_Dt: editData.Est_End_Dt.split('T')[0],
-                Ord_By: editData.Ord_By,
-                Timer_Based: editData.Timer_Based,
-                Invovled_Stat: editData.Invovled_Stat,
-                Sch_Type_Id: editData.Sch_Type,
-                Sch_Type: editData.Sch_Type_Name,
-                EmpGet: editData.EmployeeName,
-                Is_Repitative: editData.Is_Repitative,
-                RepeatDays: {
-                    Mon: !!editData.IS_Rep_Monday,
-                    Tue: !!editData.IS_Rep_Tuesday,
-                    Wed: !!editData.IS_Rep_Wednesday,
-                    Thu: !!editData.IS_Rep_Thursday,
-                    Fri: !!editData.Is_Rep_Friday,
-                    Sat: !!editData.Is_Rep_Saturday,
-                    Sun: !!editData.Is_Rep_Sunday,
-                },
-            }));
-        }
-    }, [editData]);
+      if (data.success) {
+        setTaskDetails(data.data);
+      } else {
+        console.error(data.message);
+      }
+    } catch (e) {
+      console.error('Error fetching task details:', e);
+    }
+  };
 
 
 
-    const calculateSchPeriod = () => {
-        const [hours1, minutes1] = assignEmpInpt.Sch_Time.split(':').map(Number);
-        const [hours2, minutes2] = assignEmpInpt.EN_Time.split(':').map(Number);
 
-        const date1 = new Date(0, 0, 0, hours1, minutes1);
-        const date2 = new Date(0, 0, 0, hours2, minutes2);
+  const handleAssignTask = async () => {
+    if (!taskScheduleInput.Task_Id || !taskScheduleInput.Sch_Type_Id) {
+      toast.error("Please select a task and schedule type before saving.");
+      return;
+    }
 
-        if (date2 > date1) {
-            let difference = Math.abs(date2 - date1);
-            const hours = Math.floor(difference / (1000 * 60 * 60));
-            const minutes = Math.floor(difference / (1000 * 60));
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        }
-        return '';
+    const requestData = {
+      entryBy: entryBy,
+      Project_Id: projectid,
+      Sch_Type_Id: taskScheduleInput.Sch_Type_Id,
+      Sch_Est_Start_Date: taskScheduleInput.Task_Est_Start_Date,
+      Sch_Est_End_Date: taskScheduleInput.Task_Est_End_Date,
+      tasks: [taskScheduleInput]
     };
 
+    try {
+      const response = await fetchLink({
+        address: 'taskManagement/project/schedule/createNewTaskWithSchedule',
+        method: 'POST',
+        bodyData: requestData,
+      });
 
-    const mapRepeatDaysToISRepFields = () => {
-        return {
-            IS_Rep_Monday: assignEmpInpt.RepeatDays.Mon ? 1 : null,
-            IS_Rep_Tuesday: assignEmpInpt.RepeatDays.Tue ? 1 : null,
-            IS_Rep_Wednesday: assignEmpInpt.RepeatDays.Wed ? 1 : null,
-            IS_Rep_Thursday: assignEmpInpt.RepeatDays.Thu ? 1 : null,
-            Is_Rep_Friday: assignEmpInpt.RepeatDays.Fri ? 1 : null,
-            Is_Rep_Saturday: assignEmpInpt.RepeatDays.Sat ? 1 : null,
-            Is_Rep_Sunday: assignEmpInpt.RepeatDays.Sun ? 1 : null,
-        };
-    };
+      if (response.success) {
+        toast.success(response.message);
+        setAssignDialogOpen(false);
+        setTaskScheduleInput({})
+        fetchData();
+        onReload();
+      }
+      else if (response.status === 'warning') {
+        toast.warn(response.message || "Task already exists for this project.");
+      }
+      else {
+
+        toast.warn(response.message || "Task already exists for this project.");
+      }
+    } catch (error) {
+      toast.error(error);
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setSelectedTask(task);
+    setEditDialogOpen(true);
+  };
 
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const schPeriod = calculateSchPeriod();
+  const updatesTaskDetails = async (task) => {
 
-        if (assignEmpInpt.Est_End_Dt < assignEmpInpt.Est_Start_Dt) {
-            toast.error("End date must be greater than start date.");
-            return;
-        }
+    const requestData = {
+      Sch_Project_Id: task.Sch_Project_Id,
+      Sch_Id: task.TaskSchId,
+      schtypeid: taskScheduleInput.Sch_Type_Id,
+      Task_Id: task.Task_Id
 
-        try {
-
-            const address = editData ? 'masters/employeedetails/updateTask' : 'masters/employeedetails/assignTask';
-            const repeatDaysMapped = mapRepeatDaysToISRepFields();
-            const response = await fetchLink({
-                address,
-                method: editData ? 'PUT' : 'POST',
-                bodyData: {
-                    ...assignEmpInpt,
-                    Project_Id: projectId,
-                    Sch_Id: editData ? taskId.Sch_Id : taskId.TaskSchId,
-                    Task_Levl_Id: taskId.Task_Levl_Id,
-                    Task_Id: Number(taskId.Task_Id),
-                    Assigned_Emp_Id: assignEmpInpt.Assigned_Emp_Id,
-                    Emp_Id: assignEmpInpt.Emp_Id,
-                    Sch_Period: schPeriod,
-                    Sch_Time: assignEmpInpt.Sch_Time,
-                    EN_Time: assignEmpInpt.EN_Time,
-                    Est_Start_Dt: assignEmpInpt.Est_Start_Dt,
-                    Est_End_Dt: assignEmpInpt.Est_End_Dt,
-                    Ord_By: assignEmpInpt.Ord_By,
-                    Sch_Type: selectedSch.value,
-                    Timer_Based: assignEmpInpt.Timer_Based ? 1 : 0,
-                    Invovled_Stat: assignEmpInpt.Invovled_Stat ? 1 : 0,
-                    Is_Repitative: assignEmpInpt.Is_Repitative ? 1 : 0,
-                    RepeatDays: assignEmpInpt.Is_Repitative ? assignEmpInpt.RepeatDays : '',
-                    ...repeatDaysMapped,
-                }
-
-            });
-
-            if (response.success) {
-                toast.success(`Task ${editData ? 'updated' : 'assigned'} successfully!`);
-                setAssignEmpInpt({});
-
-                onClose();
-        
-
-            } else {
-
-                toast.error("Please fill the values correctly");
-            }
-        } catch (error) {
-            toast.error("Error during task assignment/update: " + error.message);
-        }
 
     };
 
-    return (
-        <>
+    try {
+      const response = await fetchLink({
+        address: 'taskManagement/project/schedule/updateScheduleTaskUpdate',
+        method: 'PUT',
+        bodyData: requestData,
+      });
+
+      if (response.success) {
+        toast.success(response.message);
+
+        setUpdateDialogOpen(false)
+        setIsedit(false)
+        onReload();
+      }
+      else if (response.status === 'warning') {
+        toast.warn(response.message || "Task already exists for this project.");
+      }
+      else {
+
+        toast.warn(response.message || "Task already exists for this project.");
+      }
+    } catch (error) {
+      toast.error(error);
+    }
+  };
 
 
 
-            <Dialog open={open} maxWidth="sm">
-                <DialogTitle>{editData ? 'Edit Task' : 'Employee Assign'}</DialogTitle>
-                <form onSubmit={handleSubmit}>
-                    <DialogContent className="table-responsive">
-                           {loading && <div>Loading...</div>}
-                        <table className="table" style={{ tableLayout: 'fixed' }}>
-                            <tbody>
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        Employee
-                                    </td>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <Select
-                                            value={{ value: assignEmpInpt.Emp_Id, label: assignEmpInpt.EmpGet }}
-                                            onChange={(e) => setAssignEmpInpt({ ...assignEmpInpt, Emp_Id: e.value, EmpGet: e.label })}
-                                            options={[{ value: '', label: '- Select -' }, ...usersDropdown.map(obj => ({ value: obj.UserId, label: obj.Name }))]}
-                                            styles={customSelectStyles}
-                                            required
-                                            isSearchable={true}
-                                            placeholder="Select User"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        Sch_Type
-                                    </td>
-                                    
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <Select
-                                            value={selectedSch ? { value: selectedSch.value, label: `${selectedSch.label}` } : null}
-                                            styles={{ padding: '0.5em' }}
-                                            isDisabled
-                                            placeholder="Select Sch_Type"
-                                        />
-                                    </td>
-                                </tr>
+
+
+  const handleTaskEdit = (task) => {
+    setIsedit(true);
+    setTaskScheduleInput(task);
+    setUpdateDialogOpen(true);
+  };
+
+  const handleTaskChange = async (selectedOption) => {
+    setTaskScheduleInput(prev => ({
+      ...prev,
+      Task_Id: selectedOption.value,
+      TasksGet: selectedOption.label
+    }));
+
+    try {
+      const response = await fetchLink({
+        address: `taskManagement/tasks/tasklistsid?Task_Id=${selectedOption.value}`
+      });
+      if (response.success) {
+        const taskDetails = response.data;
+        setTaskScheduleInput(prev => ({
+          ...prev,
+          Task_Levl_Id: taskDetails.Task_Levl_Id,
+          Task_Name: taskDetails.Task_Name,
+          Task_Desc: taskDetails.Task_Desc,
+          Task_Group_Id: taskDetails.Task_Group_Id,
+
+          Sch_Type_Id: taskDetails.Sch_Type_Id,
+          Task_Sch_Duaration: taskDetails.Task_Sch_Duaration || '',
+          Task_Start_Time: taskDetails.Task_Start_Time || new Date().toISOString(),
+          Task_End_Time: taskDetails.Task_End_Time || new Date().toISOString(),
+          Task_Est_Start_Date: taskDetails.Task_Est_Start_Date || new Date().toISOString(),
+          Task_Est_End_Date: taskDetails.Task_Est_End_Date || new Date().toISOString(),
+        }));
+      } else {
+        toast.error("Failed to fetch task details");
+      }
+    } catch (error) {
+      toast.error(error);
+    }
+  };
+
+  const setCloseTask = async () => {
+    setDialogOpen(false);
+    setTaskScheduleInput({});
+
+  }
 
 
 
-                                {/* Time and Date Inputs */}
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        Start Time
-                                    </td>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <input
-                                            type="time"
-                                            className="cus-inpt"
-                                            value={assignEmpInpt.Sch_Time}
-                                            required
-                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Sch_Time: e.target.value })}
-                                            style={{ padding: '0.5em' }}
-                                        />
-                                    </td>
-                                </tr>
 
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        End Time
-                                    </td>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <input
-                                            type="time"
-                                            className="cus-inpt"
-                                            value={assignEmpInpt.EN_Time}
-                                            required
-                                            min={assignEmpInpt.Sch_Time}
-                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, EN_Time: e.target.value })}
-                                            style={{ padding: '0.5em' }}
-                                        />
-                                    </td>
-                                </tr>
+  const handleSchTypeChange = (e) => {
+    const selectedOption = scheduleTypes.find(option => option.Sch_Type_Id === parseInt(e.target.value));
+    if (selectedOption) {
+      setTaskScheduleInput({
+        ...taskScheduleInput,
+        Sch_Type_Id: selectedOption.Sch_Type_Id,
+        Sch_Type: selectedOption.Sch_Type,
+      });
+    }
+  };
+  return (
+    <>
 
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        Est. Start Date
-                                    </td>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <input
-                                            type="date"
-                                            className="cus-inpt"
-                                            value={assignEmpInpt.Est_Start_Dt}
-                                            required
-                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_Start_Dt: e.target.value })}
-                                            style={{ padding: '0.5em' }}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
-                                        Est. End Date
-                                    </td>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
-                                        <input
-                                            type="date"
-                                            className="cus-inpt"
-                                            value={assignEmpInpt.Est_End_Dt}
-                                            required
-                                            min={assignEmpInpt.Est_Start_Dt}
-                                            onChange={e => setAssignEmpInpt({ ...assignEmpInpt, Est_End_Dt: e.target.value })}
-                                            style={{ padding: '0.5em' }}
-                                        />
-                                    </td>
-                                </tr>
-
-                                {/* Timer Based & Involved Status */}
-                                <tr>
-                                    <td className="border-bottom-0 fa-15 text-start" style={{ paddingRight: '1em' }}>
-                                        <div style={{ display: 'inline-flex', marginRight: '1em' }}>
-                                            <input
-                                                className="form-check-input shadow-none"
-                                                type="checkbox"
-                                                id="timerbased"
-                                                checked={Boolean(Number(assignEmpInpt?.Timer_Based))}
-                                                onChange={(e) =>
-                                                    setAssignEmpInpt({ ...assignEmpInpt, Timer_Based: e.target.checked })
-                                                }
-                                                style={{ marginRight: '0.5em' }}
-                                            />
-                                            <label className="form-check-label p-1 ps-2" htmlFor="timerbased">
-                                                Timer Based Task?
-                                            </label>
-                                        </div>
-
-                                        {editData && (
-                                            <div style={{ display: 'inline-flex', marginRight: '1em' }}>
-                                                <input
-                                                    className="form-check-input shadow-none"
-                                                    type="checkbox"
-                                                    checked={Boolean(Number(assignEmpInpt?.Invovled_Stat))}
-                                                    onChange={() =>
-                                                        setAssignEmpInpt({ ...assignEmpInpt, Invovled_Stat: !assignEmpInpt.Invovled_Stat })
-                                                    }
-                                                    style={{ marginRight: '0.5em' }}
-                                                />
-                                                <label className="form-check-label p-1 ps-2">Involved Status</label>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="border-bottom-0 fa-15" style={{ paddingRight: '1em' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', marginRight: '1em' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={assignEmpInpt.Is_Repitative === 1}
-                                                    onChange={(e) => {
-                                                        setAssignEmpInpt((prevState) => ({
-                                                            ...prevState,
-                                                            Is_Repitative: e.target.checked ? 1 : 0,
-                                                        }));
-                                                    }}
-                                                    style={{ marginRight: '1em' }}
-                                                />
-                                                <label style={{ marginBottom: '0' }}>Is Repetitive?</label>
-                                            </div>
-                                            {assignEmpInpt.Is_Repitative === 1 && (
-                                                <div style={{ display: 'inline-flex', gap: '0.5em' }}>
-                                                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                                                        <label
-                                                            key={day}
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                marginRight: '1em',
-                                                                width: '30px',
-                                                            }}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={assignEmpInpt.RepeatDays[day]}
-                                                                onChange={() =>
-                                                                    setAssignEmpInpt({
-                                                                        ...assignEmpInpt,
-                                                                        RepeatDays: {
-                                                                            ...assignEmpInpt.RepeatDays,
-                                                                            [day]: !assignEmpInpt.RepeatDays[day],
-                                                                        },
-                                                                    })
-                                                                }
-                                                                style={{ marginRight: '0.5em' }}
-                                                            />
-                                                            {day}
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
+      {updateDialogOpen && (
+        <Dialog
+          open={updateDialogOpen}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{ style: { borderRadius: '8px' } }}
+          onClose={() => setUpdateDialogOpen(false)}
+        >
+          <DialogTitle>{isEdit ? "Edit Task" : "Assign Task"}</DialogTitle>
+          <DialogContent>
+            <div style={{ padding: '1px', display: 'flex' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <label style={{ marginRight: '8px' }}>Sch_Type</label>
+                <select
+                  value={taskScheduleInput.Sch_Type_Id === 0 || ''}
+                  onChange={handleSchTypeChange}
+                  className="cus-inpt"
+                  required
+                  style={{ marginLeft: '10px' }}
+                >
+                  <option value="" disabled>- Sch_Type -</option>
+                  {scheduleTypes.map((option, index) => (
+                    <option key={index} value={option.Sch_Type_Id}>
+                      {option.Sch_Type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => updatesTaskDetails(taskScheduleInput)}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
 
-                            </tbody>
-                        </table>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => {
-                                onClose();
-                                setAssignEmpInpt(intitalVlaue);
-                            }}
-                            variant="outlined"
+      <Dialog open={dialogOpen} fullWidth maxWidth="lg" PaperProps={{ style: { height: '75vh' } }}>
+        <DialogTitle>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{selectedProject?.Project_Name}</span>
+            <Button variant="contained" color="primary" onClick={() => setAssignDialogOpen(true)}>Assign Task</Button>
+          </div>
+        </DialogTitle>
+
+        <Box sx={{ width: '100%', typography: 'body1' }}>
+          {taskData.map((schedule, index) => {
+            const scheduleTypes = JSON.parse(schedule.SchTypes);
+            // const overallSchTypes = JSON.parse(schedule.OverallSchTypes)
+
+
+            return (
+              <TabContext value={selectedTab} key={index}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  <TabList onChange={handleTabChange} aria-label="Schedule Types">
+                    {/* <Tab label="Overall" value="overall" id="tab-overall" aria-controls="tabpanel-overall" /> */}
+                    {Array.isArray(scheduleTypes) && scheduleTypes.length > 0 ? (
+                      scheduleTypes.map((sch, index) => (
+                        <Tab
+                          key={`${sch.SchTypeId || 'index'}-${index}`}
+                          label={sch.SchType || 'No SchType'}
+                          value={(sch.SchTypeId || index).toString()}
+                          id={`tab-${sch.SchTypeId || index}`}
+                          aria-controls={`tabpanel-${sch.SchTypeId || index}`}
+                        />
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ padding: 2 }}>
+                        No Details Available for {scheduleTypes}
+                      </Typography>
+                    )}
+                  </TabList>
+                </Box>
+
+
+
+
+                {Array.isArray(scheduleTypes) && scheduleTypes.map((sch, index) => (
+                  <TabPanel
+                    key={`${sch.SchTypeId || 'index'}-${index}`}
+                    value={(sch.SchTypeId || index).toString()}
+                    id={`tabpanel-${sch.SchTypeId || index}`}
+                    aria-labelledby={`tab-${sch.SchTypeId || index}`}
+                  >
+                    <Box sx={{ marginBottom: 2, padding: 2, backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                      {Array.isArray(sch.TaskCountsInSchType) && sch.TaskCountsInSchType.length > 0 ? (
+                        sch.TaskCountsInSchType.map((count, index) => (
+                          <Typography key={index} variant="body1" display="flex" justifyContent="space-between" alignItems="center">
+                            <Box>
+                              Schedule Type: <strong>{sch.SchType}</strong>
+                            </Box>
+                            <Box textAlign="right">
+                              Total Tasks: <strong>{count.TotalTasks}</strong> / Completed Tasks: <strong>{count.CompletedTasks}</strong>
+                            </Box>
+                          </Typography>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="textSecondary">
+                          No tasks counted for this schedule type.
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {Array.isArray(sch.TaskTypeGroups) && sch.TaskTypeGroups.length > 0 ? (
+                      sch.TaskTypeGroups.map((taskType) => (
+                        <Accordion
+                          key={taskType.Task_Type_Id}
+                          expanded={expandedAccordion === taskType.Task_Type_Id}
+                          onChange={() => handleAccordionChange(taskType.Task_Type_Id)}
+                          sx={{
+                            backgroundColor: '#f0f4ff',
+                            boxShadow: 'black',
+                          }}
                         >
-                            Close
-                        </Button>
-                        <Button type="submit" variant="contained">
-                            Save Changes
-                        </Button>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                            <Typography fontWeight="bold">
+                              {taskType.Task_Type || 'Default Task Type'}
+                            </Typography>
+                            <Box sx={{ textAlign: 'right', flexGrow: 1 }}>
+                              <Typography variant="h6">
+                                <Typography fontWeight="bold">
+                                  Completed Task / Total Task
+                                </Typography>
+                                {Array.isArray(taskType.TaskMetrics) && taskType.TaskMetrics.length > 0 ? (
+                                  taskType.TaskMetrics.map((tasks, index) => (
+                                    <Typography sx={{ textAlign: 'right', flexGrow: 1 }} key={index}>
+                                      {tasks.CompletedTasks} / {tasks?.TotalTasks}
+                                    </Typography>
+                                  ))
+                                ) : (
+                                  <Typography variant="body2" color="textSecondary">
+                                    No task metrics available for this task type.
+                                  </Typography>
+                                )}
+                              </Typography>
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                            {Array.isArray(taskType.Tasks) && taskType.Tasks.length > 0 ? (
+                              taskType.Tasks.map((taskItem) => (
+                                <Accordion
+                                  key={taskItem.Task_Id}
+                                  expanded={expandedAccordionTask === taskItem.Task_Id}
+                                  onChange={() => handleAccordionChangeTask(taskItem.Task_Id)}
+                                  sx={{
+                                    marginBottom: 2,
+                                  }}
+                                >
+                                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Box sx={{ textAlign: 'left', flexGrow: 1 }}>
+                                      <Typography fontWeight="bold">
+                                        {taskItem?.Task_Name || 'DEFAULT TASK'}
+                                      </Typography>
+                                    </Box>
+                                  </AccordionSummary>
+                                  <AccordionDetails>
+                                    <TableContainer style={{ maxHeight: '50vh' }}>
+                                      <Table stickyHeader>
+                                        <TableHead style={{ backgroundColor: '#2C3E50' }}>
+                                          <TableRow style={{ backgroundColor: '#2C3E50' }}>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Task</TableCell>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Task Type</TableCell>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Employees</TableCell>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Employee Assign</TableCell>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Actions</TableCell>
+                                            <TableCell style={{ backgroundColor: '#2C3E50', color: 'white' }}>Details</TableCell>
+                                          </TableRow>
+                                        </TableHead>
 
-                    </DialogActions>
-                </form>
-            </Dialog>
+                                        <TableRow key={taskItem.Task_Id} sx={{ backgroundColor: '#BBE6F6' }}>
+                                          <TableCell>{taskItem.Task_Name}</TableCell>
+                                          <TableCell>
+                                            {sch.SchType}
+                                            <IconButton onClick={() => handleTaskEdit(taskItem)}>
+                                              <Edit />
+                                            </IconButton>
+                                          </TableCell>
+
+                                          <TableCell>
+                                            {Array.isArray(taskItem.AssignedEmployees) && taskItem.AssignedEmployees.length > 0 ? (
+                                              taskItem.AssignedEmployees.map((employee, empIndex) => (
+                                                <Chip
+                                                  key={empIndex}
+                                                  label={employee.Name}
+                                                  variant="outlined"
+                                                  size="small"
+                                                  sx={{ margin: '2px', color: 'green' }}
+                                                />
+                                              ))
+                                            ) : (
+                                              <span>No Employees Assigned</span>
+                                            )}
+                                          </TableCell>
+                                          <TableCell>
+                                            <IconButton onClick={() => handleSelectedTask(taskItem)}>
+                                              <LibraryAddIcon />
+                                            </IconButton>
+                                          </TableCell>
+
+                                          {Number(contextObj?.Edit_Rights) === 1 && (
+                                            <TableCell>
+                                              <IconButton onClick={() => handleEditTask(taskItem)}>
+                                                <Edit />
+                                              </IconButton>
+                                            </TableCell>
+                                          )}
+
+                                          <TableCell>
+                                            <IconButton onClick={() => handleviewTaskDetail(taskItem)}>
+                                              <ViewHeadlineSharpIcon />
+                                            </IconButton>
+                                          </TableCell>
+                                        </TableRow>
+                                      </Table>
+                                    </TableContainer>
+                                  </AccordionDetails>
+                                </Accordion>
+                              ))
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                No tasks available for this task type.
+                              </Typography>
+                            )}
+                          </AccordionDetails>
+                        </Accordion>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No task type groups found for this schedule type.
+                      </Typography>
+                    )}
+                  </TabPanel>
+                ))}
+
+              </TabContext>
+            )
+
+          })}
+        </Box>
 
 
-        </>
-    );
-};
 
-export default TaskAssign;
+        <DialogActions sx={{ marginTop: 'auto ', position: 'sticky', bottom: 0 }}>
+          <Button variant="contained" color="primary" onClick={setCloseTask}>Close</Button>
+        </DialogActions>
+
+      </Dialog>
+
+
+      <Dialog open={assignDialogOpen} fullWidth maxWidth="sm" PaperProps={{ style: { borderRadius: '8px' } }}>
+        <DialogTitle>Assign Task</DialogTitle>
+        <DialogContent>
+          <div style={{ padding: '1px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <label htmlFor="task-select" style={{ marginRight: '8px' }}>Select Task</label>
+              <select
+                id="task-select"
+                value={taskScheduleInput.Task_Id || ''}
+                className="cus-inpt"
+                required
+                onChange={e => handleTaskChange({ value: e.target.value })}
+                style={{ flex: 1, marginRight: '8px' }}
+              >
+                <option value="" disabled>- select -</option>
+                {taskOptions.map((option, index) => (
+                  <option key={index} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <IconButton onClick={() => setIsDialogOpen(true)}>
+                <Button variant="contained" color="primary">Create New</Button>
+              </IconButton>
+            </div>
+          </div>
+          <div style={{ padding: '1px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <label style={{ marginRight: '8px' }}>Sch_Type</label>
+              <select
+                value={taskScheduleInput.Sch_Type_Id || ''}
+                onChange={handleSchTypeChange}
+                className="cus-inpt"
+                required
+                style={{ marginLeft: '10px' }}
+              >
+                <option value="" disabled>- Sch_Type -</option>
+                {scheduleTypes.map((option, index) => (
+                  <option key={index} value={option.Sch_Type_Id}>
+                    {option.Sch_Type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleAssignTask}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      <TaskAssign
+        open={taskAssignOpen}
+        onClose={() => setTaskAssignOpen(false)}
+        task={selectedTask}
+        projectId={projectid}
+        entryBy={entryBy}
+        taskId={selectedTask}
+        reload={onReload}
+      />
+
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Task</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">Cancel</Button>
+          {/* <Button onClick={deleteTaskFun} color="secondary">Delete</Button> */}
+        </DialogActions>
+      </Dialog>
+
+      <TaskMasterMgt
+        openAction={isDialogOpen}
+        onCloseFun={() => setIsDialogOpen(false)}
+        onTaskAdded={fetchTasks}
+        Reload={reload}
+      />
+      <TaskMasterMgt
+        row={selectedTask}
+        openAction={editDialogOpen}
+        onCloseFun={() => setEditDialogOpen(false)}
+        reload={fetchData}
+      />
+      <TaskIndividual
+        open={taskDetailDialog}
+        onClose={() => setTaskDetailsDialog(false)}
+        taskDetails={taskDetails}
+      />
+
+    </>
+  );
+
+
+}
+
+export default ListingTask;
+
+

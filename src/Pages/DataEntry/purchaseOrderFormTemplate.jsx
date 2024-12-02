@@ -4,10 +4,10 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { isEqualNumber } from '../../Components/functions';
+import { isEqualNumber, ISOString, isValidObject } from '../../Components/functions';
 import { Delete, Add, Save, ClearAll } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify'
 const storage = JSON.parse(localStorage.getItem('user'));
 
 const initialOrderDetailsValue = {
@@ -20,6 +20,7 @@ const initialOrderDetailsValue = {
     PartyAddress: '',
     PaymentCondition: '',
     Remarks: '',
+    OrderStatus: 'New Order',
     CreatedBy: storage?.UserId,
 }
 
@@ -42,6 +43,7 @@ const initialDeliveryDetailsValue = {
     Sno: '',
     OrderId: '',
     Location: '',
+    TransporterIndex: '',
     ArrivalDate: '',
     ItemId: '',
     ItemName: '',
@@ -70,9 +72,13 @@ const initialTranspoterDetailsValue = {
     CreatedBy: storage?.UserId,
 }
 
-const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
-
-    const nav = useNavigate()
+const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
+    const storage = JSON.parse(localStorage.getItem('user'));
+    const nav = useNavigate();
+    const location = useLocation();
+    const stateDetails = location.state;
+    const tdStyle = 'border fa-14 vctr';
+    const inputStyle = 'cus-inpt p-2';
 
     const [products, setProducts] = useState([]);
     const [OrderItemsArray, setOrderItemArray] = useState([])
@@ -83,15 +89,13 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
     const [orderItemsInput, setOrderItemsInput] = useState(initialItemDetailsValue);
     const [deliveryInput, setDeliveryInput] = useState(initialDeliveryDetailsValue);
     const [transpoterInput, setTransportInput] = useState(initialTranspoterDetailsValue);
+    const isEdit = OrderDetails?.Id ? true : false;
+
     const [dialogs, setDialogs] = useState({
         itemsDialog: false,
         deliveryDialog: false,
         transporterDialog: false
     })
-
-    const tdStyle = 'border fa-14 vctr';
-    const inputStyle = 'cus-inpt p-2';
-    const storage = JSON.parse(localStorage.getItem('user'));
 
     const [options, setOptions] = useState({
         PurchaseOrderOnly: true,
@@ -110,6 +114,44 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
             }
         }).catch(e => console.error(e))
     }, [])
+
+    useEffect(() => {
+
+        if (!isValidObject(stateDetails) || !isValidObject(stateDetails.OrderDetails)) return;
+
+        const LoadingDate = stateDetails.OrderDetails?.LoadingDate ? ISOString(stateDetails.OrderDetails?.LoadingDate) : '';
+        const TradeConfirmDate = stateDetails.OrderDetails?.TradeConfirmDate ? ISOString(stateDetails.OrderDetails?.TradeConfirmDate) : '';
+        const editPage = stateDetails?.editPage;
+
+        setOrderDetails({
+            ...stateDetails.OrderDetails,
+            OrderStatus: stateDetails.OrderDetails?.OrderStatus ?? 'New Order',
+            LoadingDate,
+            TradeConfirmDate,
+            CreatedBy: storage?.UserId
+        });
+
+        setOrderItemArray(stateDetails?.OrderItemsArray ?? []);
+        setDeliveryArray(stateDetails?.DeliveryArray ?? []);
+        setTranspoterArray(stateDetails?.TranspoterArray ?? []);
+
+        const isFound = Object.keys(options).findIndex(key => key === editPage);
+
+        if (isFound !== -1) {
+            setOptions(pre => {
+                return Object.fromEntries(
+                    Object.entries(pre).map(([key, value]) => [key, key === editPage ? true : false])
+                );
+            });
+        } else {
+            setOptions({
+                PurchaseOrderOnly: false,
+                PurchaseOderWithDelivery: true,
+                DeliveryEntry: false,
+            })
+        }
+
+    }, [stateDetails]);
 
     const handleRadioChange = (event) => {
         const { id } = event.target;
@@ -154,10 +196,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
         }
         fetchLink({
             address: `dataEntry/purchaseOrderEntry`,
-            method: 'POST',
+            method: isEdit ? 'PUT' : 'POST',
             bodyData: {
                 OrderDetails: OrderDetails,
-                OrderItems: OrderItemsArray,
+                OrderItems: options.DeliveryEntry ? [] : OrderItemsArray,
                 DelivdryDetails: options.PurchaseOrderOnly ? [] : DeliveryArray,
                 TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray
             }
@@ -167,6 +209,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                 setOrderItemArray([]);
                 setDeliveryArray([]);
                 setTranspoterArray([]);
+                toast.success(data?.message)
+            } else {
+                toast.error(data?.message)
             }
         }).catch(e => console.error(e)).finally(() => {
             if (loadingOff) {
@@ -175,40 +220,33 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
         });
     }
 
-    const saveDeliveryDetails = () => {
-        if (loadingOn) {
-            loadingOn();
-        }
-        if (OrderDetails.Id) {
-            fetchLink({
-                address: `dataEntry/purchaseOrderEntry/ArrivalUpdate`,
-                method: 'PUT',
-                bodyData: {
-                    OrderId: OrderDetails.Id,
-                    DelivdryDetails: options.PurchaseOrderOnly ? [] : DeliveryArray,
-                    TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray
-                }
-            }).then(data => {
-                if (data?.success) {
-                    setOrderDetails(initialOrderDetailsValue);
-                    setOrderItemArray([]);
-                    setDeliveryArray([]);
-                    setTranspoterArray([]);
-                }
-            }).catch(e => console.error(e)).finally(() => {
-                if (loadingOff) {
-                    loadingOff();
-                }
-            });
-        }
-    }
-
-    useEffect(() => {
-        setOrderDetails(initialOrderDetailsValue);
-        setOrderItemArray([]);
-        setDeliveryArray([]);
-        setTranspoterArray([]);
-    }, [options])
+    // const saveDeliveryDetails = () => {
+    //     if (loadingOn) {
+    //         loadingOn();
+    //     }
+    //     if (OrderDetails.Id) {
+    //         fetchLink({
+    //             address: `dataEntry/purchaseOrderEntry/ArrivalUpdate`,
+    //             method: 'PUT',
+    //             bodyData: {
+    //                 OrderDetails: OrderDetails,
+    //                 DelivdryDetails: DeliveryArray,
+    //                 TranspoterDetails: TranspoterArray
+    //             }
+    //         }).then(data => {
+    //             if (data?.success) {
+    //                 setOrderDetails(initialOrderDetailsValue);
+    //                 setOrderItemArray([]);
+    //                 setDeliveryArray([]);
+    //                 setTranspoterArray([]);
+    //             }
+    //         }).catch(e => console.error(e)).finally(() => {
+    //             if (loadingOff) {
+    //                 loadingOff();
+    //             }
+    //         });
+    //     }
+    // }
 
     return (
         <Card>
@@ -219,72 +257,77 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                     <Button variant='outlined' onClick={() => nav('/dataEntry/purchaseOrder')}>back</Button>
                 </div>
 
-                <form onSubmit={(e) => e.preventDefault()}>
-                    <div className="d-flex justify-content-center flex-wrap p-2 mb-2">
-                        <div className="form-check">
-                            <input
-                                className="form-check-input shadow-none"
-                                style={{ padding: '0.7em' }}
-                                type="radio"
-                                name="radioType"
-                                id="PurchaseOrderOnly"
-                                checked={options.PurchaseOrderOnly}
-                                onChange={handleRadioChange}
-                            />
-                            <label
-                                className="form-check-label p-1 me-3"
-                                htmlFor="PurchaseOrderOnly"
-                            >
-                                Purchase Order
-                            </label>
-                        </div>
+                {!OrderDetails.Id && (
+                    <form onSubmit={(e) => e.preventDefault()}>
+                        <div className="d-flex justify-content-center flex-wrap p-2 mb-2">
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input shadow-none"
+                                    style={{ padding: '0.7em' }}
+                                    type="radio"
+                                    name="radioType"
+                                    id="PurchaseOrderOnly"
+                                    checked={options.PurchaseOrderOnly}
+                                    disabled={OrderDetails.Id ? true : false}
+                                    onChange={handleRadioChange}
+                                />
+                                <label
+                                    className="form-check-label p-1 me-3"
+                                    htmlFor="PurchaseOrderOnly"
+                                >
+                                    Purchase Order
+                                </label>
+                            </div>
 
-                        <div className="form-check">
-                            <input
-                                className="form-check-input shadow-none"
-                                style={{ padding: '0.7em' }}
-                                type="radio"
-                                name="radioType"
-                                id="DeliveryEntry"
-                                checked={options.DeliveryEntry}
-                                onChange={handleRadioChange}
-                            />
-                            <label
-                                className="form-check-label p-1 me-3"
-                                htmlFor="DeliveryEntry"
-                            >
-                                Arrival Details
-                            </label>
-                        </div>
+                            {/* <div className="form-check">
+                                <input
+                                    className="form-check-input shadow-none"
+                                    style={{ padding: '0.7em' }}
+                                    type="radio"
+                                    name="radioType"
+                                    id="DeliveryEntry"
+                                    checked={options.DeliveryEntry}
+                                    disabled={OrderDetails.Id ? true : false}
+                                    onChange={handleRadioChange}
+                                />
+                                <label
+                                    className="form-check-label p-1 me-3"
+                                    htmlFor="DeliveryEntry"
+                                >
+                                    Arrival Details
+                                </label>
+                            </div> */}
 
-                        <div className="form-check">
-                            <input
-                                className="form-check-input shadow-none"
-                                style={{ padding: '0.7em' }}
-                                type="radio"
-                                name="radioType"
-                                id="PurchaseOderWithDelivery"
-                                checked={options.PurchaseOderWithDelivery}
-                                onChange={handleRadioChange}
-                            />
-                            <label
-                                className="form-check-label p-1 me-3"
-                                htmlFor="PurchaseOderWithDelivery"
-                            >
-                                Order With Arrival
-                            </label>
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input shadow-none"
+                                    style={{ padding: '0.7em' }}
+                                    type="radio"
+                                    name="radioType"
+                                    id="PurchaseOderWithDelivery"
+                                    checked={options.PurchaseOderWithDelivery}
+                                    disabled={OrderDetails.Id ? true : false}
+                                    onChange={handleRadioChange}
+                                />
+                                <label
+                                    className="form-check-label p-1 me-3"
+                                    htmlFor="PurchaseOderWithDelivery"
+                                >
+                                    Order With Arrival
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                </form>
-
+                    </form>
+                )}
 
                 <div className="table-responsive">
 
-                    {options.DeliveryEntry && (
+                    {(options.PurchaseOderWithDelivery && OrderDetails.Id) && (
                         <>
                             <label>Order ID</label>:
                             <input
                                 value={OrderDetails.Id}
+                                disabled
                                 className={inputStyle + ' w-auto ms-2 mb-2'}
                                 onChange={e => setOrderDetails(pre => ({ ...pre, Id: e.target.value }))}
                                 placeholder='Ex: 233'
@@ -293,111 +336,124 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                     )}
 
                     {/* General Info */}
-                    {(options.PurchaseOrderOnly || options.PurchaseOderWithDelivery) && (
-                        <table className="table m-0">
-                            <tbody>
-                                <tr>
-                                    <td className={tdStyle + ' text-primary fw-bold bg-light'} >
-                                        ORDER DETAILS
-                                    </td>
-                                    <td className={tdStyle + ' text-primary text-end fw-bold bg-light'} >
-                                        PARTY DETAILS
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle + ' p-0'}>
-                                        <table className="table m-0 border-0">
-                                            <tbody>
-                                                <tr>
-                                                    <td className={tdStyle}>Loading Date</td>
-                                                    <td className={tdStyle + ' p-0'}>
-                                                        <input
-                                                            type="date"
-                                                            className={inputStyle + ' border-0'}
-                                                            value={OrderDetails.LoadingDate}
-                                                            onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className={tdStyle}>Trade Confirm Date</td>
-                                                    <td className={tdStyle + ' p-0'}>
-                                                        <input
-                                                            type="date"
-                                                            className={inputStyle + ' border-0'}
-                                                            value={OrderDetails.TradeConfirmDate}
-                                                            onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className={tdStyle}>Owner Name</td>
-                                                    <td className={tdStyle + ' p-0'}>
-                                                        <input
-                                                            className={inputStyle + ' border-0'}
-                                                            value={OrderDetails.OwnerName}
-                                                            onChange={e => setOrderDetails(pre => ({ ...pre, OwnerName: e.target.value }))}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className={tdStyle}>Broker Name</td>
-                                                    <td className={tdStyle + ' p-0'}>
-                                                        <input
-                                                            className={inputStyle + ' border-0'}
-                                                            value={OrderDetails.BrokerName}
-                                                            onChange={e => setOrderDetails(pre => ({ ...pre, BrokerName: e.target.value }))}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                    <td className={tdStyle}>
-                                        <div className="d-flex flex-wrap bg-white">
-                                            <span className='flex-grow-1 p-2'>
-                                                <h6>Party Name</h6>
-                                                <input
-                                                    className={inputStyle + ' mb-2'}
-                                                    value={OrderDetails.PartyName}
-                                                    onChange={e => setOrderDetails(pre => ({ ...pre, PartyName: e.target.value }))}
-                                                /><br />
+                    <table className="table m-0">
+                        <tbody>
+                            <tr>
+                                <td className={tdStyle + ' text-primary fw-bold bg-light'} >
+                                    ORDER DETAILS
+                                </td>
+                                <td className={tdStyle + ' text-primary text-end fw-bold bg-light'} >
+                                    PARTY DETAILS
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className={tdStyle + ' p-0'}>
+                                    <table className="table m-0 border-0">
+                                        <tbody>
+                                            <tr>
+                                                <td className={tdStyle}>Loading Date</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <input
+                                                        type="date"
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails.LoadingDate}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className={tdStyle}>Trade Confirm Date</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <input
+                                                        type="date"
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails.TradeConfirmDate}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className={tdStyle}>Owner Name</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <input
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails.OwnerName}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, OwnerName: e.target.value }))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className={tdStyle}>Broker Name</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <input
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails.BrokerName}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, BrokerName: e.target.value }))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className={tdStyle}>Order Status</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <select
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails?.OrderStatus}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, OrderStatus: e.target.value }))}
+                                                    >
+                                                        <option value="New Order">New Order</option>
+                                                        <option value="On Process">On Process</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Canceled">Canceled</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td className={tdStyle}>
+                                    <div className="d-flex flex-wrap bg-white">
+                                        <span className='flex-grow-1 p-2'>
+                                            <h6>Party Name</h6>
+                                            <input
+                                                className={inputStyle + ' mb-2'}
+                                                value={OrderDetails.PartyName}
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, PartyName: e.target.value }))}
+                                            /><br />
 
-                                                <h6>Party Address</h6>
-                                                <textarea
-                                                    className={inputStyle + ' mb-2'}
-                                                    rows={3}
-                                                    value={OrderDetails.PartyAddress}
-                                                    onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
-                                                />
-                                            </span>
+                                            <h6>Party Address</h6>
+                                            <textarea
+                                                className={inputStyle + ' mb-2'}
+                                                rows={3}
+                                                value={OrderDetails.PartyAddress}
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
+                                            />
+                                        </span>
 
-                                            <span className='p-2'>
-                                                <h6>Payment Condition</h6>
-                                                <textarea
-                                                    className={inputStyle}
-                                                    rows={2}
-                                                    value={OrderDetails.PaymentCondition}
-                                                    onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
-                                                />
-                                                <h6>Remarks</h6>
-                                                <textarea
-                                                    className={inputStyle}
-                                                    rows={2}
-                                                    value={OrderDetails.Remarks}
-                                                    onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
-                                                />
-                                            </span>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        <span className='p-2'>
+                                            <h6>Payment Condition</h6>
+                                            <textarea
+                                                className={inputStyle}
+                                                rows={2}
+                                                value={OrderDetails.PaymentCondition}
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
+                                            />
+                                            <h6>Remarks</h6>
+                                            <textarea
+                                                className={inputStyle}
+                                                rows={2}
+                                                value={OrderDetails.Remarks}
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
+                                            />
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
 
-                                <tr>
-                                    <td className={'p-3'} colSpan={2}></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    )}
+                            <tr>
+                                <td className={'p-3'} colSpan={2}></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     {/* Item Details */}
                     {(options.PurchaseOrderOnly || options.PurchaseOderWithDelivery) && (!options.DeliveryEntry) && (
@@ -462,75 +518,6 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
 
                     {(options.PurchaseOderWithDelivery || options.DeliveryEntry) && (
                         <>
-                            {/* Delivery Details */}
-                            <table className="table m-0">
-                                <thead>
-                                    <tr>
-                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={11}>DELIVERY DETAILS</td>
-                                        <td className={tdStyle + ' text-end bg-light p-0'}>
-                                            <Button
-                                                startIcon={<Add />}
-                                                varient='outlined'
-                                                onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
-                                            >Add Delivery</Button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th className={tdStyle + ' text-center'}>SNo</th>
-                                        <th className={tdStyle + ' text-center'}>Location</th>
-                                        <th className={tdStyle + ' text-center'}>Arrival Date</th>
-                                        <th className={tdStyle + ' text-center'}>Item Name</th>
-                                        <th className={tdStyle + ' text-center'}>Concern</th>
-
-                                        <th className={tdStyle + ' text-center'}>Bill No</th>
-                                        <th className={tdStyle + ' text-center'}>Bill Date</th>
-                                        <th className={tdStyle + ' text-center'}>Quantity</th>
-                                        <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
-                                        <th className={tdStyle + ' text-center'}>Batch / Location</th>
-
-                                        <th className={tdStyle + ' text-center'}>Pending Quantity</th>
-                                        <th className={tdStyle + ' text-center'}>Action</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {DeliveryArray.map((o, i) => (
-                                        <tr key={i}>
-                                            <td className={tdStyle}>{i + 1}</td>
-                                            <td className={tdStyle}>{o?.Location}</td>
-                                            <td className={tdStyle}>{o?.ArrivalDate}</td>
-                                            <td className={tdStyle}>{o?.ItemName}</td>
-                                            <td className={tdStyle}>{o?.Concern}</td>
-
-                                            <td className={tdStyle}>{o?.BillNo}</td>
-                                            <td className={tdStyle}>{o?.BillDate}</td>
-                                            <td className={tdStyle}>{o?.Quantity}</td>
-                                            <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
-                                            <td className={tdStyle}>{o?.BatchLocation}</td>
-
-                                            <td className={tdStyle}>{o?.PendingQuantity}</td>
-                                            <td className={tdStyle + ' p-0 text-center'}>
-                                                <IconButton
-                                                    onClick={() => {
-                                                        setDeliveryArray(prev => {
-                                                            return prev.filter((_, index) => index !== i);
-                                                        });
-                                                    }}
-                                                    size='small'
-                                                >
-                                                    <Delete color='error' />
-                                                </IconButton>
-                                            </td>
-                                        </tr>
-                                    ))}
-
-                                    <tr>
-                                        <td className={'p-3'} colSpan={12}></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-
-
                             {/* TRANSPOTER DETAILS */}
                             <table className="table m-0">
                                 <thead>
@@ -597,6 +584,75 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                                     </tr>
                                 </tbody>
                             </table>
+
+                            {/* Delivery Details */}
+                            <table className="table m-0">
+                                <thead>
+                                    <tr>
+                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={11}>DELIVERY DETAILS</td>
+                                        <td className={tdStyle + ' text-end bg-light p-0'}>
+                                            <Button
+                                                startIcon={<Add />}
+                                                varient='outlined'
+                                                disabled={TranspoterArray.length === 0}
+                                                onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
+                                            >Add Delivery</Button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th className={tdStyle + ' text-center'}>SNo</th>
+                                        <th className={tdStyle + ' text-center'}>Location</th>
+                                        <th className={tdStyle + ' text-center'}>Arrival Date</th>
+                                        <th className={tdStyle + ' text-center'}>Item Name</th>
+                                        <th className={tdStyle + ' text-center'}>Concern</th>
+
+                                        <th className={tdStyle + ' text-center'}>Bill No</th>
+                                        <th className={tdStyle + ' text-center'}>Bill Date</th>
+                                        <th className={tdStyle + ' text-center'}>Quantity</th>
+                                        <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
+                                        <th className={tdStyle + ' text-center'}>Batch / Location</th>
+
+                                        <th className={tdStyle + ' text-center'}>Pending Quantity</th>
+                                        <th className={tdStyle + ' text-center'}>Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {DeliveryArray.map((o, i) => (
+                                        <tr key={i}>
+                                            <td className={tdStyle}>{i + 1}</td>
+                                            <td className={tdStyle}>{o?.Location}</td>
+                                            <td className={tdStyle}>{o?.ArrivalDate}</td>
+                                            <td className={tdStyle}>{o?.ItemName}</td>
+                                            <td className={tdStyle}>{o?.Concern}</td>
+
+                                            <td className={tdStyle}>{o?.BillNo}</td>
+                                            <td className={tdStyle}>{o?.BillDate}</td>
+                                            <td className={tdStyle}>{o?.Quantity}</td>
+                                            <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
+                                            <td className={tdStyle}>{o?.BatchLocation}</td>
+
+                                            <td className={tdStyle}>{o?.PendingQuantity}</td>
+                                            <td className={tdStyle + ' p-0 text-center'}>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setDeliveryArray(prev => {
+                                                            return prev.filter((_, index) => index !== i);
+                                                        });
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Delete color='error' />
+                                                </IconButton>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    <tr>
+                                        <td className={'p-3'} colSpan={12}></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </>
                     )}
 
@@ -613,7 +669,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                             startIcon={<ClearAll />}
                         >Clear Values</Button>
                         <Button
-                            onClick={options.DeliveryEntry ? saveDeliveryDetails : postOrder}
+                            onClick={postOrder}
                             variant='contained'
                             startIcon={<Save />}
                             disabled={
@@ -661,9 +717,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                                                     ...products.map(obj => ({
                                                         value: obj?.Product_Id,
                                                         label: obj?.Product_Name,
-                                                        // isDisabled: OrderItemsArray?.findIndex(o => isEqualNumber(
-                                                        //     o?.ItemId, obj?.Product_Id
-                                                        // )) ? true : false
+                                                        isDisabled: (OrderItemsArray.findIndex(o => isEqualNumber(
+                                                            o?.ItemId, obj?.Product_Id
+                                                        ))) === -1 ? false : true
                                                     }))
                                                 ]}
                                                 styles={customSelectStyles}
@@ -772,7 +828,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                         changeDeliveryInfo(deliveryInput);
                     }}>
                         <DialogContent>
-                            <table className="table m-0">
+                            <table className="table mb-2">
                                 <tbody>
                                     <tr>
                                         <td className={tdStyle}>Location</td>
@@ -804,7 +860,8 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                                                 options={[
                                                     { value: '', label: 'select', isDisabled: true },
                                                     ...products.map(obj => ({
-                                                        value: obj?.Product_Id, label: obj?.Product_Name
+                                                        value: obj?.Product_Id,
+                                                        label: obj?.Product_Name
                                                     }))
                                                 ]}
                                                 styles={customSelectStyles}
@@ -898,6 +955,22 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff, OrderId }) => {
                                     </tr>
                                 </tbody>
                             </table>
+
+                            <div className="p-2 d-flex flex-wrap justify-content-end align-items-center">
+                                <label>Transporter: </label>
+                                <select
+                                    value={deliveryInput?.TransporterIndex}
+                                    className='cus-inpt w-auto ms-2'
+                                    style={{ minWidth: '130px' }}
+                                    required
+                                    onChange={e => setDeliveryInput(pre => ({ ...pre, TransporterIndex: e.target.value }))}
+                                >
+                                    <option value={''} disabled>Select Trip</option>
+                                    {TranspoterArray.map((o, i) => (
+                                        <option value={i} key={i}>Trip - {i + 1}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </DialogContent>
                         <DialogActions className='d-flex justify-content-between'>
                             <span>
