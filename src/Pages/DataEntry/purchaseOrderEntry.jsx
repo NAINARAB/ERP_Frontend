@@ -162,16 +162,16 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                         value={filters.OrderStatus}
                                         onChange={e => setFilters(pre => ({ ...pre, OrderStatus: e.target.value }))}
                                     >
+                                        <optgroup label="ITEM BASED">
                                             <option value={'ITEMS'}>ITEMS</option>
-                                            <option value={'ITEMS ARRIVED'}>ITEMS - ARRIVED</option>
-                                        {/* <optgroup label="ITEM BASED">
                                             <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
-                                        </optgroup> */}
+                                            <option value={'ITEMS ARRIVED'}>ITEMS - ARRIVED</option>
+                                        </optgroup>
+                                        <optgroup label="ORDER BASED">
                                             <option value={'ORDERS'}>ORDERS</option>
-                                        {/* <optgroup label="ORDER BASED">
-                                            <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
-                                            <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option>
-                                        </optgroup> */}
+                                            {/* <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
+                                            <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option> */}
+                                        </optgroup>
                                     </select>
                                 </td>
                             </tr>

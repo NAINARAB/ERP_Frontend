@@ -4,8 +4,8 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { isEqualNumber, ISOString, isValidObject } from '../../Components/functions';
-import { Delete, Add, Save, ClearAll } from '@mui/icons-material';
+import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject } from '../../Components/functions';
+import { Delete, Add, Save, ClearAll, Edit } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
 const storage = JSON.parse(localStorage.getItem('user'));
@@ -39,6 +39,7 @@ const initialItemDetailsValue = {
 }
 
 const initialDeliveryDetailsValue = {
+    indexValue: null,
     Id: '',
     Sno: '',
     OrderId: '',
@@ -59,6 +60,7 @@ const initialDeliveryDetailsValue = {
 }
 
 const initialTranspoterDetailsValue = {
+    indexValue: null,
     Id: '',
     OrderId: '',
     Loading_Load: '',
@@ -132,17 +134,25 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
         });
 
         setOrderItemArray(stateDetails?.OrderItemsArray ?? []);
-        setDeliveryArray(stateDetails?.DeliveryArray ?? []);
-        setTranspoterArray(stateDetails?.TranspoterArray ?? []);
+        setDeliveryArray(
+            stateDetails?.DeliveryArray?.map((o, i) => ({
+                ...o,
+                indexValue: o?.indexValue === null ? i : o?.indexValue
+            })) ?? []
+        );
+        setTranspoterArray(
+            stateDetails?.TranspoterArray?.map((o, i) => ({
+                ...o,
+                indexValue: o?.indexValue === null ? i : o?.indexValue
+            })) ?? []
+        );
 
         const isFound = Object.keys(options).findIndex(key => key === editPage);
 
         if (isFound !== -1) {
-            setOptions(pre => {
-                return Object.fromEntries(
-                    Object.entries(pre).map(([key, value]) => [key, key === editPage ? true : false])
-                );
-            });
+            setOptions(pre => Object.fromEntries(
+                Object.entries(pre).map(([key, value]) => [key, key === editPage ? true : false])
+            ));
         } else {
             setOptions({
                 PurchaseOrderOnly: false,
@@ -164,7 +174,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     };
 
     const changeItems = (itemDetail) => {
-        const productIndex = OrderItemsArray.findIndex(item => isEqualNumber(item.Item_Id, itemDetail.Item_Id));
+        const productIndex = OrderItemsArray.findIndex(item => isEqualNumber(item.ItemId, itemDetail.ItemId));
         if (productIndex !== -1) {
             const updatedValues = [...OrderItemsArray];
             Object.entries(itemDetail).forEach(([key, value]) => {
@@ -179,16 +189,32 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     }
 
     const changeDeliveryInfo = (details) => {
-        setDeliveryArray(prevValues => [...prevValues, { ...details }]);
+        if (checkIsNumber(details.indexValue)) {
+            setDeliveryArray(pre => {
+                const deliveryData = [...pre];
+                deliveryData[details.indexValue] = { ...details };
+                return deliveryData;
+            })
+        } else {
+            setDeliveryArray(pre => [...pre, { ...details, indexValue: pre.length }]);
+        }
         setDeliveryInput(initialDeliveryDetailsValue);
         setDialogs(pre => ({ ...pre, deliveryDialog: false }));
     }
 
     const changeTransporterInfo = (details) => {
-        setTranspoterArray(prevValues => [...prevValues, { ...details }]);
+        if (checkIsNumber(details.indexValue)) {
+            setTranspoterArray(pre => {
+                const transporterData = [...pre];
+                transporterData[details.indexValue] = { ...details };
+                return transporterData;
+            });
+        } else {
+            setTranspoterArray(pre => [...pre, { ...details, indexValue: pre.length }]);
+        }
         setTransportInput(initialTranspoterDetailsValue);
         setDialogs(pre => ({ ...pre, transporterDialog: false }));
-    }
+    };
 
     const postOrder = () => {
         if (loadingOn) {
@@ -218,6 +244,18 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 loadingOff();
             }
         });
+    }
+
+
+    const closeDialog = () => {
+        setDialogs(pre => ({
+            itemsDialog: false,
+            deliveryDialog: false,
+            transporterDialog: false
+        }));
+        setOrderItemsInput(initialItemDetailsValue);
+        setDeliveryInput(initialDeliveryDetailsValue);
+        setTransportInput(initialTranspoterDetailsValue);
     }
 
     // const saveDeliveryDetails = () => {
@@ -497,6 +535,17 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle + ' p-0 text-center'}>
                                             <IconButton
                                                 onClick={() => {
+                                                    setOrderItemsInput(pre => Object.fromEntries(
+                                                        Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                    ));
+                                                    setDialogs(pre => ({ ...pre, itemsDialog: true }));
+                                                }}
+                                                size='small'
+                                            >
+                                                <Edit />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => {
                                                     setOrderItemArray(prev => {
                                                         return prev.filter((_, index) => index !== i);
                                                     });
@@ -568,6 +617,17 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             <td className={tdStyle + ' p-0 text-center'}>
                                                 <IconButton
                                                     onClick={() => {
+                                                        setTransportInput(pre => Object.fromEntries(
+                                                            Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                        ));
+                                                        setDialogs(pre => ({ ...pre, transporterDialog: true }));
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                                <IconButton
+                                                    onClick={() => {
                                                         setTranspoterArray(prev => {
                                                             return prev.filter((_, index) => index !== i);
                                                         });
@@ -636,6 +696,17 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             <td className={tdStyle + ' p-0 text-center'}>
                                                 <IconButton
                                                     onClick={() => {
+                                                        setDeliveryInput(pre => Object.fromEntries(
+                                                            Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                        ));
+                                                        setDialogs(pre => ({ ...pre, deliveryDialog: true }));
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                                <IconButton
+                                                    onClick={() => {
                                                         setDeliveryArray(prev => {
                                                             return prev.filter((_, index) => index !== i);
                                                         });
@@ -695,7 +766,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                 <Dialog
                     open={dialogs.itemsDialog}
-                    onClose={() => setDialogs(pre => ({ ...pre, itemsDialog: false }))}
+                    onClose={closeDialog}
                     maxWidth='sm' fullWidth
                 >
                     <DialogTitle>Add Items</DialogTitle>
@@ -809,7 +880,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     variant='outlined'
                                     className='me-2'
                                     type='button'
-                                    onClick={() => setDialogs(pre => ({ ...pre, itemsDialog: false }))}
+                                    onClick={closeDialog}
                                 >cancel</Button>
                                 <Button variant='contained' type='submit'>submit</Button>
                             </span>
@@ -819,7 +890,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                 <Dialog
                     open={dialogs.deliveryDialog}
-                    onClose={() => setDialogs(pre => ({ ...pre, deliveryDialog: false }))}
+                    onClose={closeDialog}
                     maxWidth='md' fullWidth
                 >
                     <DialogTitle>Add Delivery Details</DialogTitle>
@@ -859,9 +930,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                 onChange={(e) => setDeliveryInput(pre => ({ ...pre, ItemId: e.value, ItemName: e.label }))}
                                                 options={[
                                                     { value: '', label: 'select', isDisabled: true },
-                                                    ...products.map(obj => ({
-                                                        value: obj?.Product_Id,
-                                                        label: obj?.Product_Name
+                                                    ...OrderItemsArray.map(obj => ({
+                                                        value: obj?.ItemId,
+                                                        label: obj?.ItemName
                                                     }))
                                                 ]}
                                                 styles={customSelectStyles}
@@ -942,35 +1013,31 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             />
                                         </td>
                                         <td className={'border-0'}></td>
-                                        <td className={tdStyle}>Pending Quantity</td>
+                                        <td className={tdStyle}>Transporter</td>
                                         <td className={tdStyle}>
-                                            <input
+                                            {/* <input
                                                 type="number"
                                                 value={deliveryInput?.PendingQuantity}
                                                 className='cus-inpt p-2'
                                                 placeholder='penging quantity'
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, PendingQuantity: e.target.value }))}
-                                            />
+                                            /> */}
+                                            <select
+                                                value={deliveryInput?.TransporterIndex}
+                                                className='cus-inpt ms-2'
+                                                required
+                                                onChange={e => setDeliveryInput(pre => ({ ...pre, TransporterIndex: e.target.value }))}
+                                            >
+                                                <option value={''} disabled>Select Trip</option>
+                                                {TranspoterArray.map((o, i) => (
+                                                    <option value={o?.indexValue} key={i}>Trip - {Addition(o?.indexValue, 1)}</option>
+                                                ))}
+                                            </select>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
 
-                            <div className="p-2 d-flex flex-wrap justify-content-end align-items-center">
-                                <label>Transporter: </label>
-                                <select
-                                    value={deliveryInput?.TransporterIndex}
-                                    className='cus-inpt w-auto ms-2'
-                                    style={{ minWidth: '130px' }}
-                                    required
-                                    onChange={e => setDeliveryInput(pre => ({ ...pre, TransporterIndex: e.target.value }))}
-                                >
-                                    <option value={''} disabled>Select Trip</option>
-                                    {TranspoterArray.map((o, i) => (
-                                        <option value={i} key={i}>Trip - {i + 1}</option>
-                                    ))}
-                                </select>
-                            </div>
                         </DialogContent>
                         <DialogActions className='d-flex justify-content-between'>
                             <span>
@@ -981,7 +1048,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     variant='outlined'
                                     className='me-2'
                                     type='button'
-                                    onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: false }))}
+                                    onClick={closeDialog}
                                 >cancel</Button>
                                 <Button variant='contained' type='submit'>submit</Button>
                             </span>
@@ -991,7 +1058,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                 <Dialog
                     open={dialogs.transporterDialog}
-                    onClose={() => setDialogs(pre => ({ ...pre, transporterDialog: false }))}
+                    onClose={closeDialog}
                     maxWidth='sm' fullWidth
                 >
                     <DialogTitle>Add Transporter Details</DialogTitle>
@@ -1091,7 +1158,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                 value={transpoterInput?.PhoneNumber}
                                                 onChange={e => setTransportInput(pre => ({ ...pre, PhoneNumber: e.target.value }))}
                                                 className={inputStyle + ' border-0'}
-                                                maxLength={15}
+                                                max={9999999999}
                                             />
                                         </td>
                                     </tr>
@@ -1107,7 +1174,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     variant='outlined'
                                     className='me-2'
                                     type='button'
-                                    onClick={() => setDialogs(pre => ({ ...pre, transporterDialog: false }))}
+                                    onClick={closeDialog}
                                 >cancel</Button>
                                 <Button variant='contained' type='submit'>submit</Button>
                             </span>

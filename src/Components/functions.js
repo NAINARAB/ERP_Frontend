@@ -400,7 +400,7 @@ export const createAbbreviation = (sentence) => {
 }
 
 export const checkIsNumber = (num) => {
-    return num ? isNaN(num) ? false : true : false
+    return (num !== '' && num !== null && num !== undefined) ? isNaN(num) ? false : true : false
 }
 
 export const isObject = (val) => {

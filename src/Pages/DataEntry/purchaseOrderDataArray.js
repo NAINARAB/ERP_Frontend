@@ -42,8 +42,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
                     const itemDetails = item?.ItemDetails?.filter(fil => {
                         const itemsInDelivery = item?.DeliveryDetails?.filter(del => isEqualNumber(del.ItemId, fil?.ItemId));
-                        const WeightTotal = itemsInDelivery.reduce((sum, delivery) => Addition(sum, delivery?.Quantity), 0);
-                        return WeightTotal === 0;
+                        const WeightTotal = itemsInDelivery.reduce((sum, delivery) => Addition(sum, delivery?.Weight), 0);
+                        return Number(WeightTotal) < Number(fil?.Weight);
                     }).map(o => ({
                         ...o,
                         OrderDetails: {
@@ -74,8 +74,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
                     const itemDetails = item?.ItemDetails?.filter(fil => {
                         const itemsInDelivery = item?.DeliveryDetails?.filter(del => isEqualNumber(del.ItemId, fil?.ItemId));
-                        const WeightTotal = itemsInDelivery.reduce((sum, delivery) => Addition(sum, delivery?.Quantity), 0);
-                        return WeightTotal > 0;
+                        const WeightTotal = itemsInDelivery.reduce((sum, delivery) => Addition(sum, delivery?.Weight), 0);
+                        return Number(WeightTotal) >= Number(fil?.Weight);
                     }).map(o => ({
                         ...o,
                         OrderDetails: {
