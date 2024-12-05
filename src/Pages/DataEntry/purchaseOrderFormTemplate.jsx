@@ -5,7 +5,7 @@ import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
 import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject } from '../../Components/functions';
-import { Delete, Add, Save, ClearAll, Edit } from '@mui/icons-material';
+import { Delete, Add, Save, ClearAll, Edit, Launch } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
 const storage = JSON.parse(localStorage.getItem('user'));
@@ -15,7 +15,10 @@ const initialOrderDetailsValue = {
     LoadingDate: '',
     TradeConfirmDate: '',
     OwnerName: '',
+    OwnerId: '',
     BrokerName: '',
+    BrokerId: '',
+    PartyId: 'select',
     PartyName: '',
     PartyAddress: '',
     PaymentCondition: '',
@@ -43,6 +46,7 @@ const initialDeliveryDetailsValue = {
     Id: '',
     Sno: '',
     OrderId: '',
+    LocationId: '',
     Location: '',
     TransporterIndex: '',
     ArrivalDate: '',
@@ -83,6 +87,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const inputStyle = 'cus-inpt p-2';
 
     const [products, setProducts] = useState([]);
+    const [costCenterData, setCostCenterData] = useState([]);
+    const [godownLocations, setGodownLocations] = useState([]);
+    const [retailers, setRetailers] = useState([]);
+
     const [OrderItemsArray, setOrderItemArray] = useState([])
     const [DeliveryArray, setDeliveryArray] = useState([]);
     const [TranspoterArray, setTranspoterArray] = useState([]);
@@ -114,7 +122,31 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
             } else {
                 setProducts([]);
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter`
+        }).then(data => {
+            if (data.success) {
+                setCostCenterData(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/godownLocationMaster`
+        }).then(data => {
+            if (data.success) {
+                setGodownLocations(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/retailers`
+        }).then(data => {
+            if (data.success) {
+                setRetailers(data.data);
+            }
+        }).catch(e => console.error(e));
     }, [])
 
     useEffect(() => {
@@ -127,6 +159,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
         setOrderDetails({
             ...stateDetails.OrderDetails,
+            PartyId: stateDetails?.OrderDetails?.PartyId ?? '',
+            OwnerId: stateDetails?.OrderDetails?.OwnerId ?? '',
+            BrokerId: stateDetails?.OrderDetails?.BrokerId ?? '',
             OrderStatus: stateDetails.OrderDetails?.OrderStatus ?? 'New Order',
             LoadingDate,
             TradeConfirmDate,
@@ -245,7 +280,6 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
             }
         });
     }
-
 
     const closeDialog = () => {
         setDialogs(pre => ({
@@ -386,6 +420,13 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                             </tr>
                             <tr>
                                 <td className={tdStyle + ' p-0'}>
+                                    <div className="text-end">
+                                        <Button
+                                            varient='outlined'
+                                            startIcon={<Launch />}
+                                            onClick={() => nav('/dataEntry/costCenter')}
+                                        >Cost Center</Button>
+                                    </div>
                                     <table className="table m-0 border-0">
                                         <tbody>
                                             <tr>
@@ -413,20 +454,50 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             <tr>
                                                 <td className={tdStyle}>Owner Name</td>
                                                 <td className={tdStyle + ' p-0'}>
-                                                    <input
+                                                    {/* <input
                                                         className={inputStyle + ' border-0'}
                                                         value={OrderDetails.OwnerName}
                                                         onChange={e => setOrderDetails(pre => ({ ...pre, OwnerName: e.target.value }))}
+                                                    /> */}
+                                                    <Select
+                                                        value={{ value: OrderDetails.OwnerId, label: OrderDetails.OwnerName }}
+                                                        onChange={(e) => setOrderDetails(pre => ({ ...pre, OwnerId: e.value, OwnerName: e.label }))}
+                                                        options={[
+                                                            { value: '', label: 'select', isDisabled: true },
+                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 2)).map(obj => ({
+                                                                value: obj?.Cost_Center_Id,
+                                                                label: obj?.Cost_Center_Name
+                                                            }))
+                                                        ]}
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        placeholder={"Select Owners"}
+                                                        maxMenuHeight={200}
                                                     />
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td className={tdStyle}>Broker Name</td>
                                                 <td className={tdStyle + ' p-0'}>
-                                                    <input
+                                                    {/* <input
                                                         className={inputStyle + ' border-0'}
                                                         value={OrderDetails.BrokerName}
                                                         onChange={e => setOrderDetails(pre => ({ ...pre, BrokerName: e.target.value }))}
+                                                    /> */}
+                                                    <Select
+                                                        value={{ value: OrderDetails.BrokerId, label: OrderDetails.BrokerName }}
+                                                        onChange={(e) => setOrderDetails(pre => ({ ...pre, BrokerId: e.value, BrokerName: e.label }))}
+                                                        options={[
+                                                            { value: '', label: 'select', isDisabled: true },
+                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 5)).map(obj => ({
+                                                                value: obj?.Cost_Center_Id,
+                                                                label: obj?.Cost_Center_Name
+                                                            }))
+                                                        ]}
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        placeholder={"Select Brokers"}
+                                                        maxMenuHeight={200}
                                                     />
                                                 </td>
                                             </tr>
@@ -452,11 +523,40 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     <div className="d-flex flex-wrap bg-white">
                                         <span className='flex-grow-1 p-2'>
                                             <h6>Party Name</h6>
-                                            <input
+                                            {/* <input
                                                 className={inputStyle + ' mb-2'}
                                                 value={OrderDetails.PartyName}
                                                 onChange={e => setOrderDetails(pre => ({ ...pre, PartyName: e.target.value }))}
-                                            /><br />
+                                            /> */}
+
+                                            <Select
+                                                value={{ value: OrderDetails.PartyId, label: OrderDetails.PartyName }}
+                                                onChange={e => {
+                                                    const selectedOption = retailers.find(
+                                                        ret => isEqualNumber(ret.Retailer_Id, e.value)
+                                                    ) ?? {}
+
+                                                    setOrderDetails(pre => ({ 
+                                                        ...pre, 
+                                                        PartyId: selectedOption?.Retailer_Id, 
+                                                        PartyName: selectedOption?.Retailer_Name,
+                                                        PartyAddress: selectedOption?.Reatailer_Address
+                                                    }))
+                                                }}
+                                                options={[
+                                                    { value: '', label: 'select', isDisabled: true },
+                                                    ...retailers.map(obj => ({
+                                                        value: obj?.Retailer_Id,
+                                                        label: obj?.Retailer_Name
+                                                    }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Select Party"}
+                                                maxMenuHeight={200}
+                                            />
+
+                                            <br />
 
                                             <h6>Party Address</h6>
                                             <textarea
@@ -802,6 +902,21 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         </td>
                                     </tr>
                                     <tr>
+                                        <td className={tdStyle}>Brand</td>
+                                        <td className={tdStyle}>
+                                            <input
+                                                className='cus-inpt p-2'
+                                                value={
+                                                    checkIsNumber(orderItemsInput.ItemId)
+                                                        ? (products.find(pro => isEqualNumber(pro.Product_Id, orderItemsInput.ItemId)).Brand_Name ?? 'Not found')
+                                                        : ''
+                                                }
+                                                placeholder='Product Brand'
+                                                disabled
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <td className={tdStyle}>Weight <RequiredStar /></td>
                                         <td className={tdStyle}>
                                             <input
@@ -904,12 +1019,31 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     <tr>
                                         <td className={tdStyle}>Location</td>
                                         <td className={tdStyle}>
-                                            <input
+                                            {/* <input
                                                 className={'cus-inpt p-2'}
                                                 value={deliveryInput?.Location}
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, Location: e.target.value }))}
                                                 placeholder='Location'
-                                            />
+                                            /> */}
+                                            <select
+                                                value={deliveryInput?.LocationId}
+                                                className='cus-inpt p-2'
+                                                onChange={e => {
+                                                    const selectedIndex = e.target.selectedIndex;
+                                                    const selectedLabel = e.target.options[selectedIndex].text;
+
+                                                    setDeliveryInput(pre => ({
+                                                        ...pre,
+                                                        LocationId: e.target.value,
+                                                        Location: selectedLabel
+                                                    }));
+                                                }}
+                                            >
+                                                <option value="">select</option>
+                                                {godownLocations.map((o, i) => (
+                                                    <option value={o?.Godown_Id} key={i}>{o?.Godown_Name}</option>
+                                                ))}
+                                            </select>
                                         </td>
                                         <td className={'border-0'}></td>
                                         <td className={tdStyle}>Arrival Date</td>

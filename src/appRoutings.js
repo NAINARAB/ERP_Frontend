@@ -95,6 +95,7 @@ const WeightCheckActivity = lazy(() => import("./Pages/DataEntry/WeightCheckActi
 const DataEntryAttendance = lazy(() => import("./Pages/DataEntry/dataEntryAttendance"))
 const PurchaseOrderEntries = lazy(() => import("./Pages/DataEntry/purchaseOrderEntry"))
 const PurchaseOrderDataEntry = lazy(() => import("./Pages/DataEntry/purchaseOrderFormTemplate"))
+const CostCenter = lazy(() => import("./Pages/DataEntry/costCenter"))
 
 
 
@@ -137,6 +138,7 @@ const RoutingArray = [
     { component: <DataEntryAbstract />, path: '/dataEntry/report' },
     { component: <PurchaseOrderEntries />, path: '/dataEntry/purchaseOrder' },
     { component: <PurchaseOrderDataEntry />, path: '/dataEntry/purchaseOrder/create' },
+    { component: <CostCenter />, path: '/dataEntry/costCenter' },
 
 
     // ERP 
