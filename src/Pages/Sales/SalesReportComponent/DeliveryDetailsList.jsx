@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import '../common.css'
-import Select from "react-select";
-import { customSelectStyles } from "../../Components/tablecolumn";
-import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
-import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility  } from "@mui/icons-material";
-import { convertedStatus } from "./convertedStatus";
-import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable from "../../Components/filterableTable2";
-import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation"; 
-// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
 
-import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-const SaleOrderList = ({ loadingOn, loadingOff }) => {
+
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Switch } from "@mui/material";
+// import '../common.css'
+import Select from "react-select";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
+import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate";
+import { Edit, FilterAlt,Delete } from "@mui/icons-material";
+import { fetchLink } from "../../../Components/fetchComponent";
+import FilterableTable from "../../../Components/filterableTable2";
+// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import NewDeliveryOrder from "./NewDeliveryOrder";
+const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -22,9 +23,10 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
-    const [reload, setReload] = useState(false)
-    const [confirmDialog,setConfirmDialog]=useState(false)
-
+    
+    const [deleteConfirm, setDeleteConfirm] = useState(false)
+   const [itemTodelete,setItemToDelete]=useState({})
+    const [isDeliveryDetailsVisible, setIsDeliveryDetailsVisible] = useState(false)
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
         Todate: ISOString(),
@@ -32,8 +34,8 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         RetailerGet: 'ALL',
         Created_by: '',
         CreatedByGet: 'ALL',
-        Sales_Person_Id: '',
-        SalsePersonGet: 'ALL',
+        Delivery_Person_Id: '',
+        Delivery_Person_Name: 'ALL',
         Cancel_status: 0
     });
 
@@ -44,18 +46,19 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `delivery/deliveryOrderList?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Delivery_Person_Id=${filters?.Delivery_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
             }
         }).catch(e => console.error(e))
 
+       
     }, [
         filters.Fromdate,
         filters?.Todate,
         filters?.Retailer_Id,
-        filters?.Sales_Person_Id,
+        filters?.Delivery_Person_Id,
         filters?.Created_by,
         filters?.Cancel_status,
         reload
@@ -88,11 +91,25 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
 
     }, [])
-
+    const openDeleteDialog = (itemData) => {
+      
+        setItemToDelete({
+            So_No: itemData.So_No,
+            Do_Id: itemData.Do_Id
+        });
+        setDeleteConfirm(true);
+    };
+    
     const saleOrderColumn = [
         {
-            Field_Name: 'So_Id',
-            ColumnHeader: 'Order ID',
+            Field_Name: 'Do_Id',
+            ColumnHeader: 'Delivery ID',
+            Fied_Data: 'string',
+            isVisible: 1,
+        },
+        {
+            Field_Name: 'So_No',
+            ColumnHeader: 'Sale Order ID',
             Fied_Data: 'string',
             isVisible: 1,
         },
@@ -103,12 +120,20 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             isVisible: 1,
         },
         {
-            Field_Name: 'So_Date',
-            ColumnHeader: 'Date',
+            Field_Name: 'SalesDate',
+            ColumnHeader: 'Sale Order Date',
             Fied_Data: 'date',
             isVisible: 1,
             align: 'center',
         },
+        {
+            Field_Name: 'Do_Date',
+            ColumnHeader: 'Delivery Date',
+            Fied_Data: 'date',
+            isVisible: 1,
+            align: 'center',
+        },
+
         // {
         //     Field_Name: 'Products',
         //     ColumnHeader: 'Products / Quantity',
@@ -144,19 +169,21 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             align: 'center',
         },
         {
-            ColumnHeader: 'Status',
+            Field_Name: 'DeliveryStatusName',
+            ColumnHeader: 'Delivery Status ',
+            Fied_Data: 'string',
             isVisible: 1,
             align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
-                return (
-                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-                        {convert?.label ?? 'Undefined'}
-                    </span>
-                )
-            },
         },
+        // {
+        //     Field_Name: 'DeliveryStatusName',
+        //     // ColumnHeader: 'DeliveryStatusName',
+        //     isVisible: 1,
+        //     Field_Data:'String',
+        //     align: 'center',
+        //     // isCustomCell: true,
+         
+        // },
         // {
         //     Field_Name: 'Sales_Person_Name',
         //     ColumnHeader: 'Sales Person',
@@ -170,20 +197,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             Cell: ({ row }) => {
                 return (
                     <>
-                        <Tooltip title='View Order'>
-                            <IconButton
-                                onClick={() => {
-                                    setViewOrder({
-                                        orderDetails: row,
-                                        orderProducts: row?.Products_List ? row?.Products_List : [],
-                                    })
-                                }}
-                                color='primary' size="small"
-                            >
-                                <Visibility className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
+                      
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
@@ -195,17 +209,15 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 <Edit className="fa-16" />
                             </IconButton>
                         </Tooltip>
-                        {/* <Tooltip title='SalesDelivery'>
+                        <Tooltip title='Delete'>
                             <IconButton
-                                onClick={() => {
-                                    setConfirmDialog(true);
-                                }}
+                               onClick={()=>openDeleteDialog(row)}
+                            
                                 size="small"
                             >
-                                <TwoWheelerIcon className="fa-16" />
+                                <Delete className="fa-16" />
                             </IconButton>
-                        </Tooltip> */}
-
+                        </Tooltip>
                     </>
                 )
             },
@@ -216,13 +228,14 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
         return (
             <>
+
                 <table className="table">
                     <tbody>
                         <tr>
                             <td className="border p-2 bg-light">Branch</td>
                             <td className="border p-2">{row.Branch_Name}</td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
+                            <td className="border p-2 bg-light">Delivery Person</td>
+                            <td className="border p-2">{row.Delivery_Person_Name}</td>
                             <td className="border p-2 bg-light">Round off</td>
                             <td className="border p-2">{row.Round_off}</td>
                         </tr>
@@ -253,6 +266,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const switchScreen = () => {
         setScreen(!screen)
         setOrderInfo({});
+        setIsDeliveryDetailsVisible(!isDeliveryDetailsVisible);
     }
 
     const closeDialog = () => {
@@ -262,20 +276,42 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-        setOrderInfo({});
-        setConfirmDialog(false)
-    }
+   
+      
+        setDeleteConfirm(false)  
+      }
 
+        const confirmData = async () => {
+       
+            if (!itemTodelete) return;
+            fetchLink({
+                address: 'delivery/deliveryOrder',
+                method: 'DELETE',
+                bodyData: ({ Order_Id: itemTodelete.So_No, Do_Id: itemTodelete.Do_Id })
+
+            }).then(data => {
+                if (data.success) {
+                    toast.success(data?.message);
+                   reload()
+                } else {
+                    toast.error(data?.message)
+                }
+            }).catch(e => console.error(e)).finally(() => loadingOff())
+
+            setDeleteConfirm(false) 
+        
+        };
+        
     return (
         <>
             <Card>
                 <div className="p-3 py-2 d-flex align-items-center justify-content-between">
                     <h6 className="fa-18 m-0 p-0">{
                         screen
-                            ? 'Sale Orders'
+                            ? 'Delivery Orders'
                             : isValidObject(orderInfo)
-                                ? 'Modify Sale Order'
-                                : 'Sale Order Creation'}
+                                ? 'Modify Delivery Order'
+                                : ''  }
                     </h6>
                     <span>
                         {screen && (
@@ -288,14 +324,15 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 </IconButton>
                             </Tooltip>
                         )}
+
                         {screen && (
-                            <Button
-                                variant='outlined'
-                                startIcon={<Add />}
-                                onClick={switchScreen}
-                            >
-                                {'New'}
-                            </Button>
+                          <Switch
+                                checked={!screen}
+                                onChange={onToggle}
+                                label={'Delivery Details'}
+                                inputProps={{ 'aria-label': 'controlled' }}
+                                
+                            />
                         )}
                     </span>
                 </div>
@@ -311,12 +348,11 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                             expandableComp={ExpendableComponent}
                         />
                     ) : (
-                        <NewSaleOrderCreation
+                        <NewDeliveryOrder
                             editValues={orderInfo}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
                             reload={() => {
-                                setReload(pre => !pre);
                                 setScreen(pre => !pre)
                             }}
                             switchScreen={switchScreen}
@@ -327,7 +363,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
 
             {Object.keys(viewOrder).length > 0 && (
-                <InvoiceBillTemplate
+                <DeliveryInvoiceTemplate
                     orderDetails={viewOrder?.orderDetails}
                     orderProducts={viewOrder?.orderProducts}
                     download={true}
@@ -338,115 +374,20 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             )}
 
 
-   <Dialog
-    open={confirmDialog}
-    onClose={closeDialog}
-    fullWidth maxWidth='sm'
->
-    <DialogTitle>Filters</DialogTitle>
-    <DialogContent>
-        <div className="table-responsive pb-4">
-            <table className="table">
-                <tbody>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Retailer Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>From</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Fromdate}
-                                onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>To</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Todate}
-                                onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
-                        <td>
-                            <select
-                                type="date"
-                                value={filters.Cancel_status}
-                                onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
-                                className="cus-inpt"
-                            >
-                                <option value={1}>Show</option>
-                                <option value={0}>Hide</option>
-                            </select>
-                        </td>
-                    </tr>
-
-                </tbody>
-            </table>
-        </div>
-    </DialogContent>
-    <DialogActions>
-        <Button onClick={closeDialog}>close</Button>
-    </DialogActions>
-</Dialog>
+            <Dialog
+                open={deleteConfirm}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Delete</DialogTitle>
+                <DialogContent>
+                 <div>Are You Want to Move the order Into the Sale Order Again</div>
+                </DialogContent>
+                <DialogActions>
+                   
+                    <Button onClick={closeDialog}>close</Button>
+                    <Button onClick={confirmData}>Delete</Button>
+                </DialogActions>
+            </Dialog>
 
             <Dialog
                 open={dialog.filters}
@@ -477,18 +418,18 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 </tr>
 
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
+                                    <td style={{ verticalAlign: 'middle' }}>Delivery Person</td>
                                     <td>
                                         <Select
-                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
+                                            value={{ value: filters?.Delivery_Person_Id, label: filters?.Delivery_Person_Name }}
+                                            onChange={(e) => setFilters({ ...filters, Delivery_Person_Id: e.value, Delivery_Person_Name: e.label })}
                                             options={[
                                                 { value: '', label: 'ALL' },
                                                 ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            placeholder={"Delivery Person Name"}
                                         />
                                     </td>
                                 </tr>
@@ -505,7 +446,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            placeholder={"Delivery Person Name"}
                                         />
                                     </td>
                                 </tr>
@@ -562,4 +503,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default SaleOrderList;
+export default DeliveryDetailsList;
+
+

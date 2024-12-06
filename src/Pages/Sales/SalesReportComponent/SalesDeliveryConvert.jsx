@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import '../common.css'
+import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Switch } from "@mui/material";
+import '../../common.css'
 import Select from "react-select";
-import { customSelectStyles } from "../../Components/tablecolumn";
-import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
-import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility  } from "@mui/icons-material";
-import { convertedStatus } from "./convertedStatus";
-import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable from "../../Components/filterableTable2";
-import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation"; 
-// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
+// import NewDeliveryOrder from "../SalesReportComponent/newInvoiceTemplate";
+import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+import { convertedStatus } from "../convertedStatus";
+import { fetchLink } from "../../../Components/fetchComponent";
+import FilterableTable from "../../../Components/filterableTable2";
+import NewDeliveryOrder from "../SalesReportComponent/NewDeliveryOrder";
+import InvoiceBillTemplate from "./newInvoiceTemplate";
 
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-const SaleOrderList = ({ loadingOn, loadingOff }) => {
+import DeliveryDetailsList from "./DeliveryDetailsList";
+const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -23,7 +24,13 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
-    const [confirmDialog,setConfirmDialog]=useState(false)
+    const [routes, setRoutes] = useState([])
+    const [area, setArea] = useState([])
+    const [isDeliveryDetailsVisible, setIsDeliveryDetailsVisible] = useState(false)
+
+    const [checked, setChecked] = useState(true)
+
+
 
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
@@ -34,7 +41,11 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         CreatedByGet: 'ALL',
         Sales_Person_Id: '',
         SalsePersonGet: 'ALL',
-        Cancel_status: 0
+        Cancel_status: 0,
+        Route_Id: '',
+        RoutesGet: 'ALL',
+        Area_Id: '',
+        AreaGet: 'ALL'
     });
 
     const [dialog, setDialog] = useState({
@@ -44,7 +55,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `sales/saleDelivery?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}&Route_Id=${filters?.Route_Id}&Area_Id=${filters?.Area_Id}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
@@ -58,6 +69,8 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         filters?.Sales_Person_Id,
         filters?.Created_by,
         filters?.Cancel_status,
+        filters?.Route_Id,
+        filters?.Area_Id,
         reload
     ])
 
@@ -87,6 +100,25 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
 
+
+        fetchLink({
+            address: `masters/routes/dropdown?Company_id=${storage?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setRoutes(data.data)
+            }
+        }).catch(e => console.error(e))
+
+
+        fetchLink({
+            address: `masters/areas/dropdown?Company_id=${storage?.Company_id}`
+        }).then(data => {
+            if (data.success) {
+                setArea(data.data)
+            }
+        }).catch(e => console.error(e))
+
+
     }, [])
 
     const saleOrderColumn = [
@@ -104,7 +136,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         },
         {
             Field_Name: 'So_Date',
-            ColumnHeader: 'Date',
+            ColumnHeader: 'Sale Order Date',
             Fied_Data: 'date',
             isVisible: 1,
             align: 'center',
@@ -184,27 +216,18 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                             </IconButton>
                         </Tooltip>
 
-                        <Tooltip title='Edit'>
+
+                        <Tooltip title='Sales Delivery'>
                             <IconButton
                                 onClick={() => {
                                     switchScreen();
-                                    setOrderInfo({ ...row, isEdit: true });
-                                }}
-                                size="small"
-                            >
-                                <Edit className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-                        {/* <Tooltip title='SalesDelivery'>
-                            <IconButton
-                                onClick={() => {
-                                    setConfirmDialog(true);
+                                    setOrderInfo({ ...row});
                                 }}
                                 size="small"
                             >
                                 <TwoWheelerIcon className="fa-16" />
                             </IconButton>
-                        </Tooltip> */}
+                        </Tooltip>
 
                     </>
                 )
@@ -262,24 +285,27 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-        setOrderInfo({});
-        setConfirmDialog(false)
     }
+    const handleToggle = () => {
 
+        setScreen((prev) => !prev);
+        setIsDeliveryDetailsVisible((prev) => !prev);
+    };
     return (
         <>
             <Card>
                 <div className="p-3 py-2 d-flex align-items-center justify-content-between">
-                    <h6 className="fa-18 m-0 p-0">{
-                        screen
+                    <h6 className="fa-18 m-0 p-0">
+                        {screen
                             ? 'Sale Orders'
                             : isValidObject(orderInfo)
-                                ? 'Modify Sale Order'
-                                : 'Sale Order Creation'}
+                        }
+             
                     </h6>
-                    <span>
+
+                    <div>
                         {screen && (
-                            <Tooltip title='Filters'>
+                            <Tooltip title="Filters">
                                 <IconButton
                                     size="small"
                                     onClick={() => setDialog({ ...dialog, filters: true })}
@@ -288,19 +314,22 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 </IconButton>
                             </Tooltip>
                         )}
+
                         {screen && (
-                            <Button
-                                variant='outlined'
-                                startIcon={<Add />}
-                                onClick={switchScreen}
-                            >
-                                {'New'}
-                            </Button>
+                            <Switch
+                                checked={checked}
+                                onChange={() => {
+                                    setScreen(false);
+                                    setIsDeliveryDetailsVisible(true);
+                                }}
+                                inputProps={{ 'aria-label': 'controlled' }}
+                            />
                         )}
-                    </span>
+                    </div>
+
                 </div>
 
-                <CardContent className="p-0 ">
+                <CardContent className="p-0">
                     {screen ? (
                         <FilterableTable
                             dataArray={saleOrders}
@@ -310,19 +339,34 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                             tableMaxHeight={550}
                             expandableComp={ExpendableComponent}
                         />
+                    ) : isDeliveryDetailsVisible ? (
+                        <DeliveryDetailsList
+                            editValues={orderInfo}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                            reload={() =>{ setReload(prev => !prev);setScreen(pre =>!pre)}}
+                            switchScreen={() => setScreen(true)}
+                            onToggle={handleToggle}
+                        />
                     ) : (
-                        <NewSaleOrderCreation
+                        <NewDeliveryOrder
                             editValues={orderInfo}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
                             reload={() => {
-                                setReload(pre => !pre);
-                                setScreen(pre => !pre)
-                            }}
-                            switchScreen={switchScreen}
+                                setReload(prev => !prev);  setScreen(prev => !prev)}}
+                            switchScreen={() => setScreen(true)}
+                            editOn={true}
                         />
+                        // reload={() => {
+                        //     setReload(pre => !pre);
+                        //     setScreen(pre => !pre)
+                        // }}
+                        // switchScreen={switchScreen}
                     )}
                 </CardContent>
+
+
             </Card>
 
 
@@ -337,116 +381,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 />
             )}
 
-
-   <Dialog
-    open={confirmDialog}
-    onClose={closeDialog}
-    fullWidth maxWidth='sm'
->
-    <DialogTitle>Filters</DialogTitle>
-    <DialogContent>
-        <div className="table-responsive pb-4">
-            <table className="table">
-                <tbody>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Retailer Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>From</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Fromdate}
-                                onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>To</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Todate}
-                                onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
-                        <td>
-                            <select
-                                type="date"
-                                value={filters.Cancel_status}
-                                onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
-                                className="cus-inpt"
-                            >
-                                <option value={1}>Show</option>
-                                <option value={0}>Hide</option>
-                            </select>
-                        </td>
-                    </tr>
-
-                </tbody>
-            </table>
-        </div>
-    </DialogContent>
-    <DialogActions>
-        <Button onClick={closeDialog}>close</Button>
-    </DialogActions>
-</Dialog>
 
             <Dialog
                 open={dialog.filters}
@@ -548,6 +482,40 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                         </select>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Routes</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Route_Id, label: filters?.RoutesGet }}
+                                            onChange={(e) => setFilters({ ...filters, Route_Id: e.value, RoutesGet: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...routes.map(obj => ({ value: obj?.Route_Id, label: obj?.Route_Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Route Name"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Area</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Area_Id, label: filters?.AreaGet }}
+                                            onChange={(e) => setFilters({ ...filters, Area_Id: e.value, AreaGet: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...area.map(obj => ({ value: obj?.Area_Id, label: obj?.Area_Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Area Name"}
+                                        />
+                                    </td>
+                                </tr>
+
 
                             </tbody>
                         </table>
@@ -562,4 +530,8 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default SaleOrderList;
+export default SalesDeliveryConvert;
+
+
+
+

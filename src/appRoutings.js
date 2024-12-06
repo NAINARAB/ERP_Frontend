@@ -111,7 +111,7 @@ const ClosingStockReports = lazy(() => import("./Pages/UserModule/retailer/closi
 // const ERP_MasterData = lazy(() => import('./Pages/SubMenu/ERP/masterData'))
 const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations'))
 // const TSK_MasterData = lazy(() => import('./Pages/SubMenu/TaskManagement/masterData'))
-
+const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/SalesDeliveryConvert"))
 
 const RoutingArray = [
     // Dashboard
@@ -212,6 +212,7 @@ const RoutingArray = [
     { component: <MenuManagement />, path: '/userControl/appMenu' },
     // { component: <WorkDoneHistory />, path: '' }, // will not work
     // { component: <ItemBasedReport />, path: '' }, // will not work
+    { component: <SalesDelivery/>, path: '/erp/sales/salesDelivery' },
 ];
 
 export default RoutingArray
