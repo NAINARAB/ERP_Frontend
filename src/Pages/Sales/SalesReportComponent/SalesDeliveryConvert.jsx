@@ -5,7 +5,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
 // import NewDeliveryOrder from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+import { FilterAlt, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";

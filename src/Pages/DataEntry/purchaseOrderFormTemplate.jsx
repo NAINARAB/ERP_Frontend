@@ -11,7 +11,11 @@ import { toast } from 'react-toastify'
 const storage = JSON.parse(localStorage.getItem('user'));
 
 const initialOrderDetailsValue = {
+    Sno: '',
     Id: '',
+    BranchId: 1,
+    PoYear: '',
+    PO_ID: '',
     LoadingDate: '',
     TradeConfirmDate: '',
     OwnerName: '',
@@ -516,6 +520,19 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                     </select>
                                                 </td>
                                             </tr>
+                                            {/* <tr>
+                                                <td className={tdStyle}>Branch</td>
+                                                <td className={tdStyle + ' p-0'}>
+                                                    <select
+                                                        className={inputStyle + ' border-0'}
+                                                        value={OrderDetails?.BranchId}
+                                                        onChange={e => setOrderDetails(pre => ({ ...pre, BranchId: e.target.value }))}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="On Process">On Process</option>
+                                                    </select>
+                                                </td>
+                                            </tr> */}
                                         </tbody>
                                     </table>
                                 </td>

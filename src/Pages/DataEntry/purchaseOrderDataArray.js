@@ -14,6 +14,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                         ...o,
                         OrderDetails: {
                             Id: item?.Id,
+                            Sno: item?.Sno,
+                            PoYear: item?.PoYear,
+                            PO_ID: item?.PO_ID,
+                            BranchId: item?.BranchId,
                             BrokerId: item.BrokerId ?? '',
                             BrokerName: item.BrokerName,
                             CreatedBy: item.CreatedBy,
@@ -51,6 +55,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                         ...o,
                         OrderDetails: {
                             Id: item?.Id,
+                            Sno: item?.Sno,
+                            PoYear: item?.PoYear,
+                            PO_ID: item?.PO_ID,
+                            BranchId: item?.BranchId,
                             BrokerId: item.BrokerId ?? '',
                             BrokerName: item.BrokerName,
                             CreatedBy: item.CreatedBy,
@@ -74,6 +82,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                     return acc.concat(itemDetails);
                 }, [])
             )
+
         case 'ITEMS ARRIVED':
             return (
                 data?.reduce((acc, item) => {
@@ -87,6 +96,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                         ...o,
                         OrderDetails: {
                             Id: item?.Id,
+                            Sno: item?.Sno,
+                            PoYear: item?.PoYear,
+                            PO_ID: item?.PO_ID,
+                            BranchId: item?.BranchId,
                             BrokerId: item.BrokerId ?? '',
                             BrokerName: item.BrokerName,
                             CreatedBy: item.CreatedBy,
@@ -110,6 +123,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                     return acc.concat(itemDetails);
                 }, [])
             )
+            
         case 'ORDERS':
             return data
         case 'ORDERS PENDING':

@@ -12,7 +12,7 @@ import FilterableTable from "../../Components/filterableTable2";
 import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation"; 
 // import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
 
-import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
+// import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
 const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
