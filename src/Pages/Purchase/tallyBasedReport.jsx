@@ -5,12 +5,12 @@ import { checkIsNumber, getPreviousDate, ISOString } from "../../Components/func
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
-import { purchaseOrderDataSet, displayColumns } from "./purchaseOrderDataArray";
+import { purchaseOrderDataSet, displayColumns } from "../DataEntry/purchaseOrderDataArray";
 import { toast } from 'react-toastify';
-import PurchaseOrderPreviewTemplate from "./purchaseOrderPreviewTemplate";
+import PurchaseOrderPreviewTemplate from "../DataEntry/purchaseOrderPreviewTemplate";
 
 
-const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
+const TallyBasedReport = ({ loadingOn, loadingOff }) => {
 
     const [purchaseOrderData, setPurchaseOrderData] = useState([]);
     const [orderPreview, setOrderPreview] = useState({
@@ -80,16 +80,12 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         <>
             <Card>
                 <div className="p-2 d-flex flex-wrap align-items-center">
-                    <h5 className="m-0 flex-grow-1">Purchase Order</h5>
+                    <h5 className="m-0 flex-grow-1">Purchase Order Report</h5>
                     <IconButton
                         size="small"
                         className="me-2"
                         onClick={() => setFilters(pre => ({ ...pre, FilterDialog: true }))}
                     ><FilterAlt /></IconButton>
-                    <Button
-                        variant="outlined"
-                        onClick={() => nav('create')}
-                    >Add</Button>
                 </div>
 
                 <CardContent>
@@ -162,23 +158,12 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                         value={filters.OrderStatus}
                                         onChange={e => setFilters(pre => ({ ...pre, OrderStatus: e.target.value }))}
                                     >
-                                        <optgroup label="ITEM BASED">
-                                            <option value={'ITEMS'}>ITEMS</option>
-                                            <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
-                                            <option value={'ITEMS ARRIVED'}>ITEMS - ARRIVED</option>
-                                        </optgroup>
-                                        <optgroup label="ORDER BASED">
-                                            <option value={'ORDERS'}>ORDERS</option>
-                                            {/* <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
-                                            <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option> */}
-                                        </optgroup>
-                                        <optgroup label="REPORTS">
-                                            <option value="REPORT 1">REPORT 1</option>
-                                            <option value="REPORT 2">REPORT 2</option>
-                                            <option value="REPORT 2A">REPORT 2A</option>
-                                            <option value="REPORT 3">REPORT 3</option>
-                                            <option value="REPORT 4">REPORT 4</option>
-                                        </optgroup>
+
+                                        <option value="REPORT 1">REPORT 1</option>
+                                        <option value="REPORT 2">REPORT 2</option>
+                                        <option value="REPORT 2A">REPORT 2A</option>
+                                        <option value="REPORT 3">REPORT 3</option>
+                                        <option value="REPORT 4">REPORT 4</option>
                                     </select>
                                 </td>
                             </tr>
@@ -213,4 +198,4 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default PurchaseOrderDataEntry;
+export default TallyBasedReport;
