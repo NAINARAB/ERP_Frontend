@@ -59,6 +59,7 @@ const initialDeliveryDetailsValue = {
     Concern: '',
     BillNo: '',
     BillDate: '',
+    BilledRate: 0,
     Quantity: '',
     Weight: '',
     Units: '',
@@ -553,9 +554,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         ret => isEqualNumber(ret.Retailer_Id, e.value)
                                                     ) ?? {}
 
-                                                    setOrderDetails(pre => ({ 
-                                                        ...pre, 
-                                                        PartyId: selectedOption?.Retailer_Id, 
+                                                    setOrderDetails(pre => ({
+                                                        ...pre,
+                                                        PartyId: selectedOption?.Retailer_Id,
                                                         PartyName: selectedOption?.Retailer_Name,
                                                         PartyAddress: selectedOption?.Reatailer_Address
                                                     }))
@@ -786,10 +787,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         <th className={tdStyle + ' text-center'}>Bill No</th>
                                         <th className={tdStyle + ' text-center'}>Bill Date</th>
                                         <th className={tdStyle + ' text-center'}>Quantity</th>
+                                        <th className={tdStyle + ' text-center'}>Billed Rate</th>
                                         <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
                                         <th className={tdStyle + ' text-center'}>Batch / Location</th>
 
-                                        <th className={tdStyle + ' text-center'}>Pending Quantity</th>
                                         <th className={tdStyle + ' text-center'}>Action</th>
                                     </tr>
                                 </thead>
@@ -806,10 +807,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             <td className={tdStyle}>{o?.BillNo}</td>
                                             <td className={tdStyle}>{o?.BillDate}</td>
                                             <td className={tdStyle}>{o?.Quantity}</td>
+                                            <td className={tdStyle}>{o?.BilledRate ?? 0}</td>
                                             <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
                                             <td className={tdStyle}>{o?.BatchLocation}</td>
 
-                                            <td className={tdStyle}>{o?.PendingQuantity}</td>
                                             <td className={tdStyle + ' p-0 text-center'}>
                                                 <IconButton
                                                     onClick={() => {
@@ -1020,6 +1021,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     </form>
                 </Dialog>
 
+                {/* Delivery Details */}
                 <Dialog
                     open={dialogs.deliveryDialog}
                     onClose={closeDialog}
@@ -1063,18 +1065,19 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             </select>
                                         </td>
                                         <td className={'border-0'}></td>
-                                        <td className={tdStyle}>Arrival Date</td>
+                                        <td className={tdStyle}>Arrival Date <RequiredStar /></td>
                                         <td className={tdStyle}>
                                             <input
                                                 type="date"
                                                 value={deliveryInput?.ArrivalDate}
+                                                required
                                                 className='cus-inpt p-2'
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, ArrivalDate: e.target.value }))}
                                             />
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className={tdStyle}>Item Name</td>
+                                        <td className={tdStyle}>Item Name <RequiredStar /></td>
                                         <td className={tdStyle}>
                                             <Select
                                                 value={{ value: deliveryInput?.ItemId, label: deliveryInput?.ItemName }}
@@ -1087,7 +1090,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                     }))
                                                 ]}
                                                 styles={customSelectStyles}
-                                                required
+                                                required={true}
                                                 isSearchable={true}
                                                 placeholder={"Select Product"}
                                                 maxMenuHeight={200}
@@ -1136,13 +1139,14 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             />
                                         </td>
                                         <td className={'border-0'}></td>
-                                        <td className={tdStyle}>Tonnage</td>
+                                        <td className={tdStyle}>Tonnage <RequiredStar /></td>
                                         <td className={tdStyle}>
                                             <input
                                                 type="number"
                                                 value={deliveryInput?.Weight}
                                                 className='cus-inpt p-2 w-50'
                                                 placeholder='Weight'
+                                                required
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, Weight: e.target.value }))}
                                             />
                                             <input
@@ -1154,28 +1158,28 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className={tdStyle}>Batch / Location</td>
+                                        <td className={tdStyle}>Billed Rate</td>
                                         <td className={tdStyle}>
                                             <input
-                                                className={'cus-inpt p-2'}
+                                                type="number"
+                                                value={deliveryInput?.BilledRate}
+                                                className='cus-inpt p-2'
+                                                onChange={e => setDeliveryInput(pre => ({ ...pre, BilledRate: e.target.value }))}
+                                            />
+
+                                        </td>
+                                        <td className={'border-0'}></td>
+                                        <td className={tdStyle}>Batch / Location </td>
+                                        <td className={tdStyle}>
+                                            <input
+                                                className={'cus-inpt p-2 w-auto'}
                                                 value={deliveryInput?.BatchLocation}
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, BatchLocation: e.target.value }))}
                                                 placeholder='location or batch'
                                             />
-                                        </td>
-                                        <td className={'border-0'}></td>
-                                        <td className={tdStyle}>Transporter</td>
-                                        <td className={tdStyle}>
-                                            {/* <input
-                                                type="number"
-                                                value={deliveryInput?.PendingQuantity}
-                                                className='cus-inpt p-2'
-                                                placeholder='penging quantity'
-                                                onChange={e => setDeliveryInput(pre => ({ ...pre, PendingQuantity: e.target.value }))}
-                                            /> */}
                                             <select
                                                 value={deliveryInput?.TransporterIndex}
-                                                className='cus-inpt ms-2'
+                                                className='cus-inpt w-auto'
                                                 required
                                                 onChange={e => setDeliveryInput(pre => ({ ...pre, TransporterIndex: e.target.value }))}
                                             >

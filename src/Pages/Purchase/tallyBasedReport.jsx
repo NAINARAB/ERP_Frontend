@@ -79,8 +79,8 @@ const TallyBasedReport = ({ loadingOn, loadingOff }) => {
     return (
         <>
             <Card>
-                <div className="p-2 d-flex flex-wrap align-items-center">
-                    <h5 className="m-0 flex-grow-1">Purchase Order Report</h5>
+                <div className="p-2 d-flex flex-wrap align-items-center border-bottom">
+                    <h5 className="m-0 flex-grow-1 ps-2">Purchase Order Report</h5>
                     <IconButton
                         size="small"
                         className="me-2"
@@ -159,11 +159,11 @@ const TallyBasedReport = ({ loadingOn, loadingOff }) => {
                                         onChange={e => setFilters(pre => ({ ...pre, OrderStatus: e.target.value }))}
                                     >
 
-                                        <option value="REPORT 1">REPORT 1</option>
-                                        <option value="REPORT 2">REPORT 2</option>
-                                        <option value="REPORT 2A">REPORT 2A</option>
-                                        <option value="REPORT 3">REPORT 3</option>
-                                        <option value="REPORT 4">REPORT 4</option>
+                                        <option value="PO-Vendor-Wise">PO-Vendor-Wise</option>
+                                        <option value="PO-Item-Wise">PO-Item-Wise</option>
+                                        <option value="PO-Pending-Only">PO-Pending-Only</option>
+                                        <option value="AR-Item-Based">AR-Item-Based</option>
+                                        <option value="AR-Vendor-Wise">AR-Vendor-Wise</option>
                                     </select>
                                 </td>
                             </tr>

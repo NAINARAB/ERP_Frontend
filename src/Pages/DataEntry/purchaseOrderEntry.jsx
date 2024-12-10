@@ -172,13 +172,13 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                             {/* <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
                                             <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option> */}
                                         </optgroup>
-                                        <optgroup label="REPORTS">
+                                        {/* <optgroup label="REPORTS">
                                             <option value="REPORT 1">REPORT 1</option>
                                             <option value="REPORT 2">REPORT 2</option>
                                             <option value="REPORT 2A">REPORT 2A</option>
                                             <option value="REPORT 3">REPORT 3</option>
                                             <option value="REPORT 4">REPORT 4</option>
-                                        </optgroup>
+                                        </optgroup> */}
                                     </select>
                                 </td>
                             </tr>

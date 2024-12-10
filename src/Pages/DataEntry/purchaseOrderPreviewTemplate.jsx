@@ -180,10 +180,10 @@ const PurchaseOrderPreviewTemplate = ({
                                     <th className={tdStyle + ' text-center'}>Bill No</th>
                                     <th className={tdStyle + ' text-center'}>Bill Date</th>
                                     <th className={tdStyle + ' text-center'}>Quantity</th>
+                                    <th className={tdStyle + ' text-center'}>Billed Rate</th>
                                     <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
                                     <th className={tdStyle + ' text-center'}>Batch / Location</th>
 
-                                    <th className={tdStyle + ' text-center'}>Pending Quantity</th>
                                 </tr>
                             </thead>
 
@@ -199,10 +199,10 @@ const PurchaseOrderPreviewTemplate = ({
                                         <td className={tdStyle}>{o?.BillNo}</td>
                                         <td className={tdStyle}>{o?.BillDate ? LocalDate(o?.BillDate) : ''}</td>
                                         <td className={tdStyle}>{o?.Quantity}</td>
+                                        <td className={tdStyle}>{o?.BilledRate ?? 0}</td>
                                         <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
                                         <td className={tdStyle}>{o?.BatchLocation}</td>
 
-                                        <td className={tdStyle}>{o?.PendingQuantity}</td>
                                     </tr>
                                 ))}
                             </tbody>

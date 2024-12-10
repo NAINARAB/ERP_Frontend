@@ -6,8 +6,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
     switch (status) {
         case 'ITEMS':
-        case 'REPORT 1':
-        case 'REPORT 2':
+        case 'PO-Vendor-Wise':
+        case 'PO-Item-Wise':
             return (
                 data?.reduce((acc, item) => {
                     if (!Array.isArray(item?.ItemDetails)) return acc;
@@ -47,7 +47,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
             )
 
         case 'ITEMS PENDING':
-        case 'REPORT 2A':
+        case 'PO-Pending-Only':
             return (
                 data?.reduce((acc, item) => {
                     if (!Array.isArray(item?.ItemDetails)) return acc;
@@ -133,8 +133,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                 }, [])
             )
 
-        case 'REPORT 3':
-        case 'REPORT 4':
+        case 'AR-Item-Based':
+        case 'AR-Vendor-Wise':
             return (
                 data?.reduce((acc, item) => {
                     if (!Array.isArray(item?.DeliveryDetails)) return acc;
@@ -435,8 +435,9 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             isCustomCell: true,
             Cell: ({ row }) => {
                 const OrderedItems = Array.isArray(row?.OrderDetails?.ItemDetails) ? row?.OrderDetails?.ItemDetails : [];
-                const rate = OrderedItems.find(o => isEqualNumber(o?.ItemId, row?.ItemId))?.Rate ?? 0
-                return NumberFormat(rate);
+                const OrderedRate = OrderedItems.find(o => isEqualNumber(o?.ItemId, row?.ItemId))?.Rate ?? 0
+                const BilledRate = Number(row?.BilledRate);
+                return `${BilledRate} (${isGraterNumber(BilledRate, OrderedRate) ? ('+'+ (BilledRate - OrderedRate)) : ('-' + (OrderedRate - BilledRate))})`
             }
         }
 
@@ -475,23 +476,23 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                 OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, OwnerName, Remarks, OrderActions,
             ]
 
-        case 'REPORT 1':
+        case 'PO-Vendor-Wise':
             return [
                 ItemPO_ID, ItemTradeConfirmDate, ItemLOLLedgerName, ItemLOLPartyDistrict, StockGroup, WeightWithUOM, Rate, PendingItemQuantity, ItemActions
             ]
-        case 'REPORT 2':
+        case 'PO-Item-Wise':
             return [
                 ItemPO_ID, ItemTradeConfirmDate, StockGroup, StockItem, WeightWithUOM, Rate, PendingItemQuantity, ItemLOLLedgerName, ItemLOLPartyDistrict, ItemActions
             ]
-        case 'REPORT 2A':
+        case 'PO-Pending-Only':
             return [
                 ItemPO_ID, ItemTradeConfirmDate, StockGroup, StockItem, WeightWithUOM, Rate, PendingItemQuantity, ItemLOLLedgerName, ItemLOLPartyDistrict, ItemActions
             ]
-        case 'REPORT 3':
+        case 'AR-Item-Based':
             return [
                 ItemPO_ID, ArrivedDate, ArrivedLocation, StockGroup, StockItem, WeightWithUOM, ArrivalRate, ItemLOLLedgerName, ItemLOLPartyDistrict, ItemActions
             ]
-        case 'REPORT 4':
+        case 'AR-Vendor-Wise':
             return [
                 ItemPO_ID, ArrivedDate, ArrivedLocation, ItemLOLLedgerName, ItemLOLPartyDistrict, StockGroup, ArrivalRate, WeightWithUOM, PendingItemQuantity, ItemActions
             ]
