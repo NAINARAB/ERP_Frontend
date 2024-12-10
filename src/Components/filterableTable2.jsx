@@ -1,8 +1,11 @@
-import React, { Fragment, useState } from 'react';
-import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton } from '@mui/material';
+import React, { Fragment, useRef, useState } from 'react';
+import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button } from '@mui/material';
 import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-
+import { Download, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { useReactToPrint } from 'react-to-print';
 import PropTypes from 'prop-types';
 
 /**
@@ -30,9 +33,83 @@ import PropTypes from 'prop-types';
  * @param {boolean} [props.EnableSerialNumber]
  * @param {'small'|'medium'|'large'} [props.CellSize]
  * @param {boolean} [props.disablePagination]
+ * @param {boolean} [props.PDFPrintOption]
+ * @param {boolean} [props.ExcelPrintOption]
  * @param {''} [props.title]
  */
 
+
+const preprocessDataForExport = (data, columns) => {
+    return data.map((row) => {
+        const flattenedRow = {};
+
+        columns.forEach((column, index) => {
+            if (column.isVisible || column.Defult_Display) {
+                if (column.isCustomCell && column.Cell) {
+                    const cellContent = column.Cell({ row });
+
+                    const safeColumnHeader = column.ColumnHeader
+                        ? String(column.ColumnHeader).replace(/\s+/g, '_').toLowerCase()
+                        : `field_${index + 1}`;
+
+                    if (typeof cellContent === 'string' || typeof cellContent === 'number' || typeof cellContent === 'bigint') {
+                        flattenedRow[safeColumnHeader] = cellContent;
+                    } 
+                    // else if (React.isValidElement(cellContent)) {
+                    //     flattenedRow[safeColumnHeader] = 'null';
+                    // } else {
+                    //     flattenedRow[safeColumnHeader] = 'invalid';
+                    // }
+                } else {
+                    // Handle regular fields
+                    let key = column.Field_Name;
+                    flattenedRow[key] = row[key] || '';
+                }
+            }
+        });
+
+        return flattenedRow;
+    });
+};
+
+
+const generatePDF = (dataArray, columns) => {
+    try {
+        const doc = new jsPDF();
+        const processedData = preprocessDataForExport(dataArray, columns);
+
+        const headers = columns
+            .filter((column) => column.isVisible || column.Defult_Display)
+            .map((column) => column.Field_Name || String(column.ColumnHeader).replace(/\s+/g, '_').toLowerCase());
+
+        const rows = processedData.map((row) =>
+            headers.map((header) => row[header])
+        ).map((o, i) => ({...o, Sno: i + 1}))
+
+        doc.autoTable({
+            head: [headers],
+            body: rows,
+        });
+
+        doc.save('table.pdf');
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+const exportToExcel = (dataArray, columns) => {
+    try {
+        const processedData = preprocessDataForExport(dataArray, columns);
+
+        const worksheet = XLSX.utils.json_to_sheet(processedData);
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+        XLSX.writeFile(workbook, 'table.xlsx');
+    } catch (e) {
+        console.error(e);
+    }
+};
 
 const FilterableTable = ({
     dataArray = [],
@@ -45,12 +122,17 @@ const FilterableTable = ({
     EnableSerialNumber = false,
     CellSize = 'small' || 'medium',
     disablePagination = false,
-    title = ''
+    title = '',
+    PDFPrintOption = false,
+    ExcelPrintOption = false,
 }) => {
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
     const [sortCriteria, setSortCriteria] = useState([]);
+    const [showFullHeight, setShowFullHeight] = useState(false);
+    const tableHeight = showFullHeight ? ' max-content ' : tableMaxHeight;
+    const printRef = useRef(null);
 
     const columnAlign = [
         {
@@ -177,8 +259,8 @@ const FilterableTable = ({
                                             className={`fa-13 border-end ` + (
                                                 column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
                                             ) + (
-                                                column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
-                                            )}
+                                                    column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
+                                                )}
                                             onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                         >
                                             {formatString(value, column?.Fied_Data)}
@@ -191,8 +273,8 @@ const FilterableTable = ({
                                     className={`fa-13 border-end ` + (
                                         column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
                                     ) + (
-                                        column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
-                                    )}
+                                            column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
+                                        )}
                                 >
                                     {column.Cell({ row, Field_Name: column.Field_Name })}
                                 </TableCell>
@@ -211,10 +293,49 @@ const FilterableTable = ({
         )
     }
 
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+    });
+
     return (
         <div>
-            {title && <h6 className='fw-bold text-muted'>{title}</h6>}
-            <TableContainer component={Paper} sx={{ maxHeight: tableMaxHeight }}>
+            <div className="d-flex align-items-center flex-wrap mb-2">
+                {title && <h6 className='fw-bold text-muted flex-grow-1 m-0 ps-3'>{title}</h6>}
+                {PDFPrintOption && (
+                    <Button
+                        variant='outlined'
+                        color='primary'
+                        className='me-2'
+                        // onClick={handlePrint}
+                        onClick={() => generatePDF(dataArray, columns)}
+                        disabled={isEqualNumber(dataArray?.length, 0)}
+                        startIcon={<Download />}
+                    >Download PDF</Button>
+                )}
+                {ExcelPrintOption && (
+                    <Button
+                        variant='outlined'
+                        color='success'
+                        className='me-2'
+                        onClick={() => exportToExcel(dataArray, columns)}
+                        disabled={isEqualNumber(dataArray?.length, 0)}
+                        startIcon={<Download />}
+                    >Download Excel</Button>
+                )}
+                <div>
+                    <label className="form-check-label p-1 pe-2" htmlFor="fullHeight">Max Height</label>
+                    <input
+                        className="form-check-input shadow-none"
+                        style={{ padding: '0.7em' }}
+                        type="checkbox"
+                        id="fullHeight"
+                        checked={showFullHeight}
+                        onChange={e => setShowFullHeight(e.target.checked)}
+                    />
+                </div>
+            </div>
+
+            <TableContainer component={Paper} sx={{ maxHeight: tableHeight }} ref={printRef}>
 
                 <Table stickyHeader size={CellSize}>
 
@@ -342,6 +463,8 @@ FilterableTable.propTypes = {
     CellSize: PropTypes.string,
     disablePagination: PropTypes.bool,
     title: PropTypes.string,
+    PDFPrintOption: PropTypes.bool,
+    ExcelPrintOption: PropTypes.bool,
 };
 
 FilterableTable.defaultProps = {
@@ -355,7 +478,9 @@ FilterableTable.defaultProps = {
     EnableSerialNumber: false,
     CellSize: 'small',
     disablePagination: false,
-    title: undefined
+    title: undefined,
+    PDFPrintOption: false,
+    ExcelPrintOption: false,
 };
 
 

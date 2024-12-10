@@ -27,7 +27,7 @@ const TallyBasedReport = ({ loadingOn, loadingOff }) => {
         Fromdate: getPreviousDate(10),
         Todate: ISOString(),
         FilterDialog: false,
-        OrderStatus: 'ITEMS',
+        OrderStatus: 'PO-Vendor-Wise',
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
@@ -103,6 +103,8 @@ const TallyBasedReport = ({ loadingOn, loadingOff }) => {
                         tableMaxHeight={750}
                         EnableSerialNumber
                         title={filters.OrderStatus}
+                        PDFPrintOption={true}
+                        ExcelPrintOption={true}
                     />
 
                 </CardContent>
