@@ -420,20 +420,25 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
     return (
         <>
 
-            <div className="d-flex justify-content-end pb-2">
-                <Button
-                    onClick={() => {
-                        setDialog(true);
-                        setInputValues(initialValue);
-                    }}
-                    variant="outlined"
-                    startIcon={<Add />}
-                >
-                    New Menu
-                </Button>
-            </div>
+            {/* <div className="d-flex justify-content-end pb-2">
+
+            </div> */}
 
             <FilterableTable
+                title="Main Menu"
+                ButtonArea={
+                    <Button
+                        onClick={() => {
+                            setDialog(true);
+                            setInputValues(initialValue);
+                        }}
+                        variant="outlined"
+                        startIcon={<Add />}
+                    >
+                        New Menu
+                    </Button>
+                }
+                ExcelPrintOption
                 dataArray={menuData}
                 columns={[
                     {
@@ -629,7 +634,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     onChange={e => setInputValues(pre => ({ ...pre, url: e.target.value }))}
                                 />
                             </div>
-                            
+
                             {inputValues.id && (
                                 <div className="col-lg-6 p-2">
                                     <label>Is Active</label>

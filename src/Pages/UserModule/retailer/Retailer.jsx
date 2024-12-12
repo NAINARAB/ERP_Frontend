@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DataTable from "react-data-table-component";
 import { customTableStyles } from '../../../Components/tablecolumn'
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, CardContent, CardMedia, Tooltip, Button } from "@mui/material";
-import { Person, Call, LocationOn, ArrowBack, Edit, Verified, Add, Delete } from "@mui/icons-material";
+import { Person, Call, LocationOn, ArrowBack, Edit, Verified, Add, Delete, Sync } from "@mui/icons-material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
@@ -10,7 +10,7 @@ import ImagePreviewDialog from "../../../Components/imagePreview";
 import { useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 
-const RetailersMaster = () => {
+const RetailersMaster = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [retailers, setRetailers] = useState([]);
     const [area, setArea] = useState([]);
@@ -443,14 +443,28 @@ const RetailersMaster = () => {
         }).catch(e => console.error(e))
     }
 
+    const syncLOL = () => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `masters/retailers/lolSync`,
+            method: 'POST'
+        }).then(data => {
+            if (data.success) toast.success(data.message);
+            else toast.error(data.message);
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
+
 
     return (
         <>
 
             <Card sx={{ mb: 1 }} >
-                <div className="p-3 pb-0 d-flex align-items-center justify-content-between">
-                    <h6 className="fa-18">Retailers</h6>
+                <div className="p-3 pb-0 d-flex align-items-center ">
+                    <h6 className="fa-18 flex-grow-1">Retailers</h6>
                     <Button variant='outlined' startIcon={<Add />} onClick={() => setDialog(true)}>Add Retailers</Button>
+                    <Tooltip title='Sync Tally LOL'><IconButton onClick={syncLOL}><Sync /></IconButton></Tooltip>
                 </div>
 
                 <CardContent>

@@ -105,6 +105,7 @@ const TallyBasedReport = ({ loadingOn, loadingOff }) => {
                         title={filters.OrderStatus}
                         PDFPrintOption={true}
                         ExcelPrintOption={true}
+                        maxHeightOption={true}
                     />
 
                 </CardContent>

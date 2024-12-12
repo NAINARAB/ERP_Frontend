@@ -1,11 +1,10 @@
 import React, { Fragment, useRef, useState } from 'react';
-import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button } from '@mui/material';
+import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
 import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
-import { Download, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import { Download, KeyboardArrowDown, KeyboardArrowUp, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { useReactToPrint } from 'react-to-print';
 import PropTypes from 'prop-types';
 
 /**
@@ -21,6 +20,14 @@ import PropTypes from 'prop-types';
  */
 
 /**
+ * @typedef {Object} Menu
+ * @property {string} name
+ * @property {Element} icon
+ * @property {Function} onclick
+ * @property {boolean} disabled
+ */
+
+/**
  * Filterable Table Component
  * @param {Object} props
  * @param {Array<Object>} props.dataArray
@@ -33,9 +40,12 @@ import PropTypes from 'prop-types';
  * @param {boolean} [props.EnableSerialNumber]
  * @param {'small'|'medium'|'large'} [props.CellSize]
  * @param {boolean} [props.disablePagination]
+ * @param {''} [props.title]
  * @param {boolean} [props.PDFPrintOption]
  * @param {boolean} [props.ExcelPrintOption]
- * @param {''} [props.title]
+ * @param {boolean} [props.maxHeightOption]
+ * @param {React.ReactElement} [props.ButtonArea]
+ * @param {Array<Menu>} props.MenuButtons
  */
 
 
@@ -54,7 +64,7 @@ const preprocessDataForExport = (data, columns) => {
 
                     if (typeof cellContent === 'string' || typeof cellContent === 'number' || typeof cellContent === 'bigint') {
                         flattenedRow[safeColumnHeader] = cellContent;
-                    } 
+                    }
                     // else if (React.isValidElement(cellContent)) {
                     //     flattenedRow[safeColumnHeader] = 'null';
                     // } else {
@@ -72,7 +82,6 @@ const preprocessDataForExport = (data, columns) => {
     });
 };
 
-
 const generatePDF = (dataArray, columns) => {
     try {
         const doc = new jsPDF();
@@ -84,7 +93,7 @@ const generatePDF = (dataArray, columns) => {
 
         const rows = processedData.map((row) =>
             headers.map((header) => row[header])
-        ).map((o, i) => ({...o, Sno: i + 1}))
+        ).map((o, i) => ({ ...o, Sno: i + 1 }))
 
         doc.autoTable({
             head: [headers],
@@ -111,6 +120,27 @@ const exportToExcel = (dataArray, columns) => {
     }
 };
 
+const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'middle') => {
+    return {
+        isVisible: 1,
+        Field_Name: field,
+        Fied_Data: type,
+        align,
+        verticalAlign,
+        ...(ColumnHeader && { ColumnHeader })
+    }
+}
+
+const createPopUpMenu = (name, icon, onclick, disabled = false) => (
+    <MenuItem
+        onClick={onclick}
+        disabled={disabled}
+    >
+        <ListItemIcon>{icon}</ListItemIcon>
+        <ListItemText>{name}</ListItemText>
+    </MenuItem>
+)
+
 const FilterableTable = ({
     dataArray = [],
     columns = [],
@@ -125,14 +155,16 @@ const FilterableTable = ({
     title = '',
     PDFPrintOption = false,
     ExcelPrintOption = false,
+    maxHeightOption = false,
+    ButtonArea = null,
+    MenuButtons = []
 }) => {
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
     const [sortCriteria, setSortCriteria] = useState([]);
-    const [showFullHeight, setShowFullHeight] = useState(false);
-    const tableHeight = showFullHeight ? ' max-content ' : tableMaxHeight;
-    const printRef = useRef(null);
+    const [showFullHeight, setShowFullHeight] = useState(true);
+    const tableHeight = (showFullHeight && maxHeightOption) ? ' max-content ' : tableMaxHeight;
 
     const columnAlign = [
         {
@@ -293,49 +325,111 @@ const FilterableTable = ({
         )
     }
 
-    const handlePrint = useReactToPrint({
-        content: () => printRef.current,
-    });
+    const TableActions = () => {
+        const [anchorEl, setAnchorEl] = useState(null);
+
+        const popOverOpen = Boolean(anchorEl);
+
+        const handleClick = (event) => {
+            setAnchorEl(event.currentTarget);
+        };
+
+        const handleClose = () => {
+            setAnchorEl(null);
+        };
+
+        return (
+            <>
+                <Tooltip title='Export options and more...'>
+                    <IconButton aria-describedby={popOverOpen} onClick={handleClick} className='ms-2' size='small'>
+                        <MoreVert />
+                    </IconButton>
+                </Tooltip>
+
+                <Popover
+                    open={popOverOpen}
+                    anchorEl={anchorEl}
+                    onClose={handleClose}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                    }}
+                >
+                    <MenuList>
+
+                        {maxHeightOption && (
+                            <MenuItem
+                                onClick={() => setShowFullHeight(pre => !pre)}
+                                disabled={isEqualNumber(dataArray?.length, 0)}
+                            >
+                                <ListItemIcon>
+                                    {showFullHeight
+                                        ? <ToggleOn fontSize="small" color='primary' />
+                                        : <ToggleOff fontSize="small" />
+                                    }
+                                </ListItemIcon>
+                                <ListItemText
+                                    color={showFullHeight ? 'success' : ''}
+                                >Max Height</ListItemText>
+                            </MenuItem>
+                        )}
+
+                        {PDFPrintOption && (
+                            <MenuItem
+                                onClick={() => generatePDF(dataArray, columns)}
+                                disabled={isEqualNumber(dataArray?.length, 0)}
+                            >
+                                <ListItemIcon><Download fontSize="small" color='primary' /></ListItemIcon>
+                                <ListItemText>Download PDF</ListItemText>
+                            </MenuItem>
+                        )}
+
+                        {ExcelPrintOption && (
+                            <MenuItem
+                                onClick={() => exportToExcel(dataArray, columns)}
+                                disabled={isEqualNumber(dataArray?.length, 0)}
+                            >
+                                <ListItemIcon><Download fontSize="small" color='primary' /></ListItemIcon>
+                                <ListItemText>Download Excel</ListItemText>
+                            </MenuItem>
+                        )}
+
+                        {MenuButtons.map(btn => createPopUpMenu(btn.name, btn.icon, btn.onclick, btn.disabled))}
+
+                    </MenuList>
+                </Popover>
+            </>
+        )
+    }
 
     return (
-        <div>
-            <div className="d-flex align-items-center flex-wrap mb-2">
-                {title && <h6 className='fw-bold text-muted flex-grow-1 m-0 ps-3'>{title}</h6>}
-                {PDFPrintOption && (
-                    <Button
-                        variant='outlined'
-                        color='primary'
-                        className='me-2'
-                        // onClick={handlePrint}
-                        onClick={() => generatePDF(dataArray, columns)}
-                        disabled={isEqualNumber(dataArray?.length, 0)}
-                        startIcon={<Download />}
-                    >Download PDF</Button>
-                )}
-                {ExcelPrintOption && (
-                    <Button
-                        variant='outlined'
-                        color='success'
-                        className='me-2'
-                        onClick={() => exportToExcel(dataArray, columns)}
-                        disabled={isEqualNumber(dataArray?.length, 0)}
-                        startIcon={<Download />}
-                    >Download Excel</Button>
-                )}
-                <div>
-                    <label className="form-check-label p-1 pe-2" htmlFor="fullHeight">Max Height</label>
-                    <input
-                        className="form-check-input shadow-none"
-                        style={{ padding: '0.7em' }}
-                        type="checkbox"
-                        id="fullHeight"
-                        checked={showFullHeight}
-                        onChange={e => setShowFullHeight(e.target.checked)}
-                    />
-                </div>
+        <div className='rounded-3 bg-white overflow-hidden'>
+            <div
+                className="d-flex align-items-center flex-wrap px-3 py-2 flex-row-reverse "
+            >
+                {/* {maxHeightOption && (
+                    <div>
+                        <label className="form-check-label p-1" htmlFor="fullHeight">Max Height</label>
+                        <input
+                            className="form-check-input shadow-none"
+                            style={{ padding: '0.7em' }}
+                            type="checkbox"
+                            id="fullHeight"
+                            checked={showFullHeight}
+                            onChange={e => setShowFullHeight(e.target.checked)}
+                        />
+                    </div>
+                )} */}
+                {(PDFPrintOption || ExcelPrintOption || MenuButtons.length > 0 || maxHeightOption) && <TableActions />}
+                {ButtonArea && ButtonArea}
+                {title && <h6 className='fw-bold text-muted flex-grow-1 m-0'>{title}</h6>}
             </div>
 
-            <TableContainer component={Paper} sx={{ maxHeight: tableHeight }} ref={printRef}>
+            <TableContainer component={Paper} sx={{ maxHeight: tableHeight }}>
 
                 <Table stickyHeader size={CellSize}>
 
@@ -422,7 +516,9 @@ const FilterableTable = ({
             </TableContainer>
 
             {!disablePagination && paginatedData.length !== 0 && (
-                <div className="p-2 pb-0">
+                <div
+                    className="p-2 pb-0"
+                >
                     <TablePagination
                         component="div"
                         count={dataArray.length}
@@ -465,6 +561,9 @@ FilterableTable.propTypes = {
     title: PropTypes.string,
     PDFPrintOption: PropTypes.bool,
     ExcelPrintOption: PropTypes.bool,
+    maxHeightOption: PropTypes.bool,
+    ButtonArea: PropTypes.element,
+    MenuButtons: PropTypes.arrayOf(PropTypes.object)
 };
 
 FilterableTable.defaultProps = {
@@ -481,7 +580,14 @@ FilterableTable.defaultProps = {
     title: undefined,
     PDFPrintOption: false,
     ExcelPrintOption: false,
+    maxHeightOption: false,
+    ButtonArea: null,
+    MenuButtons: []
 };
 
-
 export default FilterableTable;
+
+export {
+    createCol,
+    // createPopUpMenu,
+}

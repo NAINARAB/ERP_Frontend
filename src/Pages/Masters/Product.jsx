@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "react-data-table-component";
 import { customTableStyles } from '../../Components/tablecolumn'
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent } from "@mui/material";
-import { AddPhotoAlternate } from "@mui/icons-material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent, Tooltip } from "@mui/material";
+import { AddPhotoAlternate, Sync } from "@mui/icons-material";
 import api from '../../API';
 import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../Components/imagePreview";
 import { fetchLink } from '../../Components/fetchComponent';
 
-const ProductsMaster = () => {
+const ProductsMaster = ({loadingOn, loadingOff}) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [products, setProducts] = useState([]);
     const [reload, setReload] = useState(false);
@@ -163,12 +163,26 @@ const ProductsMaster = () => {
         setDialog({ ...dialog, imageUpload: false });
         setProductInputValue(initialInputValue);
     }
+    
+    const syncLOS = () => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `masters/products/losSync`,
+            method: 'POST'
+        }).then(data => {
+            if (data.success) toast.success(data.message);
+            else toast.error(data.message);
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
 
     return (
         <>
             <Card component={Paper}>
                 <div className="p-3 pb-0 d-flex align-items-center">
                     <h6 className="flex-grow-1 fa-18">Products</h6>
+                    <Tooltip title='Sync Tally LOS'><IconButton onClick={syncLOS}><Sync /></IconButton></Tooltip>
                     {/* <Button
                         variant='outlined'
                         startIcon={<Add />}
