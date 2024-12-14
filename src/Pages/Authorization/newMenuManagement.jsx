@@ -438,7 +438,6 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                         New Menu
                     </Button>
                 }
-                ExcelPrintOption
                 dataArray={menuData}
                 columns={[
                     {

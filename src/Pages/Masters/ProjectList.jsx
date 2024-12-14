@@ -23,6 +23,7 @@ const ActiveProjects = () => {
     const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
     const [listingTaskDialogOpen, setListingTaskDialogOpen] = useState(false);
     const [filterInput, setFilterInput] = useState('');
+    const [reloadFlag, setReloadFlag] = useState(false);
 
     const parseData = JSON.parse(localStorage.getItem("user"));
 
@@ -31,8 +32,11 @@ const ActiveProjects = () => {
         fetchProjectData();
     }, [parseData?.Company_id, reload]);
 
-    const handleReloadProjects = () => setReload(prev => !prev);
-
+    const handleReloadProjects = () => {
+        setReload(prev => !prev);  
+        setReloadFlag(prev => !prev); 
+    };
+    
     const fetchProjects = async () => {
         try {
             const data = await fetchLink({
@@ -82,17 +86,20 @@ const ActiveProjects = () => {
         { name: 'Head', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Project_Head_Name, sortable: true },
         { name: 'Status', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Status, sortable: true },
         { name: 'End Date', selector: row => row.Est_End_Dt ? new Date(row.Est_End_Dt).toLocaleDateString('en-IN') : "N/A", sortable: true },
-        { name: 'Progress', selector: row => `${calcPercentage(row.TasksScheduled, row.CompletedTasks)}%`, sortable: true },
+        { name: 'Progress', selector: row => `${calcPercentage(row.TodayTaskcounts, row.CompletedTasks)}%`, sortable: true },
         {
-            name: 'Tasks', cell: row => (
+            name: 'Task Details', cell: row => (
                 <>
                     <IconButton onClick={() => handleOpenListingTaskDialog(row)}>
                         <Launch />
                     </IconButton>
-                    {row.CompletedTasks} / {row.TasksScheduled}
+                    {row.CompletedTasks} / {row.TodayTaskcounts}
                 </>
             )
         },
+      
+        { name: 'Task Count',  selector: row => row?.TodayTaskcounts, sortable: true, sortable: true },
+      
         { name: 'Assigned', selector: row => row.TasksAssignedToEmployee },
         {
             name: 'Employees', cell: row => (
@@ -290,6 +297,8 @@ const ActiveProjects = () => {
                 projectid={projectId}
                 onReload={handleReloadProjects}
                 selectedProject={selectedProject}
+                reload={reload}  
+              
             />
 
             <ProjectForm
