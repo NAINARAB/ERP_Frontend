@@ -298,13 +298,9 @@ export const Subraction = (a, b) => {
     return Number(a) - Number(b)
 }
 
-export const Multiplication = (a, b) => {
-    return Number(a) * Number(b)
-}
+export const Multiplication = (a, b) => Number(a || 0) * Number(b || 0);
 
-export const Division = (a, b) => {
-    return Number(a) / Number(b)
-}
+export const Division = (a, b) => b !== 0 ? Number(a || 0) / Number(b || 1) : 0;
 
 export const validValue = (val) => {
     return Boolean(val) ? val : ''
@@ -401,6 +397,24 @@ export const createAbbreviation = (sentence) => {
 
 export const checkIsNumber = (num) => {
     return (num !== '' && num !== null && num !== undefined) ? isNaN(num) ? false : true : false
+}
+
+export const isValidJSON = (str) => {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+export const parseJSON = (str) => {
+    try {
+        const value = JSON.parse(str);
+        return { isJSON: true, data: value };
+    } catch (e) {
+        return { isJSON: false, };
+    }
 }
 
 export const isObject = (val) => {

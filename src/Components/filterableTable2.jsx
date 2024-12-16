@@ -120,7 +120,7 @@ const exportToExcel = (dataArray, columns) => {
     }
 };
 
-const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'middle') => {
+const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center') => {
     return {
         isVisible: 1,
         Field_Name: field,
