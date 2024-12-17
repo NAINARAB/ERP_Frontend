@@ -67,7 +67,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Item_Id: '',
         Bill_Qty: 0,
         Item_Rate: 0,
-        Weight: 0,
+        Act_Qty: 0,
         Free_Qty: 0,
         Unit_Id: '',
         Unit_Name: '',
@@ -91,6 +91,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const [branches, setBranches] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
     const [products, setProducts] = useState([]);
+    const [godownLocations, setGodownLocations] = useState([]);
     const [baseDetails, setBaseDetails] = useState({
         vendor: 'search',
         vendorId: '',
@@ -184,6 +185,14 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             if (data.success) setProducts(data.data);
             else setProducts([]);
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `dataEntry/godownLocationMaster`
+        }).then(data => {
+            if (data.success) {
+                setGodownLocations(data.data);
+            }
+        }).catch(e => console.error(e));
 
     }, [])
 
@@ -293,10 +302,11 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 case 'OrderId': return [key, Number(item?.OrderId)]
                                 case 'PIN_Id': return [key, Number(item?.OrderId)]
                                 case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
+                                case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
                                 case 'Bill_Qty': return [key, Bill_Qty]
                                 case 'Item_Rate': return [key, Number(item?.BilledRate)]
-                                case 'Weight': return [key, Number(item?.Weight)]
+                                case 'Act_Qty': return [key, Number(item?.Weight)]
                                 case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
                                 case 'Amount': return [key, Amount]
                                 case 'Total_Qty': return [key, Bill_Qty]
@@ -399,6 +409,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 <div className="d-flex flex-wrap align-items-center border-bottom p-2">
                     <h5 className='flex-grow-1 m-0 ps-2'>Purchase Invoice Creation</h5>
                     {/* <Button variant='outlined'>back</Button> */}
+                    <Button onClick={() => setSelectedItems([])}>clear selected</Button>
+                    <Button
+                        variant="contained"
+                        className='ms-2'
+                        onClick={() => setDialogs(pre => ({ ...pre, nextStep: true }))}
+                        disabled={selectedItems.length === 0}
+                    >next</Button>
                 </div>
                 <CardContent style={{ minHeight: 500 }}>
                     <label className="pe-2">Select Vendor For Invoice: </label>
@@ -429,7 +446,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             className="mx-2"
                             disabled={!checkIsNumber(baseDetails.vendorId)}
                             // onClick={() => getVendorInfo(3440)}
-                        onClick={() => getVendorInfo(baseDetails.vendorId)}
+                            onClick={() => getVendorInfo(baseDetails.vendorId)}
                         ><Search /></Button>
                     </div>
 
@@ -479,14 +496,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                         maxHeightOption
                     />
                 </CardContent>
-                <CardActions className="d-flex justify-content-end flex-wrap">
-                    <Button onClick={() => setSelectedItems([])}>clear all</Button>
-                    <Button
-                        variant="contained"
-                        onClick={() => setDialogs(pre => ({ ...pre, nextStep: true }))}
-                        disabled={selectedItems.length === 0}
-                    >next</Button>
-                </CardActions>
             </Card>
 
             <Dialog
@@ -494,11 +503,18 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 onClose={closeDialogs}
                 fullScreen
             >
-                <DialogTitle>Create Invoice</DialogTitle>
                 <form onSubmit={e => {
                     e.preventDefault();
                     postOrder();
                 }}>
+                    <DialogTitle className='d-flex flex-wrap align-items-center border-bottom '>
+                        <span className="flex-grow-1">Create Invoice</span>
+                        <span>
+                            <Button onClick={closeDialogs} type="button" className='me-2'>back</Button>
+                            <Button type='submit' variant="contained">submit</Button>
+                        </span>
+                    </DialogTitle>
+
                     <DialogContent className="table-responsive">
                         <div className="row">
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
@@ -576,8 +592,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle}>Item</td>
                                         <td className={tdStyle}>Rate</td>
                                         <td className={tdStyle}>Quantity</td>
+                                        <td className={tdStyle}>Act-Qty</td>
                                         <td className={tdStyle}>Unit</td>
                                         <td className={tdStyle}>Amount</td>
+                                        <td className={tdStyle}>Branch</td>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -600,6 +618,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Bill_Qty', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Act_Qty}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
                                                     required
                                                 />
                                             </td>
@@ -630,6 +657,18 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     onChange={e => changeSelectedObjects(row, 'Amount', e.target.value)}
                                                     required
                                                 />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <select
+                                                    value={row?.Location_Id}
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(row, 'Location_Id', e.target.value)}
+                                                >
+                                                    <option value="">select</option>
+                                                    {godownLocations.map((o, i) => (
+                                                        <option value={o?.Godown_Id} key={i}>{o?.Godown_Name}</option>
+                                                    ))}
+                                                </select>
                                             </td>
                                         </tr>
                                     ))}
@@ -785,8 +824,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                         /> */}
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={closeDialogs} type="button">back</Button>
-                        <Button type='submit' variant="contained">submit</Button>
+
                     </DialogActions>
                 </form>
             </Dialog>

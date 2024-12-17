@@ -80,6 +80,7 @@ const PurchaseReportForCustomer = lazy(() => import("./Pages/Purchase/purchaseRe
 const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
 const PurchaseOrderTallyBasedReport = lazy(() => import("./Pages/Purchase/tallyBasedReport"))
 const PurchaseInvoiceManagement = lazy(() => import("./Pages/Purchase/purchaseInvoiceManagement"))
+const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
 
 
 // Payments
@@ -159,7 +160,8 @@ const RoutingArray = [
     { component: <PurchaseReportForCustomer />, path: '/erp/purchase/myPurchase' },
     { component: <PurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
     { component: <PurchaseOrderTallyBasedReport />, path: '/erp/purchase/tallyBasedReport' },
-    { component: <PurchaseInvoiceManagement />, path: '/erp/purchase/invoice' },
+    { component: <PurchaseInvoiceManagement />, path: '/erp/purchase/invoice/create' },
+    { component: <PurchaseInvoces />, path: '/erp/purchase/invoice' },
     // ERP - inventory
     { component: <DisplayNavigations />, path: '/erp/inventory' },
     { component: <StockReport />, path: '/erp/inventory/stockReport' },

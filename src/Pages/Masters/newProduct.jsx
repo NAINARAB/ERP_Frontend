@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent } from "@mui/material";
-import { Add, AddPhotoAlternate, Edit } from "@mui/icons-material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent, Tooltip } from "@mui/material";
+import { Add, AddPhotoAlternate, Edit, Sync } from "@mui/icons-material";
 import api from '../../API';
 import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../Components/imagePreview";
@@ -197,11 +197,25 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         setProductInputValue(initialInputValue);
     }
 
+    const syncLOS = () => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `masters/products/losSync`,
+            method: 'POST'
+        }).then(data => {
+            if (data.success) toast.success(data.message);
+            else toast.error(data.message);
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
+
     return (
         <>
             <Card component={Paper}>
                 <div className="p-3 pb-1 d-flex align-items-center flex-wrap">
                     <h6 className="flex-grow-1 fa-18">Products</h6>
+                    <Tooltip title='Sync Tally LOS'><IconButton onClick={syncLOS}><Sync /></IconButton></Tooltip>
 
                     <ProductAddEditComp
                         reload={() => setReload(pre => !pre)}
