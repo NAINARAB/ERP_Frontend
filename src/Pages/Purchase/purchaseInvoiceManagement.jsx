@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Button, Card, CardActions, CardContent, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Search } from "@mui/icons-material";
-import { checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom";
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
@@ -25,8 +26,10 @@ const taxCalc = (method = 1, amount = 0, percentage = 0) => {
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
-    // const user = localStorage.getItem('user');
-    // const storage = isValidJSON(user) ? JSON.parse(user) : {};
+    const user = localStorage.getItem('user');
+    const storage = isValidJSON(user) ? JSON.parse(user) : {};
+    const location = useLocation();
+    const stateDetails = location.state;
 
     const initialInvoiceValue = {
         PIN_Id: '',
@@ -34,6 +37,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Ref_Po_Inv_No: '',
         Branch_Id: '',
         Po_Inv_Date: ISOString(),
+        Po_Entry_Date: ISOString(),
         Retailer_Id: '',
         GST_Inclusive: 2,
         IS_IGST: 0,
@@ -47,8 +51,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Total_Tax: 0,
         Total_Invoice_value: 0,
         Cancel_status: 0,
-        Created_by: 0,
-        Altered_by: 0,
+        Voucher_Type: '',
+        Stock_Item_Ledger_Name: '',
+        Created_by: storage.UserId,
+        Altered_by: storage.UserId,
         Created_on: '',
         Alterd_on: '',
         Trans_Type: '',
@@ -64,13 +70,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         PIN_Id: '',
         Po_Inv_Date: '',
         S_No: '',
+        Location_Id: '',
         Item_Id: '',
         Bill_Qty: 0,
         Item_Rate: 0,
-        Act_Qty: 0,
+        Bill_Alt_Qty: 0,
         Free_Qty: 0,
         Unit_Id: '',
         Unit_Name: '',
+        Batch_No: '',
         Taxable_Rate: 0,
         Amount: 0,
         Total_Qty: 0,
@@ -87,10 +95,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Final_Amo: 0,
         Created_on: '',
     }
+
     const [vendorList, setVendorList] = useState([]);
     const [branches, setBranches] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
     const [products, setProducts] = useState([]);
+    const [voucherType, setVoucherType] = useState([]);
+    const [stockItemLedgerName, setStockItemLedgerName] = useState([]);
     const [godownLocations, setGodownLocations] = useState([]);
     const [baseDetails, setBaseDetails] = useState({
         vendor: 'search',
@@ -156,7 +167,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         TotalTax: 0
     });
 
-    useState(() => {
+    useEffect(() => {
         fetchLink({
             address: `masters/retailers/dropDown`
         }).then(data => {
@@ -194,66 +205,46 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e));
 
+        fetchLink({
+            address: `purchase/voucherType`
+        }).then(data => {
+            if (data.success) {
+                setVoucherType(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `purchase/stockItemLedgerName`
+        }).then(data => {
+            if (data.success) {
+                setStockItemLedgerName(data.data);
+            }
+        }).catch(e => console.error(e));
+
     }, [])
 
-    // useEffect(() => {
-    //     setInvoiceDetails(pre => ({
-    //         ...pre,
-    //         Total_Invoice_value: Total_Invoice_value,
-    //         Total_Before_Tax: totalValueBeforeTax.TotalValue,
-    //         Total_Tax: totalValueBeforeTax.TotalTax,
-    //         CSGT_Total: IS_IGST ? 0 : totalValueBeforeTax.TotalTax / 2,
-    //         SGST_Total: IS_IGST ? 0 : totalValueBeforeTax.TotalTax / 2,
-    //         IGST_Total: IS_IGST ? totalValueBeforeTax.TotalTax : 0,
-    //         Round_off: Total_Invoice_value - (
-    //             RoundNumber(totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax)
-    //         )
-    //     }))
-    // }, [totalValueBeforeTax, Total_Invoice_value])
-
-    // useState(() => {
-    //     const isInclusive = isEqualNumber(invoiceDetails.GST_Inclusive, 1);
-    //     const isIgst = isEqualNumber(invoiceDetails?.IS_IGST, 1);
-    //     const isNotTaxableBill = isEqualNumber(invoiceDetails?.GST_Inclusive, 2);
-    //     setSelectedItems(pre => {
-    //         const preItems = [...pre];
-    //         return preItems.map(item => {
-    //             const productDetails = findProductDetails(products, item.Item_Id)
-    //             const gstPercentage = isIgst ? productDetails.Igst_P : productDetails.Gst_P;
-    //             const Taxble = gstPercentage > 0 ? 1 : 0;
-    //             const Bill_Qty = Number(item.Bill_Qty);
-    //             const Item_Rate = RoundNumber(item.Item_Rate ?? 0);
-    //             const Amount = Bill_Qty * Item_Rate;
-    //             const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
-    //             const itemTaxRate = taxCalc(invoiceDetails.GST_Inclusive, Item_Rate, gstPercentage);
-    //             const Taxable_Rate = RoundNumber(Subraction(Item_Rate, itemTaxRate));
-
-    //             const Taxable_Amount = isInclusive ? (Amount - tax) : Amount;
-    //             const Final_Amo = isInclusive ? Amount : (Amount + tax);
-    //             const Cgst_Amo = !isIgst ? (taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) / 2) : 0;
-    //             const Igst_Amo = isIgst ? taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) : 0;
-    //             return Object.fromEntries(
-    //                 Object.entries(itemsRowDetails).map(([key, value]) => {
-    //                     switch (key) {
-    //                         case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
-    //                         case 'Taxble': return [key, Taxble]
-    //                         case 'Taxable_Amount': return [key, Taxable_Amount]
-    //                         case 'Tax_Rate': return [key, gstPercentage]
-    //                         case 'Cgst': return [key, (gstPercentage / 2) ?? 0]
-    //                         case 'Cgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-    //                         case 'Sgst': return [key, (gstPercentage / 2) ?? 0]
-    //                         case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-    //                         case 'Igst': return [key, (gstPercentage / 2) ?? 0]
-    //                         case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
-    //                         case 'Final_Amo': return [key, Final_Amo]
-
-    //                         default: return [key, value]
-    //                     }
-    //                 })
-    //             )
-    //         })
-    //     })
-    // }, [invoiceDetails.GST_Inclusive, invoiceDetails.IS_IGST, selectedItems, products])
+    useEffect(() => {
+        if (isValidObject(stateDetails) && Array.isArray(stateDetails?.orderInfo) && isValidObject(stateDetails?.invoiceInfo)) {
+            const { invoiceInfo, orderInfo } = stateDetails;
+            setInvoiceDetails(
+                Object.fromEntries(
+                    Object.entries(initialInvoiceValue).map(([key, value]) => {
+                        if (key === 'Po_Inv_Date') return [key, invoiceInfo[key] ? ISOString(invoiceInfo[key]) : value]
+                        if (key === 'Po_Entry_Date') return [key, invoiceInfo[key] ? ISOString(invoiceInfo[key]) : value]
+                        return [key, invoiceInfo[key] ?? value]
+                    })
+                )
+            );
+            setSelectedItems(
+                orderInfo.map(item => Object.fromEntries(
+                    Object.entries(itemsRowDetails).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            );
+            setDialogs(pre => ({ ...pre, nextStep: true }))
+        }
+    }, [stateDetails])
 
     const getVendorInfo = (vendor) => {
         if (loadingOn) loadingOn();
@@ -284,7 +275,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     const productDetails = findProductDetails(products, item.ItemId)
                     const gstPercentage = IS_IGST ? productDetails.Igst_P : productDetails.Gst_P;
                     const Taxble = gstPercentage > 0 ? 1 : 0;
-                    const Bill_Qty = Number(item.Quantity);
+                    const Bill_Qty = Number(item.Weight);
                     const Item_Rate = RoundNumber(item.BilledRate);
                     const Amount = Bill_Qty * Item_Rate;
                     const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
@@ -305,8 +296,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
                                 case 'Bill_Qty': return [key, Bill_Qty]
-                                case 'Item_Rate': return [key, Number(item?.BilledRate)]
-                                case 'Act_Qty': return [key, Number(item?.Weight)]
+                                case 'Item_Rate': return [key, Item_Rate]
+                                case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
+                                case 'Batch_No': return [key, item?.BatchLocation]
                                 case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
                                 case 'Amount': return [key, Amount]
                                 case 'Total_Qty': return [key, Bill_Qty]
@@ -380,10 +372,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
     const postOrder = () => {
         if (loadingOn) loadingOn();
-        // checkIsNumber(invoiceDetails?.PIN_Id) ? 'PUT' : 
         fetchLink({
             address: 'purchase/purchaseOrder',
-            method: 'POST',
+            method: checkIsNumber(invoiceDetails?.PIN_Id) ? 'PUT' : 'POST',
             bodyData: {
                 Product_Array: selectedItems,
                 ...invoiceDetails
@@ -445,7 +436,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             variant="outlined"
                             className="mx-2"
                             disabled={!checkIsNumber(baseDetails.vendorId)}
-                            // onClick={() => getVendorInfo(3440)}
+                            // onClick={() => getVendorInfo(3412)}
                             onClick={() => getVendorInfo(baseDetails.vendorId)}
                         ><Search /></Button>
                     </div>
@@ -542,7 +533,17 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 </select>
                             </div>
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Date <RequiredStar /></label>
+                                <label>Entry Date <RequiredStar /></label>
+                                <input
+                                    value={invoiceDetails?.Po_Entry_Date}
+                                    type="date"
+                                    required
+                                    className={inputStyle}
+                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Po_Entry_Date: e.target.value }))}
+                                />
+                            </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Bill Date <RequiredStar /></label>
                                 <input
                                     value={invoiceDetails?.Po_Inv_Date}
                                     type="date"
@@ -583,6 +584,42 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     <option value='1'>IGST</option>
                                 </select>
                             </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Voucher Type</label>
+                                <Select
+                                    value={{ value: invoiceDetails.Voucher_Type, label: invoiceDetails.Voucher_Type }}
+                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.label }))}
+                                    options={[
+                                        { value: '', label: 'Search', isDisabled: true },
+                                        ...voucherType.map(obj => ({
+                                            value: obj?.Voucher_Type,
+                                            label: obj?.Voucher_Type
+                                        }))
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Select Voucher Type"}
+                                    maxMenuHeight={300}
+                                />
+                            </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Stock Item Ledger Name</label>
+                                <Select
+                                    value={{ value: invoiceDetails.Stock_Item_Ledger_Name, label: invoiceDetails.Stock_Item_Ledger_Name }}
+                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Stock_Item_Ledger_Name: e.label }))}
+                                    options={[
+                                        { value: '', label: 'Search', isDisabled: true },
+                                        ...stockItemLedgerName.map(obj => ({
+                                            value: obj?.Stock_Item_Ledger_Name,
+                                            label: obj?.Stock_Item_Ledger_Name
+                                        }))
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Select"}
+                                    maxMenuHeight={300}
+                                />
+                            </div>
                         </div>
                         <div className="table-responsive">
                             <table className="table">
@@ -592,10 +629,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle}>Item</td>
                                         <td className={tdStyle}>Rate</td>
                                         <td className={tdStyle}>Quantity</td>
-                                        <td className={tdStyle}>Act-Qty</td>
                                         <td className={tdStyle}>Unit</td>
                                         <td className={tdStyle}>Amount</td>
-                                        <td className={tdStyle}>Branch</td>
+                                        <td className={tdStyle}>Godown Location</td>
+                                        <td className={tdStyle}>Batch</td>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -621,15 +658,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     required
                                                 />
                                             </td>
-                                            <td className={tdStyle}>
+                                            {/* <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Act_Qty}
+                                                    value={row?.Bill_Alt_Qty}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(row, 'Bill_Alt_Qty', e.target.value)}
                                                     required
                                                 />
-                                            </td>
+                                            </td> */}
                                             <td className={tdStyle}>
                                                 <select
                                                     value={row?.Unit_Id}
@@ -669,6 +706,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                         <option value={o?.Godown_Id} key={i}>{o?.Godown_Name}</option>
                                                     ))}
                                                 </select>
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Batch_No}
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(row, 'Batch_No', e.target.value)}
+                                                />
                                             </td>
                                         </tr>
                                     ))}

@@ -155,7 +155,13 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
-                                    navigateToPageWithState({ page: 'create' })
+                                    navigateToPageWithState({ 
+                                        page: 'create',  
+                                        stateToTransfer: {
+                                            invoiceInfo: row,
+                                            orderInfo: row?.Products_List
+                                        }
+                                    })
                                 }}
                                 size="small"
                             >
