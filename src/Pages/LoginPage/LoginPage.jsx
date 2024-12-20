@@ -12,13 +12,14 @@ function LoginPage({ setLoginTrue }) {
     const [isLoading, setIsLoading] = useState(false);
 
     const getLogin = async () => {
+        const APP_Type=2;
         setIsLoading(true);
         const passHash = encryptPasswordFun(password);
 
         fetchLink({
             address: `authorization/login`,
             method: 'POST',
-            bodyData: { username: userID, password: passHash }
+            bodyData: { username: userID, password: passHash ,APP_Type:APP_Type}
         }).then((data) => {
             if (data.success) {
                 const user = data.user;

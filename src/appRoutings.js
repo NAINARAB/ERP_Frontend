@@ -116,7 +116,14 @@ const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations
 // const TSK_MasterData = lazy(() => import('./Pages/SubMenu/TaskManagement/masterData'))
 const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/SalesDeliveryConvert"))
 
+
+const ProjectReports=lazy(()=>import ("./Pages/ProjectReports/reports"))
+const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"))
 const RoutingArray = [
+
+
+    {component :<ActivityTracking/>,path :'/userControl/activityTracking'},
+{component :<ProjectReports/>,path:'/taskManagement/report/projectReports'},
     // Dashboard
     { component: <CommonDashboard />, path: '/dashboard' },
 
