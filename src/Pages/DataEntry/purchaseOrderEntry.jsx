@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, ISOString } from "../../Components/functions";
+import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString } from "../../Components/functions";
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
 import { purchaseOrderDataSet, displayColumns } from "./purchaseOrderDataArray";
 import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "./purchaseOrderPreviewTemplate";
-
+import Select from 'react-select';
+import { customSelectStyles } from "../../Components/tablecolumn";
 
 const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
@@ -20,6 +21,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         TranspoterArray: [],
         display: false,
     });
+    const [vendorList, setVendorList] = useState([]);
 
     const nav = useNavigate();
 
@@ -28,11 +30,23 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         Todate: ISOString(),
         FilterDialog: false,
         OrderStatus: 'ITEMS',
+        vendorId: '',
+        vendor: '',
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
         view: 'PURCHASE ORDERS'
     })
+
+    useEffect(() => {
+        fetchLink({
+            address: `masters/retailers/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setVendorList(data.data);
+            }
+        }).catch(e => console.error(e));
+    }, [])
 
     useEffect(() => {
         fetchLink({
@@ -95,7 +109,10 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 <CardContent>
                     <FilterableTable
                         dataArray={purchaseOrderDataSet({
-                            data: purchaseOrderData,
+                            data: 
+                                checkIsNumber(filters.vendorId) ? (
+                                    purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
+                                ) : purchaseOrderData,
                             status: filters.OrderStatus
                         })}
                         columns={displayColumns({
@@ -133,6 +150,30 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     <table className="table m-0 border-0">
                         <tbody>
                             <tr>
+                                <td className="border-0 vctr">Vendor</td>
+                                <td className="border-0 vctr">
+                                    <Select
+                                        value={{ value: filters.vendorId, label: filters.vendor }}
+                                        onChange={e => setFilters(pre => ({
+                                            ...pre,
+                                            vendorId: e.value,
+                                            vendor: e.label
+                                        }))}
+                                        options={[
+                                            { value: '', label: 'Search', isDisabled: true },
+                                            ...vendorList.map(obj => ({
+                                                value: obj?.Retailer_Id,
+                                                label: obj?.Retailer_Name
+                                            }))
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Select Vendor"}
+                                        maxMenuHeight={300}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
                                 <td className="border-0 vctr">Fromdate</td>
                                 <td className="border-0 vctr">
                                     <input
@@ -169,8 +210,11 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                         </optgroup>
                                         <optgroup label="ORDER BASED">
                                             <option value={'ORDERS'}>ORDERS</option>
+                                            <option value={'COMPLETED ORDERS'}>COMPLETED ORDERS</option>
+                                            <option value={'IN-COMPLETED ORDERS'}>IN-COMPLETED ORDERS</option>
                                             {/* <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
                                             <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option> */}
+
                                         </optgroup>
                                         {/* <optgroup label="REPORTS">
                                             <option value="REPORT 1">REPORT 1</option>

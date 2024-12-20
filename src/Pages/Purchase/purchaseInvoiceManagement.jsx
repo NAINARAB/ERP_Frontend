@@ -628,7 +628,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle}>SNo</td>
                                         <td className={tdStyle}>Item</td>
                                         <td className={tdStyle}>Rate</td>
-                                        <td className={tdStyle}>Quantity</td>
+                                        <td className={tdStyle}>Bill Quantity</td>
+                                        <td className={tdStyle}>Acl Quantity</td>
                                         <td className={tdStyle}>Unit</td>
                                         <td className={tdStyle}>Amount</td>
                                         <td className={tdStyle}>Godown Location</td>
@@ -658,7 +659,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     required
                                                 />
                                             </td>
-                                            {/* <td className={tdStyle}>
+                                            <td className={tdStyle}>
                                                 <input
                                                     value={row?.Bill_Alt_Qty}
                                                     type="number"
@@ -666,7 +667,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     onChange={e => changeSelectedObjects(row, 'Bill_Alt_Qty', e.target.value)}
                                                     required
                                                 />
-                                            </td> */}
+                                            </td>
                                             <td className={tdStyle}>
                                                 <select
                                                     value={row?.Unit_Id}

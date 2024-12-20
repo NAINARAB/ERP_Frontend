@@ -1,6 +1,6 @@
-import { Addition, isEqualNumber, isGraterNumber, LocalDate, NumberFormat, Subraction } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, NumberFormat, Subraction } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
-import { Delete, Edit, Visibility } from '@mui/icons-material';
+import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
 export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
@@ -28,6 +28,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
                             LoadingDate: item.LoadingDate,
+                            IsConvertedAsInvoice: item.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -72,6 +73,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
                             LoadingDate: item.LoadingDate,
+                            IsConvertedAsInvoice: item.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -115,6 +117,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
                             LoadingDate: item.LoadingDate,
+                            IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -155,6 +158,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             OrderStatus: item?.OrderStatus,
                             ItemDetails: item.ItemDetails ?? [],
                             LoadingDate: item.LoadingDate,
+                            IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -187,6 +191,22 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
             return data.reduce((acc, item) => {
 
                 if (!Array.isArray(item?.DeliveryDetails) || isEqualNumber(item?.DeliveryDetails?.length, 0)) return acc;
+
+                return acc.concat(item);
+
+            }, [])
+        case 'COMPLETED ORDERS':
+            return data.reduce((acc, item) => {
+
+                if (item?.OrderStatus !== 'Completed') return acc;
+
+                return acc.concat(item);
+
+            }, [])
+        case 'IN-COMPLETED ORDERS':
+            return data.reduce((acc, item) => {
+
+                if (item?.OrderStatus === 'Completed') return acc;
 
                 return acc.concat(item);
 
@@ -270,7 +290,41 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </span>
                         </Tooltip>
 
-                        {navigation && (
+                        {(navigation && isEqualNumber(row?.IsConvertedAsInvoice, 0)) && (
+                            <Tooltip title='Convert to invoice'>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                        navigation({
+                                            page: '/erp/purchase/invoice/create',
+                                            stateToTransfer: {
+                                                invoiceInfo: {
+                                                    Branch_Id: OrderDetails?.BranchId,
+                                                    Po_Inv_Date: ISOString(),
+                                                    Po_Entry_Date: OrderDetails?.LoadingDate,
+                                                    Retailer_Id: OrderDetails?.PartyId,
+                                                },
+                                                orderInfo: DeliveryArray.map(item => ({
+                                                    POI_St_Id: '',
+                                                    DeliveryId: item?.Id,
+                                                    OrderId: item?.OrderId,
+                                                    Location_Id: item?.LocationId,
+                                                    Item_Id: item?.ItemId,
+                                                    Bill_Qty: item?.Weight,
+                                                    Item_Rate: item?.BilledRate,
+                                                    Amount: Multiplication(item?.BilledRate, item?.Weight),
+                                                    Bill_Alt_Qty: item?.Weight,
+                                                    Free_Qty: 0,
+                                                    Batch_No: item?.BatchLocation,
+                                                })),
+                                            }
+                                        })
+                                    }}
+                                ><ShoppingCartCheckout /></IconButton>
+                            </Tooltip>
+                        )}
+
+                        {(navigation && isEqualNumber(row?.IsConvertedAsInvoice, 0)) && (
                             <Tooltip title='Edit'>
                                 <span>
                                     <IconButton
@@ -292,15 +346,17 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </Tooltip >
                         )}
 
-                        <Tooltip title='Delete Order'>
-                            <span>
-                                <IconButton
-                                    size='small'
-                                    onClick={() => dialogs(pre => ({ ...pre, deleteOrderDialog: true, deleteOrderId: row?.Id }))}
-                                    color='error'
-                                ><Delete className="fa-16" /></IconButton>
-                            </span>
-                        </Tooltip>
+                        {isEqualNumber(row?.IsConvertedAsInvoice, 0) && (
+                            <Tooltip title='Delete Order'>
+                                <span>
+                                    <IconButton
+                                        size='small'
+                                        onClick={() => dialogs(pre => ({ ...pre, deleteOrderDialog: true, deleteOrderId: row?.Id }))}
+                                        color='error'
+                                    ><Delete className="fa-16" /></IconButton>
+                                </span>
+                            </Tooltip>
+                        )}
                     </>
                 )
             }
@@ -437,7 +493,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                 const OrderedItems = Array.isArray(row?.OrderDetails?.ItemDetails) ? row?.OrderDetails?.ItemDetails : [];
                 const OrderedRate = OrderedItems.find(o => isEqualNumber(o?.ItemId, row?.ItemId))?.Rate ?? 0
                 const BilledRate = Number(row?.BilledRate);
-                return `${BilledRate} (${isGraterNumber(BilledRate, OrderedRate) ? ('+'+ (BilledRate - OrderedRate)) : ('-' + (OrderedRate - BilledRate))})`
+                return `${BilledRate} (${isGraterNumber(BilledRate, OrderedRate) ? ('+' + (BilledRate - OrderedRate)) : ('-' + (OrderedRate - BilledRate))})`
             }
         }
 
@@ -467,6 +523,8 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                 ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM, ItemArrivedQuantity, PendingItemQuantity, Rate, ItemActions
             ];
         case 'ORDERS':
+        case 'COMPLETED ORDERS':
+        case 'IN-COMPLETED ORDERS':
             return [
                 OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, OwnerName, Remarks, GeneralStatus, OrderActions,
             ]
@@ -496,7 +554,6 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             return [
                 ItemPO_ID, ArrivedDate, ArrivedLocation, ItemLOLLedgerName, ItemLOLPartyDistrict, StockGroup, ArrivalRate, WeightWithUOM, PendingItemQuantity, ItemActions
             ]
-
         default:
             return [];
     }
