@@ -277,6 +277,11 @@ export const NumberFormat = (num) => {
     return Number(num).toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
+export const limitFractionDigits = (num = 0, maxFractionDigits = 2) => {
+    const factor = Math.pow(10, maxFractionDigits);
+    return Math.round(num * factor) / factor;
+}
+
 export const RoundNumber = (num) => {
     return checkIsNumber(num) ? Number(num).toFixed(2) : 0;
 }
@@ -290,17 +295,13 @@ export const indianCurrency = (number) => {
     }).format(num)
 };
 
-export const Addition = (a, b) => {
-    return Number(a) + Number(b)
-}
+export const Addition = (a, b) => limitFractionDigits(Number(a) + Number(b));
 
-export const Subraction = (a, b) => {
-    return Number(a) - Number(b)
-}
+export const Subraction = (a, b) => limitFractionDigits(Number(a) - Number(b));
 
-export const Multiplication = (a, b) => Number(a || 0) * Number(b || 0);
+export const Multiplication = (a, b) => limitFractionDigits(Number(a || 0) * Number(b || 0));
 
-export const Division = (a, b) => b !== 0 ? Number(a || 0) / Number(b || 1) : 0;
+export const Division = (a, b) => limitFractionDigits(b !== 0 ? Number(a || 0) / Number(b || 1) : 0);
 
 export const validValue = (val) => {
     return Boolean(val) ? val : ''

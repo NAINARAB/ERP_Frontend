@@ -301,7 +301,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                 invoiceInfo: {
                                                     Branch_Id: OrderDetails?.BranchId,
                                                     Po_Inv_Date: ISOString(),
-                                                    Po_Entry_Date: OrderDetails?.LoadingDate,
+                                                    Po_Entry_Date: OrderDetails?.LoadingDate ? ISOString(OrderDetails?.LoadingDate) : ISOString(),
                                                     Retailer_Id: OrderDetails?.PartyId,
                                                 },
                                                 orderInfo: DeliveryArray.map(item => ({

@@ -1,5 +1,5 @@
 import React, { Fragment, useRef, useState } from 'react';
-import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
+import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, Tooltip, Card } from '@mui/material';
 import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
 import { Download, KeyboardArrowDown, KeyboardArrowUp, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
 import jsPDF from 'jspdf';
@@ -407,29 +407,16 @@ const FilterableTable = ({
     }
 
     return (
-        <div className='rounded-3 bg-white overflow-hidden'>
+        <Card className='rounded-3 bg-white overflow-hidden' component={Paper}>
             <div
                 className="d-flex align-items-center flex-wrap px-3 py-2 flex-row-reverse "
             >
-                {/* {maxHeightOption && (
-                    <div>
-                        <label className="form-check-label p-1" htmlFor="fullHeight">Max Height</label>
-                        <input
-                            className="form-check-input shadow-none"
-                            style={{ padding: '0.7em' }}
-                            type="checkbox"
-                            id="fullHeight"
-                            checked={showFullHeight}
-                            onChange={e => setShowFullHeight(e.target.checked)}
-                        />
-                    </div>
-                )} */}
                 {(PDFPrintOption || ExcelPrintOption || MenuButtons.length > 0 || maxHeightOption) && <TableActions />}
                 {ButtonArea && ButtonArea}
                 {title && <h6 className='fw-bold text-muted flex-grow-1 m-0'>{title}</h6>}
             </div>
 
-            <TableContainer component={Paper} sx={{ maxHeight: tableHeight }}>
+            <TableContainer sx={{ maxHeight: tableHeight }}>
 
                 <Table stickyHeader size={CellSize}>
 
@@ -534,7 +521,7 @@ const FilterableTable = ({
                 </div>
             )}
 
-        </div>
+        </Card>
     );
 };
 

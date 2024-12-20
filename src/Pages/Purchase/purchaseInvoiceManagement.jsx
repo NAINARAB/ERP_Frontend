@@ -8,7 +8,7 @@ import { checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValid
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
@@ -29,6 +29,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const user = localStorage.getItem('user');
     const storage = isValidJSON(user) ? JSON.parse(user) : {};
     const location = useLocation();
+    const navigation = useNavigate();
     const stateDetails = location.state;
 
     const initialInvoiceValue = {
@@ -110,9 +111,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const [deliveryDetails, setDeliveryDetails] = useState([]);
     const [invoiceDetails, setInvoiceDetails] = useState(initialInvoiceValue);
     const [selectedItems, setSelectedItems] = useState([]);
-    const [dialogs, setDialogs] = useState({
-        nextStep: false,
-    });
+    const [dialogs, setDialogs] = useState(false);
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
     const isExclusiveBill = isEqualNumber(invoiceDetails?.GST_Inclusive, 0);
@@ -242,7 +241,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-            setDialogs(pre => ({ ...pre, nextStep: true }))
+            setDialogs(true)
         }
     }, [stateDetails])
 
@@ -277,7 +276,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     const Taxble = gstPercentage > 0 ? 1 : 0;
                     const Bill_Qty = Number(item.Weight);
                     const Item_Rate = RoundNumber(item.BilledRate);
-                    const Amount = Bill_Qty * Item_Rate;
+                    const Amount = Multiplication(Bill_Qty, Item_Rate);
                     const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
                     const itemTaxRate = taxCalc(invoiceDetails.GST_Inclusive, Item_Rate, gstPercentage);
                     const Taxable_Rate = RoundNumber(Subraction(Item_Rate, itemTaxRate));
@@ -325,9 +324,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     };
 
     const closeDialogs = () => {
-        setDialogs({
-            nextStep: false,
-        })
+        setDialogs(false);
+        setSelectedItems([]);
+        setInvoiceDetails(initialInvoiceValue);
+        setDeliveryDetails([]);
+        if ((Array.isArray(stateDetails?.orderInfo) || isValidObject(stateDetails?.invoiceInfo)) && window.history.length > 1) {
+            navigation(-1);
+        } else {
+            navigation(location.pathname, { replace: true, state: null });
+        }
     }
 
     const changeSelectedObjects = (row, key, value) => {
@@ -381,11 +386,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             }
         }).then(data => {
             if (data.success) {
-                toast.success(data?.message || 'Saved');
+                toast.success(data?.message || 'Saved');    
                 closeDialogs();
-                setSelectedItems([]);
-                setInvoiceDetails(initialInvoiceValue);
-                setDeliveryDetails([])
             } else {
                 toast.error(data?.message || 'Request Failed')
             }
@@ -404,7 +406,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     <Button
                         variant="contained"
                         className='ms-2'
-                        onClick={() => setDialogs(pre => ({ ...pre, nextStep: true }))}
+                        onClick={() => setDialogs(true)}
                         disabled={selectedItems.length === 0}
                     >next</Button>
                 </div>
@@ -490,7 +492,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             </Card>
 
             <Dialog
-                open={dialogs.nextStep}
+                open={dialogs}
                 onClose={closeDialogs}
                 fullScreen
             >
@@ -501,7 +503,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     <DialogTitle className='d-flex flex-wrap align-items-center border-bottom '>
                         <span className="flex-grow-1">Create Invoice</span>
                         <span>
-                            <Button onClick={closeDialogs} type="button" className='me-2'>back</Button>
+                            <Button onClick={closeDialogs} type="button" className='me-2'>cancel</Button>
                             <Button type='submit' variant="contained">submit</Button>
                         </span>
                     </DialogTitle>

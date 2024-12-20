@@ -294,7 +294,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                     </td>
                                 </tr>
 
-                                <tr>
+                                {/* <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Created By</td>
                                     <td>
                                         <Select
@@ -309,7 +309,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                             placeholder={"Sales Person Name"}
                                         />
                                     </td>
-                                </tr>
+                                </tr> */}
 
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
@@ -335,7 +335,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                     </td>
                                 </tr>
 
-                                <tr>
+                                {/* <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
                                     <td>
                                         <select
@@ -348,7 +348,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                             <option value={0}>Hide</option>
                                         </select>
                                     </td>
-                                </tr>
+                                </tr> */}
 
                             </tbody>
                         </table>

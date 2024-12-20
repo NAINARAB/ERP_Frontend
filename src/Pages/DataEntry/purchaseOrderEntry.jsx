@@ -92,42 +92,50 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
-            <Card>
+            {/* <Card>
                 <div className="p-2 d-flex flex-wrap align-items-center">
                     <h5 className="m-0 flex-grow-1">Purchase Order</h5>
-                    <IconButton
-                        size="small"
-                        className="me-2"
-                        onClick={() => setFilters(pre => ({ ...pre, FilterDialog: true }))}
-                    ><FilterAlt /></IconButton>
-                    <Button
-                        variant="outlined"
-                        onClick={() => nav('create')}
-                    >Add</Button>
+                    
                 </div>
 
                 <CardContent>
-                    <FilterableTable
-                        dataArray={purchaseOrderDataSet({
-                            data: 
-                                checkIsNumber(filters.vendorId) ? (
-                                    purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
-                                ) : purchaseOrderData,
-                            status: filters.OrderStatus
-                        })}
-                        columns={displayColumns({
-                            OrderStatus: filters.OrderStatus,
-                            dialogs: setFilters,
-                            setOrderPreview,
-                            navigation: navigateToPageWithState
-                        })}
-                        tableMaxHeight={750}
-                        EnableSerialNumber
-                        title={filters.OrderStatus}
-                    />
+
 
                 </CardContent>
-            </Card>
+            </Card> */}
+
+            <FilterableTable
+                dataArray={purchaseOrderDataSet({
+                    data:
+                        checkIsNumber(filters.vendorId) ? (
+                            purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
+                        ) : purchaseOrderData,
+                    status: filters.OrderStatus
+                })}
+                columns={displayColumns({
+                    OrderStatus: filters.OrderStatus,
+                    dialogs: setFilters,
+                    setOrderPreview,
+                    navigation: navigateToPageWithState
+                })}
+                tableMaxHeight={650}
+                EnableSerialNumber
+                title={'Purchase Order - ' + filters.OrderStatus}
+                maxHeightOption
+                ButtonArea={
+                    <>
+                        <Button
+                            variant="outlined"
+                            onClick={() => nav('create')}
+                        >Add</Button>
+                        <IconButton
+                            size="small"
+                            className="me-2"
+                            onClick={() => setFilters(pre => ({ ...pre, FilterDialog: true }))}
+                        ><FilterAlt /></IconButton>
+                    </>
+                }
+            />
 
             {orderPreview.display && (
                 <PurchaseOrderPreviewTemplate

@@ -3,13 +3,13 @@ import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, Di
 import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
+import { Addition, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
 import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility  } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "./convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
-import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation"; 
+import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation";
 // import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
 
 // import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
@@ -23,10 +23,10 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
-    const [confirmDialog,setConfirmDialog]=useState(false)
+    const [confirmDialog, setConfirmDialog] = useState(false)
 
     const [filters, setFilters] = useState({
-        Fromdate: getPreviousDate(7),
+        Fromdate: ISOString(),
         Todate: ISOString(),
         Retailer_Id: '',
         RetailerGet: 'ALL',
@@ -266,6 +266,8 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         setConfirmDialog(false)
     }
 
+    const Total_Invoice_value = saleOrders.reduce((acc, orders) => Addition(acc, orders?.Total_Invoice_value), 0);
+
     return (
         <>
             <Card>
@@ -302,14 +304,17 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
                 <CardContent className="p-0 ">
                     {screen ? (
-                        <FilterableTable
-                            dataArray={saleOrders}
-                            columns={saleOrderColumn}
-                            // EnableSerialNumber={true}
-                            isExpendable={true}
-                            tableMaxHeight={550}
-                            expandableComp={ExpendableComponent}
-                        />
+                        <>
+                            <FilterableTable
+                                dataArray={saleOrders}
+                                columns={saleOrderColumn}
+                                // EnableSerialNumber={true}
+                                isExpendable={true}
+                                tableMaxHeight={550}
+                                expandableComp={ExpendableComponent}
+                            />
+                            <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({saleOrders?.length}) : {Total_Invoice_value}</h6> 
+                        </>
                     ) : (
                         <NewSaleOrderCreation
                             editValues={orderInfo}
@@ -338,115 +343,115 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             )}
 
 
-   <Dialog
-    open={confirmDialog}
-    onClose={closeDialog}
-    fullWidth maxWidth='sm'
->
-    <DialogTitle>Filters</DialogTitle>
-    <DialogContent>
-        <div className="table-responsive pb-4">
-            <table className="table">
-                <tbody>
+            <Dialog
+                open={confirmDialog}
+                onClose={closeDialog}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Filters</DialogTitle>
+                <DialogContent>
+                    <div className="table-responsive pb-4">
+                        <table className="table">
+                            <tbody>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Retailer Name"}
-                            />
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
+                                            onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Retailer Name"}
+                                        />
+                                    </td>
+                                </tr>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
+                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                        />
+                                    </td>
+                                </tr>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                        <td>
-                            <Select
-                                value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Sales Person Name"}
-                            />
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
+                                            onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                        />
+                                    </td>
+                                </tr>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>From</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Fromdate}
-                                onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>From</td>
+                                    <td>
+                                        <input
+                                            type="date"
+                                            value={filters.Fromdate}
+                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
+                                            className="cus-inpt"
+                                        />
+                                    </td>
+                                </tr>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>To</td>
-                        <td>
-                            <input
-                                type="date"
-                                value={filters.Todate}
-                                onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                className="cus-inpt"
-                            />
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>To</td>
+                                    <td>
+                                        <input
+                                            type="date"
+                                            value={filters.Todate}
+                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
+                                            className="cus-inpt"
+                                        />
+                                    </td>
+                                </tr>
 
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
-                        <td>
-                            <select
-                                type="date"
-                                value={filters.Cancel_status}
-                                onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
-                                className="cus-inpt"
-                            >
-                                <option value={1}>Show</option>
-                                <option value={0}>Hide</option>
-                            </select>
-                        </td>
-                    </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
+                                    <td>
+                                        <select
+                                            type="date"
+                                            value={filters.Cancel_status}
+                                            onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
+                                            className="cus-inpt"
+                                        >
+                                            <option value={1}>Show</option>
+                                            <option value={0}>Hide</option>
+                                        </select>
+                                    </td>
+                                </tr>
 
-                </tbody>
-            </table>
-        </div>
-    </DialogContent>
-    <DialogActions>
-        <Button onClick={closeDialog}>close</Button>
-    </DialogActions>
-</Dialog>
+                            </tbody>
+                        </table>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDialog}>close</Button>
+                </DialogActions>
+            </Dialog>
 
             <Dialog
                 open={dialog.filters}
