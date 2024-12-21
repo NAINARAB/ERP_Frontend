@@ -305,7 +305,7 @@ function ListingTask({ dialogOpen, setDialogOpen, projectid, reload, onReload, s
 
 
 	const handleSchTypeChange = (e) => {
-		console.log("e", e)
+		
 		const selectedOption = scheduleTypes.find(option => option.Sch_Type_Id === parseInt(e.target.value));
 		if (selectedOption) {
 			setTaskScheduleInput({
