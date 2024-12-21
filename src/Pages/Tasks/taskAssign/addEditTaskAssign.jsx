@@ -6,7 +6,7 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
 
-const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
+const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editData }) => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
  
@@ -38,29 +38,29 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
     const [assignEmpInpt, setAssignEmpInpt] = useState(intitalVlaue);
     
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const userResponse =  await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
-                const schTypeResponse =  await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
-
-
-                if (userResponse.success) setUsersDropdown(userResponse.data || []);
-                if (schTypeResponse.success) {
-                
-       }
-                
-            } catch (error) {
-                toast.error("Failed to fetch data.");
-            } finally {
-                setLoading(false);
-            }
-        };
+ 
 
         if (open) fetchData();
     }, [projectId, open, reload]);
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const userResponse =  await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
+            const schTypeResponse =  await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
 
+
+            if (userResponse.success) setUsersDropdown(userResponse.data || []);
+            if (schTypeResponse.success) {
+            
+   }
+            
+        } catch (error) {
+            toast.error("Failed to fetch data.");
+        } finally {
+            setLoading(false);
+        }
+    };
     useEffect(() => {
  
         const fetchSelectedData = async () => {
@@ -211,7 +211,9 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload, editData }) => {
             if (response.success) {
                 toast.success(`Task ${editData ? 'updated' : 'assigned'} successfully!`);
                 setAssignEmpInpt({});
-
+                if (onReload) {
+                    onReload();  
+                }
                 onClose();
         
 
