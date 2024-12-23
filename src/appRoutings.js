@@ -81,6 +81,7 @@ const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purc
 const PurchaseOrderTallyBasedReport = lazy(() => import("./Pages/Purchase/tallyBasedReport"))
 const PurchaseInvoiceManagement = lazy(() => import("./Pages/Purchase/purchaseInvoiceManagement"))
 const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
+const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"))
 
 
 // Payments
@@ -117,13 +118,13 @@ const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations
 const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/SalesDeliveryConvert"))
 
 
-const ProjectReports=lazy(()=>import ("./Pages/ProjectReports/reports"))
+const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"))
 const RoutingArray = [
 
 
-    {component :<ActivityTracking/>,path :'/userControl/activityTracking'},
-{component :<ProjectReports/>,path:'/taskManagement/report/projectReports'},
+    { component: <ActivityTracking />, path: '/userControl/activityTracking' },
+    { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
     // Dashboard
     { component: <CommonDashboard />, path: '/dashboard' },
 
@@ -153,8 +154,8 @@ const RoutingArray = [
 
     // ERP 
     // ERP - master
-    { component: <DisplayNavigations />, path: '/erp/master' }, 
-    { component: <ProductsMaster />, path: '/erp/master/products' }, 
+    { component: <DisplayNavigations />, path: '/erp/master' },
+    { component: <ProductsMaster />, path: '/erp/master/products' },
     { component: <RetailersMaster />, path: '/erp/master/retailers' },
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
@@ -173,6 +174,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/inventory' },
     { component: <StockReport />, path: '/erp/inventory/stockReport' },
     { component: <LiveStockReport />, path: '/erp/inventory/losStockReport' },
+    { component: <TallyStockJournalList />, path: '/erp/inventory/tallyStockJournal' },
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
@@ -212,7 +214,7 @@ const RoutingArray = [
     { component: <ChartsReport />, path: '/taskManagement/report/activityGraph' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
     { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
-    
+
     // User Control
     { component: <CompanyInfo />, path: '/userControl/company' },
     { component: <Users />, path: '/userControl/users' },
@@ -225,7 +227,7 @@ const RoutingArray = [
     { component: <MenuManagement />, path: '/userControl/appMenu' },
     // { component: <WorkDoneHistory />, path: '' }, // will not work
     // { component: <ItemBasedReport />, path: '' }, // will not work
-    { component: <SalesDelivery/>, path: '/erp/sales/salesDelivery' },
+    { component: <SalesDelivery />, path: '/erp/sales/salesDelivery' },
 ];
 
 export default RoutingArray

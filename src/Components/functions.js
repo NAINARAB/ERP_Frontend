@@ -1,6 +1,13 @@
 import CryptoJS from "crypto-js";
 import { encryptionKey } from "../encryptionKey";
 
+export const getSessionUser = () => {
+    const storage = localStorage.getItem('user');
+    const user = isValidJSON(storage) ? JSON.parse(storage) : {};
+
+    return { storage, user }
+}
+
 export const encryptPasswordFun = (str) => {
     return CryptoJS.AES.encrypt(str, encryptionKey).toString();
 }

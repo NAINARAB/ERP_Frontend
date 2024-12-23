@@ -265,7 +265,7 @@ const EmployeeMaster = () => {
         {
             label: 'Attendance Id (Finger Print)',
             elem: 'input',
-            oninput: (e) => onlynum(e),
+            // oninput: (e) => onlynum(e),
             class: inputclass,
             placeholder: "Enter Employee Attendance Master Id",
             event: (e) => setEmpFormData({ ...empFormData, fingerPrintEmpId: e.target.value }),

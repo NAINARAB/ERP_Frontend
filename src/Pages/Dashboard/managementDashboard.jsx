@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { groupData, ISOString, NumberFormat } from "../../Components/functions";
+import { checkIsNumber, groupData, ISOString, NumberFormat } from "../../Components/functions";
 import { ShoppingCart } from "@mui/icons-material";
 import { LuArrowUpWideNarrow } from "react-icons/lu";
 import { HiOutlineCurrencyRupee } from "react-icons/hi";
@@ -78,10 +78,15 @@ const ManagementDashboard = () => {
 
     const [popUpDetails, setPopUpDetails] = useState({
         salesDetails: [],
+        erpPurchaseCount: 0,
+        erpPurchaseAmount: 0,
+        tallyPurchaseCount: 0,
+        tallyPurchaseAmount: 0,
     });
 
     const [popUpDialogs, setPopUpDialogs] = useState({
         salesDetails: false,
+        purchaseDetails: false,
     })
 
     const [filter, setFilter] = useState({
@@ -121,8 +126,30 @@ const ManagementDashboard = () => {
                     setPopUpDetails(pre => ({ ...pre, salesDetails: []}));
                 }
             }).catch(e => console.error(e))
+
+            fetchLink({
+                address: `dashboard/purchaseInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
+            }).then(data => {
+                if (data.success) {
+                    const tallyInfo = data.data[0][0] || {};
+                    const erpInfo = data.data[1][0] || {};
+                    setPopUpDetails(pre => ({
+                        ...pre,
+                        erpPurchaseCount: checkIsNumber(erpInfo?.Purchase_Count) ? erpInfo?.Purchase_Count : 0,
+                        erpPurchaseAmount: checkIsNumber(erpInfo?.Purchase_Amount) ? erpInfo?.Purchase_Amount : 0,
+                        tallyPurchaseCount: checkIsNumber(tallyInfo?.Tally_Purchase_Count) ? tallyInfo?.Tally_Purchase_Count : 0,
+                        tallyPurchaseAmount: checkIsNumber(tallyInfo?.Tally_Purchase_Amount) ? tallyInfo?.Tally_Purchase_Amount : 0,
+                    }));
+                }
+            }).catch(e => console.error(e))
         }
     }, [filter.date]);
+
+    const closeDialog = () => {
+        setPopUpDialogs(pre => Object.fromEntries(
+            Object.entries(pre).map(([key, value]) => [key, false])
+        ))
+    }
 
     const salesDetailsGrouped = groupData(popUpDetails?.salesDetails, 'Party_Group');
 
@@ -154,6 +181,9 @@ const ManagementDashboard = () => {
                                 case 'SALES':
                                     setPopUpDialogs(pre => ({ ...pre, salesDetails: true }));
                                     break;
+                                case 'PURCHASE':
+                                    setPopUpDialogs(pre => ({ ...pre, purchaseDetails: true }));
+                                    break;
                                 default:
                                     break;
                             }
@@ -177,7 +207,7 @@ const ManagementDashboard = () => {
 
             <Dialog
                 open={popUpDialogs.salesDetails}
-                onClose={() => setPopUpDialogs(pre => ({ ...pre, salesDetails: false }))}
+                onClose={closeDialog}
                 fullWidth maxWidth='sm'
             >
                 <DialogTitle>
@@ -193,13 +223,6 @@ const ManagementDashboard = () => {
                     </span>
                 </DialogTitle>
                 <DialogContent>
-                    {/* <DisplayArrayData 
-                        dataArray={popUpDetails.salesDetails} 
-                        columns={Object.keys(popUpDetails?.salesDetails[0] ?? {}).map(head => ({
-                            Column_Name: head,
-                            Data_Type: 'string'
-                        }))} 
-                    /> */}
                     <FilterableTable 
                         dataArray={salesDetailsGrouped}
                         columns={[
@@ -237,27 +260,55 @@ const ManagementDashboard = () => {
                             />
                         )}
                     />
-                    {/* <div className="table-responsive">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    {Object.keys(popUpDetails?.salesDetails[0] ?? {}).map(head => (
-                                        <th className="fa-14 border ">{head}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    {Object.keys(popUpDetails.salesDetails).map(head => (
-                                        <th className="fa-14 border ">{head}</th>
-                                    ))}
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div> */}
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPopUpDialogs(pre => ({ ...pre, salesDetails: false }))}></Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={popUpDialogs.purchaseDetails}
+                onClose={closeDialog}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>
+                    <span>
+                        <h4 className='d-flex justify-content-between flex-wrap'>
+                            <span>Purchase Details</span>
+                        </h4>
+                    </span>
+                </DialogTitle>
+                <DialogContent>
+                    <table className="table">
+                        <tbody>
+                            <tr>
+                                <td className="fa-14 border p-2 text-center fw-bold" colSpan={2}>ERP</td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 border p-2 ">Count</td>
+                                <td className="fa-14 border p-2 ">{NumberFormat(popUpDetails.erpPurchaseCount)}</td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 border p-2 ">Amount</td>
+                                <td className="fa-14 border p-2 ">{NumberFormat(popUpDetails.erpPurchaseAmount)}</td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 border p-2 text-center fw-bold" colSpan={2}>Tally</td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 border p-2 ">Count</td>
+                                <td className="fa-14 border p-2 ">{NumberFormat(popUpDetails.tallyPurchaseCount)}</td>
+                            </tr>
+                            <tr>
+                                <td className="fa-14 border p-2 ">Amount</td>
+                                <td className="fa-14 border p-2 ">{NumberFormat(popUpDetails.tallyPurchaseAmount)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDialog}></Button>
                 </DialogActions>
             </Dialog>
         </>
