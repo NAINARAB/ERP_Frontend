@@ -74,6 +74,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Location_Id: '',
         Item_Id: '',
         Bill_Qty: 0,
+        Act_Qty: 0,
         Item_Rate: 0,
         Bill_Alt_Qty: 0,
         Free_Qty: 0,
@@ -295,6 +296,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
                                 case 'Bill_Qty': return [key, Bill_Qty]
+                                case 'Act_Qty' : return [key, Bill_Qty]
                                 case 'Item_Rate': return [key, Item_Rate]
                                 case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
                                 case 'Batch_No': return [key, item?.BatchLocation]
@@ -600,6 +602,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
+                                    required={true}
                                     placeholder={"Select Voucher Type"}
                                     maxMenuHeight={300}
                                 />
@@ -617,6 +620,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         }))
                                     ]}
                                     styles={customSelectStyles}
+                                    required={true}
                                     isSearchable={true}
                                     placeholder={"Select"}
                                     maxMenuHeight={300}
@@ -663,10 +667,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Bill_Alt_Qty}
+                                                    value={row?.Act_Qty}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Bill_Alt_Qty', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
                                                     required
                                                 />
                                             </td>

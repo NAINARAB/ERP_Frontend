@@ -297,41 +297,16 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
         setTransportInput(initialTranspoterDetailsValue);
     }
 
-    // const saveDeliveryDetails = () => {
-    //     if (loadingOn) {
-    //         loadingOn();
-    //     }
-    //     if (OrderDetails.Id) {
-    //         fetchLink({
-    //             address: `dataEntry/purchaseOrderEntry/ArrivalUpdate`,
-    //             method: 'PUT',
-    //             bodyData: {
-    //                 OrderDetails: OrderDetails,
-    //                 DelivdryDetails: DeliveryArray,
-    //                 TranspoterDetails: TranspoterArray
-    //             }
-    //         }).then(data => {
-    //             if (data?.success) {
-    //                 setOrderDetails(initialOrderDetailsValue);
-    //                 setOrderItemArray([]);
-    //                 setDeliveryArray([]);
-    //                 setTranspoterArray([]);
-    //             }
-    //         }).catch(e => console.error(e)).finally(() => {
-    //             if (loadingOff) {
-    //                 loadingOff();
-    //             }
-    //         });
-    //     }
-    // }
-
     return (
         <Card>
             <CardContent>
 
                 <div className="d-flex flex-wrap">
                     <h5 className='flex-grow-1'>Purchase Order</h5>
-                    <Button variant='outlined' onClick={() => nav('/dataEntry/purchaseOrder')}>back</Button>
+                    <Button
+                        variant='outlined'
+                        onClick={() => nav(window.history.length > 1 ? -1 : '/dataEntry/purchaseOrder')}
+                    >back</Button>
                 </div>
 
                 {!OrderDetails.Id && (

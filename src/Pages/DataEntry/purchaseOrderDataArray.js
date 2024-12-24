@@ -290,39 +290,44 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </span>
                         </Tooltip>
 
-                        {(navigation && isEqualNumber(row?.IsConvertedAsInvoice, 0)) && (
-                            <Tooltip title='Convert to invoice'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                        navigation({
-                                            page: '/erp/purchase/invoice/create',
-                                            stateToTransfer: {
-                                                invoiceInfo: {
-                                                    Branch_Id: OrderDetails?.BranchId,
-                                                    Po_Inv_Date: ISOString(),
-                                                    Po_Entry_Date: OrderDetails?.LoadingDate ? ISOString(OrderDetails?.LoadingDate) : ISOString(),
-                                                    Retailer_Id: OrderDetails?.PartyId,
-                                                },
-                                                orderInfo: DeliveryArray.map(item => ({
-                                                    POI_St_Id: '',
-                                                    DeliveryId: item?.Id,
-                                                    OrderId: item?.OrderId,
-                                                    Location_Id: item?.LocationId,
-                                                    Item_Id: item?.ItemId,
-                                                    Bill_Qty: item?.Weight,
-                                                    Item_Rate: item?.BilledRate,
-                                                    Amount: Multiplication(item?.BilledRate, item?.Weight),
-                                                    Bill_Alt_Qty: item?.Weight,
-                                                    Free_Qty: 0,
-                                                    Batch_No: item?.BatchLocation,
-                                                })),
-                                            }
-                                        })
-                                    }}
-                                ><ShoppingCartCheckout /></IconButton>
-                            </Tooltip>
-                        )}
+                        {(
+                            navigation
+                            && isEqualNumber(row?.IsConvertedAsInvoice, 0)
+                            && OrderDetails?.OrderStatus === 'Completed'
+                        ) && (
+                                <Tooltip title='Convert to invoice'>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                            navigation({
+                                                page: '/erp/purchase/invoice/create',
+                                                stateToTransfer: {
+                                                    invoiceInfo: {
+                                                        Branch_Id: OrderDetails?.BranchId,
+                                                        Po_Inv_Date: ISOString(),
+                                                        Po_Entry_Date: OrderDetails?.LoadingDate ? ISOString(OrderDetails?.LoadingDate) : ISOString(),
+                                                        Retailer_Id: OrderDetails?.PartyId,
+                                                    },
+                                                    orderInfo: DeliveryArray.map(item => ({
+                                                        POI_St_Id: '',
+                                                        DeliveryId: item?.Id,
+                                                        OrderId: item?.OrderId,
+                                                        Location_Id: item?.LocationId,
+                                                        Item_Id: item?.ItemId,
+                                                        Bill_Qty: item?.Weight,
+                                                        Act_Qty: item?.Weight,
+                                                        Bill_Alt_Qty: item?.Quantity,
+                                                        Item_Rate: item?.BilledRate,
+                                                        Amount: Multiplication(item?.BilledRate, item?.Weight),
+                                                        Free_Qty: 0,
+                                                        Batch_No: item?.BatchLocation,
+                                                    })),
+                                                }
+                                            })
+                                        }}
+                                    ><ShoppingCartCheckout /></IconButton>
+                                </Tooltip>
+                            )}
 
                         {(navigation && isEqualNumber(row?.IsConvertedAsInvoice, 0)) && (
                             <Tooltip title='Edit'>

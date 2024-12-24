@@ -9,7 +9,7 @@ import { PiHandCoinsFill } from "react-icons/pi";
 import { FaCubesStacked } from "react-icons/fa6";
 import { fetchLink } from "../../Components/fetchComponent";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import FilterableTable from '../../Components/filterableTable2';
+import FilterableTable, { createCol } from '../../Components/filterableTable2';
 
 
 const getIcons = (str) => {
@@ -47,7 +47,6 @@ const getIcons = (str) => {
     return iconArr.find(o => str === o.str)?.icon || <></>
 }
 
-
 const CardComp = ({ title, icon, firstVal, secondVal, classCount, onClick }) => {
     return (
         <>
@@ -67,8 +66,7 @@ const CardComp = ({ title, icon, firstVal, secondVal, classCount, onClick }) => 
     )
 }
 
-
-const ManagementDashboard = () => {
+const ManagementDashboard = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const UserAccess = Number(storage?.UserTypeId) === 2 || Number(storage?.UserTypeId) === 0 || Number(storage?.UserTypeId) === 1;
 
@@ -82,11 +80,13 @@ const ManagementDashboard = () => {
         erpPurchaseAmount: 0,
         tallyPurchaseCount: 0,
         tallyPurchaseAmount: 0,
+        morePurchaseInfo: [],
     });
 
     const [popUpDialogs, setPopUpDialogs] = useState({
         salesDetails: false,
         purchaseDetails: false,
+        purchaseMoreDetails: false,
     })
 
     const [filter, setFilter] = useState({
@@ -123,12 +123,13 @@ const ManagementDashboard = () => {
                         salesDetails: data.data ?? []
                     }));
                 } else {
-                    setPopUpDetails(pre => ({ ...pre, salesDetails: []}));
+                    setPopUpDetails(pre => ({ ...pre, salesDetails: [] }));
                 }
             }).catch(e => console.error(e))
 
             fetchLink({
                 address: `dashboard/purchaseInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
+                method: 'GET',
             }).then(data => {
                 if (data.success) {
                     const tallyInfo = data.data[0][0] || {};
@@ -148,7 +149,25 @@ const ManagementDashboard = () => {
     const closeDialog = () => {
         setPopUpDialogs(pre => Object.fromEntries(
             Object.entries(pre).map(([key, value]) => [key, false])
-        ))
+        ));
+        setPopUpDetails(pre => ({ ...pre, morePurchaseInfo: [] }))
+    }
+
+    const fetchMorePurchaseDetails = () => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `dashboard/purchaseInfo/moreInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
+        }).then(data => {
+            if (data.success) {
+                setPopUpDetails(pre => ({
+                    ...pre,
+                    morePurchaseInfo: data.data ?? []
+                }));
+                setPopUpDialogs(pre => ({ ...pre, purchaseMoreDetails: true }));
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     }
 
     const salesDetailsGrouped = groupData(popUpDetails?.salesDetails, 'Party_Group');
@@ -223,7 +242,7 @@ const ManagementDashboard = () => {
                     </span>
                 </DialogTitle>
                 <DialogContent>
-                    <FilterableTable 
+                    <FilterableTable
                         dataArray={salesDetailsGrouped}
                         columns={[
                             {
@@ -242,7 +261,7 @@ const ManagementDashboard = () => {
                         EnableSerialNumber
                         isExpendable={true}
                         expandableComp={({ row }) => (
-                            <FilterableTable 
+                            <FilterableTable
                                 dataArray={row?.groupedData ?? []}
                                 columns={[
                                     {
@@ -274,8 +293,8 @@ const ManagementDashboard = () => {
             >
                 <DialogTitle>
                     <span>
-                        <h4 className='d-flex justify-content-between flex-wrap'>
-                            <span>Purchase Details</span>
+                        <h4 className='d-flex flex-wrap'>
+                            <span className="flex-grow-1">Purchase Details</span>
                         </h4>
                     </span>
                 </DialogTitle>
@@ -308,7 +327,35 @@ const ManagementDashboard = () => {
                     </table>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={closeDialog}></Button>
+                    <Button onClick={closeDialog}>close</Button>
+                    <Button
+                        variant="outlined"
+                        onClick={fetchMorePurchaseDetails}
+                    >View More</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={popUpDialogs.purchaseMoreDetails}
+                onClose={closeDialog}
+                fullWidth maxWidth='lg'
+            >
+                <DialogContent>
+                    <FilterableTable 
+                        dataArray={popUpDetails?.morePurchaseInfo || []}
+                        title="Purchase Details"
+                        columns={[
+                            createCol('invoice_no', 'string', 'Invoice No'),
+                            createCol('reference_no', 'string', 'Ref No'),
+                            createCol('invoice_date', 'date', 'Date'),
+                            createCol('ledger_name', 'string', 'Ledger Name'),
+                            createCol('voucher_name', 'string', 'Voucher Name'),
+                            createCol('total_invoice_value', 'number', 'Invoice Value'),
+                        ]}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDialog}>close</Button>
                 </DialogActions>
             </Dialog>
         </>

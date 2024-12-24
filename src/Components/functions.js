@@ -167,6 +167,11 @@ export const convertToTimeObject = (timeString) => {
     return LocalTime(date);
 }
 
+export const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return !isNaN(date) && date.toISOString().split('T')[0] === dateString;
+};
+
 export const getPreviousDate = (days) => {
     const num = days ? Number(days) : 1;
     return new Date(new Date().setDate(new Date().getDate() - num)).toISOString().split('T')[0]
@@ -308,7 +313,7 @@ export const Subraction = (a, b) => limitFractionDigits(Number(a) - Number(b));
 
 export const Multiplication = (a, b) => limitFractionDigits(Number(a || 0) * Number(b || 0));
 
-export const Division = (a, b) => limitFractionDigits(b !== 0 ? Number(a || 0) / Number(b || 1) : 0);
+export const Division = (a, b) => limitFractionDigits(b != 0 ? Number(a || 0) / Number(b || 1) : 0);
 
 export const validValue = (val) => {
     return Boolean(val) ? val : ''

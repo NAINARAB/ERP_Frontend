@@ -1,15 +1,25 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString } from "../../Components/functions";
+import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
 import { purchaseOrderDataSet, displayColumns } from "./purchaseOrderDataArray";
 import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "./purchaseOrderPreviewTemplate";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
+
+const useQuery = () => new URLSearchParams(useLocation().search);
+
+const defaultFilters = {
+    Fromdate: getPreviousDate(10),
+    Todate: new Date().toISOString().split('T')[0],
+    OrderStatus: "ITEMS",
+    vendorId: '',
+    vendor: '',
+};
 
 const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
@@ -23,15 +33,17 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
     });
     const [vendorList, setVendorList] = useState([]);
 
-    const nav = useNavigate();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const query = useQuery();
 
     const [filters, setFilters] = useState({
-        Fromdate: getPreviousDate(10),
-        Todate: ISOString(),
+        Fromdate: defaultFilters.Fromdate,
+        Todate: defaultFilters.Todate,
         FilterDialog: false,
-        OrderStatus: 'ITEMS',
-        vendorId: '',
-        vendor: '',
+        OrderStatus: defaultFilters.OrderStatus,
+        vendorId: defaultFilters.vendorId,
+        vendor: defaultFilters.vendor,
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
@@ -57,6 +69,39 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
     }, [filters.Fromdate, filters.Todate, filters.refresh]);
+
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+            OrderStatus: query.get("OrderStatus") || defaultFilters.OrderStatus,
+            vendorId: query.get("vendorId") || defaultFilters.vendorId,
+            vendor: query.get("vendor") || defaultFilters.vendor,
+        };
+        setFilters(pre => ({ ...pre, ...queryFilters }));
+    }, [location.search]);
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams(newFilters);
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
+    const handleFilterChange = (key, value) => {
+        const updatedFilters = {
+            Fromdate: filters?.Fromdate,
+            Todate: filters?.Todate,
+            OrderStatus: filters?.OrderStatus,
+            vendorId: filters?.vendorId,
+            vendor: filters?.vendor,
+            [key]: value
+        };
+        setFilters(pre => ({ ...pre, ...updatedFilters }));
+        updateQueryString(updatedFilters);
+    };
 
     const deleteOrder = (OrderId) => {
         if (!checkIsNumber(OrderId)) return;
@@ -87,7 +132,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
     }
 
     const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
-        nav(page, { state: stateToTransfer });
+        navigate(page, { state: stateToTransfer });
     }
 
     return (
@@ -126,7 +171,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     <>
                         <Button
                             variant="outlined"
-                            onClick={() => nav('create')}
+                            onClick={() => navigate('create')}
                         >Add</Button>
                         <IconButton
                             size="small"
@@ -186,7 +231,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                 <td className="border-0 vctr">
                                     <input
                                         type="date"
-                                        onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                        onChange={e => handleFilterChange('Fromdate', e.target.value)}
                                         value={filters.Fromdate}
                                         className="cus-inpt p-2"
                                     />
@@ -197,7 +242,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                 <td className="border-0 vctr">
                                     <input
                                         type="date"
-                                        onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                                        onChange={e => handleFilterChange('Todate', e.target.value)}
                                         value={filters.Todate}
                                         className="cus-inpt p-2"
                                     />
@@ -209,7 +254,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                     <select
                                         className="cus-inpt p-2"
                                         value={filters.OrderStatus}
-                                        onChange={e => setFilters(pre => ({ ...pre, OrderStatus: e.target.value }))}
+                                        onChange={e => handleFilterChange('OrderStatus', e.target.value)}
                                     >
                                         <optgroup label="ITEM BASED">
                                             <option value={'ITEMS'}>ITEMS</option>
