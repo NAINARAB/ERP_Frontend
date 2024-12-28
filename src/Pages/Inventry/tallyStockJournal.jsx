@@ -82,8 +82,8 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                 dataArray={sJournalData}
                 onClickFun={data => getDetails(data)}
                 columns={[
-                    createCol("journal_no", "string", 'Journal No'),
                     createCol("stock_journal_date", "date", 'Date'),
+                    createCol("journal_no", "string", 'Journal No'),
                     createCol("broker_name", 'string', "Broker"),
                     createCol("transporter_name", 'string', "Transporter"),
                     createCol("loadman_name", 'string', "Loadman"),

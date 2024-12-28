@@ -1,239 +1,241 @@
+
+
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, IconButton, Dialog, DialogTitle, DialogContent, Button, Tooltip } from "@mui/material";
+import { Card, CardContent, IconButton, Button, Dialog, DialogTitle, DialogContent, Chip, TextField } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { DaysBetween, firstDayOfMonth, formatTime24, isEqualNumber, ISOString, LocalDate, LocalTime } from "../../Components/functions";
-import { Close, FileDownload } from "@mui/icons-material";
-import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import listPlugin from '@fullcalendar/list';
+import { firstDayOfMonth, ISOString } from "../../Components/functions";
+import { Close } from "@mui/icons-material";
 import { fetchLink } from '../../Components/fetchComponent';
-import CardComp from '../Analytics/entryComps/numCardComp';
-import FilterableTable from '../../Components/filterableTable2';
-import { mkConfig, generateCsv, download } from 'export-to-csv';
-
-const csvConfig = mkConfig({
-    fieldSeparator: ',',
-    decimalSeparator: '.',
-    useKeysAsHeaders: true,
-});
-
-const handleExportData = (dataArray) => {
-    const csv = generateCsv(csvConfig)(dataArray);
-    download(csvConfig)(csv);
-};
-
-const ContCard = ({ Value, Label }) => <CardComp Value={Value} Label={Label} />
+import FilterableTable from "../../Components/filterableTable2";
+import * as XLSX from 'xlsx';
 
 const FingerPrintAttendanceReport = () => {
+    const storage = JSON.parse(localStorage.getItem('user'));
+    const userTypeId = storage?.UserTypeId;
     const [attendanceData, setAttendanceData] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [salaryTypes, setSalaryTypes] = useState([]);
-    const [dialog, setDialog] = useState(false);
-    const [dialogAbstract, setDialogAbstract] = useState(false);
-    const [objDetails, setObjectDetails] = useState({});
-    const [filter, setFilter] = useState({
+    const initialValue = {
         From: firstDayOfMonth(),
         To: ISOString(),
-        EmpId: '',
-        Name: 'All Employees',
-        display: 0, // calendar - 0, table - 1.
-        salaryType: ''
-    });
-
-    useEffect(() => {
-        fetchLink({
-            address: `empAttendance/fingerPrintAttendance?Fromdate=${filter.From}&Todate=${filter.To}&EmpId=${filter.EmpId}`,
-        }).then(data => {
-            if (data.success) {
-                setAttendanceData(data.data);
-                const uniqueSalaryType = new Set(data.data.map(o => o?.Salary_Type));
-                setSalaryTypes(Array.from(uniqueSalaryType));
-                const empSet = [];
-                const uniqueEmpIds = new Set();
-
-                data.data.forEach(o => {
-                    if (!uniqueEmpIds.has(o.Emp_Id)) {
-                        empSet.push({
-                            Emp_Name: o.Emp_Name,
-                            fingerPrintEmpId: o.fingerPrintEmpId,
-                            Emp_Id: o.Emp_Id,
-                        });
-                        uniqueEmpIds.add(o.Emp_Id);
-                    }
-                });
-
-                empSet.sort((a, b) => String(a.Emp_Name).localeCompare(b.Emp_Name))
-                setEmployees(empSet);
-            }
-        }).catch(e => console.error(e));
-    }, [filter.From, filter.To, filter.EmpId,])
-
-    const closeDialg = () => {
-        setDialog(false);
-        setObjectDetails({});
-    }
-
-    const totalDays = DaysBetween(new Date(filter.From), new Date(filter.To));
-    const presentDays = attendanceData.filter(o => isEqualNumber(o.Emp_Id, filter.EmpId)).length;
-    const absentDays = totalDays - presentDays;
-
-    const totalHours = attendanceData
-        .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-        .reduce((sum, item) => sum + (new Date(item.OutTime) - new Date(item.InTime)), 0);
-
-    const averageMilliseconds = totalHours / presentDays;
-
-    const averageInTime = new Date(
-        attendanceData
-            .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-            .reduce((sum, item) => sum + new Date(item.InTime).getTime(), 0) / presentDays
-    ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-
-    const averageOutTime = new Date(
-        attendanceData
-            .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-            .reduce((sum, item) => sum + new Date(item.OutTime).getTime(), 0) / presentDays
-    ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-
-    let hours = Math.floor(averageMilliseconds / (1000 * 60 * 60));
-    let minutes = Math.round((averageMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
-    if (minutes === 60) {
-        hours += 1;
-        minutes = 0;
-    }
-
-    const averageInTimeMillis = attendanceData
-        .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-        .reduce((sum, item) => sum + new Date(item.InTime).getTime(), 0) / presentDays;
-
-    const averageOutTimeMillis = attendanceData
-        .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-        .reduce((sum, item) => sum + new Date(item.OutTime).getTime(), 0) / presentDays;
-
-    const ifEmployeeData = [
-        {
-            label: 'Total Days',
-            value: totalDays,
-        },
-        {
-            label: 'Present Days',
-            value: presentDays,
-        },
-        {
-            label: 'Absent Days',
-            value: absentDays,
-        },
-        {
-            label: 'Average Hours',
-            value: hours + ':' + minutes,
-        },
-        {
-            label: 'Average In-Time',
-            value: formatTime24(averageInTime),
-        },
-        {
-            label: 'Average Out-Time',
-            value: formatTime24(averageOutTime),
-        },
-        {
-            label: 'Total Hours Worked',
-            value: `${Math.floor(totalHours / (1000 * 60 * 60))} hours`,
-        },
-        {
-            label: 'Late Arrivals',
-            value: attendanceData
-                .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-                .filter(o => new Date(o.InTime).getTime() > averageInTimeMillis)
-                .length,
-        },
-        {
-            label: 'Early Departures',
-            value: attendanceData
-                .filter(o => isEqualNumber(o.Emp_Id, filter.EmpId))
-                .filter(o => new Date(o.OutTime).getTime() < averageOutTimeMillis)
-                .length,
-        },
-        {
-            label: 'Half Present Days',
-            value: attendanceData.filter(o => isEqualNumber(o.Emp_Id, filter.EmpId)).filter(o => o.AttendanceStatus.trim() === '½Present').length,
-        },
-    ];
-
-    const ifNotEmployee = [
-        {
-            label: 'Total Days',
-            value: DaysBetween(new Date(filter.From), new Date(filter.To)),
-        },
-        {
-            label: 'Total Employees',
-            value: employees.length,
-        },
-        {
-            label: 'Average Attendance',
-            value: attendanceData.length / totalDays,
-        },
-    ];
-
-    const dataFormat = (arr) => {
-        const data = arr.map(o => ({
-            Emp_Id: o.Emp_Id,
-            Employee: o.Emp_Name,
-            InTime: o.InTime,
-            OutTime: o.OutTime,
-            Date: o.InTime,
-            Salary_Type: o.Salary_Type
-        }));
-
-        const filteredData = data
-            .filter(o => !filter.EmpId || isEqualNumber(o.Emp_Id, filter.EmpId))
-            .filter(o => !filter.salaryType || o.Salary_Type === filter.salaryType);
-
-        return filteredData;
+        EmpId: 0,
+        Name: '',
     };
 
+    const [filter, setFilter] = useState(initialValue);
+    const [dialog, setDialog] = useState(false);
+    const [employees, setEmployees] = useState([]);
+    const [isDropdownDisabled, setIsDropdownDisabled] = useState(false);
+    const [dropdownPlaceholder, setDropdownPlaceholder] = useState("Employee Name");
+
+
+    const [debouncedFilter, setDebouncedFilter] = useState(filter);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedFilter(filter);
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [filter]);
+
+
+    useEffect(() => {
+
+        const userTypeId = storage?.UserTypeId;
+        const userId = storage?.UserId;
+        const companyId = storage?.Company_id;
+
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${companyId}`,
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
+            }
+        }).then(data => {
+            if (data.success) {
+                let filteredEmployees = [];
+
+                if (Number(userTypeId) == 1 || Number(userTypeId) == 0) {
+                    filteredEmployees = data.data;
+                    setFilter(prev => ({ ...prev, EmpId: 0, Name: 'All Employees' }));
+                    setIsDropdownDisabled(false);
+                    setDropdownPlaceholder("Employee Name");
+                } else {
+                    filteredEmployees = data.data.filter(employee => employee.UserId === userId);
+                    setFilter(prev => ({ ...prev, EmpId: userId, Name: storage?.Name }));
+                    setIsDropdownDisabled(true);
+                    setDropdownPlaceholder(storage?.Name || "Employee Name");
+                }
+
+                setEmployees(filteredEmployees);
+            }
+        }).catch(e => console.error("Error fetching employees:", e));
+    }, [storage?.UserTypeId]);
+
+    const fetchAttendanceData = async (From, To, EmpId) => {
+        try {
+            const userTypeId = storage?.UserTypeId;
+
+            const response = await fetchLink({
+                address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${From}&ToDate=${To}&UserTypeId=${userTypeId}&UserId=${EmpId}`,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
+                }
+            });
+
+            if (response.success) {
+                setAttendanceData(response.data);
+            }
+        } catch (e) {
+            console.error("Error fetching attendance data:", e);
+        }
+    };
+
+
+    useEffect(() => {
+        const { From, To, EmpId } = debouncedFilter;
+        if (From && To && (EmpId || EmpId === 0)) {
+            fetchAttendanceData(From, To, EmpId);
+        }
+    }, [debouncedFilter]);
+
+    const openReportDialog = () => {
+        setDialog(true);
+    };
+
+    const closeDialog = () => {
+        setDialog(false);
+    };
+
+    // const handleDownload = () => {
+
+    //     const maxPunches = Math.max(...attendanceData.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0)));
+
+
+    //     const exportData = attendanceData.map(row => {
+    //         const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+    //         const punchColumns = {};
+
+
+    //         for (let i = 0; i < maxPunches; i++) {
+    //             punchColumns[`Punch Detail ${i + 1}`] = punchDetails[i] ? punchDetails[i].trim() : '--';
+    //         }
+
+    //         return {
+    //             Employee: row.username,
+    //             "Log Date": formatAttendanceDate(row.LogDate),
+    //             "Attendance Status": row.AttendanceStatus,
+    //             ...punchColumns 
+    //         };
+    //     });
+
+
+    //     const ws = XLSX.utils.json_to_sheet(exportData);
+
+
+    //     const wb = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+
+
+    //     XLSX.writeFile(wb, "Attendance_Report.xlsx");
+    // };
+
+
+    const handleDownload = () => {
+        const maxPunches = Math.max(...attendanceData.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0)));
+
+        const exportData = attendanceData.map(row => {
+            const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+            const punchColumns = {};
+
+
+            for (let i = 0; i < maxPunches; i++) {
+
+                const timeString = punchDetails[i] ? punchDetails[i].split(' (')[0].trim() : '';
+                let formattedTime = '--';
+
+                if (timeString) {
+                    let [hours, minutes] = timeString.split(':').map(Number);
+                    let ampm = hours >= 12 ? 'PM' : 'AM';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12;
+                    formattedTime = `${hours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+                }
+
+                punchColumns[`Punch Detail ${i + 1}`] = formattedTime;
+            }
+
+            return {
+                Employee: row.username,
+                "Log Date": formatAttendanceDate(row.LogDate),
+                "Attendance Status": row.AttendanceStatus,
+                ...punchColumns,
+            };
+        });
+
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+
+
+        XLSX.writeFile(wb, "Attendance_Report.xlsx");
+    };
+
+
+
+
+    const formatAttendanceDate = (logDateTime) => {
+        if (!logDateTime) return '--';
+        const [date] = logDateTime.split('T');
+        return `${date} `;
+    };
 
     return (
         <>
             <Card>
-
                 <CardContent sx={{ minHeight: '50vh' }}>
                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
                         <h6 className="fa-18">Employee Attendance</h6>
-                        <div>
-                            <Tooltip title='Download Excel Data'>
-                                <IconButton 
-                                    onClick={() => handleExportData(dataFormat(attendanceData))}
-                                    className="me-2"
-                                >
-                                    <FileDownload />
-                                </IconButton>
-                            </Tooltip>
-                            <Button
-                                variant='outlined'
-                                onClick={() => setDialogAbstract(true)}
-                            >
-                                {filter.EmpId ? 'Emplyee Summary' : 'Attendance Summary'}
-                            </Button>
-                        </div>
+                        {(userTypeId == 1 || userTypeId == 0) ? (
+                            <>
+                                <div className="d-flex align-items-center justify-content-start gap-3">
+                                    <Button
+                                        onClick={openReportDialog}
+                                        disabled={filter?.EmpId === 0 || filter?.Name === "All Employees"}
+                                    >
+                                        Individual Report
+                                    </Button>
+                                    {/* <Button 
+                                        onClick={() => { 
+                                            fetchMonthlyReportData(filter?.From, filter?.To); 
+                                            openReportDialog(); 
+                                        }}
+                                    >
+                                        Monthly Report
+                                    </Button> */}
+                                </div>
+                            </>
+                        ) : (
+                            <div> </div>
+                        )}
+
+
+
                     </div>
 
                     <div className="px-2 row mb-4">
-
                         <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label>Employee</label>
                             <Select
-                                value={{ value: filter?.UserId, label: filter?.Name }}
+                                value={{ value: filter?.EmpId, label: filter?.Name }}
                                 onChange={(e) => setFilter({ ...filter, EmpId: e.value, Name: e.label })}
-                                options={[
-                                    { value: '', label: '(' + employees.length + ') All Employees ' },
-                                    ...employees.map(obj => ({ value: obj?.Emp_Id, label: obj?.Emp_Name }))
-                                ]}
+                                options={[{ value: '', label: `All Employees` }, ...employees.map(obj => ({ value: obj?.UserId, label: obj?.Name }))]}
                                 styles={customSelectStyles}
                                 isSearchable={true}
-                                placeholder={"Employee Name"} // start from here
+                                placeholder={dropdownPlaceholder}
+                                isDisabled={isDropdownDisabled}
                             />
                         </div>
 
@@ -241,9 +243,9 @@ const FingerPrintAttendanceReport = () => {
                             <label>From</label>
                             <input
                                 type="date"
-                                className="cus-inpt "
+                                className="cus-inpt"
                                 value={filter?.From}
-                                onChange={e => setFilter(pre => ({ ...pre, From: e.target.value }))}
+                                onChange={e => setFilter(prev => ({ ...prev, From: e.target.value }))}
                             />
                         </div>
 
@@ -251,212 +253,167 @@ const FingerPrintAttendanceReport = () => {
                             <label>To</label>
                             <input
                                 type="date"
-                                className="cus-inpt "
+                                className="cus-inpt"
                                 value={filter?.To}
-                                onChange={e => setFilter(pre => ({ ...pre, To: e.target.value }))}
+                                onChange={e => setFilter(prev => ({ ...prev, To: e.target.value }))}
                             />
                         </div>
-
-                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                            <label>Display View</label>
-                            <select
-                                className="cus-inpt"
-                                value={filter?.display}
-                                onChange={e => setFilter(pre => ({ ...pre, display: Number(e.target.value) }))}
-                            >
-                                <option value={0}>Calendar</option>
-                                <option value={1}>Table</option>
-                            </select>
-                        </div>
-
-                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                            <label>Salary Type</label>
-                            <select
-                                className="cus-inpt"
-                                value={filter?.salaryType}
-                                onChange={e => setFilter(pre => ({ ...pre, salaryType: e.target.value }))}
-                            >
-                                <option value={''}>- Select -</option>
-                                {salaryTypes.map((o, i) => (
-                                    <option value={o} key={i}>{o}</option>
-                                ))}
-                            </select>
-                        </div>
-
                     </div>
 
-                    {isEqualNumber(filter.display, 0) && (
-                        <FullCalendar
-                            plugins={[timeGridPlugin, listPlugin, dayGridPlugin, interactionPlugin]}
-                            initialView="listMonth"
-                            initialDate={new Date()}
-                            events={
-                                dataFormat(attendanceData)?.map(o => ({
-                                    title: o?.Employee,
-                                    start: new Date(o?.InTime),
-                                    end: new Date(o?.OutTime),
-                                    objectData: o
-                                }))
+                    <FilterableTable
+                        dataArray={attendanceData}
+                        columns={[
+                            {
+                                isCustomCell: true,
+                                Cell: ({ row }) => row.username,
+                                ColumnHeader: 'Employee',
+                                isVisible: 1,
+                                width: '20%',
+                                CellProps: {
+                                    sx: {
+                                        padding: '10px',
+                                        textAlign: 'left',
+                                        fontWeight: 'bold',
+                                    },
+                                },
+                            },
+                            {
+                                isCustomCell: true,
+                                Cell: ({ row }) => formatAttendanceDate(row.LogDate || '--'),
+                                ColumnHeader: 'Log Date',
+                                isVisible: 1,
+                                width: '20%',
+                                CellProps: {
+                                    sx: {
+                                        padding: '10px',
+                                        textAlign: 'center',
+                                        color: 'gray',
+                                    },
+                                },
+                            },
+                            {
+                                isCustomCell: true,
+                                Cell: ({ row }) => (row.AttendanceStatus || '--'),
+                                ColumnHeader: 'Attendance Status',
+                                isVisible: 1,
+                                width: '20%',
+                                CellProps: {
+                                    sx: {
+                                        padding: '10px',
+                                        textAlign: 'center',
+                                    },
+                                },
+                            },
+                            {
+                                isCustomCell: true,
+                                ColumnHeader: 'Punch Details',
+                                isVisible: 1,
+                                width: '40%',
+                                CellProps: {
+                                    sx: {
+                                        padding: '10px',
+                                    },
+                                },
+                                Cell: ({ row }) => (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        {row.AttendanceDetails ? (
+                                            row.AttendanceDetails.split(',').map((detail, idx) => {
+                                                const timeString = detail.split(' (')[0];
+                                                let [hours, minutes] = timeString.split(':').map(Number);
+                                                let ampm = hours >= 12 ? 'PM' : 'AM';
+                                                hours = hours % 12;
+                                                hours = hours ? hours : 12;
+                                                const formattedTime = `${hours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+                                                return (
+                                                    <Chip
+                                                        key={idx}
+                                                        label={formattedTime}
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{ margin: '2px', color: 'green' }}
+                                                    />
+                                                );
+                                            })
+                                        ) : (
+                                            <span>No details available</span>
+                                        )}
+                                    </div>
+                                ),
                             }
-                            headerToolbar={{
-                                left: 'prev next',
-                                center: 'title',
-                                right: 'timeGridDay, timeGridWeek, dayGridMonth, listMonth',
-                            }}
-                            slotDuration={'00:30:00'}
-                            showNonCurrentDates={false}
-                            editable={false}
-                            selectable
-                            selectMirror
-                            eventClick={eve => {
-                                const eveObj = eve.event.extendedProps.objectData;
-                                setObjectDetails(eveObj);
-                                setDialog(true);
-                            }}
-                            datesSet={date => {
-                                const lastDay = new Date(date.endStr);
-                                lastDay.setDate(lastDay.getDate() - 1);
-                                const formattedLastDay = lastDay.toLocaleDateString('en-CA');
-                                setFilter(pre => ({
-                                    ...pre,
-                                    From: date.startStr.split('T')[0],
-                                    To: formattedLastDay
-                                }));
-                            }}
-                            height={800}
-                        />
-                    )}
-
-                    {isEqualNumber(filter.display, 1) && (
-                        <FilterableTable
-                            dataArray={dataFormat(attendanceData)}
-                            columns={[
-                                {
-                                    Field_Name: "Employee",
-                                    Fied_Data: "string",
-                                    isVisible: 1,
-                                    OrderBy: 1,
-                                },
-                                {
-                                    Field_Name: "Salary_Type",
-                                    Fied_Data: "string",
-                                    isVisible: 1,
-                                    OrderBy: 1,
-                                },
-                                {
-                                    Field_Name: "Date",
-                                    Fied_Data: "date",
-                                    isVisible: 1,
-                                    OrderBy: 2,
-                                },
-                                {
-                                    Field_Name: "InTime",
-                                    Fied_Data: "time",
-                                    isVisible: 1,
-                                    OrderBy: 2,
-                                },
-                                {
-                                    Field_Name: "OutTime",
-                                    Fied_Data: "time",
-                                    isVisible: 1,
-                                    OrderBy: 3,
-                                },
-                            ]}
-                            EnableSerialNumber={true}
-                        />
-                    )}
-
+                        ]}
+                        EnableSerialNumber
+                        CellSize="small"
+                        disablePagination={false}
+                    />
                 </CardContent>
             </Card>
 
-            <Dialog
-                open={dialog}
-                onClose={closeDialg}
-                fullWidth
-                maxWidth='sm'
-            >
-                <DialogTitle className='d-flex justify-content-between'>
-                    <span>Attendance Details</span>
-                    <IconButton onClick={closeDialg}><Close sx={{ color: 'black' }} /></IconButton>
+            <Dialog open={dialog} onClose={closeDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    Individual Report
+                    <IconButton onClick={closeDialog} style={{ position: 'absolute', right: 16, top: 16 }}>
+                        <Close />
+                    </IconButton>
                 </DialogTitle>
-
                 <DialogContent>
-                    <div className="table-responsive">
-                        <table className="table">
-                            <tbody>
-                                <tr>
-                                    <td className="fa-14 fw-bold text-muted border">Start Date</td>
-                                    <td className="fa-14 fw-bold text-end text-muted border">End Date</td>
-                                </tr>
-                                <tr>
-                                    <td className="fa-14 fw-bold text-primary border">{objDetails?.InTime ? LocalDate(objDetails?.InTime) : ' - '}</td>
-                                    <td className="fa-14 fw-bold text-primary border text-end">{objDetails?.OutTime ? LocalDate(objDetails?.OutTime) : ' - '}</td>
-                                </tr>
-                                <tr>
-                                    <td className="fa-14 fw-bold text-muted border">In Time</td>
-                                    <td className="fa-14 fw-bold text-end text-muted border">Out Time</td>
-                                </tr>
-                                <tr>
-                                    <td className="fa-14 fw-bold text-primary border">{objDetails?.InTime ? LocalTime(objDetails?.InTime) : ' - '}</td>
-                                    <td className="fa-14 fw-bold text-primary border text-end">{objDetails?.OutTime ? LocalTime(objDetails?.OutTime) : ' - '}</td>
-                                </tr>
-                                {/* <tr>
-                                    <td className="fa-14 border text-end fw-bold" colSpan={2}>
-                                        <Tooltip title="Open in Map">
-                                            <span className="ps-2">
-                                                Location:
-                                                <IconButton
-                                                    size="small"
-                                                    color='primary'
-                                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${objDetails?.Latitude},${objDetails?.Longitude}`, '_blank')}
-                                                >
-                                                    <OpenInNew sx={{ fontSize: '16px' }} />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-                                    </td>
-                                </tr> */}
-                            </tbody>
-                        </table>
+                    <div style={{ marginBottom: '16px' }}>
+                        <label htmlFor="employee">Employee</label>
+                        <Select
+                            id="employee"
+                            value={{ value: filter?.EmpId, label: filter?.Name }}
+                            onChange={(e) => {
+                                setFilter({ ...filter, EmpId: e.value, Name: e.label });
+                            }}
+                            options={[{ value: '', label: 'All Employees' }, ...employees.map((obj) => ({ value: obj?.UserId, label: obj?.Name }))]}
+                            styles={customSelectStyles}
+                            isSearchable={true}
+                            placeholder={dropdownPlaceholder}
+                            isDisabled={isDropdownDisabled}
+                        />
                     </div>
-                </DialogContent>
-
-            </Dialog>
-
-            <Dialog
-                open={dialogAbstract}
-                onClose={() => setDialogAbstract(false)}
-                maxWidth='lg' fullWidth
-            >
-                <DialogTitle className='d-flex justify-content-between'>
-                    <span>
-                        Attendance summary {filter.EmpId && 'of ' + filter.Name}
-                        <span className="ps-2 blue-text">{LocalDate(filter.From) + ' - ' + LocalDate(filter.To)}</span>
-                    </span>
-                    <IconButton onClick={() => setDialogAbstract(false)}><Close sx={{ color: 'black' }} /></IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <div className="row">
-                        {filter.EmpId ? (
-                            ifEmployeeData.map((o, i) => (
-                                <div className="col-lg-4 p-2" key={i}>
-                                    <ContCard Value={o.value} Label={o.label} />
-                                </div>
-                            ))
-                        ) : (
-                            ifNotEmployee.map((o, i) => (
-                                <div className="col-lg-4 p-2" key={i}>
-                                    <ContCard Value={o.value} Label={o.label} />
-                                </div>
-                            ))
-                        )}
+                    <div style={{ marginBottom: '16px' }}>
+                        <label htmlFor="from-date">From Date:</label>
+                        <TextField
+                            id="from-date"
+                            type="date"
+                            value={filter?.From}
+                            onChange={e => setFilter(prev => ({ ...prev, From: e.target.value }))}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            fullWidth
+                            margin="normal"
+                        />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                        <label htmlFor="to-date">To Date:</label>
+                        <TextField
+                            id="to-date"
+                            type="date"
+                            value={filter?.To}
+                            onChange={e => setFilter(prev => ({ ...prev, To: e.target.value }))}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            fullWidth
+                            margin="normal"
+                        />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            onClick={handleDownload}
+                            variant="contained"
+                            color="primary"
+                            style={{ marginTop: '16px' }}
+                        >
+                            Download Report
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>
 
         </>
-    )
-}
-
+    );
+};
 
 export default FingerPrintAttendanceReport;

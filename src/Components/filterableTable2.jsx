@@ -308,7 +308,7 @@ const FilterableTable = ({
                                             column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
                                         )}
                                 >
-                                    {column.Cell({ row, Field_Name: column.Field_Name })}
+                                    {column.Cell({ row, Field_Name: column.Field_Name, index })}
                                 </TableCell>
                             )
                         )

@@ -71,7 +71,10 @@ const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
-const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"))
+const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"));
+const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"))
+const StockJournal = lazy(() => import("./Pages/Inventry/stockJournal"))
+const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate"))
 
 
 // Purchase
@@ -81,7 +84,6 @@ const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purc
 const PurchaseOrderTallyBasedReport = lazy(() => import("./Pages/Purchase/tallyBasedReport"))
 const PurchaseInvoiceManagement = lazy(() => import("./Pages/Purchase/purchaseInvoiceManagement"))
 const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
-const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"))
 
 
 // Payments
@@ -175,6 +177,8 @@ const RoutingArray = [
     { component: <StockReport />, path: '/erp/inventory/stockReport' },
     { component: <LiveStockReport />, path: '/erp/inventory/losStockReport' },
     { component: <TallyStockJournalList />, path: '/erp/inventory/tallyStockJournal' },
+    { component: <StockJournal />, path: '/erp/inventory/stockJournal' },
+    { component: <StockJournalEntry />, path: '/erp/inventory/stockJournal/create' },
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
