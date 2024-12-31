@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, getSessionUser, isEqualNumber, isGraterNumber, isValidObject } from "../../Components/functions"
+import { Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM, getSessionUser, isEqualNumber, isGraterNumber, isValidObject } from "../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
 import { fetchLink } from "../../Components/fetchComponent"
 import Select from 'react-select';
@@ -93,6 +93,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         uom: [],
         staff: [],
     });
+    const [isViewOnly, setIsViewOnly] = useState(false);
     const [stockJorunalInfo, setStockJorunalInfo] = useState(initialStockJournalInfoValues);
     const [sourceList, setSourceList] = useState([]);
     const [destinationList, setDestinationList] = useState([]);
@@ -153,34 +154,58 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         fetchData();
     }, []);
 
-    // useEffect(() => {
-    //     if (
-    //         isValidObject(stateDetails) 
-    //         && Array.isArray(stateDetails?.SourceDetails) 
-    //         && Array.isArray(stateDetails?.DestinationDetails) 
-    //         && Array.isArray(stateDetails.StaffsDetails)
-    //     ) {
-    //         const isEditable = stateDetails?.isEditable ? true : false;
-    //         setInvoiceDetails(
-    //             Object.fromEntries(
-    //                 Object.entries(initialStockJournalInfoValues).map(([key, value]) => {
-    //                     if (key === 'Stock_Journal_date') return [key, stateDetails[key] ? ISOString(invoiceInfo[key]) : value]
-    //                     if (key === 'Start_Time') return [key, stateDetails[key] ? ISOString(invoiceInfo[key]) : value]
-    //                     if (key === 'End_Time') return [key, stateDetails[key] ? ISOString(invoiceInfo[key]) : value]
-    //                     return [key, invoiceInfo[key] ?? value]
-    //                 })
-    //             )
-    //         );
-    //         setSelectedItems(
-    //             orderInfo.map(item => Object.fromEntries(
-    //                 Object.entries(itemsRowDetails).map(([key, value]) => {
-    //                     return [key, item[key] ?? value]
-    //                 })
-    //             ))
-    //         );
-    //         setDialogs(true)
-    //     }
-    // }, [stateDetails])
+    useEffect(() => {
+        const source = stateDetails?.SourceDetails;
+        const destination = stateDetails?.DestinationDetails;
+        const staff = stateDetails?.StaffsDetails; 
+        if (
+            isValidObject(stateDetails)
+            && Array.isArray(source)
+            && Array.isArray(destination)
+            && Array.isArray(staff)
+        ) {
+            const isEditable = stateDetails?.isEditable ? true : false;
+            setIsViewOnly(isEditable);
+
+            setStockJorunalInfo(
+                Object.fromEntries(
+                    Object.entries(initialStockJournalInfoValues).map(([key, value]) => {
+                        if (key === 'Stock_Journal_date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
+                        if (key === 'Start_Time') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
+                        if (key === 'End_Time') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
+                        return [key, stateDetails[key] ?? value]
+                    })
+                )
+            );
+
+            setSourceList(
+                source.map(sourceData => Object.fromEntries(
+                    Object.entries(initialSoruceValue).map(([key, value]) => {
+                        if (key === 'Sour_Item_Name') return [key, sourceData['Product_Name'] ? sourceData['Product_Name'] : value]
+                        return [key, sourceData[key] ?? value]
+                    })
+                ))
+            )
+
+            setDestinationList(
+                destination.map(destinationData => Object.fromEntries(
+                    Object.entries(initialDestinationValue).map(([key, value]) => {
+                        if (key === 'Dest_Item_Name') return [key, destinationData['Product_Name'] ? destinationData['Product_Name'] : value]
+                        return [key, destinationData[key] ?? value]
+                    })
+                ))
+            );
+
+            setStaffInvolvedList(
+                staff.map(staffData => Object.fromEntries(
+                    Object.entries(initialStaffInvolvedValue).map(([key, value]) => {
+                        if (key === 'Staff_Name') return [key, staffData['Cost_Center_Name'] ? staffData['Cost_Center_Name'] : value]
+                        return [key, staffData[key] ?? value]
+                    })
+                ))
+            );
+        }
+    }, [stateDetails])
 
     const changeSourceValue = (rowIndex, key, value) => {
         setSourceList((prev) => {
