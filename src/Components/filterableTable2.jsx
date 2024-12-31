@@ -1,6 +1,6 @@
 import React, { Fragment, useRef, useState } from 'react';
 import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, Tooltip, Card } from '@mui/material';
-import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
+import { isEqualNumber, LocalDate, LocalTime, NumberFormat, randomNumber } from './functions';
 import { Download, KeyboardArrowDown, KeyboardArrowUp, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -9,45 +9,50 @@ import PropTypes from 'prop-types';
 
 /**
  * @typedef {Object} Column
- * @property {string} Field_Name
- * @property {'string'|'number'|'date'|'time'} Fied_Data
- * @property {'top'|'middle'|'bottom'} verticalAlign
- * @property {string} ColumnHeader
- * @property {0|1} isVisible
- * @property {'left'|'right'|'center'} align
- * @property {boolean} [isCustomCell]
+ * @property {string} [Field_Name] 
+ * @property {'string'|'number'|'date'|'time'} [Fied_Data]
+ * @property {'top'|'middle'|'bottom'} [verticalAlign] 
+ * @property {string} [ColumnHeader] 
+ * @property {0|1} [isVisible] 
+ * @property {'left'|'right'|'center'} [align] 
+ * @property {boolean} [isCustomCell] 
  * @property {Function} [Cell]
  */
 
 /**
  * @typedef {Object} Menu
- * @property {string} name
- * @property {Element} icon
- * @property {Function} onclick
- * @property {boolean} disabled
+ * @property {string} [name] 
+ * @property {JSX.Element} [icon] 
+ * @property {Function} [onclick] 
+ * @property {boolean} [disabled] 
  */
 
 /**
  * Filterable Table Component
- * @param {Object} props
- * @param {Array<Object>} props.dataArray
- * @param {Array<Column>} props.columns
- * @param {Function} [props.onClickFun]
- * @param {boolean} [props.isExpendable]
- * @param {React.ReactElement} [props.expandableComp]
- * @param {number} [props.tableMaxHeight]
- * @param {number} [props.initialPageCount]
- * @param {boolean} [props.EnableSerialNumber]
- * @param {'small'|'medium'|'large'} [props.CellSize]
- * @param {boolean} [props.disablePagination]
- * @param {''} [props.title]
- * @param {boolean} [props.PDFPrintOption]
- * @param {boolean} [props.ExcelPrintOption]
- * @param {boolean} [props.maxHeightOption]
- * @param {React.ReactElement} [props.ButtonArea]
- * @param {Array<Menu>} props.MenuButtons
+ * @param {Object} props 
+ * @param {Array<Object>} [props.dataArray] 
+ * @param {Array<Column>} [props.columns] 
+ * @param {Function} [props.onClickFun] 
+ * @param {boolean} [props.isExpendable=false] 
+ * @param {React.ReactElement|JSX.Element} [props.expandableComp] 
+ * @param {number} [props.tableMaxHeight] 
+ * @param {number} [props.initialPageCount=10] 
+ * @param {boolean} [props.EnableSerialNumber=false] 
+ * @param {'small'|'medium'|'large'} [props.CellSize='medium'] 
+ * @param {boolean} [props.disablePagination=false] 
+ * @param {string} [props.title=''] 
+ * @param {boolean} [props.PDFPrintOption=false] 
+ * @param {boolean} [props.ExcelPrintOption=false] 
+ * @param {boolean} [props.maxHeightOption=false]
+ * @param {React.ReactElement|JSX.Element} [props.ButtonArea] 
+ * @param {Array<Menu>} props.MenuButtons 
  */
 
+/**
+ * Button Actions
+ * @param {Array<Menu>} [buttonsData] 
+ * @param {string} [ToolTipText] 
+ */
 
 const preprocessDataForExport = (data, columns) => {
     return data.map((row) => {
@@ -131,15 +136,56 @@ const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left
     }
 }
 
-const createPopUpMenu = (name, icon, onclick, disabled = false) => (
-    <MenuItem
-        onClick={onclick}
-        disabled={disabled}
-    >
-        <ListItemIcon>{icon}</ListItemIcon>
-        <ListItemText>{name}</ListItemText>
-    </MenuItem>
-)
+const ButtonActions = ({ buttonsData = [], ToolTipText = 'Options' }) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+
+    const popOverOpen = Boolean(anchorEl);
+
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    return (
+        <>
+            <Tooltip title={ToolTipText}>
+                <IconButton aria-describedby={popOverOpen} onClick={handleClick} className='ms-2' size='small'>
+                    <MoreVert />
+                </IconButton>
+            </Tooltip>
+
+            <Popover
+                open={popOverOpen}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                }}
+            >
+                <MenuList>
+                    {buttonsData.map((btn, btnKey) => (
+                        <MenuItem
+                            key={btnKey}
+                            onClick={() => btn?.onclick && btn?.onclick()}
+                            disabled={btn?.disabled}
+                        >
+                            <ListItemIcon>{btn?.icon}</ListItemIcon>
+                            <ListItemText>{btn?.name}</ListItemText>
+                        </MenuItem>
+                    ))}
+                </MenuList>
+            </Popover>
+        </>
+    )
+}
 
 const FilterableTable = ({
     dataArray = [],
@@ -276,43 +322,40 @@ const FilterableTable = ({
                         <TableCell className='fa-13 border-end text-center vtop'>{(rowsPerPage * page) + index + 1}</TableCell>
                     )}
 
-                    {columns?.map((column, columnInd) => (
-                        isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1)
-                    ) && (
-                            (Boolean(column?.isCustomCell) === false || !column.Cell) ? (
-                                Object.entries(row).map(([key, value]) => (
-                                    (
-                                        (column.Field_Name === key)
-                                        &&
-                                        (isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1))
-                                    ) && (
-                                        <TableCell
-                                            key={columnInd}
-                                            className={`fa-13 border-end ` + (
-                                                column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
-                                            ) + (
-                                                    column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
-                                                )}
-                                            onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
-                                        >
-                                            {formatString(value, column?.Fied_Data)}
-                                        </TableCell>
-                                    )
-                                ))
-                            ) : (
+                    {columns?.map((column, columnInd) => {
+                        const isColumnVisible = isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1);
+                        const isCustomCell = Boolean(column?.isCustomCell) && column.Cell;
+                        const isCommonValue = !isCustomCell;
+
+                        const horizondalalignClass = column.align ? columnAlign.find(
+                            align => align.type === String(column.align).toLowerCase()
+                        )?.class : '';
+                        const verticalAlignClass = column.verticalAlign ? columnVerticalAlign.find(
+                            align => align.type === String(column.verticalAlign).toLowerCase()
+                        )?.class : ' vctr '
+
+                        if (isColumnVisible && isCommonValue) return Object.entries(row).map(
+                            ([key, value]) => column.Field_Name === key && (
                                 <TableCell
                                     key={columnInd}
-                                    className={`fa-13 border-end ` + (
-                                        column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : ''
-                                    ) + (
-                                            column.verticalAlign ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class : ' vctr '
-                                        )}
+                                    className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}
+                                    onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                 >
-                                    {column.Cell({ row, Field_Name: column.Field_Name, index })}
+                                    {formatString(value, column?.Fied_Data)}
                                 </TableCell>
                             )
                         )
-                    )}
+
+                        if (isColumnVisible && isCustomCell) return (
+                            <TableCell
+                                key={columnInd}
+                                className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}
+                            >
+                                {column.Cell({ row, Field_Name: column.Field_Name, index })}
+                            </TableCell>
+                        )
+
+                    })}
 
                 </TableRow>
 
@@ -325,93 +368,45 @@ const FilterableTable = ({
         )
     }
 
-    const TableActions = () => {
-        const [anchorEl, setAnchorEl] = useState(null);
-
-        const popOverOpen = Boolean(anchorEl);
-
-        const handleClick = (event) => {
-            setAnchorEl(event.currentTarget);
-        };
-
-        const handleClose = () => {
-            setAnchorEl(null);
-        };
-
-        return (
-            <>
-                <Tooltip title='Export options and more...'>
-                    <IconButton aria-describedby={popOverOpen} onClick={handleClick} className='ms-2' size='small'>
-                        <MoreVert />
-                    </IconButton>
-                </Tooltip>
-
-                <Popover
-                    open={popOverOpen}
-                    anchorEl={anchorEl}
-                    onClose={handleClose}
-                    anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'left',
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                    }}
-                >
-                    <MenuList>
-
-                        {maxHeightOption && (
-                            <MenuItem
-                                onClick={() => setShowFullHeight(pre => !pre)}
-                                disabled={isEqualNumber(dataArray?.length, 0)}
-                            >
-                                <ListItemIcon>
-                                    {showFullHeight
-                                        ? <ToggleOn fontSize="small" color='primary' />
-                                        : <ToggleOff fontSize="small" />
-                                    }
-                                </ListItemIcon>
-                                <ListItemText
-                                    color={showFullHeight ? 'success' : ''}
-                                >Max Height</ListItemText>
-                            </MenuItem>
-                        )}
-
-                        {PDFPrintOption && (
-                            <MenuItem
-                                onClick={() => generatePDF(dataArray, columns)}
-                                disabled={isEqualNumber(dataArray?.length, 0)}
-                            >
-                                <ListItemIcon><Download fontSize="small" color='primary' /></ListItemIcon>
-                                <ListItemText>Download PDF</ListItemText>
-                            </MenuItem>
-                        )}
-
-                        {ExcelPrintOption && (
-                            <MenuItem
-                                onClick={() => exportToExcel(dataArray, columns)}
-                                disabled={isEqualNumber(dataArray?.length, 0)}
-                            >
-                                <ListItemIcon><Download fontSize="small" color='primary' /></ListItemIcon>
-                                <ListItemText>Download Excel</ListItemText>
-                            </MenuItem>
-                        )}
-
-                        {MenuButtons.map(btn => createPopUpMenu(btn.name, btn.icon, btn.onclick, btn.disabled))}
-
-                    </MenuList>
-                </Popover>
-            </>
-        )
-    }
-
     return (
         <Card className='rounded-3 bg-white overflow-hidden' component={Paper}>
             <div
                 className="d-flex align-items-center flex-wrap px-3 py-2 flex-row-reverse "
             >
-                {(PDFPrintOption || ExcelPrintOption || MenuButtons.length > 0 || maxHeightOption) && <TableActions />}
+                {(PDFPrintOption || ExcelPrintOption || MenuButtons.length > 0 || maxHeightOption) && (
+                    <ButtonActions
+                        ToolTipText='Table Options'
+                        buttonsData={[
+                            ...(maxHeightOption
+                                ? [{
+                                    name: 'Max Height',
+                                    icon: showFullHeight
+                                        ? <ToggleOn fontSize="small" color='primary' />
+                                        : <ToggleOff fontSize="small" />,
+                                    onclick: () => setShowFullHeight(pre => !pre),
+                                    disabled: isEqualNumber(dataArray?.length, 0)
+                                }]
+                                : []),
+                            ...(PDFPrintOption
+                                ? [{
+                                    name: 'PDF Print',
+                                    icon: <Download fontSize="small" color='primary' />,
+                                    onclick: () => generatePDF(dataArray, columns),
+                                    disabled: isEqualNumber(dataArray?.length, 0)
+                                }]
+                                : []),
+                            ...(ExcelPrintOption
+                                ? [{
+                                    name: 'Excel Print',
+                                    icon: <Download fontSize="small" color='primary' />,
+                                    onclick: () => exportToExcel(dataArray, columns),
+                                    disabled: isEqualNumber(dataArray?.length, 0)
+                                }]
+                                : []),
+                            ...MenuButtons,
+                        ]}
+                    />
+                )}
                 {ButtonArea && ButtonArea}
                 {title && <h6 className='fw-bold text-muted flex-grow-1 m-0'>{title}</h6>}
             </div>
@@ -469,14 +464,12 @@ const FilterableTable = ({
                                         >
                                             {column.ColumnHeader || column?.Field_Name?.replace(/_/g, ' ')}
                                         </TableCell>
-                                    );
+                                    )
                                 }
                                 return null;
                             })}
                         </TableRow>
                     </TableHead>
-
-
 
                     <TableBody>
                         {(disablePagination ? sortedData : paginatedData).map((row, index) => (
@@ -497,7 +490,6 @@ const FilterableTable = ({
                             </TableRow>
                         )}
                     </TableBody>
-
 
                 </Table>
             </TableContainer>
@@ -576,5 +568,5 @@ export default FilterableTable;
 
 export {
     createCol,
-    // createPopUpMenu,
+    ButtonActions,
 }

@@ -155,6 +155,15 @@ export const timeToDate = (time) => {
     return dateObj;
 }
 
+export const combineDateTime = (date = ISOString(), time) => {
+    const isoDate = ISOString(date);
+    const [year, month, day] = isoDate.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+
+    const combinedDate = new Date(year, month - 1, day, hours, minutes, 0);
+    return combinedDate.toISOString();
+}
+
 export const convertToTimeObject = (timeString) => {
     const [hours, minutes, seconds] = timeString ? timeString.split(':').map(Number) : '00:00:00';
 
@@ -177,7 +186,7 @@ export const getPreviousDate = (days) => {
     return new Date(new Date().setDate(new Date().getDate() - num)).toISOString().split('T')[0]
 }
 
-export const firstDayOfMonth = () => {
+export const firstDayOfMonth = (monthAndYear = '') => {
     return new Date(new Date().getFullYear(), new Date().getMonth(), 2).toISOString().split('T')[0]
 }
 
@@ -314,6 +323,8 @@ export const Subraction = (a, b) => limitFractionDigits(Number(a) - Number(b));
 export const Multiplication = (a, b) => limitFractionDigits(Number(a || 0) * Number(b || 0));
 
 export const Division = (a, b) => limitFractionDigits(b != 0 ? Number(a || 0) / Number(b || 1) : 0);
+
+export const trimText = (text = '', replaceWith = '_') => String(text).trim().replace(/\s+/g, replaceWith ?? '_')
 
 export const validValue = (val) => {
     return Boolean(val) ? val : ''
@@ -460,6 +471,8 @@ export const numbersRange = [
     { min: 1500000, max: 2000000 },
     { min: 2000000, max: 1e15 },
 ];
+
+export const randomNumber = (range = 10000000) => Math.floor(Math.random() * range) + 1;
 
 export const getRandomColor = () => {
     const letters = '0123456789ABCDEF';
