@@ -43,7 +43,7 @@ const AttendanceReport = () => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/users/employee/dropDown?Company_id=${storage?.Company_id}`
+            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
                 setSalePerson(data.data)

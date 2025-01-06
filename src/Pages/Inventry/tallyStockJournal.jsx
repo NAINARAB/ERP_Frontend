@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../Components/fetchComponent';
-import { checkIsNumber, getSessionUser, ISOString, LocalDate } from "../../Components/functions";
-import FilterableTable, { createCol } from '../../Components/filterableTable2'
+import { checkIsNumber, getSessionUser, ISOString, isValidDate, LocalDate, NumberFormat, trimText } from "../../Components/functions";
+import FilterableTable, { createCol, ButtonActions } from '../../Components/filterableTable2'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { FilterAlt, ReadMore, Search, Today, Visibility } from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
+
+const useQuery = () => new URLSearchParams(useLocation().search);
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+};
 
 const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const query = useQuery();
     const user = getSessionUser().user;
     const [sJournalData, setSJournalData] = useState([]);
     const [stockDetails, setStockDetails] = useState({
@@ -14,10 +24,10 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         rowDetails: {},
     });
     const [filters, setFilters] = useState({
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        fetchFrom: ISOString(),
-        fetchTo: ISOString(),
+        Fromdate: defaultFilters.Fromdate,
+        Todate: defaultFilters.Todate,
+        fetchFrom: defaultFilters.Fromdate,
+        fetchTo: defaultFilters.Todate,
         refresh: false,
         filterDialog: false,
         showDetailsDialog: false,
@@ -39,6 +49,23 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         });
     }, [filters?.fetchFrom, filters?.fetchTo])
 
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+        };
+        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
+    }, [location.search]);
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams(newFilters);
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
     const closeDialog = () => {
         setFilters(pre => ({ ...pre, filterDialog: false, showDetailsDialog: false }));
         setStockDetails({
@@ -48,28 +75,28 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         })
     }
 
-    const getDetails = (rowData) => {
-        if (!checkIsNumber(rowData?.tally_id)) return;
+    // const getDetails = (rowData) => {
+    //     if (!checkIsNumber(rowData?.tally_id)) return;
 
-        if (loadingOn) loadingOn();
-        fetchLink({
-            address: `inventory/getTallyStockJournal/sourceAndDestination?tally_id=${rowData?.tally_id}`,
-            headers: {
-                "Db": user?.Company_id
-            }
-        }).then(data => {
-            if (data.success) {
-                setStockDetails({
-                    rowDetails: {...rowData, stock_journal_date: LocalDate(rowData.stock_journal_date)},
-                    soruceDetails: data.data[0].SourceDetails,
-                    destinationDetails: data.data[0].DestinationDetails
-                });
-                setFilters(pre => ({ ...pre, showDetailsDialog: true }));
-            }
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff();
-        })
-    }
+    //     if (loadingOn) loadingOn();
+    //     fetchLink({
+    //         address: `inventory/getTallyStockJournal/sourceAndDestination?tally_id=${rowData?.tally_id}`,
+    //         headers: {
+    //             "Db": user?.Company_id
+    //         }
+    //     }).then(data => {
+    //         if (data.success) {
+    //             setStockDetails({
+    //                 rowDetails: { ...rowData, stock_journal_date: LocalDate(rowData.stock_journal_date) },
+    //                 soruceDetails: data.data[0].SourceDetails,
+    //                 destinationDetails: data.data[0].DestinationDetails
+    //             });
+    //             // setFilters(pre => ({ ...pre, showDetailsDialog: true }));
+    //         }
+    //     }).catch(e => console.error(e)).finally(() => {
+    //         if (loadingOff) loadingOff();
+    //     })
+    // }
 
     return (
         <>
@@ -80,19 +107,85 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                     + (filters.fetchTo ? ` To ${LocalDate(filters.fetchTo)}` : '') + ' )'
                 }
                 dataArray={sJournalData}
-                onClickFun={data => getDetails(data)}
+                onClickFun={data => {
+                    setFilters(pre => ({ ...pre, showDetailsDialog: true }));
+                    setStockDetails({
+                        rowDetails: { ...data, stock_journal_date: data.stock_journal_date ? LocalDate(data.stock_journal_date) : '' },
+                        soruceDetails: data.SourceDetails,
+                        destinationDetails: data.DestinationDetails
+                    });
+                }}
                 columns={[
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Action',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => (
+                    //         <ButtonActions
+                    //             buttonsData={[
+                    //                 {
+                    //                     name: 'Convert',
+                    //                     icon: <ReadMore />,
+                    //                     onclick: () => { }
+                    //                 },
+                    //                 // {
+                    //                 //     name: 'Open',
+                    //                 //     icon: <Visibility />,
+                    //                 //     onclick: () => getDetails(row)
+                    //                 // },
+                    //             ]}
+                    //         />
+                    //     )
+                    // },
                     createCol("stock_journal_date", "date", 'Date'),
+                    createCol("voucher_name", "string", 'Type'),
                     createCol("journal_no", "string", 'Journal No'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Source',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <table className="table table-bordered m-0">
+                                <tbody>
+                                    {row?.SourceDetails?.map((source, index) => (
+                                        <tr className="py-1" key={index}>
+                                            {/* <td className="fa-12">{index + 1}</td> */}
+                                            <td className="fa-12">{trimText(source?.stock_item_name)}</td>
+                                            <td className="fa-12 text-primary">{NumberFormat(source?.source_consumt_qty)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Destination',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <table className="table table-bordered m-0">
+                                <tbody>
+                                    {row?.DestinationDetails?.map((destinaiton, index) => (
+                                        <tr className="py-1" key={index}>
+                                            {/* <td className="fa-12">{index + 1}</td> */}
+                                            <td className="fa-12">{trimText(destinaiton?.stock_item_name)}</td>
+                                            <td className="fa-12 text-primary">{NumberFormat(destinaiton?.destina_consumt_qty)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) 
+                    },
                     createCol("broker_name", 'string', "Broker"),
                     createCol("transporter_name", 'string', "Transporter"),
                     createCol("loadman_name", 'string', "Loadman"),
                     createCol("othersone_name", 'string', "Others 1"),
                     createCol("otherstwo_name", 'string', "Others 2"),
                     createCol("othersthree_name", 'string', "Others 3"),
-                    createCol("othersfour_name", 'string', "Others 4"),
-                    createCol("othersfive_name", 'string', "Others 5"),
-                    createCol("otherssix_name", 'string', "Others 6"),
+                    // createCol("othersfour_name", 'string', "Others 4"),
+                    // createCol("othersfive_name", 'string', "Others 5"),
+                    // createCol("otherssix_name", 'string', "Others 6"),
+
                 ]}
                 ButtonArea={
                     <>
@@ -151,7 +244,13 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                 <DialogActions>
                     <Button onClick={closeDialog}>close</Button>
                     <Button
-                        onClick={() => setFilters(pre => ({ ...pre, fetchFrom: pre.Fromdate, fetchTo: pre.Todate }))}
+                        onClick={() => {
+                            const updatedFilters = {
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters?.Todate
+                            };
+                            updateQueryString(updatedFilters);
+                        }}
                         startIcon={<Search />}
                         variant="outlined"
                     >Search</Button>
@@ -197,6 +296,7 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                             createCol("source_consumt_amt", "number", "Amount"),
                         ]}
                         title="Source Details"
+                        disablePagination
                     />
                     <br />
                     <FilterableTable
@@ -212,6 +312,7 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                             createCol("destina_consumt_rate", "number", "Rate"),
                             createCol("destina_consumt_amt", "number", "Amount"),
                         ]}
+                        disablePagination
                     />
                 </DialogContent>
                 <DialogActions>

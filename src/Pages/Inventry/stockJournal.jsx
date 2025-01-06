@@ -1,18 +1,27 @@
 import { useEffect, useState } from "react";
-import { ISOString, NumberFormat, Subraction, timeDuration, trimText } from '../../Components/functions';
+import { ISOString, isValidDate, NumberFormat, Subraction, timeDuration, trimText } from '../../Components/functions';
 import FilterableTable, { createCol, ButtonActions } from '../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Edit, FilterAlt, Visibility } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../Components/fetchComponent";
+
+const useQuery = () => new URLSearchParams(useLocation().search);
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+};
 
 const StockJournal = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const query = useQuery();
     const [stockJournalData, setStockJournalData] = useState([]);
     const [filters, setFilters] = useState({
-        Fromdate: ISOString(),
-        Todate: ISOString(),
+        Fromdate: defaultFilters.Fromdate,
+        Todate: defaultFilters.Todate,
         filterDialog: false,
+        refresh: false
     });
 
     useEffect(() => {
@@ -27,7 +36,33 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters.Fromdate, filters.Todate])
+    }, [filters?.Fromdate, filters?.Todate])
+
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+        };
+        setFilters(pre => ({ ...pre, ...queryFilters }));
+    }, [location.search]);
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams(newFilters);
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
+    const handleFilterChange = (key, value) => {
+        const updatedFilters = {
+            Fromdate: filters?.Fromdate,
+            Todate: filters?.Todate,
+            [key]: value
+        };
+        updateQueryString(updatedFilters);
+    };
 
     const closeDialog = () => {
         setFilters({
@@ -121,7 +156,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'Action',
                         isCustomCell: true,
                         Cell: ({ row }) => (
-                            <ButtonActions 
+                            <ButtonActions
                                 buttonsData={[
                                     {
                                         name: 'Edit',
@@ -166,7 +201,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                         <input
                                             type="date"
                                             value={filters.Fromdate}
-                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
+                                            onChange={e => handleFilterChange('Fromdate', e.target.value)}
                                             className="cus-inpt"
                                         />
                                     </td>
@@ -177,7 +212,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                         <input
                                             type="date"
                                             value={filters.Todate}
-                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
+                                            onChange={e => handleFilterChange('Todate', e.target.value)}
                                             className="cus-inpt"
                                         />
                                     </td>
@@ -188,6 +223,11 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeDialog}>close</Button>
+                    {/* <Button
+                        variant="outlined"
+                        startIcon={<Search />}
+                        onClick={() => setFilters(pre => ({ ...pre, refresh: !pre.refresh }))}
+                    >Search</Button> */}
                 </DialogActions>
             </Dialog>
         </>

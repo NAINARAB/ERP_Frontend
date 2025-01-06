@@ -157,7 +157,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         const source = stateDetails?.SourceDetails;
         const destination = stateDetails?.DestinationDetails;
-        const staff = stateDetails?.StaffsDetails; 
+        const staff = stateDetails?.StaffsDetails;
         if (
             isValidObject(stateDetails)
             && Array.isArray(source)
@@ -388,8 +388,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
     }
 
-    // conso
-
     return (
         <>
             <Card>
@@ -409,6 +407,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                             variant="outlined"
                                             color="primary"
                                             type="button"
+                                            disabled={isViewOnly}
                                             onClick={() => setStaffInvolvedList([...staffInvolvedList, { ...initialStaffInvolvedValue }])}
                                         >Add</Button>
                                     </div>
@@ -472,7 +471,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 className="form-check-input shadow-none"
                                                 style={{ padding: '0.7em' }}
                                                 type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id)}
+                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
                                                 name="radioType"
                                                 id="MATERIALINWARD"
                                                 checked={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
@@ -495,7 +494,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 className="form-check-input shadow-none"
                                                 style={{ padding: '0.7em' }}
                                                 type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id)}
+                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
                                                 name="radioType"
                                                 id="OTHERGODOWN"
                                                 checked={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
@@ -518,7 +517,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 className="form-check-input shadow-none"
                                                 style={{ padding: '0.7em' }}
                                                 type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id)}
+                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
                                                 name="radioType"
                                                 id="PROCESSING"
                                                 checked={stockJorunalInfo.Stock_Journal_Bill_type === 'PROCESSING'}
@@ -547,6 +546,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Branch_Id: e.target.value })}
                                                 placeholder={"Select Branch"}
                                                 className="cus-inpt mb-2 p-2"
+                                                disabled={isViewOnly}
                                             >
                                                 <option value="" disabled>Select Branch</option>
                                                 {baseData.branch.map((br, bi) => (
@@ -558,6 +558,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                             <input
                                                 value={stockJorunalInfo.Stock_Journal_date}
                                                 type="date"
+                                                disabled={isViewOnly}
                                                 onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
                                                 className="cus-inpt p-2 mb-2"
                                             />
@@ -576,6 +577,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
                                                 placeholder={"Select Voucher Type"}
+                                                isDisabled={isViewOnly}
                                             />
 
                                             <label className="mt-2">Trip Number</label>
@@ -584,6 +586,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 placeholder="Trip / Machine / Vehicle"
                                                 onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Trip_No: e.target.value })}
                                                 className="cus-inpt p-2 mb-2"
+                                                disabled={isViewOnly}
                                             />
                                         </div>
 
@@ -612,6 +615,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                                     onChange={e => setStockJorunalInfo(pre => ({ ...pre, Start_Time: e.target.value }))}
                                                                     value={stockJorunalInfo?.Start_Time}
                                                                     className="cus-inpt p-2"
+                                                                    disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                             <td className="fa-13">
@@ -620,6 +624,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                                     onChange={e => setStockJorunalInfo(pre => ({ ...pre, End_Time: e.target.value }))}
                                                                     value={stockJorunalInfo?.End_Time}
                                                                     className="cus-inpt p-2"
+                                                                    disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                             <td className="fa-13">
@@ -630,6 +635,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                                     min={0}
                                                                     className="cus-inpt p-2"
                                                                     placeholder="Kilometers"
+                                                                    disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                             <td className="fa-13">
@@ -640,6 +646,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                                     min={Addition(stockJorunalInfo?.Vehicle_Start_KM, 1)}
                                                                     className="cus-inpt p-2"
                                                                     placeholder="Kilometers"
+                                                                    disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                         </tr>
@@ -651,6 +658,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 className="cus-inpt"
                                                 placeholder="Narration"
                                                 rows={5}
+                                                disabled={isViewOnly}
                                                 value={stockJorunalInfo.Narration}
                                                 onChange={e => setStockJorunalInfo(pre => ({ ...pre, Narration: e.target.value }))}
                                             ></textarea>
@@ -671,7 +679,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         variant="outlined"
                                         color="primary"
                                         type="button"
-                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                         onClick={() => {
                                             setSourceList([...sourceList, { ...initialSoruceValue }]);
                                             if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') setDestinationList(
@@ -707,7 +715,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             menuPortalTarget={document.body}
                                                             styles={customSelectStyles}
                                                             isSearchable={true}
-                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
                                                         />
@@ -717,7 +725,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Sour_Batch_Lot_No ?? ""}
                                                             onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
                                                             className="cus-inpt p-2"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                         />
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>
@@ -726,7 +734,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             type="number"
                                                             min={1}
                                                             required
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -737,7 +745,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Unit</option>
                                                             {baseData.uom.map((uom, ind) => (
@@ -748,7 +756,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Rate ?? ""}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             type="number"
                                                             min={1}
                                                             onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
@@ -758,7 +766,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Amt ?? ""}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             type="number"
                                                             min={1}
                                                             onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
@@ -772,6 +780,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeSourceValue(index, 'Sour_Goodown_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
+                                                            disabled={isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Location</option>
                                                             {baseData.godown.map((god, ind) => (
@@ -784,7 +793,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             variant="contained"
                                                             color="error"
                                                             type="button"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             size="small"
                                                             onClick={() => {
                                                                 if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') {
@@ -821,7 +830,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         variant="outlined"
                                         color="primary"
                                         type="button"
-                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                         onClick={() => {
                                             setDestinationList([...destinationList, { ...initialDestinationValue }]);
                                             if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') setSourceList(
@@ -864,13 +873,14 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             isSearchable={true}
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
-                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                         />
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Dest_Batch_Lot_No ?? ""}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Batch_Lot_No', e.target.value)}
+                                                            disabled={isViewOnly}
                                                             className="cus-inpt p-2"
                                                         />
                                                     </td>
@@ -881,7 +891,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             min={1}
                                                             required
                                                             onChange={e => changeDestinationValues(index, 'Dest_Qty', e.target.value)}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             className="cus-inpt p-2"
                                                         />
                                                     </td>
@@ -891,7 +901,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeDestinationValues(index, 'Dest_Unit_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Unit</option>
                                                             {baseData.uom.map((uom, ind) => (
@@ -904,7 +914,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Dest_Rate ?? ""}
                                                             type="number"
                                                             min={1}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Rate', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -914,7 +924,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Dest_Amt ?? ""}
                                                             type="number"
                                                             min={1}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Amt', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -926,6 +936,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeDestinationValues(index, 'Dest_Goodown_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
+                                                            disabled={isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Location</option>
                                                             {baseData.godown.map((god, ind) => (
@@ -937,7 +948,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                         <IconButton
                                                             variant="contained"
                                                             color="error"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
+                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             type="button"
                                                             size="small"
                                                             onClick={() => {
@@ -970,6 +981,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                 variant="outlined"
                                 type="button"
                                 color="secondary"
+                                disabled={isViewOnly}
                                 onClick={resetForm}
                             >
                                 Reset
@@ -978,7 +990,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                 variant="contained" className="ms-2"
                                 color="primary"
                                 type="submit"
-                                disabled={sourceList.length === 0 || destinationList.length === 0}
+                                disabled={sourceList.length === 0 || destinationList.length === 0 || isViewOnly}
                             >
                                 {checkIsNumber(stockJorunalInfo?.STJ_Id) ? "Update" : "Save"}
                             </Button>
@@ -991,3 +1003,10 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
 }
 
 export default StockJournalCreate;
+
+export {
+    initialStockJournalInfoValues,
+    initialSoruceValue,
+    initialDestinationValue,
+    initialStaffInvolvedValue
+}
