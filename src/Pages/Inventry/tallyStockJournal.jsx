@@ -173,13 +173,18 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         const DestinationDetails = row?.DestinationDetails?.map(destination => {
             return Object.fromEntries(
                 Object.entries(initialDestinationValue).map(([key, value]) => {
-                    if (key === 'Dest_Item_Id') return [key, findObject(products, 'ERP_Id', destination['destina_consumt_item_id'])?.Product_Id ?? '']
-                    if (key === 'Dest_Item_Name') return ['Product_Name', findObject(products, 'ERP_Id', destination['destina_consumt_item_id'])?.Product_Name ?? '']
-                    if (key === 'Dest_Goodown_Id') return [key, findObject(godown, 'Godown_Tally_Id', destination['destina_consumt_goodown_id'])?.Godown_Id ?? '']
-                    if (key === 'Dest_Batch_Lot_No') return [key, destination['destina_batch_Lot_No'] ?? '']
-                    if (key === 'Dest_Qty') return [key, destination['destina_consumt_qty'] ?? '']
-                    if (key === 'Dest_Rate') return [key, destination['destina_consumt_rate'] ?? '']
-                    if (key === 'Dest_Amt') return [key, destination['destina_consumt_amt'] ?? '']
+                    const productData = findObject(products, 'ERP_Id', destination['destina_consumt_item_id']);
+                    const godownData = findObject(godown, 'Godown_Tally_Id', destination['destina_consumt_goodown_id']);
+
+                    if (key === 'Dest_Item_Id') return [key, productData.Product_Id ?? value]
+                    if (key === 'Dest_Item_Name') return ['Product_Name', productData.Product_Name ?? value]
+                    if (key === 'Dest_Goodown_Id') return [key, godownData.Godown_Id ?? value]
+                    if (key === 'Dest_Batch_Lot_No') return [key, destination['destina_batch_Lot_No'] ?? value]
+                    if (key === 'Dest_Qty') return [key, destination['destina_consumt_qty'] ?? value]
+                    if (key === 'Dest_Unit_Id') return [key, productData.UOM_Id ?? value]
+                    if (key === 'Dest_Unit') return [key, productData.Units ?? value]
+                    if (key === 'Dest_Rate') return [key, destination['destina_consumt_rate'] ?? value]
+                    if (key === 'Dest_Amt') return [key, destination['destina_consumt_amt'] ?? value]
 
                     return [key, value]
                 })
@@ -189,13 +194,18 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         const SourceDetails = row?.SourceDetails?.map(source => {
             return Object.fromEntries(
                 Object.entries(initialSoruceValue).map(([key, value]) => {
-                    if (key === 'Sour_Item_Id') return [key, findObject(products, 'ERP_Id', source['source_consumt_item_id'])?.Product_Id ?? '']
-                    if (key === 'Sour_Item_Name') return ['Product_Name', findObject(products, 'ERP_Id', source['source_consumt_item_id'])?.Product_Name ?? '']
-                    if (key === 'Sour_Goodown_Id') return [key, findObject(godown, 'Godown_Tally_Id', source['source_consumt_goodown_id'])?.Godown_Id ?? '']
-                    if (key === 'Sour_Batch_Lot_No') return [key, source['source_batch_Lot_No'] ?? '']
-                    if (key === 'Sour_Qty') return [key, source['source_consumt_qty'] ?? '']
-                    if (key === 'Sour_Rate') return [key, source['source_consumt_rate'] ?? '']
-                    if (key === 'Sour_Amt') return [key, source['source_consumt_amt'] ?? '']
+                    const productData = findObject(products, 'ERP_Id', source['source_consumt_item_id']);
+                    const godownData = findObject(godown, 'Godown_Tally_Id', source['source_consumt_goodown_id']);
+
+                    if (key === 'Sour_Item_Id') return [key, productData.Product_Id ?? value]
+                    if (key === 'Sour_Item_Name') return ['Product_Name', productData.Product_Name ?? value]
+                    if (key === 'Sour_Goodown_Id') return [key, godownData.Godown_Id ?? value]
+                    if (key === 'Sour_Batch_Lot_No') return [key, source['source_batch_Lot_No'] ?? value]
+                    if (key === 'Sour_Qty') return [key, source['source_consumt_qty'] ?? value]
+                    if (key === 'Sour_Unit_Id') return [key, productData.UOM_Id ?? value]
+                    if (key === 'Sour_Unit') return [key, productData.Units ?? value]
+                    if (key === 'Sour_Rate') return [key, source['source_consumt_rate'] ?? value]
+                    if (key === 'Sour_Amt') return [key, source['source_consumt_amt'] ?? value]
 
                     return [key, value]
                 })
@@ -253,6 +263,12 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                     },
                     createCol("stock_journal_date", "date", 'Date'),
                     createCol("voucher_name", "string", 'Type'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Type',
+                        isCustomCell: true,
+                        Cell: ({ row }) => findObject(voucherType, 'Voucher_Type', row?.voucher_name)?.Type
+                    },
                     createCol("journal_no", "string", 'Journal No'),
                     // {
                     //     isVisible: 1,
