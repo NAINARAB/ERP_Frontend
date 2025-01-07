@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../Components/fetchComponent';
-import { checkIsNumber, getSessionUser, ISOString, isValidDate, LocalDate, NumberFormat, trimText } from "../../Components/functions";
+import { Addition, checkIsNumber, getSessionUser, ISOString, isValidDate, LocalDate, NumberFormat, trimText } from "../../Components/functions";
 import FilterableTable, { createCol, ButtonActions } from '../../Components/filterableTable2'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { FilterAlt, ReadMore, Search, Today, Visibility } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import { initialStockJournalInfoValues, initialSoruceValue, initialDestinationValue, initialStaffInvolvedValue } from "./stockJournalCreate";
+
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -12,11 +14,17 @@ const defaultFilters = {
     Todate: ISOString(),
 };
 
+const findObject = (arr = [], key, value) => arr.find(obj => String(obj[key]) === String(value)) ?? {};
+
 const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const query = useQuery();
     const user = getSessionUser().user;
+    const [products, setProducts] = useState([]);
+    const [godown, setGodown] = useState([]);
+    const [voucherType, setVoucherType] = useState([]);
+    // const [uom, setUOM] = useState([])
     const [sJournalData, setSJournalData] = useState([]);
     const [stockDetails, setStockDetails] = useState({
         soruceDetails: [],
@@ -61,6 +69,47 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
         setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
     }, [location.search]);
 
+    useEffect(() => {
+
+        const fetchData = async () => {
+            try {
+                const [
+                    productsResponse,
+                    godownLocationsResponse,
+                    voucherTypeResponse,
+                    // uomResponse,
+                ] = await Promise.all([
+                    fetchLink({ address: `masters/products` }),
+                    fetchLink({ address: `dataEntry/godownLocationMaster` }),
+                    fetchLink({ address: `purchase/voucherType` }),
+                    // fetchLink({ address: `masters/uom` }),
+                ]);
+
+                const productsData = (productsResponse.success ? productsResponse.data : []).sort(
+                    (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+                );
+                const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
+                    (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
+                );
+                const voucherType = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
+                    (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
+                );
+                // const uomData = (uomResponse.success ? uomResponse.data : []).sort(
+                //     (a, b) => String(a.Units).localeCompare(b.Units)
+                // );
+
+                setProducts(productsData);
+                setGodown(godownLocations);
+                setVoucherType(voucherType);
+                // setUOM(uomData)
+            } catch (e) {
+                console.error("Error fetching data:", e);
+            }
+        };
+
+        fetchData();
+    }, [])
+
     const updateQueryString = (newFilters) => {
         const params = new URLSearchParams(newFilters);
         navigate(`?${params.toString()}`, { replace: true });
@@ -98,6 +147,72 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
     //     })
     // }
 
+    const navToErpStockJournal = (row) => {
+        const GeneralInfo = Object.fromEntries(
+            Object.entries(initialStockJournalInfoValues).map(([key, value]) => {
+                if (key === 'Stock_Journal_date') return [key, row['stock_journal_date'] ? ISOString(row['stock_journal_date']) : value]
+                if (key === 'Invoice_no') return [key, row['invoice_no'] ? row['invoice_no'] : value]
+                if (key === 'Stock_Journal_Bill_type') return [key, findObject(voucherType, 'Voucher_Type', row?.voucher_name)?.Type ?? value]
+                if (key === 'Narration') return [key, (
+                    ' Broker: ' + (row['broker_name'] ?? ' - ') +
+                    '\n Transporter: ' + (row['transporter_name'] ?? ' - ') +
+                    '\n Loadman: ' + (row['loadman_name'] ?? ' - ') +
+                    '\n Others1: ' + (row['othersone_name'] ?? ' - ') +
+                    '\n Others2: ' + (row['otherstwo_name'] ?? ' - ') +
+                    '\n Others3: ' + (row['othersthree_name'] ?? ' - ') +
+                    '\n Others4: ' + (row['othersfour_name'] ?? ' - ') +
+                    '\n Others5: ' + (row['othersfive_name'] ?? ' - ') +
+                    '\n Others6: ' + (row['otherssix_name'] ?? ' - ') +
+                    '\n\n Narration: ' + (row['narration'] ?? ' - ')
+                )];
+                
+                return [key, value]
+            })
+        )
+
+        const DestinationDetails = row?.DestinationDetails?.map(destination => {
+            return Object.fromEntries(
+                Object.entries(initialDestinationValue).map(([key, value]) => {
+                    if (key === 'Dest_Item_Id') return [key, findObject(products, 'ERP_Id', destination['destina_consumt_item_id'])?.Product_Id ?? '']
+                    if (key === 'Dest_Item_Name') return ['Product_Name', findObject(products, 'ERP_Id', destination['destina_consumt_item_id'])?.Product_Name ?? '']
+                    if (key === 'Dest_Goodown_Id') return [key, findObject(godown, 'Godown_Tally_Id', destination['destina_consumt_goodown_id'])?.Godown_Id ?? '']
+                    if (key === 'Dest_Batch_Lot_No') return [key, destination['destina_batch_Lot_No'] ?? '']
+                    if (key === 'Dest_Qty') return [key, destination['destina_consumt_qty'] ?? '']
+                    if (key === 'Dest_Rate') return [key, destination['destina_consumt_rate'] ?? '']
+                    if (key === 'Dest_Amt') return [key, destination['destina_consumt_amt'] ?? '']
+
+                    return [key, value]
+                })
+            )
+        });
+
+        const SourceDetails = row?.SourceDetails?.map(source => {
+            return Object.fromEntries(
+                Object.entries(initialSoruceValue).map(([key, value]) => {
+                    if (key === 'Sour_Item_Id') return [key, findObject(products, 'ERP_Id', source['source_consumt_item_id'])?.Product_Id ?? '']
+                    if (key === 'Sour_Item_Name') return ['Product_Name', findObject(products, 'ERP_Id', source['source_consumt_item_id'])?.Product_Name ?? '']
+                    if (key === 'Sour_Goodown_Id') return [key, findObject(godown, 'Godown_Tally_Id', source['source_consumt_goodown_id'])?.Godown_Id ?? '']
+                    if (key === 'Sour_Batch_Lot_No') return [key, source['source_batch_Lot_No'] ?? '']
+                    if (key === 'Sour_Qty') return [key, source['source_consumt_qty'] ?? '']
+                    if (key === 'Sour_Rate') return [key, source['source_consumt_rate'] ?? '']
+                    if (key === 'Sour_Amt') return [key, source['source_consumt_amt'] ?? '']
+
+                    return [key, value]
+                })
+            )
+        });
+
+        // console.log({
+        //     ...GeneralInfo, SourceDetails, DestinationDetails, StaffsDetails: []
+        // })
+
+        navigate('/erp/inventory/stockJournal/create', {
+            state: {
+                ...GeneralInfo, SourceDetails, DestinationDetails, StaffsDetails: []
+            }
+        })
+    }
+
     return (
         <>
             <FilterableTable
@@ -107,74 +222,89 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                     + (filters.fetchTo ? ` To ${LocalDate(filters.fetchTo)}` : '') + ' )'
                 }
                 dataArray={sJournalData}
-                onClickFun={data => {
-                    setFilters(pre => ({ ...pre, showDetailsDialog: true }));
-                    setStockDetails({
-                        rowDetails: { ...data, stock_journal_date: data.stock_journal_date ? LocalDate(data.stock_journal_date) : '' },
-                        soruceDetails: data.SourceDetails,
-                        destinationDetails: data.DestinationDetails
-                    });
-                }}
                 columns={[
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Action',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         <ButtonActions
-                    //             buttonsData={[
-                    //                 {
-                    //                     name: 'Convert',
-                    //                     icon: <ReadMore />,
-                    //                     onclick: () => { }
-                    //                 },
-                    //                 // {
-                    //                 //     name: 'Open',
-                    //                 //     icon: <Visibility />,
-                    //                 //     onclick: () => getDetails(row)
-                    //                 // },
-                    //             ]}
-                    //         />
-                    //     )
-                    // },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Action',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <ButtonActions
+                                buttonsData={[
+                                    {
+                                        name: 'Convert',
+                                        icon: <ReadMore />,
+                                        onclick: () => navToErpStockJournal(row)
+                                    },
+                                    {
+                                        name: 'Open',
+                                        icon: <Visibility />,
+                                        onclick: () => {
+                                            setFilters(pre => ({ ...pre, showDetailsDialog: true }));
+                                            setStockDetails({
+                                                rowDetails: { ...row, stock_journal_date: row.stock_journal_date ? LocalDate(row.stock_journal_date) : '' },
+                                                soruceDetails: row.SourceDetails,
+                                                destinationDetails: row.DestinationDetails
+                                            });
+                                        }
+                                    },
+                                ]}
+                            />
+                        )
+                    },
                     createCol("stock_journal_date", "date", 'Date'),
                     createCol("voucher_name", "string", 'Type'),
                     createCol("journal_no", "string", 'Journal No'),
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Source',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => (
+                    //         <table className="table table-bordered m-0">
+                    //             <tbody>
+                    //                 {row?.SourceDetails?.map((source, index) => (
+                    //                     <tr className="py-1" key={index}>
+                    //                         {/* <td className="fa-12">{index + 1}</td> */}
+                    //                         <td className="fa-12">{trimText(source?.stock_item_name)}</td>
+                    //                         <td className="fa-12 text-primary">{NumberFormat(source?.source_consumt_qty)}</td>
+                    //                     </tr>
+                    //                 ))}
+                    //             </tbody>
+                    //         </table>
+                    //     )
+                    // },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Destination',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => (
+                    //         <table className="table table-bordered m-0">
+                    //             <tbody>
+                    //                 {row?.DestinationDetails?.map((destinaiton, index) => (
+                    //                     <tr className="py-1" key={index}>
+                    //                         {/* <td className="fa-12">{index + 1}</td> */}
+                    //                         <td className="fa-12">{trimText(destinaiton?.stock_item_name)}</td>
+                    //                         <td className="fa-12 text-primary">{NumberFormat(destinaiton?.destina_consumt_qty)}</td>
+                    //                     </tr>
+                    //                 ))}
+                    //             </tbody>
+                    //         </table>
+                    //     )
+                    // },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Source',
                         isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <table className="table table-bordered m-0">
-                                <tbody>
-                                    {row?.SourceDetails?.map((source, index) => (
-                                        <tr className="py-1" key={index}>
-                                            {/* <td className="fa-12">{index + 1}</td> */}
-                                            <td className="fa-12">{trimText(source?.stock_item_name)}</td>
-                                            <td className="fa-12 text-primary">{NumberFormat(source?.source_consumt_qty)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )
+                        Cell: ({ row }) => NumberFormat(row?.SourceDetails?.reduce((acc, source) => (
+                            Addition(acc, source?.source_consumt_qty)
+                        ), 0))
                     },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Destination',
                         isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <table className="table table-bordered m-0">
-                                <tbody>
-                                    {row?.DestinationDetails?.map((destinaiton, index) => (
-                                        <tr className="py-1" key={index}>
-                                            {/* <td className="fa-12">{index + 1}</td> */}
-                                            <td className="fa-12">{trimText(destinaiton?.stock_item_name)}</td>
-                                            <td className="fa-12 text-primary">{NumberFormat(destinaiton?.destina_consumt_qty)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        ) 
+                        Cell: ({ row }) => NumberFormat(row?.DestinationDetails?.reduce((acc, destinaiton) => (
+                            Addition(acc, destinaiton?.destina_consumt_qty)
+                        ), 0))
                     },
                     createCol("broker_name", 'string', "Broker"),
                     createCol("transporter_name", 'string', "Transporter"),
@@ -250,6 +380,7 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                                 Todate: filters?.Todate
                             };
                             updateQueryString(updatedFilters);
+                            closeDialog();
                         }}
                         startIcon={<Search />}
                         variant="outlined"

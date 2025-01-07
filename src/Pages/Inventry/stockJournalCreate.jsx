@@ -539,7 +539,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
 
                                     <div className="row px-2">
                                         {/* Common Details - 1 */}
-                                        <div className="col-lg-3 col-sm-4 p-2">
+                                        <div className="col-lg-3 col-sm-6 p-2">
                                             <label>Branch</label>
                                             <select
                                                 value={stockJorunalInfo.Branch_Id}
@@ -553,17 +553,21 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <option key={bi} value={br.BranchId}>{br.BranchName}</option>
                                                 ))}
                                             </select>
+                                        </div>
 
-                                            <label>Date</label>
-                                            <input
-                                                value={stockJorunalInfo.Stock_Journal_date}
-                                                type="date"
-                                                disabled={isViewOnly}
-                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
-                                                className="cus-inpt p-2 mb-2"
-                                            />
+                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <label>Date</label>
+                                        <input
+                                            value={stockJorunalInfo.Stock_Journal_date}
+                                            type="date"
+                                            disabled={isViewOnly}
+                                            onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
+                                            className="cus-inpt p-2 mb-2"
+                                        />
+                                        </div>
 
-                                            <label>Voucher Type</label>
+                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <label>Voucher Type</label>
                                             <Select
                                                 value={{ value: stockJorunalInfo.Stock_Journal_Voucher_type, label: stockJorunalInfo.Stock_Journal_Voucher_type }}
                                                 onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_Voucher_type: e.value })}
@@ -579,8 +583,10 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 placeholder={"Select Voucher Type"}
                                                 isDisabled={isViewOnly}
                                             />
+                                        </div>
 
-                                            <label className="mt-2">Trip Number</label>
+                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <label>Trip Number</label>
                                             <input
                                                 value={stockJorunalInfo.Trip_No}
                                                 placeholder="Trip / Machine / Vehicle"
@@ -591,9 +597,9 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         </div>
 
                                         {/* Common Details - 2 */}
-                                        <div className="col-lg-9 col-sm-8 p-2 ">
+                                        <div className="col-12 p-2 ">
 
-                                            <div className="table-responsive">
+                                            {/* <div className="table-responsive">
                                                 <table className="table table-bordered">
                                                     <thead>
                                                         <tr>
@@ -652,7 +658,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                         </tr>
                                                     </tbody>
                                                 </table>
-                                            </div>
+                                            </div> */}
 
                                             <textarea
                                                 className="cus-inpt"
