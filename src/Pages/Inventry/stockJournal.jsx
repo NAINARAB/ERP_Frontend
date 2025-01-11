@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { ISOString, isValidDate, NumberFormat, Subraction, timeDuration, trimText } from '../../Components/functions';
 import FilterableTable, { createCol, ButtonActions } from '../../Components/filterableTable2';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../Components/fetchComponent";
+import { toast } from 'react-toastify'
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -20,6 +21,8 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
+        fetchFrom: defaultFilters.Fromdate,
+        fetchTo: defaultFilters.Todate,
         filterDialog: false,
         refresh: false
     });
@@ -28,7 +31,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
 
         fetchLink({
-            address: `inventory/stockJournal?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
+            address: `inventory/stockJournal?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
         }).then(data => {
             if (data.success) {
                 setStockJournalData(data.data);
@@ -36,7 +39,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters?.Fromdate, filters?.Todate])
+    }, [filters?.fetchFrom, filters?.fetchTo])
 
     useEffect(() => {
         const queryFilters = {
@@ -47,7 +50,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                 ? query.get("Todate")
                 : defaultFilters.Todate,
         };
-        setFilters(pre => ({ ...pre, ...queryFilters }));
+        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
     }, [location.search]);
 
     const updateQueryString = (newFilters) => {
@@ -55,20 +58,20 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         navigate(`?${params.toString()}`, { replace: true });
     };
 
-    const handleFilterChange = (key, value) => {
-        const updatedFilters = {
-            Fromdate: filters?.Fromdate,
-            Todate: filters?.Todate,
-            [key]: value
-        };
-        updateQueryString(updatedFilters);
-    };
-
     const closeDialog = () => {
         setFilters({
             ...filters,
             filterDialog: false,
         });
+    }
+
+    const syncTallyStockJournalData = () => {
+        fetchLink({
+            address: `inventory/stockJournal/tallySync`,
+        }).then(data => {
+            if (data.success) toast.success(data.message)
+            else toast.error(data.message)
+        }).catch(e => console.error(e))
     }
 
     return (
@@ -79,14 +82,22 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                 maxHeightOption
                 ButtonArea={
                     <>
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters({ ...filters, filterDialog: true })}
-                        ><FilterAlt /></IconButton>
                         <Button
                             variant="outlined"
                             onClick={() => navigate('/erp/inventory/stockJournal/create')}
                         >Add</Button>
+                        <Tooltip title='Filters'>
+                            <IconButton
+                                size="small"
+                                onClick={() => setFilters({ ...filters, filterDialog: true })}
+                            ><FilterAlt /></IconButton>
+                        </Tooltip>
+                        <Tooltip title='Sync Tally Stock Journal'>
+                            <IconButton
+                                size="small"
+                                onClick={syncTallyStockJournalData}
+                            ><Sync /></IconButton>
+                        </Tooltip>
                     </>
                 }
                 EnableSerialNumber
@@ -96,37 +107,37 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                     createCol('Journal_no', 'string', 'Journal number'),
                     createCol('Stock_Journal_Bill_type', 'string', 'Type'),
                     createCol('Stock_Journal_Voucher_type', 'string', 'Voucher'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Time Taken',
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-                            const startTime = row?.Start_Time ? new Date(row.Start_Time) : '';
-                            const endTime = row.End_Time ? new Date(row.End_Time) : '';
-                            const timeTaken = (startTime && endTime) ? timeDuration(startTime, endTime) : '00:00';
-                            return (
-                                <span className="cus-badge bg-light">{timeTaken}</span>
-                            )
-                        }
-                    },
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Distance',
-                        isCustomCell: true,
-                        Cell: ({ row }) => NumberFormat(Subraction(row?.Vehicle_End_KM, row?.Vehicle_Start_KM))
-                    },
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Staffs',
-                        isCustomCell: true,
-                        Cell: ({ row }) => row?.StaffsDetails?.map((staff, index) => (
-                            <div className="py-1" key={index}>
-                                <span className="cus-badge bg-light border">
-                                    {(index + 1) + '.' + trimText(staff.Cost_Center_Name)}
-                                </span>
-                            </div>
-                        ))
-                    },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Time Taken',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => {
+                    //         const startTime = row?.Start_Time ? new Date(row.Start_Time) : '';
+                    //         const endTime = row.End_Time ? new Date(row.End_Time) : '';
+                    //         const timeTaken = (startTime && endTime) ? timeDuration(startTime, endTime) : '00:00';
+                    //         return (
+                    //             <span className="cus-badge bg-light">{timeTaken}</span>
+                    //         )
+                    //     }
+                    // },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Distance',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => NumberFormat(Subraction(row?.Vehicle_End_KM, row?.Vehicle_Start_KM))
+                    // },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Staffs',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => row?.StaffsDetails?.map((staff, index) => (
+                    //         <div className="py-1" key={index}>
+                    //             <span className="cus-badge bg-light border">
+                    //                 {(index + 1) + '.' + trimText(staff.Cost_Center_Name)}
+                    //             </span>
+                    //         </div>
+                    //     ))
+                    // },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Source',
@@ -195,24 +206,25 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                     <div className="table-responsive pb-4">
                         <table className="table">
                             <tbody>
-                                <tr>
+                            <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
                                         <input
                                             type="date"
                                             value={filters.Fromdate}
-                                            onChange={e => handleFilterChange('Fromdate', e.target.value)}
+                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
                                             className="cus-inpt"
                                         />
                                     </td>
                                 </tr>
+
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
                                         <input
                                             type="date"
                                             value={filters.Todate}
-                                            onChange={e => handleFilterChange('Todate', e.target.value)}
+                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
                                             className="cus-inpt"
                                         />
                                     </td>
@@ -223,11 +235,18 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeDialog}>close</Button>
-                    {/* <Button
-                        variant="outlined"
+                    <Button
+                        onClick={() => {
+                            const updatedFilters = {
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters?.Todate
+                            };
+                            updateQueryString(updatedFilters);
+                            closeDialog();
+                        }}
                         startIcon={<Search />}
-                        onClick={() => setFilters(pre => ({ ...pre, refresh: !pre.refresh }))}
-                    >Search</Button> */}
+                        variant="outlined"
+                    >Search</Button>
                 </DialogActions>
             </Dialog>
         </>

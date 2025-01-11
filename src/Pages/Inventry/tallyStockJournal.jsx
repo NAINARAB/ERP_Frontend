@@ -153,6 +153,7 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                 if (key === 'Stock_Journal_date') return [key, row['stock_journal_date'] ? ISOString(row['stock_journal_date']) : value]
                 if (key === 'Invoice_no') return [key, row['invoice_no'] ? row['invoice_no'] : value]
                 if (key === 'Stock_Journal_Bill_type') return [key, findObject(voucherType, 'Voucher_Type', row?.voucher_name)?.Type ?? value]
+                if (key === 'Stock_Journal_Voucher_type') return [key, row['voucher_name']]
                 if (key === 'Narration') return [key, (
                     ' Broker: ' + (row['broker_name'] ?? ' - ') +
                     '\n Transporter: ' + (row['transporter_name'] ?? ' - ') +
@@ -262,10 +263,10 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                         )
                     },
                     createCol("stock_journal_date", "date", 'Date'),
-                    createCol("voucher_name", "string", 'Type'),
+                    createCol("voucher_name", "string", 'Tally Type'),
                     {
                         isVisible: 1,
-                        ColumnHeader: 'Type',
+                        ColumnHeader: 'ERP Type',
                         isCustomCell: true,
                         Cell: ({ row }) => findObject(voucherType, 'Voucher_Type', row?.voucher_name)?.Type
                     },

@@ -233,6 +233,9 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                 ColumnHeader: 'Action',
                             }
                         ]}
+                        tableMaxHeight={700}
+                        isExpendable={true}
+                        expandableComp={({ row }) => row?.SubRoutes?.length > 0 && <DisplaySubRoutings dataSource={row} />}
                     />
                 )}
 

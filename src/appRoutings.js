@@ -75,6 +75,9 @@ const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"));
 const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"))
 const StockJournal = lazy(() => import("./Pages/Inventry/stockJournal"))
 const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate"))
+const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
+const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'))
+const TripSheetCreation = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetCreation'))
 
 
 // Purchase
@@ -179,6 +182,9 @@ const RoutingArray = [
     { component: <TallyStockJournalList />, path: '/erp/inventory/tallyStockJournal' },
     { component: <StockJournal />, path: '/erp/inventory/stockJournal' },
     { component: <StockJournalEntry />, path: '/erp/inventory/stockJournal/create' },
+    { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
+    { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
+    { component: <TripSheetCreation />, path: '/erp/inventory/tripSheet/searchGodown/create' },
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },

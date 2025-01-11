@@ -5,13 +5,15 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 import { fetchLink } from '../../Components/fetchComponent';
 import FilterableTable from "../../Components/filterableTable2";
 import * as XLSX from 'xlsx';
-
+import { MyContext } from "../../Components/context/contextProvider";
+import { useContext } from "react";
 const FingerPrintAttendanceReport = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const userTypeId = storage?.UserTypeId;
     const [attendanceData, setAttendanceData] = useState([]);
 
-
+    const { contextObj } = useContext(MyContext);
+    const Add_Rights = contextObj?.Add_Rights;
     const getCurrentMonthYear = () => {
         const date = new Date();
         const year = date.getFullYear();
@@ -62,7 +64,7 @@ const FingerPrintAttendanceReport = () => {
             if (data.success) {
                 let filteredEmployees = [];
 
-                if (Number(userTypeId) === 1 || Number(userTypeId) === 0) {
+                if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) == 1) {
                     filteredEmployees = data.data;
                     setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
                     setIsDropdownDisabled(false);
@@ -95,7 +97,7 @@ const FingerPrintAttendanceReport = () => {
             const endDate = `${year}-${month}-${dayCount}`;
 
 
-         
+
             const response = await fetchLink({
                 address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&UserId=${EmpId}`,
                 headers: {
