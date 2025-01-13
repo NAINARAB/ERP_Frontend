@@ -161,7 +161,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 ]}
                 isExpendable={true}
                 expandableComp={({ row }) => (
-                    <FilterableTable 
+                    <FilterableTable
                         title="Items"
                         EnableSerialNumber
                         dataArray={Array.isArray(row.Products_List) ? row.Products_List : []}

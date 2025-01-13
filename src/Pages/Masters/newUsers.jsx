@@ -23,9 +23,6 @@ const Users = ({ loadingOn, loadingOff }) => {
         Password: "",
         BranchId: '',
         Company_id: parseData?.Company_id,
-
-
-
     };
     const initialInputValue = {
         Cost_Center_Id: '',

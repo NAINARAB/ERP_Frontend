@@ -21,6 +21,7 @@ export const tripDetailsColumns = {
     Trip_Id: '',
     STJ_Id: '',
     Batch_No: '',
+    Journal_no: '',
     From_Location: '',
     To_Location: '',
     S_No: '',

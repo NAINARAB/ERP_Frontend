@@ -9,7 +9,6 @@ import Select from 'react-select'
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { isEqualNumber } from "../../Components/functions";
 import AddBoxIcon from '@mui/icons-material/AddBox';
-import { encryptPasswordFun } from "../../Components/functions";
 import { Button as MuiButton } from "@mui/material/";
 import CheckIcon from '@mui/icons-material/Check';
 
@@ -41,7 +40,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [reload, setReload] = useState(false);
     const [usertypes, setUserType] = useState([])
-
+    const [employeeMaster, setEmployeeMaster] = useState([])
 
     useEffect(() => {
         fetchLink({
@@ -64,6 +63,20 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
         }).then((data) => {
             if (data.success) {
                 setUserType(data.data);
+            }
+        }).catch((e) => console.error(e));
+
+
+    }, [parseData?.Company_id, reload]);
+
+
+    useEffect(() => {
+        fetchLink({
+            address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
+        }).then((data) => {
+            console.log("Data", data)
+            if (data.success) {
+                setEmployeeMaster(data.data);
             }
         }).catch((e) => console.error(e));
 
@@ -112,15 +125,10 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
 
 
-        const encryptedPassword = encryptPasswordFun(inputValue.Password);
 
         const userData = {
             Name: inputValue.Name,
-            UserTypeId: inputValue.UserType,
-            Password: encryptedPassword,
-            UserName: inputValue.UserName,
-            Company_Id: inputValue.Company_Id,
-            BranchId: inputValue.BranchId,
+            UserId: inputValue.UserId,
             Cost_Center_Id: inputValue.Cost_Center_Id
         };
 
@@ -354,8 +362,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
 
 
 
-
-            <Dialog open={addDialogBox} onClose={() => setAddDialogBox(false)} fullWidth maxWidth='sm'>
+            <Dialog open={addDialogBox} onClose={() => setAddDialogBox(false)} fullWidth maxWidth="md">
                 <DialogTitle>Add New User</DialogTitle>
                 <DialogContent>
                     {/* Wrap your fields inside a form */}
@@ -368,113 +375,71 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                         <td>
                                             <input
                                                 value={inputValue.Name}
-                                                onChange={e => setInputValue(prev => ({ ...prev, Name: e.target.value }))}
-                                                className="cus-inpt p-2"
-                                                required
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>User Type</td>
-                                        <td>
-                                            <select
-                                                value={inputValue.UserType}
-                                                onChange={e => setInputValue(prev => ({ ...prev, UserType: e.target.value }))}
-                                                className="cus-inpt p-2"
-                                                required
-                                            >
-                                                <option value="">Select Branch</option>
-                                                {usertypes.map((UserTypeItem, index) => (
-                                                    <option key={index} value={UserTypeItem.UserTypeId}>
-                                                        {UserTypeItem.UserType}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </td>
-
-                                    </tr>
-                                    <tr>
-                                        <td>Mobile</td>
-                                        <td>
-                                            <input
-                                                value={inputValue.UserName}
-                                                onChange={e => setInputValue(prev => ({ ...prev, UserName: e.target.value }))}
-                                                className="cus-inpt p-2"
-                                                required
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Company</td>
-                                        <td>
-                                            <select
-                                                value={inputValue.Company_Id}
-                                                onChange={e => setInputValue(prev => ({ ...prev, Company_Id: e.target.value }))}
-                                                className="cus-inpt p-2"
-                                                required
-                                            >
-                                                <option value="">Select Company</option>
-                                                {companyData.map((companyItem, index) => (
-                                                    <option key={index} value={companyItem.id}>{companyItem.Company_Name}</option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Password</td>
-                                        <td>
-
-                                            <input
-                                                className="cus-inpt"
-                                                type="password"
-                                                minLength={6}
-                                                value={inputValue.Password}
                                                 onChange={(e) =>
-                                                    setInputValue({ ...inputValue, Password: e.target.value })
+                                                    setInputValue((prev) => ({ ...prev, Name: e.target.value }))
                                                 }
+                                                className="cus-inpt p-2"
                                                 required
                                             />
                                         </td>
                                     </tr>
-
                                     <tr>
-                                        <td>Branch</td>
-                                        <td>
+                                        <Td>User Type <RequiredStar /></Td>
+
+                                        <Td>
                                             <select
-                                                value={inputValue.BranchId}
-                                                onChange={e => setInputValue(prev => ({ ...prev, BranchId: e.target.value }))}
+                                                value={inputValue.UserId}
+                                                onChange={e => setInputValue(prev => ({ ...prev, UserId: e.target.value }))}
                                                 className="cus-inpt p-2"
                                                 required
+                                                aria-label="Select User Type"
                                             >
-                                                <option value="">Select Branch</option>
-                                                {branch.map((branchItem) => (
-                                                    <option key={branchItem.BranchId} value={branchItem.BranchId}>
-                                                        {branchItem.BranchName}
+                                                <option value="">Select User</option>
+                                                {employeeMaster.map((UserTypeItem, index) => (
+                                                    <option key={index} value={UserTypeItem.UserId}>
+                                                        {UserTypeItem.Name}
                                                     </option>
                                                 ))}
                                             </select>
-                                        </td>
+                                        </Td>
+
+
+
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <DialogActions className='d-flex justify-content-between flex-wrap'>
+                        <DialogActions className="d-flex justify-content-between flex-wrap">
                             <Button
                                 type="button"
                                 variant="outlined"
-                                onClick={() => setInputValue({ UserId: '', Name: '', UserType: '', UserName: '', Company_Name: '', BranchName: '' })}
+                                onClick={() =>
+                                    setInputValue({
+                                        UserId: "",
+                                        Name: "",
+                                        UserType: "",
+                                        UserName: "",
+                                        Company_Name: "",
+                                        BranchName: "",
+                                    })
+                                }
                             >
                                 Clear
                             </Button>
                             <span>
-                                <Button type="button" onClick={() => setAddDialogBox(false)}>Cancel</Button>
-                                <Button type="submit" variant='contained'>Submit</Button>
+                                <Button type="button" onClick={() => setAddDialogBox(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" variant="contained">
+                                    Submit
+                                </Button>
                             </span>
                         </DialogActions>
                     </form>
                 </DialogContent>
             </Dialog>
+
 
 
             <Dialog

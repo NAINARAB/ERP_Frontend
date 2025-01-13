@@ -143,7 +143,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     return Object.fromEntries(
                         Object.entries(tripDetailsColumns).map(([key, value]) => {
                             switch (key) {
-                                case 'STJ_Id': return [key, Number(item?.STJ_Id)];
+                                case 'STJ_Id': return [key, Number(item.STJ_Id)];
                                 case 'Batch_No': return [key, item?.Sour_Batch_Lot_No];
                                 case 'From_Location': return [key, item?.Sour_Goodown_Id];
                                 case 'To_Location': return [key, item?.Dest_Goodown_Id];
@@ -163,6 +163,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 case 'Total_Value': return [key, Final_Amo];
                                 case 'Trip_From': return [key, 'STOCK JOURNAL'];
                                 case 'Party_And_Branch_Id': return [key, 1];
+                                case 'Journal_no': return [key, item.Journal_no ?? ''];
                                 default: return [key, value];
                             }
                         })
@@ -188,10 +189,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             method: 'POST',
             bodyData: {
                 ...tripSheetInfo,
-                StartTime: combineDateTime(tripSheetInfo?.Trip_Date, tripSheetInfo?.StartTime),
-                EndTime: combineDateTime(tripSheetInfo?.Trip_Date, tripSheetInfo?.EndTime),
+                StartTime: (
+                    tripSheetInfo.StartTime && tripSheetInfo.Trip_Date
+                ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.StartTime) : '',
+                EndTime: (
+                    tripSheetInfo.EndTime && tripSheetInfo.Trip_Date
+                ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.EndTime) : '',
                 Product_Array: selectedItems,
-                EmployeesInvolved: staffInvolvedList
+                EmployeesInvolved: staffInvolvedList.filter(staff => checkIsNumber(staff.Involved_Emp_Id) && checkIsNumber(staff.Cost_Center_Type_Id))
             }
         }).then(data => {
             if (data.success) {
@@ -200,7 +205,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             } else {
                 toast.error(data.message)
             }
-        }).catch(e => console.log(e)).finally(() => {
+        }).catch(
+            e => console.log(e)
+        ).finally(() => {
             if (loadingOff) loadingOff();
         })
     }
@@ -302,8 +309,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         className="cus-inpt p-2"
                                                     >
                                                         <option value="">Select</option>
-                                                        {costCenterCategory.map(st =>
-                                                            <option value={st?.Cost_Category_Id}>{st?.Cost_Category}</option>
+                                                        {costCenterCategory.map((st, sti) =>
+                                                            <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
                                                         )}
                                                     </select>
                                                 </td>
@@ -456,6 +463,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 isCustomCell: true,
                                 Cell: ({ row }) => findProductDetails(products, row.Product_Id)?.Product_Name
                             },
+                            createCol('Journal_no', 'string'),
                             createCol('HSN_Code', 'string', 'HSN Code'),
                             createCol('QTY', 'number', 'Quantity'),
                             createCol('KGS', 'number', 'KGs'),
@@ -644,6 +652,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         )
                                     }
                                 },
+                                createCol('Journal_no', 'string', 'Journal_no'),
                                 createCol('Sour_Item_Name', 'string', 'Item'),
                                 createCol('Stock_Journal_Voucher_type', 'string', 'Voucher'),
                                 createCol('Stock_Journal_Bill_type', 'string', 'Bill-Type'),
