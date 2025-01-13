@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidDate, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
+import { Addition, checkIsNumber, combineDateTime, isEqualNumber, ISOString, isValidDate, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete, Search } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
-
+import { toast } from 'react-toastify'
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
@@ -174,8 +174,35 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         });
     };
 
-    const saveTripSheet = () => {
+    const resetForm = () => {
+        setSelectedItems([]);
+        setStaffInvolvedList([]);
+        setTripSheetInfo(tripMasterDetails);
+        setTransactionData([]);
+    }
 
+    const saveTripSheet = () => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `inventory/tripSheet`,
+            method: 'POST',
+            bodyData: {
+                ...tripSheetInfo,
+                StartTime: combineDateTime(tripSheetInfo?.Trip_Date, tripSheetInfo?.StartTime),
+                EndTime: combineDateTime(tripSheetInfo?.Trip_Date, tripSheetInfo?.EndTime),
+                Product_Array: selectedItems,
+                EmployeesInvolved: staffInvolvedList
+            }
+        }).then(data => {
+            if (data.success) {
+                resetForm();
+                toast.success(data.message);
+            } else {
+                toast.error(data.message)
+            }
+        }).catch(e => console.log(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     }
 
     return (
@@ -184,6 +211,11 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
                 <div className="d-flex flex-wrap align-items-center border-bottom p-2">
                     <h5 className='flex-grow-1 m-0 ps-2'>Trip Sheet Creation</h5>
+                    <Button
+                        variant="outlined"
+                        onClick={saveTripSheet}
+                        disabled={selectedItems.length === 0 || !isValidDate(tripSheetInfo.Trip_Date)}
+                    >Save</Button>
                 </div>
 
                 <CardContent style={{ minHeight: 500 }}>
@@ -285,10 +317,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         {/* Stock Journal Details */}
                         <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
                             <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                <div className="row">
 
-                                <div className="row px-2">
-                                    {/* Common Details - 1 */}
-                                    <div className="col-lg-3 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Branch</label>
                                         <select
                                             value={tripSheetInfo.Branch_Id}
@@ -301,7 +332,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 <option key={bi} value={br.BranchId}>{br.BranchName}</option>
                                             ))}
                                         </select>
+                                    </div>
 
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Date</label>
                                         <input
                                             value={tripSheetInfo.Trip_Date}
@@ -309,116 +342,92 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_Date: e.target.value })}
                                             className="cus-inpt p-2 mb-2"
                                         />
+                                    </div>
 
-                                        <label>Trip Number</label>
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label>Vehicle No</label>
+                                        <input
+                                            value={tripSheetInfo.Vehicle_No}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Vehicle_No: e.target.value })}
+                                            className="cus-inpt p-2 mb-2"
+                                        />
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label>Trip No</label>
                                         <input
                                             value={tripSheetInfo.Trip_No}
-                                            placeholder="Trip / Machine / Vehicle"
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
                                             className="cus-inpt p-2 mb-2"
                                         />
-
                                     </div>
-
-
-                                    {/* Common Details - 2 */}
-                                    <div className="col-lg-9 col-sm-6 p-2 pt-0">
-
-                                        <div className="row">
-                                            <div className="col-md-4 col-sm-6 p-2">
-                                                <label>Challan No</label>
-                                                <input
-                                                    value={tripSheetInfo.Challan_No}
-                                                    onChange={e => setTripSheetInfo({ ...tripSheetInfo, Challan_No: e.target.value })}
-                                                    className="cus-inpt p-2 mb-2"
-                                                />
-                                            </div>
-                                            <div className="col-md-4 col-sm-6 p-2">
-                                                <label>Vehicle No</label>
-                                                <input
-                                                    value={tripSheetInfo.Vehicle_No}
-                                                    onChange={e => setTripSheetInfo({ ...tripSheetInfo, Vehicle_No: e.target.value })}
-                                                    className="cus-inpt p-2 mb-2"
-                                                />
-                                            </div>
-                                            <div className="col-md-4 col-sm-6 p-2">
-                                                <label>Trip No</label>
-                                                <input
-                                                    value={tripSheetInfo.Trip_No}
-                                                    onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
-                                                    className="cus-inpt p-2 mb-2"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="table-responsive">
-                                            <table className="table table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th colSpan={2} className="fa-13 text-center">Time</th>
-                                                        <th colSpan={2} className="fa-13 text-center">Distance</th>
-                                                    </tr>
-                                                    <tr>
-                                                        <th className="fa-13 text-center">Start</th>
-                                                        <th className="fa-13 text-center">End</th>
-                                                        <th className="fa-13 text-center">Start (Km)</th>
-                                                        <th className="fa-13 text-center">End (Km)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <td className="fa-13">
-                                                            <input
-                                                                type='time'
-                                                                onChange={e => setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))}
-                                                                value={tripSheetInfo?.StartTime}
-                                                                className="cus-inpt p-2"
-                                                            />
-                                                        </td>
-                                                        <td className="fa-13">
-                                                            <input
-                                                                type='time'
-                                                                onChange={e => setTripSheetInfo(pre => ({ ...pre, EndTime: e.target.value }))}
-                                                                value={tripSheetInfo?.EndTime}
-                                                                className="cus-inpt p-2"
-                                                            />
-                                                        </td>
-                                                        <td className="fa-13">
-                                                            <input
-                                                                type="number"
-                                                                onChange={e => setTripSheetInfo(pre => ({
-                                                                    ...pre,
-                                                                    Trip_ST_KM: e.target.value,
-                                                                    Trip_Tot_Kms: Subraction(pre.Trip_EN_KM ?? 0, e.target.value ?? 0)
-                                                                }))}
-                                                                value={tripSheetInfo?.Trip_ST_KM}
-                                                                min={0}
-                                                                className="cus-inpt p-2"
-                                                                placeholder="Kilometers"
-                                                            />
-                                                        </td>
-                                                        <td className="fa-13">
-                                                            <input
-                                                                type="number"
-                                                                onChange={e => setTripSheetInfo(pre => ({
-                                                                    ...pre,
-                                                                    Trip_EN_KM: e.target.value,
-                                                                    Trip_Tot_Kms: Subraction(e.target.value ?? 0, pre.Trip_ST_KM ?? 0)
-                                                                }))}
-                                                                value={tripSheetInfo?.Trip_EN_KM}
-                                                                min={Addition(tripSheetInfo?.Trip_ST_KM, 1)}
-                                                                className="cus-inpt p-2"
-                                                                placeholder="Kilometers"
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                    </div>
-
                                 </div>
+
+                                <div className="table-responsive">
+                                    <table className="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th colSpan={2} className="fa-13 text-center">Time</th>
+                                                <th colSpan={2} className="fa-13 text-center">Distance</th>
+                                            </tr>
+                                            <tr>
+                                                <th className="fa-13 text-center">Start</th>
+                                                <th className="fa-13 text-center">End</th>
+                                                <th className="fa-13 text-center">Start (Km)</th>
+                                                <th className="fa-13 text-center">End (Km)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="fa-13">
+                                                    <input
+                                                        type='time'
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))}
+                                                        value={tripSheetInfo?.StartTime}
+                                                        className="cus-inpt p-2"
+                                                    />
+                                                </td>
+                                                <td className="fa-13">
+                                                    <input
+                                                        type='time'
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, EndTime: e.target.value }))}
+                                                        value={tripSheetInfo?.EndTime}
+                                                        className="cus-inpt p-2"
+                                                    />
+                                                </td>
+                                                <td className="fa-13">
+                                                    <input
+                                                        type="number"
+                                                        onChange={e => setTripSheetInfo(pre => ({
+                                                            ...pre,
+                                                            Trip_ST_KM: e.target.value,
+                                                            Trip_Tot_Kms: Subraction(pre.Trip_EN_KM ?? 0, e.target.value ?? 0)
+                                                        }))}
+                                                        value={tripSheetInfo?.Trip_ST_KM}
+                                                        min={0}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="Kilometers"
+                                                    />
+                                                </td>
+                                                <td className="fa-13">
+                                                    <input
+                                                        type="number"
+                                                        onChange={e => setTripSheetInfo(pre => ({
+                                                            ...pre,
+                                                            Trip_EN_KM: e.target.value,
+                                                            Trip_Tot_Kms: Subraction(e.target.value ?? 0, pre.Trip_ST_KM ?? 0)
+                                                        }))}
+                                                        value={tripSheetInfo?.Trip_EN_KM}
+                                                        min={Addition(tripSheetInfo?.Trip_ST_KM, 1)}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="Kilometers"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
                             </div>
                         </div>
                     </div>
