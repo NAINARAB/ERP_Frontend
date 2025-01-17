@@ -7,6 +7,7 @@ import FilterableTable from "../../Components/filterableTable2";
 import * as XLSX from 'xlsx';
 import { MyContext } from "../../Components/context/contextProvider";
 import { useContext } from "react";
+import { toast } from "react-toastify";
 const FingerPrintAttendanceReport = () => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const userTypeId = storage?.UserTypeId;
@@ -64,7 +65,7 @@ const FingerPrintAttendanceReport = () => {
             if (data.success) {
                 let filteredEmployees = [];
 
-                if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) == 1) {
+                if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) === 1) {
                     filteredEmployees = data.data;
                     setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
                     setIsDropdownDisabled(false);
@@ -112,6 +113,8 @@ const FingerPrintAttendanceReport = () => {
             console.error("Error fetching attendance data:", e);
         }
     };
+
+
     const handleOverallDownload = async () => {
         try {
 
@@ -225,6 +228,7 @@ const FingerPrintAttendanceReport = () => {
         if (From && (EmpId || EmpId === 0)) {
             fetchAttendanceData(From, EmpId);
         }
+
     }, [debouncedFilter]);
 
 
@@ -332,7 +336,178 @@ const FingerPrintAttendanceReport = () => {
         return `${date} `;
     };
 
+    // const handleOverallWithPunch = () => {
 
+
+    //         const groupedData = attendanceData.reduce((acc, row) => {
+    //             const location = row.location || "Unknown Location"; 
+    //             const month = new Date(row.LogDate).toLocaleString("default", { month: "long" });
+    //             const userKey = `${row.username}_${location}_${month}`;
+
+    //             if (!acc[userKey]) {
+    //                 acc[userKey] = {
+    //                     username: row.username,
+    //                     location,
+    //                     month,
+    //                     attendance: []
+    //                 };
+    //             }
+
+    //             acc[userKey].attendance.push(row);
+    //             return acc;
+    //         }, {});
+
+    //         Object.values(groupedData).forEach(({ username, location, month, attendance }) => {
+    //             const maxPunches = Math.max(
+    //                 ...attendance.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0))
+    //             );
+
+    //             const exportData = attendance.map(row => {
+    //                 const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+    //                 const punchColumns = {};
+
+    //                 const sortedPunchDetails = punchDetails
+    //                     .map(detail => {
+    //                         const timeString = detail.trim().split(' ')[1];
+    //                         let formattedTime = '--';
+    //                         if (timeString) {
+    //                             const [hours, minutes] = timeString.split(':').map(Number);
+    //                             if (!isNaN(hours) && !isNaN(minutes)) {
+    //                                 const ampm = hours >= 12 ? 'PM' : 'AM';
+    //                                 const formattedHours = hours % 12 || 12;
+    //                                 formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+    //                             }
+    //                         }
+    //                         return { formattedTime, timeString };
+    //                     })
+    //                     .filter(item => item.formattedTime !== '--')
+    //                     .sort((a, b) => {
+    //                         const [aHours, aMinutes] = a.timeString.split(':').map(Number);
+    //                         const [bHours, bMinutes] = b.timeString.split(':').map(Number);
+    //                         return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
+    //                     })
+    //                     .map(item => item.formattedTime);
+
+    //                 sortedPunchDetails.forEach((formattedTime, index) => {
+    //                     punchColumns[`Punch ${index + 1}`] = formattedTime;
+    //                 });
+
+    //                 return {
+    //                     Employee: row.username,
+    //                     Location: location,
+    //                     "Log Date": formatAttendanceDate(row.LogDate),
+    //                     ...punchColumns,
+    //                 };
+    //             });
+
+    //             const columnsOrder = ["Employee", "Log Date", ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)];
+
+    //             const reorderedData = exportData.map(row =>
+    //                 columnsOrder.reduce((acc, col) => {
+    //                     acc[col] = row[col] || '--';
+    //                     return acc;
+    //                 }, {})
+    //             );
+
+    //             const ws = XLSX.utils.json_to_sheet(reorderedData);
+    //             const wb = XLSX.utils.book_new();
+    //             XLSX.utils.book_append_sheet(wb, ws, `${username}_${month}`);
+
+
+    //             const fileName = `${username}_${month}_${year}.xlsx`;
+    //             XLSX.writeFile(wb, fileName);
+    //         });
+
+
+
+    // };
+
+    const handleOverallWithPunch = () => {
+
+        const groupedData = attendanceData.reduce((acc, row) => {
+            const username = row.username;
+            if (!acc[username]) {
+                acc[username] = [];
+            }
+            acc[username].push(row);
+            return acc;
+        }, {});
+
+        if (Object.keys(groupedData).length === 0) {
+            toast.error("No attendance data available to export.");
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+
+        const firstLogDate = attendanceData[0]?.LogDate;
+        const date = new Date(firstLogDate);
+        const year = date.getFullYear();
+        const month = date.toLocaleString("default", { month: "long" });
+
+
+        Object.entries(groupedData).forEach(([username, userAttendance]) => {
+            const maxPunches = Math.max(
+                ...userAttendance.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0))
+            );
+
+            const exportData = userAttendance.map(row => {
+                const location = row.location || "Unknown Location";
+                const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+                const punchColumns = {};
+
+                const sortedPunchDetails = punchDetails
+                    .map(detail => {
+                        const timeString = detail.trim().split(' ')[1];
+                        let formattedTime = '--';
+                        if (timeString) {
+                            const [hours, minutes] = timeString.split(':').map(Number);
+                            if (!isNaN(hours) && !isNaN(minutes)) {
+                                const ampm = hours >= 12 ? 'PM' : 'AM';
+                                const formattedHours = hours % 12 || 12;
+                                formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+                            }
+                        }
+                        return { formattedTime, timeString };
+                    })
+                    .filter(item => item.formattedTime !== '--')
+                    .sort((a, b) => {
+                        const [aHours, aMinutes] = a.timeString.split(':').map(Number);
+                        const [bHours, bMinutes] = b.timeString.split(':').map(Number);
+                        return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
+                    })
+                    .map(item => item.formattedTime);
+
+                sortedPunchDetails.forEach((formattedTime, index) => {
+                    punchColumns[`Punch ${index + 1}`] = formattedTime;
+                });
+
+                return {
+                    Employee: row.username,
+                    Location: location,
+                    "Log Date": formatAttendanceDate(row.LogDate),
+                    ...punchColumns,
+                };
+            });
+
+            const columnsOrder = ["Employee", "Log Date", ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)];
+
+            const reorderedData = exportData.map(row =>
+                columnsOrder.reduce((acc, col) => {
+                    acc[col] = row[col] || '--';
+                    return acc;
+                }, {})
+            );
+
+            const ws = XLSX.utils.json_to_sheet(reorderedData);
+            XLSX.utils.book_append_sheet(wb, ws, username);
+        });
+
+
+        const fileName = `Attendance_Report_${month}_${year}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
 
 
     return (
@@ -360,7 +535,16 @@ const FingerPrintAttendanceReport = () => {
 
                                         }}
                                     >
-                                        OverAll Report
+                                        Monthly Report
+                                    </Button>
+
+                                    <Button
+                                        onClick={() => {
+                                            handleOverallWithPunch(filter?.From, filter?.To);
+
+                                        }}
+                                    >
+                                        Cummulative Monthly Report
                                     </Button>
                                 </div>
                             </>

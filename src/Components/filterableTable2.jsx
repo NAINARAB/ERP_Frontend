@@ -292,11 +292,11 @@ const FilterableTable = ({
     const formatString = (val, dataType) => {
         switch (dataType) {
             case 'number':
-                return NumberFormat(val)
+                return val ? NumberFormat(val) : val;
             case 'date':
-                return LocalDate(val);
+                return val ? LocalDate(val) : val;
             case 'time':
-                return LocalTime(val);
+                return val ? LocalTime(val) : val;
             case 'string':
                 return val;
             default:

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, combineDateTime, isEqualNumber, ISOString, isValidDate, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
+import { Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber, ISOString, isValidDate, isValidObject, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete, Search } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
 import { toast } from 'react-toastify'
+import { useLocation, useNavigate } from "react-router-dom";
 
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
@@ -25,6 +26,9 @@ const taxCalc = (method = 1, amount = 0, percentage = 0) => {
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
+    const location = useLocation();
+    const navigation = useNavigate();
+    const stateDetails = location.state;
 
     const [filters, setFilters] = useState({
         FromGodown: '',
@@ -95,6 +99,47 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         fetchData();
     }, [])
 
+    useEffect(() => {
+        const productsArray = stateDetails?.Products_List;
+        const employeesArray = stateDetails?.Employees_Involved;
+        if (
+            isValidObject(stateDetails)
+            && Array.isArray(productsArray)
+            && Array.isArray(employeesArray)
+        ) {
+            setTripSheetInfo(
+                Object.fromEntries(
+                    Object.entries(tripMasterDetails).map(([key, value]) => {
+                        if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
+                        if (
+                            key === 'StartTime' || key === 'EndTime'
+                        ) return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
+                        return [key, stateDetails[key] ?? value]
+                    })
+                )
+            );
+
+            setSelectedItems(
+                productsArray.map(productsData => Object.fromEntries(
+                    Object.entries(tripDetailsColumns).map(([key, value]) => {
+                        if (
+                            key === 'Dispatch_Date' || key ===  'Delivery_Date'
+                        ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
+                        return [key, productsData[key] ?? value]
+                    })
+                ))
+            )
+
+            setStaffInvolvedList(
+                employeesArray.map(staffData => Object.fromEntries(
+                    Object.entries(tripStaffsColumns).map(([key, value]) => {
+                        return [key, staffData[key] ?? value]
+                    })
+                ))
+            );
+        }
+    }, [stateDetails])
+
     const searchTransaction = (e) => {
         e.preventDefault();
         const { FromGodown, ToGodown, Fromdate, Todate } = filters;
@@ -107,8 +152,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             }).then(data => {
                 if (data.success) setTransactionData(data.data);
             }).catch(e => console.log(e)).finally(() => {
-                if (loadingOff) loadingOff();
-            }).finally(() => {
                 if (loadingOff) loadingOff();
             })
         }
@@ -186,7 +229,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
         fetchLink({
             address: `inventory/tripSheet`,
-            method: 'POST',
+            method: checkIsNumber(tripSheetInfo?.Trip_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...tripSheetInfo,
                 StartTime: (

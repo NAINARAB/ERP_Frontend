@@ -131,6 +131,7 @@ const RoutingArray = [
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
     // Dashboard
     { component: <CommonDashboard />, path: '/dashboard' },
+    { component: <CommonDashboard />, path: '' },
 
     // Change password
     { component: <ChangePassword />, path: '/changePassword' },
