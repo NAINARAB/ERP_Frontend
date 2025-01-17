@@ -53,13 +53,15 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
     }, [others.refresh]);
 
     const closeDialog = () => {
+        setInputValue(initialInputValue)
         setOthers(prev => ({ ...prev, dialog: false, deleteDialog: false }));
-        setInputValue(initialInputValue);
+
+
     };
 
     useEffect(() => {
         fetchLink({
-            address: `masters/userTypecostcenter`
+            address: `dataEntry/costCategory/DropDown`
         }).then((data) => {
             if (data.success) {
                 setUserType(data.data);
@@ -74,7 +76,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`
         }).then((data) => {
-            console.log("Data", data)
+
             if (data.success) {
                 setEmployeeMaster(data.data);
             }
@@ -105,9 +107,9 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
 
     const handleCreate = () => {
         fetchLink({
-            address: `masters/userType`,
+            address: `dataEntry/costCategory`,
             method: "POST",
-            bodyData: { UserType: newChipType },
+            bodyData: { Cost_Category: newChipType },
         }).then((data) => {
             if (data.success) {
                 setIsCreateDialogOpen(false);
@@ -142,6 +144,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                 if (data.success) {
                     toast.success('User created successfully');
                     setAddDialogBox(false);
+                    setInputValue(initialInputValue)
                     refresh();
                 } else {
                     toast.error(data.message || 'Failed to create user');
@@ -162,11 +165,11 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
     const OnSubmit = (e) => {
         e.preventDefault();
         if (loadingOn) loadingOn();
-        console.log("useretieud", inputValue)
+
         fetchLink({
             address: `dataEntry/costCenter`,
             method: inputValue.Cost_Center_Id ? 'PUT' : 'POST',
-            bodyData: { Cost_Center_Name: inputValue?.Cost_Center_Name, User_Type: inputValue?.UserType }
+            bodyData: { Cost_Center_Name: inputValue?.Cost_Center_Name, User_Type: inputValue?.User_Type, Cost_Center_Id: inputValue?.Cost_Center_Id }
         }).then(data => {
 
             if (data.success) {
@@ -298,7 +301,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
 
             <Dialog
                 open={others.dialog}
-                onClose={closeDialog}
+                // onClose={closeDialog}
                 fullWidth maxWidth='sm'
             >
                 <DialogTitle>{inputValue.Cost_Center_Id ? 'Modify Records' : 'Add Records'}</DialogTitle>
@@ -320,8 +323,29 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                     </tr>
                                     <tr>
                                         <Td>User Type <RequiredStar /></Td>
-
                                         <Td>
+                                            <select
+                                                value={inputValue.User_Type}
+                                                onChange={(e) =>
+                                                    setInputValue((prev) => ({
+                                                        ...prev,
+                                                        User_Type: e.target.value,
+                                                    }))
+                                                }
+                                                className="cus-inpt p-2"
+                                                required
+                                                aria-label="Select User Type"
+                                            >
+                                                <option value="">Select Branch</option>
+                                                {usertypes.map((UserTypeItem, index) => (
+                                                    <option key={index} value={UserTypeItem.value}>
+                                                        {UserTypeItem.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </Td>
+
+                                        {/* <Td>
                                             <select
                                                 value={inputValue.UserType}
                                                 onChange={e => setInputValue(prev => ({ ...prev, UserType: e.target.value }))}
@@ -331,12 +355,12 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                             >
                                                 <option value="">Select Branch</option>
                                                 {usertypes.map((UserTypeItem, index) => (
-                                                    <option key={index} value={UserTypeItem.UserTypeId}>
-                                                        {UserTypeItem.UserType}
+                                                    <option key={index} value={UserTypeItem.value}>
+                                                        {UserTypeItem.label}
                                                     </option>
                                                 ))}
                                             </select>
-                                        </Td>
+                                        </Td> */}
 
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             {/* <span>Create New</span> */}
@@ -360,9 +384,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                 </form>
             </Dialog>
 
-
-
-            <Dialog open={addDialogBox} onClose={() => setAddDialogBox(false)} fullWidth maxWidth="md">
+            <Dialog open={addDialogBox} fullWidth maxWidth="sm">
                 <DialogTitle>Add New User</DialogTitle>
                 <DialogContent>
                     {/* Wrap your fields inside a form */}
@@ -428,7 +450,10 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                 Clear
                             </Button>
                             <span>
-                                <Button type="button" onClick={() => setAddDialogBox(false)}>
+                                <Button type="button" onClick={() => {
+                                    setAddDialogBox(false);
+                                    setInputValue(initialInputValue);
+                                }} >
                                     Cancel
                                 </Button>
                                 <Button type="submit" variant="contained">
@@ -440,13 +465,9 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
             </Dialog>
 
-
-
             <Dialog
                 open={isCreateDialogOpen}
                 onClose={() => setIsCreateDialogOpen(false)}
-                aria-labelledby="create-dialog-title"
-                aria-describedby="create-dialog-description"
             >
                 <DialogTitle id="create-dialog-title">UserType Creation</DialogTitle>
                 <DialogContent>

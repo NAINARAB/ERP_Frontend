@@ -60,7 +60,7 @@ const FingerPrintAttendanceReport = lazy(() => import("./Pages/Attendance/finger
 const CustomerList = lazy(() => import("./Pages/UserModule/customerList"))
 const EmployeeMaster = lazy(() => import("./Pages/UserModule/employee"))
 const RetailersMaster = lazy(() => import("./Pages/UserModule/retailer/Retailer"))
-
+const CostCategory = lazy(() => import("./Pages/UserModule/costCenterType"))
 
 // Sales
 const SalesReport = lazy(() => import("./Pages/Sales/LedgerTransaction"))
@@ -77,7 +77,6 @@ const StockJournal = lazy(() => import("./Pages/Inventry/stockJournal"))
 const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate"))
 const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
 const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'))
-const TripSheetCreation = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetCreation'))
 
 
 // Purchase
@@ -184,7 +183,6 @@ const RoutingArray = [
     { component: <StockJournalEntry />, path: '/erp/inventory/stockJournal/create' },
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
-    { component: <TripSheetCreation />, path: '/erp/inventory/tripSheet/searchGodown/create' },
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
@@ -235,6 +233,7 @@ const RoutingArray = [
     { component: <CustomerList />, path: '/userControl/customers' },
     { component: <EmployeeMaster />, path: '/userControl/employees' },
     { component: <MenuManagement />, path: '/userControl/appMenu' },
+    { component: <CostCategory />, path: '/userControl/CostCategory' },
     // { component: <WorkDoneHistory />, path: '' }, // will not work
     // { component: <ItemBasedReport />, path: '' }, // will not work
     { component: <SalesDelivery />, path: '/erp/sales/salesDelivery' },

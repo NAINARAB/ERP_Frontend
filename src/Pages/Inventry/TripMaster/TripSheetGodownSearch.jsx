@@ -454,7 +454,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         }
                         EnableSerialNumber
                         disablePagination
-                        title={`Selected Items (${selectedItems.length})`}
+                        title={`
+                            Selected Items: ${selectedItems.length} 
+                            QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o.QTY ?? 0), 0)}
+                        `}
                         maxHeightOption
                         columns={[
                             {

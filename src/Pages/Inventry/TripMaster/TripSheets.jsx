@@ -1,9 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Addition, ISOString, isValidDate, NumberFormat, Subraction, timeDuration } from "../../../Components/functions";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -24,7 +24,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         fetchFrom: defaultFilters.Fromdate,
         fetchTo: defaultFilters.Todate,
         filterDialog: false,
-        refresh: false
+        refresh: false,
+        printPreviewDialog: false,
     })
 
 
@@ -91,6 +92,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 initialPageCount={10}
                 columns={[
                     createCol('Trip_Date', 'date', 'Date'),
+                    createCol('Trip_No', 'string'),
                     createCol('Challan_No', 'string', 'Challan'),
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('Branch_Name', 'string', 'Journal number'),
@@ -127,37 +129,32 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                         isCustomCell: true,
                         Cell: ({ row }) => NumberFormat(row.Products_List.length ?? 0)
                     },
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Action',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         <ButtonActions
-                    //             buttonsData={[
-                    //                 {
-                    //                     name: 'Edit',
-                    //                     icon: <Edit className="fa-14" />,
-                    //                     onclick: () => navigate('/erp/inventory/stockJournal/create', {
-                    //                         state: {
-                    //                             ...row,
-                    //                             isEditable: false,
-                    //                         },
-                    //                     }),
-                    //                 },
-                    //                 {
-                    //                     name: 'Open',
-                    //                     icon: <Visibility className="fa-14" />,
-                    //                     onclick: () => navigate('/erp/inventory/stockJournal/create', {
-                    //                         state: {
-                    //                             ...row,
-                    //                             isEditable: true,
-                    //                         },
-                    //                     }),
-                    //                 },
-                    //             ]}
-                    //         />
-                    //     )
-                    // }
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Action',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <ButtonActions
+                                buttonsData={[
+                                    {
+                                        name: 'Edit',
+                                        icon: <Edit className="fa-14" />,
+                                        onclick: () => nav('/erp/inventory/tripSheet/searchGodown', {
+                                            state: {
+                                                ...row,
+                                                isEditable: false,
+                                            },
+                                        }),
+                                    },
+                                    {
+                                        name: 'Preview',
+                                        icon: <Visibility className="fa-14" />,
+                                        onclick: () => {},
+                                    },
+                                ]}
+                            />
+                        )
+                    }
                 ]}
                 isExpendable={true}
                 expandableComp={({ row }) => (
@@ -230,6 +227,23 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                         startIcon={<Search />}
                         variant="outlined"
                     >Search</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={filters.printPreviewDialog}
+                onClose={() => setFilters(pre => ({...pre, printPreviewDialog: false}))}
+                maxWidth='lg' fullWidth
+            >
+                <DialogTitle>Print Preview</DialogTitle>
+                <DialogContent>
+                    
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setFilters(pre => ({...pre, printPreviewDialog: false}))}
+                        variant="outlined"
+                    >close</Button>
                 </DialogActions>
             </Dialog>
         </>
