@@ -354,7 +354,8 @@ const FilterableTable = ({
                                 {column.Cell({ row, Field_Name: column.Field_Name, index })}
                             </TableCell>
                         )
-
+                        
+                        return <TableCell key={columnInd} className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}></TableCell>
                     })}
 
                 </TableRow>

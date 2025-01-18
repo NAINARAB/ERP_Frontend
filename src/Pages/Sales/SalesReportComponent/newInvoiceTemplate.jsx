@@ -265,7 +265,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                         <td className='border bg-light fa-14 text-end'>
                                             <p className='m-2 '>Rate</p>
                                             <p className='m-0 '>
-                                                {isEqualNumber(orderDetails.GST_Inclusive, 1) && '(Incl. of Tax)'} 
+                                                {isEqualNumber(orderDetails.GST_Inclusive, 1) && '(Incl. of Tax)'}
                                                 {isEqualNumber(orderDetails.GST_Inclusive, 2) && '(Tax not applicable)'}
                                                 {isEqualNumber(orderDetails.GST_Inclusive, 0) && '(Excl. of Tax)'}
                                             </p>
@@ -371,115 +371,110 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                     </div>
 
                     {/* Tax Calculations */}
-                    <div className="row">
-                        <div className="col-12 p-0">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>HSN / SAC</td>
-                                        <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>Taxable Value</td>
-                                        {isEqualNumber(orderDetails.IS_IGST, 1) ? (
-                                            <td className="border bg-light fa-14 text-center" colSpan={2}>IGST Tax</td>
-                                        ) : (
-                                            <>
-                                                <td className="border bg-light fa-14 text-center" colSpan={2}>Central Tax</td>
-                                                <td className="border bg-light fa-14 text-center" colSpan={2}>State Tax</td>
-                                            </>
-                                        )}
-                                        <td className="border bg-light fa-14 text-center">Total</td>
-                                    </tr>
-                                    <tr>
-                                        {isEqualNumber(orderDetails.IS_IGST, 1) ? (
-                                            <>
-                                                <td className="border bg-light fa-14 text-center">Rate</td>
-                                                <td className="border bg-light fa-14 text-center">Amount</td>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <td className="border bg-light fa-14 text-center">Rate</td>
-                                                <td className="border bg-light fa-14 text-center">Amount</td>
-                                                <td className="border bg-light fa-14 text-center">Rate</td>
-                                                <td className="border bg-light fa-14 text-center">Amount</td>
-                                            </>
-                                        )}
-                                        <td className="border bg-light fa-14 text-center">Tax Amount</td>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {TaxData.map((o, i) => {
-                                        return (
-                                            <tr key={i}>
-                                                <td className="border fa-13 text-end">{o?.hsnCode}</td>
-                                                <td className="border fa-13 text-end">{NumberFormat(o?.taxableValue)}</td>
-                                                {orderDetails.IS_IGST ? (
-                                                    <>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.igstPercentage)}</td>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.igst)}</td>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.cgstPercentage)}</td>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.cgst)}</td>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.sgstPercentage)}</td>
-                                                        <td className="border fa-13 text-end">{NumberFormat(o?.sgst)}</td>
-                                                    </>
-                                                )}
-                                                <td className="border fa-13 text-end">
-                                                    {NumberFormat(o?.totalTax)}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                    <tr>
-                                        <td className="border fa-13 text-end">Total</td>
-                                        <td className="border fa-13 text-end fw-bold">
-                                            {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.taxableValue), 0))}
-                                        </td>
-
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>HSN / SAC</td>
+                                <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>Taxable Value</td>
+                                {isEqualNumber(orderDetails.IS_IGST, 1) ? (
+                                    <td className="border bg-light fa-14 text-center" colSpan={2}>IGST Tax</td>
+                                ) : (
+                                    <>
+                                        <td className="border bg-light fa-14 text-center" colSpan={2}>Central Tax</td>
+                                        <td className="border bg-light fa-14 text-center" colSpan={2}>State Tax</td>
+                                    </>
+                                )}
+                                <td className="border bg-light fa-14 text-center">Total</td>
+                            </tr>
+                            <tr>
+                                {isEqualNumber(orderDetails.IS_IGST, 1) ? (
+                                    <>
+                                        <td className="border bg-light fa-14 text-center">Rate</td>
+                                        <td className="border bg-light fa-14 text-center">Amount</td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td className="border bg-light fa-14 text-center">Rate</td>
+                                        <td className="border bg-light fa-14 text-center">Amount</td>
+                                        <td className="border bg-light fa-14 text-center">Rate</td>
+                                        <td className="border bg-light fa-14 text-center">Amount</td>
+                                    </>
+                                )}
+                                <td className="border bg-light fa-14 text-center">Tax Amount</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {TaxData.map((o, i) => {
+                                return (
+                                    <tr key={i}>
+                                        <td className="border fa-13 text-end">{o?.hsnCode}</td>
+                                        <td className="border fa-13 text-end">{NumberFormat(o?.taxableValue)}</td>
                                         {orderDetails.IS_IGST ? (
                                             <>
-                                                <td className="border fa-13 text-end"></td>
-                                                <td className="border fa-13 text-end fw-bold">
-                                                    {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.igst), 0))}
-                                                </td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.igstPercentage)}</td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.igst)}</td>
                                             </>
                                         ) : (
                                             <>
-                                                <td className="border fa-13 text-end"></td>
-                                                <td className="border fa-13 text-end fw-bold">
-                                                    {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.cgst), 0))}
-                                                </td>
-                                                <td className="border fa-13 text-end"></td>
-                                                <td className="border fa-13 text-end fw-bold">
-                                                    {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.sgst), 0))}
-                                                </td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.cgstPercentage)}</td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.cgst)}</td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.sgstPercentage)}</td>
+                                                <td className="border fa-13 text-end">{NumberFormat(o?.sgst)}</td>
                                             </>
                                         )}
+                                        <td className="border fa-13 text-end">
+                                            {NumberFormat(o?.totalTax)}
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                            <tr>
+                                <td className="border fa-13 text-end">Total</td>
+                                <td className="border fa-13 text-end fw-bold">
+                                    {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.taxableValue), 0))}
+                                </td>
 
+                                {orderDetails.IS_IGST ? (
+                                    <>
+                                        <td className="border fa-13 text-end"></td>
                                         <td className="border fa-13 text-end fw-bold">
-                                            {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0))}
+                                            {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.igst), 0))}
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td
-                                            colSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 5 : 7}
-                                            className='border fa-13 fw-bold'
-                                        >
-                                            Tax Amount (in words) : INR &nbsp;
-                                            {numberToWords(
-                                                parseInt(
-                                                    TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0)
-                                                )
-                                            )} only.
+                                    </>
+                                ) : (
+                                    <>
+                                        <td className="border fa-13 text-end"></td>
+                                        <td className="border fa-13 text-end fw-bold">
+                                            {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.cgst), 0))}
                                         </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                        <td className="border fa-13 text-end"></td>
+                                        <td className="border fa-13 text-end fw-bold">
+                                            {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.sgst), 0))}
+                                        </td>
+                                    </>
+                                )}
 
-                        <div className="col-12 text-center">
-                            <p>This is a Computer Generated Invoice</p>
-                        </div>
+                                <td className="border fa-13 text-end fw-bold">
+                                    {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0))}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td
+                                    colSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 5 : 7}
+                                    className='border fa-13 fw-bold'
+                                >
+                                    Tax Amount (in words) : INR &nbsp;
+                                    {numberToWords(
+                                        parseInt(
+                                            TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0)
+                                        )
+                                    )} only.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div className="col-12 text-center">
+                        <p>This is a Computer Generated Invoice</p>
                     </div>
 
                 </DialogContent>

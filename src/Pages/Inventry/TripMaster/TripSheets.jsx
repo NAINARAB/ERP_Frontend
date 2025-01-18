@@ -1,10 +1,11 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
-import React, { useEffect, useState } from "react";
-import { Addition, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, Subraction, timeDuration } from "../../../Components/functions";
-import { Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import React, { useEffect, useRef, useState } from "react";
+import { Addition, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration } from "../../../Components/functions";
+import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
+import { useReactToPrint } from 'react-to-print';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -27,7 +28,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         refresh: false,
         printPreviewDialog: false,
     });
-    const [selectedRow, setSelectedRow] = useState(null);
+    const [selectedRow, setSelectedRow] = useState({});
+    const printRef = useRef(null);
 
 
     useEffect(() => {
@@ -67,6 +69,46 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             filterDialog: false,
         });
     }
+
+    const TaxData = (Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).reduce((data, item) => {
+        const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
+
+        const {
+            Taxable_Value = 0, Cgst_P = 0, Sgst_P = 0, Igst_P = 0, HSN_Code
+        } = item;
+
+        if (HSNindex !== -1) {
+            const prev = data[HSNindex];
+            const newValue = {
+                ...prev,
+                taxableValue: prev.taxableValue + Taxable_Value,
+                cgst: Addition(prev.cgst, Cgst_P),
+                sgst: Addition(prev.sgst, Sgst_P),
+                igst: Addition(prev.igst, Igst_P),
+                totalTax: prev.totalTax + Addition(Addition(Cgst_P, Sgst_P), Igst_P),
+            };
+
+            data[HSNindex] = newValue;
+            return data;
+        }
+
+        const newEntry = {
+            hsnCode: HSN_Code,
+            taxableValue: Taxable_Value,
+            cgst: Cgst_P,
+            sgst: Sgst_P,
+            igst: Igst_P,
+            totalTax: Addition(Addition(Cgst_P, Sgst_P), Igst_P),
+        };
+        console.log(newEntry)
+
+        return [...data, newEntry];
+    }, []);
+
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+    });
+
 
     return (
         <>
@@ -250,28 +292,28 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 maxWidth='xl' fullWidth
             >
                 <DialogTitle>Print Preview</DialogTitle>
-                <DialogContent>
+                <DialogContent ref={printRef}>
                     {isValidObject(selectedRow) && <React.Fragment>
-                        <h3 className="mt-2 text-center">DELIVERY CHALLAN</h3>
-                        <div className="d-flex border my-2 align-items-center">
-                            <div class="text-center my-3 fw-bold flex-grow-1 p-2">
-                                <p>S.M TRADERS</p>
-                                <p>746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611</p>
-                                <p>GST No: 33AADFS4987M1ZL</p>
+                        {/* <h3 className="text-center mb-2">DELIVERY CHALLAN</h3>
+
+                        <div className="d-flex border my-2 align-items-center fa-14">
+                            <div className="text-center my-3 fw-bold flex-grow-1 p-2">
+                                <h4>S.M TRADERS</h4>
+                                <p className="m-0">746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611</p>
+                                <p className="m-0">GST No: 33AADFS4987M1ZL</p>
                             </div>
                             <div className="p-2">
-                                <h5>ORIGINAL / DUPLICATE</h5>
-                                <p>Challan No: &emsp;&emsp;{NumberFormat(selectedRow.Challan_No ?? ' -')}</p>
-                                <p>Date: &emsp;&emsp; {selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}</p>
-                                <p>GST No: 33AADFS4987M1ZL</p>
+                                <p className="fw-bold fa-16 m-0">ORIGINAL / DUPLICATE</p>
+                                <p className="m-0">Challan No: &emsp;&emsp;{NumberFormat(selectedRow.Challan_No ?? ' -')}</p>
+                                <p className="m-0">Date: &emsp;&emsp;&emsp;&emsp; {selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}</p>
+                                <p className="m-0">GST No: &emsp;33AADFS4987M1ZL</p>
                             </div>
                         </div>
 
-                        <div className="border p-2">
-                            <table class="table">
-                                <tr>
-                                    <td colSpan={4}>Details of Recipient / Supplier / Consignee</td>
-                                </tr>
+                        <h6 className="text-center my-2">Details of Recipient / Supplier / Consignee</h6>
+
+                        <div className="border p-2 fa-14">
+                            <table className="table">
                                 <tr>
                                     <td colSpan={2}></td>
                                     <td>Mode of Transport: </td>
@@ -279,7 +321,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </tr>
                                 <tr>
                                     <td>Name:</td>
-                                    <td>S.M TRADERS</td>
+                                    <td className="fw-bold">S.M TRADERS</td>
                                     <td>Vehicle No: </td>
                                     <td>{selectedRow.Vehicle_No ?? ' -'}</td>
                                 </tr>
@@ -297,7 +339,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </tr>
                                 <tr>
                                     <td>State: </td>
-                                    <td>Tamilnadu</td>
+                                    <td></td>
                                     <td>Time of Supply: </td>
                                     <td>{selectedRow.Delivery_Date ? LocalTime(selectedRow.Delivery_Date) : ''}</td>
                                 </tr>
@@ -308,32 +350,231 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     <td></td>
                                 </tr>
                             </table>
+                        </div> */}
+
+                        <table className="table table-bordered fa-13 m-0">
+                            <tbody>
+                                <tr>
+                                    <td colSpan={3}>DELIVERY CHALLAN</td>
+                                    <td colSpan={3}>GSTIN : 33AADFS4987M1ZL</td>
+                                    <td colSpan={2}>ORIGINAL / DUPLICATE</td>
+                                </tr>
+                                <tr>
+                                    <td colSpan={3} rowSpan={2}>
+                                        <span className="fa-14 fw-bold">S.M TRADERS</span> <br />
+                                        H.O: 153, CHITRAKARA STREET, MADURAI - 625001 <br />
+                                        G.O: 746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611
+                                    </td>
+                                    <td colSpan={3}>FSSAI No : 12418012000818</td>
+                                    <td>Challan No</td>
+                                    <td>{selectedRow?.Challan_No}</td>
+                                </tr>
+                                <tr>
+                                    <td colSpan={3}>Phone No: 9842131353, 9786131353</td>
+                                    <td>Date</td>
+                                    <td>{selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}</td>
+                                </tr>
+                                <tr>
+                                    <td colSpan={8} className="text-center">Reason for Transfer - Branch Transfer / Line Sales / Purchase Return / Job Work</td>
+                                </tr>
+                                <tr>
+                                    <td>Vehicle No</td>
+                                    <td>{selectedRow?.Vehicle_No}</td>
+                                    <td>Driver Name</td>
+                                    <td>
+                                        {selectedRow?.Employees_Involved?.filter(staff => (
+                                            staff?.Cost_Category === 'Driver'
+                                        ))?.map(staff => staff?.Emp_Name).join(', ')}
+                                    </td>
+                                    <td>Start Time</td>
+                                    <td>{selectedRow?.StartTime ? LocalTime(new Date(selectedRow.StartTime)) : ''}</td>
+                                    <td>Start KM</td>
+                                    <td>{selectedRow?.Trip_ST_KM}</td>
+                                </tr>
+                                <tr>
+                                    <td>Trip No</td>
+                                    <td>{selectedRow?.Trip_ST_KM}</td>
+                                    <td>LoadMan</td>
+                                    <td>
+                                        {selectedRow?.Employees_Involved?.filter(staff => (
+                                            staff?.Cost_Category === 'Load Man'
+                                        ))?.map(staff => staff?.Emp_Name).join(', ')}
+                                    </td>
+                                    <td>End Time</td>
+                                    <td>{selectedRow?.EndTime ? LocalTime(new Date(selectedRow.EndTime)) : ''}</td>
+                                    <td>End KM</td>
+                                    <td>{selectedRow?.Trip_ST_KM}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* items */}
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th className="fa-12 bg-light">#</th>
+                                    <th className="fa-12 bg-light">Reason</th>
+                                    <th className="fa-12 bg-light">Party</th>
+                                    <th className="fa-12 bg-light">Address</th>
+                                    <th className="fa-12 bg-light">Item</th>
+                                    <th className="fa-12 bg-light">HSN</th>
+
+                                    <th className="fa-12 bg-light">Qty</th>
+                                    <th className="fa-12 bg-light">KGS</th>
+                                    <th className="fa-12 bg-light">Rate</th>
+                                    <th className="fa-12 bg-light">Amount</th>
+                                    <th className="fa-12 bg-light">Transfer To</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).sort(
+                                    (a, b) => String(a.Trip_From).localeCompare(b.Trip_From)
+                                ).map((item, index, array) => {
+                                    const isFirstOccurrence =
+                                        index === 0 || item.Trip_From !== array[index - 1]?.Trip_From;
+                                    const rowSpan = array.filter((row) => row.Trip_From === item.Trip_From).length;
+
+                                    return (
+                                        <tr key={index}>
+                                            <td className="fa-10">{index + 1}</td>
+                                            {/* Render the `Trip_From` cell only for the first occurrence */}
+                                            {isFirstOccurrence && (
+                                                <td className="fa-10 vctr" rowSpan={rowSpan}>
+                                                    {item.Trip_From === "STOCK JOURNAL" && "Transfer"}
+                                                </td>
+                                            )}
+                                            <td className="fa-10"></td>
+                                            <td className="fa-10"></td>
+                                            <td className="fa-10">{item?.Product_Name}</td>
+                                            <td className="fa-10">{item?.HSN_Code}</td>
+                                            <td className="fa-10">{NumberFormat(item?.QTY)}</td>
+                                            <td className="fa-10">{NumberFormat(item?.KGS)}</td>
+                                            <td className="fa-10">{NumberFormat(item?.Gst_Rate)}</td>
+                                            <td className="fa-10">{NumberFormat(item?.Total_Value)}</td>
+                                            <td className="fa-10">{item?.ToLocation}</td>
+                                        </tr>
+                                    );
+                                })}
+
+                                <tr>
+                                    <td className="fa-10 fw-bold" colSpan={6}>
+                                        Total:&emsp;
+                                        {numberToWords((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                            (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
+                                        ))} Only.
+                                    </td>
+                                    <td className="fa-10 fw-bold ">
+                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                            (acc, item) => Addition(acc, item.QTY ?? 0), 0
+                                        ))}.
+                                    </td>
+                                    <td className="fa-10 fw-bold">
+                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                            (acc, item) => Addition(acc, item.KGS ?? 0), 0
+                                        ))}.
+                                    </td>
+                                    <td className="fa-10"></td>
+                                    <td className="fa-10 fw-bold" colSpan={2}>
+                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                            (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
+                                        ))}.
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+                        </table>
+
+                        {/* tax calculation */}
+
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <td className="bg-light fa-12 text-center">HSN / SAC</td>
+                                    <td className="bg-light fa-12 text-center">Taxable Value</td>
+                                    <td className="bg-light fa-12 text-center">IGST</td>
+                                    <td className="bg-light fa-12 text-center">CGST</td>
+                                    <td className="bg-light fa-12 text-center">SGST</td>
+                                    <td className="bg-light fa-12 text-center">Total</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {TaxData.map((o, i) => {
+                                    return (
+                                        <tr key={i}>
+                                            <td className="fa-10 text-end">{o?.hsnCode}</td>
+                                            <td className="fa-10 text-end">{NumberFormat(o?.taxableValue)}</td>
+                                            <td className="fa-10 text-end">{NumberFormat(o?.igst)}</td>
+                                            <td className="fa-10 text-end">{NumberFormat(o?.cgst)}</td>
+                                            <td className="fa-10 text-end">{NumberFormat(o?.sgst)}</td>
+                                            <td className="fa-10 text-end">
+                                                {NumberFormat(o?.totalTax)}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                                <tr>
+                                    <td className="border fa-10 text-end">Total</td>
+                                    <td className="border fa-10 text-end fw-bold">
+                                        {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.taxableValue), 0))}
+                                    </td>
+                                    <td className="border fa-10 text-end fw-bold">
+                                        {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.igst), 0))}
+                                    </td>
+                                    <td className="border fa-10 text-end fw-bold">
+                                        {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.cgst), 0))}
+                                    </td>
+                                    <td className="border fa-10 text-end fw-bold">
+                                        {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.sgst), 0))}
+                                    </td>
+                                    <td className="border fa-10 text-end fw-bold">
+                                        {NumberFormat(TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0))}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className='border fa-13 fw-bold'
+                                    >
+                                        Tax Amount (in words) : INR &nbsp;
+                                        {numberToWords(
+                                            parseInt(
+                                                TaxData.reduce((sum, item) => sum += Number(item.totalTax), 0)
+                                            )
+                                        )} only.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table className="table table-bordered fa-10">
+                            <tbody>
+                                <tr>
+                                    <td>Prepared By</td>
+                                    <td style={{ minWidth: 150 }}></td>
+                                    <td>Executed By</td>
+                                    <td style={{ minWidth: 150 }}></td>
+                                    <td>Verified By</td>
+                                    <td style={{ minWidth: 150 }}></td>
+                                </tr>
+                                <tr>
+                                    <td>Other Expenses</td>
+                                    <td>0</td>
+                                    <td>Round Off</td>
+                                    <td>0</td>
+                                    <td>Grand Total</td>
+                                    <td>
+                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                            (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
+                                        ))}.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div className="col-12 text-center">
+                            <p>This is a Computer Generated Invoice</p>
                         </div>
 
-                        <FilterableTable
-                            title="Items"
-                            EnableSerialNumber
-                            dataArray={Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []}
-                            columns={[
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Reason',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => row.Stock_Journal_Bill_type ?? 'Not Available',
-                                },
-                                createCol('Batch_No', 'string'),
-                                createCol('Product_Name', 'string', 'Item'),
-                                createCol('HSN_Code', 'string'),
-                                createCol('QTY', 'number'),
-                                createCol('KGS', 'number'),
-                                createCol('Gst_Rate', 'number'),
-                                createCol('Total_Value', 'number'),
-                                createCol('FromLocation', 'string', 'From'),
-                                createCol('ToLocation', 'string', 'To'),
-                            ]}
-                            disablePagination
-                            ExcelPrintOption
-                        />
                     </React.Fragment>
                     }
                 </DialogContent>
@@ -342,6 +583,13 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                         onClick={() => setFilters(pre => ({ ...pre, printPreviewDialog: false }))}
                         variant="outlined"
                     >close</Button>
+                    <Button
+                        startIcon={<Download />}
+                        variant='outlined'
+                        onClick={handlePrint}
+                    >
+                        Download
+                    </Button>
                 </DialogActions>
             </Dialog>
 
