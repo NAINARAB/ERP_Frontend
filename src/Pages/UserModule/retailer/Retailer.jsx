@@ -9,6 +9,8 @@ import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../../Components/imagePreview";
 import { useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
+
 
 const RetailersMaster = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -25,6 +27,8 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
     const [multipleLocationDialogs, setMultipleLocationDialogs] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
 
+    const [retailersMap, setRetailersMap] = useState([]);
+    const [retailersDialog, setRetailersDialog] = useState(false)
     const [filters, setFilters] = useState({
         cust: '',
         custGet: 'All Retailer',
@@ -32,20 +36,50 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
         areaGet: 'All Area',
     });
 
+    const center = {
+        lat: 9.9252,
+        lng: 78.1198,
+    };
+
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: process.env.REACT_APP_GOOGLE_API,
+    });
+
+    console.log(process.env.REACT_APP_GOOGLE_API)
+
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const resoponse = await fetchLink({
+                    address: `userModule/employeeActivity/maplatitude`,
+                });
+                setRetailersMap(resoponse.data);
+            } catch (error) {
+
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        fetchData();
+    }, [retailersDialog]);
+
+
+
     const initialRetailerInput = {
         Company_Id: storage?.Company_id,
         Retailer_Id: '',
         Retailer_Name: '',
         Contact_Person: '',
         Mobile_No: '',
-        Retailer_Channel_Id: '', //select
+        Retailer_Channel_Id: '',
         Retailer_Class: '',
-        Route_Id: '', //select
-        Area_Id: '', //select
+        Route_Id: '',
+        Area_Id: '',
         Reatailer_Address: '',
         Reatailer_City: '',
         PinCode: '',
-        State_Id: '', //select
+        State_Id: '',
         Branch_Id: storage?.BranchId,
         Gstno: '',
         Created_By: storage?.UserId,
@@ -282,6 +316,7 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
         setIsEdit(false)
     }
 
+
     const closeMultipleLocationDialog = () => {
         setMultipleLocationDialogs(false);
         setSelectedRetailer({});
@@ -462,8 +497,10 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
 
             <Card sx={{ mb: 1 }} >
                 <div className="p-3 pb-0 d-flex align-items-center ">
-                    <h6 className="fa-18 flex-grow-1">Retailers</h6>
+                    <h6 className="fa-18 flex-grow-1 ">Retailers</h6>
+                    <Button variant='outlined' onClick={() => setRetailersDialog(true)}>Retailers Map</Button><br />
                     <Button variant='outlined' startIcon={<Add />} onClick={() => setDialog(true)}>Add Retailers</Button>
+
                     <Tooltip title='Sync Tally LOL'><IconButton onClick={syncLOL}><Sync /></IconButton></Tooltip>
                 </div>
 
@@ -598,6 +635,45 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
                 </form>
             </Dialog>
 
+            <Dialog open={retailersDialog} fullScreen scroll="paper">
+                <DialogTitle>
+                    <IconButton size="small" onClick={closeDialog} className="me-2">
+
+                    </IconButton>
+                    <span>Retailers Map</span>
+                </DialogTitle>
+                <GoogleMap
+                    mapContainerStyle={{ width: '100%', height: '100%' }}
+                    center={center}
+                    zoom={13}
+
+                    onError={() => console.error("Failed to load Google Map")}
+                >
+                    {isLoaded && retailers.length > 0 ? (
+                        retailersMap.map((retailer, index) =>
+                            retailer.latitude && retailer.longitude ? (
+                                <Marker
+                                    key={index}
+                                    position={{
+                                        lat: parseFloat(retailer.latitude),
+                                        lng: parseFloat(retailer.longitude),
+                                    }}
+                                    title={retailer.Retailer_Name || "Retailer"}
+                                    icon={{
+                                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                                        scaledSize: new window.google.maps.Size(25, 25),
+                                    }}
+                                />
+                            ) : null
+                        )
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'gray' }}>
+                            No retailers available to display on the map.
+                        </div>
+                    )}
+                </GoogleMap>
+            </Dialog>
+
             <Dialog
                 open={multipleLocationDialogs}
                 onClose={closeMultipleLocationDialog}
@@ -662,10 +738,6 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
                         </table>
                     </div>
 
-
-
-
-                    {/* {selectedRetailer?.} */}
                 </DialogContent>
 
                 <DialogActions>

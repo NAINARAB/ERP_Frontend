@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, Button, Chip } from "@mui/material";
+import {
+    Card, CardContent, Button, Chip, Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Autocomplete,
+    TextField,
+} from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { fetchLink } from '../../Components/fetchComponent';
@@ -8,12 +15,19 @@ import * as XLSX from 'xlsx';
 import { MyContext } from "../../Components/context/contextProvider";
 import { useContext } from "react";
 import { toast } from "react-toastify";
-const FingerPrintAttendanceReport = () => {
-    const storage = JSON.parse(localStorage.getItem('user'));
-    const userTypeId = storage?.UserTypeId;
-    const [attendanceData, setAttendanceData] = useState([]);
+import Popper from '@mui/material/Popper';
 
+const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
+
+    const [loading, setLoading] = useState(true);
+    const storage = JSON.parse(localStorage.getItem('user'));
+
+    const userTypeId = storage?.UserTypeId;
+    const parseData = storage;
+    const [attendanceData, setAttendanceData] = useState([]);
+    const [dropdownEmployees, setDropdownEmployees] = useState([]);
     const { contextObj } = useContext(MyContext);
+    const [selectedEmployees, setSelectedEmployees] = useState([]);
     const Add_Rights = contextObj?.Add_Rights;
     const getCurrentMonthYear = () => {
         const date = new Date();
@@ -22,7 +36,13 @@ const FingerPrintAttendanceReport = () => {
         return `${year}-${month}`;
     };
 
+    const CustomPopper = (props) => {
+        return <Popper {...props} placement="top" />;
+    };
+    const handleAddEmployeeClose = () => {
+        setAddEmployeeDialogOpen(false);
 
+    };
 
     const initialValue = {
         From: getCurrentMonthYear(),
@@ -31,6 +51,7 @@ const FingerPrintAttendanceReport = () => {
         Name: '',
     };
 
+    const [addEmployeeDialogOpen, setAddEmployeeDialogOpen] = useState(false);
     const [filter, setFilter] = useState(initialValue);
     const [employees, setEmployees] = useState([]);
     const [isDropdownDisabled, setIsDropdownDisabled] = useState(false);
@@ -46,10 +67,6 @@ const FingerPrintAttendanceReport = () => {
 
         return () => clearTimeout(timer);
     }, [filter]);
-
-
-
-
 
     useEffect(() => {
         const userTypeId = storage?.UserTypeId;
@@ -82,9 +99,6 @@ const FingerPrintAttendanceReport = () => {
         }).catch(e => console.error("Error fetching employees:", e));
     }, [storage?.UserTypeId, storage?.UserId, storage?.Company_id, storage?.Name]);
 
-
-
-
     const fetchAttendanceData = async (From, EmpId) => {
         try {
             const userTypeId = storage?.UserTypeId;
@@ -96,8 +110,6 @@ const FingerPrintAttendanceReport = () => {
             const dayCount = getDaysInMonth(`${year}-${month}`);
 
             const endDate = `${year}-${month}-${dayCount}`;
-
-
 
             const response = await fetchLink({
                 address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&UserId=${EmpId}`,
@@ -117,22 +129,11 @@ const FingerPrintAttendanceReport = () => {
 
     const handleOverallDownload = async () => {
         try {
-
             const fromDate = filter.From;
-
-
             const [year, month] = fromDate.split("-");
-
-
             const startDate = `${year}-${month}-01`;
-
-
             const dayCount = getDaysInMonth(`${year}-${month}`);
-
-
             const endDate = `${year}-${month}-${dayCount}`;
-
-
             const response = await fetchLink({
                 address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
             });
@@ -149,11 +150,9 @@ const FingerPrintAttendanceReport = () => {
                         allDays.push(new Date(currentDate).toISOString().split("T")[0]);
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
-
                     if (allDays.length === 0) {
                         allDays.push("No days in this range");
                     }
-
                     return {
                         days: allDays,
                         count: allDays.length,
@@ -227,12 +226,28 @@ const FingerPrintAttendanceReport = () => {
         const { From, EmpId } = debouncedFilter;
         if (From && (EmpId || EmpId === 0)) {
             fetchAttendanceData(From, EmpId);
+            fetchDropdownEmployees();
         }
 
     }, [debouncedFilter]);
 
 
-
+    const fetchDropdownEmployees = async () => {
+        setLoading(true);
+        try {
+            const data = await fetchLink({
+                address: `masters/Employeedetails/dropDown?Company_id=${parseData.Company_id}`,
+            });
+            if (data.success) {
+                setDropdownEmployees(data.data);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to fetch employees for dropdown");
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
     const handleFromChange = (e) => {
@@ -243,17 +258,10 @@ const FingerPrintAttendanceReport = () => {
 
             return new Date(year, month, 0).getDate();
         };
-
         const selectedMonth = e.target.value;
         const [year, month] = selectedMonth.split("-");
-
-
         const startDate = `${year}-${month}-01`;
-
-
         const dayCount = getDaysInMonth(`${year}-${month}`);
-
-
         const endDate = `${year}-${month}-${dayCount}`;
 
         setFilter({
@@ -326,105 +334,21 @@ const FingerPrintAttendanceReport = () => {
         XLSX.writeFile(wb, "Attendance_Report.xlsx");
     };
 
-
-
-
-
     const formatAttendanceDate = (logDateTime) => {
         if (!logDateTime) return '--';
         const [date] = logDateTime.split('T');
         return `${date} `;
     };
 
-    // const handleOverallWithPunch = () => {
-
-
-    //         const groupedData = attendanceData.reduce((acc, row) => {
-    //             const location = row.location || "Unknown Location"; 
-    //             const month = new Date(row.LogDate).toLocaleString("default", { month: "long" });
-    //             const userKey = `${row.username}_${location}_${month}`;
-
-    //             if (!acc[userKey]) {
-    //                 acc[userKey] = {
-    //                     username: row.username,
-    //                     location,
-    //                     month,
-    //                     attendance: []
-    //                 };
-    //             }
-
-    //             acc[userKey].attendance.push(row);
-    //             return acc;
-    //         }, {});
-
-    //         Object.values(groupedData).forEach(({ username, location, month, attendance }) => {
-    //             const maxPunches = Math.max(
-    //                 ...attendance.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0))
-    //             );
-
-    //             const exportData = attendance.map(row => {
-    //                 const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
-    //                 const punchColumns = {};
-
-    //                 const sortedPunchDetails = punchDetails
-    //                     .map(detail => {
-    //                         const timeString = detail.trim().split(' ')[1];
-    //                         let formattedTime = '--';
-    //                         if (timeString) {
-    //                             const [hours, minutes] = timeString.split(':').map(Number);
-    //                             if (!isNaN(hours) && !isNaN(minutes)) {
-    //                                 const ampm = hours >= 12 ? 'PM' : 'AM';
-    //                                 const formattedHours = hours % 12 || 12;
-    //                                 formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
-    //                             }
-    //                         }
-    //                         return { formattedTime, timeString };
-    //                     })
-    //                     .filter(item => item.formattedTime !== '--')
-    //                     .sort((a, b) => {
-    //                         const [aHours, aMinutes] = a.timeString.split(':').map(Number);
-    //                         const [bHours, bMinutes] = b.timeString.split(':').map(Number);
-    //                         return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
-    //                     })
-    //                     .map(item => item.formattedTime);
-
-    //                 sortedPunchDetails.forEach((formattedTime, index) => {
-    //                     punchColumns[`Punch ${index + 1}`] = formattedTime;
-    //                 });
-
-    //                 return {
-    //                     Employee: row.username,
-    //                     Location: location,
-    //                     "Log Date": formatAttendanceDate(row.LogDate),
-    //                     ...punchColumns,
-    //                 };
-    //             });
-
-    //             const columnsOrder = ["Employee", "Log Date", ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)];
-
-    //             const reorderedData = exportData.map(row =>
-    //                 columnsOrder.reduce((acc, col) => {
-    //                     acc[col] = row[col] || '--';
-    //                     return acc;
-    //                 }, {})
-    //             );
-
-    //             const ws = XLSX.utils.json_to_sheet(reorderedData);
-    //             const wb = XLSX.utils.book_new();
-    //             XLSX.utils.book_append_sheet(wb, ws, `${username}_${month}`);
-
-
-    //             const fileName = `${username}_${month}_${year}.xlsx`;
-    //             XLSX.writeFile(wb, fileName);
-    //         });
-
-
-
-    // };
-
     const handleOverallWithPunch = () => {
 
-        const groupedData = attendanceData.reduce((acc, row) => {
+        const filteredAttendanceData = attendanceData.filter((row) => {
+            console.log(selectedEmployees)
+            const isUserSelected = selectedEmployees.some((user) => user.UserId === row.UserId);
+            return isUserSelected || selectedEmployees.some(user => user.UserId === 'all');
+        });
+
+        const groupedData = filteredAttendanceData.reduce((acc, row) => {
             const username = row.username;
             if (!acc[username]) {
                 acc[username] = [];
@@ -433,19 +357,12 @@ const FingerPrintAttendanceReport = () => {
             return acc;
         }, {});
 
-        if (Object.keys(groupedData).length === 0) {
-            toast.error("No attendance data available to export.");
-            return;
-        }
-
         const wb = XLSX.utils.book_new();
 
-
-        const firstLogDate = attendanceData[0]?.LogDate;
+        const firstLogDate = filteredAttendanceData[0]?.LogDate;
         const date = new Date(firstLogDate);
         const year = date.getFullYear();
         const month = date.toLocaleString("default", { month: "long" });
-
 
         Object.entries(groupedData).forEach(([username, userAttendance]) => {
             const maxPunches = Math.max(
@@ -504,14 +421,63 @@ const FingerPrintAttendanceReport = () => {
             XLSX.utils.book_append_sheet(wb, ws, username);
         });
 
-
         const fileName = `Attendance_Report_${month}_${year}.xlsx`;
         XLSX.writeFile(wb, fileName);
     };
 
-
     return (
         <>
+            <Dialog
+                open={addEmployeeDialogOpen}
+                // onClose={handleAddEmployeeClose}
+                maxWidth="md"
+                PaperProps={{
+                    style: { width: '500px', height: '500px' },
+                }}
+            >
+                <DialogTitle>Add Employee</DialogTitle>
+                <DialogContent>
+                    <Autocomplete
+                        multiple
+                        options={[{ UserId: 'all', Name: 'ALL' }, ...dropdownEmployees]}
+                        getOptionLabel={(option) => option.Name}
+                        isOptionEqualToValue={(option, value) => option.UserId === value.UserId}
+                        onChange={(event, value) => {
+                            if (value.some((selected) => selected.UserId === 'all')) {
+                                setSelectedEmployees(dropdownEmployees);
+                            } else {
+                                const uniqueValues = value.filter((val, index, self) =>
+                                    index === self.findIndex((t) => t.UserId === val.UserId)
+                                );
+                                setSelectedEmployees(uniqueValues);
+                            }
+                        }}
+                        value={selectedEmployees.some((user) => user.UserId === 'all')
+                            ? [{ UserId: 'all', Name: 'ALL' }]
+                            : selectedEmployees}
+                        renderInput={(params) => (
+                            <TextField {...params} placeholder="Employees" />
+                        )}
+                    />
+
+
+                </DialogContent>
+                <DialogActions className="d-flex justify-content-between flex-wrap">
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        onClick={() => setSelectedEmployees([])}
+                    >
+                        Clear
+                    </Button>
+                    <span>
+                        <Button onClick={handleAddEmployeeClose}>Cancel</Button>
+                        <Button onClick={handleOverallWithPunch}>Download</Button>
+
+                    </span>
+                </DialogActions>
+
+            </Dialog>
             <Card>
                 <CardContent sx={{ minHeight: '50vh' }}>
                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
@@ -540,7 +506,8 @@ const FingerPrintAttendanceReport = () => {
 
                                     <Button
                                         onClick={() => {
-                                            handleOverallWithPunch(filter?.From, filter?.To);
+                                            setAddEmployeeDialogOpen(true)
+                                            // handleOverallWithPunch(filter?.From, filter?.To);
 
                                         }}
                                     >
@@ -558,6 +525,7 @@ const FingerPrintAttendanceReport = () => {
 
                     <div className="px-2 row mb-4">
                         <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+
                             <label>Employee</label>
                             <Select
                                 value={{ value: filter?.EmpId, label: filter?.Name }}
@@ -586,6 +554,7 @@ const FingerPrintAttendanceReport = () => {
                     <FilterableTable
                         dataArray={attendanceData}
                         columns={[
+
                             {
                                 isCustomCell: true,
                                 Cell: ({ row }) => row.username,
@@ -671,13 +640,8 @@ const FingerPrintAttendanceReport = () => {
                     />
                 </CardContent>
             </Card>
-
-
-
         </>
     );
 };
 
 export default FingerPrintAttendanceReport;
-
-

@@ -1,11 +1,13 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Addition, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration } from "../../../Components/functions";
 import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
+import Select from 'react-select';
+import { customSelectStyles } from "../../../Components/tablecolumn";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -27,6 +29,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         refresh: false,
         printPreviewDialog: false,
+        FromGodown: [],
+        ToGodown: [],
+        Staffs: [],
+        Items: []
     });
     const [selectedRow, setSelectedRow] = useState({});
     const printRef = useRef(null);
@@ -81,11 +87,11 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             const prev = data[HSNindex];
             const newValue = {
                 ...prev,
-                taxableValue: prev.taxableValue + Taxable_Value,
+                taxableValue: Addition(prev.taxableValue, Taxable_Value),
                 cgst: Addition(prev.cgst, Cgst_P),
                 sgst: Addition(prev.sgst, Sgst_P),
                 igst: Addition(prev.igst, Igst_P),
-                totalTax: prev.totalTax + Addition(Addition(Cgst_P, Sgst_P), Igst_P),
+                totalTax: Addition(prev.totalTax, Addition(Addition(Cgst_P, Sgst_P), Igst_P)),
             };
 
             data[HSNindex] = newValue;
@@ -94,13 +100,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
         const newEntry = {
             hsnCode: HSN_Code,
-            taxableValue: Taxable_Value,
-            cgst: Cgst_P,
-            sgst: Sgst_P,
-            igst: Igst_P,
+            taxableValue: Number(Taxable_Value) ?? 0,
+            cgst: Number(Cgst_P) ?? 0,
+            sgst: Number(Sgst_P) ?? 0,
+            igst: Number(Igst_P) ?? 0,
             totalTax: Addition(Addition(Cgst_P, Sgst_P), Igst_P),
         };
-        console.log(newEntry)
 
         return [...data, newEntry];
     }, []);
@@ -109,12 +114,87 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         content: () => printRef.current,
     });
 
+    const uniqueFromLocations = useMemo(() => {
+        const allLocations = tripData.flatMap((trip) =>
+            trip.Products_List.map((product) => product.FromLocation)
+        );
+        return [...new Set(allLocations)].map((location) => ({
+            value: location,
+            label: location,
+        }));
+    }, [tripData]);
+
+    const uniqueToLocations = useMemo(() => {
+        const allLocations = tripData.flatMap((trip) =>
+            trip.Products_List.map((product) => product.ToLocation)
+        );
+        return [...new Set(allLocations)].map((location) => ({
+            value: location,
+            label: location,
+        }));
+    }, [tripData]);
+
+    const uniqueItems = useMemo(() => {
+        const allItems = tripData.flatMap((trip) =>
+            trip.Products_List.map((product) => product.Product_Name)
+        );
+        return [...new Set(allItems)].map(items => ({
+            value: items,
+            label: items,
+        }));
+    }, [tripData]);
+
+    const uniqueStaffs = useMemo(() => {
+        const allStaffs = tripData.flatMap((trip) =>
+            trip.Employees_Involved.map((staff) => staff.Emp_Name)
+        );
+        return [...new Set(allStaffs)].map((name) => ({
+            value: name,
+            label: name,
+        }));
+    }, [tripData]);
+
+    const filteredData = useMemo(() => {
+        return tripData.filter(trip => {
+            const hasFromGodownMatch = filters.FromGodown.length > 0
+                ? trip.Products_List.some(product =>
+                    filters.FromGodown.some(selected => selected.value === product.FromLocation)
+                )
+                : false;
+
+            const hasToGodownMatch = filters.ToGodown.length > 0
+                ? trip.Products_List.some(product =>
+                    filters.ToGodown.some(selected => selected.value === product.ToLocation)
+                )
+                : false;
+
+            const hasItemMatch = filters.Items.length > 0
+                ? trip.Products_List.some(product =>
+                    filters.Items.some(selected => selected.value === product.Product_Name)
+                )
+                : false;
+
+            const hasEmployeeMatch = filters.Staffs.length > 0
+                ? trip.Employees_Involved.some(staff =>
+                    filters.Staffs.some(selected => selected.value === staff.Emp_Name)
+                )
+                : false;
+
+            return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch;
+        });
+    }, [tripData, filters]);
+
 
     return (
         <>
 
             <FilterableTable
-                dataArray={tripData}
+                dataArray={(
+                    filters.FromGodown.length > 0 ||
+                    filters.ToGodown.length > 0 ||
+                    filters.Staffs.length > 0 ||
+                    filters.Items.length > 0
+                ) ? filteredData : tripData}
                 title="Trip Sheets"
                 maxHeightOption
                 ExcelPrintOption
@@ -139,7 +219,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     createCol('Trip_No', 'string'),
                     createCol('Challan_No', 'string', 'Challan'),
                     createCol('Vehicle_No', 'string', 'Vehicle'),
-                    createCol('Branch_Name', 'string', 'Journal number'),
+                    createCol('Branch_Name', 'string', 'Branch'),
                     createCol('StartTime', 'time', 'Start Time'),
                     createCol('EndTime', 'time', 'End Time'),
                     {
@@ -205,43 +285,68 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 ]}
                 isExpendable={true}
                 expandableComp={({ row }) => (
-                    <FilterableTable
-                        title="Items"
-                        EnableSerialNumber
-                        dataArray={Array.isArray(row.Products_List) ? row.Products_List : []}
-                        columns={[
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Reason',
-                                isCustomCell: true,
-                                Cell: ({ row }) => row.Stock_Journal_Bill_type ?? 'Not Available',
-                            },
-                            createCol('Batch_No', 'string'),
-                            createCol('Product_Name', 'string', 'Item'),
-                            createCol('HSN_Code', 'string'),
-                            createCol('QTY', 'number'),
-                            createCol('KGS', 'number'),
-                            createCol('Gst_Rate', 'number'),
-                            createCol('Total_Value', 'number'),
-                            createCol('FromLocation', 'string', 'From'),
-                            createCol('ToLocation', 'string', 'To'),
-                        ]}
-                        disablePagination
-                        ExcelPrintOption
-                    />
+                    <>
+                        {row?.Employees_Involved?.length > 0 && (
+                            <table className="fa-14">
+                                <tbody>
+                                    <tr>
+                                        <th className="py-1 px-2 border text-muted" colSpan={3}>Involved Employees</th>
+                                    </tr>
+                                    <tr>
+                                        <th className="py-1 px-2 border text-muted">SNo</th>
+                                        <th className="py-1 px-2 border text-muted">Name</th>
+                                        <th className="py-1 px-2 border text-muted">Role</th>
+                                    </tr>
+                                    {row.Employees_Involved.map((o, i) => (
+                                        <tr key={i}>
+                                            <td className="py-1 px-2 border">{i + 1}</td>
+                                            <td className="py-1 px-2 border">{o?.Emp_Name}</td>
+                                            <td className="py-1 px-2 border">{o?.Cost_Category}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+
+                        <FilterableTable
+                            title="Items"
+                            EnableSerialNumber
+                            dataArray={Array.isArray(row.Products_List) ? row.Products_List : []}
+                            columns={[
+                                {
+                                    isVisible: 1,
+                                    ColumnHeader: 'Reason',
+                                    isCustomCell: true,
+                                    Cell: ({ row }) => row.Stock_Journal_Bill_type ?? 'Not Available',
+                                },
+                                createCol('Batch_No', 'string'),
+                                createCol('Product_Name', 'string', 'Item'),
+                                createCol('HSN_Code', 'string'),
+                                createCol('QTY', 'number'),
+                                createCol('KGS', 'number'),
+                                createCol('Gst_Rate', 'number'),
+                                createCol('Total_Value', 'number'),
+                                createCol('FromLocation', 'string', 'From'),
+                                createCol('ToLocation', 'string', 'To'),
+                            ]}
+                            disablePagination
+                            ExcelPrintOption
+                        />
+                    </>
                 )}
             />
 
             <Dialog
                 open={filters.filterDialog}
                 onClose={closeDialog}
-                fullWidth maxWidth='sm'
+                fullWidth maxWidth='md'
             >
                 <DialogTitle>Filters</DialogTitle>
                 <DialogContent>
                     <div className="table-responsive pb-4">
                         <table className="table">
                             <tbody>
+
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -252,9 +357,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             className="cus-inpt"
                                         />
                                     </td>
-                                </tr>
-
-                                <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
                                         <input
@@ -265,6 +367,83 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Staffs</td>
+                                    <td colSpan={3}>
+                                        <Select
+                                            value={filters.Staffs}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, Staffs: selectedOptions }))
+                                            }
+                                            menuPortalTarget={document.body}
+                                            options={uniqueStaffs}
+                                            isMulti
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select Staff"}
+                                            maxMenuHeight={300}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Items</td>
+                                    <td colSpan={3}>
+                                        <Select
+                                            value={filters.Items}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, Items: selectedOptions }))
+                                            }
+                                            menuPortalTarget={document.body}
+                                            options={uniqueItems}
+                                            isMulti
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select Items"}
+                                            maxMenuHeight={300}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>From Godown</td>
+                                    <td colSpan={3}>
+                                        <Select
+                                            value={filters.FromGodown}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, FromGodown: selectedOptions }))
+                                            }
+                                            menuPortalTarget={document.body}
+                                            options={uniqueFromLocations}
+                                            isMulti
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select From Godown"}
+                                            maxMenuHeight={300}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>To Godown</td>
+                                    <td colSpan={3}>
+                                        <Select
+                                            value={filters.ToGodown}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, ToGodown: selectedOptions }))
+                                            }
+                                            menuPortalTarget={document.body}
+                                            options={uniqueToLocations}
+                                            isMulti
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select To Godown"}
+                                            maxMenuHeight={300}
+                                        />
+                                    </td>
+                                </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -440,7 +619,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             {/* Render the `Trip_From` cell only for the first occurrence */}
                                             {isFirstOccurrence && (
                                                 <td className="fa-10 vctr" rowSpan={rowSpan}>
-                                                    {item.Trip_From === "STOCK JOURNAL" && "Transfer"}
+                                                    {item.Trip_From === "STOCK JOURNAL" && "T"}
                                                 </td>
                                             )}
                                             <td className="fa-10"></td>

@@ -92,7 +92,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                         isEqualNumber(row?.is_active, 1) ? (
                             <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
                         ) : (
-                            <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                            <span className="px-3 py-1 rounded-3 text-white bg-danger">Disabled</span>
                         )
                     ),
                     ColumnHeader: 'Status',
@@ -196,7 +196,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     isEqualNumber(row?.is_active, 1) ? (
                                         <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
                                     ) : (
-                                        <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                                        <span className="px-3 py-1 rounded-3 text-white bg-danger">Disabled</span>
                                     )
                                 ),
                                 ColumnHeader: 'Status',
@@ -340,7 +340,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     isEqualNumber(row?.is_active, 1) ? (
                                         <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
                                     ) : (
-                                        <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                                        <span className="px-3 py-1 rounded-3 text-white bg-danger">Disabled</span>
                                     )
                                 ),
                                 ColumnHeader: 'Status',
@@ -526,7 +526,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                             isEqualNumber(row?.is_active, 1) ? (
                                 <span className="px-3 py-1 rounded-3 text-white bg-success">Active</span>
                             ) : (
-                                <span className="px-3 py-1 rounded-3 text-white bg-danger">In-Active</span>
+                                <span className="px-3 py-1 rounded-3 text-white bg-danger">Disabled</span>
                             )
                         ),
                         ColumnHeader: 'Status',
@@ -647,7 +647,7 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                     >
                                         <option value='' disabled>select</option>
                                         <option value='1'>Active</option>
-                                        <option value='0'>In-Active</option>
+                                        <option value='0'>Disable</option>
                                     </select>
                                 </div>
                             )}
