@@ -1,13 +1,14 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Card, CardContent } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Card, CardContent, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject } from '../../Components/functions';
-import { Delete, Add, Save, ClearAll, Edit, Launch } from '@mui/icons-material';
+import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidDate, isValidObject, LocalDate, NumberFormat, onlynum, Subraction, timeDuration } from '../../Components/functions';
+import { Delete, Add, Save, ClearAll, Edit, Launch, Search, Close, FilterAlt, Download, KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
+import FilterableTable, { createCol } from '../../Components/filterableTable2';
 const storage = JSON.parse(localStorage.getItem('user'));
 
 const initialOrderDetailsValue = {
@@ -50,6 +51,8 @@ const initialDeliveryDetailsValue = {
     Id: '',
     Sno: '',
     OrderId: '',
+    Trip_Id: '',
+    Trip_Item_SNo: '',
     LocationId: '',
     Location: '',
     TransporterIndex: '',
@@ -99,6 +102,18 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [OrderItemsArray, setOrderItemArray] = useState([])
     const [DeliveryArray, setDeliveryArray] = useState([]);
     const [TranspoterArray, setTranspoterArray] = useState([]);
+    const [tripData, setTripData] = useState([]);
+
+    const [filters, setFilters] = useState({
+        FromGodown: '',
+        FromGodownName: 'Select From Location',
+        ToGodown: '',
+        ToGodownName: 'Select To Location',
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        search: false,
+        tripSheetDialog: false,
+    })
 
     const [OrderDetails, setOrderDetails] = useState(initialOrderDetailsValue);
     const [orderItemsInput, setOrderItemsInput] = useState(initialItemDetailsValue);
@@ -109,7 +124,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [dialogs, setDialogs] = useState({
         itemsDialog: false,
         deliveryDialog: false,
-        transporterDialog: false
+        transporterDialog: false,
     })
 
     const [options, setOptions] = useState({
@@ -288,14 +303,96 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
     const closeDialog = () => {
         setDialogs(pre => ({
+            ...pre,
             itemsDialog: false,
             deliveryDialog: false,
-            transporterDialog: false
+            transporterDialog: false,
         }));
         setOrderItemsInput(initialItemDetailsValue);
         setDeliveryInput(initialDeliveryDetailsValue);
         setTransportInput(initialTranspoterDetailsValue);
     }
+
+    const searchTripData = () => {
+        fetchLink({
+            address: `inventory/tripSheet?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
+        }).then(data => {
+            if (data.success) {
+                setTripData(data.data);
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
+
+    const changeTripItems = (itemDetail, deleteRow = false) => {
+        setDeliveryArray((prev) => {
+            const preItems = prev.filter(o => !(
+                isEqualNumber(o.Trip_Id, itemDetail.Trip_Id) &&
+                isEqualNumber(o.Trip_Item_SNo, itemDetail.S_No)
+            ));
+
+            if (deleteRow) {
+                return preItems;
+            } else {
+                const currentProduct = tripData
+                    .flatMap((t) => t.Products_List)
+                    .filter(o => (
+                        isEqualNumber(o.Trip_Id, itemDetail.Trip_Id) &&
+                        isEqualNumber(o.S_No, itemDetail.S_No)
+                    ));
+
+                const reStruc = currentProduct.map((item, curProIndex) => {
+                    const trip = tripData.find((trp) =>
+                        isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
+                    );
+                    const getTripDate = trip?.Trip_Date;
+                    const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
+
+                    return Object.fromEntries(
+                        Object.entries(initialDeliveryDetailsValue).map(([key, value]) => {
+                            switch (key) {
+                                case "indexValue":
+                                    return [key, Addition(DeliveryArray.length, curProIndex)];
+                                case "Sno":
+                                    return [
+                                        key,
+                                        Addition(DeliveryArray.length, Addition(curProIndex, 1)),
+                                    ];
+                                case "Trip_Id":
+                                    return [key, item?.Trip_Id ?? null];
+                                case "Trip_Item_SNo":
+                                    return [key, item?.S_No ?? null];
+                                case "TransporterIndex":
+                                    return [key, 0];
+                                case "ArrivalDate":
+                                    return [key, tripDate];
+                                case "ItemId":
+                                    return [key, Number(item?.Product_Id)];
+                                case "ItemName":
+                                    return [key, item?.Product_Name];
+                                case "BillDate":
+                                    return [key, tripDate];
+                                case "BilledRate":
+                                    return [key, Number(item.Gst_Rate)];
+                                case "Quantity":
+                                    return [key, Number(item.QTY)];
+                                case "Weight":
+                                    return [key, item?.KGS ?? 0];
+                                case "BatchLocation":
+                                    return [key, item?.Batch_No ?? ""];
+                                default:
+                                    return [key, value];
+                            }
+                        })
+                    );
+                });
+
+                // Return the updated array with new items added
+                return preItems.concat(reStruc);
+            }
+        });
+    };
 
     return (
         <Card>
@@ -309,7 +406,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     >back</Button>
                 </div>
 
-                {!OrderDetails.Id && (
+                {!checkIsNumber(OrderDetails.Id) && (
                     <form onSubmit={(e) => e.preventDefault()}>
                         <div className="d-flex justify-content-center flex-wrap p-2 mb-2">
                             <div className="form-check">
@@ -742,14 +839,20 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                             <table className="table m-0">
                                 <thead>
                                     <tr>
-                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={11}>DELIVERY DETAILS</td>
-                                        <td className={tdStyle + ' text-end bg-light p-0'}>
+                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={10}>DELIVERY DETAILS</td>
+                                        <td className={tdStyle + ' text-end bg-light p-0'} colSpan={2}>
                                             <Button
                                                 startIcon={<Add />}
                                                 varient='outlined'
                                                 disabled={TranspoterArray.length === 0}
                                                 onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
                                             >Add Delivery</Button>
+                                            <Button
+                                                startIcon={<Download />}
+                                                varient='outlined'
+                                                disabled={TranspoterArray.length === 0}
+                                                onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: true }))}
+                                            >From Trips</Button>
                                         </td>
                                     </tr>
                                     <tr>
@@ -1186,6 +1289,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     </form>
                 </Dialog>
 
+                {/* Transporter Details */}
                 <Dialog
                     open={dialogs.transporterDialog}
                     onClose={closeDialog}
@@ -1284,11 +1388,16 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle} colSpan={2}>Phone Number</td>
                                         <td className={tdStyle + ' p-0'} colSpan={2}>
                                             <input
-                                                type='number'
                                                 value={transpoterInput?.PhoneNumber}
-                                                onChange={e => setTransportInput(pre => ({ ...pre, PhoneNumber: e.target.value }))}
+                                                onChange={(e) => {
+                                                    const sanitizedValue = onlynum(e);
+                                                    setTransportInput((pre) => ({
+                                                        ...pre,
+                                                        PhoneNumber: sanitizedValue,
+                                                    }));
+                                                }}
                                                 className={inputStyle + ' border-0'}
-                                                max={9999999999}
+                                                maxLength={10}
                                             />
                                         </td>
                                     </tr>
@@ -1310,6 +1419,121 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                             </span>
                         </DialogActions>
                     </form>
+                </Dialog>
+
+                {/* import from Tripsheet */}
+                <Dialog
+                    open={filters.tripSheetDialog}
+                    onClose={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                    fullScreen
+                >
+                    <DialogTitle
+                        className="d-flex align-items-center"
+                    >
+                        <span className="flex-grow-1">Import From Trip Sheet</span>
+                        <IconButton
+                            size="small" color="error"
+                            onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                        ><Close /></IconButton>
+                    </DialogTitle>
+                    <DialogContent>
+                        <form onSubmit={e => {
+                            e.preventDefault();
+                            searchTripData();
+                        }}>
+                            <div className="row">
+                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <input
+                                        type="date"
+                                        value={filters.Fromdate}
+                                        className="cus-inpt p-2"
+                                        required
+                                        max={filters.Todate}
+                                        onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <input
+                                        type="date"
+                                        value={filters.Todate}
+                                        className="cus-inpt p-2"
+                                        min={filters.Fromdate}
+                                        required
+                                        onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <Button
+                                        variant="outlined"
+                                        type="submit"
+                                        startIcon={<Search />}
+                                    >Search</Button>
+                                </div>
+                            </div>
+
+                            <div className="table-responsive">
+                                <table className="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            {['#', 'SNo', 'Item', 'Rate', 'Quantity', 'Date', 'Trip No', 'Challan No', 'Vehicle No', 'Branch'].map((o, i) => (
+                                                <th className="fa-13" key={i}>{o}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tripData.flatMap(trip =>
+                                            trip?.Products_List.map(product => ({
+                                                ...trip,
+                                                ...product,
+                                            }))
+                                        ).map((trip, tripIndex) => (
+                                            <tr key={tripIndex}>
+                                                <td className='fa-12'>
+                                                    {(() => {
+                                                        const isChecked = DeliveryArray.findIndex(o =>
+                                                            isEqualNumber(o?.Trip_Id, trip.Trip_Id) &&
+                                                            isEqualNumber(o?.Trip_Item_SNo, trip.S_No)
+                                                        ) !== -1;
+
+                                                        return (
+                                                            <div>
+                                                                <input
+                                                                    className="form-check-input shadow-none pointer"
+                                                                    style={{ padding: '0.7em' }}
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => {
+                                                                        if (isChecked) changeTripItems(trip, true)
+                                                                        else changeTripItems(trip)
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )
+                                                    })()}
+                                                </td>
+                                                <td className='fa-12'>{tripIndex + 1}</td>
+                                                <td className='fa-12'>{trip?.Product_Name}</td>
+                                                <td className='fa-12'>{trip?.Gst_Rate}</td>
+                                                <td className='fa-12'>{trip?.QTY}</td>
+                                                <td className='fa-12'>{trip?.Trip_Date ? LocalDate(trip.Trip_Date) : ''}</td>
+                                                <td className='fa-12'>{trip?.Trip_No}</td>
+                                                <td className='fa-12'>{trip?.Challan_No}</td>
+                                                <td className='fa-12'>{trip?.Vehicle_No}</td>
+                                                <td className='fa-12'>{trip?.Branch_Name}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </form>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            size="small" color="error"
+                            onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                        >close</Button>
+                    </DialogActions>
                 </Dialog>
             </CardContent>
         </Card>

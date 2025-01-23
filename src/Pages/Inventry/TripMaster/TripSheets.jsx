@@ -572,7 +572,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </tr>
                                 <tr>
                                     <td>Trip No</td>
-                                    <td>{selectedRow?.Trip_ST_KM}</td>
+                                    <td>{selectedRow?.Trip_No}</td>
                                     <td>LoadMan</td>
                                     <td>
                                         {selectedRow?.Employees_Involved?.filter(staff => (

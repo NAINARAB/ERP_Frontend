@@ -245,7 +245,7 @@ export const timeDifferenceHHMM = (startDate, endDate) => {
 export const onlynum = (e) => {
     const value = e.target.value;
     const newValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
-    e.target.value = newValue;
+    return e.target.value = newValue;
 }
 
 export const isEqualNumber = (a, b) => {

@@ -556,18 +556,18 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         </div>
 
                                         <div className="col-lg-3 col-sm-6 p-2">
-                                        <label>Date</label>
-                                        <input
-                                            value={stockJorunalInfo.Stock_Journal_date}
-                                            type="date"
-                                            disabled={isViewOnly}
-                                            onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
-                                            className="cus-inpt p-2 mb-2"
-                                        />
+                                            <label>Date</label>
+                                            <input
+                                                value={stockJorunalInfo.Stock_Journal_date}
+                                                type="date"
+                                                disabled={isViewOnly}
+                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
+                                                className="cus-inpt p-2 mb-2"
+                                            />
                                         </div>
 
                                         <div className="col-lg-3 col-sm-6 p-2">
-                                        <label>Voucher Type</label>
+                                            <label>Voucher Type</label>
                                             <Select
                                                 value={{ value: stockJorunalInfo.Stock_Journal_Voucher_type, label: stockJorunalInfo.Stock_Journal_Voucher_type }}
                                                 onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_Voucher_type: e.value })}
@@ -586,7 +586,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         </div>
 
                                         <div className="col-lg-3 col-sm-6 p-2">
-                                        <label>Trip Number</label>
+                                            <label>Trip Number</label>
                                             <input
                                                 value={stockJorunalInfo.Trip_No}
                                                 placeholder="Trip / Machine / Vehicle"
@@ -717,7 +717,13 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                         <Select
                                                             value={{ value: row?.Sour_Item_Id, label: row?.Sour_Item_Name }}
                                                             onChange={e => changeSourceValue(index, 'Sour_Item_Id', e.value)}
-                                                            options={baseData.products.map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))}
+                                                            options={
+                                                                baseData.products
+                                                                    .filter(pro =>
+                                                                        !sourceList.some(src => isEqualNumber(pro.Product_Id, src.Sour_Item_Id))
+                                                                    )
+                                                                    .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
+                                                            }
                                                             menuPortalTarget={document.body}
                                                             styles={customSelectStyles}
                                                             isSearchable={true}
@@ -725,6 +731,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
                                                         />
+
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
@@ -869,10 +876,11 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={{ value: row?.Dest_Item_Id, label: row?.Dest_Item_Name }}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Item_Id', e.value)}
                                                             options={
-                                                                baseData.products.map(pro => ({
-                                                                    value: pro.Product_Id,
-                                                                    label: pro.Product_Name
-                                                                }))
+                                                                baseData.products
+                                                                    .filter(pro =>
+                                                                        !destinationList.some(src => isEqualNumber(pro.Product_Id, src.Dest_Item_Id))
+                                                                    )
+                                                                    .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
                                                             }
                                                             menuPortalTarget={document.body}
                                                             styles={customSelectStyles}
