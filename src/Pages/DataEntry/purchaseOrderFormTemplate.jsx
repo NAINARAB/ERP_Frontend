@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidDate, isValidObject, LocalDate, NumberFormat, onlynum, Subraction, timeDuration } from '../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidDate, isValidObject, LocalDate, NumberFormat, onlynum, Subraction, timeDuration } from '../../Components/functions';
 import { Delete, Add, Save, ClearAll, Edit, Launch, Search, Close, FilterAlt, Download, KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
@@ -85,6 +85,8 @@ const initialTranspoterDetailsValue = {
     PhoneNumber: '',
     CreatedBy: storage?.UserId,
 }
+
+const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -348,6 +350,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     );
                     const getTripDate = trip?.Trip_Date;
                     const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
+                    const productDetails = findProductDetails(products, item?.Product_Id);
+                    const pack = parseFloat(productDetails?.PackGet ?? 0);
+                    const Quantity = Division(item.QTY, pack);
 
                     return Object.fromEntries(
                         Object.entries(initialDeliveryDetailsValue).map(([key, value]) => {
@@ -355,10 +360,11 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                 case "indexValue":
                                     return [key, Addition(DeliveryArray.length, curProIndex)];
                                 case "Sno":
-                                    return [
-                                        key,
-                                        Addition(DeliveryArray.length, Addition(curProIndex, 1)),
-                                    ];
+                                    return [key, Addition(DeliveryArray.length, Addition(curProIndex, 1)),];
+                                case 'LocationId':
+                                    return [key, Number(item?.To_Location) ?? value]
+                                case 'Location':
+                                    return [key, item?.ToLocation ?? value]
                                 case "Trip_Id":
                                     return [key, item?.Trip_Id ?? null];
                                 case "Trip_Item_SNo":
@@ -376,9 +382,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                 case "BilledRate":
                                     return [key, Number(item.Gst_Rate)];
                                 case "Quantity":
-                                    return [key, Number(item.QTY)];
+                                    return [key, Quantity]
                                 case "Weight":
-                                    return [key, item?.KGS ?? 0];
+                                    return [key, Number(item.QTY) ?? 0];
                                 case "BatchLocation":
                                     return [key, item?.Batch_No ?? ""];
                                 default:
@@ -1475,7 +1481,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                 <table className="table table-bordered">
                                     <thead>
                                         <tr>
-                                            {['#', 'SNo', 'Item', 'Rate', 'Quantity', 'Date', 'Trip No', 'Challan No', 'Vehicle No', 'Branch'].map((o, i) => (
+                                            {['#', 'SNo', 'Date', 'Item', 'Rate', 'Quantity', 'From', 'To', 'Trip No', 'Challan No', 'Vehicle No', 'Branch'].map((o, i) => (
                                                 <th className="fa-13" key={i}>{o}</th>
                                             ))}
                                         </tr>
@@ -1512,10 +1518,12 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                     })()}
                                                 </td>
                                                 <td className='fa-12'>{tripIndex + 1}</td>
+                                                <td className='fa-12'>{trip?.Trip_Date ? LocalDate(trip.Trip_Date) : ''}</td>
                                                 <td className='fa-12'>{trip?.Product_Name}</td>
                                                 <td className='fa-12'>{trip?.Gst_Rate}</td>
                                                 <td className='fa-12'>{trip?.QTY}</td>
-                                                <td className='fa-12'>{trip?.Trip_Date ? LocalDate(trip.Trip_Date) : ''}</td>
+                                                <td className='fa-12'>{trip?.FromLocation}</td>
+                                                <td className='fa-12'>{trip?.ToLocation}</td>
                                                 <td className='fa-12'>{trip?.Trip_No}</td>
                                                 <td className='fa-12'>{trip?.Challan_No}</td>
                                                 <td className='fa-12'>{trip?.Vehicle_No}</td>
