@@ -23,6 +23,21 @@ const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     }
 }
 
+const calculateGST = (method, amount, percentage) => {
+    if (method === 2 || percentage === 0) {
+        return { gstAmount: 0, netPrice: amount };
+    }
+
+    const gstAmount = method === 1
+        ? RoundNumber(amount - (amount * (100 / (100 + percentage))))
+        : RoundNumber((amount * percentage) / 100);
+    const netPrice = method === 1
+        ? amount - gstAmount
+        : amount + gstAmount;
+
+    return { gstAmount, netPrice };
+};
+
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
@@ -263,6 +278,69 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         })
     }
 
+    // const changeItems = (itemDetail, deleteOption) => {
+    //     setSelectedItems((prev) => {
+    //         const preItems = prev.filter(o => !isEqualNumber(o?.OrderId, itemDetail?.OrderId));
+    //         if (deleteOption) {
+    //             return preItems;
+    //         } else {
+    //             const currentOrders = deliveryDetails.filter(item => isEqualNumber(item.OrderId, itemDetail.OrderId));
+
+    //             const reStruc = currentOrders.map(item => {
+    //                 const productDetails = findProductDetails(products, item.ItemId);
+    //                 const gstPercentage = IS_IGST ? productDetails.Igst_P : productDetails.Gst_P;
+    //                 const Taxble = gstPercentage > 0 ? 1 : 0;
+    //                 const Bill_Qty = Number(item.Weight);
+    //                 const Item_Rate = RoundNumber(item.BilledRate);
+    //                 const Amount = Multiplication(Bill_Qty, Item_Rate);
+    //                 const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
+    //                 const itemTaxRate = taxCalc(invoiceDetails.GST_Inclusive, Item_Rate, gstPercentage);
+    //                 const Taxable_Rate = RoundNumber(Subraction(Item_Rate, itemTaxRate));
+
+    //                 const Taxable_Amount = isInclusive ? (Amount - tax) : Amount;
+    //                 const Final_Amo = isInclusive ? Amount : (Amount + tax);
+    //                 const Cgst_Amo = !IS_IGST ? (taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) / 2) : 0;
+    //                 const Igst_Amo = IS_IGST ? taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) : 0;
+
+    //                 return Object.fromEntries(
+    //                     Object.entries(itemsRowDetails).map(([key, value]) => {
+    //                         switch (key) {
+    //                             case 'DeliveryId': return [key, Number(item?.Id)]
+    //                             case 'OrderId': return [key, Number(item?.OrderId)]
+    //                             case 'PIN_Id': return [key, Number(item?.OrderId)]
+    //                             case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
+    //                             case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
+    //                             case 'Item_Id': return [key, Number(item?.ItemId)]
+    //                             case 'Bill_Qty': return [key, Bill_Qty]
+    //                             case 'Act_Qty' : return [key, Bill_Qty]
+    //                             case 'Item_Rate': return [key, Item_Rate]
+    //                             case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
+    //                             case 'Batch_No': return [key, item?.BatchLocation]
+    //                             case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
+    //                             case 'Amount': return [key, Amount]
+    //                             case 'Total_Qty': return [key, Bill_Qty]
+    //                             case 'Taxble': return [key, Taxble]
+    //                             case 'HSN_Code': return [key, productDetails.HSN_Code]
+    //                             case 'Taxable_Amount': return [key, Taxable_Amount]
+    //                             case 'Tax_Rate': return [key, gstPercentage]
+    //                             case 'Cgst': return [key, (gstPercentage / 2) ?? 0]
+    //                             case 'Cgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
+    //                             case 'Sgst': return [key, (gstPercentage / 2) ?? 0]
+    //                             case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
+    //                             case 'Igst': return [key, (gstPercentage / 2) ?? 0]
+    //                             case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
+    //                             case 'Final_Amo': return [key, Final_Amo]
+
+    //                             default: return [key, value]
+    //                         }
+    //                     })
+    //                 )
+    //             })
+    //             return preItems.concat(reStruc);
+    //         }
+    //     });
+    // };
+
     const changeItems = (itemDetail, deleteOption) => {
         setSelectedItems((prev) => {
             const preItems = prev.filter(o => !isEqualNumber(o?.OrderId, itemDetail?.OrderId));
@@ -272,58 +350,83 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 const currentOrders = deliveryDetails.filter(item => isEqualNumber(item.OrderId, itemDetail.OrderId));
 
                 const reStruc = currentOrders.map(item => {
-                    const productDetails = findProductDetails(products, item.ItemId)
+                    const productDetails = findProductDetails(products, item.ItemId);
                     const gstPercentage = IS_IGST ? productDetails.Igst_P : productDetails.Gst_P;
-                    const Taxble = gstPercentage > 0 ? 1 : 0;
+                    const isTaxable = gstPercentage > 0;
+
                     const Bill_Qty = Number(item.Weight);
                     const Item_Rate = RoundNumber(item.BilledRate);
                     const Amount = Multiplication(Bill_Qty, Item_Rate);
-                    const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
-                    const itemTaxRate = taxCalc(invoiceDetails.GST_Inclusive, Item_Rate, gstPercentage);
-                    const Taxable_Rate = RoundNumber(Subraction(Item_Rate, itemTaxRate));
 
-                    const Taxable_Amount = isInclusive ? (Amount - tax) : Amount;
-                    const Final_Amo = isInclusive ? Amount : (Amount + tax);
-                    const Cgst_Amo = !IS_IGST ? (taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) / 2) : 0;
-                    const Igst_Amo = IS_IGST ? taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) : 0;
+                    const { gstAmount, netPrice } = calculateGST(invoiceDetails.GST_Inclusive, Amount, isTaxable ? gstPercentage : 0);
+
+                    const Cgst_Amo = isTaxable && !IS_IGST ? gstAmount / 2 : 0;
+                    const Igst_Amo = isTaxable && IS_IGST ? gstAmount : 0;
+
                     return Object.fromEntries(
                         Object.entries(itemsRowDetails).map(([key, value]) => {
                             switch (key) {
-                                case 'DeliveryId': return [key, Number(item?.Id)]
-                                case 'OrderId': return [key, Number(item?.OrderId)]
-                                case 'PIN_Id': return [key, Number(item?.OrderId)]
-                                case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
-                                case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
-                                case 'Item_Id': return [key, Number(item?.ItemId)]
-                                case 'Bill_Qty': return [key, Bill_Qty]
-                                case 'Act_Qty' : return [key, Bill_Qty]
-                                case 'Item_Rate': return [key, Item_Rate]
-                                case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
-                                case 'Batch_No': return [key, item?.BatchLocation]
-                                case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
-                                case 'Amount': return [key, Amount]
-                                case 'Total_Qty': return [key, Bill_Qty]
-                                case 'Taxble': return [key, Taxble]
-                                case 'HSN_Code': return [key, productDetails.HSN_Code]
-                                case 'Taxable_Amount': return [key, Taxable_Amount]
-                                case 'Tax_Rate': return [key, gstPercentage]
-                                case 'Cgst': return [key, (gstPercentage / 2) ?? 0]
-                                case 'Cgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-                                case 'Sgst': return [key, (gstPercentage / 2) ?? 0]
-                                case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-                                case 'Igst': return [key, (gstPercentage / 2) ?? 0]
-                                case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
-                                case 'Final_Amo': return [key, Final_Amo]
-
-                                default: return [key, value]
+                                case 'DeliveryId': 
+                                    return [key, Number(item?.Id)];
+                                case 'OrderId': 
+                                    return [key, Number(item?.OrderId)];
+                                case 'PIN_Id': 
+                                    return [key, Number(item?.OrderId)];
+                                case 'Po_Inv_Date': 
+                                    return [key, invoiceDetails?.Po_Inv_Date];
+                                case 'Location_Id': 
+                                    return [key, Number(item?.LocationId) ?? ''];
+                                case 'Item_Id': 
+                                    return [key, Number(item?.ItemId)];
+                                case 'Bill_Qty': 
+                                case 'Act_Qty': 
+                                    return [key, Bill_Qty];
+                                case 'Item_Rate': 
+                                    return [key, Item_Rate];
+                                case 'Bill_Alt_Qty': 
+                                    return [key, Number(item?.Quantity)];
+                                case 'Batch_No': 
+                                    return [key, item?.BatchLocation];
+                                case 'Taxable_Rate': 
+                                    return [key, RoundNumber(Item_Rate - (invoiceDetails.GST_Inclusive ? gstAmount / Bill_Qty : 0))];
+                                case 'Amount': 
+                                    return [key, Amount];
+                                case 'Total_Qty': 
+                                    return [key, Bill_Qty];
+                                case 'Taxble': 
+                                    return [key, isTaxable ? 1 : 0];
+                                case 'HSN_Code': 
+                                    return [key, productDetails.HSN_Code];
+                                case 'Taxable_Amount': 
+                                    return [key, netPrice];
+                                case 'Tax_Rate': 
+                                    return [key, isTaxable ? gstPercentage : 0];
+                                case 'Cgst': 
+                                case 'Sgst': 
+                                    return [key, isTaxable ? gstPercentage / 2 : 0];
+                                case 'Cgst_Amo': 
+                                case 'Sgst_Amo': 
+                                    return [key, isTaxable && !IS_IGST ? Cgst_Amo : 0];
+                                case 'Igst': 
+                                    return [key, isTaxable && IS_IGST ? gstPercentage : 0];
+                                case 'Igst_Amo': 
+                                    return [key, isTaxable && IS_IGST ? Igst_Amo : 0];
+                                case 'Final_Amo': 
+                                    return [key, isTaxable ? netPrice : Amount];
+                                default:
+                                    console.warn(`Unknown key encountered: ${key}`);
+                                    return [key, value]; 
                             }
-                        })
-                    )
-                })
+                        }).filter(entry => entry !== undefined) 
+                    );
+                    
+                });
                 return preItems.concat(reStruc);
             }
         });
     };
+
+    console.log(selectedItems)
 
     const closeDialogs = () => {
         setDialogs(false);
@@ -388,7 +491,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             }
         }).then(data => {
             if (data.success) {
-                toast.success(data?.message || 'Saved');    
+                toast.success(data?.message || 'Saved');
                 closeDialogs();
             } else {
                 toast.error(data?.message || 'Request Failed')
