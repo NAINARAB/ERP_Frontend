@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, NumberFormat, Subraction } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 

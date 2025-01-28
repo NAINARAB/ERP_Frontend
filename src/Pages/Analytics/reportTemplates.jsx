@@ -335,22 +335,22 @@ const ReportTemplates = () => {
             .finally(() => setLocalVariable(pre => ({ ...pre, filterTablesAndColumns: {} })))
     }
 
-    const saveReportGroupingState = (reportid, grouping) => {
-        fetchLink({
-            address: `reports/template/templateState`,
-            method: 'POST',
-            bodyData: {
-                Report_Type_Id: reportid,
-                ReportState: grouping
-            }
-        }).then(data => {
-            if (data.success) {
-                toast.success(data.message);
-            } else {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e))
-    }
+    // const saveReportGroupingState = (reportid, grouping) => {
+    //     fetchLink({
+    //         address: `reports/template/templateState`,
+    //         method: 'POST',
+    //         bodyData: {
+    //             Report_Type_Id: reportid,
+    //             ReportState: grouping
+    //         }
+    //     }).then(data => {
+    //         if (data.success) {
+    //             toast.success(data.message);
+    //         } else {
+    //             toast.error(data.message)
+    //         }
+    //     }).catch(e => console.error(e))
+    // }
 
     return (
         <>

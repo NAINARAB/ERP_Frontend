@@ -252,6 +252,15 @@ export const isEqualNumber = (a, b) => {
     return Number(a) === Number(b)
 }
 
+export const toNumber = (value) => {
+    if (!value) return 0; 
+    if (typeof value === 'string') {
+        const parsed = parseFloat(value.replace(/,/g, '')); 
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return typeof value === 'number' ? value : 0; 
+};
+
 export const isEqualObject = (obj1, obj2) => {
     if (obj1 === obj2) {
         return true;

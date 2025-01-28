@@ -4,39 +4,12 @@ import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, Dialog
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Search } from "@mui/icons-material";
-import { checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
-
-const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    switch (method) {
-        case 0:
-            return RoundNumber(amount * (percentage / 100));
-        case 1:
-            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
-        case 2:
-            return 0;
-        default:
-            return 0;
-    }
-}
-
-const calculateGST = (method, amount, percentage) => {
-    if (method === 2 || percentage === 0) {
-        return { gstAmount: 0, netPrice: amount };
-    }
-
-    const gstAmount = method === 1
-        ? RoundNumber(amount - (amount * (100 / (100 + percentage))))
-        : RoundNumber((amount * percentage) / 100);
-    const netPrice = method === 1
-        ? amount - gstAmount
-        : amount + gstAmount;
-
-    return { gstAmount, netPrice };
-};
+import { calculateGSTDetails } from '../../Components/taxCalculator';
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -55,7 +28,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Po_Inv_Date: ISOString(),
         Po_Entry_Date: ISOString(),
         Retailer_Id: '',
-        GST_Inclusive: 2,
+        GST_Inclusive: 1,
         IS_IGST: 0,
         Narration: '',
         isConverted: '',
@@ -130,51 +103,43 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const [dialogs, setDialogs] = useState(false);
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
-    const isExclusiveBill = isEqualNumber(invoiceDetails?.GST_Inclusive, 0);
     const isInclusive = isEqualNumber(invoiceDetails?.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(invoiceDetails?.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(invoiceDetails?.IS_IGST, 1);
 
-    const Total_Invoice_value = selectedItems.reduce((o, item) => {
+    const Total_Invoice_value = selectedItems.reduce((acc, item) => {
         const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty);
+        const billQty = RoundNumber(item?.Bill_Qty);
         const Amount = Multiplication(billQty, itemRate);
 
-        if (isInclusive || isNotTaxableBill) {
-            return o += Number(Amount);
-        }
+        if (isNotTaxableBill) return Amount;
 
-        if (isExclusiveBill) {
-            const product = findProductDetails(products, item.Item_Id);
-            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
-            const tax = taxCalc(0, itemRate, gstPercentage)
-            return o += (Number(Amount) + (tax * billQty));
+        const product = findProductDetails(products, item.Item_Id);
+        const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+        if (isInclusive) {
+            return acc += calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax;
+        } else {
+            return acc += calculateGSTDetails(Amount, gstPercentage, 'add').with_tax;
         }
-    }, 0);
+    }, 0)
 
     const totalValueBeforeTax = selectedItems.reduce((acc, item) => {
         const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty) || 0;
-
-        if (isNotTaxableBill) {
-            acc.TotalValue += Multiplication(billQty, itemRate);
-            return acc;
+        const billQty = RoundNumber(item?.Bill_Qty);
+        const Amount = Multiplication(billQty, itemRate);
+        
+        if (isNotTaxableBill) return {
+            TotalValue: Addition(acc.TotalValue, Amount),
+            TotalTax: 0
         }
 
         const product = findProductDetails(products, item.Item_Id);
-        const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+        const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
-        if (isInclusive) {
-            const itemTax = taxCalc(1, itemRate, gstPercentage);
-            const basePrice = Subraction(itemRate, itemTax);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, basePrice);
-        }
-        if (isExclusiveBill) {
-            const itemTax = taxCalc(0, itemRate, gstPercentage);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, itemRate);
-        }
+        const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+        acc.TotalValue += taxInfo.without_tax;
+        acc.TotalTax += taxInfo.tax_amount;
 
         return acc;
     }, {
@@ -278,69 +243,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         })
     }
 
-    // const changeItems = (itemDetail, deleteOption) => {
-    //     setSelectedItems((prev) => {
-    //         const preItems = prev.filter(o => !isEqualNumber(o?.OrderId, itemDetail?.OrderId));
-    //         if (deleteOption) {
-    //             return preItems;
-    //         } else {
-    //             const currentOrders = deliveryDetails.filter(item => isEqualNumber(item.OrderId, itemDetail.OrderId));
-
-    //             const reStruc = currentOrders.map(item => {
-    //                 const productDetails = findProductDetails(products, item.ItemId);
-    //                 const gstPercentage = IS_IGST ? productDetails.Igst_P : productDetails.Gst_P;
-    //                 const Taxble = gstPercentage > 0 ? 1 : 0;
-    //                 const Bill_Qty = Number(item.Weight);
-    //                 const Item_Rate = RoundNumber(item.BilledRate);
-    //                 const Amount = Multiplication(Bill_Qty, Item_Rate);
-    //                 const tax = taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage);
-    //                 const itemTaxRate = taxCalc(invoiceDetails.GST_Inclusive, Item_Rate, gstPercentage);
-    //                 const Taxable_Rate = RoundNumber(Subraction(Item_Rate, itemTaxRate));
-
-    //                 const Taxable_Amount = isInclusive ? (Amount - tax) : Amount;
-    //                 const Final_Amo = isInclusive ? Amount : (Amount + tax);
-    //                 const Cgst_Amo = !IS_IGST ? (taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) / 2) : 0;
-    //                 const Igst_Amo = IS_IGST ? taxCalc(invoiceDetails.GST_Inclusive, Amount, gstPercentage) : 0;
-
-    //                 return Object.fromEntries(
-    //                     Object.entries(itemsRowDetails).map(([key, value]) => {
-    //                         switch (key) {
-    //                             case 'DeliveryId': return [key, Number(item?.Id)]
-    //                             case 'OrderId': return [key, Number(item?.OrderId)]
-    //                             case 'PIN_Id': return [key, Number(item?.OrderId)]
-    //                             case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
-    //                             case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
-    //                             case 'Item_Id': return [key, Number(item?.ItemId)]
-    //                             case 'Bill_Qty': return [key, Bill_Qty]
-    //                             case 'Act_Qty' : return [key, Bill_Qty]
-    //                             case 'Item_Rate': return [key, Item_Rate]
-    //                             case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
-    //                             case 'Batch_No': return [key, item?.BatchLocation]
-    //                             case 'Taxable_Rate': return [key, Number(Taxable_Rate)]
-    //                             case 'Amount': return [key, Amount]
-    //                             case 'Total_Qty': return [key, Bill_Qty]
-    //                             case 'Taxble': return [key, Taxble]
-    //                             case 'HSN_Code': return [key, productDetails.HSN_Code]
-    //                             case 'Taxable_Amount': return [key, Taxable_Amount]
-    //                             case 'Tax_Rate': return [key, gstPercentage]
-    //                             case 'Cgst': return [key, (gstPercentage / 2) ?? 0]
-    //                             case 'Cgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-    //                             case 'Sgst': return [key, (gstPercentage / 2) ?? 0]
-    //                             case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-    //                             case 'Igst': return [key, (gstPercentage / 2) ?? 0]
-    //                             case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
-    //                             case 'Final_Amo': return [key, Final_Amo]
-
-    //                             default: return [key, value]
-    //                         }
-    //                     })
-    //                 )
-    //             })
-    //             return preItems.concat(reStruc);
-    //         }
-    //     });
-    // };
-
     const changeItems = (itemDetail, deleteOption) => {
         setSelectedItems((prev) => {
             const preItems = prev.filter(o => !isEqualNumber(o?.OrderId, itemDetail?.OrderId));
@@ -354,79 +256,58 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     const gstPercentage = IS_IGST ? productDetails.Igst_P : productDetails.Gst_P;
                     const isTaxable = gstPercentage > 0;
 
-                    const Bill_Qty = Number(item.Weight);
-                    const Item_Rate = RoundNumber(item.BilledRate);
+                    const Bill_Qty = parseFloat(item.Weight) ?? 0;
+                    const Item_Rate = RoundNumber(item.BilledRate) ?? 0;
                     const Amount = Multiplication(Bill_Qty, Item_Rate);
 
-                    const { gstAmount, netPrice } = calculateGST(invoiceDetails.GST_Inclusive, Amount, isTaxable ? gstPercentage : 0);
+                    const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
+                    const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
+                    const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
 
-                    const Cgst_Amo = isTaxable && !IS_IGST ? gstAmount / 2 : 0;
-                    const Igst_Amo = isTaxable && IS_IGST ? gstAmount : 0;
+                    const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
+                    const igstPer = IS_IGST ? gstInfo.igst_per : 0;
+                    const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
+                    const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
 
                     return Object.fromEntries(
                         Object.entries(itemsRowDetails).map(([key, value]) => {
                             switch (key) {
-                                case 'DeliveryId': 
-                                    return [key, Number(item?.Id)];
-                                case 'OrderId': 
-                                    return [key, Number(item?.OrderId)];
-                                case 'PIN_Id': 
-                                    return [key, Number(item?.OrderId)];
-                                case 'Po_Inv_Date': 
-                                    return [key, invoiceDetails?.Po_Inv_Date];
-                                case 'Location_Id': 
-                                    return [key, Number(item?.LocationId) ?? ''];
-                                case 'Item_Id': 
-                                    return [key, Number(item?.ItemId)];
-                                case 'Bill_Qty': 
-                                case 'Act_Qty': 
-                                    return [key, Bill_Qty];
-                                case 'Item_Rate': 
-                                    return [key, Item_Rate];
-                                case 'Bill_Alt_Qty': 
-                                    return [key, Number(item?.Quantity)];
-                                case 'Batch_No': 
-                                    return [key, item?.BatchLocation];
-                                case 'Taxable_Rate': 
-                                    return [key, RoundNumber(Item_Rate - (invoiceDetails.GST_Inclusive ? gstAmount / Bill_Qty : 0))];
-                                case 'Amount': 
-                                    return [key, Amount];
-                                case 'Total_Qty': 
-                                    return [key, Bill_Qty];
-                                case 'Taxble': 
-                                    return [key, isTaxable ? 1 : 0];
-                                case 'HSN_Code': 
-                                    return [key, productDetails.HSN_Code];
-                                case 'Taxable_Amount': 
-                                    return [key, netPrice];
-                                case 'Tax_Rate': 
-                                    return [key, isTaxable ? gstPercentage : 0];
-                                case 'Cgst': 
-                                case 'Sgst': 
-                                    return [key, isTaxable ? gstPercentage / 2 : 0];
-                                case 'Cgst_Amo': 
-                                case 'Sgst_Amo': 
-                                    return [key, isTaxable && !IS_IGST ? Cgst_Amo : 0];
-                                case 'Igst': 
-                                    return [key, isTaxable && IS_IGST ? gstPercentage : 0];
-                                case 'Igst_Amo': 
-                                    return [key, isTaxable && IS_IGST ? Igst_Amo : 0];
-                                case 'Final_Amo': 
-                                    return [key, isTaxable ? netPrice : Amount];
-                                default:
-                                    console.warn(`Unknown key encountered: ${key}`);
-                                    return [key, value]; 
+                                case 'DeliveryId': return [key, Number(item?.Id)]
+                                case 'OrderId': return [key, Number(item?.OrderId)]
+                                case 'PIN_Id': return [key, Number(item?.OrderId)]
+                                case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
+                                case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
+                                case 'Item_Id': return [key, Number(item?.ItemId)]
+                                case 'Bill_Qty': return [key, Bill_Qty]
+                                case 'Act_Qty': return [key, Bill_Qty]
+                                case 'Item_Rate': return [key, Item_Rate]
+                                case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
+                                case 'Batch_No': return [key, item?.BatchLocation]
+                                case 'Taxable_Rate': return [key, itemRateGst.base_amount]
+                                case 'Amount': return [key, Amount]
+                                case 'Total_Qty': return [key, Bill_Qty]
+                                case 'Taxble': return [key, isTaxable ? 1 : 0]
+                                case 'HSN_Code': return [key, productDetails.HSN_Code]
+                                case 'Taxable_Amount': return [key, gstInfo.base_amount]
+                                case 'Tax_Rate': return [key, gstPercentage]
+                                case 'Cgst':
+                                case 'Sgst': return [key, cgstPer ?? 0]
+                                case 'Cgst_Amo':
+                                case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
+                                case 'Igst': return [key, igstPer ?? 0]
+                                case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
+                                case 'Final_Amo': return [key, gstInfo.with_tax]
+
+                                default: return [key, value]
                             }
-                        }).filter(entry => entry !== undefined) 
-                    );
-                    
+                        })
+                    )
+
                 });
                 return preItems.concat(reStruc);
             }
         });
     };
-
-    console.log(selectedItems)
 
     const closeDialogs = () => {
         setDialogs(false);
@@ -614,6 +495,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     </DialogTitle>
 
                     <DialogContent className="table-responsive">
+
                         <div className="row">
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Vendor</label>
@@ -730,6 +612,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
                         </div>
+
                         <div className="table-responsive">
                             <table className="table">
                                 <thead>
@@ -828,6 +711,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     ))}
                                 </tbody>
                             </table>
+
                             <table className="table">
                                 <tbody>
                                     <tr>
@@ -844,13 +728,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             <tr>
                                                 <td className="border p-2">CGST</td>
                                                 <td className="border p-2">
-                                                    {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
+                                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td className="border p-2">SGST</td>
                                                 <td className="border p-2">
-                                                    {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
+                                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
                                                 </td>
                                             </tr>
                                         </>
@@ -858,7 +742,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <tr>
                                             <td className="border p-2">IGST</td>
                                             <td className="border p-2">
-                                                {NumberFormat(totalValueBeforeTax.TotalTax)}
+                                                {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax))}
                                             </td>
                                         </tr>
                                     )}
@@ -866,9 +750,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
                                             {NumberFormat(
-                                                Total_Invoice_value - (
-                                                    totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax
-                                                )
+                                                Subraction(Total_Invoice_value, Addition(
+                                                    totalValueBeforeTax.TotalValue, totalValueBeforeTax.TotalTax
+                                                ))
                                             )}
                                         </td>
                                     </tr>
@@ -881,101 +765,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 </tbody>
                             </table>
                         </div>
-                        {/* <FilterableTable
-                            dataArray={selectedItems}
-                            columns={[
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Item',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        findProductDetails(products, row.Item_Id)?.Product_Name ?? 'Not found'
-                                    )
-                                },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Rate',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <input
-                                            value={row?.Item_Rate}
-                                            type="number"
-                                            className={inputStyle}
-                                            onChange={e => changeSelectedObjects(row, 'Item_Rate', e.target.value)}
-                                            required
-                                        />
-                                    )
-                                },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Quantity',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <input
-                                            value={row?.Bill_Qty}
-                                            type="number"
-                                            className={inputStyle}
-                                            onChange={e => changeSelectedObjects(row, 'Bill_Qty', e.target.value)}
-                                            required
-                                        />
-                                    )
-                                },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Weight',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <input
-                                            value={row?.Weight}
-                                            type="number"
-                                            className={inputStyle}
-                                            onChange={e => changeSelectedObjects(row, 'Weight', e.target.value)}
-                                            required
-                                        />
-                                    )
-                                },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Unit',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <select
-                                            value={row?.Unit_Id}
-                                            type="number"
-                                            className={inputStyle}
-                                            onChange={e => {
-                                                const selectedIndex = e.target.selectedIndex;
-                                                const label = e.target.options[selectedIndex].text;
-                                                const value = e.target.value;
-                                                changeSelectedObjects(row, 'Unit_Id', value);
-                                                changeSelectedObjects(row, 'Unit_Name', label);
-                                            }}
-                                            required
-                                        >
-                                            <option value="">select</option>
-                                            {productUOM.map((o, i) => (
-                                                <option value={o.Unit_Id} key={i} >{o.Units}</option>
-                                            ))}
-                                        </select>
-                                    )
-                                },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Amount',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <input
-                                            value={row?.Amount}
-                                            type="number"
-                                            className={inputStyle}
-                                            onChange={e => changeSelectedObjects(row, 'Amount', e.target.value)}
-                                            required
-                                        />
-                                    )
-                                },
-                            ]}
-                            EnableSerialNumber
-                        /> */}
+
                     </DialogContent>
                     <DialogActions>
 

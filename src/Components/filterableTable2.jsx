@@ -1,6 +1,10 @@
-import React, { Fragment, useRef, useState } from 'react';
-import { Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, TableSortLabel, IconButton, Button, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, Tooltip, Card } from '@mui/material';
-import { isEqualNumber, LocalDate, LocalTime, NumberFormat, randomNumber } from './functions';
+import React, { Fragment, useState } from 'react';
+import { 
+    Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, 
+    TableSortLabel, IconButton, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, 
+    Tooltip, Card 
+} from '@mui/material';
+import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
 import { Download, KeyboardArrowDown, KeyboardArrowUp, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
