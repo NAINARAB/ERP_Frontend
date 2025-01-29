@@ -28,7 +28,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Po_Inv_Date: ISOString(),
         Po_Entry_Date: ISOString(),
         Retailer_Id: '',
-        GST_Inclusive: 1,
+        GST_Inclusive: 2,
         IS_IGST: 0,
         Narration: '',
         isConverted: '',
@@ -108,9 +108,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const IS_IGST = isEqualNumber(invoiceDetails?.IS_IGST, 1);
 
     const Total_Invoice_value = selectedItems.reduce((acc, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = RoundNumber(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate);
+        // const itemRate = RoundNumber(item?.Item_Rate);
+        // const billQty = RoundNumber(item?.Bill_Qty);
+        // const Amount = Multiplication(billQty, itemRate);
+        const Amount = RoundNumber(item?.Amount);
 
         if (isNotTaxableBill) return Amount;
 
@@ -125,9 +126,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     }, 0)
 
     const totalValueBeforeTax = selectedItems.reduce((acc, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = RoundNumber(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate);
+        // const itemRate = RoundNumber(item?.Item_Rate);
+        // const billQty = RoundNumber(item?.Bill_Qty);
+        // const Amount = Multiplication(billQty, itemRate);
+        const Amount = RoundNumber(item?.Amount);
         
         if (isNotTaxableBill) return {
             TotalValue: Addition(acc.TotalValue, Amount),
@@ -635,7 +637,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             <td className={tdStyle}>{findProductDetails(products, row.Item_Id)?.Product_Name ?? 'Not found'}</td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Item_Rate}
+                                                    value={row?.Item_Rate ? row?.Item_Rate : ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Item_Rate', e.target.value)}
@@ -644,7 +646,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Bill_Qty}
+                                                    value={row?.Bill_Qty ? row?.Bill_Qty : ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Bill_Qty', e.target.value)}
@@ -653,7 +655,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Act_Qty}
+                                                    value={row?.Act_Qty ?? ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
@@ -681,7 +683,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Amount}
+                                                    value={row?.Amount ? row?.Amount : ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Amount', e.target.value)}
