@@ -48,6 +48,7 @@ const EmployeeDayAbstract = lazy(() => import("./Pages/Reports/workDocument"))
 const EmployeeAbstract = lazy(() => import("./Pages/Reports/employeeAbstract"))
 const TallyReports = lazy(() => import("./Pages/Dashboard/tallyReport"))
 const UserActivities = lazy(() => import("./Pages/Dashboard/userActivities"))
+const DayBookOfERP = lazy(() => import("./Pages/Reports/dayBook"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -223,6 +224,7 @@ const RoutingArray = [
     { component: <ChartsReport />, path: '/taskManagement/report/activityGraph' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
     { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
+    { component: <DayBookOfERP />, path: '/erp/dayBook' },
 
     // User Control
     { component: <CompanyInfo />, path: '/userControl/company' },

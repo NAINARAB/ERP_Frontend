@@ -751,11 +751,11 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
-                                            {NumberFormat(
+                                            {/* {NumberFormat(
                                                 Subraction(Total_Invoice_value, Addition(
                                                     totalValueBeforeTax.TotalValue, totalValueBeforeTax.TotalTax
                                                 ))
-                                            )}
+                                            )} */}0
                                         </td>
                                     </tr>
                                     <tr>
