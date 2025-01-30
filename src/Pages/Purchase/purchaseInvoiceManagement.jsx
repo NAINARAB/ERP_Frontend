@@ -108,29 +108,23 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const IS_IGST = isEqualNumber(invoiceDetails?.IS_IGST, 1);
 
     const Total_Invoice_value = selectedItems.reduce((acc, item) => {
-        // const itemRate = RoundNumber(item?.Item_Rate);
-        // const billQty = RoundNumber(item?.Bill_Qty);
-        // const Amount = Multiplication(billQty, itemRate);
         const Amount = RoundNumber(item?.Amount);
 
-        if (isNotTaxableBill) return Amount;
+        if (isNotTaxableBill) return Addition(acc, Amount);
 
         const product = findProductDetails(products, item.Item_Id);
         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
         if (isInclusive) {
-            return acc += calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax;
+            return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
         } else {
-            return acc += calculateGSTDetails(Amount, gstPercentage, 'add').with_tax;
+            return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
         }
     }, 0)
 
     const totalValueBeforeTax = selectedItems.reduce((acc, item) => {
-        // const itemRate = RoundNumber(item?.Item_Rate);
-        // const billQty = RoundNumber(item?.Bill_Qty);
-        // const Amount = Multiplication(billQty, itemRate);
         const Amount = RoundNumber(item?.Amount);
-        
+
         if (isNotTaxableBill) return {
             TotalValue: Addition(acc.TotalValue, Amount),
             TotalTax: 0
@@ -140,10 +134,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
         const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
-        acc.TotalValue += taxInfo.without_tax;
-        acc.TotalTax += taxInfo.tax_amount;
+        const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
+        const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
 
-        return acc;
+        return {
+            TotalValue, TotalTax
+        };
     }, {
         TotalValue: 0,
         TotalTax: 0
@@ -751,19 +747,16 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
-                                            {/* {NumberFormat(
-                                                Subraction(Total_Invoice_value, Addition(
-                                                    totalValueBeforeTax.TotalValue, totalValueBeforeTax.TotalTax
-                                                ))
-                                            )} */}0
+                                            {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
                                         </td>
                                     </tr>
                                     <tr>
                                         <td className="border p-2">Total</td>
                                         <td className="border p-2">
-                                            {NumberFormat(Total_Invoice_value)}
+                                            {NumberFormat(Math.round(Total_Invoice_value))}
                                         </td>
                                     </tr>
+
                                 </tbody>
                             </table>
                         </div>
