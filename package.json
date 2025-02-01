@@ -52,8 +52,8 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "node --max-old-space-size=4096 node_modules/react-scripts/bin/react-scripts.js build",
+    "start": "set \"REACT_APP_VERSION=%npm_package_version%\" && react-scripts start",
+    "build": "set \"REACT_APP_VERSION=%npm_package_version%\" && node --max-old-space-size=4096 node_modules/react-scripts/bin/react-scripts.js build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "analyze": "npm run build && webpack-bundle-analyzer build/static/js/main.*.js"

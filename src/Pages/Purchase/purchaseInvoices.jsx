@@ -84,7 +84,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
             isVisible: 1,
         },
         {
-            Field_Name: 'Po_Inv_Date',
+            Field_Name: 'Po_Entry_Date',
             ColumnHeader: 'Date',
             Fied_Data: 'date',
             isVisible: 1,

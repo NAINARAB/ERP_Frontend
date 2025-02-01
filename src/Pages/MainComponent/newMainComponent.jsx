@@ -504,7 +504,7 @@ const MainComponent = (props) => {
                 {desktopMenu && (
                     <aside className="fixed-fullheight-sidebar" >
                         <div className="sidebar-head">
-                            <h4 className="my-0 ps-3">ERP</h4>
+                            <h4 className="my-0 ps-3">ERP  <span className="fa-10">v{process.env.REACT_APP_VERSION}</span></h4>
                         </div>
                         <hr className="my-2" />
                         <div className="sidebar-body-div">
@@ -616,7 +616,9 @@ const MainComponent = (props) => {
 
             <Offcanvas show={show} onHide={handleClose}>
                 <Offcanvas.Header style={{ backgroundColor: '#333', color: 'white' }} closeButton>
-                    <Offcanvas.Title >Menu</Offcanvas.Title>
+                    <Offcanvas.Title >
+                        <h4 className="my-0 ps-3">ERP  <span className="fa-12">v{process.env.REACT_APP_VERSION}</span></h4>
+                    </Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body style={{ backgroundColor: '#333' }}>
 
