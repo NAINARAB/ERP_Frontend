@@ -29,6 +29,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         refresh: false,
         printPreviewDialog: false,
+        shortPreviewDialog: false,
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
@@ -45,7 +46,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             address: `delivery/deliveryTripSheet?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
         }).then(data => {
             if (data.success) {
-          
+
                 setTripData(data.data);
             }
         }).finally(() => {
@@ -77,12 +78,9 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
-
     const TotalTax = (Cgst_P, Sgst_P) => {
         return Addition(Cgst_P, Sgst_P);
     };
-
-
 
     const TaxData = (Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).reduce((data, item) => {
         const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
@@ -197,10 +195,25 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
+    const groupedTotals = selectedRow?.Products_List?.reduce((acc, item) => {
+        const key = `${item.Retailer_Id}-${item.Trip_Id}`;
+        if (!acc[key]) {
+            acc[key] = {
+                Retailer_Id: item.Retailer_Id,
+                Trip_Id: item.Trip_Id,
+                Retailer_Name: item.Retailers_Name,
+                Total_Amount: 0,
+            };
+        }
+
+        acc[key].Total_Amount += Number(item.Total_Value);
+        return acc;
+    }, {});
+
+    const groupedEntries = Object.values(groupedTotals || {});
 
     return (
         <>
-
             <FilterableTable
                 dataArray={(
                     filters.FromGodown.length > 0 ||
@@ -284,6 +297,14 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         }),
                                     },
                                     {
+                                        name: 'Short Preview',
+                                        icon: <Visibility className="fa-14" />,
+                                        onclick: () => {
+                                            setFilters(pre => ({ ...pre, shortPreviewDialog: true }));
+                                            setSelectedRow(row);
+                                        }
+                                    },
+                                    {
                                         name: 'Preview',
                                         icon: <Visibility className="fa-14" />,
                                         onclick: () => {
@@ -321,7 +342,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             </table>
                         )}
 
-                 
                         <FilterableTable
                             title="Items"
                             EnableSerialNumber
@@ -333,12 +353,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     isCustomCell: true,
                                     Cell: ({ row }) => row.Reason ?? 'Delivery',
                                 },
-                              
+
                                 createCol('Product_Name', 'string', 'Item'),
                                 createCol('HSN_Code', 'string'),
                                 createCol('Retailers_Name', 'string'),
                                 createCol('QTY', 'number', 'QTY'),
-                             
+
                                 {
                                     isVisible: 1,
                                     ColumnHeader: 'Tax',
@@ -347,7 +367,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         const cgstP = Number(row.Cgst_P) || 0;
                                         const sgstP = Number(row.Sgst_P) || 0;
 
-                                    
+
                                         const taxValue = cgstP + sgstP;
                                         return taxValue.toFixed(2);
                                     },
@@ -357,15 +377,15 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     ColumnHeader: 'Total',
                                     isCustomCell: true,
                                     Cell: ({ row }) => {
-                                       
+
                                         const taxableValue = Number(row.Taxable_Value) || 0;
                                         const cgstP = Number(row.Cgst_P) || 0;
                                         const sgstP = Number(row.Sgst_P) || 0;
 
-                                       
+
                                         const total = taxableValue + cgstP + sgstP;
 
-                                        return total.toFixed(2); 
+                                        return total.toFixed(2);
                                     },
                                 },
                                 {
@@ -392,7 +412,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         }
 
                                         roundOffDiff = (roundedTotal - total).toFixed(2);
-                                      
+
                                         return roundOffDiff > 0 ? `+${roundOffDiff}` : roundOffDiff;
                                     },
                                 },
@@ -478,7 +498,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     </td>
                                 </tr>
 
-                            
+
                             </tbody>
                         </table>
                     </div>
@@ -500,6 +520,61 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+
+            <Dialog
+                open={filters.shortPreviewDialog}
+                onClose={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
+                maxWidth='xl' fullWidth
+            >
+                <DialogTitle>Print Preview</DialogTitle>
+                <DialogContent ref={printRef}>
+                    {isValidObject(selectedRow) && <React.Fragment>
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th className="fa-12 bg-light">Retailer Name</th>
+                                    <th className="fa-12 bg-light">Trip_No</th>
+                                    <th className="fa-12 bg-light">Amount</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {groupedEntries.length > 0 ? (
+                                    groupedEntries.map((group, idx) => (
+                                        <React.Fragment key={idx}>
+                                            <tr>
+
+                                                <td className="fw-bold">{group.Retailer_Name}</td>
+
+
+                                                <td className="fw-bold">{group.Trip_Id}</td>
+
+
+                                                <td className="fw-bold text-end">{NumberFormat(group.Total_Amount)}</td>
+                                            </tr>
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="3" className="text-center">
+                                            No data available
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </React.Fragment>
+                    }
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
+                        variant="outlined"
+                    >close</Button>
+
+                </DialogActions>
+            </Dialog>
+
             <Dialog
                 open={filters.printPreviewDialog}
                 onClose={() => setFilters(pre => ({ ...pre, printPreviewDialog: false }))}
@@ -508,7 +583,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 <DialogTitle>Print Preview</DialogTitle>
                 <DialogContent ref={printRef}>
                     {isValidObject(selectedRow) && <React.Fragment>
-                   
+
 
                         <table className="table table-bordered fa-13 m-0">
                             <tbody>
@@ -685,8 +760,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 )} only.
                             </td>
                         </table>
-
-
 
                         <table className="table table-bordered fa-10">
                             <tbody>

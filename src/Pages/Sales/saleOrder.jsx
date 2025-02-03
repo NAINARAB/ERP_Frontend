@@ -3,18 +3,27 @@ import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, Di
 import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, isEqualNumber, ISOString, isValidObject } from "../../Components/functions";
+import { Addition, isEqualNumber, ISOString, isValidDate, isValidObject } from "../../Components/functions";
 import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "./convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
 import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation";
-// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
+import { useNavigate, useLocation } from "react-router-dom";
 
-// import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
+const useQuery = () => new URLSearchParams(useLocation().search);
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+};
+
 const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
+    const navigate = useNavigate();
+    const location = useLocation();
+    const stateDetails = location.state;
+    const query = useQuery();
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [salesPerson, setSalePerson] = useState([]);
@@ -23,7 +32,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
-    const [confirmDialog, setConfirmDialog] = useState(false)
 
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
@@ -43,21 +51,17 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     });
 
     useEffect(() => {
+        if (loadingOn) loadingOn();
         fetchLink({
             address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
             }
-        }).catch(e => console.error(e))
-
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     }, [
-        filters.Fromdate,
-        filters?.Todate,
-        filters?.Retailer_Id,
-        filters?.Sales_Person_Id,
-        filters?.Created_by,
-        filters?.Cancel_status,
         reload
     ])
 
@@ -89,6 +93,33 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
 
     }, [])
 
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+        };
+        setFilters(pre => ({ ...pre, Fromdate: queryFilters.Fromdate, Todate: queryFilters.Todate }));
+    }, [location.search]);
+
+    useEffect(() => {
+        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+        if (Fromdate && Todate) {
+            updateQueryString({ Fromdate, Todate });
+            setFilters(pre => ({ ...pre, Fromdate: ISOString(stateDetails.Fromdate), Todate: stateDetails.Todate }));
+            setReload(pre => !pre);
+        }
+    }, [stateDetails])
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams(newFilters);
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
     const saleOrderColumn = [
         {
             Field_Name: 'So_Id',
@@ -109,19 +140,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             isVisible: 1,
             align: 'center',
         },
-        // {
-        //     Field_Name: 'Products',
-        //     ColumnHeader: 'Products / Quantity',
-        //     isVisible: 1,
-        //     align: 'center',
-        //     isCustomCell: true,
-        //     Cell: ({ row }) => (
-        //         <>
-        //             <span>{row?.Products_List?.length ?? 0}</span> /&nbsp;
-        //             <span>{row?.Products_List?.reduce((sum, item) => sum += item?.Bill_Qty ?? 0, 0) ?? 0}</span>
-        //         </>
-        //     )
-        // },
         {
             Field_Name: 'Total_Before_Tax',
             ColumnHeader: 'Before Tax',
@@ -157,12 +175,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 )
             },
         },
-        // {
-        //     Field_Name: 'Sales_Person_Name',
-        //     ColumnHeader: 'Sales Person',
-        //     Fied_Data: 'string',
-        //     isVisible: 1,
-        // },
         {
             Field_Name: 'Action',
             isVisible: 1,
@@ -195,16 +207,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 <Edit className="fa-16" />
                             </IconButton>
                         </Tooltip>
-                        {/* <Tooltip title='SalesDelivery'>
-                            <IconButton
-                                onClick={() => {
-                                    setConfirmDialog(true);
-                                }}
-                                size="small"
-                            >
-                                <TwoWheelerIcon className="fa-16" />
-                            </IconButton>
-                        </Tooltip> */}
 
                     </>
                 )
@@ -262,8 +264,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-        setOrderInfo({});
-        setConfirmDialog(false)
     }
 
     const Total_Invoice_value = saleOrders.reduce((acc, orders) => Addition(acc, orders?.Total_Invoice_value), 0);
@@ -313,7 +313,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                 tableMaxHeight={550}
                                 expandableComp={ExpendableComponent}
                             />
-                            <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({saleOrders?.length}) : {Total_Invoice_value}</h6> 
+                            <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({saleOrders?.length}) : {Total_Invoice_value}</h6>
                         </>
                     ) : (
                         <NewSaleOrderCreation
@@ -330,7 +330,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 </CardContent>
             </Card>
 
-
             {Object.keys(viewOrder).length > 0 && (
                 <InvoiceBillTemplate
                     orderDetails={viewOrder?.orderDetails}
@@ -341,117 +340,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                     TitleText={'Sale Order'}
                 />
             )}
-
-
-            <Dialog
-                open={confirmDialog}
-                onClose={closeDialog}
-                fullWidth maxWidth='sm'
-            >
-                <DialogTitle>Filters</DialogTitle>
-                <DialogContent>
-                    <div className="table-responsive pb-4">
-                        <table className="table">
-                            <tbody>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                            onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Retailer Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                            onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>From</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Fromdate}
-                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>To</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Todate}
-                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
-                                    <td>
-                                        <select
-                                            type="date"
-                                            value={filters.Cancel_status}
-                                            onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
-                                            className="cus-inpt"
-                                        >
-                                            <option value={1}>Show</option>
-                                            <option value={0}>Hide</option>
-                                        </select>
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={closeDialog}>close</Button>
-                </DialogActions>
-            </Dialog>
 
             <Dialog
                 open={dialog.filters}
@@ -560,6 +448,19 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeDialog}>close</Button>
+                    <Button
+                        onClick={() => {
+                            closeDialog();
+                            const updatedFilters = {
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters?.Todate
+                            };
+                            updateQueryString(updatedFilters);
+                            setReload(pre => !pre);
+                        }}
+                        startIcon={<Search />}
+                        variant="outlined"
+                    >Search</Button>
                 </DialogActions>
             </Dialog>
 

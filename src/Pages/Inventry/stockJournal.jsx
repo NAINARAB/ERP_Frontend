@@ -18,6 +18,7 @@ const defaultFilters = {
 const StockJournal = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const stateDetails = location.state;
     const query = useQuery();
     const [stockJournalData, setStockJournalData] = useState([]);
     const [filters, setFilters] = useState({
@@ -29,14 +30,17 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         refresh: false,
         BillType: '',
         BranchName: '',
+        VoucherType: '',
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
         SourceItems: [],
         DestinationItems: [],
     });
+
     const [activeFilter, setActiveFilter] = useState({
         BillType: false,
+        VoucherType: false,
         BranchName: false,
         FromGodown: false,
         ToGodown: false,
@@ -48,6 +52,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         setActiveFilter({
             BillType: filters.BillType ? true : false,
+            VoucherType: filters.VoucherType ? true : false,
             BranchName: filters.BranchName ? true : false,
             FromGodown: filters.FromGodown.length > 0 ? true : false,
             ToGodown: filters.ToGodown.length > 0 ? true : false,
@@ -83,6 +88,18 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
     }, [location.search]);
 
+    useEffect(() => {
+        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+        const VoucherType = stateDetails?.Voucher_Type;
+        if (VoucherType) setFilters(pre => ({ ...pre, VoucherType: VoucherType }));
+        if (Fromdate && Todate) {
+            setFilters(pre => ({ ...pre, Fromdate: Fromdate, Todate: Todate }))
+            updateQueryString({ Fromdate, Todate });
+        }
+
+    }, [stateDetails])
+
     const updateQueryString = (newFilters) => {
         const params = new URLSearchParams(newFilters);
         navigate(`?${params.toString()}`, { replace: true });
@@ -106,6 +123,10 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
 
     const uniqueBillType = useMemo(() => {
         return [...new Set(stockJournalData.map(sj => sj.Stock_Journal_Bill_type))].map(bType => ({ value: bType, label: bType }));
+    }, [stockJournalData]);
+
+    const uniqueVoucherType = useMemo(() => {
+        return [...new Set(stockJournalData.map(sj => sj.Stock_Journal_Voucher_type))].map(vType => ({ value: vType, label: vType }));
     }, [stockJournalData])
 
     const uniqueBranch = useMemo(() => {
@@ -166,42 +187,46 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         return stockJournalData.filter((stj) => {
             const hasFromGodownMatch = activeFilter.FromGodown
                 ? stj.SourceDetails.some((product) =>
-                      filters.FromGodown.some((selected) => selected.value === product.Godown_Name)
-                  )
+                    filters.FromGodown.some((selected) => selected.value === product.Godown_Name)
+                )
                 : true;
-    
+
             const hasToGodownMatch = activeFilter.ToGodown
                 ? stj.DestinationDetails.some((product) =>
-                      filters.ToGodown.some((selected) => selected.value === product.Godown_Name)
-                  )
+                    filters.ToGodown.some((selected) => selected.value === product.Godown_Name)
+                )
                 : true;
-    
+
             const hasSourceItemMatch = activeFilter.SourceItems
                 ? stj.SourceDetails.some((product) =>
-                      filters.SourceItems.some((selected) => selected.value === product.Product_Name)
-                  )
+                    filters.SourceItems.some((selected) => selected.value === product.Product_Name)
+                )
                 : true;
-    
+
             const hasDestinationItemMatch = activeFilter.DestinationItems
                 ? stj.DestinationDetails.some((product) =>
-                      filters.DestinationItems.some((selected) => selected.value === product.Product_Name)
-                  )
+                    filters.DestinationItems.some((selected) => selected.value === product.Product_Name)
+                )
                 : true;
-    
+
             const hasEmployeeMatch = activeFilter.Staffs
                 ? stj.Employees_Involved.some((staff) =>
-                      filters.Staffs.some((selected) => selected.value === staff.Emp_Name)
-                  )
+                    filters.Staffs.some((selected) => selected.value === staff.Emp_Name)
+                )
                 : true;
-    
+
             const hasBranchMatch = activeFilter.BranchName
                 ? stj.BranchName === filters.BranchName
                 : true;
-    
+
             const hasBillTypeMatch = activeFilter.BillType
                 ? stj.Stock_Journal_Bill_type === filters.BillType
                 : true;
-    
+
+            const hasVoucherTypeMatch = activeFilter.VoucherType
+                ? stj.Stock_Journal_Voucher_type === filters.VoucherType
+                : true;
+
             return (
                 hasFromGodownMatch &&
                 hasToGodownMatch &&
@@ -209,19 +234,31 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                 hasDestinationItemMatch &&
                 hasEmployeeMatch &&
                 hasBranchMatch &&
-                hasBillTypeMatch
+                hasBillTypeMatch &&
+                hasVoucherTypeMatch
             );
         });
-    }, [stockJournalData, filters, activeFilter]);
-    
+    }, [
+        stockJournalData, 
+        activeFilter,
+        // filters.BillType,
+        // filters.BranchName,
+        // filters.VoucherType,
+        // filters.FromGodown,
+        // filters.ToGodown,
+        // filters.Staffs,
+        // filters.SourceItems,
+        // filters.DestinationItems,
+    ]);
+
 
     return (
         <>
             <FilterableTable
                 dataArray={(
-                    filters.BillType || filters.BranchName ||
+                    filters.BillType || filters.BranchName || filters.VoucherType ||
                     filters.SourceItems.length > 0 || filters.DestinationItems.length > 0 ||
-                    filters.FromGodown.length > 0 || filters.ToGodown.length > 0
+                    filters.FromGodown.length > 0 || filters.ToGodown.length > 0 
                 ) ? filteredData : stockJournalData}
                 title="Stock Journal"
                 maxHeightOption
@@ -382,6 +419,22 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             <option value="">All Branch</option>
                                             {uniqueBranch.map((branch, index) => (
                                                 <option value={branch.value} key={index}>{branch.label}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Voucher Type</td>
+                                    <td colSpan={3}>
+                                        <select
+                                            value={filters.VoucherType}
+                                            className="cus-inpt p-2 "
+                                            onChange={e => setFilters(pre => ({ ...pre, VoucherType: e.target.value }))}
+                                        >
+                                            <option value="">All Voucher Type</option>
+                                            {uniqueVoucherType.map((voucher, index) => (
+                                                <option value={voucher.value} key={index}>{voucher.label}</option>
                                             ))}
                                         </select>
                                     </td>

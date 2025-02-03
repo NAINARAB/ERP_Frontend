@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Addition, getSessionUser, ISOString, isValidDate, NumberFormat } from '../../Components/functions'
-import { useNavigate, useLocation } from "react-router-dom";
-import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Button, Card, CardContent, IconButton } from "@mui/material";
-import { KeyboardArrowDown, KeyboardArrowUp, Search } from "@mui/icons-material";
+import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
+import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, Search } from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -29,7 +28,7 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         if (loadingOn) loadingOn();
-
+        setDayBookData([])
         fetchLink({
             address: `dashboard/dayBook?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
             headers: {
@@ -74,25 +73,44 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
         return (
             <>
                 <tr>
-                    <td className="p-0 text-center vctr">
-                        <button onClick={() => setOpen(!open)} className="icon-btn">
-                            {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
-                        </button>
-                    </td>
                     <td>{Sno}</td>
                     <td>{row?.ModuleName}</td>
                     <td>{row?.groupedData?.length}</td>
                     <td>{NumberFormat(row?.groupedData?.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
+                    <td className="p-0 text-center vctr">
+                        <Tooltip title={'Open ' + row?.ModuleName + ' Details'}>
+                            <button onClick={() => setOpen(!open)} className="icon-btn">
+                                {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
+                            </button>
+                        </Tooltip>
+                    </td>
                 </tr>
 
                 {open && (
                     row?.groupedData?.map((item, index) => (
-                        <tr>
-                            <td></td>
+                        <tr key={index}>
                             <td>{Sno + '.' + (index + 1)}</td>
                             <td>{item?.Voucher_Type}</td>
                             <td>{item?.VoucherBreakUpCount}</td>
                             <td>{NumberFormat(item?.Amount)}</td>
+                            <td>
+                                <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
+                                    <button
+                                        onClick={() => {
+                                            navigate(item?.navLink, {
+                                                state: {
+                                                    ...item,
+                                                    Fromdate: filters?.fetchFrom,
+                                                    Todate: filters?.fetchTo
+                                                }
+                                            })
+                                        }}
+                                        className="icon-btn"
+                                    >
+                                        <ArrowRight sx={{ fontSize: 'inherit' }} />
+                                    </button>
+                                </Tooltip>
+                            </td>
                         </tr>
                     ))
                 )}
@@ -138,11 +156,11 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                         <table className="table table-bordered fa-13">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Sno</th>
                                     <th>Voucher</th>
                                     <th>Voucher Count</th>
                                     <th>Total Amount</th>
+                                    <th>Detilas</th>
                                 </tr>
                             </thead>
                             <tbody>

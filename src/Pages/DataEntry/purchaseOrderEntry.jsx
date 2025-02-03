@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, isEqualNumber, isValidDate } from "../../Components/functions";
+import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
@@ -15,7 +15,7 @@ const useQuery = () => new URLSearchParams(useLocation().search);
 
 const defaultFilters = {
     Fromdate: getPreviousDate(10),
-    Todate: new Date().toISOString().split('T')[0],
+    Todate: ISOString(),
     OrderStatus: "ITEMS",
     vendorId: '',
     vendor: '',
@@ -35,6 +35,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const stateDetails = location.state;
     const query = useQuery();
 
     const [filters, setFilters] = useState({
@@ -61,13 +62,16 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
     }, [])
 
     useEffect(() => {
+        if (loadingOn) loadingOn();
         fetchLink({
             address: `dataEntry/purchaseOrderEntry?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
         }).then(data => {
             if (data.success) {
                 setPurchaseOrderData(data.data);
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff()
+        })
     }, [filters.Fromdate, filters.Todate, filters.refresh]);
 
     useEffect(() => {
@@ -84,6 +88,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         };
         setFilters(pre => ({ ...pre, ...queryFilters }));
     }, [location.search]);
+
+    useEffect(() => {
+        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+        if (Fromdate && Todate) {
+            updateQueryString({ Fromdate, Todate });
+        }
+    }, [stateDetails])
 
     const updateQueryString = (newFilters) => {
         const params = new URLSearchParams(newFilters);
@@ -137,17 +149,6 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
-            {/* <Card>
-                <div className="p-2 d-flex flex-wrap align-items-center">
-                    <h5 className="m-0 flex-grow-1">Purchase Order</h5>
-                    
-                </div>
-
-                <CardContent>
-
-
-                </CardContent>
-            </Card> */}
 
             <FilterableTable
                 dataArray={purchaseOrderDataSet({

@@ -10,7 +10,7 @@ import ImagePreviewDialog from "../../../Components/imagePreview";
 import { useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-
+import * as XLSX from "xlsx";
 
 const RetailersMaster = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -26,9 +26,9 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
     const [dialog, setDialog] = useState(false);
     const [multipleLocationDialogs, setMultipleLocationDialogs] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
-
     const [retailersMap, setRetailersMap] = useState([]);
     const [retailersDialog, setRetailersDialog] = useState(false)
+    const [retailersXlsheet, setRetailersXlsheet] = useState(false)
     const [filters, setFilters] = useState({
         cust: '',
         custGet: 'All Retailer',
@@ -45,9 +45,6 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_API,
     });
 
-    console.log(process.env.REACT_APP_GOOGLE_API)
-
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -63,8 +60,6 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
 
         fetchData();
     }, [retailersDialog]);
-
-
 
     const initialRetailerInput = {
         Company_Id: storage?.Company_id,
@@ -491,17 +486,85 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
         })
     }
 
+    const DownloadRetailers = () => {
+        if (!retailers || retailers.length === 0) {
+            alert("No data available to download.");
+            return;
+        }
+
+
+        const worksheet = XLSX.utils.json_to_sheet(retailers);
+
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Retailers Data");
+
+
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+
+        function download(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
+
+        const blob = new Blob([download(excelBuffer)], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "Retailers_Data.xlsx";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
 
     return (
         <>
 
+            <Dialog
+                open={retailersXlsheet}
+                onClose={() => setRetailersXlsheet(false)}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle id="alert-dialog-title">Confirmation</DialogTitle>
+                <DialogContent>
+                    <b className="text-muted">
+                        Do you want to Delete the user <span className="blue-text">{ }</span>?
+                    </b>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        className=" btn-light"
+                        onClick={() => {
+                            setDialog(false);
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    {/* <Button onClick={handleDeleteConfirm}>Delete</Button> */}
+                </DialogActions>
+            </Dialog>
+
             <Card sx={{ mb: 1 }} >
                 <div className="p-3 pb-0 d-flex align-items-center ">
                     <h6 className="fa-18 flex-grow-1 ">Retailers</h6>
-                    <Button variant='outlined' onClick={() => setRetailersDialog(true)}>Retailers Map</Button><br />
-                    <Button variant='outlined' startIcon={<Add />} onClick={() => setDialog(true)}>Add Retailers</Button>
+                    <div className="d-flex gap-2">
+                        <Button variant='outlined' onClick={() => setRetailersDialog(true)} style={{ justifyContent: "space-between" }}>Retailers Map</Button><br />
+                        <Button variant='outlined' onClick={DownloadRetailers}>DOWNLOAD</Button><br />
+                        <Button variant='outlined' startIcon={<Add />} onClick={() => setDialog(true)}>Add Retailers</Button>
 
-                    <Tooltip title='Sync Tally LOL'><IconButton onClick={syncLOL}><Sync /></IconButton></Tooltip>
+                        <Tooltip title='Sync Tally LOL'><IconButton onClick={syncLOL}><Sync /></IconButton></Tooltip>
+                    </div>
                 </div>
 
                 <CardContent>

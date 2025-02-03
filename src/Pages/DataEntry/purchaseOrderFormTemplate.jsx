@@ -546,7 +546,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         onChange={(e) => setOrderDetails(pre => ({ ...pre, OwnerId: e.value, OwnerName: e.label }))}
                                                         options={[
                                                             { value: '', label: 'select', isDisabled: true },
-                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 2)).map(obj => ({
+                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 14)).map(obj => ({
                                                                 value: obj?.Cost_Center_Id,
                                                                 label: obj?.Cost_Center_Name
                                                             }))
@@ -571,7 +571,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         onChange={(e) => setOrderDetails(pre => ({ ...pre, BrokerId: e.value, BrokerName: e.label }))}
                                                         options={[
                                                             { value: '', label: 'select', isDisabled: true },
-                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 5)).map(obj => ({
+                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 3)).map(obj => ({
                                                                 value: obj?.Cost_Center_Id,
                                                                 label: obj?.Cost_Center_Name
                                                             }))

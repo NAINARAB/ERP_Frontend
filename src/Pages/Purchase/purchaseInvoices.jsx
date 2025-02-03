@@ -2,24 +2,33 @@ import React, { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { isEqualNumber, ISOString } from "../../Components/functions";
+import { isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from "../../Components/filterableTable2";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const useQuery = () => new URLSearchParams(useLocation().search);
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+};
 
 const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
-    const [users, setUsers] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
-    const nav = useNavigate();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const query = useQuery();
+    const stateDetails = location.state;
 
     const [filters, setFilters] = useState({
-        Fromdate: ISOString(),
-        Todate: ISOString(),
+        Fromdate: defaultFilters.Fromdate,
+        Todate: defaultFilters.Todate,
+        fetchFrom: defaultFilters.Fromdate,
+        fetchTo: defaultFilters.Todate,
         Retailer_Id: '',
         RetailerGet: 'ALL',
         Created_by: '',
@@ -35,7 +44,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `purchase/purchaseOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setPurchaseOrder(data?.data)
@@ -45,8 +54,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
         })
 
     }, [
-        filters.Fromdate,
-        filters?.Todate,
+        filters?.fetchFrom, filters?.fetchTo,
         filters?.Retailer_Id,
         filters?.Created_by,
         filters?.Cancel_status,
@@ -62,18 +70,35 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
 
-        fetchLink({
-            address: `masters/user/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setUsers(data.data)
-            }
-        }).catch(e => console.error(e))
-
     }, [])
 
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+        };
+        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
+    }, [location.search]);
+
+    useEffect(() => {
+        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+        if (Fromdate && Todate) {
+            updateQueryString({ Fromdate, Todate });
+        }
+    }, [stateDetails])
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams(newFilters);
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
     const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
-        nav(page, { state: stateToTransfer });
+        navigate(page, { state: stateToTransfer });
     }
 
     const purchaseOrderColumn = [
@@ -155,8 +180,8 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
-                                    navigateToPageWithState({ 
-                                        page: 'create',  
+                                    navigateToPageWithState({
+                                        page: 'create',
                                         stateToTransfer: {
                                             invoiceInfo: row,
                                             orderInfo: row?.Products_List
@@ -356,6 +381,18 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeDialog}>close</Button>
+                    <Button
+                        onClick={() => {
+                            const updatedFilters = {
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters?.Todate
+                            };
+                            updateQueryString(updatedFilters);
+                            closeDialog();
+                        }}
+                        startIcon={<Search />}
+                        variant="outlined"
+                    >Search</Button>
                 </DialogActions>
             </Dialog>
 
