@@ -75,14 +75,17 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                 <tr>
                     <td>{Sno}</td>
                     <td>{row?.ModuleName}</td>
-                    <td>{row?.groupedData?.length}</td>
+                    <td>
+                        {row?.groupedData?.length
+                            + ' ( ' +
+                            row?.groupedData?.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
+                            + ' - Entry )'}
+                    </td>
                     <td>{NumberFormat(row?.groupedData?.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
                     <td className="p-0 text-center vctr">
-                        <Tooltip title={'Open ' + row?.ModuleName + ' Details'}>
-                            <button onClick={() => setOpen(!open)} className="icon-btn">
-                                {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
-                            </button>
-                        </Tooltip>
+                        <button onClick={() => setOpen(!open)} className="icon-btn">
+                            {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
+                        </button>
                     </td>
                 </tr>
 
