@@ -78,9 +78,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
+
     const TotalTax = (Cgst_P, Sgst_P) => {
         return Addition(Cgst_P, Sgst_P);
     };
+
+
 
     const TaxData = (Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).reduce((data, item) => {
         const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
@@ -195,6 +198,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
+
+
+
+
     const groupedTotals = selectedRow?.Products_List?.reduce((acc, item) => {
         const key = `${item.Retailer_Id}-${item.Trip_Id}`;
         if (!acc[key]) {
@@ -212,8 +219,15 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
     const groupedEntries = Object.values(groupedTotals || {});
 
+
+
+
+
+
+
     return (
         <>
+
             <FilterableTable
                 dataArray={(
                     filters.FromGodown.length > 0 ||
@@ -286,16 +300,16 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                         Cell: ({ row }) => (
                             <ButtonActions
                                 buttonsData={[
-                                    {
-                                        name: 'Edit',
-                                        icon: <Edit className="fa-14" />,
-                                        onclick: () => nav('/erp/sales/Tripsheet/Tripsheetcreation', {
-                                            state: {
-                                                ...row,
-                                                isEditable: false,
-                                            },
-                                        }),
-                                    },
+                                    // {
+                                    //     name: 'Edit',
+                                    //     icon: <Edit className="fa-14" />,
+                                    //     onclick: () => nav('/erp/sales/Tripsheet/Tripsheetcreation', {
+                                    //         state: {
+                                    //             ...row,
+                                    //             isEditable: false,
+                                    //         },
+                                    //     }),
+                                    // },
                                     {
                                         name: 'Short Preview',
                                         icon: <Visibility className="fa-14" />,
@@ -341,6 +355,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </tbody>
                             </table>
                         )}
+
 
                         <FilterableTable
                             title="Items"
@@ -427,6 +442,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </>
                 )}
             />
+
 
             <Dialog
                 open={filters.filterDialog}
@@ -529,6 +545,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 <DialogTitle>Print Preview</DialogTitle>
                 <DialogContent ref={printRef}>
                     {isValidObject(selectedRow) && <React.Fragment>
+
+
+
+
                         <table className="table table-bordered">
                             <thead>
                                 <tr>
@@ -563,6 +583,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 )}
                             </tbody>
                         </table>
+
+
+
+
+
+
                     </React.Fragment>
                     }
                 </DialogContent>
@@ -574,6 +600,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
                 </DialogActions>
             </Dialog>
+
+
+
+
+
+
 
             <Dialog
                 open={filters.printPreviewDialog}
@@ -760,6 +792,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 )} only.
                             </td>
                         </table>
+
+
 
                         <table className="table table-bordered fa-10">
                             <tbody>
