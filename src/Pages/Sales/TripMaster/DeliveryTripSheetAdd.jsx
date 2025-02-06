@@ -157,7 +157,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             if (loadingOn) loadingOn();
             setTransactionData([]);
             fetchLink({
-                address: `sales/saleDelivery?FromDate=${Fromdate}&ToDate=${Todate}`
+                address: `sales/saleDelivery?Fromdate=${Fromdate}&Todate=${Todate}`
             }).then(data => {
                 if (data.success) setTransactionData(data.data);
             }).catch(e => console.log(e)).finally(() => {

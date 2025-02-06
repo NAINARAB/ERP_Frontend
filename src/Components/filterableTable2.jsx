@@ -1,8 +1,8 @@
 import React, { Fragment, useState } from 'react';
-import { 
-    Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell, 
-    TableSortLabel, IconButton, Popover, MenuList, MenuItem, ListItemIcon, ListItemText, 
-    Tooltip, Card 
+import {
+    Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell,
+    TableSortLabel, IconButton, Popover, MenuList, MenuItem, ListItemIcon, ListItemText,
+    Tooltip, Card
 } from '@mui/material';
 import { isEqualNumber, LocalDate, LocalTime, NumberFormat } from './functions';
 import { Download, KeyboardArrowDown, KeyboardArrowUp, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
@@ -41,6 +41,8 @@ import PropTypes from 'prop-types';
  * @param {React.ReactElement|JSX.Element} [props.expandableComp] 
  * @param {number} [props.tableMaxHeight] 
  * @param {number} [props.initialPageCount=10] 
+ * @param {number} [props.bodyFontSizePx=13] 
+ * @param {number} [props.headerFontSizePx=13] 
  * @param {boolean} [props.EnableSerialNumber=false] 
  * @param {'small'|'medium'|'large'} [props.CellSize='medium'] 
  * @param {boolean} [props.disablePagination=false] 
@@ -207,7 +209,9 @@ const FilterableTable = ({
     ExcelPrintOption = false,
     maxHeightOption = false,
     ButtonArea = null,
-    MenuButtons = []
+    MenuButtons = [],
+    bodyFontSizePx = 13,
+    headerFontSizePx = 13
 }) => {
 
     const [page, setPage] = useState(0);
@@ -317,13 +321,17 @@ const FilterableTable = ({
                 <TableRow>
 
                     {(isExpendable === true && expandableComp) && (
-                        <TableCell className='fa-13 border-end text-center vtop'>
-                            <IconButton size='small' onClick={() => setOpen(pre => !pre)}>{open ? <KeyboardArrowUp sx={{ fontSize }} /> : <KeyboardArrowDown sx={{ fontSize }} />}</IconButton>
+                        <TableCell className='border-end text-center vtop' sx={{ fontSize: `${bodyFontSizePx}px` }}>
+                            <IconButton size='small' onClick={() => setOpen(pre => !pre)}>
+                                {open ? <KeyboardArrowUp sx={{ fontSize }} /> : <KeyboardArrowDown sx={{ fontSize }} />}
+                            </IconButton>
                         </TableCell>
                     )}
 
                     {EnableSerialNumber === true && (
-                        <TableCell className='fa-13 border-end text-center vtop'>{(rowsPerPage * page) + index + 1}</TableCell>
+                        <TableCell className='border-end text-center vtop' sx={{ fontSize: `${bodyFontSizePx}px` }}>
+                            {(rowsPerPage * page) + index + 1}
+                        </TableCell>
                     )}
 
                     {columns?.map((column, columnInd) => {
@@ -342,7 +350,8 @@ const FilterableTable = ({
                             ([key, value]) => column.Field_Name === key && (
                                 <TableCell
                                     key={columnInd}
-                                    className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}
+                                    className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                                    sx={{ fontSize: `${bodyFontSizePx}px` }}
                                     onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                 >
                                     {formatString(value, column?.Fied_Data)}
@@ -353,13 +362,20 @@ const FilterableTable = ({
                         if (isColumnVisible && isCustomCell) return (
                             <TableCell
                                 key={columnInd}
-                                className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}
+                                className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                                sx={{ fontSize: `${bodyFontSizePx}px` }}
                             >
                                 {column.Cell({ row, Field_Name: column.Field_Name, index })}
                             </TableCell>
                         )
-                        
-                        return <TableCell key={columnInd} className={`fa-13 border-end ` + horizondalalignClass + verticalAlignClass}></TableCell>
+
+                        return (
+                            <TableCell
+                                key={columnInd}
+                                sx={{ fontSize: `${bodyFontSizePx}px` }}
+                                className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                            ></TableCell>
+                        )
                     })}
 
                 </TableRow>
@@ -424,14 +440,20 @@ const FilterableTable = ({
                         <TableRow>
                             {/* Expendable column */}
                             {isExpendable && expandableComp && (
-                                <TableCell className='fa-13 fw-bold border-end border-top text-center' style={{ backgroundColor: '#EDF0F7' }}>
+                                <TableCell
+                                    className='fw-bold border-end border-top text-center'
+                                    sx={{ fontSize: `${headerFontSizePx}px`, backgroundColor: '#EDF0F7' }}
+                                >
                                     #
                                 </TableCell>
                             )}
 
                             {/* Serial number column */}
                             {EnableSerialNumber && (
-                                <TableCell className='fa-13 fw-bold border-end border-top text-center' style={{ backgroundColor: '#EDF0F7' }}>
+                                <TableCell
+                                    className='fw-bold border-end border-top text-center'
+                                    sx={{ fontSize: `${headerFontSizePx}px`, backgroundColor: '#EDF0F7' }}
+                                >
                                     SNo
                                 </TableCell>
                             )}
@@ -447,9 +469,9 @@ const FilterableTable = ({
                                     return isSortable ? (
                                         <TableCell
                                             key={ke}
-                                            className={`fa-13 fw-bold border-end border-top ` +
+                                            className={`fw-bold border-end border-top ` +
                                                 (column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : '')}
-                                            style={{ backgroundColor: '#EDF0F7' }}
+                                            sx={{ fontSize: `${headerFontSizePx}px`, backgroundColor: '#EDF0F7' }}
                                             sortDirection={sortCriteriaMatch ? sortDirection : false}
                                         >
                                             <TableSortLabel
@@ -463,9 +485,16 @@ const FilterableTable = ({
                                     ) : (
                                         <TableCell
                                             key={ke}
-                                            className={`${(column.ColumnHeader || column?.Field_Name) ? ' fa-13 fw-bold border-end border-top p-2 appFont ' : ' p-0 '} ` +
-                                                (column.align ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class : '')}
-                                            style={{ backgroundColor: '#EDF0F7' }}
+                                            className={
+                                                `${(column.ColumnHeader || column?.Field_Name) 
+                                                    ? ' fw-bold border-end border-top p-2 appFont ' 
+                                                    : ' p-0 '
+                                                } ` +
+                                                (column.align 
+                                                    ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class 
+                                                    : '')
+                                            }
+                                            sx={{ fontSize: `${headerFontSizePx}px`, backgroundColor: '#EDF0F7' }}
                                         >
                                             {column.ColumnHeader || column?.Field_Name?.replace(/_/g, ' ')}
                                         </TableCell>
@@ -566,7 +595,9 @@ FilterableTable.defaultProps = {
     ExcelPrintOption: false,
     maxHeightOption: false,
     ButtonArea: null,
-    MenuButtons: []
+    MenuButtons: [],
+    headerFontSizePx: 13,
+    bodyFontSizePx: 13,
 };
 
 export default FilterableTable;
