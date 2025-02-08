@@ -239,7 +239,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
             );
         });
     }, [
-        stockJournalData, 
+        stockJournalData,
         activeFilter,
         // filters.BillType,
         // filters.BranchName,
@@ -251,14 +251,22 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
         // filters.DestinationItems,
     ]);
 
+    const calculateDifference = (sourceQty, destQty) => {
+        if (sourceQty === 0) return 0;
+    
+        return ((sourceQty - destQty) / sourceQty) * 100;
+    };
+
 
     return (
         <>
             <FilterableTable
+                headerFontSizePx={11}
+                bodyFontSizePx={11}
                 dataArray={(
                     filters.BillType || filters.BranchName || filters.VoucherType ||
                     filters.SourceItems.length > 0 || filters.DestinationItems.length > 0 ||
-                    filters.FromGodown.length > 0 || filters.ToGodown.length > 0 
+                    filters.FromGodown.length > 0 || filters.ToGodown.length > 0
                 ) ? filteredData : stockJournalData}
                 title="Stock Journal"
                 maxHeightOption
@@ -331,6 +339,16 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                     },
                     {
                         isVisible: 1,
+                        ColumnHeader: 'Difference (%)',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const sourceQtySum = row?.SourceDetails?.reduce((acc, source) => Addition(acc, source.Sour_Qty), 0);
+                            const destinationQtySum = row?.DestinationDetails?.reduce((acc, destination) => Addition(acc, destination.Dest_Qty), 0);
+                            return calculateDifference(sourceQtySum, destinationQtySum);
+                        }
+                    },
+                    {
+                        isVisible: 1,
                         ColumnHeader: 'Action',
                         isCustomCell: true,
                         Cell: ({ row }) => (
@@ -361,6 +379,47 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                         )
                     }
                 ]}
+                isExpendable={true}
+                expandableComp={({ row }) => (
+                    <div className="row">
+                        <div className="col-md-6 p-1">
+                            <FilterableTable
+                                title="Source"
+                                headerFontSizePx={11}
+                                bodyFontSizePx={11}
+                                EnableSerialNumber
+                                dataArray={row?.SourceDetails}
+                                columns={[
+                                    createCol('Product_Name', 'string', 'Item'),
+                                    createCol('Godown_Name', 'string', 'Godown'),
+                                    createCol('Sour_Qty', 'number', 'QTY'),
+                                    // createCol('Sour_Unit', 'string', 'Unit'),
+                                    // createCol('Sour_Rate', 'number', 'Rate'),
+                                    // createCol('Sour_Amt', 'number', 'Amount'),
+                                ]}
+                                disablePagination
+                            />
+                        </div>
+                        <div className="col-md-6 p-1">
+                            <FilterableTable
+                                title="Destination"
+                                headerFontSizePx={11}
+                                bodyFontSizePx={11}
+                                EnableSerialNumber
+                                dataArray={row?.DestinationDetails}
+                                columns={[
+                                    createCol('Product_Name', 'string', 'Item'),
+                                    createCol('Godown_Name', 'string', 'Godown'),
+                                    createCol('Dest_Qty', 'number', 'QTY'),
+                                    // createCol('Dest_Unit', 'string', 'Unit'),
+                                    // createCol('Dest_Rate', 'number', 'Rate'),
+                                    // createCol('Dest_Amt', 'number', 'Amount'),
+                                ]}
+                                disablePagination
+                            />
+                        </div>
+                    </div>
+                )}
             />
 
             <Dialog

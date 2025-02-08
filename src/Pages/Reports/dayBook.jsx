@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Addition, getSessionUser, ISOString, isValidDate, NumberFormat } from '../../Components/functions'
+import { Addition, filterableText, getSessionUser, ISOString, isValidDate, NumberFormat } from '../../Components/functions'
 import { fetchLink } from "../../Components/fetchComponent";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, Search } from "@mui/icons-material";
+import { ArrowRight, KeyboardArrowDown, KeyboardArrowRight, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -83,9 +83,23 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                     </td>
                     <td>{NumberFormat(row?.groupedData?.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
                     <td className="p-0 text-center vctr">
-                        <button onClick={() => setOpen(!open)} className="icon-btn">
+                        <IconButton onClick={() => setOpen(!open)} size="small">
                             {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
-                        </button>
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                navigate(row?.groupedData[0]?.navLink, {
+                                    state: {
+                                        ModuleName: row.ModuleName,
+                                        Fromdate: filters?.fetchFrom,
+                                        Todate: filters?.fetchTo
+                                    }
+                                })
+                            }} className="ms-2"
+                        >
+                            {<OpenInNew sx={{ fontSize: 'inherit' }} />}
+                        </IconButton>
                     </td>
                 </tr>
 
@@ -96,7 +110,7 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                             <td>{item?.Voucher_Type}</td>
                             <td>{item?.VoucherBreakUpCount}</td>
                             <td>{NumberFormat(item?.Amount)}</td>
-                            <td>
+                            <td className="p-0 text-center vctr">
                                 <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
                                     <button
                                         onClick={() => {

@@ -14,12 +14,12 @@ export const dayBookColumn = (moduleName) => {
 
     switch (moduleName) {
         case 'Sales':
-            return [SalesLedgerName, EventDate, ModuleID, VoucherName, SalesTotal]
+            return [ModuleID, EventDate, VoucherName, SalesLedgerName, SalesTotal]
         case 'Payment':
         case 'Receipt':
         case 'Journal':
         case 'Contra': 
-            return [EventDate, DebitLedger, DebitAmt, CreditLedger, CreditAmt, ModuleID, VoucherName]
+            return [ModuleID, EventDate, VoucherName, DebitLedger, DebitAmt, CreditLedger, CreditAmt]
         default:
             return []
     }
