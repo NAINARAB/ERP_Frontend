@@ -167,7 +167,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const changeItems = (itemDetail, deleteOption) => {
-        console.log("dfasdasdasdasd", itemDetail)
         setSelectedItems(prev => {
             const preItems = prev.filter(o =>
                 !isEqualNumber(o.So_Id, itemDetail.So_Id)
@@ -178,7 +177,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 const currentOrders = transactionData.filter(o =>
                     isEqualNumber(o.So_Id, itemDetail.So_Id)
                 );
-                console.log("Selected Items updated:", [...preItems, ...currentOrders]); // Debugging state update
                 return preItems.concat(currentOrders);
             }
         });

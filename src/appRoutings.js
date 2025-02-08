@@ -51,6 +51,7 @@ const UserActivities = lazy(() => import("./Pages/Dashboard/userActivities"))
 const DayBookOfERP = lazy(() => import("./Pages/Reports/dayBook"))
 const DayBookDetails = lazy(() => import("./Pages/Reports/dayBookDetails"));
 const TallyLolSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLolSyncDashboard"))
+const TallyLosSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLosSyncDashboard"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -170,6 +171,7 @@ const RoutingArray = [
     { component: <ProductsMaster />, path: '/erp/master/products' },
     { component: <RetailersMaster />, path: '/erp/master/retailers' },
     { component: <TallyLolSyncDashboard />, path: '/erp/master/tallyLOL' },
+    { component: <TallyLosSyncDashboard />, path: '/erp/master/tallyLOS' },
     
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
