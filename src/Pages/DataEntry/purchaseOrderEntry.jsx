@@ -32,6 +32,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         display: false,
     });
     const [vendorList, setVendorList] = useState([]);
+    const [products, setProducts] = useState([]);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -57,6 +58,16 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 setVendorList(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/products`
+        }).then(data => {
+            if (data.success) {
+                setProducts(data.data);
+            } else {
+                setProducts([]);
             }
         }).catch(e => console.error(e));
     }, [])
@@ -162,7 +173,8 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     OrderStatus: filters.OrderStatus,
                     dialogs: setFilters,
                     setOrderPreview,
-                    navigation: navigateToPageWithState
+                    navigation: navigateToPageWithState,
+                    products: products
                 })}
                 tableMaxHeight={650}
                 EnableSerialNumber

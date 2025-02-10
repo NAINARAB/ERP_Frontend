@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
@@ -243,8 +243,18 @@ const createCol = (field, type, ColumnHeader) => {
     }
 }
 
+// const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview, navigation }) => {
+// const getActQty = (item, products) => {
+//     console.log(item)
+//     const productDetails = findProductDetails(products, item?.ItemId);
+//     const pack = parseFloat(productDetails?.PackGet ?? 0);
+//     const Quantity = Division(item.Weight, pack);
+//     console.log({pack, Quantity})
+//     return Quantity;
+// }
+
+export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview, navigation, products }) => {
 
     // Order Based Cells
     const OrderId = createCol('OrderId', 'string', 'Order Id'),
@@ -315,7 +325,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Location_Id: item?.LocationId,
                                                         Item_Id: item?.ItemId,
                                                         Bill_Qty: item?.Weight,
-                                                        Act_Qty: item?.Weight,
+                                                        Act_Qty: item?.Quantity,
                                                         Bill_Alt_Qty: item?.Quantity,
                                                         Item_Rate: item?.BilledRate,
                                                         Amount: Multiplication(item?.BilledRate, item?.Weight),

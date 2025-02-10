@@ -257,6 +257,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     const Bill_Qty = parseFloat(item.Weight) ?? 0;
                     const Item_Rate = RoundNumber(item.BilledRate) ?? 0;
                     const Amount = Multiplication(Bill_Qty, Item_Rate);
+                    const pack = parseFloat(productDetails?.PackGet ?? 0);
+                    const ActualQuantity = Division(item.QTY, pack);
+                    console.log({ pack, ActualQuantity })
 
                     const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
                     const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
@@ -277,7 +280,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
                                 case 'Bill_Qty': return [key, Bill_Qty]
-                                case 'Act_Qty': return [key, Bill_Qty]
+                                case 'Act_Qty': return [key, ActualQuantity]
                                 case 'Item_Rate': return [key, Item_Rate]
                                 case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
                                 case 'Batch_No': return [key, item?.BatchLocation]
@@ -326,7 +329,23 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     switch (key) {
                         case 'Bill_Qty': {
                             const updatedValue = parseFloat(value || 0);
-                            const newItem = { ...item, Bill_Qty: updatedValue };
+                            const productDetails = findProductDetails(products, row.Item_Id);
+                            const pack = parseFloat(productDetails?.PackGet ?? 0);
+                            const ActualQuantity = Division(updatedValue, pack);
+                            const newItem = { ...item, Bill_Qty: updatedValue, Act_Qty: ActualQuantity };
+                            if (item.Item_Rate) {
+                                newItem.Amount = Multiplication(item.Item_Rate, updatedValue);
+                            } else if (item.Amount) {
+                                newItem.Item_Rate = Division(item.Amount, updatedValue);
+                            }
+                            return newItem;
+                        }
+                        case 'Act_Qty': {
+                            const updatedValue = parseFloat(value || 0);
+                            const productDetails = findProductDetails(products, row.Item_Id);
+                            const pack = parseFloat(productDetails?.PackGet ?? 0);
+                            const billedQty = Multiplication(updatedValue, pack);
+                            const newItem = { ...item, Act_Qty: updatedValue, Bill_Qty: billedQty };
                             if (item.Item_Rate) {
                                 newItem.Amount = Multiplication(item.Item_Rate, updatedValue);
                             } else if (item.Amount) {
@@ -651,7 +670,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Act_Qty ?? ''}
+                                                    value={row?.Act_Qty ? row?.Act_Qty : ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
