@@ -325,7 +325,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Location_Id: item?.LocationId,
                                                         Item_Id: item?.ItemId,
                                                         Bill_Qty: item?.Weight,
-                                                        Act_Qty: item?.Quantity,
+                                                        Act_Qty: item?.Weight,
                                                         Bill_Alt_Qty: item?.Quantity,
                                                         Item_Rate: item?.BilledRate,
                                                         Amount: Multiplication(item?.BilledRate, item?.Weight),

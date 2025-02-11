@@ -36,14 +36,17 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
     const [retailers, setRetailers] = useState([]);
     const [products, setProducts] = useState([]);
     // const [productGroup, setProductGroup] = useState([]);
+    const [voucherType, setVoucherType] = useState([]);
     const [productBrand, setProductBrand] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
-    // const [salesPerson, setSalePerson] = useState([]);
+    const [salesPerson, setSalePerson] = useState([]);
+    const [branch, setBranch] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
 
     const initialValue = {
         Company_Id: storage?.Company_id,
         So_Date: ISOString(),
+        VoucherType: '',
         Retailer_Id: '',
         Retailer_Name: 'Select',
         Sales_Person_Id: storage?.UserId,
@@ -94,6 +97,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                 Sales_Person_Id: editValues?.Sales_Person_Id,
                 Sales_Person_Name: editValues?.Sales_Person_Name,
                 Branch_Id: editValues?.Branch_Id,
+                VoucherType: editValues?.VoucherType,
                 Narration: editValues?.Narration,
                 Created_by: editValues?.Created_by,
                 So_Id: editValues?.So_Id,
@@ -165,19 +169,35 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
             }
         }).catch(e => console.error(e))
 
-        // fetchLink({
-        //     address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        // }).then(data => {
-        //     if (data.success) {
-        //         setSalePerson(data.data)
-        //     }
-        // }).catch(e => console.error(e))
+        fetchLink({
+            address: `masters/users/salesPerson/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setSalePerson(data.data)
+            }
+        }).catch(e => console.error(e))
 
         fetchLink({
             address: `masters/company?Company_id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
                 setCompanyInfo(data?.data[0] ? data?.data[0] : {})
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `purchase/voucherType`
+        }).then(data => {
+            if (data.success) {
+                setVoucherType(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/branch/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setBranch(data.data)
             }
         }).catch(e => console.error(e))
 
@@ -295,34 +315,33 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
 
             <div className="p-3 pt-0">
                 {/* CompnayInfo  */}
-                <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
+                <div className="p-3 rounded-3 mb-3 shadow-sm">
                     <h5 className="border-bottom">From:</h5>
                     <div className="row">
-                        <div className="col-lg-8 col-md-7">
-                            <table className="table">
+                        <div className="col-lg-4 col-md-6">
+                            <table className="table table-borderless m-0 fa-13">
                                 <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light" colSpan={2}>
-                                            {companyInfo?.Company_Name}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Address:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Phone:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
-                                    </tr>
+                                    <tr><td>
+                                        <span className="me-2">Company: </span>
+                                        <span>{companyInfo?.Company_Name}</span>
+                                    </td></tr>
+                                    <tr><td>
+                                        <span className="me-2">Address: </span>
+                                        <span>{companyInfo?.Company_Address}</span>
+                                    </td></tr>
+                                    <tr><td>
+                                        <span className="me-2">Phone: </span>
+                                        <span>{companyInfo?.Telephone_Number}</span>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div className="col-lg-4 col-md-5">
-                            <table className="table">
+                        <div className="col-lg-4 col-md-6">
+                            <table className="table table-borderless fa-13 m-0">
                                 <tbody>
                                     <tr>
-                                        <td className="border-0 bg-light">Date:</td>
-                                        <td className="border-0 bg-light">
+                                        <td>Date:</td>
+                                        <td>
                                             <input
                                                 type="date"
                                                 value={orderDetails?.So_Date ? ISOString(orderDetails?.So_Date) : ''}
@@ -332,8 +351,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Invoice Type:</td>
-                                        <td className="border-0 bg-light">
+                                        <td>Invoice Type:</td>
+                                        <td>
                                             <select
                                                 className="cus-inpt p-1"
                                                 onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
@@ -346,8 +365,8 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Tax Type:</td>
-                                        <td className="border-0 bg-light">
+                                        <td>Tax Type:</td>
+                                        <td>
                                             <select
                                                 className="cus-inpt p-1"
                                                 onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
@@ -360,7 +379,58 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     </tr>
                                 </tbody>
                             </table>
-
+                        </div>
+                        <div className="col-lg-4 col-md-6">
+                            <table className="table table-borderless fa-13 m-0">
+                                <tbody>
+                                    <tr>
+                                        <td>Sales Person:</td>
+                                        <td>
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, Sales_Person_Id: Number(e.target.value) })}
+                                                value={orderDetails.Sales_Person_Id}
+                                            >
+                                                <option value='' disabled>select sales person</option>
+                                                <option value={storage?.UserId}>{storage?.Name}</option>
+                                                {salesPerson?.map((vou, ind) => (
+                                                    <option value={vou.UserId} key={ind}>{vou.Name}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Voucher Type:</td>
+                                        <td>
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, VoucherType: Number(e.target.value) })}
+                                                value={orderDetails.VoucherType}
+                                            >
+                                                <option value='' disabled>select voucher</option>
+                                                {voucherType?.filter(vou => vou.Type === 'SALES').map((vou, ind) => (
+                                                    <option value={vou.Vocher_Type_Id} key={ind}>{vou.Voucher_Type}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Branch</td>
+                                        <td>
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, Branch_Id: Number(e.target.value) })}
+                                                value={orderDetails.Branch_Id}
+                                            >
+                                                <option value='' disabled>select Branch</option>
+                                                {branch.map((branch, ind) => (
+                                                    <option value={branch.BranchId} key={ind}>{branch.BranchName}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

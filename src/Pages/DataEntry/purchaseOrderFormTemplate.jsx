@@ -85,6 +85,13 @@ const initialTranspoterDetailsValue = {
     CreatedBy: storage?.UserId,
 }
 
+const initialStaffDetailsValue = {
+    Id: '',
+    OrderId: '',
+    EmployeeId: '',
+    CostType: '',
+}
+
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
@@ -103,6 +110,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [OrderItemsArray, setOrderItemArray] = useState([])
     const [DeliveryArray, setDeliveryArray] = useState([]);
     const [TranspoterArray, setTranspoterArray] = useState([]);
+    const [StaffArray, setStaffArray] = useState([]);
     const [tripData, setTripData] = useState([]);
 
     const [filters, setFilters] = useState({
@@ -120,6 +128,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [orderItemsInput, setOrderItemsInput] = useState(initialItemDetailsValue);
     const [deliveryInput, setDeliveryInput] = useState(initialDeliveryDetailsValue);
     const [transpoterInput, setTransportInput] = useState(initialTranspoterDetailsValue);
+    const [staffInput, setStaffInput] = useState(initialStaffDetailsValue);
     const isEdit = OrderDetails?.Id ? true : false;
 
     const [dialogs, setDialogs] = useState({
@@ -202,6 +211,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 indexValue: o?.indexValue === null ? i : o?.indexValue
             })) ?? []
         );
+        setStaffArray(stateDetails?.StaffArray ?? []);
 
         const isFound = Object.keys(options).findIndex(key => key === editPage);
 
@@ -283,7 +293,8 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 OrderDetails: OrderDetails,
                 OrderItems: options.DeliveryEntry ? [] : OrderItemsArray,
                 DelivdryDetails: options.PurchaseOrderOnly ? [] : DeliveryArray,
-                TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray
+                TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray,
+                StaffDetails: StaffArray
             }
         }).then(data => {
             if (data?.success) {
@@ -291,6 +302,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 setOrderItemArray([]);
                 setDeliveryArray([]);
                 setTranspoterArray([]);
+                setStaffArray([]);
                 toast.success(data?.message)
             } else {
                 toast.error(data?.message)
@@ -343,10 +355,49 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                         isEqualNumber(o.S_No, itemDetail.S_No)
                     ));
 
+                const trip = tripData.find((trp) =>
+                    isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
+                );
+
+                const notInStaffList = trip?.Employees_Involved?.filter(staff =>
+                    !StaffArray.some(arrObj => isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id))
+                ) || [];
+    
+                if (notInStaffList.length > 0) {
+                    setStaffArray(prevStaffArray => [
+                        ...prevStaffArray,
+                        ...notInStaffList.map(staff => Object.fromEntries(
+                            Object.entries(initialStaffDetailsValue).map(([key, value]) => {
+                                switch (key) {
+                                    case 'EmployeeId': return [key, staff?.Involved_Emp_Id];
+                                    case 'CostType': return [key, staff?.Cost_Center_Type_Id];
+                                    default: return [key, value];
+                                }
+                            })
+                        ))
+                    ]);
+                }
+
+                // const notInStaffList = trip?.Employees_Involved?.filter(staff => (
+                //     StaffArray.findIndex(arrObj => (
+                //         isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id)
+                //     ) === -1 ? true : false)
+                // ));
+
+                // notInStaffList.forEach(staff => (
+                //     StaffArray.concat(Object.fromEntries(
+                //         Object.entries(initialStaffDetailsValue).map(([key, value]) => {
+                //             switch (key) {
+                //                 case 'EmployeeId': return [key, staff?.Involved_Emp_Id]
+                //                 case 'CostType': return [key, staff?.Cost_Center_Type_Id]
+                //                 default: return [key, value]
+                //             }
+                //         })
+                //     ))
+                // ))
+
                 const reStruc = currentProduct.map((item, curProIndex) => {
-                    const trip = tripData.find((trp) =>
-                        isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
-                    );
+
                     const getTripDate = trip?.Trip_Date;
                     const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
                     const productDetails = findProductDetails(products, item?.Product_Id);
@@ -393,7 +444,6 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     );
                 });
 
-                // Return the updated array with new items added
                 return preItems.concat(reStruc);
             }
         });
@@ -476,6 +526,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                 <div className="table-responsive">
 
+                    {/* display order id for edit only */}
                     {(options.PurchaseOderWithDelivery && OrderDetails.Id) && (
                         <>
                             <label>Order ID</label>:
@@ -965,6 +1016,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                 </div>
 
+                {/* add items dialog */}
                 <Dialog
                     open={dialogs.itemsDialog}
                     onClose={closeDialog}
@@ -1491,7 +1543,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                 ...trip,
                                                 ...product,
                                             }))
-                                        ).map((trip, tripIndex) => (
+                                        ).filter(fil => !checkIsNumber(fil.arrivalOrderId)).map((trip, tripIndex) => (
                                             <tr key={tripIndex}>
                                                 <td className='fa-12'>
                                                     {(() => {
