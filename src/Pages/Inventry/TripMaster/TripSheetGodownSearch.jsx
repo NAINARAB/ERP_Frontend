@@ -323,7 +323,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         options={
                                                             [...costCenter.filter(fil => (
                                                                 staffInvolvedList.findIndex(st => (
-                                                                    isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)
+                                                                    isEqualNumber(st.Involved_Emp_Id, fil.Cost_Center_Id)
                                                                 )) === -1 ? true : false
                                                             ))].map(st => ({
                                                                 value: st.Cost_Center_Id,

@@ -104,6 +104,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
     const [products, setProducts] = useState([]);
     const [costCenterData, setCostCenterData] = useState([]);
+    const [costCenterCategoryData, setCostCenterCategoryData] = useState([]);
     const [godownLocations, setGodownLocations] = useState([]);
     const [retailers, setRetailers] = useState([]);
 
@@ -128,7 +129,6 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [orderItemsInput, setOrderItemsInput] = useState(initialItemDetailsValue);
     const [deliveryInput, setDeliveryInput] = useState(initialDeliveryDetailsValue);
     const [transpoterInput, setTransportInput] = useState(initialTranspoterDetailsValue);
-    const [staffInput, setStaffInput] = useState(initialStaffDetailsValue);
     const isEdit = OrderDetails?.Id ? true : false;
 
     const [dialogs, setDialogs] = useState({
@@ -161,6 +161,14 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 setCostCenterData(data.data);
             }
         }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter/category`
+        }).then(data => {
+            if (data.success) {
+                setCostCenterCategoryData(data.data);
+            }
+        }).catch(e => console.log(e))
 
         fetchLink({
             address: `dataEntry/godownLocationMaster`
@@ -327,6 +335,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     }
 
     const searchTripData = () => {
+        if (loadingOn) loadingOn()
         fetchLink({
             address: `inventory/tripSheet?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
         }).then(data => {
@@ -362,7 +371,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 const notInStaffList = trip?.Employees_Involved?.filter(staff =>
                     !StaffArray.some(arrObj => isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id))
                 ) || [];
-    
+
                 if (notInStaffList.length > 0) {
                     setStaffArray(prevStaffArray => [
                         ...prevStaffArray,
@@ -524,220 +533,230 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     </form>
                 )}
 
+                {/* display order id for edit only */}
+                {(options.PurchaseOderWithDelivery && OrderDetails.Id) && (
+                    <>
+                        <label>Order ID</label>:
+                        <input
+                            value={OrderDetails.Id}
+                            disabled
+                            className={inputStyle + ' w-auto ms-2 mb-2'}
+                            onChange={e => setOrderDetails(pre => ({ ...pre, Id: e.target.value }))}
+                            placeholder='Ex: 233'
+                        />
+                    </>
+                )}
+
+                <div className="row">
+                    {/* staff details */}
+                    <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                        <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                            <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
+                                <h6 className="flex-grow-1 m-0">Staff Involved</h6>
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    type="button"
+                                    onClick={() => setStaffArray([...StaffArray, { ...initialStaffDetailsValue }])}
+                                >Add</Button>
+                            </div>
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th className="fa-13">Sno</th>
+                                        <th className="fa-13">Staff Name</th>
+                                        <th className="fa-13">Category</th>
+                                        <th className="fa-13">#</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {StaffArray.map((row, index) => (
+                                        <tr key={index}>
+                                            <td className='fa-13 vctr text-center'>{index + 1}</td>
+                                            <td className='fa-13 w-100 p-0'>
+                                                <Select
+                                                    value={{
+                                                        value: row?.EmployeeId,
+                                                        label: costCenterData.find(c => isEqualNumber(c?.Cost_Center_Id, row?.EmployeeId))?.Cost_Center_Name
+                                                    }}
+                                                    onChange={e => setStaffArray((prev) => {
+                                                        return prev.map((item, ind) => {
+                                                            if (isEqualNumber(ind, index)) {
+                                                                const staff = costCenterData.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
+                                                                return {
+                                                                    ...item,
+                                                                    CostType:
+                                                                        checkIsNumber(item.CostType)
+                                                                            ? Number(item.CostType)
+                                                                            : checkIsNumber(staff.User_Type)
+                                                                                ? Number(staff.User_Type)
+                                                                                : 0,
+                                                                    EmployeeId: Number(e.value),
+                                                                }
+                                                            }
+                                                            return item;
+                                                        });
+                                                    })}
+                                                    options={
+                                                        [...costCenterData.filter(fil => (
+                                                            StaffArray.findIndex(st => (
+                                                                isEqualNumber(st.EmployeeId, fil.Cost_Center_Id)
+                                                            )) === -1 ? true : false
+                                                        ))].map(st => ({
+                                                            value: st.Cost_Center_Id,
+                                                            label: st.Cost_Center_Name
+                                                        }))
+                                                    }
+                                                    styles={customSelectStyles}
+                                                    isSearchable={true}
+                                                    placeholder={"Select Staff"}
+                                                />
+                                            </td>
+                                            <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
+                                                <select
+                                                    value={row?.CostType}
+                                                    onChange={e => setStaffArray((prev) => {
+                                                        return prev.map((item, ind) => {
+                                                            if (isEqualNumber(ind, index)) {
+                                                                return {
+                                                                    ...item,
+                                                                    CostType: e.target.value
+                                                                }
+                                                            }
+                                                            return item;
+                                                        });
+                                                    })}
+                                                    className="cus-inpt p-2 border-0"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {costCenterCategoryData.map((st, sti) =>
+                                                        <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
+                                                    )}
+                                                </select>
+                                            </td>
+                                            <td className='fa-13 vctr p-0'>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setStaffArray(prev => {
+                                                            return prev.filter((_, filIndex) => index !== filIndex);
+                                                        });
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Delete color='error' />
+                                                </IconButton>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* po general details */}
+                    <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                        <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                            <div className="row py-2 px-3">
+
+                                <div className="col-md-4 col-sm-6 p-2">
+                                    <label>Loading Date</label>
+                                    <input
+                                        type="date"
+                                        className={inputStyle + ' bg-light'}
+                                        value={OrderDetails.LoadingDate}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
+                                    />
+                                </div>
+
+                                <div className="col-md-4 col-sm-6 p-2">
+                                    <label>Trade Date</label>
+                                    <input
+                                        type="date"
+                                        className={inputStyle + ' bg-light'}
+                                        value={OrderDetails.TradeConfirmDate}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
+                                    />
+                                </div>
+
+                                <div className="col-md-4 col-sm-6 p-2">
+                                    <label>Order Status</label>
+                                    <select
+                                        className={inputStyle + ' bg-light'}
+                                        value={OrderDetails?.OrderStatus}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, OrderStatus: e.target.value }))}
+                                    >
+                                        <option value="New Order">New Order</option>
+                                        <option value="On Process">On Process</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Canceled">Canceled</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="d-flex flex-wrap bg-white">
+                                <span className='flex-grow-1 p-2'>
+                                    <h6>Party Name</h6>
+                                    <Select
+                                        value={{ value: OrderDetails.PartyId, label: OrderDetails.PartyName }}
+                                        onChange={e => {
+                                            const selectedOption = retailers.find(
+                                                ret => isEqualNumber(ret.Retailer_Id, e.value)
+                                            ) ?? {}
+
+                                            setOrderDetails(pre => ({
+                                                ...pre,
+                                                PartyId: selectedOption?.Retailer_Id,
+                                                PartyName: selectedOption?.Retailer_Name,
+                                                PartyAddress: selectedOption?.Reatailer_Address
+                                            }))
+                                        }}
+                                        options={[
+                                            { value: '', label: 'select', isDisabled: true },
+                                            ...retailers.map(obj => ({
+                                                value: obj?.Retailer_Id,
+                                                label: obj?.Retailer_Name
+                                            }))
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Select Party"}
+                                        maxMenuHeight={200}
+                                    />
+
+                                    <br />
+
+                                    <h6>Party Address</h6>
+                                    <textarea
+                                        className={inputStyle + ' mb-2'}
+                                        rows={3}
+                                        value={OrderDetails.PartyAddress}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
+                                    />
+                                </span>
+
+                                <span className='p-2'>
+                                    <h6>Payment Condition</h6>
+                                    <textarea
+                                        className={inputStyle}
+                                        rows={2}
+                                        value={OrderDetails.PaymentCondition}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
+                                    />
+                                    <h6>Remarks</h6>
+                                    <textarea
+                                        className={inputStyle}
+                                        rows={2}
+                                        value={OrderDetails.Remarks}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
+                                    />
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
                 <div className="table-responsive">
-
-                    {/* display order id for edit only */}
-                    {(options.PurchaseOderWithDelivery && OrderDetails.Id) && (
-                        <>
-                            <label>Order ID</label>:
-                            <input
-                                value={OrderDetails.Id}
-                                disabled
-                                className={inputStyle + ' w-auto ms-2 mb-2'}
-                                onChange={e => setOrderDetails(pre => ({ ...pre, Id: e.target.value }))}
-                                placeholder='Ex: 233'
-                            />
-                        </>
-                    )}
-
-                    {/* General Info */}
-                    <table className="table m-0">
-                        <tbody>
-                            <tr>
-                                <td className={tdStyle + ' text-primary fw-bold bg-light'} >
-                                    ORDER DETAILS
-                                </td>
-                                <td className={tdStyle + ' text-primary text-end fw-bold bg-light'} >
-                                    PARTY DETAILS
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className={tdStyle + ' p-0'}>
-                                    <div className="text-end">
-                                        <Button
-                                            varient='outlined'
-                                            startIcon={<Launch />}
-                                            onClick={() => nav('/dataEntry/costCenter')}
-                                        >Cost Center</Button>
-                                    </div>
-                                    <table className="table m-0 border-0">
-                                        <tbody>
-                                            <tr>
-                                                <td className={tdStyle}>Loading Date</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    <input
-                                                        type="date"
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails.LoadingDate}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
-                                                    />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className={tdStyle}>Trade Confirm Date</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    <input
-                                                        type="date"
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails.TradeConfirmDate}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
-                                                    />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className={tdStyle}>Owner Name</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    {/* <input
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails.OwnerName}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, OwnerName: e.target.value }))}
-                                                    /> */}
-                                                    <Select
-                                                        value={{ value: OrderDetails.OwnerId, label: OrderDetails.OwnerName }}
-                                                        onChange={(e) => setOrderDetails(pre => ({ ...pre, OwnerId: e.value, OwnerName: e.label }))}
-                                                        options={[
-                                                            { value: '', label: 'select', isDisabled: true },
-                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 14)).map(obj => ({
-                                                                value: obj?.Cost_Center_Id,
-                                                                label: obj?.Cost_Center_Name
-                                                            }))
-                                                        ]}
-                                                        styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Owners"}
-                                                        maxMenuHeight={200}
-                                                    />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className={tdStyle}>Broker Name</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    {/* <input
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails.BrokerName}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, BrokerName: e.target.value }))}
-                                                    /> */}
-                                                    <Select
-                                                        value={{ value: OrderDetails.BrokerId, label: OrderDetails.BrokerName }}
-                                                        onChange={(e) => setOrderDetails(pre => ({ ...pre, BrokerId: e.value, BrokerName: e.label }))}
-                                                        options={[
-                                                            { value: '', label: 'select', isDisabled: true },
-                                                            ...costCenterData.filter(fil => isEqualNumber(fil.User_Type, 3)).map(obj => ({
-                                                                value: obj?.Cost_Center_Id,
-                                                                label: obj?.Cost_Center_Name
-                                                            }))
-                                                        ]}
-                                                        styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Brokers"}
-                                                        maxMenuHeight={200}
-                                                    />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td className={tdStyle}>Order Status</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    <select
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails?.OrderStatus}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, OrderStatus: e.target.value }))}
-                                                    >
-                                                        <option value="New Order">New Order</option>
-                                                        <option value="On Process">On Process</option>
-                                                        <option value="Completed">Completed</option>
-                                                        <option value="Canceled">Canceled</option>
-                                                    </select>
-                                                </td>
-                                            </tr>
-                                            {/* <tr>
-                                                <td className={tdStyle}>Branch</td>
-                                                <td className={tdStyle + ' p-0'}>
-                                                    <select
-                                                        className={inputStyle + ' border-0'}
-                                                        value={OrderDetails?.BranchId}
-                                                        onChange={e => setOrderDetails(pre => ({ ...pre, BranchId: e.target.value }))}
-                                                    >
-                                                        <option value="">Select</option>
-                                                        <option value="On Process">On Process</option>
-                                                    </select>
-                                                </td>
-                                            </tr> */}
-                                        </tbody>
-                                    </table>
-                                </td>
-                                <td className={tdStyle}>
-                                    <div className="d-flex flex-wrap bg-white">
-                                        <span className='flex-grow-1 p-2'>
-                                            <h6>Party Name</h6>
-                                            {/* <input
-                                                className={inputStyle + ' mb-2'}
-                                                value={OrderDetails.PartyName}
-                                                onChange={e => setOrderDetails(pre => ({ ...pre, PartyName: e.target.value }))}
-                                            /> */}
-
-                                            <Select
-                                                value={{ value: OrderDetails.PartyId, label: OrderDetails.PartyName }}
-                                                onChange={e => {
-                                                    const selectedOption = retailers.find(
-                                                        ret => isEqualNumber(ret.Retailer_Id, e.value)
-                                                    ) ?? {}
-
-                                                    setOrderDetails(pre => ({
-                                                        ...pre,
-                                                        PartyId: selectedOption?.Retailer_Id,
-                                                        PartyName: selectedOption?.Retailer_Name,
-                                                        PartyAddress: selectedOption?.Reatailer_Address
-                                                    }))
-                                                }}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({
-                                                        value: obj?.Retailer_Id,
-                                                        label: obj?.Retailer_Name
-                                                    }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Select Party"}
-                                                maxMenuHeight={200}
-                                            />
-
-                                            <br />
-
-                                            <h6>Party Address</h6>
-                                            <textarea
-                                                className={inputStyle + ' mb-2'}
-                                                rows={3}
-                                                value={OrderDetails.PartyAddress}
-                                                onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
-                                            />
-                                        </span>
-
-                                        <span className='p-2'>
-                                            <h6>Payment Condition</h6>
-                                            <textarea
-                                                className={inputStyle}
-                                                rows={2}
-                                                value={OrderDetails.PaymentCondition}
-                                                onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
-                                            />
-                                            <h6>Remarks</h6>
-                                            <textarea
-                                                className={inputStyle}
-                                                rows={2}
-                                                value={OrderDetails.Remarks}
-                                                onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
-                                            />
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td className={'p-3'} colSpan={2}></td>
-                            </tr>
-                        </tbody>
-                    </table>
 
                     {/* Item Details */}
                     {(options.PurchaseOrderOnly || options.PurchaseOderWithDelivery) && (!options.DeliveryEntry) && (
@@ -879,8 +898,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         });
                                                     }}
                                                     size='small'
+                                                    disabled={DeliveryArray.some(d => isEqualNumber(d.TransporterIndex, i))}
+                                                    color='error'
                                                 >
-                                                    <Delete color='error' />
+                                                    <Delete />
                                                 </IconButton>
                                             </td>
                                         </tr>
@@ -1543,7 +1564,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                 ...trip,
                                                 ...product,
                                             }))
-                                        ).filter(fil => !checkIsNumber(fil.arrivalOrderId)).map((trip, tripIndex) => (
+                                        ).filter(fil =>
+                                            !checkIsNumber(fil.arrivalOrderId)
+                                            && OrderItemsArray.some(odrItem => isEqualNumber(odrItem.ItemId, fil.Product_Id))
+                                        ).map((trip, tripIndex) => (
                                             <tr key={tripIndex}>
                                                 <td className='fa-12'>
                                                     {(() => {

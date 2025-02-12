@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FilterAlt } from '@mui/icons-material';
+import { FilterAlt, Search } from '@mui/icons-material';
 import { purchaseOrderDataSet, displayColumns } from "./purchaseOrderDataArray";
 import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "./purchaseOrderPreviewTemplate";
@@ -14,15 +14,14 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 const useQuery = () => new URLSearchParams(useLocation().search);
 
 const defaultFilters = {
-    Fromdate: getPreviousDate(10),
-    Todate: ISOString(),
+    Fromdate: new Date().toISOString().split('T')[0],
+    Todate: new Date().toISOString().split('T')[0],
     OrderStatus: "ITEMS",
     vendorId: '',
     vendor: '',
 };
 
 const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
-
     const [purchaseOrderData, setPurchaseOrderData] = useState([]);
     const [orderPreview, setOrderPreview] = useState({
         OrderDetails: {},
@@ -40,17 +39,13 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
     const query = useQuery();
 
     const [filters, setFilters] = useState({
-        Fromdate: defaultFilters.Fromdate,
-        Todate: defaultFilters.Todate,
+        ...defaultFilters,
         FilterDialog: false,
-        OrderStatus: defaultFilters.OrderStatus,
-        vendorId: defaultFilters.vendorId,
-        vendor: defaultFilters.vendor,
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
         view: 'PURCHASE ORDERS'
-    })
+    });
 
     useEffect(() => {
         fetchLink({
@@ -70,20 +65,20 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 setProducts([]);
             }
         }).catch(e => console.error(e));
-    }, [])
+    }, []);
 
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `dataEntry/purchaseOrderEntry?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
+            address: `dataEntry/purchaseOrderEntry?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
         }).then(data => {
             if (data.success) {
                 setPurchaseOrderData(data.data);
             }
         }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff()
-        })
-    }, [filters.Fromdate, filters.Todate, filters.refresh]);
+            if (loadingOff) loadingOff();
+        });
+    }, [filters.refresh]);
 
     useEffect(() => {
         const queryFilters = {
@@ -97,7 +92,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
             vendorId: query.get("vendorId") || defaultFilters.vendorId,
             vendor: query.get("vendor") || defaultFilters.vendor,
         };
-        setFilters(pre => ({ ...pre, ...queryFilters }));
+        setFilters(prev => ({ ...prev, ...queryFilters }));
     }, [location.search]);
 
     useEffect(() => {
@@ -106,23 +101,24 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         if (Fromdate && Todate) {
             updateQueryString({ Fromdate, Todate });
         }
-    }, [stateDetails])
+    }, [stateDetails]);
 
     const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
+        const params = new URLSearchParams();
+        Object.keys(newFilters).forEach(key => {
+            if (newFilters[key]) {
+                params.set(key, newFilters[key]);
+            }
+        });
         navigate(`?${params.toString()}`, { replace: true });
     };
 
-    const handleFilterChange = (key, value) => {
+    const handleFilterChange = (valObj) => {
         const updatedFilters = {
-            Fromdate: filters?.Fromdate,
-            Todate: filters?.Todate,
-            OrderStatus: filters?.OrderStatus,
-            vendorId: filters?.vendorId,
-            vendor: filters?.vendor,
-            [key]: value
+            ...filters,
+            ...valObj
         };
-        setFilters(pre => ({ ...pre, ...updatedFilters }));
+        setFilters(updatedFilters);
         updateQueryString(updatedFilters);
     };
 
@@ -135,14 +131,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
             bodyData: { OrderId }
         }).then(data => {
             if (data.success) {
-                setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '', refresh: !pre.refresh }));
+                setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '', refresh: !prev.refresh }));
                 toast.success(data.message);
             } else {
-                setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }));
+                setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }));
                 toast.error(data.message);
             }
-        }).catch(e => console.error(e))
-    }
+        }).catch(e => console.error(e));
+    };
 
     const onCloseDialog = () => {
         setOrderPreview({
@@ -151,22 +147,20 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
             DeliveryArray: [],
             TranspoterArray: [],
             display: false,
-        })
-    }
+        });
+    };
 
     const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
         navigate(page, { state: stateToTransfer });
-    }
+    };
 
     return (
         <>
-
             <FilterableTable
                 dataArray={purchaseOrderDataSet({
-                    data:
-                        checkIsNumber(filters.vendorId) ? (
-                            purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
-                        ) : purchaseOrderData,
+                    data: checkIsNumber(filters.vendorId)
+                        ? purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
+                        : purchaseOrderData,
                     status: filters.OrderStatus
                 })}
                 columns={displayColumns({
@@ -189,7 +183,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                         <IconButton
                             size="small"
                             className="me-2"
-                            onClick={() => setFilters(pre => ({ ...pre, FilterDialog: true }))}
+                            onClick={() => setFilters(prev => ({ ...prev, FilterDialog: true }))}
                         ><FilterAlt /></IconButton>
                     </>
                 }
@@ -202,14 +196,15 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     DeliveryArray={orderPreview.DeliveryArray}
                     TranspoterArray={orderPreview.TranspoterArray}
                     display={orderPreview.display}
-                    onCloseDialog={() => onCloseDialog()}
+                    onCloseDialog={onCloseDialog}
                 />
             )}
 
             <Dialog
                 open={filters.FilterDialog}
-                onClose={() => setFilters(pre => ({ ...pre, FilterDialog: false }))}
-                maxWidth='sm' fullWidth
+                onClose={() => setFilters(prev => ({ ...prev, FilterDialog: false }))}
+                maxWidth='sm'
+                fullWidth
             >
                 <DialogTitle>Filters</DialogTitle>
                 <DialogContent>
@@ -220,11 +215,10 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                 <td className="border-0 vctr">
                                     <Select
                                         value={{ value: filters.vendorId, label: filters.vendor }}
-                                        onChange={e => setFilters(pre => ({
-                                            ...pre,
+                                        onChange={e => handleFilterChange({
                                             vendorId: e.value,
                                             vendor: e.label
-                                        }))}
+                                        })}
                                         options={[
                                             { value: '', label: 'Search', isDisabled: true },
                                             ...vendorList.map(obj => ({
@@ -244,7 +238,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                 <td className="border-0 vctr">
                                     <input
                                         type="date"
-                                        onChange={e => handleFilterChange('Fromdate', e.target.value)}
+                                        onChange={e => handleFilterChange({ Fromdate: e.target.value })}
                                         value={filters.Fromdate}
                                         className="cus-inpt p-2"
                                     />
@@ -255,7 +249,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                 <td className="border-0 vctr">
                                     <input
                                         type="date"
-                                        onChange={e => handleFilterChange('Todate', e.target.value)}
+                                        onChange={e => handleFilterChange({ Todate: e.target.value })}
                                         value={filters.Todate}
                                         className="cus-inpt p-2"
                                     />
@@ -267,7 +261,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                     <select
                                         className="cus-inpt p-2"
                                         value={filters.OrderStatus}
-                                        onChange={e => handleFilterChange('OrderStatus', e.target.value)}
+                                        onChange={e => handleFilterChange({ OrderStatus: e.target.value })}
                                     >
                                         <optgroup label="ITEM BASED">
                                             <option value={'ITEMS'}>ITEMS</option>
@@ -278,17 +272,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                                             <option value={'ORDERS'}>ORDERS</option>
                                             <option value={'COMPLETED ORDERS'}>COMPLETED ORDERS</option>
                                             <option value={'IN-COMPLETED ORDERS'}>IN-COMPLETED ORDERS</option>
-                                            {/* <option value={'ORDERS PENDING'}>ORDERS - PENDING</option>
-                                            <option value={'ORDERS ARRIVED'}>ORDERS - ARRIVED</option> */}
-
                                         </optgroup>
-                                        {/* <optgroup label="REPORTS">
-                                            <option value="REPORT 1">REPORT 1</option>
-                                            <option value="REPORT 2">REPORT 2</option>
-                                            <option value="REPORT 2A">REPORT 2A</option>
-                                            <option value="REPORT 3">REPORT 3</option>
-                                            <option value="REPORT 4">REPORT 4</option>
-                                        </optgroup> */}
                                     </select>
                                 </td>
                             </tr>
@@ -297,15 +281,20 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={() => setFilters(pre => ({ ...pre, FilterDialog: false }))}
+                        onClick={() => setFilters(prev => ({ ...prev, FilterDialog: false }))}
                         variant="outlined"
                     >Close</Button>
+                    <Button
+                        onClick={() => setFilters(prev => ({ ...prev, refresh: !prev.refresh }))}
+                        variant="outlined"
+                        startIcon={<Search />}
+                    >Search</Button>
                 </DialogActions>
             </Dialog>
 
             <Dialog
                 open={filters.deleteOrderDialog}
-                onClose={() => setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }))}
+                onClose={() => setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }))}
                 maxWidth='sm'
             >
                 <DialogTitle>Confirmation</DialogTitle>
@@ -314,13 +303,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={() => setFilters(pre => ({ ...pre, deleteOrderDialog: false, deleteOrderId: '' }))}
+                        onClick={() => setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }))}
                     >Cancel</Button>
                     <Button color='error' variant='outlined' onClick={() => deleteOrder(filters.deleteOrderId)}>Delete</Button>
                 </DialogActions>
             </Dialog>
+
         </>
-    )
-}
+    );
+};
 
 export default PurchaseOrderDataEntry;
