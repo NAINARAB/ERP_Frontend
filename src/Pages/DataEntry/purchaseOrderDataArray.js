@@ -27,8 +27,9 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
+                            StaffDetails: item.StaffDetails ?? [],
                             LoadingDate: item.LoadingDate,
-                            IsConvertedAsInvoice: item.IsConvertedAsInvoice,
+                            IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -72,8 +73,9 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
+                            StaffDetails: item.StaffDetails ?? [],
                             LoadingDate: item.LoadingDate,
-                            IsConvertedAsInvoice: item.IsConvertedAsInvoice,
+                            IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
                             OwnerName: item.OwnerName,
                             PartyAddress: item.PartyAddress,
@@ -116,6 +118,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
                             DeliveryDetails: item.DeliveryDetails ?? [],
+                            StaffDetails: item.StaffDetails ?? [],
                             LoadingDate: item.LoadingDate,
                             IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
@@ -155,6 +158,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             CreatedBy: item.CreatedBy,
                             CreatedAt: item.CreatedAt,
                             DeliveryDetails: item?.DeliveryDetails ?? [],
+                            StaffDetails: item.StaffDetails ?? [],
                             OrderStatus: item?.OrderStatus,
                             ItemDetails: item.ItemDetails ?? [],
                             LoadingDate: item.LoadingDate,
@@ -279,6 +283,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                 const OrderDetails = row ?? {};
                 const OrderItemsArray = row?.ItemDetails ?? [];
                 const DeliveryArray = row?.DeliveryDetails ?? [];
+                const StaffArray = row?.StaffDetails ?? [];
                 const TranspoterArray = row?.TranspoterDetails ?? [];
 
                 return (
@@ -317,6 +322,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Po_Inv_Date: ISOString(),
                                                         Po_Entry_Date: OrderDetails?.LoadingDate ? ISOString(OrderDetails?.LoadingDate) : ISOString(),
                                                         Retailer_Id: OrderDetails?.PartyId,
+                                                        Retailer_Name: OrderDetails?.PartyName
                                                     },
                                                     orderInfo: DeliveryArray.map(item => ({
                                                         POI_St_Id: '',
@@ -332,6 +338,11 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Free_Qty: 0,
                                                         Batch_No: item?.BatchLocation,
                                                     })),
+                                                    staffInfo: StaffArray.map(staff => ({
+                                                        Involved_Emp_Id: Number(staff.EmployeeId),
+                                                        Involved_Emp_Name: staff.Emp_Name,
+                                                        Cost_Center_Type_Id: Number(staff.CostType),
+                                                    }))
                                                 }
                                             })
                                         }}
@@ -352,6 +363,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                     OrderItemsArray,
                                                     DeliveryArray,
                                                     TranspoterArray,
+                                                    StaffArray,
                                                     editPage: 'PurchaseOderWithDelivery'
                                                 }
                                             })

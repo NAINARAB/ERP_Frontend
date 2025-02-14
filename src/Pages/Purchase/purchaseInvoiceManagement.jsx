@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Search } from "@mui/icons-material";
+import { Add, Delete, Search } from "@mui/icons-material";
 import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
@@ -27,7 +27,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Branch_Id: '',
         Po_Inv_Date: ISOString(),
         Po_Entry_Date: ISOString(),
-        Retailer_Id: '',
+        Retailer_Id: 17,
+        Retailer_Name: 'testing',
+        // Retailer_Id: '',
         GST_Inclusive: 2,
         IS_IGST: 0,
         Narration: '',
@@ -86,6 +88,14 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Created_on: '',
     }
 
+    const staffRowDetails = {
+        Id: '',
+        PIN_Id: '',
+        Involved_Emp_Id: '',
+        Involved_Emp_Name: 'select',
+        Cost_Center_Type_Id: '',
+    }
+
     const [vendorList, setVendorList] = useState([]);
     const [branches, setBranches] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
@@ -93,13 +103,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const [voucherType, setVoucherType] = useState([]);
     const [stockItemLedgerName, setStockItemLedgerName] = useState([]);
     const [godownLocations, setGodownLocations] = useState([]);
-    const [baseDetails, setBaseDetails] = useState({
-        vendor: 'search',
-        vendorId: '',
-    });
     const [deliveryDetails, setDeliveryDetails] = useState([]);
+    const [costCenter, setCostCenter] = useState([]);
+    const [costCategory, setCostCategory] = useState([]);
+
     const [invoiceDetails, setInvoiceDetails] = useState(initialInvoiceValue);
     const [selectedItems, setSelectedItems] = useState([]);
+    const [StaffArray, setStaffArray] = useState([]);
     const [dialogs, setDialogs] = useState(false);
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
@@ -150,36 +160,54 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             address: `masters/retailers/dropDown`
         }).then(data => {
             if (data.success) {
-                setVendorList(data.data);
+                const retailerData = data?.data?.sort(
+                    (a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)
+                );
+                setVendorList(retailerData);
             }
         }).catch(e => console.error(e));
 
         fetchLink({
             address: `masters/branch/dropDown`
         }).then(data => {
-            if (data.success) setBranches(data.data);
+            if (data.success) {
+                const branchData = data?.data?.sort(
+                    (a, b) => String(a?.BranchName).localeCompare(b?.BranchName)
+                );
+                setBranches(branchData)
+            };
         }).catch(e => console.error(e));
 
         fetchLink({
             address: `masters/uom`
         }).then(data => {
             if (data.success) {
-                setProductUOM(data.data);
+                const uomData = data?.data?.sort(
+                    (a, b) => String(a?.Units).localeCompare(b?.Units)
+                );
+                setProductUOM(uomData);
             }
         }).catch(e => console.error(e))
 
         fetchLink({
             address: `masters/products`
         }).then(data => {
-            if (data.success) setProducts(data.data);
-            else setProducts([]);
+            if (data.success) {
+                const productsData = data?.data?.sort(
+                    (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+                );
+                setProducts(productsData)
+            } 
         }).catch(e => console.error(e))
 
         fetchLink({
             address: `dataEntry/godownLocationMaster`
         }).then(data => {
             if (data.success) {
-                setGodownLocations(data.data);
+                const godownLocations = data?.data?.sort(
+                    (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
+                );
+                setGodownLocations(godownLocations);
             }
         }).catch(e => console.error(e));
 
@@ -187,7 +215,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             address: `purchase/voucherType`
         }).then(data => {
             if (data.success) {
-                setVoucherType(data.data);
+                const voucherTypeData = data?.data?.sort(
+                    (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
+                );
+                setVoucherType(voucherTypeData);
             }
         }).catch(e => console.error(e));
 
@@ -195,15 +226,45 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             address: `purchase/stockItemLedgerName`
         }).then(data => {
             if (data.success) {
-                setStockItemLedgerName(data.data);
+                const stockItemLedgerName = data?.data?.sort(
+                    (a, b) => String(a?.Stock_Item_Ledger_Name).localeCompare(b?.Stock_Item_Ledger_Name)
+                );
+                setStockItemLedgerName(stockItemLedgerName);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter`
+        }).then(data => {
+            if (data.success) {
+                const staffData = data?.data?.sort(
+                    (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
+                );
+                setCostCenter(staffData);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter/category`
+        }).then(data => {
+            if (data.success) {
+                const staffCategoryData = data?.data?.sort(
+                    (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
+                );
+                setCostCategory(staffCategoryData);
             }
         }).catch(e => console.error(e));
 
     }, [])
 
     useEffect(() => {
-        if (isValidObject(stateDetails) && Array.isArray(stateDetails?.orderInfo) && isValidObject(stateDetails?.invoiceInfo)) {
-            const { invoiceInfo, orderInfo } = stateDetails;
+        if (
+            isValidObject(stateDetails) &&
+            Array.isArray(stateDetails?.orderInfo) &&
+            Array.isArray(stateDetails?.staffInfo) &&
+            isValidObject(stateDetails?.invoiceInfo)
+        ) {
+            const { invoiceInfo, orderInfo, staffInfo } = stateDetails;
             setInvoiceDetails(
                 Object.fromEntries(
                     Object.entries(initialInvoiceValue).map(([key, value]) => {
@@ -220,25 +281,28 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-            setDialogs(true)
+            setStaffArray(
+                staffInfo.map(item => Object.fromEntries(
+                    Object.entries(staffRowDetails).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            );
         }
     }, [stateDetails])
 
-    const getVendorInfo = (vendor) => {
-        if (loadingOn) loadingOn();
-        setSelectedItems([]);
-        setInvoiceDetails(pre => ({
-            ...pre,
-            Retailer_Id: vendor
-        }))
-        fetchLink({
-            // address: `dataEntry/purchaseOrderEntry/delivery/partyBased?VendorId=${baseDetails?.vendorId}`
-            address: `dataEntry/purchaseOrderEntry/delivery/partyBased?VendorId=${vendor}`
-        }).then(data => {
-            if (data.success) setDeliveryDetails(data.data)
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff()
-        })
+    const searchFromArrival = (vendor) => {
+        if (checkIsNumber(vendor)) {
+            if (loadingOn) loadingOn();
+            // setSelectedItems([]);
+            fetchLink({
+                address: `dataEntry/purchaseOrderEntry/delivery/partyBased?VendorId=${vendor}`
+            }).then(data => {
+                if (data.success) setDeliveryDetails(data.data)
+            }).catch(e => console.error(e)).finally(() => {
+                if (loadingOff) loadingOff()
+            })
+        }
     }
 
     const changeItems = (itemDetail, deleteOption) => {
@@ -248,6 +312,27 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 return preItems;
             } else {
                 const currentOrders = deliveryDetails.filter(item => isEqualNumber(item.OrderId, itemDetail.OrderId));
+
+                const notInStaffList = [...new Map(
+                    currentOrders.flatMap(ordr => ordr.EmployeesInvolved)
+                        .filter(staff => !StaffArray.some(arrObj => isEqualNumber(arrObj.Involved_Emp_Id, staff.EmployeeId)))
+                        .map(staff => [staff.EmployeeId, staff])
+                ).values()];
+
+                if (notInStaffList.length > 0) {
+                    setStaffArray(prevStaffArray => [
+                        ...prevStaffArray,
+                        ...notInStaffList.map(staff => Object.fromEntries(
+                            Object.entries(staffRowDetails).map(([key, value]) => {
+                                switch (key) {
+                                    case 'Involved_Emp_Id': return [key, staff?.EmployeeId];
+                                    case 'Cost_Center_Type_Id': return [key, staff?.CostType];
+                                    default: return [key, value];
+                                }
+                            })
+                        ))
+                    ]);
+                }
 
                 const reStruc = currentOrders.map(item => {
                     const productDetails = findProductDetails(products, item.ItemId);
@@ -309,14 +394,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
     const closeDialogs = () => {
         setDialogs(false);
-        setSelectedItems([]);
-        setInvoiceDetails(initialInvoiceValue);
-        setDeliveryDetails([]);
-        if ((Array.isArray(stateDetails?.orderInfo) || isValidObject(stateDetails?.invoiceInfo)) && window.history.length > 1) {
-            navigation(-1);
-        } else {
-            navigation(location.pathname, { replace: true, state: null });
-        }
     }
 
     const changeSelectedObjects = (row, key, value) => {
@@ -371,7 +448,14 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 toast.success(data?.message || 'Saved');
-                closeDialogs();
+                setSelectedItems([]);
+                setInvoiceDetails(initialInvoiceValue);
+                setDeliveryDetails([]);
+                if ((Array.isArray(stateDetails?.orderInfo) || isValidObject(stateDetails?.invoiceInfo)) && window.history.length > 1) {
+                    navigation(-1);
+                } else {
+                    navigation(location.pathname, { replace: true, state: null });
+                }
             } else {
                 toast.error(data?.message || 'Request Failed')
             }
@@ -382,236 +466,289 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
-            <Card>
-                <div className="d-flex flex-wrap align-items-center border-bottom p-2">
-                    <h5 className='flex-grow-1 m-0 ps-2'>Purchase Invoice Creation</h5>
-                    {/* <Button variant='outlined'>back</Button> */}
-                    <Button onClick={() => setSelectedItems([])}>clear selected</Button>
-                    <Button
-                        variant="contained"
-                        className='ms-2'
-                        onClick={() => setDialogs(true)}
-                        disabled={selectedItems.length === 0}
-                    >next</Button>
-                </div>
-                <CardContent style={{ minHeight: 500 }}>
-                    <label className="pe-2">Select Vendor For Invoice: </label>
-                    <div className="d-flex align-self-stretch flex-wrap mb-2">
-                        <span className="flex-grow-1" style={{ maxWidth: '50%' }}>
-                            <Select
-                                value={{ value: baseDetails.vendorId, label: baseDetails.vendor }}
-                                onChange={e => setBaseDetails(pre => ({
-                                    ...pre,
-                                    vendorId: e.value,
-                                    vendor: e.label
-                                }))}
-                                options={[
-                                    { value: '', label: 'Search', isDisabled: true },
-                                    ...vendorList.map(obj => ({
-                                        value: obj?.Retailer_Id,
-                                        label: obj?.Retailer_Name
-                                    }))
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Select Vendor"}
-                                maxMenuHeight={300}
-                            />
-                        </span>
-                        <Button
-                            variant="outlined"
-                            className="mx-2"
-                            disabled={!checkIsNumber(baseDetails.vendorId)}
-                            // onClick={() => getVendorInfo(3412)}
-                            onClick={() => getVendorInfo(baseDetails.vendorId)}
-                        ><Search /></Button>
-                    </div>
-
-                    <FilterableTable
-                        dataArray={deliveryDetails}
-                        columns={[
-                            {
-                                isVisible: 1,
-                                ColumnHeader: '#',
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-
-                                    return (
-                                        <div>
-                                            <input
-                                                className="form-check-input shadow-none pointer"
-                                                style={{ padding: '0.7em' }}
-                                                type="checkbox"
-                                                checked={selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1}
-                                                onChange={() => {
-                                                    if (selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1) changeItems(row, true)
-                                                    else changeItems(row)
-                                                }}
-                                            />
-                                        </div>
-                                    )
-                                }
-                            },
-                            createCol('ArrivalDate', 'date'),
-                            createCol('ItemName', 'string'),
-                            createCol('BilledRate', 'string'),
-                            createCol('Quantity', 'number'),
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Weight',
-                                isCustomCell: true,
-                                Cell: ({ row }) => (
-                                    row?.Weight ?? 0
-                                ) + ' ' + row?.Units
-                            },
-                            createCol('PO_ID', 'string'),
-                            createCol('Location', 'string'),
-                        ]}
-                        EnableSerialNumber
-                        disablePagination
-                        title={`Arrival Details of ${baseDetails.vendor}`}
-                        maxHeightOption
-                    />
-                </CardContent>
-            </Card>
-
-            <Dialog
-                open={dialogs}
-                onClose={closeDialogs}
-                fullScreen
-            >
-                <form onSubmit={e => {
-                    e.preventDefault();
-                    postOrder();
-                }}>
-                    <DialogTitle className='d-flex flex-wrap align-items-center border-bottom '>
-                        <span className="flex-grow-1">Create Invoice</span>
+            <form onSubmit={e => {
+                e.preventDefault();
+                postOrder();
+            }}>
+                <Card>
+                    <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
+                        <span className="flex-grow-1 fa-16 fw-bold">Purchase Invoice Creation</span>
                         <span>
-                            <Button onClick={closeDialogs} type="button" className='me-2'>cancel</Button>
                             <Button type='submit' variant="contained">submit</Button>
                         </span>
-                    </DialogTitle>
-
-                    <DialogContent className="table-responsive">
+                    </div>
+                    <CardContent>
 
                         <div className="row">
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Vendor</label>
-                                <input
-                                    disabled={true}
-                                    value={vendorList?.find(ven =>
-                                        isEqualNumber(ven?.Retailer_Id, invoiceDetails?.Retailer_Id)
-                                    )?.Retailer_Name ?? 'Not Mapped'}
-                                    className={inputStyle}
-                                />
+                            {/* staff info */}
+                            <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                                <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                    <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
+                                        <h6 className="flex-grow-1 m-0">Staff Involved</h6>
+                                        <Button
+                                            variant="outlined"
+                                            color="primary"
+                                            type="button"
+                                            onClick={() => setStaffArray([...StaffArray, { ...staffRowDetails }])}
+                                        >Add</Button>
+                                    </div>
+                                    <table className="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th className="fa-13">Sno</th>
+                                                <th className="fa-13">Staff Name</th>
+                                                <th className="fa-13">Category</th>
+                                                <th className="fa-13">#</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {StaffArray.map((row, index) => (
+                                                <tr key={index}>
+                                                    <td className='fa-13 vctr text-center'>{index + 1}</td>
+                                                    <td className='fa-13 w-100 p-0'>
+                                                        <Select
+                                                            value={{
+                                                                value: row?.Involved_Emp_Id,
+                                                                label: row?.Involved_Emp_Name, 
+                                                            }}
+                                                            onChange={e => setStaffArray((prev) => {
+                                                                return prev.map((item, ind) => {
+                                                                    if (isEqualNumber(ind, index)) {
+                                                                        const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
+                                                                        return {
+                                                                            ...item,
+                                                                            Cost_Center_Type_Id:
+                                                                                checkIsNumber(item.Cost_Center_Type_Id)
+                                                                                    ? Number(item.Cost_Center_Type_Id)
+                                                                                    : checkIsNumber(staff.User_Type)
+                                                                                        ? Number(staff.User_Type)
+                                                                                        : 0,
+                                                                            Involved_Emp_Id: Number(e.value),
+                                                                            Involved_Emp_Name: e.label
+                                                                        }
+                                                                    }
+                                                                    return item;
+                                                                });
+                                                            })}
+                                                            options={
+                                                                [...costCenter.filter(fil => (
+                                                                    !StaffArray.some(st => (
+                                                                        isEqualNumber(st.Involved_Emp_Id, fil.Cost_Center_Id)
+                                                                    ))
+                                                                ))].map(st => ({
+                                                                    value: st.Cost_Center_Id,
+                                                                    label: st.Cost_Center_Name
+                                                                }))
+                                                            }
+                                                            styles={customSelectStyles}
+                                                            isSearchable={true}
+                                                            placeholder={"Select Staff"}
+                                                        />
+                                                    </td>
+                                                    <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
+                                                        <select
+                                                            value={row?.Cost_Center_Type_Id}
+                                                            onChange={e => setStaffArray((prev) => {
+                                                                return prev.map((item, ind) => {
+                                                                    if (isEqualNumber(ind, index)) {
+                                                                        return {
+                                                                            ...item,
+                                                                            Cost_Center_Type_Id: e.target.value
+                                                                        }
+                                                                    }
+                                                                    return item;
+                                                                });
+                                                            })}
+                                                            className="cus-inpt p-2 border-0"
+                                                        >
+                                                            <option value="">Select</option>
+                                                            {costCategory.map((st, sti) =>
+                                                                <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
+                                                            )}
+                                                        </select>
+                                                    </td>
+                                                    <td className='fa-13 vctr p-0'>
+                                                        <IconButton
+                                                            onClick={() => {
+                                                                setStaffArray(prev => {
+                                                                    return prev.filter((_, filIndex) => index !== filIndex);
+                                                                });
+                                                            }}
+                                                            size='small'
+                                                        >
+                                                            <Delete color='error' />
+                                                        </IconButton>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Branch <RequiredStar /></label>
-                                <select
-                                    className={inputStyle}
-                                    value={invoiceDetails?.Branch_Id}
-                                    required
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Branch_Id: e.target.value }))}
-                                >
-                                    <option value="">select</option>
-                                    {branches.map((o, i) => (
-                                        <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
-                                    ))}
-                                </select>
+
+                            {/* general info */}
+                            <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                                <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+
+                                    <div className="row">
+                                        <div className="col-sm-8 p-2">
+                                            <label className='fa-13'>Vendor</label>
+                                            <Select
+                                                value={{
+                                                    value: invoiceDetails?.Retailer_Id, 
+                                                    label: invoiceDetails?.Retailer_Name
+                                                }}
+                                                onChange={e => setInvoiceDetails(pre => ({
+                                                    ...pre,
+                                                    Retailer_Id: e.value,
+                                                    Retailer_Name: e.label
+                                                }))}
+                                                options={[
+                                                    { value: '', label: 'Search', isDisabled: true },
+                                                    ...vendorList.map(obj => ({
+                                                        value: obj?.Retailer_Id,
+                                                        label: obj?.Retailer_Name
+                                                    }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                placeholder={"Select Vendor"}
+                                                maxMenuHeight={300}
+                                            />
+                                        </div>
+
+                                        <div className="col-sm-4 p-2">
+                                            <label className='fa-13'>Voucher Type</label>
+                                            <Select
+                                                value={{ value: invoiceDetails.Voucher_Type, label: invoiceDetails.Voucher_Type }}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.label }))}
+                                                options={[
+                                                    { value: '', label: 'Search', isDisabled: true },
+                                                    ...voucherType.map(obj => ({
+                                                        value: obj?.Voucher_Type,
+                                                        label: obj?.Voucher_Type
+                                                    }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                isSearchable={true}
+                                                required={true}
+                                                placeholder={"Select Voucher Type"}
+                                                maxMenuHeight={300}
+                                            />
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Branch <RequiredStar /></label>
+                                            <select
+                                                className={inputStyle}
+                                                value={invoiceDetails?.Branch_Id}
+                                                required
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Branch_Id: e.target.value }))}
+                                            >
+                                                <option value="">select</option>
+                                                {branches.map((o, i) => (
+                                                    <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Entry Date <RequiredStar /></label>
+                                            <input
+                                                value={invoiceDetails?.Po_Entry_Date}
+                                                type="date"
+                                                required
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Po_Entry_Date: e.target.value }))}
+                                            />
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Bill Date <RequiredStar /></label>
+                                            <input
+                                                value={invoiceDetails?.Po_Inv_Date}
+                                                type="date"
+                                                required
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Po_Inv_Date: e.target.value }))}
+                                            />
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Ref Number</label>
+                                            <input
+                                                value={invoiceDetails?.Ref_Po_Inv_No}
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Ref_Po_Inv_No: e.target.value }))}
+                                            />
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>GST Type <RequiredStar /></label>
+                                            <select
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, GST_Inclusive: Number(e.target.value) }))}
+                                                value={invoiceDetails.GST_Inclusive}
+                                                required
+                                            >
+                                                <option value={1}>Inclusive Tax</option>
+                                                <option value={0}>Exclusive Tax</option>
+                                                <option value={2}>Not Taxable</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Tax Type</label>
+                                            <select
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, IS_IGST: Number(e.target.value) }))}
+                                                value={invoiceDetails.IS_IGST}
+                                            >
+                                                <option value='0'>GST</option>
+                                                <option value='1'>IGST</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="col-sm-6 p-2">
+                                            <label className='fa-13'>Stock Item Ledger Name</label>
+                                            <Select
+                                                value={{ value: invoiceDetails.Stock_Item_Ledger_Name, label: invoiceDetails.Stock_Item_Ledger_Name }}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Stock_Item_Ledger_Name: e.label }))}
+                                                options={[
+                                                    { value: '', label: 'Search', isDisabled: true },
+                                                    ...stockItemLedgerName.map(obj => ({
+                                                        value: obj?.Stock_Item_Ledger_Name,
+                                                        label: obj?.Stock_Item_Ledger_Name
+                                                    }))
+                                                ]}
+                                                styles={customSelectStyles}
+                                                required={true}
+                                                isSearchable={true}
+                                                placeholder={"Select"}
+                                                maxMenuHeight={300}
+                                            />
+                                        </div>
+
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Entry Date <RequiredStar /></label>
-                                <input
-                                    value={invoiceDetails?.Po_Entry_Date}
-                                    type="date"
-                                    required
-                                    className={inputStyle}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Po_Entry_Date: e.target.value }))}
-                                />
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Bill Date <RequiredStar /></label>
-                                <input
-                                    value={invoiceDetails?.Po_Inv_Date}
-                                    type="date"
-                                    required
-                                    className={inputStyle}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Po_Inv_Date: e.target.value }))}
-                                />
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Ref Number</label>
-                                <input
-                                    value={invoiceDetails?.Ref_Po_Inv_No}
-                                    className={inputStyle}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Ref_Po_Inv_No: e.target.value }))}
-                                />
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>GST Type <RequiredStar /></label>
-                                <select
-                                    className={inputStyle}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, GST_Inclusive: Number(e.target.value) }))}
-                                    value={invoiceDetails.GST_Inclusive}
-                                    required
-                                >
-                                    <option value={1}>Inclusive Tax</option>
-                                    <option value={0}>Exclusive Tax</option>
-                                    <option value={2}>Not Taxable</option>
-                                </select>
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Tax Type</label>
-                                <select
-                                    className={inputStyle}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, IS_IGST: Number(e.target.value) }))}
-                                    value={invoiceDetails.IS_IGST}
-                                >
-                                    <option value='0'>GST</option>
-                                    <option value='1'>IGST</option>
-                                </select>
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Voucher Type</label>
-                                <Select
-                                    value={{ value: invoiceDetails.Voucher_Type, label: invoiceDetails.Voucher_Type }}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.label }))}
-                                    options={[
-                                        { value: '', label: 'Search', isDisabled: true },
-                                        ...voucherType.map(obj => ({
-                                            value: obj?.Voucher_Type,
-                                            label: obj?.Voucher_Type
-                                        }))
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    required={true}
-                                    placeholder={"Select Voucher Type"}
-                                    maxMenuHeight={300}
-                                />
-                            </div>
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Stock Item Ledger Name</label>
-                                <Select
-                                    value={{ value: invoiceDetails.Stock_Item_Ledger_Name, label: invoiceDetails.Stock_Item_Ledger_Name }}
-                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Stock_Item_Ledger_Name: e.label }))}
-                                    options={[
-                                        { value: '', label: 'Search', isDisabled: true },
-                                        ...stockItemLedgerName.map(obj => ({
-                                            value: obj?.Stock_Item_Ledger_Name,
-                                            label: obj?.Stock_Item_Ledger_Name
-                                        }))
-                                    ]}
-                                    styles={customSelectStyles}
-                                    required={true}
-                                    isSearchable={true}
-                                    placeholder={"Select"}
-                                    maxMenuHeight={300}
-                                />
-                            </div>
+
                         </div>
 
+                        {/* product info */}
                         <div className="table-responsive">
+                            <div className="d-flex p-2 justify-content-end">
+                                <Button type="button" onClick={() => setSelectedItems([])}>clear selected</Button>
+                                <Button
+                                    variant="outlined"
+                                    className='ms-2'
+                                    type="button"
+                                    onClick={() => setDialogs(true)}
+                                    startIcon={<Add />}
+                                    disabled={!checkIsNumber(invoiceDetails.Retailer_Id)}
+                                >Add Products</Button>
+                            </div>
                             <table className="table">
                                 <thead>
                                     <tr>
@@ -761,11 +898,74 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             </table>
                         </div>
 
-                    </DialogContent>
-                    <DialogActions>
+                    </CardContent>
+                </Card>
+            </form>
 
-                    </DialogActions>
-                </form>
+            <Dialog
+                open={dialogs}
+                onClose={closeDialogs}
+                fullScreen
+            >
+                <DialogTitle className='d-flex flex-wrap align-items-center '>
+                    <span className="flex-grow-1">Select Purchase Order</span>
+                    <span>
+                        <Button onClick={closeDialogs} type="button" className='me-2'>close</Button>
+                        <Button 
+                            type="button" 
+                            onClick={() => searchFromArrival(invoiceDetails.Retailer_Id)}
+                        >Search Arrival Details</Button>
+                    </span>
+                </DialogTitle>
+                <DialogContent>
+                    <FilterableTable
+                        dataArray={deliveryDetails}
+                        columns={[
+                            {
+                                isVisible: 1,
+                                ColumnHeader: '#',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+
+                                    return (
+                                        <div>
+                                            <input
+                                                className="form-check-input shadow-none pointer"
+                                                style={{ padding: '0.7em' }}
+                                                type="checkbox"
+                                                checked={selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1}
+                                                onChange={() => {
+                                                    if (selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1) changeItems(row, true)
+                                                    else changeItems(row)
+                                                }}
+                                            />
+                                        </div>
+                                    )
+                                }
+                            },
+                            createCol('ArrivalDate', 'date'),
+                            createCol('ItemName', 'string'),
+                            createCol('BilledRate', 'string'),
+                            createCol('Quantity', 'number'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Weight',
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    row?.Weight ?? 0
+                                ) + ' ' + row?.Units
+                            },
+                            createCol('PO_ID', 'string'),
+                            createCol('Location', 'string'),
+                        ]}
+                        EnableSerialNumber
+                        disablePagination
+                        title={`Arrival Details of ${vendorList?.find(ven =>
+                            isEqualNumber(ven?.Retailer_Id, invoiceDetails?.Retailer_Id)
+                        )?.Retailer_Name ?? 'Not available'}`}
+                        maxHeightOption
+                    />
+                </DialogContent>
             </Dialog>
         </>
     )

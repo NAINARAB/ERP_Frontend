@@ -184,7 +184,8 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                         page: 'create',
                                         stateToTransfer: {
                                             invoiceInfo: row,
-                                            orderInfo: row?.Products_List
+                                            orderInfo: row?.Products_List,
+                                            staffInfo: row?.Staff_List
                                         }
                                     })
                                 }}

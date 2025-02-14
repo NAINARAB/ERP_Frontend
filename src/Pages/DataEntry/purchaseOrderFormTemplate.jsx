@@ -358,7 +358,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                 return preItems;
             } else {
                 const currentProduct = tripData
-                    .flatMap((t) => t.Products_List)
+                    .flatMap(t => t.Products_List)
                     .filter(o => (
                         isEqualNumber(o.Trip_Id, itemDetail.Trip_Id) &&
                         isEqualNumber(o.S_No, itemDetail.S_No)

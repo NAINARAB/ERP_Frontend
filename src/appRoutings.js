@@ -64,7 +64,8 @@ const FingerPrintAttendanceReport = lazy(() => import("./Pages/Attendance/finger
 const CustomerList = lazy(() => import("./Pages/UserModule/customerList"))
 const EmployeeMaster = lazy(() => import("./Pages/UserModule/employee"))
 const RetailersMaster = lazy(() => import("./Pages/UserModule/retailer/Retailer"))
-const CostCategory = lazy(() => import("./Pages/UserModule/costCenterType"))
+const CostCategory = lazy(() => import("./Pages/UserModule/costCenterType"));
+const VoucherType = lazy(() => import("./Pages/UserModule/voucherMaster"))
 
 // Sales
 const SalesReport = lazy(() => import("./Pages/Sales/LedgerTransaction"))
@@ -82,9 +83,9 @@ const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate
 const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
 const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'))
 
-const DeliveryTripSheet=lazy(()=>import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
-const DeliveryTripSheetAdd=lazy(()=>import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
-const SalesConvert=lazy(()=>import("./Pages/Sales/TripMaster/SalesDeliveryAdd") )
+const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
+const DeliveryTripSheetAdd = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
+const SalesConvert = lazy(() => import("./Pages/Sales/TripMaster/SalesDeliveryAdd"))
 
 
 // Purchase
@@ -131,7 +132,9 @@ const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/Sale
 
 
 const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
-const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"))
+const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
+
+
 const RoutingArray = [
 
 
@@ -172,7 +175,7 @@ const RoutingArray = [
     { component: <RetailersMaster />, path: '/erp/master/retailers' },
     { component: <TallyLolSyncDashboard />, path: '/erp/master/tallyLOL' },
     { component: <TallyLosSyncDashboard />, path: '/erp/master/tallyLOS' },
-    
+
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
     { component: <SalesReport />, path: '/erp/sales/salesReport' },
@@ -196,10 +199,10 @@ const RoutingArray = [
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
 
-    {component:<SalesConvert/>,path:'/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert'},
+    { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
     { component: <DeliveryTripSheetAdd />, path: '/erp/sales/Tripsheet/Tripsheetcreation' },
     { component: <DeliveryTripSheet />, path: '/erp/sales/Tripsheet' },
-    
+
     // ERP - payments
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
@@ -253,6 +256,7 @@ const RoutingArray = [
     { component: <EmployeeMaster />, path: '/userControl/employees' },
     { component: <MenuManagement />, path: '/userControl/appMenu' },
     { component: <CostCategory />, path: '/userControl/CostCategory' },
+    { component: <VoucherType />, path: '/erp/master/voucherMaster' },
     // { component: <WorkDoneHistory />, path: '' }, // will not work
     // { component: <ItemBasedReport />, path: '' }, // will not work
     { component: <SalesDelivery />, path: '/erp/sales/salesDelivery' },
