@@ -52,6 +52,7 @@ const DayBookOfERP = lazy(() => import("./Pages/Reports/dayBook"))
 const DayBookDetails = lazy(() => import("./Pages/Reports/dayBookDetails"));
 const TallyLolSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLolSyncDashboard"))
 const TallyLosSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLosSyncDashboard"))
+const TripReports = lazy(() => import("./Pages/Reports/tripReports"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -65,7 +66,9 @@ const CustomerList = lazy(() => import("./Pages/UserModule/customerList"))
 const EmployeeMaster = lazy(() => import("./Pages/UserModule/employee"))
 const RetailersMaster = lazy(() => import("./Pages/UserModule/retailer/Retailer"))
 const CostCategory = lazy(() => import("./Pages/UserModule/costCenterType"));
-const VoucherType = lazy(() => import("./Pages/UserModule/voucherMaster"))
+const VoucherType = lazy(() => import("./Pages/UserModule/voucherMaster"));
+const RouteMaster = lazy(() => import("./Pages/UserModule/routeMaster"))
+const AreaMaster = lazy(() => import("./Pages/UserModule/areaMaster"))
 
 // Sales
 const SalesReport = lazy(() => import("./Pages/Sales/LedgerTransaction"))
@@ -175,6 +178,7 @@ const RoutingArray = [
     { component: <RetailersMaster />, path: '/erp/master/retailers' },
     { component: <TallyLolSyncDashboard />, path: '/erp/master/tallyLOL' },
     { component: <TallyLosSyncDashboard />, path: '/erp/master/tallyLOS' },
+    { component: <TripReports />, path: '/erp/reports/tripReports' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
@@ -257,6 +261,8 @@ const RoutingArray = [
     { component: <MenuManagement />, path: '/userControl/appMenu' },
     { component: <CostCategory />, path: '/userControl/CostCategory' },
     { component: <VoucherType />, path: '/erp/master/voucherMaster' },
+    { component: <AreaMaster />, path: '/erp/master/areaMaster' },
+    { component: <RouteMaster />, path: '/erp/master/routeMaster' },
     // { component: <WorkDoneHistory />, path: '' }, // will not work
     // { component: <ItemBasedReport />, path: '' }, // will not work
     { component: <SalesDelivery />, path: '/erp/sales/salesDelivery' },

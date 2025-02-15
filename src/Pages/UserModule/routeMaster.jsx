@@ -8,14 +8,11 @@ import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 
 const initialState = {
-    Voucher_Type_Id: "",
-    Voucher_Type: "",
-    Branch_Id: "",
-    Branch_Name: "",
-    Type: ""
+    Route_Id: "",
+    Route_Name: ""
 };
 
-function VoucherMaster() {
+function RouteMaster() {
     const [UserTypeData, setUserTypeData] = useState([]);
     const [reload, setReload] = useState(false);
     const [open, setOpen] = useState(false);
@@ -24,39 +21,26 @@ function VoucherMaster() {
     const [inputValue, setInputValue] = useState(initialState);
     const [editUser, setEditUser] = useState(false);
 
-    const [voucherType, setVouchertype] = useState("");
-    const [districts, setDistricts] = useState([]);
-    const [selectedBranch, setSelectedBranch] = useState("");
-    const [types, setTypes] = useState("");
-
     useEffect(() => {
         fetchLink({
-            address: `masters/voucher`
+            address: `masters/routes`
         }).then((data) => {
             if (data.success) {
                 setUserTypeData(data.data);
-            }
-        }).catch(e => console.error(e));
-
-        fetchLink({
-            address: `masters/branch/dropDown`
-        }).then((data) => {
-            if (data.success) {
-                setDistricts(data.data);
             }
         }).catch(e => console.error(e));
     }, [reload]);
 
     const handleDelete = () => {
         fetchLink({
-            address: `masters/voucher`,
+            address: `masters/routes`,
             method: "DELETE",
-            bodyData: { Vocher_Type_Id: inputValue.Voucher_Type_Id },
+            bodyData: { Route_Id: inputValue.Route_Id },
         }).then((data) => {
             if (data.success) {
                 setReload(!reload);
                 setOpen(false);
-                toast.success("Voucher Type deleted successfully!");
+                toast.success("Route deleted successfully!");
             } else {
                 toast.error("Failed to delete area:", data.message);
             }
@@ -64,25 +48,18 @@ function VoucherMaster() {
     };
 
     const handleCreate = () => {
-        if (!selectedBranch || !voucherType || !types) {
-            toast.error("Please fill all fields");
-            return;
-        }
         fetchLink({
-            address: `masters/voucher`,
+            address: `masters/routes`,
             method: "POST",
             bodyData: {
-                Voucher_Type: voucherType,
-                Branch_Id: Number(selectedBranch),
-                Type: types
+                Route_Name: inputValue.Route_Name
             },
         }).then((data) => {
             if (data.success) {
                 setIsCreateDialogOpen(false);
                 setReload(!reload);
                 toast.success(data.message);
-                setVouchertype("");
-
+                setInputValue([])
             } else {
                 toast.error(data.message);
             }
@@ -92,24 +69,22 @@ function VoucherMaster() {
     const editRow = (user) => {
         setEditUser(true);
         setInputValue({
-            Voucher_Type_Id: user.Vocher_Type_Id,
-            Voucher_Type: user.Voucher_Type,
-            Branch_Id: user.Branch_Id,
-            Type: user.Type,
+            Route_Id: user.Route_Id,
+            Route_Name: user.Route_Name,
         });
-        setSelectedBranch(user.Branch_Id);
     };
 
-    const editFun = (Voucher_Type_Id, Voucher_Type, Branch_Id, Type) => {
+    const editFun = (Route_Id, Route_Name) => {
         fetchLink({
-            address: `masters/voucher`,
+            address: `masters/routes`,
             method: "PUT",
-            bodyData: { Voucher_Type_Id, Voucher_Type, Branch_Id, Type },
+            bodyData: { Route_Id, Route_Name },
         }).then((data) => {
             if (data.success) {
                 toast.success(data.message);
                 setReload(!reload);
                 setEditUser(false);
+                setInputValue([])
             } else {
                 toast.error(data.message);
             }
@@ -126,10 +101,12 @@ function VoucherMaster() {
                             className="rounded-5 px-3 py-1 fa-13 btn-primary shadow"
                             onClick={() => setIsCreateDialogOpen(true)}
                         >
-                            Create Voucher
+                            Create Route
                         </Button>
                     </div>
                 </div>
+
+
 
                 <FilterableTable
                     dataArray={UserTypeData}
@@ -137,10 +114,10 @@ function VoucherMaster() {
                     isExpendable={true}
                     maxHeightOption
                     columns={[
-                        createCol('Voucher_Type', 'string', 'Voucher_Type'),
-                        createCol('Type', 'string', 'Type'),
-                        createCol('BranchName', 'string', 'BranchName'),
+                        createCol('Route_Name', 'string', 'Route_Name'),
                         {
+
+                            Field_Name: "Actions",
                             ColumnHeader: "Actions",
                             isVisible: 1,
                             isCustomCell: true,
@@ -157,7 +134,7 @@ function VoucherMaster() {
                                         <IconButton
                                             onClick={() => {
                                                 setOpen(true);
-                                                setInputValue({ Voucher_Type_Id: row.Vocher_Type_Id });
+                                                setInputValue({ Route_Id: row.Route_Id });
                                             }}
                                             size="small"
                                             color='error'
@@ -179,46 +156,25 @@ function VoucherMaster() {
                 aria-labelledby="create-dialog-title"
                 aria-describedby="create-dialog-description"
             >
-                <DialogTitle id="create-dialog-title">Voucher Creation</DialogTitle>
+                <DialogTitle id="create-dialog-title">Route Creation</DialogTitle>
                 <DialogContent>
                     <div>
                         <div className="p-2">
-                            <label>Voucher Name</label>
+                            <label>Route Name</label>
                             <input
                                 type="text"
-                                onChange={(event) => setVouchertype(event.target.value)}
-                                placeholder=""
-                                value={voucherType}
+                                onChange={(event) =>
+                                    setInputValue({
+                                        ...inputValue,
+                                        Route_Name: event.target.value,
+                                    })
+                                }
+                                placeholder="Ex: BB Kulam"
+                                value={inputValue.Route_Name}
                                 className="cus-inpt"
                             />
                         </div>
 
-                        <div className="p-2">
-                            <label>Branch</label>
-                            <select
-                                value={selectedBranch}
-                                onChange={(event) => setSelectedBranch(event.target.value)}
-                                className="cus-inpt"
-                            >
-                                <option value="">Select Branch</option>
-                                {districts.map((district) => (
-                                    <option key={district.BranchId} value={district.BranchId}>
-                                        {district.BranchName}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="p-2">
-                            <label>Type</label>
-                            <input
-                                type="text"
-                                onChange={(event) => setTypes(event.target.value)}
-                                placeholder=""
-                                value={types}
-                                className="cus-inpt"
-                            />
-                        </div>
                     </div>
                 </DialogContent>
                 <DialogActions>
@@ -237,59 +193,28 @@ function VoucherMaster() {
                 aria-labelledby="create-dialog-title"
                 aria-describedby="create-dialog-description"
             >
-                <DialogTitle id="create-dialog-title">voucherType</DialogTitle>
+                <DialogTitle id="create-dialog-title">Route</DialogTitle>
                 <DialogContent>
                     <div className="p-2">
-                        <label>voucherType </label>
+                        <label>Route_Name </label>
                         <input
                             type="text"
                             onChange={(event) =>
                                 setInputValue({
                                     ...inputValue,
-                                    Voucher_Type: event.target.value,
+                                    Route_Name: event.target.value,
                                 })
                             }
-                            placeholder={inputValue.Voucher_Type}
-                            value={inputValue.Voucher_Type}
+                            placeholder={inputValue.Route_Name}
+                            value={inputValue.Route_Name}
                             className="cus-inpt"
                         />
                     </div>
 
-                    <div className="p-2">
-                        <label>Branch</label>
-                        <select
-                            value={selectedBranch}
-                            onChange={(event) => setSelectedBranch(event.target.value)}
-                            className="cus-inpt"
-                        >
-                            <option value="">Select Branch</option>
-                            {districts.map((district) => (
-                                <option key={district.BranchId} value={district.BranchId}>
-                                    {district.BranchName}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="p-2">
-                        <label>Type </label>
-                        <input
-                            type="text"
-                            onChange={(event) =>
-                                setInputValue({
-                                    ...inputValue,
-                                    Type: event.target.value,
-                                })
-                            }
-                            placeholder={inputValue.Type}
-                            value={inputValue.Type}
-                            className="cus-inpt"
-                        />
-                    </div>
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setEditUser(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={() => editFun(inputValue.Voucher_Type_Id, inputValue.Voucher_Type, inputValue.Branch_Id, inputValue.Type)} color="success">
+                    <MuiButton onClick={() => editFun(inputValue.Route_Id, inputValue.Route_Name)} color="success">
                         Update
                     </MuiButton>
                 </DialogActions>
@@ -303,18 +228,17 @@ function VoucherMaster() {
             >
                 <DialogTitle id="alert-dialog-title">Confirmation</DialogTitle>
                 <DialogContent>
-                    <b>Do you want to delete the Voucher?</b>
+                    <b>Do you want to delete the Route?</b>
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setOpen(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={handleDelete} autoFocus color="error">
+                    <MuiButton onClick={() => handleDelete(inputValue.Route_Id)} autoFocus color="error">
                         Delete
                     </MuiButton>
                 </DialogActions>
             </Dialog>
-
         </Fragment>
     );
 }
 
-export default VoucherMaster;
+export default RouteMaster;

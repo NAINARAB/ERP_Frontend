@@ -161,46 +161,46 @@ const TaskType = () => {
                 </div>
 
                 <div className="card-body overflow-scroll" style={{ maxHeight: "78vh" }}>
-                <TableContainer>
-    <Table>
-        <TableHead>
-            <TableRow>
-                {taskTypeColumns.map((column) => (
-                    <TableCell key={column.id} sx={{ padding: '4px 8px' }}> 
-                        {column.sort ? (
-                            <TableSortLabel
-                                active={orderBy === column.id}
-                                direction={orderBy === column.id ? order : "asc"}
-                                onClick={() => handleRequestSort(column.id)}
-                            >
-                                {column.label}
-                            </TableSortLabel>
-                        ) : (
-                            column.label
-                        )}
-                    </TableCell>
-                ))}
-            </TableRow>
-        </TableHead>
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    {taskTypeColumns.map((column) => (
+                                        <TableCell key={column.id} sx={{ padding: '4px 8px' }}>
+                                            {column.sort ? (
+                                                <TableSortLabel
+                                                    active={orderBy === column.id}
+                                                    direction={orderBy === column.id ? order : "asc"}
+                                                    onClick={() => handleRequestSort(column.id)}
+                                                >
+                                                    {column.label}
+                                                </TableSortLabel>
+                                            ) : (
+                                                column.label
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            </TableHead>
 
-        <TableBody>
-            {sortedData.map((obj, index) => (
-                <TableRow key={obj.Task_Type_Id}>
-                    <TableCell sx={{ padding: '4px 8px' }}>{index + 1}</TableCell> 
-                    <TableCell sx={{ padding: '4px 8px' }}>{obj.Task_Type}</TableCell>
-                    <TableCell sx={{ padding: '4px 8px' }}>
-                        <IconButton onClick={() => handleOpenEditDialog(obj)} size="small">
-                            <Edit />
-                        </IconButton>
-                        <IconButton onClick={() => handleDeleteClick(obj)} sx={{ color: '#FF6865' }}>
-                            <Delete />
-                        </IconButton>
-                    </TableCell>
-                </TableRow>
-            ))}
-        </TableBody>
-    </Table>
-</TableContainer>
+                            <TableBody>
+                                {sortedData.map((obj, index) => (
+                                    <TableRow key={obj.Task_Type_Id}>
+                                        <TableCell sx={{ padding: '4px 8px' }}>{index + 1}</TableCell>
+                                        <TableCell sx={{ padding: '4px 8px' }}>{obj.Task_Type}</TableCell>
+                                        <TableCell sx={{ padding: '4px 8px' }}>
+                                            <IconButton onClick={() => handleOpenEditDialog(obj)} size="small">
+                                                <Edit />
+                                            </IconButton>
+                                            <IconButton onClick={() => handleDeleteClick(obj)} sx={{ color: '#FF6865' }}>
+                                                <Delete />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
 
                 </div>
             </div>

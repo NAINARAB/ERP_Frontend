@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Add, Delete, Search } from "@mui/icons-material";
-import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber, Subraction } from "../../Components/functions";
+import { Add, Delete } from "@mui/icons-material";
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
@@ -27,9 +27,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Branch_Id: '',
         Po_Inv_Date: ISOString(),
         Po_Entry_Date: ISOString(),
-        Retailer_Id: 17,
-        Retailer_Name: 'testing',
-        // Retailer_Id: '',
+        Retailer_Id: '',
+        Retailer_Name: '',
         GST_Inclusive: 2,
         IS_IGST: 0,
         Narration: '',
@@ -157,7 +156,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/retailers/dropDown`
+            address: `dataEntry/pendingPartyInvoice`
         }).then(data => {
             if (data.success) {
                 const retailerData = data?.data?.sort(
@@ -197,7 +196,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
                 );
                 setProducts(productsData)
-            } 
+            }
         }).catch(e => console.error(e))
 
         fetchLink({
@@ -265,6 +264,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             isValidObject(stateDetails?.invoiceInfo)
         ) {
             const { invoiceInfo, orderInfo, staffInfo } = stateDetails;
+            searchFromArrival(invoiceInfo.Retailer_Id);
             setInvoiceDetails(
                 Object.fromEntries(
                     Object.entries(initialInvoiceValue).map(([key, value]) => {
@@ -295,6 +295,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         if (checkIsNumber(vendor)) {
             if (loadingOn) loadingOn();
             // setSelectedItems([]);
+            setDeliveryDetails([]);
             fetchLink({
                 address: `dataEntry/purchaseOrderEntry/delivery/partyBased?VendorId=${vendor}`
             }).then(data => {
@@ -307,11 +308,17 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
     const changeItems = (itemDetail, deleteOption) => {
         setSelectedItems((prev) => {
-            const preItems = prev.filter(o => !isEqualNumber(o?.OrderId, itemDetail?.OrderId));
+            const preItems = prev.filter(o => !(
+                isEqualNumber(o?.OrderId, itemDetail?.OrderId)
+                && isEqualNumber(itemDetail?.ItemId, o?.Item_Id)
+            ));
             if (deleteOption) {
                 return preItems;
             } else {
-                const currentOrders = deliveryDetails.filter(item => isEqualNumber(item.OrderId, itemDetail.OrderId));
+                const currentOrders = deliveryDetails.filter(item => (
+                    isEqualNumber(item.OrderId, itemDetail.OrderId)
+                    && isEqualNumber(itemDetail?.ItemId, item?.ItemId)
+                ));
 
                 const notInStaffList = [...new Map(
                     currentOrders.flatMap(ordr => ordr.EmployeesInvolved)
@@ -326,6 +333,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             Object.entries(staffRowDetails).map(([key, value]) => {
                                 switch (key) {
                                     case 'Involved_Emp_Id': return [key, staff?.EmployeeId];
+                                    case 'Involved_Emp_Name': return [key, staff?.EmployeeName];
                                     case 'Cost_Center_Type_Id': return [key, staff?.CostType];
                                     default: return [key, value];
                                 }
@@ -357,11 +365,11 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             switch (key) {
                                 case 'DeliveryId': return [key, Number(item?.Id)]
                                 case 'OrderId': return [key, Number(item?.OrderId)]
-                                case 'PIN_Id': return [key, Number(item?.OrderId)]
+                                // case 'PIN_Id': return [key, Number(item?.OrderId)]
                                 case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
-                                case 'Bill_Qty': return [key, Bill_Qty]
+                                case 'Bill_Qty': return [key, item?.convertableQuantity]
                                 case 'Act_Qty': return [key, Bill_Qty]
                                 case 'Item_Rate': return [key, Item_Rate]
                                 case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
@@ -443,6 +451,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(invoiceDetails?.PIN_Id) ? 'PUT' : 'POST',
             bodyData: {
                 Product_Array: selectedItems,
+                StaffArray: StaffArray,
                 ...invoiceDetails
             }
         }).then(data => {
@@ -451,6 +460,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 setSelectedItems([]);
                 setInvoiceDetails(initialInvoiceValue);
                 setDeliveryDetails([]);
+                setStaffArray([]);
                 if ((Array.isArray(stateDetails?.orderInfo) || isValidObject(stateDetails?.invoiceInfo)) && window.history.length > 1) {
                     navigation(-1);
                 } else {
@@ -474,6 +484,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
                         <span className="flex-grow-1 fa-16 fw-bold">Purchase Invoice Creation</span>
                         <span>
+                            <Button type='button' onClick={() => {
+                                if ((Array.isArray(stateDetails?.orderInfo) || isValidObject(stateDetails?.invoiceInfo)) && window.history.length > 1) {
+                                    navigation(-1);
+                                } else {
+                                    navigation(location.pathname, { replace: true, state: null });
+                                }
+                            }}>Cancel</Button>
                             <Button type='submit' variant="contained">submit</Button>
                         </span>
                     </div>
@@ -509,7 +526,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                         <Select
                                                             value={{
                                                                 value: row?.Involved_Emp_Id,
-                                                                label: row?.Involved_Emp_Name, 
+                                                                label: row?.Involved_Emp_Name,
                                                             }}
                                                             onChange={e => setStaffArray((prev) => {
                                                                 return prev.map((item, ind) => {
@@ -595,14 +612,18 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             <label className='fa-13'>Vendor</label>
                                             <Select
                                                 value={{
-                                                    value: invoiceDetails?.Retailer_Id, 
+                                                    value: invoiceDetails?.Retailer_Id,
                                                     label: invoiceDetails?.Retailer_Name
                                                 }}
-                                                onChange={e => setInvoiceDetails(pre => ({
-                                                    ...pre,
-                                                    Retailer_Id: e.value,
-                                                    Retailer_Name: e.label
-                                                }))}
+                                                onChange={e => {
+                                                    setInvoiceDetails(pre => ({
+                                                        ...pre,
+                                                        Retailer_Id: e.value,
+                                                        Retailer_Name: e.label
+                                                    }));
+                                                    setSelectedItems([]);
+                                                    searchFromArrival(e.value)
+                                                }}
                                                 options={[
                                                     { value: '', label: 'Search', isDisabled: true },
                                                     ...vendorList.map(obj => ({
@@ -911,10 +932,11 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     <span className="flex-grow-1">Select Purchase Order</span>
                     <span>
                         <Button onClick={closeDialogs} type="button" className='me-2'>close</Button>
-                        <Button 
+                        {/* <Button 
                             type="button" 
                             onClick={() => searchFromArrival(invoiceDetails.Retailer_Id)}
-                        >Search Arrival Details</Button>
+                            variant="contained" startIcon={<Search />}
+                        >Search Arrival Details</Button> */}
                     </span>
                 </DialogTitle>
                 <DialogContent>
@@ -946,7 +968,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             createCol('ArrivalDate', 'date'),
                             createCol('ItemName', 'string'),
                             createCol('BilledRate', 'string'),
-                            createCol('Quantity', 'number'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Weight',
@@ -955,6 +976,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     row?.Weight ?? 0
                                 ) + ' ' + row?.Units
                             },
+                            createCol('convertableQuantity', 'number', 'Pending Tonnage'),
+                            createCol('Quantity', 'number'),
                             createCol('PO_ID', 'string'),
                             createCol('Location', 'string'),
                         ]}
