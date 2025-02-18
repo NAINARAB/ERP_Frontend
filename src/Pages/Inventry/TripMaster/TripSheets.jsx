@@ -474,63 +474,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 <DialogTitle>Print Preview</DialogTitle>
                 <DialogContent ref={printRef}>
                     {isValidObject(selectedRow) && <React.Fragment>
-                        {/* <h3 className="text-center mb-2">DELIVERY CHALLAN</h3>
-
-                        <div className="d-flex border my-2 align-items-center fa-14">
-                            <div className="text-center my-3 fw-bold flex-grow-1 p-2">
-                                <h4>S.M TRADERS</h4>
-                                <p className="m-0">746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611</p>
-                                <p className="m-0">GST No: 33AADFS4987M1ZL</p>
-                            </div>
-                            <div className="p-2">
-                                <p className="fw-bold fa-16 m-0">ORIGINAL / DUPLICATE</p>
-                                <p className="m-0">Challan No: &emsp;&emsp;{NumberFormat(selectedRow.Challan_No ?? ' -')}</p>
-                                <p className="m-0">Date: &emsp;&emsp;&emsp;&emsp; {selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}</p>
-                                <p className="m-0">GST No: &emsp;33AADFS4987M1ZL</p>
-                            </div>
-                        </div>
-
-                        <h6 className="text-center my-2">Details of Recipient / Supplier / Consignee</h6>
-
-                        <div className="border p-2 fa-14">
-                            <table className="table">
-                                <tr>
-                                    <td colSpan={2}></td>
-                                    <td>Mode of Transport: </td>
-                                    <td>By Road</td>
-                                </tr>
-                                <tr>
-                                    <td>Name:</td>
-                                    <td className="fw-bold">S.M TRADERS</td>
-                                    <td>Vehicle No: </td>
-                                    <td>{selectedRow.Vehicle_No ?? ' -'}</td>
-                                </tr>
-                                <tr>
-                                    <td>Address: </td>
-                                    <td>157, CHITRAKARA STREET, EAST MASI STREET, MADURAI - 625001</td>
-                                    <td>Driver Name:  </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>GSTIN:</td>
-                                    <td>33AADFS4987M1ZL</td>
-                                    <td>Date of Supply: </td>
-                                    <td>{selectedRow.Delivery_Date ? LocalDate(selectedRow.Delivery_Date) : ''}</td>
-                                </tr>
-                                <tr>
-                                    <td>State: </td>
-                                    <td></td>
-                                    <td>Time of Supply: </td>
-                                    <td>{selectedRow.Delivery_Date ? LocalTime(selectedRow.Delivery_Date) : ''}</td>
-                                </tr>
-                                <tr>
-                                    <td>State Code: </td>
-                                    <td></td>
-                                    <td>Place of Supply: </td>
-                                    <td></td>
-                                </tr>
-                            </table>
-                        </div> */}
 
                         <table className="table table-bordered fa-13 m-0">
                             <tbody>

@@ -37,16 +37,19 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const [productBrand, setProductBrand] = useState([]);
     const [productUOM, setProductUOM] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
+    const [voucherType, setVoucherType] = useState([]);
 
+    const [branch, setBranch] = useState([]);
     const initialValue = {
         Company_Id: storage?.Company_id,
         Do_Date: ISOString(),
+        VoucherType: '',
         Retailer_Id: '',
         Retailer_Name: 'Select',
         Delivery_Status: 1,
         Delivery_Person_Id: 0,
         Payment_Ref_No: '',
-        Delivery_Person_Name:'',
+        Delivery_Person_Name: '',
         Payment_Mode: 0,
         Payment_Status: 0,
         Branch_Id: storage?.BranchId,
@@ -87,6 +90,9 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const [deliveryPersonList, setDeliveryPersonList] = useState([]);
 
 
+
+
+    
     useEffect(() => {
         const fetchLocation = async () => {
             try {
@@ -107,15 +113,17 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         };
 
         if (isValidObject(editValues)) {
+           
             setOrderDetails(pre => ({
                 ...pre,
                 Do_Id: editValues?.Do_Id,
-                Do_Date: editValues?.Do_Date ?? ISOString(), 
+                Do_Date: editValues?.Do_Date ?? ISOString(),
+                VoucherType: editValues?.Voucher_Type,
                 Retailer_Id: editValues?.Retailer_Id,
                 Retailer_Name: editValues?.Retailer_Name,
                 Delivery_Status: editValues?.Delivery_Status,
                 Delivery_Person_Id: editValues?.Delivery_Person_Id,
-                Delivery_Person_Name:editValues?.Delivery_Person_Name,
+                Delivery_Person_Name: editValues?.Delivery_Person_Name,
                 Payment_Status: editValues?.Payment_Status,
                 Payment_Mode: editValues?.Payment_Mode,
                 Branch_Id: editValues?.Branch_Id,
@@ -182,10 +190,10 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         }).then(data => {
             if (data.success) {
                 setProducts(data.data);
-              
+
                 const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
                 setProductBrand(uniqueBrand);
-             
+
             } else {
                 setProducts([]);
                 setProductBrand([]);
@@ -197,7 +205,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
             address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
-                setDeliveryPersonList(data.data);  
+                setDeliveryPersonList(data.data);
             }
         }).catch(e => console.error(e));
 
@@ -207,6 +215,22 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         }).then(data => {
             if (data.success) {
                 setCompanyInfo(data?.data[0] ? data?.data[0] : {})
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `purchase/voucherType`
+        }).then(data => {
+            if (data.success) {
+                setVoucherType(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/branch/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setBranch(data.data)
             }
         }).catch(e => console.error(e))
 
@@ -243,7 +267,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
-
+          
             fetchLink({
                 address: `delivery/deliveryOrder`,
                 method: (isEdit && !editOn) ? 'PUT' : 'POST',
@@ -302,6 +326,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
             const tax = taxCalc(0, itemRate, gstPercentage)
             return o += (Amount + (tax * billQty));
         }
+        return o;
     }, 0);
 
     const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
@@ -419,6 +444,49 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                             >
                                                 <option value='0'>GST</option>
                                                 <option value='1'>IGST</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td className="border-0 bg-light">Branch</td>
+                                    
+                                    <td className="border-0 bg-light">
+                                            <select
+                                                className="cus-inpt p-1 "
+                                                onChange={e => setOrderDetails({
+                                                    ...orderDetails,
+                                                    VoucherType: e.target.value  
+                                                })}
+                                                
+                                                value={orderDetails.VoucherType}
+                                            >
+                                                
+                                                <option value='' disabled>select voucher</option>
+                                                {voucherType.map((vou, ind) => (
+                                                    <option
+                                                        value={vou.Voucher_Type} 
+                                                        key={ind}
+                                                    >
+                                                        {vou.Voucher_Type}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            </td>
+                                    
+                                    </tr>
+                                    <tr>
+                                    <td className="border-0 bg-light">Branch</td>
+                                    
+                                        <td className="border-0 bg-light">
+                                            <select
+                                                className="cus-inpt p-1"
+                                                onChange={e => setOrderDetails({ ...orderDetails, Branch_Id: Number(e.target.value) })}
+                                                value={orderDetails.Branch_Id}
+                                            >
+                                                <option value='' disabled>select Branch</option>
+                                                {branch.map((branch, ind) => (
+                                                    <option value={branch.BranchId} key={ind}>{branch.BranchName}</option>
+                                                ))}
                                             </select>
                                         </td>
                                     </tr>

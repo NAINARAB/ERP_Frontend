@@ -216,10 +216,41 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                             <td className="border p-2">{row.Round_off}</td>
                         </tr>
                         <tr>
+                            <td className="border p-2 bg-light">Broker</td>
+                            <td className="border p-2">
+                                {row?.Staff_List?.filter(cost =>
+                                    cost.Involved_Emp_Type === 'Broker'
+                                ).map(staff => staff.Involved_Emp_Name)?.join(', ')}
+                            </td>
+                            <td className="border p-2 bg-light">Owners</td>
+                            <td className="border p-2">
+                                {row?.Staff_List?.filter(cost =>
+                                    cost.Involved_Emp_Type === 'Owners'
+                                ).map(staff => staff.Involved_Emp_Name)?.join(', ')}
+                            </td>
+                            <td className="border p-2 bg-light">Others</td>
+                            <td className="border p-2">
+                                <table className="table table-bordered m-0 fa-12">
+                                    <tbody>
+                                        {row?.Staff_List?.filter(cost =>
+                                            !(cost.Involved_Emp_Type === 'Owners' || 
+                                            cost.Involved_Emp_Type === 'Broker') 
+                                        ).map(staff => (
+                                            <tr>
+                                                <td>{staff?.Involved_Emp_Name}</td>
+                                                <td>{staff?.Involved_Emp_Type}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
                             <td className="border p-2 bg-light">Invoice Type</td>
                             <td className="border p-2">
                                 {isEqualNumber(row.GST_Inclusive, 1) && 'Inclusive'}
                                 {isEqualNumber(row.GST_Inclusive, 0) && 'Exclusive'}
+                                {isEqualNumber(row.GST_Inclusive, 2) && 'Not applicable'}
                             </td>
                             <td className="border p-2 bg-light">Tax Type</td>
                             <td className="border p-2">

@@ -752,6 +752,14 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
                                     </div>
 
+                                    <label className='fa-13'>Narration</label>
+                                    <textarea 
+                                        className="cus-inpt fa-14" 
+                                        rows={2}
+                                        value={invoiceDetails.Narration}
+                                        onChange={e => setInvoiceDetails(pre => ({...pre, Narration: e.target.value}))} 
+                                    />
+
                                 </div>
                             </div>
 

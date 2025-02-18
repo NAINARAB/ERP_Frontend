@@ -262,8 +262,27 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
 
     // Order Based Cells
     const OrderId = createCol('OrderId', 'string', 'Order Id'),
-        OwnerName = createCol('OwnerName', 'string', 'Owner Name'),
-        BrokerName = createCol('BrokerName', 'string', 'Broker Name'),
+        // OwnerName = createCol('OwnerName', 'string', 'Owner Name'),
+        OwnerName = {
+            isVisible: 1,
+            ColumnHeader: 'Owners',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                return row?.StaffDetails?.filter(staff => staff.Cost_Category === 'Owners').map(staff => (
+                    staff.Emp_Name
+                )).join(', ')
+            }
+        },
+        BrokerName = {
+            isVisible: 1,
+            ColumnHeader: 'Brokers',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                return row?.StaffDetails?.filter(staff => staff.Cost_Category === 'Broker').map(staff => (
+                    staff.Emp_Name
+                )).join(', ')
+            }
+        },
         PartyName = createCol('PartyName', 'string', 'Party'),
         PaymentCondition = createCol('PaymentCondition', 'string', 'Payment Condition'),
         Remarks = createCol('Remarks', 'string'),
