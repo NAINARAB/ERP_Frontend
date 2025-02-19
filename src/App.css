@@ -2,6 +2,10 @@
     cursor: pointer !important;
 }
 
+.hov-text {
+    color: #f2f2f2;
+}
+
 .overlay {
     position: fixed;
     top: 0;
