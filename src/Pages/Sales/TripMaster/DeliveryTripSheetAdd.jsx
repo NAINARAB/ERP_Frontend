@@ -93,7 +93,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
 
     useEffect(() => {
-
         fetchLink({
             address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
@@ -103,11 +102,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e));
     }, [])
 
-
     const handleDeliveryPersonChange = (selectedOption) => {
-
         setDeliveryPerson(selectedOption ? { UserId: selectedOption.value, Name: selectedOption.label } : null);
     };
+
     useEffect(() => {
         const productsArray = stateDetails?.Products_List;
         const employeesArray = stateDetails?.Employees_Involved;
@@ -180,8 +178,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 return preItems.concat(currentOrders);
             }
         });
-
-
     };
 
     const resetForm = () => {

@@ -38,7 +38,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     const [selectedRow, setSelectedRow] = useState({});
     const printRef = useRef(null);
 
-
     useEffect(() => {
         if (loadingOn) loadingOn();
 
@@ -78,12 +77,9 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
-
     const TotalTax = (Cgst_P, Sgst_P) => {
         return Addition(Cgst_P, Sgst_P);
     };
-
-
 
     const TaxData = (Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).reduce((data, item) => {
         const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
@@ -198,10 +194,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
-
-
-
-
     const groupedTotals = selectedRow?.Products_List?.reduce((acc, item) => {
         const key = `${item.Retailer_Id}-${item.Trip_Id}`;
         if (!acc[key]) {
@@ -219,15 +211,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
     const groupedEntries = Object.values(groupedTotals || {});
 
-
-
-
-
-
-
     return (
         <>
-
             <FilterableTable
                 dataArray={(
                     filters.FromGodown.length > 0 ||
@@ -513,8 +498,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
-
-
                             </tbody>
                         </table>
                     </div>
@@ -536,7 +519,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
-
             <Dialog
                 open={filters.shortPreviewDialog}
                 onClose={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
@@ -545,10 +527,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 <DialogTitle>Print Preview</DialogTitle>
                 <DialogContent ref={printRef}>
                     {isValidObject(selectedRow) && <React.Fragment>
-
-
-
-
                         <table className="table table-bordered">
                             <thead>
                                 <tr>
@@ -583,12 +561,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 )}
                             </tbody>
                         </table>
-
-
-
-
-
-
                     </React.Fragment>
                     }
                 </DialogContent>
@@ -600,12 +572,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
                 </DialogActions>
             </Dialog>
-
-
-
-
-
-
 
             <Dialog
                 open={filters.printPreviewDialog}
@@ -851,8 +817,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-
         </>
     )
 }

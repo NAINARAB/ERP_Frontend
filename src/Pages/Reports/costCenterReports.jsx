@@ -79,6 +79,12 @@ const CostCenterReports = ({ loadingOn, loadingOff }) => {
             ...staff,
             Name: staff?.groupedData[0] ? staff?.groupedData[0]?.Name : ' - ',
             Tonnage: staff?.groupedData?.reduce((acc, staff) => Addition(acc, staff?.TotalTonnage), 0),
+            StockJournalTonnage: staff?.groupedData?.filter(
+                fil => filterableText(fil.DataFrom) === filterableText('Stock Journal')
+            )?.reduce((acc, staff) => Addition(acc, staff?.TotalTonnage), 0),
+            TripSheetTonnage: staff?.groupedData?.filter(
+                fil => filterableText(fil.DataFrom) === filterableText('Trip Sheet')
+            )?.reduce((acc, staff) => Addition(acc, staff?.TotalTonnage), 0),
             Invoices: staff?.groupedData?.length ?? 0,
             DayTransactions: Array.isArray(staff?.groupedData) ?
                 groupData(staff?.groupedData, 'EventDate').sort((a, b) => new Date(a.EventDate) - new Date(b.EventDate)) :
@@ -90,6 +96,12 @@ const CostCenterReports = ({ loadingOn, loadingOff }) => {
             DayTransactions: staff?.DayTransactions?.map(day => ({
                 ...day,
                 TotalTonnage: day?.groupedData?.reduce((acc, day) => Addition(acc, day?.TotalTonnage), 0),
+                StockJournalTonnage: day?.groupedData?.filter(
+                    fil => filterableText(fil.DataFrom) === filterableText('Stock Journal')
+                )?.reduce((acc, staff) => Addition(acc, staff?.TotalTonnage), 0),
+                TripSheetTonnage: day?.groupedData?.filter(
+                    fil => filterableText(fil.DataFrom) === filterableText('Trip Sheet')
+                )?.reduce((acc, staff) => Addition(acc, staff?.TotalTonnage), 0),
                 DayInvoices: checkIsNumber(day?.groupedData?.length) ? day?.groupedData?.length : 0
             }))
         }));
@@ -109,7 +121,9 @@ const CostCenterReports = ({ loadingOn, loadingOff }) => {
                 dataArray={showData}
                 columns={[
                     createCol('Name', 'string', 'Name'),
-                    createCol('Tonnage', 'number', 'Tonnage'),
+                    createCol('StockJournalTonnage', 'number', 'Stock Journal'),
+                    createCol('TripSheetTonnage', 'number', 'Trip Sheet'),
+                    createCol('Tonnage', 'number', 'Total'),
                     createCol('Invoices', 'number', 'Invoices'),
                 ]}
                 MenuButtons={[
@@ -134,7 +148,9 @@ const CostCenterReports = ({ loadingOn, loadingOff }) => {
                         dataArray={Array.isArray(row?.DayTransactions) ? row?.DayTransactions : []}
                         columns={[
                             createCol('EventDate', 'date', 'Date'),
-                            createCol('TotalTonnage', 'number', 'Tonnage'),
+                            createCol('StockJournalTonnage', 'number', 'Stock Journal'),
+                            createCol('TripSheetTonnage', 'number', 'Trip Sheet'),
+                            createCol('TotalTonnage', 'number', 'Total'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Invoices',
