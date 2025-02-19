@@ -15,7 +15,6 @@ import * as XLSX from 'xlsx';
 import { MyContext } from "../../Components/context/contextProvider";
 import { useContext } from "react";
 import { toast } from "react-toastify";
-import Popper from '@mui/material/Popper';
 
 const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
@@ -29,6 +28,8 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
     const { contextObj } = useContext(MyContext);
     const [selectedEmployees, setSelectedEmployees] = useState([]);
     const Add_Rights = contextObj?.Add_Rights;
+
+
     const getCurrentMonthYear = () => {
         const date = new Date();
         const year = date.getFullYear();
@@ -36,9 +37,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
         return `${year}-${month}`;
     };
 
-    const CustomPopper = (props) => {
-        return <Popper {...props} placement="top" />;
-    };
     const handleAddEmployeeClose = () => {
         setAddEmployeeDialogOpen(false);
 
@@ -56,8 +54,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
     const [employees, setEmployees] = useState([]);
     const [isDropdownDisabled, setIsDropdownDisabled] = useState(false);
     const [dropdownPlaceholder, setDropdownPlaceholder] = useState("ALL");
-
-
     const [debouncedFilter, setDebouncedFilter] = useState(filter);
 
     useEffect(() => {
@@ -102,7 +98,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
     const fetchAttendanceData = async (From, EmpId) => {
         try {
             const userTypeId = storage?.UserTypeId;
-
             const [year, month] = From.split("-");
 
             const startDate = `${year}-${month}-01`;
@@ -122,10 +117,10 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                 setAttendanceData(response.data);
             }
         } catch (e) {
+
             console.error("Error fetching attendance data:", e);
         }
     };
-
 
     const handleOverallDownload = async () => {
         try {
@@ -209,7 +204,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
         }
     };
 
-
     const getDaysInMonth = (monthYear) => {
         if (!monthYear) return 0;
 
@@ -217,10 +211,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
         return new Date(year, month, 0).getDate();
     };
-
-
-
-
 
     useEffect(() => {
         const { From, EmpId } = debouncedFilter;
@@ -230,7 +220,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
         }
 
     }, [debouncedFilter]);
-
 
     const fetchDropdownEmployees = async () => {
         setLoading(true);
@@ -248,7 +237,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
             setLoading(false);
         }
     };
-
 
     const handleFromChange = (e) => {
         const getDaysInMonth = (monthYear) => {
@@ -272,53 +260,44 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
         });
     };
 
-
     const handleDownload = () => {
-        const maxPunches = Math.max(
-            ...attendanceData.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0))
-        );
+        const maxPunches = 6;
 
         const exportData = attendanceData.map(row => {
-            const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+
+            const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',').map(detail => detail.trim()) : [];
             const punchColumns = {};
 
-            const sortedPunchDetails = punchDetails
-                .map(detail => {
-                    const timeString = detail.trim().split(' ')[1];
-                    let formattedTime = '--';
-                    if (timeString) {
-                        const [hours, minutes] = timeString.split(':').map(Number);
-                        if (!isNaN(hours) && !isNaN(minutes)) {
-                            const ampm = hours >= 12 ? 'PM' : 'AM';
-                            const formattedHours = hours % 12 || 12;
-                            formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
-                        }
-                    }
-                    return { formattedTime, timeString };
-                })
-                .filter(item => item.formattedTime !== '--')
-                .sort((a, b) => {
-                    const [aHours, aMinutes] = a.timeString.split(':').map(Number);
-                    const [bHours, bMinutes] = b.timeString.split(':').map(Number);
-                    return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
-                })
-                .map(item => item.formattedTime);
 
-            sortedPunchDetails.forEach((formattedTime, index) => {
-                punchColumns[`Punch ${index + 1}`] = formattedTime;
-            });
+            let allPunchesEmpty = true;
+
+            for (let i = 0; i < maxPunches; i++) {
+                const punch = punchDetails[i] || '--';
+                punchColumns[`Punch ${i + 1}`] = punch;
+
+                if (punch !== '--') {
+                    allPunchesEmpty = false;
+                }
+            }
+
+            const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
+
 
             return {
                 Employee: row.username,
                 "Log Date": formatAttendanceDate(row.LogDate),
-                "Attendance Status": 'P',
+                "Attendance Status": attendanceStatus,
                 ...punchColumns,
             };
         });
 
 
-        const columnsOrder = ["Employee", "Log Date", "Attendance Status", ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)];
-
+        const columnsOrder = [
+            "Employee",
+            "Log Date",
+            "Attendance Status",
+            ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)
+        ];
 
         const reorderedData = exportData.map(row =>
             columnsOrder.reduce((acc, col) => {
@@ -326,7 +305,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                 return acc;
             }, {})
         );
-
         const ws = XLSX.utils.json_to_sheet(reorderedData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
@@ -341,10 +319,11 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
     };
 
     const handleOverallWithPunch = () => {
-
+        const maxPunches = 6;
         const filteredAttendanceData = attendanceData.filter((row) => {
-            console.log(selectedEmployees)
-            const isUserSelected = selectedEmployees.some((user) => user.UserId === row.UserId);
+
+            const isUserSelected = selectedEmployees.some((user) => user.UserId === row.User_Mgt_Id);
+
             return isUserSelected || selectedEmployees.some(user => user.UserId === 'all');
         });
 
@@ -360,55 +339,50 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
         const wb = XLSX.utils.book_new();
 
         const firstLogDate = filteredAttendanceData[0]?.LogDate;
+        if (!firstLogDate) {
+
+            return;
+        }
+
         const date = new Date(firstLogDate);
         const year = date.getFullYear();
         const month = date.toLocaleString("default", { month: "long" });
 
-        Object.entries(groupedData).forEach(([username, userAttendance]) => {
-            const maxPunches = Math.max(
-                ...userAttendance.map(row => (row.AttendanceDetails ? row.AttendanceDetails.split(',').length : 0))
-            );
 
+        Object.entries(groupedData).forEach(([username, userAttendance]) => {
             const exportData = userAttendance.map(row => {
-                const location = row.location || "Unknown Location";
-                const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',') : [];
+                const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',').map(detail => detail.trim()) : [];
                 const punchColumns = {};
 
-                const sortedPunchDetails = punchDetails
-                    .map(detail => {
-                        const timeString = detail.trim().split(' ')[1];
-                        let formattedTime = '--';
-                        if (timeString) {
-                            const [hours, minutes] = timeString.split(':').map(Number);
-                            if (!isNaN(hours) && !isNaN(minutes)) {
-                                const ampm = hours >= 12 ? 'PM' : 'AM';
-                                const formattedHours = hours % 12 || 12;
-                                formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
-                            }
-                        }
-                        return { formattedTime, timeString };
-                    })
-                    .filter(item => item.formattedTime !== '--')
-                    .sort((a, b) => {
-                        const [aHours, aMinutes] = a.timeString.split(':').map(Number);
-                        const [bHours, bMinutes] = b.timeString.split(':').map(Number);
-                        return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
-                    })
-                    .map(item => item.formattedTime);
+                let allPunchesEmpty = true;
 
-                sortedPunchDetails.forEach((formattedTime, index) => {
-                    punchColumns[`Punch ${index + 1}`] = formattedTime;
-                });
+
+                for (let i = 0; i < maxPunches; i++) {
+                    const punch = punchDetails[i] || '--';
+                    punchColumns[`Punch ${i + 1}`] = punch;
+
+                    if (punch !== '--') {
+                        allPunchesEmpty = false;
+                    }
+                }
+
+                const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
 
                 return {
                     Employee: row.username,
-                    Location: location,
                     "Log Date": formatAttendanceDate(row.LogDate),
+                    "Attendance Status": attendanceStatus,
                     ...punchColumns,
                 };
             });
 
-            const columnsOrder = ["Employee", "Log Date", ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)];
+            const columnsOrder = [
+                "Employee",
+                "Log Date",
+                "Attendance Status",
+                ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
+            ];
+
 
             const reorderedData = exportData.map(row =>
                 columnsOrder.reduce((acc, col) => {
@@ -417,12 +391,146 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                 }, {})
             );
 
+
+            const sheetName = `${username}`.slice(0, 31);
+
+
             const ws = XLSX.utils.json_to_sheet(reorderedData);
-            XLSX.utils.book_append_sheet(wb, ws, username);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
         });
+
 
         const fileName = `Attendance_Report_${month}_${year}.xlsx`;
         XLSX.writeFile(wb, fileName);
+    };
+
+    const handleSummaryDownload = async () => {
+        try {
+            const fromDate = filter.From;
+            const [year, month] = fromDate.split("-");
+            const startDate = `${year}-${month}-01`;
+            const dayCount = getDaysInMonth(`${year}-${month}`);
+            const endDate = `${year}-${month}-${dayCount}`;
+
+            const response = await fetchLink({
+                address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
+            });
+
+            if (response.success) {
+                const overallData = response.data;
+
+                const getWorkingDays = (fromDate, endDate) => {
+                    const allDays = [];
+                    const currentDate = new Date(fromDate);
+                    const endDateObj = new Date(endDate);
+                    let sundayCount = 0;
+
+                    while (currentDate <= endDateObj) {
+                        const dateStr = new Date(currentDate).toISOString().split("T")[0];
+                        allDays.push(dateStr);
+
+                        // Count Sundays
+                        if (currentDate.getDay() === 0) {
+                            sundayCount++;
+                        }
+
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    if (allDays.length === 0) {
+                        allDays.push("No days in this range");
+                    }
+
+                    return {
+                        days: allDays,
+                        sundayCount,
+                        totalDays: allDays.length,
+                    };
+                };
+
+                const { days: dateRange, sundayCount, totalDays } = getWorkingDays(startDate, endDate);
+
+                let totalWorkingDaysSummary = 0;
+                let totalLeaveDaysSummary = 0;
+
+                const summaryData = overallData.map(row => {
+                    const punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
+                    let totalWorkingDays = 0;
+                    let totalLeaveDays = 0;
+
+                    dateRange.forEach((date) => {
+                        if (Array.isArray(punchDetails)) {
+                            const detail = punchDetails.find(detail => detail.Date === date);
+
+                            const isSunday = new Date(date).getDay() === 0;
+
+                            // Skip Sundays for leave day calculation
+                            if (isSunday) {
+                                return; // Do nothing for Sundays
+                            }
+
+                            if (detail) {
+                                if (detail.AttendanceStatus === 'P') {
+                                    totalWorkingDays++;
+                                } else if (detail.AttendanceStatus === 'A') {
+                                    totalLeaveDays++;
+                                }
+                            } else {
+                                totalLeaveDays++;
+                            }
+                        }
+                    });
+
+                    totalWorkingDaysSummary += totalWorkingDays;
+                    totalLeaveDaysSummary += totalLeaveDays;
+
+                    return {
+                        EmployeeName: row.Name,
+                        EmployeeID: row.EmployeeID,
+                        Month: `${month}-${year}`,
+                        Branch: row.Branch,
+                        NumberOfSundays: sundayCount,
+                        NumberOfDaysInMonth: totalDays,
+                        TotalWorkingDays: totalWorkingDays,
+                        TotalLeaveDays: totalLeaveDays,
+                    };
+                });
+
+                const exportData = summaryData.map(item => ({
+                    EmployeeName: item.EmployeeName,
+                    EmployeeID: item.EmployeeID,
+                    Month: item.Month,
+                    Branch: item.Branch,
+                    NumberOfSundays: item.NumberOfSundays,
+                    NumberOfDaysInMonth: item.NumberOfDaysInMonth,
+                    TotalWorkingDays: item.TotalWorkingDays,
+                    TotalLeaveDays: item.TotalLeaveDays,
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+
+                const headers = [
+                    "EmployeeName",
+                    "EmployeeID",
+                    "Month",
+                    "Branch",
+                    "NumberOfSundays",
+                    "NumberOfDaysInMonth",
+                    "TotalWorkingDays",
+                    "TotalLeaveDays",
+                ];
+
+                XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Attendance Summary Report");
+
+                // Write to file
+                XLSX.writeFile(wb, "Attendance_Summary_Report.xlsx");
+            }
+        } catch (error) {
+            console.error("Error downloading overall report:", error);
+        }
     };
 
     return (
@@ -459,8 +567,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                             <TextField {...params} placeholder="Employees" />
                         )}
                     />
-
-
                 </DialogContent>
                 <DialogActions className="d-flex justify-content-between flex-wrap">
                     <Button
@@ -476,13 +582,13 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
                     </span>
                 </DialogActions>
-
             </Dialog>
             <Card>
                 <CardContent sx={{ minHeight: '50vh' }}>
                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
                         <h6 className="fa-18">Employee Attendance</h6>
-                        {Number(userTypeId === 1) || Number(userTypeId) === 0 ? (
+
+                        {Number(userTypeId == 1) || Number(userTypeId) == 0 ? (
                             <>
                                 <div className="d-flex align-items-center justify-content-start gap-3">
                                     <Button
@@ -513,19 +619,24 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                                     >
                                         Cummulative Monthly Report
                                     </Button>
+
+
+                                    <Button
+                                        onClick={
+                                            handleSummaryDownload
+                                        }
+                                    >
+                                        Summary
+                                    </Button>
                                 </div>
                             </>
                         ) : (
                             <div> </div>
                         )}
-
-
-
                     </div>
 
                     <div className="px-2 row mb-4">
                         <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-
                             <label>Employee</label>
                             <Select
                                 value={{ value: filter?.EmpId, label: filter?.Name }}
@@ -547,14 +658,11 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                                 onChange={handleFromChange}
                             />
                         </div>
-
-
                     </div>
 
                     <FilterableTable
                         dataArray={attendanceData}
                         columns={[
-
                             {
                                 isCustomCell: true,
                                 Cell: ({ row }) => row.username,
@@ -583,8 +691,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                                     },
                                 },
                             },
-
-
                             {
                                 isCustomCell: true,
                                 ColumnHeader: 'Punch Details',
@@ -601,25 +707,17 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
                                         {row.AttendanceDetails ? (
                                             row.AttendanceDetails.split(',')
-                                                .map(detail => {
-                                                    const timeString = detail.trim().split(' ')[1];
-                                                    if (!timeString) return null;
-                                                    let [hours, minutes] = timeString.split(':').map(Number);
-                                                    if (isNaN(hours) || isNaN(minutes)) return null;
-                                                    return { timeString, hours, minutes, originalDetail: detail };
-                                                })
-                                                .filter(item => item !== null)
-                                                .sort((a, b) => a.hours * 60 + a.minutes - (b.hours * 60 + b.minutes))
-                                                .map((item, idx) => {
-                                                    const { hours, minutes } = item;
-                                                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                                                    const formattedHours = hours % 12 || 12;
-                                                    const formattedTime = `${formattedHours < 10 ? '0' + formattedHours : formattedHours}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+                                                .map((detail) => detail.trim())
+                                                .filter((detail) => detail !== '')
+                                                .map((detail, index) => {
+
+                                                    const parts = detail.split(' (');
+                                                    const time = parts[0];
 
                                                     return (
                                                         <Chip
-                                                            key={idx}
-                                                            label={formattedTime}
+                                                            key={index}
+                                                            label={time}
                                                             variant="outlined"
                                                             size="small"
                                                             sx={{ margin: '2px', color: 'green' }}
@@ -627,12 +725,11 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                                                     );
                                                 })
                                         ) : (
-                                            <span>No details available</span>
+                                            <div>No Punch Details</div>
                                         )}
                                     </div>
                                 ),
                             }
-
                         ]}
                         EnableSerialNumber
                         CellSize="small"
