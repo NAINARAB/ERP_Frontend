@@ -1,29 +1,22 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber, ISOString, isValidDate, isValidObject, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
+import { Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber, ISOString, isValidDate, isValidObject, Subraction } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete, Search } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
+import { tripMasterDetails, tripStaffsColumns } from './tableColumns'
 import { toast } from 'react-toastify'
 import { useLocation } from "react-router-dom";
 
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     const stateDetails = location.state;
-    const [expandedRows, setExpandedRows] = useState([]);
+
     const [deliveryPerson, setDeliveryPerson] = useState(null);
     const [deliveryPersonList, setDeliveryPersonList] = useState([]);
-    const toggleExpand = (rowId) => {
-        setExpandedRows((prevExpandedRows) => {
-            if (prevExpandedRows.includes(rowId)) {
-                return prevExpandedRows.filter(id => id !== rowId);
-            }
-            return [...prevExpandedRows, rowId];
-        });
-    };
+
     const storage = JSON.parse(localStorage.getItem('user'));
 
     const [filters, setFilters] = useState({
@@ -93,6 +86,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
 
     useEffect(() => {
+
         fetchLink({
             address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
@@ -102,12 +96,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e));
     }, [])
 
+
     const handleDeliveryPersonChange = (selectedOption) => {
+
         setDeliveryPerson(selectedOption ? { UserId: selectedOption.value, Name: selectedOption.label } : null);
     };
-
     useEffect(() => {
-        const productsArray = stateDetails?.Products_List;
+
+        const productsArray = stateDetails?.Product_Array;
         const employeesArray = stateDetails?.Employees_Involved;
         if (
             isValidObject(stateDetails)
@@ -125,18 +121,17 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     })
                 )
             );
-
-            setSelectedItems(
-                productsArray.map(productsData => Object.fromEntries(
-                    Object.entries(tripDetailsColumns).map(([key, value]) => {
-                        if (
-                            key === 'Dispatch_Date' || key === 'Delivery_Date'
-                        ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
-                        return [key, productsData[key] ?? value]
-                    })
-                ))
-            )
-
+            // setSelectedItems(
+            //     productsArray.map(productsData => Object.fromEntries(
+            //         Object.entries(tripDetailsColumns).map(([key, value]) => {
+            //             if (
+            //                 key === 'Dispatch_Date' || key === 'Delivery_Date'
+            //             ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
+            //             return [key, productsData[key] ?? value]
+            //         })
+            //     ))
+            // )
+            setSelectedItems(productsArray)
             setStaffInvolvedList(
                 employeesArray.map(staffData => Object.fromEntries(
                     Object.entries(tripStaffsColumns).map(([key, value]) => {
@@ -165,21 +160,29 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const changeItems = (itemDetail, deleteOption) => {
-        setSelectedItems(prev => {
-            const preItems = prev.filter(o =>
-                !isEqualNumber(o.So_Id, itemDetail.So_Id)
-            );
-            if (deleteOption) {
-                return preItems;
-            } else {
-                const currentOrders = transactionData.filter(o =>
-                    isEqualNumber(o.So_Id, itemDetail.So_Id)
+        if (deleteOption) {
+            // Delete logic: Remove the item with the matching SO_St_Id
+            setSelectedItems(prev => {
+                return prev.map(item => ({
+                    ...item,
+                    Products_List: item.Products_List.filter(product => product.Do_Id !== itemDetail.Delivery_Order_Id)
+                })).filter(item => item.Products_List.length > 0); // Remove items with empty Products_List
+            });
+        } else {
+            // Add logic: Add the item back to selectedItems
+            setSelectedItems(prev => {
+                const preItems = prev.filter(item =>
+                    !isEqualNumber(item.Do_Id, itemDetail.Delivery_Order_Id)
                 );
-                return preItems.concat(currentOrders);
-            }
-        });
-    };
 
+                const currentOrders = transactionData.filter(item =>
+                    isEqualNumber(item.So_Id, itemDetail.So_Id)
+                );
+
+                return preItems.concat(currentOrders);
+            });
+        }
+    };
     const resetForm = () => {
         setSelectedItems([]);
         setStaffInvolvedList([]);
@@ -509,41 +512,29 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         </div>
                     </div>
 
+
                     <FilterableTable
-                        dataArray={selectedItems}
+                        dataArray={selectedItems?.map(item => item?.Products_List).flat()}
                         expandableComp={ExpendableComponent}
                         ButtonArea={
                             <>
-                                <Button onClick={() => setFilters(pre => ({ ...pre, addItemDialog: true }))}>Add</Button>
+                                <Button onClick={() => setFilters(prev => ({ ...prev, addItemDialog: true }))}>Add</Button>
                                 <Button onClick={() => setSelectedItems([])} className="me-2">Clear</Button>
                             </>
                         }
                         EnableSerialNumber
                         disablePagination
-                        title={`Selected Items: ${selectedItems.length} QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o.QTY ?? 0), 0)}`}
+                        // title={`Selected Items: ${selectedItems?.reduce((acc, item) => acc + item.Products_List.length, 0) ?? 0} QTY: ${selectedItems?.reduce((acc, item) => acc + item.Products_List.reduce((sum, product) => sum + (product.Total_Qty ?? 0), 0), 0) ?? 0}`}
                         maxHeightOption
                         columns={[
-                            {
-                                isVisible: 1,
-                                ColumnHeader: '',
-                                isCustomCell: true,
-                                Cell: ({ row }) => (
-                                    <div onClick={() => toggleExpand(row.So_Id)}>
-                                        {expandedRows.includes(row.So_Id) ? (
-                                            <span>-</span>
-                                        ) : (
-                                            <span>+</span>
-                                        )}
-                                    </div>
-                                ),
-                            },
-                            createCol('Retailer_Name', 'string'),
-                            createCol('So_Id', 'string'),
-                            createCol('So_Date', 'date', 'So_Date'),
-                            createCol('Routename', 'string', 'Routename'),
-                            createCol('Total_Tax', 'number', 'Total_Tax'),
-                            createCol('Total_Before_Tax', 'number', 'Total_Before_Tax'),
-                            createCol('Total_Invoice_value', 'number', 'Total_Invoice_value'),
+
+                            createCol('Product_Name', 'string', 'Product_Name'),
+                            // createCol('Sales_Order_Id', 'string', 'So_Id'),
+                            // createCol('So_Date', 'date', 'So_Date'),
+                            createCol('Taxable_Rate', 'number', 'Rate'),
+                            createCol('Bill_Qty', 'number', 'Bill_Qty'),
+                            createCol('Taxable_Amount', 'string', 'Before_Tax_Amount'),
+                            createCol('Amount', 'number', 'Total_Invoice_value'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: '#',
@@ -554,9 +545,16 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         color="error"
                                         size="small"
                                         onClick={() => {
-                                            const filteredItems = selectedItems.filter(o => !isEqualNumber(o.So_Id, row.So_Id));
+                                            const filteredItems = selectedItems?.map(item => {
+                                                return {
+                                                    ...item,
+                                                    Products_List: item.Products_List.filter(o => o[(row.DO_St_Id ? "DO_St_Id" : "SO_St_Id")] !== row[(row.DO_St_Id ? "DO_St_Id" : "SO_St_Id")])
+                                                };
+                                            }).filter(item => item.Products_List.length > 0);
+
                                             setSelectedItems(filteredItems);
                                         }}
+
                                     >
                                         <Delete className="fa-20" />
                                     </IconButton>
@@ -564,6 +562,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             },
                         ]}
                     />
+
 
                 </CardContent>
                 <div className="border-top p-2 text-end">

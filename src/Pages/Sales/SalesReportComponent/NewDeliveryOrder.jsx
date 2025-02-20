@@ -92,7 +92,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
 
 
 
-    
+
     useEffect(() => {
         const fetchLocation = async () => {
             try {
@@ -113,7 +113,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         };
 
         if (isValidObject(editValues)) {
-           
+
             setOrderDetails(pre => ({
                 ...pre,
                 Do_Id: editValues?.Do_Id,
@@ -267,7 +267,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
-          
+            console.log("fasdadadas", orderProducts)
             fetchLink({
                 address: `delivery/deliveryOrder`,
                 method: (isEdit && !editOn) ? 'PUT' : 'POST',
@@ -448,35 +448,35 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         </td>
                                     </tr>
                                     <tr>
-                                    <td className="border-0 bg-light">Branch</td>
-                                    
-                                    <td className="border-0 bg-light">
+                                        <td className="border-0 bg-light">Branch</td>
+
+                                        <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1 "
                                                 onChange={e => setOrderDetails({
                                                     ...orderDetails,
-                                                    VoucherType: e.target.value  
+                                                    VoucherType: e.target.value
                                                 })}
-                                                
+
                                                 value={orderDetails.VoucherType}
                                             >
-                                                
+
                                                 <option value='' disabled>select voucher</option>
                                                 {voucherType.map((vou, ind) => (
                                                     <option
-                                                        value={vou.Voucher_Type} 
+                                                        value={vou.Vocher_Type_Id}
                                                         key={ind}
                                                     >
                                                         {vou.Voucher_Type}
                                                     </option>
                                                 ))}
                                             </select>
-                                            </td>
-                                    
+                                        </td>
+
                                     </tr>
                                     <tr>
-                                    <td className="border-0 bg-light">Branch</td>
-                                    
+                                        <td className="border-0 bg-light">Branch</td>
+
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"

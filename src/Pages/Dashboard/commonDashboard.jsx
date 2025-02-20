@@ -12,10 +12,11 @@ import AttendanceComp from "../Attendance/attendanceComp";
 import ManagementDashboard from "./managementDashboard";
 import { fetchLink } from '../../Components/fetchComponent'
 import { ISOString } from "../../Components/functions";
+import StaffInvolvedCostCenterDetails from "./staffInvolvedCostCenter";
 
 
 
-const CommonDashboard = () => {
+const CommonDashboard = ({ loadingOn, loadingOff }) => {
     const parseData = JSON.parse(localStorage.getItem("user"));
     const [dashboardData, setDashboardData] = useState({});
     const [workedDetais, setWorkedDetais] = useState([]);
@@ -32,23 +33,23 @@ const CommonDashboard = () => {
             fetchLink({
                 address: `dashboard/dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`
             })
-            .then(data => {
-                if (data.success) {
-                    setDashboardData(data.data[0]);
-                } else {
-                    setDashboardData({});
-                }
-            })
-            .catch(e => {
-                console.error(e);
-            });
+                .then(data => {
+                    if (data.success) {
+                        setDashboardData(data.data[0]);
+                    } else {
+                        setDashboardData({});
+                    }
+                })
+                .catch(e => {
+                    console.error(e);
+                });
         }
     }, [parseData?.UserId, parseData?.UserTypeId, isAdmin, isMangement, isEmp]);
 
     useEffect(() => {
         if (isEmp) {
             fetchLink({
-                address:`dashboard/getTallyData?UserId=${parseData?.UserId}`
+                address: `dashboard/getTallyData?UserId=${parseData?.UserId}`
             }).then(data => {
                 if (data.success) {
                     setTallyDetails(data.data);
@@ -62,7 +63,7 @@ const CommonDashboard = () => {
     useEffect(() => {
         if (isEmp) {
             fetchLink({
-                address:`taskManagement/task/work?Emp_Id=${parseData?.UserId}&from=${ISOString()}&to=${ISOString()}`
+                address: `taskManagement/task/work?Emp_Id=${parseData?.UserId}&from=${ISOString()}&to=${ISOString()}`
             }).then(data => {
                 if (data.success) {
                     setWorkedDetais(data.data);
@@ -72,7 +73,7 @@ const CommonDashboard = () => {
             }).catch(e => console.error(e))
 
             fetchLink({
-                address:`taskManagement/tasks/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${ISOString()}`
+                address: `taskManagement/tasks/myTasks?Emp_Id=${parseData?.UserId}&reqDate=${ISOString()}`
             }).then(data => {
                 if (data.success) {
                     data.data.sort((a, b) => {
@@ -231,6 +232,8 @@ const CommonDashboard = () => {
                     <br />
                 </>
             )}
+
+            <StaffInvolvedCostCenterDetails loadingOn={loadingOn} loadingOff={loadingOff} />
 
             {(isEmp && myTasks.length > 0) && (
                 <Card>
