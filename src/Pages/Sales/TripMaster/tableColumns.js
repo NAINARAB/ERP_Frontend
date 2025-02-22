@@ -14,12 +14,13 @@ export const tripMasterDetails = {
     Trip_Tot_Kms: '',
     Created_By: '',
     Updated_By: '',
+    DO_Date:ISOString(),
+    Delivery_Person_Id:''
 }
 
 export const tripDetailsColumns = {
     Id: '',
     Trip_Id: '',
-    STJ_Id: '',
     Batch_No: '',
     Journal_no: '',
     From_Location: '',

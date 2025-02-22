@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber, ISOString, isValidDate, isValidObject, Subraction } from "../../../Components/functions";
+import { Addition, checkIsNumber, combineDateTime, isEqualNumber, ISOString, isValidDate, isValidObject, Subraction } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete, Search } from "@mui/icons-material";
@@ -15,15 +15,22 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const stateDetails = location.state;
 
     const [deliveryPerson, setDeliveryPerson] = useState(null);
-    const [deliveryPersonList, setDeliveryPersonList] = useState([]);
 
     const storage = JSON.parse(localStorage.getItem('user'));
 
+    const [salesPerson, setSalePerson] = useState([]);
     const [filters, setFilters] = useState({
-        FromGodown: '',
-        FromGodownName: 'Select From Location',
-        ToGodown: '',
-        ToGodownName: 'Select To Location',
+        Retailer_Id: '',
+        RetailerGet: 'ALL',
+        Created_by: '',
+        CreatedByGet: 'ALL',
+        Sales_Person_Id: '',
+        SalsePersonGet: 'ALL',
+        Cancel_status: 0,
+        Route_Id: '',
+        RoutesGet: 'ALL',
+        Area_Id: '',
+        AreaGet: 'ALL',
         Fromdate: ISOString(),
         Todate: ISOString(),
         search: false,
@@ -32,7 +39,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
     const [transactionData, setTransactionData] = useState([]);
 
-    const [products, setProducts] = useState([]);
+    // const [products, setProducts] = useState([]);
     const [costCenter, setCostCenter] = useState([]);
     const [costCenterCategory, setCostCenterCategory] = useState([])
     const [branch, setBranch] = useState([]);
@@ -46,12 +53,11 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             try {
                 const [
                     branchResponse,
-                    productsResponse,
                     staffResponse,
                     staffCategory
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
-                    fetchLink({ address: `masters/products` }),
+
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` })
                 ]);
@@ -59,9 +65,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
                     (a, b) => String(a?.BranchName).localeCompare(b?.BranchName)
                 );
-                const productsData = (productsResponse.success ? productsResponse.data : []).sort(
-                    (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
-                );
+
 
                 const staffData = (staffResponse.success ? staffResponse.data : []).sort(
                     (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
@@ -71,8 +75,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 );
 
                 setBranch(branchData)
-                setProducts(productsData);
-
                 setCostCenter(staffData);
                 setCostCenterCategory(staffCategoryData)
 
@@ -87,51 +89,53 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
 
+
+
         fetchLink({
             address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
-                setDeliveryPersonList(data.data);
+                setSalePerson(data.data)
             }
-        }).catch(e => console.error(e));
+        }).catch(e => console.error(e))
     }, [])
 
 
-    const handleDeliveryPersonChange = (selectedOption) => {
-
-        setDeliveryPerson(selectedOption ? { UserId: selectedOption.value, Name: selectedOption.label } : null);
-    };
     useEffect(() => {
+        const extractHHMM = (timeString) => {
+            const date = new Date(timeString);
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
 
+            return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+        };
+
+        console.log("Data", stateDetails)
         const productsArray = stateDetails?.Product_Array;
         const employeesArray = stateDetails?.Employees_Involved;
+
         if (
             isValidObject(stateDetails)
             && Array.isArray(productsArray)
             && Array.isArray(employeesArray)
         ) {
-            setTripSheetInfo(
-                Object.fromEntries(
+            setTripSheetInfo((prev) => ({
+                ...prev,
+                ...Object.fromEntries(
                     Object.entries(tripMasterDetails).map(([key, value]) => {
-                        if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
-                        if (
-                            key === 'StartTime' || key === 'EndTime'
-                        ) return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
-                        return [key, stateDetails[key] ?? value]
+                        if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value];
+                        if (key === 'DO_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value];
+                        if (key === 'Branch_Id') return [key, stateDetails[key] ?? value];
+                        if (key === 'StartTime' || key === 'EndTime') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value];
+                        return [key, stateDetails[key] ?? value];
                     })
-                )
-            );
-            // setSelectedItems(
-            //     productsArray.map(productsData => Object.fromEntries(
-            //         Object.entries(tripDetailsColumns).map(([key, value]) => {
-            //             if (
-            //                 key === 'Dispatch_Date' || key === 'Delivery_Date'
-            //             ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
-            //             return [key, productsData[key] ?? value]
-            //         })
-            //     ))
-            // )
+                ),
+                Product_Array: productsArray,
+            }));
+
+
             setSelectedItems(productsArray)
+
             setStaffInvolvedList(
                 employeesArray.map(staffData => Object.fromEntries(
                     Object.entries(tripStaffsColumns).map(([key, value]) => {
@@ -139,18 +143,35 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
+
+            const deliveryStaff = employeesArray.find(staff => Number(staff.Cost_Center_Type_Id) === 9);
+
+            if (deliveryStaff) {
+
+                setDeliveryPerson({
+                    UserId: deliveryStaff.Involved_Emp_Id,
+                    Name: deliveryStaff.Emp_Name,
+                });
+            } else {
+
+                setDeliveryPerson(null);
+            }
         }
-    }, [stateDetails])
+    }, [stateDetails]);
+
+
+
+
 
     const searchTransaction = (e) => {
         e.preventDefault();
-        const { Fromdate, Todate } = filters;
+        const { Fromdate, Todate, Sales_Person_Id } = filters;
 
         if (Fromdate && Todate) {
             if (loadingOn) loadingOn();
             setTransactionData([]);
             fetchLink({
-                address: `sales/saleDelivery?Fromdate=${Fromdate}&Todate=${Todate}`
+                address: `sales/saleDelivery?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}`
             }).then(data => {
                 if (data.success) setTransactionData(data.data);
             }).catch(e => console.log(e)).finally(() => {
@@ -161,15 +182,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
     const changeItems = (itemDetail, deleteOption) => {
         if (deleteOption) {
-            // Delete logic: Remove the item with the matching SO_St_Id
             setSelectedItems(prev => {
                 return prev.map(item => ({
                     ...item,
                     Products_List: item.Products_List.filter(product => product.Do_Id !== itemDetail.Delivery_Order_Id)
-                })).filter(item => item.Products_List.length > 0); // Remove items with empty Products_List
+                })).filter(item => item.Products_List.length > 0);
             });
         } else {
-            // Add logic: Add the item back to selectedItems
+
             setSelectedItems(prev => {
                 const preItems = prev.filter(item =>
                     !isEqualNumber(item.Do_Id, itemDetail.Delivery_Order_Id)
@@ -260,6 +280,34 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
 
+    const handleCostCenterChange = (e, index) => {
+        setStaffInvolvedList((prev) => {
+            const updatedList = prev.map((item, ind) => {
+                if (isEqualNumber(ind, index)) {
+                    const updatedItem = { ...item, Cost_Center_Type_Id: e.target.value };
+
+
+                    if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
+
+                        setDeliveryPerson({
+                            UserId: updatedItem.Involved_Emp_Id,
+                            Name: updatedItem.Emp_Name,
+                        });
+                    } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
+
+                        setDeliveryPerson(null);
+                    }
+
+                    return updatedItem;
+                }
+                return item;
+            });
+
+            return updatedList;
+        });
+    };
+
+
     return (
         <>
 
@@ -277,7 +325,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 <CardContent style={{ minHeight: 500 }}>
 
                     <div className="row ">
-                        {/* Staff involved Info */}
                         <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
                             <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
                                 <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
@@ -307,60 +354,60 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                             value: row?.Involved_Emp_Id,
                                                             label: row?.Emp_Name
                                                         }}
-                                                        onChange={e => setStaffInvolvedList((prev) => {
-                                                            return prev.map((item, ind) => {
-                                                                if (isEqualNumber(ind, index)) {
-                                                                    const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
-                                                                    return {
-                                                                        ...item,
-                                                                        Cost_Center_Type_Id:
-                                                                            checkIsNumber(item.Cost_Center_Type_Id)
-                                                                                ? item.Cost_Center_Type_Id
-                                                                                : checkIsNumber(staff.User_Type)
-                                                                                    ? staff.User_Type
-                                                                                    : 0,
-                                                                        Involved_Emp_Id: e.value,
-                                                                        Emp_Name: staff.Cost_Center_Name ?? ''
+                                                        onChange={e => {
+                                                            setStaffInvolvedList((prev) => {
+                                                                const updatedList = prev.map((item, ind) => {
+                                                                    if (isEqualNumber(ind, index)) {
+                                                                        const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
+                                                                        const updatedItem = {
+                                                                            ...item,
+                                                                            Cost_Center_Type_Id: item.Cost_Center_Type_Id || staff.User_Type || 0,
+                                                                            Involved_Emp_Id: e.value,
+                                                                            Emp_Name: staff.Cost_Center_Name ?? ''
+                                                                        };
+
+
+                                                                        if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
+                                                                            setDeliveryPerson({
+                                                                                UserId: updatedItem.Involved_Emp_Id,
+                                                                                Name: updatedItem.Emp_Name,
+                                                                            });
+                                                                        } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
+
+                                                                            setDeliveryPerson(null);
+                                                                        }
+
+                                                                        return updatedItem;
                                                                     }
-                                                                }
-                                                                return item;
+                                                                    return item;
+                                                                });
+
+                                                                return updatedList;
                                                             });
-                                                        })}
-                                                        options={
-                                                            [...costCenter.filter(fil => (
-                                                                staffInvolvedList.findIndex(st => (
-                                                                    isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)
-                                                                )) === -1 ? true : false
-                                                            ))].map(st => ({
-                                                                value: st.Cost_Center_Id,
-                                                                label: st.Cost_Center_Name
-                                                            }))
-                                                        }
+                                                        }}
+                                                        options={costCenter.filter(fil => (
+                                                            staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
+                                                        )).map(st => ({
+                                                            value: st.Cost_Center_Id,
+                                                            label: st.Cost_Center_Name
+                                                        }))}
                                                         styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Staff"}
+                                                        isSearchable
+                                                        placeholder="Select Staff"
                                                     />
                                                 </td>
                                                 <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
                                                     <select
                                                         value={row?.Cost_Center_Type_Id}
-                                                        onChange={e => setStaffInvolvedList((prev) => {
-                                                            return prev.map((item, ind) => {
-                                                                if (isEqualNumber(ind, index)) {
-                                                                    return {
-                                                                        ...item,
-                                                                        Cost_Center_Type_Id: e.target.value
-                                                                    }
-                                                                }
-                                                                return item;
-                                                            });
-                                                        })}
+                                                        onChange={e => handleCostCenterChange(e, index)}
                                                         className="cus-inpt p-2"
                                                     >
                                                         <option value="">Select</option>
-                                                        {costCenterCategory.map((st, sti) =>
-                                                            <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
-                                                        )}
+                                                        {costCenterCategory.map((st, sti) => (
+                                                            <option value={st?.Cost_Category_Id} key={sti}>
+                                                                {st?.Cost_Category}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </td>
                                             </tr>
@@ -376,7 +423,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 <div className="row">
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label>Branch</label>
+                                        <label>
+                                            Branch <span style={{ color: "red" }}>*</span>
+                                        </label>
                                         <select
                                             value={tripSheetInfo.Branch_Id}
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Branch_Id: e.target.value })}
@@ -391,7 +440,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     </div>
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label>Date</label>
+                                        <label>Trip_Date</label>
                                         <input
                                             value={tripSheetInfo.Trip_Date}
                                             type="date"
@@ -399,7 +448,15 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             className="cus-inpt p-2 mb-2"
                                         />
                                     </div>
-
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label>Delivery Date <span style={{ color: "red" }}>*</span></label>
+                                        <input
+                                            value={tripSheetInfo?.DO_Date || ""}
+                                            type="date"
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Do_Date: e.target.value })}
+                                            className="cus-inpt p-2 mb-2"
+                                        />
+                                    </div>
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Vehicle No</label>
                                         <input
@@ -409,28 +466,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         />
                                     </div>
                                     <div className="col-xl-3 col-md-6 col-sm-12 p-2">
-                                        <label>Delivery Person</label>
-                                        <Select
+                                        <label>Delivery Person <span style={{ color: "red" }}>*</span></label>
+                                        <input
                                             id="delivery-person"
                                             name="deliveryPerson"
-                                            value={
-                                                deliveryPerson
-                                                    ? { value: deliveryPerson.UserId, label: deliveryPerson.Name }
-                                                    : null
-                                            }
-                                            onChange={handleDeliveryPersonChange}
-                                            options={[
-                                                { value: '', label: 'Select', isDisabled: true },
-                                                ...(deliveryPersonList || []).map((obj) => ({
-                                                    value: obj.UserId,
-                                                    label: obj.Name,
-                                                })),
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable
-                                        // placeholder="Delivery Person Name"
+                                            type="text"
+                                            value={deliveryPerson ? deliveryPerson.Name : ''}
+                                            readOnly
+                                            className="form-control"
+                                            placeholder="Delivery Person"
                                         />
                                     </div>
+
 
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -451,13 +498,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 <th colSpan={2} className="fa-13 text-center">Distance</th>
                                             </tr>
                                             <tr>
-                                                <th className="fa-13 text-center">Start</th>
+                                                <th className="fa-13 text-center">Start </th>
                                                 <th className="fa-13 text-center">End</th>
                                                 <th className="fa-13 text-center">Start (Km)</th>
                                                 <th className="fa-13 text-center">End (Km)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+
                                             <tr>
                                                 <td className="fa-13">
                                                     <input
@@ -600,13 +648,20 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         <div className="table-responsive">
                             <table className="table table-bordered">
                                 <tbody>
-                                    <tr>
 
-                                        <td className="text-center fa-13 fw-bold" colSpan={2}>Date</td>
+                                    <tr>
+                                        {/* <td className="text-center fa-13 fw-bold" colSpan={6}>
+                Date
+            </td> */}
                                     </tr>
 
+
                                     <tr>
-                                        <td className="fa-13 text-center ">
+
+                                        <td className="fa-13 text-center">
+                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
+                                                From Date
+                                            </td>
                                             <input
                                                 type="date"
                                                 value={filters.Fromdate}
@@ -614,10 +669,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 required
                                                 max={filters.Todate}
                                                 onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                                style={{ width: "100%" }}
                                             />
                                         </td>
 
-                                        <td className="fa-13 text-center ">
+                                        <td className="fa-13 text-center">
+                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
+                                                To Date
+                                            </td>
                                             <input
                                                 type="date"
                                                 value={filters.Todate}
@@ -625,12 +684,42 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 min={filters.Fromdate}
                                                 required
                                                 onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                                                style={{ width: "100%" }}
                                             />
+                                        </td>
+                                        <td>
+                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
+                                                Sales_Person
+                                            </td>
+                                            <select
+                                                value={filters?.Sales_Person_Id || ""}
+                                                className="cus-inpt p-2"
+                                                onChange={(e) => {
+                                                    const selected = salesPerson.find(sp => sp.UserId === Number(e.target.value));
+                                                    setFilters({
+                                                        ...filters,
+                                                        Sales_Person_Id: selected?.UserId || '',
+                                                        SalsePersonGet: selected?.Name || ''
+                                                    });
+                                                }}
+                                                style={{ width: "100%" }}
+                                            >
+                                                <option value="">ALL</option>
+                                                {salesPerson.map(obj => (
+                                                    <option key={obj.UserId} value={obj.UserId}>
+                                                        {obj.Name}
+                                                    </option>
+                                                ))}
+                                            </select>
+
                                         </td>
                                     </tr>
 
+
+
                                 </tbody>
                             </table>
+
                         </div>
 
                         <FilterableTable

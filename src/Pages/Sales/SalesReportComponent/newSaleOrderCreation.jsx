@@ -616,7 +616,6 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                     disablePagination={true}
                 />
 
-
                 {orderProducts.length > 0 && (
                     <div className="d-flex justify-content-end py-2">
                         <table className="table">
@@ -669,7 +668,6 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                         </table>
                     </div>
                 )}
-
 
                 <p className="fa-15 mt-3 m-0">Narration</p>
                 <textarea
@@ -865,7 +863,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
-                                    value={productDetails.Item_Rate ? NumberFormat(productDetails.Item_Rate) : ''}
+                                    value={productDetails.Item_Rate ? productDetails.Item_Rate : ''}
                                     onInput={onlynum}
                                     onChange={e => setProductDetails(pre => ({
                                         ...pre,

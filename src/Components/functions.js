@@ -243,10 +243,20 @@ export const timeDifferenceHHMM = (startDate, endDate) => {
 }
 
 export const onlynum = (e) => {
-    const value = e.target.value;
-    const newValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
-    return e.target.value = newValue;
-}
+    let value = e.target.value;
+    value = value.replace(/[^0-9.]/g, '');
+    if ((value.match(/\./g) || []).length > 1) {
+        value = value.slice(0, -1);
+    }
+    e.target.value = value;
+};
+
+
+// export const onlynum = (e) => {
+//     const value = e.target.value;
+//     const newValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+//     return e.target.value = newValue;
+// }
 
 export const isEqualNumber = (a, b) => {
     return Number(a) === Number(b)

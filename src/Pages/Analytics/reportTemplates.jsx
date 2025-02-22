@@ -283,10 +283,10 @@ const ReportTemplates = () => {
                                             )}
                                             <td
                                                 className={`
-                                                                border fa-13 vctr
-                                                                ${Boolean(Number(column?.IS_Default)) ? ' blue-text ' : ''}
-                                                                ${Boolean(Number(column?.IS_Join_Key)) ? ' fw-bold ' : ''}
-                                                                `}
+                                                    border fa-13 vctr
+                                                    ${Boolean(Number(column?.IS_Default)) ? ' blue-text ' : ''}
+                                                    ${Boolean(Number(column?.IS_Join_Key)) ? ' fw-bold ' : ''}
+                                                    `}
                                             >
                                                 {column?.Column_Name}
                                             </td>

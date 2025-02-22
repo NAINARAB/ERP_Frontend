@@ -1,20 +1,20 @@
+
+
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Switch } from "@mui/material";
-import '../../common.css'
+import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+// import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
-// import NewDeliveryOrder from "../SalesReportComponent/newInvoiceTemplate";
-import { FilterAlt, Visibility } from "@mui/icons-material";
-import { convertedStatus } from "../convertedStatus";
+import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate";
+import { Edit, FilterAlt } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
-import NewDeliveryOrder from "../SalesReportComponent/NewDeliveryOrder";
-import InvoiceBillTemplate from "./newInvoiceTemplate";
-
-import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import DeliveryDetailsList from "./DeliveryDetailsList";
-const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
+// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
+// import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import NewDeliveryOrder from "./NewDeliveryOrder";
+const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -23,15 +23,10 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
-    const [reload, setReload] = useState(false)
-    const [routes, setRoutes] = useState([])
-    const [area, setArea] = useState([])
+    
+    const [deleteConfirm, setDeleteConfirm] = useState(false)
+//    const [itemTodelete,setItemToDelete]=useState({})
     const [isDeliveryDetailsVisible, setIsDeliveryDetailsVisible] = useState(false)
-
-    const [checked, setChecked] = useState(true)
-
-
-
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
         Todate: ISOString(),
@@ -39,13 +34,9 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         RetailerGet: 'ALL',
         Created_by: '',
         CreatedByGet: 'ALL',
-        Sales_Person_Id: '',
-        SalsePersonGet: 'ALL',
-        Cancel_status: 0,
-        Route_Id: '',
-        RoutesGet: 'ALL',
-        Area_Id: '',
-        AreaGet: 'ALL'
+        Delivery_Person_Id: '',
+        Delivery_Person_Name: 'ALL',
+        Cancel_status: 0
     });
 
     const [dialog, setDialog] = useState({
@@ -55,22 +46,21 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `sales/saleDelivery?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}&Route_Id=${filters?.Route_Id}&Area_Id=${filters?.Area_Id}`
+            address: `delivery/deliveryOrderList?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Delivery_Person_Id=${filters?.Delivery_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
             }
         }).catch(e => console.error(e))
 
+       
     }, [
         filters.Fromdate,
         filters?.Todate,
         filters?.Retailer_Id,
-        filters?.Sales_Person_Id,
+        filters?.Delivery_Person_Id,
         filters?.Created_by,
         filters?.Cancel_status,
-        filters?.Route_Id,
-        filters?.Area_Id,
         reload
     ])
 
@@ -85,7 +75,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
 
         fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
+            address: `dataEntry/costCenter`
         }).then(data => {
             if (data.success) {
                 setSalePerson(data.data)
@@ -100,31 +90,26 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
             }
         }).catch(e => console.error(e))
 
-
-        fetchLink({
-            address: `masters/routes/dropdown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setRoutes(data.data)
-            }
-        }).catch(e => console.error(e))
-
-
-        fetchLink({
-            address: `masters/areas/dropdown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setArea(data.data)
-            }
-        }).catch(e => console.error(e))
-
-
     }, [])
-
+    // const openDeleteDialog = (itemData) => {
+      
+    //     setItemToDelete({
+    //         So_No: itemData.So_No,
+    //         Do_Id: itemData.Do_Id
+    //     });
+    //     setDeleteConfirm(true);
+    // };
+    
     const saleOrderColumn = [
         {
-            Field_Name: 'So_Id',
-            ColumnHeader: 'Order ID',
+            Field_Name: 'Do_Id',
+            ColumnHeader: 'Delivery ID',
+            Fied_Data: 'string',
+            isVisible: 1,
+        },
+        {
+            Field_Name: 'So_No',
+            ColumnHeader: 'Sale Order ID',
             Fied_Data: 'string',
             isVisible: 1,
         },
@@ -135,12 +120,20 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
             isVisible: 1,
         },
         {
-            Field_Name: 'So_Date',
+            Field_Name: 'SalesDate',
             ColumnHeader: 'Sale Order Date',
             Fied_Data: 'date',
             isVisible: 1,
             align: 'center',
         },
+        {
+            Field_Name: 'Do_Date',
+            ColumnHeader: 'Delivery Date',
+            Fied_Data: 'date',
+            isVisible: 1,
+            align: 'center',
+        },
+
         // {
         //     Field_Name: 'Products',
         //     ColumnHeader: 'Products / Quantity',
@@ -176,19 +169,21 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
             align: 'center',
         },
         {
-            ColumnHeader: 'Status',
+            Field_Name: 'DeliveryStatusName',
+            ColumnHeader: 'Delivery Status ',
+            Fied_Data: 'string',
             isVisible: 1,
             align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
-                return (
-                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-                        {convert?.label ?? 'Undefined'}
-                    </span>
-                )
-            },
         },
+        // {
+        //     Field_Name: 'DeliveryStatusName',
+        //     // ColumnHeader: 'DeliveryStatusName',
+        //     isVisible: 1,
+        //     Field_Data:'String',
+        //     align: 'center',
+        //     // isCustomCell: true,
+         
+        // },
         // {
         //     Field_Name: 'Sales_Person_Name',
         //     ColumnHeader: 'Sales Person',
@@ -202,33 +197,27 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
             Cell: ({ row }) => {
                 return (
                     <>
-                        <Tooltip title='View Order'>
-                            <IconButton
-                                onClick={() => {
-                                    setViewOrder({
-                                        orderDetails: row,
-                                        orderProducts: row?.Products_List ? row?.Products_List : [],
-                                    })
-                                }}
-                                color='primary' size="small"
-                            >
-                                <Visibility className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-
-                        <Tooltip title='Sales Delivery'>
+                      
+                        <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
                                     switchScreen();
-                                    setOrderInfo({ ...row});
+                                    setOrderInfo({ ...row, isEdit: true });
                                 }}
                                 size="small"
                             >
-                                <TwoWheelerIcon className="fa-16" />
+                                <Edit className="fa-16" />
                             </IconButton>
                         </Tooltip>
-
+                        {/* <Tooltip title='Delete'>
+                            <IconButton
+                               onClick={()=>openDeleteDialog(row)}
+                            
+                                size="small"
+                            >
+                                <Delete className="fa-16" />
+                            </IconButton>
+                        </Tooltip> */}
                     </>
                 )
             },
@@ -239,13 +228,14 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
 
         return (
             <>
+
                 <table className="table">
                     <tbody>
                         <tr>
                             <td className="border p-2 bg-light">Branch</td>
                             <td className="border p-2">{row.Branch_Name}</td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
+                            <td className="border p-2 bg-light">Delivery Person</td>
+                            <td className="border p-2">{row.Delivery_Person_Name}</td>
                             <td className="border p-2 bg-light">Round off</td>
                             <td className="border p-2">{row.Round_off}</td>
                         </tr>
@@ -276,6 +266,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     const switchScreen = () => {
         setScreen(!screen)
         setOrderInfo({});
+        setIsDeliveryDetailsVisible(!isDeliveryDetailsVisible);
     }
 
     const closeDialog = () => {
@@ -285,27 +276,46 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-    }
-    const handleToggle = () => {
+   
+      
+        setDeleteConfirm(false)  
+      }
 
-        setScreen((prev) => !prev);
-        setIsDeliveryDetailsVisible((prev) => !prev);
-    };
+        // const confirmData = async () => {
+       
+        //     if (!itemTodelete) return;
+        //     fetchLink({
+        //         address: 'delivery/deliveryOrder',
+        //         method: 'DELETE',
+        //         bodyData: ({ Order_Id: itemTodelete.So_No, Do_Id: itemTodelete.Do_Id })
+
+        //     }).then(data => {
+        //         if (data.success) {
+        //             toast.success(data?.message);
+        //            reload()
+        //         } else {
+        //             toast.error(data?.message)
+        //         }
+        //     }).catch(e => console.error(e)).finally(() => loadingOff())
+
+        //     setDeleteConfirm(false) 
+        
+        // };
+        
     return (
         <>
             <Card>
                 <div className="p-3 py-2 d-flex align-items-center justify-content-between">
-                    <h6 className="fa-18 m-0 p-0">
-                        {screen
-                            ? 'Sale Orders'
+                    <h6 className="fa-18 m-0 p-0">{
+                        screen
+                            ? 'Delivery Orders'
                             : isValidObject(orderInfo)
-                        }
-             
+                                ? 'Modify Delivery Order'
+                                : ''  }
                     </h6>
-
-                    <div>
+                    <span>
                         {screen && (
-                            <Tooltip title="Filters">
+                            <Tooltip title='Filters'>
                                 <IconButton
                                     size="small"
                                     onClick={() => setDialog({ ...dialog, filters: true })}
@@ -315,21 +325,19 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                             </Tooltip>
                         )}
 
-                        {screen && (
-                            <Switch
-                                checked={checked}
-                                onChange={() => {
-                                    setScreen(false);
-                                    setIsDeliveryDetailsVisible(true);
-                                }}
+                        {/* {screen && (
+                          <Switch
+                                checked={!screen}
+                                onChange={onToggle}
+                                label={'Delivery Details'}
                                 inputProps={{ 'aria-label': 'controlled' }}
+                                
                             />
-                        )}
-                    </div>
-
+                        )} */}
+                    </span>
                 </div>
 
-                <CardContent className="p-0">
+                <CardContent className="p-0 ">
                     {screen ? (
                         <FilterableTable
                             dataArray={saleOrders}
@@ -339,39 +347,23 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                             tableMaxHeight={550}
                             expandableComp={ExpendableComponent}
                         />
-                    ) : isDeliveryDetailsVisible ? (
-                        <DeliveryDetailsList
-                            editValues={orderInfo}
-                            loadingOn={loadingOn}
-                            loadingOff={loadingOff}
-                            reload={() =>{ setReload(prev => !prev);setScreen(pre =>!pre)}}
-                            switchScreen={() => setScreen(true)}
-                            onToggle={handleToggle}
-                        />
                     ) : (
                         <NewDeliveryOrder
                             editValues={orderInfo}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
                             reload={() => {
-                                setReload(prev => !prev);  setScreen(prev => !prev)}}
-                            switchScreen={() => setScreen(true)}
-                            editOn={true}
+                                setScreen(pre => !pre)
+                            }}
+                            switchScreen={switchScreen}
                         />
-                        // reload={() => {
-                        //     setReload(pre => !pre);
-                        //     setScreen(pre => !pre)
-                        // }}
-                        // switchScreen={switchScreen}
                     )}
                 </CardContent>
-
-
             </Card>
 
 
             {Object.keys(viewOrder).length > 0 && (
-                <InvoiceBillTemplate
+                <DeliveryInvoiceTemplate
                     orderDetails={viewOrder?.orderDetails}
                     orderProducts={viewOrder?.orderProducts}
                     download={true}
@@ -381,6 +373,21 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                 />
             )}
 
+
+            <Dialog
+                open={deleteConfirm}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Delete</DialogTitle>
+                <DialogContent>
+                 <div>Are You Want to Move the order Into the Sale Order Again</div>
+                </DialogContent>
+                <DialogActions>
+                   
+                    <Button onClick={closeDialog}>close</Button>
+                    {/* <Button onClick={confirmData}>Delete</Button> */}
+                </DialogActions>
+            </Dialog>
 
             <Dialog
                 open={dialog.filters}
@@ -411,18 +418,18 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                                 </tr>
 
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
+                                    <td style={{ verticalAlign: 'middle' }}>Delivery Person</td>
                                     <td>
                                         <Select
-                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
+                                            value={{ value: filters?.Delivery_Person_Id, label: filters?.Delivery_Person_Name }}
+                                            onChange={(e) => setFilters({ ...filters, Delivery_Person_Id: e.value, Delivery_Person_Name: e.label })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                                ...salesPerson.map(obj => ({ value: obj?.Cost_Center_Id, label: obj?.Cost_Center_Name }))
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            placeholder={"Delivery Person Name"}
                                         />
                                     </td>
                                 </tr>
@@ -439,7 +446,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            placeholder={"Delivery Person Name"}
                                         />
                                     </td>
                                 </tr>
@@ -482,40 +489,6 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                                         </select>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Routes</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Route_Id, label: filters?.RoutesGet }}
-                                            onChange={(e) => setFilters({ ...filters, Route_Id: e.value, RoutesGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...routes.map(obj => ({ value: obj?.Route_Id, label: obj?.Route_Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Route Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Area</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Area_Id, label: filters?.AreaGet }}
-                                            onChange={(e) => setFilters({ ...filters, Area_Id: e.value, AreaGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...area.map(obj => ({ value: obj?.Area_Id, label: obj?.Area_Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Area Name"}
-                                        />
-                                    </td>
-                                </tr>
-
 
                             </tbody>
                         </table>
@@ -530,8 +503,5 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default SalesDeliveryConvert;
-
-
-
+export default DeliveryDetailsList;
 
