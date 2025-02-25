@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Addition, filterableText, getSessionUser, ISOString, isValidDate, NumberFormat } from '../../Components/functions'
 import { fetchLink } from "../../Components/fetchComponent";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { ArrowRight, KeyboardArrowDown, KeyboardArrowRight, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
+import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import LastSynedTime from "../Dashboard/tallyLastSyncedTime";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -140,7 +141,7 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
 
             <Card>
                 <div className="p-2 d-flex align-items-center flex-wrap border-bottom">
-                    <h5 className="m-0 flex-grow-1">Day Book</h5>
+                    <h5 className="m-0 flex-grow-1">Day Book <LastSynedTime /></h5>
                     <div>
                         <input
                             type="date"

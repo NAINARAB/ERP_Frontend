@@ -10,7 +10,7 @@ import { FaCubesStacked } from "react-icons/fa6";
 import { fetchLink } from "../../Components/fetchComponent";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
-
+import LastSynedTime from "./tallyLastSyncedTime";
 
 const getIcons = (str) => {
     const iconArr = [
@@ -180,6 +180,7 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
                 value={filter.date}
                 onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
             />
+            <LastSynedTime />
 
             <div className="p-1 row">
                 {theredRow?.map((o, i) => (

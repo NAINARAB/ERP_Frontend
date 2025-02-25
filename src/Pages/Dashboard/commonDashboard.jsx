@@ -14,8 +14,6 @@ import { fetchLink } from '../../Components/fetchComponent'
 import { ISOString } from "../../Components/functions";
 import StaffInvolvedCostCenterDetails from "./staffInvolvedCostCenter";
 
-
-
 const CommonDashboard = ({ loadingOn, loadingOff }) => {
     const parseData = JSON.parse(localStorage.getItem("user"));
     const [dashboardData, setDashboardData] = useState({});
