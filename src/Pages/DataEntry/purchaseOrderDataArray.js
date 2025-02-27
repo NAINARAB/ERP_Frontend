@@ -318,6 +318,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                         OrderItemsArray,
                                         DeliveryArray,
                                         TranspoterArray,
+                                        StaffArray,
                                         display: true,
                                     }))}
                                 ><Visibility className="fa-16" /></IconButton>
@@ -479,7 +480,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             Cell: ({ row }) => {
 
                 const OrderDetails = row?.OrderDetails;
-                const { ItemDetails, DeliveryDetails, TranspoterDetails } = OrderDetails;
+                const { ItemDetails, DeliveryDetails, TranspoterDetails, StaffDetails } = OrderDetails;
 
                 return (
                     <>
@@ -494,6 +495,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                         OrderItemsArray: ItemDetails,
                                         DeliveryArray: DeliveryDetails,
                                         TranspoterArray: TranspoterDetails,
+                                        StaffArray: StaffDetails,
                                         display: true,
                                     }))}
                                 ><Visibility className="fa-16" /></IconButton>
@@ -512,6 +514,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                 OrderItemsArray: ItemDetails,
                                                 DeliveryArray: DeliveryDetails,
                                                 TranspoterArray: TranspoterDetails,
+                                                StaffArray: StaffDetails,
                                                 editPage: 'PurchaseOderWithDelivery'
                                             }
                                         })}

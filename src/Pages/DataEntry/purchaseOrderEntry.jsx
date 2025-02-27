@@ -28,6 +28,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
         OrderItemsArray: [],
         DeliveryArray: [],
         TranspoterArray: [],
+        StaffArray: [],
         display: false,
     });
     const [vendorList, setVendorList] = useState([]);
@@ -195,6 +196,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     OrderItemsArray={orderPreview.OrderItemsArray}
                     DeliveryArray={orderPreview.DeliveryArray}
                     TranspoterArray={orderPreview.TranspoterArray}
+                    StaffArray={orderPreview.StaffArray}
                     display={orderPreview.display}
                     onCloseDialog={onCloseDialog}
                 />

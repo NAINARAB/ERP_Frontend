@@ -13,7 +13,7 @@ const storage = JSON.parse(localStorage.getItem('user'));
 const initialOrderDetailsValue = {
     Sno: '',
     Id: '',
-    BranchId: 1,
+    BranchId: '',
     PoYear: '',
     PO_ID: '',
     LoadingDate: '',
@@ -107,6 +107,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const [costCenterCategoryData, setCostCenterCategoryData] = useState([]);
     const [godownLocations, setGodownLocations] = useState([]);
     const [retailers, setRetailers] = useState([]);
+    const [branch, setBranch] = useState([]);
 
     const [OrderItemsArray, setOrderItemArray] = useState([])
     const [DeliveryArray, setDeliveryArray] = useState([]);
@@ -183,6 +184,14 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/branch/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setBranch(data.data);
             }
         }).catch(e => console.error(e));
     }, [])
@@ -658,7 +667,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                         <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
                             <div className="row py-2 px-3">
 
-                                <div className="col-md-4 col-sm-6 p-2">
+                                <div className="col-md-3 col-sm-6 p-2">
                                     <label>Loading Date</label>
                                     <input
                                         type="date"
@@ -668,7 +677,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     />
                                 </div>
 
-                                <div className="col-md-4 col-sm-6 p-2">
+                                <div className="col-md-3 col-sm-6 p-2">
                                     <label>Trade Date</label>
                                     <input
                                         type="date"
@@ -678,7 +687,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                     />
                                 </div>
 
-                                <div className="col-md-4 col-sm-6 p-2">
+                                <div className="col-md-3 col-sm-6 p-2">
                                     <label>Order Status</label>
                                     <select
                                         className={inputStyle + ' bg-light'}
@@ -689,6 +698,21 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         <option value="On Process">On Process</option>
                                         <option value="Completed">Completed</option>
                                         <option value="Canceled">Canceled</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-md-3 col-sm-6 p-2">
+                                    <label>Branch</label>
+                                    <select
+                                        className={inputStyle + ' bg-light'}
+                                        value={OrderDetails?.BranchId}
+                                        onChange={e => setOrderDetails(pre => ({ ...pre, BranchId: e.target.value }))}
+                                        disabled={checkIsNumber(OrderDetails.Sno)}
+                                    >
+                                        <option value="">Select Branch</option>
+                                        {branch.map((o, i) => (
+                                            <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
