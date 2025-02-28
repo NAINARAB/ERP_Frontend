@@ -141,7 +141,10 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
 
             <Card>
                 <div className="p-2 d-flex align-items-center flex-wrap border-bottom">
-                    <h5 className="m-0 flex-grow-1">Day Book <LastSynedTime /></h5>
+                    <h5 className="m-0 my-1 flex-grow-1 d-flex align-items-center flex-wrap">
+                        <span className="mx-2">Day Book</span>
+                        <LastSynedTime />
+                    </h5>
                     <div>
                         <input
                             type="date"

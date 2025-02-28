@@ -174,6 +174,7 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
+            <div className="d-flex align-items-center flex-wrap justify-content-between">
             <input
                 type="date"
                 className="cus-inpt w-auto m-1"
@@ -181,6 +182,7 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
                 onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
             />
             <LastSynedTime />
+            </div>
 
             <div className="p-1 row">
                 {theredRow?.map((o, i) => (

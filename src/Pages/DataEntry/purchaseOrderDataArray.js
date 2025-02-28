@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
@@ -435,9 +435,8 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             isVisible: 1,
             ColumnHeader: 'Weight',
             isCustomCell: true,
-            Cell: ({ row }) => (
-                row?.Weight ?? 0
-            ) + ' ' + row?.Units
+            Cell: ({ row }) => checkIsNumber(row?.Weight) ? NumberFormat(row?.Weight) : 0
+            // + ' ' + row?.Units
         }, ItemArrivedQuantity = {
             isVisible: 1,
             ColumnHeader: 'Arrived Quantity',
@@ -473,7 +472,29 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                     </span>
                 )
             }
-        }, ItemActions = {
+        }, ItemOwnerName = {
+            isVisible: 1,
+            ColumnHeader: 'Owners',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                const OrderDetails = row?.OrderDetails;
+                const { StaffDetails } = OrderDetails;
+                return StaffDetails?.filter(staff => staff.Cost_Category === 'Owners').map(staff => (
+                    staff.Emp_Name
+                )).join(', ')
+            }
+        }, ItemBrokerName = {
+            isVisible: 1,
+            ColumnHeader: 'Brokers',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                const OrderDetails = row?.OrderDetails;
+                const { StaffDetails } = OrderDetails;
+                return StaffDetails?.filter(staff => staff.Cost_Category === 'Broker').map(staff => (
+                    staff.Emp_Name
+                )).join(', ')
+            }
+        },ItemActions = {
             isVisible: 1,
             ColumnHeader: 'Action',
             isCustomCell: true,
@@ -569,7 +590,8 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
         case 'ITEMS PENDING':
         case 'ITEMS ARRIVED':
             return [
-                ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM, ItemArrivedQuantity, PendingItemQuantity, Rate, ItemActions
+                ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM, 
+                ItemArrivedQuantity, PendingItemQuantity, Rate, ItemOwnerName, ItemBrokerName, ItemActions
             ];
         case 'ORDERS':
         case 'COMPLETED ORDERS':

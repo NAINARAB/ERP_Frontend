@@ -14,9 +14,9 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 const useQuery = () => new URLSearchParams(useLocation().search);
 
 const defaultFilters = {
-    Fromdate: new Date().toISOString().split('T')[0],
-    Todate: new Date().toISOString().split('T')[0],
-    OrderStatus: "ITEMS",
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+    OrderStatus: "ITEMS PENDING",
     vendorId: '',
     vendor: '',
 };
@@ -175,6 +175,8 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 EnableSerialNumber
                 title={'Purchase Order - ' + filters.OrderStatus}
                 maxHeightOption
+                ExcelPrintOption
+                PDFPrintOption
                 ButtonArea={
                     <>
                         <Button
