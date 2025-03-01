@@ -17,6 +17,7 @@ import PropTypes from 'prop-types';
  * @property {'string'|'number'|'date'|'time'} [Fied_Data]
  * @property {'top'|'middle'|'bottom'} [verticalAlign] 
  * @property {string} [ColumnHeader] 
+ * @property {string} [tdClass] 
  * @property {0|1} [isVisible] 
  * @property {'left'|'right'|'center'} [align] 
  * @property {boolean} [isCustomCell] 
@@ -131,13 +132,14 @@ const exportToExcel = (dataArray, columns) => {
     }
 };
 
-const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center') => {
+const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', tdClass = '') => {
     return {
         isVisible: 1,
         Field_Name: field,
         Fied_Data: type,
         align,
         verticalAlign,
+        tdClass,
         ...(ColumnHeader && { ColumnHeader })
     }
 }
@@ -191,6 +193,21 @@ const ButtonActions = ({ buttonsData = [], ToolTipText = 'Options' }) => {
             </Popover>
         </>
     )
+}
+
+const formatString = (val, dataType) => {
+    switch (dataType) {
+        case 'number':
+            return val ? NumberFormat(val) : val;
+        case 'date':
+            return val ? LocalDate(val) : val;
+        case 'time':
+            return val ? LocalTime(val) : val;
+        case 'string':
+            return val;
+        default:
+            return ''
+    }
 }
 
 const FilterableTable = ({
@@ -297,21 +314,6 @@ const FilterableTable = ({
     const endIndex = startIndex + rowsPerPage;
     const paginatedData = sortedData.slice(startIndex, endIndex);
 
-    const formatString = (val, dataType) => {
-        switch (dataType) {
-            case 'number':
-                return val ? NumberFormat(val) : val;
-            case 'date':
-                return val ? LocalDate(val) : val;
-            case 'time':
-                return val ? LocalTime(val) : val;
-            case 'string':
-                return val;
-            default:
-                return ''
-        }
-    }
-
     const RowComp = ({ row, index }) => {
         const [open, setOpen] = useState(false);
         const fontSize = '20px';
@@ -338,19 +340,28 @@ const FilterableTable = ({
                         const isColumnVisible = isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1);
                         const isCustomCell = Boolean(column?.isCustomCell) && column.Cell;
                         const isCommonValue = !isCustomCell;
-
+                        const tdClass = (row, Field_Name, tdIndex) => (
+                            column?.tdClass
+                                ? String(' ' + column?.tdClass({ row, Field_Name, index: tdIndex }) + ' ')
+                                : ''
+                        );
                         const horizondalalignClass = column.align ? columnAlign.find(
                             align => align.type === String(column.align).toLowerCase()
                         )?.class : '';
                         const verticalAlignClass = column.verticalAlign ? columnVerticalAlign.find(
                             align => align.type === String(column.verticalAlign).toLowerCase()
-                        )?.class : ' vctr '
+                        )?.class : ' vctr ';
 
                         if (isColumnVisible && isCommonValue) return Object.entries(row).map(
                             ([key, value]) => column.Field_Name === key && (
                                 <TableCell
                                     key={columnInd}
-                                    className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                                    className={`
+                                        border-end` 
+                                        + horizondalalignClass 
+                                        + verticalAlignClass 
+                                        + tdClass(row, column.Field_Name, index)
+                                    }
                                     sx={{ fontSize: `${bodyFontSizePx}px` }}
                                     onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                 >
@@ -362,7 +373,12 @@ const FilterableTable = ({
                         if (isColumnVisible && isCustomCell) return (
                             <TableCell
                                 key={columnInd}
-                                className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                                className={`
+                                    border-end` 
+                                    + horizondalalignClass 
+                                    + verticalAlignClass 
+                                    + tdClass(row, column.Field_Name, index)
+                                }
                                 sx={{ fontSize: `${bodyFontSizePx}px` }}
                             >
                                 {column.Cell({ row, Field_Name: column.Field_Name, index })}
@@ -486,12 +502,12 @@ const FilterableTable = ({
                                         <TableCell
                                             key={ke}
                                             className={
-                                                `${(column.ColumnHeader || column?.Field_Name) 
-                                                    ? ' fw-bold border-end border-top p-2 appFont ' 
+                                                `${(column.ColumnHeader || column?.Field_Name)
+                                                    ? ' fw-bold border-end border-top p-2 appFont '
                                                     : ' p-0 '
                                                 } ` +
-                                                (column.align 
-                                                    ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class 
+                                                (column.align
+                                                    ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class
                                                     : '')
                                             }
                                             sx={{ fontSize: `${headerFontSizePx}px`, backgroundColor: '#EDF0F7' }}
@@ -561,7 +577,8 @@ FilterableTable.propTypes = {
         align: PropTypes.oneOf(['left', 'right', 'center']),
         verticalAlign: PropTypes.oneOf(['top', 'center', 'bottom']),
         isCustomCell: PropTypes.bool,
-        Cell: PropTypes.func
+        Cell: PropTypes.func,
+        tdClass: PropTypes.func
     })).isRequired,
     onClickFun: PropTypes.func,
     isExpendable: PropTypes.bool,
@@ -605,4 +622,5 @@ export default FilterableTable;
 export {
     createCol,
     ButtonActions,
+    formatString
 }

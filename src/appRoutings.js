@@ -87,6 +87,7 @@ const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate
 const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
 const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'));
 const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'))
+const StockProcess = lazy(() => import('./Pages/Inventry/stockProcess'))
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
 const DeliveryTripSheetAdd = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
@@ -205,6 +206,7 @@ const RoutingArray = [
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
     { component: <StockInwards />, path: '/erp/inventory/stockInward' },
+    { component: <StockProcess />, path: '/erp/inventory/stockProcessing' },
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
     { component: <DeliveryTripSheetAdd />, path: '/erp/sales/Tripsheet/Tripsheetcreation' },
