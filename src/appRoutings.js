@@ -81,11 +81,12 @@ const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
 const LiveStockReport = lazy(() => import("./Pages/Inventry/liveStockReport"));
-const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"))
+const TallyStockJournalList = lazy(() => import("./Pages/Inventry/tallyStockJournal"));
 const StockJournal = lazy(() => import("./Pages/Inventry/stockJournal"))
 const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate"))
 const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
-const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'))
+const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'));
+const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'))
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
 const DeliveryTripSheetAdd = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
@@ -203,6 +204,7 @@ const RoutingArray = [
     { component: <StockJournalEntry />, path: '/erp/inventory/stockJournal/create' },
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
+    { component: <StockInwards />, path: '/erp/inventory/stockInward' },
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
     { component: <DeliveryTripSheetAdd />, path: '/erp/sales/Tripsheet/Tripsheetcreation' },
