@@ -132,78 +132,94 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
             const response = await fetchLink({
                 address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
             });
-
+    
             if (response.success) {
                 const overallData = response.data;
-
+                console.log("overalldata", overallData);
+    
                 const getWorkingDays = (fromDate, endDate) => {
                     const allDays = [];
                     const currentDate = new Date(fromDate);
                     const endDateObj = new Date(endDate);
-
+    
                     while (currentDate <= endDateObj) {
                         allDays.push(new Date(currentDate).toISOString().split("T")[0]);
                         currentDate.setDate(currentDate.getDate() + 1);
-                    }
-                    if (allDays.length === 0) {
-                        allDays.push("No days in this range");
                     }
                     return {
                         days: allDays,
                         count: allDays.length,
                     };
                 };
-
+    
                 const { days: dateRange } = getWorkingDays(startDate, endDate);
-
+    
                 const exportData = overallData.map(row => {
-                    const punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
-
+                    let punchDetails = [];
+                    try {
+        
+                        punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
+                    } catch (error) {
+                        console.error("Error parsing AttendanceDetails for employee:", row.username, error);
+                        punchDetails = []; 
+                    }
+    
                     const dailyAttendance = {};
-
+    
+                    let totalPresent = 0;
+    
                     dateRange.forEach((date, index) => {
-                        if (Array.isArray(punchDetails)) {
-                            const detail = punchDetails.find(detail => detail.Date === date);
-
-                            const isSunday = new Date(date).getDay() === 0;
-
-                            if (isSunday) {
-                                dailyAttendance[`Day ${index + 1}`] = detail ? 'P' : 'H';
-                            } else {
-                                dailyAttendance[`Day ${index + 1}`] = detail ? detail.AttendanceStatus : 'A';
-                            }
+                        const isSunday = new Date(date).getDay() === 0;
+                    
+                        if (isSunday) {
+                            dailyAttendance[`Day ${index + 1}`] = 'H';
                         } else {
-                            dailyAttendance[`Day ${index + 1}`] = 'A';
+                            if (Array.isArray(punchDetails)) {
+                                const detail = punchDetails.find(detail => detail.Date === date);
+                    
+                               
+                                dailyAttendance[`Day ${index + 1}`] = detail ? detail.AttendanceStatus : 'A';
+                    
+                               
+                                if (detail && detail.AttendanceStatus === 'P') {
+                                    totalPresent++;
+                                }
+                            } else {
+                              
+                                dailyAttendance[`Day ${index + 1}`] = 'A';
+                            }
                         }
                     });
-
+    
                     return {
-                        EmployeeName: row.Name,
-                        TotalPresent: row.TotalPresent || punchDetails.filter(detail => detail.AttendanceStatus === 'P').length,
+                        EmployeeName: row.username || row.Name,
+                        TotalPresent: totalPresent, 
                         ...dailyAttendance,
                     };
                 });
-
-                const ws = XLSX.utils.json_to_sheet(exportData);
-
+    
+             
                 const headers = [
                     "EmployeeName",
                     "TotalPresent",
                     ...dateRange.map((_, id) => `Day ${id + 1}`),
                 ];
-
+    
+               
+                const ws = XLSX.utils.json_to_sheet(exportData);
                 XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
-
+    
+              
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Overall Attendance Report");
-
+    
+                
                 XLSX.writeFile(wb, "Overall_Attendance_Report.xlsx");
             }
         } catch (error) {
             console.error("Error downloading overall report:", error);
         }
     };
-
     const getDaysInMonth = (monthYear) => {
         if (!monthYear) return 0;
 
@@ -320,89 +336,95 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
     const handleOverallWithPunch = () => {
         const maxPunches = 6;
+      
         const filteredAttendanceData = attendanceData.filter((row) => {
-
-            const isUserSelected = selectedEmployees.some((user) => user.UserId === row.User_Mgt_Id);
-
-            return isUserSelected || selectedEmployees.some(user => user.UserId === 'all');
+            
+          const isUserSelected = selectedEmployees.some(
+            (user) => Number(user.UserId) === Number(row.User_Mgt_Id) || user.UserId === 'ALL'
+          );
+          return isUserSelected;
         });
-
+      
         const groupedData = filteredAttendanceData.reduce((acc, row) => {
-            const username = row.username;
-            if (!acc[username]) {
-                acc[username] = [];
-            }
-            acc[username].push(row);
-            return acc;
+          const username = row.username;
+          if (!acc[username]) {
+            acc[username] = [];
+          }
+          acc[username].push(row);
+          return acc;
         }, {});
-
+      
+        if (Object.keys(groupedData).length === 0) {
+            toast.error("No attendance data found")
+          return;
+        }
+      
         const wb = XLSX.utils.book_new();
-
+      
         const firstLogDate = filteredAttendanceData[0]?.LogDate;
         if (!firstLogDate) {
-
-            return;
+          console.error("No log date found in the filtered attendance data.");
+          return;
         }
-
+      
         const date = new Date(firstLogDate);
         const year = date.getFullYear();
         const month = date.toLocaleString("default", { month: "long" });
-
-
+      
         Object.entries(groupedData).forEach(([username, userAttendance]) => {
-            const exportData = userAttendance.map(row => {
-                const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',').map(detail => detail.trim()) : [];
-                const punchColumns = {};
+          const exportData = userAttendance.map((row) => {
+        
+            const punchDetails = row.AttendanceDetails
+              ? row.AttendanceDetails.split(',').map((detail) => detail.trim())
+              : [];
+      
+            const punchColumns = {};
+            let allPunchesEmpty = true;
+      
+            for (let i = 0; i < maxPunches; i++) {
+              const punch = punchDetails[i] || '--';
+              punchColumns[`Punch ${i + 1}`] = punch;
+      
+              if (punch !== '--') {
+                allPunchesEmpty = false;
+              }
+            }
+      
+          
+            const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
+      
+            return {
+              Employee: row.username,
+              "Log Date": formatAttendanceDate(row.LogDate),
+              "Attendance Status": attendanceStatus,
+              ...punchColumns,
+            };
+          });
+      
+       
+          const columnsOrder = [
+            "Employee",
+            "Log Date",
+            "Attendance Status",
+            ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
+          ];
+    
+          const reorderedData = exportData.map((row) =>
+            columnsOrder.reduce((acc, col) => {
+              acc[col] = row[col] || '--';
+              return acc;
+            }, {})
+          );
 
-                let allPunchesEmpty = true;
-
-
-                for (let i = 0; i < maxPunches; i++) {
-                    const punch = punchDetails[i] || '--';
-                    punchColumns[`Punch ${i + 1}`] = punch;
-
-                    if (punch !== '--') {
-                        allPunchesEmpty = false;
-                    }
-                }
-
-                const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
-
-                return {
-                    Employee: row.username,
-                    "Log Date": formatAttendanceDate(row.LogDate),
-                    "Attendance Status": attendanceStatus,
-                    ...punchColumns,
-                };
-            });
-
-            const columnsOrder = [
-                "Employee",
-                "Log Date",
-                "Attendance Status",
-                ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
-            ];
-
-
-            const reorderedData = exportData.map(row =>
-                columnsOrder.reduce((acc, col) => {
-                    acc[col] = row[col] || '--';
-                    return acc;
-                }, {})
-            );
-
-
-            const sheetName = `${username}`.slice(0, 31);
-
-
-            const ws = XLSX.utils.json_to_sheet(reorderedData);
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+          const sheetName = username.slice(0, 31); 
+          const ws = XLSX.utils.json_to_sheet(reorderedData);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
         });
-
-
+      
+      
         const fileName = `Attendance_Report_${month}_${year}.xlsx`;
         XLSX.writeFile(wb, fileName);
-    };
+      };
 
     const handleSummaryDownload = async () => {
         try {
@@ -418,7 +440,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
             if (response.success) {
                 const overallData = response.data;
-
                 const getWorkingDays = (fromDate, endDate) => {
                     const allDays = [];
                     const currentDate = new Date(fromDate);
@@ -429,7 +450,6 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                         const dateStr = new Date(currentDate).toISOString().split("T")[0];
                         allDays.push(dateStr);
 
-                        // Count Sundays
                         if (currentDate.getDay() === 0) {
                             sundayCount++;
                         }
@@ -464,9 +484,9 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
 
                             const isSunday = new Date(date).getDay() === 0;
 
-                            // Skip Sundays for leave day calculation
+                          
                             if (isSunday) {
-                                return; // Do nothing for Sundays
+                                return; 
                             }
 
                             if (detail) {
@@ -525,7 +545,7 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Attendance Summary Report");
 
-                // Write to file
+                
                 XLSX.writeFile(wb, "Attendance_Summary_Report.xlsx");
             }
         } catch (error) {
@@ -588,7 +608,7 @@ const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
                         <h6 className="fa-18">Employee Attendance</h6>
 
-                        {Number(userTypeId == 1) || Number(userTypeId) == 0 ? (
+                        {Number(userTypeId === 1) || Number(userTypeId) === 0 ? (
                             <>
                                 <div className="d-flex align-items-center justify-content-start gap-3">
                                     <Button
