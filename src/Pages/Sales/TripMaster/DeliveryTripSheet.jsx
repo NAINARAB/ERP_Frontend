@@ -38,7 +38,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     const [selectedRow, setSelectedRow] = useState([]);
     const printRef = useRef(null);
 
-
     useEffect(() => {
         if (loadingOn) loadingOn();
 
@@ -78,21 +77,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
-
-
-
-
-    // const Total_Invoice_value = tripData.reduce((acc, orders) => {
-    //     const invoiceValue = orders?.Product_Array?.reduce((sum, product) => {
-    //         return sum + (product?.Total_Invoice_value || 0);
-    //     }, 0);
-
-    //     return acc + (invoiceValue || 0);
-    // }, 0);
-
-
     const allProducts = (selectedRow?.Product_Array || []).flatMap(product => product.Products_List || []);
-
 
     const TaxData = allProducts.reduce((data, item) => {
         const HSNindex = data.findIndex(obj => obj.hsnCode === item.HSN_Code);
@@ -133,14 +118,9 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         return data;
     }, []);
 
-
-
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
     });
-
-
-
 
     const uniqueStaffs = useMemo(() => {
         const allStaffs = tripData.flatMap((trip) =>
@@ -181,10 +161,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch;
         });
     }, [tripData, filters]);
-
-
-
-
 
     const flattenProductsList = (productArray) => {
         if (!Array.isArray(productArray)) return [];
@@ -357,7 +333,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             </table>
                         )}
 
-
                         <FilterableTable
                             title="Items"
                             EnableSerialNumber
@@ -424,7 +399,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </>
                 )}
             />
-
 
             <Dialog
                 open={filters.filterDialog}
@@ -532,34 +506,55 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 <thead>
                                     <tr>
                                         <th className="fa-12 bg-light">Retailer Name</th>
-
+                                        <th className="fa-12 bg-light">Do_Date</th>
+                                        <th className="fa-12 bg-light">Delivery_Person</th>
                                         <th className="fa-12 bg-light">Amount</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
                                     {selectedRow.Product_Array.length > 0 ? (
-                                        selectedRow.Product_Array.map((group, idx) => {
+                                        <>
+                                            {selectedRow.Product_Array.map((group, idx) => {
+                                                const totalAmount = group.Products_List.reduce(
+                                                    (sum, product) => sum + product.Final_Amo,
+                                                    0
+                                                );
 
-                                            const totalAmount = group.Products_List.reduce((sum, product) => sum + product.Final_Amo, 0);
 
-                                            return (
-                                                <React.Fragment key={idx}>
-                                                    <tr>
+                                                const deliveryDetail = selectedRow.Trip_Details.find(
+                                                    (detail) => detail.Do_Id === group.Do_Id
+                                                );
+
+                                                return (
+                                                    <tr key={idx}>
                                                         <td className="fw-bold">{group.Retailer_Name}</td>
-
-                                                        <td className="fw-bold text-end">
-                                                            {NumberFormat(totalAmount)}
-                                                        </td>
+                                                        <td className="fw-bold text-end">{group.Do_Date}</td>
+                                                        <td className="fw-bold text-end">{deliveryDetail?.Name || "N/A"}</td>
+                                                        <td className="fw-bold text-end">{NumberFormat(totalAmount)}</td>
                                                     </tr>
-                                                </React.Fragment>
-                                            );
-                                        })
+                                                );
+                                            })}
+
+                                            <tr>
+                                                <td className="fw-bold text-end" colSpan={3}>Total:</td>
+                                                <td className="fw-bold text-end">
+                                                    {NumberFormat(
+                                                        selectedRow.Product_Array.reduce(
+                                                            (acc, group) => acc +
+                                                                group.Products_List.reduce(
+                                                                    (sum, product) => sum + product.Final_Amo,
+                                                                    0
+                                                                ),
+                                                            0
+                                                        )
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        </>
                                     ) : (
                                         <tr>
-                                            <td colSpan="3" className="text-center">
-                                                No data available
-                                            </td>
+                                            <td colSpan="5" className="text-center">No data available</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -576,8 +571,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-
 
             <Dialog
                 open={filters.printPreviewDialog}
@@ -681,7 +674,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     ))}
                                 </tbody>
                             </table>
-
 
                             <table className="table table-bordered">
                                 <thead>

@@ -13,11 +13,8 @@ import { useLocation } from "react-router-dom";
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     const stateDetails = location.state;
-
     const [deliveryPerson, setDeliveryPerson] = useState(null);
-
     const storage = JSON.parse(localStorage.getItem('user'));
-
     const [salesPerson, setSalePerson] = useState([]);
     const [filters, setFilters] = useState({
         Retailer_Id: '',
@@ -38,8 +35,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     });
 
     const [transactionData, setTransactionData] = useState([]);
-
-    // const [products, setProducts] = useState([]);
     const [costCenter, setCostCenter] = useState([]);
     const [costCenterCategory, setCostCenterCategory] = useState([])
     const [branch, setBranch] = useState([]);
@@ -48,7 +43,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [selectedItems, setSelectedItems] = useState([]);
 
     useEffect(() => {
-
         const fetchData = async () => {
             try {
                 const [
@@ -61,12 +55,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` })
                 ]);
-
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
                     (a, b) => String(a?.BranchName).localeCompare(b?.BranchName)
                 );
-
-
                 const staffData = (staffResponse.success ? staffResponse.data : []).sort(
                     (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
                 );
@@ -86,11 +77,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         fetchData();
     }, [])
 
-
     useEffect(() => {
-
-
-
         fetchLink({
             address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
@@ -100,7 +87,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
     }, [])
 
-
     useEffect(() => {
         const extractHHMM = (timeString) => {
             const date = new Date(timeString);
@@ -109,8 +95,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
             return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
         };
-
-        console.log("Data", stateDetails)
         const productsArray = stateDetails?.Product_Array;
         const employeesArray = stateDetails?.Employees_Involved;
 
@@ -132,10 +116,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 ),
                 Product_Array: productsArray,
             }));
-
-
             setSelectedItems(productsArray)
-
             setStaffInvolvedList(
                 employeesArray.map(staffData => Object.fromEntries(
                     Object.entries(tripStaffsColumns).map(([key, value]) => {
@@ -143,25 +124,17 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-
             const deliveryStaff = employeesArray.find(staff => Number(staff.Cost_Center_Type_Id) === 9);
-
             if (deliveryStaff) {
-
                 setDeliveryPerson({
                     UserId: deliveryStaff.Involved_Emp_Id,
                     Name: deliveryStaff.Emp_Name,
                 });
             } else {
-
                 setDeliveryPerson(null);
             }
         }
     }, [stateDetails]);
-
-
-
-
 
     const searchTransaction = (e) => {
         e.preventDefault();
@@ -189,20 +162,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 })).filter(item => item.Products_List.length > 0);
             });
         } else {
-
             setSelectedItems(prev => {
                 const preItems = prev.filter(item =>
                     !isEqualNumber(item.Do_Id, itemDetail.Delivery_Order_Id)
                 );
-
                 const currentOrders = transactionData.filter(item =>
                     isEqualNumber(item.So_Id, itemDetail.So_Id)
                 );
-
                 return preItems.concat(currentOrders);
             });
         }
     };
+
     const resetForm = () => {
         setSelectedItems([]);
         setStaffInvolvedList([]);
@@ -279,25 +250,19 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         )
     }
 
-
     const handleCostCenterChange = (e, index) => {
         setStaffInvolvedList((prev) => {
             const updatedList = prev.map((item, ind) => {
                 if (isEqualNumber(ind, index)) {
                     const updatedItem = { ...item, Cost_Center_Type_Id: e.target.value };
-
-
                     if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
-
                         setDeliveryPerson({
                             UserId: updatedItem.Involved_Emp_Id,
                             Name: updatedItem.Emp_Name,
                         });
                     } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
-
                         setDeliveryPerson(null);
                     }
-
                     return updatedItem;
                 }
                 return item;
@@ -306,7 +271,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             return updatedList;
         });
     };
-
 
     return (
         <>
@@ -421,7 +385,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
                             <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
                                 <div className="row">
-
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>
                                             Branch <span style={{ color: "red" }}>*</span>
@@ -438,7 +401,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
-
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Trip_Date</label>
                                         <input
@@ -477,9 +439,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             placeholder="Delivery Person"
                                         />
                                     </div>
-
-
-
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Trip No</label>
                                         <input
@@ -505,7 +464,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-
                                             <tr>
                                                 <td className="fa-13">
                                                     <input
@@ -555,11 +513,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         </tbody>
                                     </table>
                                 </div>
-
                             </div>
                         </div>
                     </div>
-
 
                     <FilterableTable
                         dataArray={selectedItems?.map(item => item?.Products_List).flat()}
@@ -575,7 +531,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         // title={`Selected Items: ${selectedItems?.reduce((acc, item) => acc + item.Products_List.length, 0) ?? 0} QTY: ${selectedItems?.reduce((acc, item) => acc + item.Products_List.reduce((sum, product) => sum + (product.Total_Qty ?? 0), 0), 0) ?? 0}`}
                         maxHeightOption
                         columns={[
-
+                            createCol('Retailer_Name', 'string', 'Retailer_Name'),
                             createCol('Product_Name', 'string', 'Product_Name'),
                             // createCol('Sales_Order_Id', 'string', 'So_Id'),
                             // createCol('So_Date', 'date', 'So_Date'),
@@ -610,7 +566,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             },
                         ]}
                     />
-
 
                 </CardContent>
                 <div className="border-top p-2 text-end">
@@ -648,16 +603,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         <div className="table-responsive">
                             <table className="table table-bordered">
                                 <tbody>
-
                                     <tr>
-                                        {/* <td className="text-center fa-13 fw-bold" colSpan={6}>
-                Date
-            </td> */}
-                                    </tr>
-
-
-                                    <tr>
-
                                         <td className="fa-13 text-center">
                                             <td className="text-center fa-13 fw-bold" colSpan={6}>
                                                 From Date
@@ -695,7 +641,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 value={filters?.Sales_Person_Id || ""}
                                                 className="cus-inpt p-2"
                                                 onChange={(e) => {
-                                                    const selected = salesPerson.find(sp => sp.UserId === Number(e.target.value));
+                                                    const selected = salesPerson.find(sp => sp.UserId == Number(e.target.value));
                                                     setFilters({
                                                         ...filters,
                                                         Sales_Person_Id: selected?.UserId || '',
@@ -714,9 +660,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
                                         </td>
                                     </tr>
-
-
-
                                 </tbody>
                             </table>
 

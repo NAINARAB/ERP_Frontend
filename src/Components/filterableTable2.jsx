@@ -13,46 +13,49 @@ import PropTypes from 'prop-types';
 
 /**
  * @typedef {Object} Column
- * @property {string} [Field_Name] 
+ * @property {string} [Field_Name]
  * @property {'string'|'number'|'date'|'time'} [Fied_Data]
- * @property {'top'|'middle'|'bottom'} [verticalAlign] 
- * @property {string} [ColumnHeader] 
- * @property {string} [tdClass] 
- * @property {0|1} [isVisible] 
- * @property {'left'|'right'|'center'} [align] 
- * @property {boolean} [isCustomCell] 
- * @property {Function} [Cell]
+ * @property {'top'|'middle'|'bottom'} [verticalAlign]
+ * @property {string} [ColumnHeader]
+ * @property {string} [tdClass]
+ * @property {0|1} [isVisible]
+ * @property {'left'|'right'|'center'} [align]
+ * @property {boolean} [isCustomCell]
+ * @property {(row: object) => JSX.Element} [Cell]
  */
 
 /**
  * @typedef {Object} Menu
- * @property {string} [name] 
- * @property {JSX.Element} [icon] 
- * @property {Function} [onclick] 
- * @property {boolean} [disabled] 
+ * @property {string} [name]
+ * @property {JSX.Element} [icon]
+ * @property {() => void} [onclick]
+ * @property {boolean} [disabled]
  */
 
 /**
- * Filterable Table Component
- * @param {Object} props 
- * @param {Array<Object>} [props.dataArray] 
- * @param {Array<Column>} [props.columns] 
- * @param {Function} [props.onClickFun] 
- * @param {boolean} [props.isExpendable=false] 
- * @param {React.ReactElement|JSX.Element} [props.expandableComp] 
- * @param {number} [props.tableMaxHeight] 
- * @param {number} [props.initialPageCount=10] 
- * @param {number} [props.bodyFontSizePx=13] 
- * @param {number} [props.headerFontSizePx=13] 
- * @param {boolean} [props.EnableSerialNumber=false] 
- * @param {'small'|'medium'|'large'} [props.CellSize='medium'] 
- * @param {boolean} [props.disablePagination=false] 
- * @param {string} [props.title=''] 
- * @param {boolean} [props.PDFPrintOption=false] 
- * @param {boolean} [props.ExcelPrintOption=false] 
- * @param {boolean} [props.maxHeightOption=false]
- * @param {React.ReactElement|JSX.Element} [props.ButtonArea] 
- * @param {Array<Menu>} props.MenuButtons 
+ * @typedef {Object} FilterableTableProps
+ * @property {Array<Object>} [dataArray]
+ * @property {Array<Column>} [columns]
+ * @property {Function} [onClickFun]
+ * @property {boolean} [isExpendable]
+ * @property {JSX.Element} [expandableComp]
+ * @property {number} [tableMaxHeight]
+ * @property {number} [initialPageCount]
+ * @property {boolean} [EnableSerialNumber]
+ * @property {'small'|'medium'|'large'} [CellSize]
+ * @property {boolean} [disablePagination]
+ * @property {string} [title]
+ * @property {boolean} [PDFPrintOption]
+ * @property {boolean} [ExcelPrintOption]
+ * @property {boolean} [maxHeightOption]
+ * @property {JSX.Element} [ButtonArea]
+ * @property {Array<Menu>} [MenuButtons]
+ * @property {number} [bodyFontSizePx]
+ * @property {number} [headerFontSizePx]
+ */
+
+/**
+ * @param {FilterableTableProps} props
  */
 
 /**
@@ -357,9 +360,9 @@ const FilterableTable = ({
                                 <TableCell
                                     key={columnInd}
                                     className={`
-                                        border-end` 
-                                        + horizondalalignClass 
-                                        + verticalAlignClass 
+                                        border-end`
+                                        + horizondalalignClass
+                                        + verticalAlignClass
                                         + tdClass(row, column.Field_Name, index)
                                     }
                                     sx={{ fontSize: `${bodyFontSizePx}px` }}
@@ -374,9 +377,9 @@ const FilterableTable = ({
                             <TableCell
                                 key={columnInd}
                                 className={`
-                                    border-end` 
-                                    + horizondalalignClass 
-                                    + verticalAlignClass 
+                                    border-end`
+                                    + horizondalalignClass
+                                    + verticalAlignClass
                                     + tdClass(row, column.Field_Name, index)
                                 }
                                 sx={{ fontSize: `${bodyFontSizePx}px` }}

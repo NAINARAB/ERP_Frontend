@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ISOString, isValidDate } from '../../Components/functions';
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { FilterAlt, Search, ShoppingCart } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../Components/fetchComponent";
 
@@ -89,11 +89,23 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
                 columns={[
                     createCol('Stock_Journal_date', 'date', 'Date'),
                     createCol('Journal_no', 'string', 'Journal number'),
-                    createCol('destinationItemNameGet', 'string', 'Type'),
+                    createCol('destinationItemNameGet', 'string', 'Item'),
                     createCol('destinationGodownGet', 'string', 'Destination'),
                     createCol('sourceGodownGet', 'string', 'Source'),
                     createCol('bagsQuantity', 'number', 'Bags'),
                     createCol('Dest_Qty', 'number', 'Tonnage'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Actions',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <Tooltip>
+                                <IconButton
+                                    size="small"
+                                ><ShoppingCart /></IconButton>
+                            </Tooltip>
+                        )
+                    }
                 ]}
 
             />

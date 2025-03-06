@@ -1,4 +1,7 @@
-import { ISOString } from "../../../Components/functions"
+import { ISOString } from "../../../Components/functions";
+import { getSessionUser } from "../../../Components/functions";
+
+const { user } = getSessionUser();
 
 export const tripMasterDetails = {
     Trip_Id: '',
@@ -12,8 +15,18 @@ export const tripMasterDetails = {
     Trip_ST_KM: '',
     Trip_EN_KM: '',
     Trip_Tot_Kms: '',
-    Created_By: '',
-    Updated_By: '',
+    Godownlocation: '',
+    LoadingLoad: '',
+    LoadingEmpty: '',
+    UnloadingLoad: '',
+    UnloadingEmpty: '',
+    MachineNo: '',
+    PhoneNumber: '',
+    BillType: '',
+    VoucherType: '',
+    Narration: '',
+    Created_By: user.UserId,
+    Updated_By: user.UserId,
 }
 
 export const tripDetailsColumns = {
@@ -25,28 +38,30 @@ export const tripDetailsColumns = {
     From_Location: '',
     To_Location: '',
     S_No: '',
-    Reason: '',
+    Concern: '',
+    BillNo: '',
+    BatchLocation: '',
     Product_Id: '',
     HSN_Code: '',
-    QTY: '',
-    KGS: '',
-    GST_Inclusive: '',
-    IS_IGST: '',
-    Gst_Rate: '',
-    Gst_P: '',
-    Cgst_P: '',
-    Sgst_P: '',
-    Igst_P: '',
-    Taxable_Value: '',
-    Round_off: '',
-    Total_Value: '',
-    Trip_From: '',
-    Party_And_Branch_Id: '',
-    Transporter_Id: '',
-    Dispatch_Date: '',
-    Delivery_Date: '',
-    Created_By: '',
-    Updated_By: '',
+    QTY: 0,
+    KGS: 0,
+    Units: '',
+    Unit_Id: '',
+    GST_Inclusive: 1,
+    IS_IGST: 0,
+    Gst_Rate: 0,
+    Gst_P: 0,
+    Cgst_P: 0,
+    Sgst_P: 0,
+    Igst_P: 0,
+    Taxable_Value: 0,
+    Round_off: 0,
+    Total_Value: 0,
+    Trip_From: 'STOCK JOURNAL',
+    Party_And_Branch_Id: 1,
+    Transporter_Id: 0,
+    Created_By: user.UserId,
+    Updated_By: user.UserId,
 }
 
 export const tripStaffsColumns = {

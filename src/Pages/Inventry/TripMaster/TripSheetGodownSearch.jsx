@@ -1,34 +1,28 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber, ISOString, isValidDate, isValidObject, Multiplication, RoundNumber, Subraction } from "../../../Components/functions";
+import {
+    Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber,
+    isValidDate, isValidObject, Multiplication, onlynum, ISOString,
+    Subraction, stringCompare
+} from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Close, Delete, Search } from "@mui/icons-material";
+import { Close, Delete, Edit } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
 import { toast } from 'react-toastify'
 import { useLocation, useNavigate } from "react-router-dom";
+import RequiredStar from "../../../Components/requiredStar";
 
-const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    switch (method) {
-        case 0:
-            return RoundNumber(amount * (percentage / 100));
-        case 1:
-            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
-        case 2:
-            return 0;
-        default:
-            return 0;
-    }
-}
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
-    const navigation = useNavigate();
+    // const navigation = useNavigate();
     const stateDetails = location.state;
+    const tdStyle = 'border fa-14 vctr';
 
     const [filters, setFilters] = useState({
         FromGodown: '',
@@ -41,15 +35,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         addItemDialog: false,
     });
 
-    const [transactionData, setTransactionData] = useState([]);
     const [godown, setGodown] = useState([]);
     const [products, setProducts] = useState([]);
+    const [uom, setUom] = useState([]);
     const [costCenter, setCostCenter] = useState([]);
     const [costCenterCategory, setCostCenterCategory] = useState([])
     const [branch, setBranch] = useState([]);
+    const [voucherType, setVoucherType] = useState([]);
+
     const [tripSheetInfo, setTripSheetInfo] = useState(tripMasterDetails);
-    const [staffInvolvedList, setStaffInvolvedList] = useState([]);
+    const [productInput, setProductInput] = useState(tripDetailsColumns);
     const [selectedItems, setSelectedItems] = useState([]);
+    const [staffInvolvedList, setStaffInvolvedList] = useState([]);
 
     useEffect(() => {
 
@@ -60,13 +57,17 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     productsResponse,
                     godownLocationsResponse,
                     staffResponse,
-                    staffCategory
+                    staffCategory,
+                    uomResponse,
+                    voucherTypeResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
-                    fetchLink({ address: `dataEntry/costCenter/category` })
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `masters/uom` }),
+                    fetchLink({ address: `masters/voucher` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -84,12 +85,20 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 const staffCategoryData = (staffCategory.success ? staffCategory.data : []).sort(
                     (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
                 );
+                const uomOrdered = (uomResponse.success ? uomResponse.data : []).sort(
+                    (a, b) => String(a?.Units).localeCompare(b?.Units)
+                );
+                const voucherOrdered = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
+                    (a, b) => String(a?.Vocher_Type_Id).localeCompare(b?.Voucher_Type)
+                );
 
                 setBranch(branchData)
                 setProducts(productsData);
                 setGodown(godownLocations);
                 setCostCenter(staffData);
-                setCostCenterCategory(staffCategoryData)
+                setCostCenterCategory(staffCategoryData);
+                setUom(uomOrdered);
+                setVoucherType(voucherOrdered)
 
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -123,7 +132,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 productsArray.map(productsData => Object.fromEntries(
                     Object.entries(tripDetailsColumns).map(([key, value]) => {
                         if (
-                            key === 'Dispatch_Date' || key ===  'Delivery_Date'
+                            key === 'Dispatch_Date' || key === 'Delivery_Date'
                         ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
                         return [key, productsData[key] ?? value]
                     })
@@ -140,89 +149,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }
     }, [stateDetails])
 
-    const searchTransaction = (e) => {
-        e.preventDefault();
-        const { FromGodown, ToGodown, Fromdate, Todate } = filters;
-
-        if (FromGodown && ToGodown && isValidDate(Fromdate) && isValidDate(Todate)) {
-            if (loadingOn) loadingOn();
-            setTransactionData([]);
-            fetchLink({
-                address: `inventory/stockJournal/godownActivity?FromDate=${Fromdate}&ToDate=${Todate}&fromGodown=${FromGodown}&toGodown=${ToGodown}`
-            }).then(data => {
-                if (data.success) setTransactionData(data.data);
-            }).catch(e => console.log(e)).finally(() => {
-                if (loadingOff) loadingOff();
-            })
-        }
-    }
-
-    const changeItems = (itemDetail, deleteOption) => {
-        setSelectedItems(prev => {
-            const preItems = prev.filter(o =>
-                !isEqualNumber(o.STJ_Id, itemDetail.STJ_Id)
-            );
-
-            if (deleteOption) {
-                return preItems;
-            } else {
-                const currentOrders = transactionData.filter(o =>
-                    isEqualNumber(o.STJ_Id, itemDetail.STJ_Id)
-                );
-
-                const reStruc = currentOrders.map(item => {
-                    const productDetails = findProductDetails(products, item.Sour_Item_Id);
-                    const GST_Inclusive = checkIsNumber(item?.GST_Inclusive) ? Number(item?.GST_Inclusive) : 0;
-                    const IS_IGST = checkIsNumber(item?.IS_IGST) ? Number(item?.IS_IGST) : 0;
-                    const gstPercentage = IS_IGST ? Number(productDetails.Igst_P) : Number(productDetails.Gst_P);
-                    const Bill_Qty = Number(item.Sour_Qty);
-                    const Item_Rate = RoundNumber(item.Sour_Rate);
-                    const Amount = Multiplication(Bill_Qty, Item_Rate);
-                    const tax = taxCalc(GST_Inclusive, Amount, gstPercentage);
-
-                    const Taxable_Amount = Amount;
-                    const Final_Amo = Addition(Amount, tax);
-
-                    return Object.fromEntries(
-                        Object.entries(tripDetailsColumns).map(([key, value]) => {
-                            switch (key) {
-                                case 'STJ_Id': return [key, Number(item.STJ_Id)];
-                                case 'Batch_No': return [key, item?.Sour_Batch_Lot_No];
-                                case 'From_Location': return [key, item?.Sour_Goodown_Id];
-                                case 'To_Location': return [key, item?.Dest_Goodown_Id];
-                                case 'Product_Id': return [key, Number(item?.Sour_Item_Id)];
-                                case 'HSN_Code': return [key, productDetails.HSN_Code];
-                                case 'QTY': return [key, Bill_Qty];
-                                case 'KGS': return [key, 0];
-                                case 'GST_Inclusive': return [key, GST_Inclusive];
-                                case 'IS_IGST': return [key, IS_IGST];
-                                case 'Gst_Rate': return [key, Item_Rate];
-                                case 'Gst_P': return [key, gstPercentage];
-                                case 'Cgst_P': return [key, (gstPercentage / 2) ?? 0];
-                                case 'Sgst_P': return [key, (gstPercentage / 2) ?? 0];
-                                case 'Igst_P': return [key, (gstPercentage / 2) ?? 0];
-                                case 'Taxable_Value': return [key, Taxable_Amount];
-                                case 'Round_off': return [key, 0];
-                                case 'Total_Value': return [key, Final_Amo];
-                                case 'Trip_From': return [key, 'STOCK JOURNAL'];
-                                case 'Party_And_Branch_Id': return [key, 1];
-                                case 'Journal_no': return [key, item.Journal_no ?? ''];
-                                default: return [key, value];
-                            }
-                        })
-                    );
-                });
-
-                return preItems.concat(reStruc);
-            }
-        });
-    };
-
     const resetForm = () => {
         setSelectedItems([]);
         setStaffInvolvedList([]);
         setTripSheetInfo(tripMasterDetails);
-        setTransactionData([]);
     }
 
     const saveTripSheet = () => {
@@ -254,6 +184,13 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             if (loadingOff) loadingOff();
         })
     }
+
+    const closeDialog = () => {
+        setProductInput(tripDetailsColumns);
+        setFilters(pre => ({ ...pre, addItemDialog: false }));
+    }
+
+    console.log(productInput)
 
     return (
         <>
@@ -289,6 +226,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <th className="fa-13">Sno</th>
                                             <th className="fa-13">Staff Name</th>
                                             <th className="fa-13">Category</th>
+                                            <th className="fa-13">#</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -357,6 +295,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         )}
                                                     </select>
                                                 </td>
+                                                <td className='fa-13 vctr p-0'>
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            setStaffInvolvedList(prev => {
+                                                                return prev.filter((_, filIndex) => index !== filIndex);
+                                                            });
+                                                        }}
+                                                        size='small'
+                                                    >
+                                                        <Delete color='error' />
+                                                    </IconButton>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -365,17 +315,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         </div>
 
                         {/* Stock Journal Details */}
-                        <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
-                            <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
-                                <div className="row">
+                        <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0 fa-12">
 
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                            <div className="border" style={{ minHeight: '30vh', height: '100%' }}>
+                                <div className="row px-3">
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                         <label>Branch</label>
                                         <select
                                             value={tripSheetInfo.Branch_Id}
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Branch_Id: e.target.value })}
                                             placeholder={"Select Branch"}
-                                            className="cus-inpt mb-2 p-2"
+                                            className="cus-inpt p-2"
                                         >
                                             <option value="" disabled>Select Branch</option>
                                             {branch.map((br, bi) => (
@@ -384,52 +335,124 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         </select>
                                     </div>
 
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                         <label>Date</label>
                                         <input
                                             value={tripSheetInfo.Trip_Date}
                                             type="date"
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_Date: e.target.value })}
-                                            className="cus-inpt p-2 mb-2"
+                                            className="cus-inpt p-2"
                                         />
                                     </div>
 
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                         <label>Vehicle No</label>
                                         <input
                                             value={tripSheetInfo.Vehicle_No}
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Vehicle_No: e.target.value })}
-                                            className="cus-inpt p-2 mb-2"
+                                            className="cus-inpt p-2"
+                                            placeholder="ex: TN XX YYYY"
                                         />
                                     </div>
 
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                         <label>Trip No</label>
                                         <input
                                             value={tripSheetInfo.Trip_No}
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
-                                            className="cus-inpt p-2 mb-2"
+                                            className="cus-inpt p-2"
+                                            placeholder="ex: 1, 2, 3"
+                                        />
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                        <label>Phone Number</label>
+                                        <input
+                                            value={tripSheetInfo.PhoneNumber}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, PhoneNumber: e.target.value })}
+                                            className="cus-inpt p-2"
+                                            maxLength={10}
+                                            placeholder="ex: 987-654-3210"
+                                        />
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                        <label>Activity Location</label>
+                                        <select
+                                            value={tripSheetInfo.Godownlocation}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Godownlocation: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value={''} disabled>select godown</option>
+                                            {godown.map((god, godInd) => (
+                                                <option value={god.Godown_Id} key={godInd}>{god.Godown_Name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                        <label>Bill Type</label>
+                                        <select
+                                            value={tripSheetInfo.BillType}
+                                            onChange={e => setTripSheetInfo({ 
+                                                ...tripSheetInfo, 
+                                                BillType: e.target.value,
+                                                VoucherType: ''
+                                            })}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value={''} disabled>select</option>
+                                            <option value={'MATERIAL INWARD'}>MATERIAL INWARD</option>
+                                            <option value={'OTHER GODOWN'}>OTHER GODOWN</option>
+                                            <option value={'OTHERS'}>OTHERS</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                        <label>Voucher Type</label>
+                                        <select
+                                            value={tripSheetInfo.VoucherType}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value={''} disabled>select voucher</option>
+                                            {voucherType.filter(
+                                                v => stringCompare(v.Type, tripSheetInfo.BillType)
+                                            ).map((voucher, voucherInd) => (
+                                                <option value={voucher.Vocher_Type_Id} key={voucherInd}>{voucher.Voucher_Type}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col-12 px-2 py-1">
+                                        <label>Narration</label>
+                                        <textarea
+                                            value={tripSheetInfo.Narration}
+                                            className="cus-inpt p-2"
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Narration: e.target.value })}
+                                            rows={2}
+                                            placeholder="Other Details"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="table-responsive">
-                                    <table className="table table-bordered">
+                                    <table className="table table-bordered fa-13 m-0">
                                         <thead>
                                             <tr>
-                                                <th colSpan={2} className="fa-13 text-center">Time</th>
-                                                <th colSpan={2} className="fa-13 text-center">Distance</th>
+                                                <th colSpan={2} className="text-center bg-light">Time</th>
+                                                <th colSpan={2} className="text-center bg-light">Distance</th>
                                             </tr>
                                             <tr>
-                                                <th className="fa-13 text-center">Start</th>
-                                                <th className="fa-13 text-center">End</th>
-                                                <th className="fa-13 text-center">Start (Km)</th>
-                                                <th className="fa-13 text-center">End (Km)</th>
+                                                <th className="text-center">Start</th>
+                                                <th className="text-center">End</th>
+                                                <th className="text-center">Start (Km)</th>
+                                                <th className="text-center">End (Km)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td className="fa-13">
+                                                <td>
                                                     <input
                                                         type='time'
                                                         onChange={e => setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))}
@@ -437,7 +460,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         className="cus-inpt p-2"
                                                     />
                                                 </td>
-                                                <td className="fa-13">
+                                                <td>
                                                     <input
                                                         type='time'
                                                         onChange={e => setTripSheetInfo(pre => ({ ...pre, EndTime: e.target.value }))}
@@ -445,7 +468,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         className="cus-inpt p-2"
                                                     />
                                                 </td>
-                                                <td className="fa-13">
+                                                <td>
                                                     <input
                                                         type="number"
                                                         onChange={e => setTripSheetInfo(pre => ({
@@ -459,7 +482,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         placeholder="Kilometers"
                                                     />
                                                 </td>
-                                                <td className="fa-13">
+                                                <td>
                                                     <input
                                                         type="number"
                                                         onChange={e => setTripSheetInfo(pre => ({
@@ -471,6 +494,58 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         min={Addition(tripSheetInfo?.Trip_ST_KM, 1)}
                                                         className="cus-inpt p-2"
                                                         placeholder="Kilometers"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <thead>
+                                            <tr>
+                                                <th colSpan={2} className="text-center bg-light">Loading</th>
+                                                <th colSpan={2} className="text-center bg-light">Un-Loading</th>
+                                            </tr>
+                                            <tr>
+                                                <th className="text-center">Load</th>
+                                                <th className="text-center">Empty</th>
+                                                <th className="text-center">Load</th>
+                                                <th className="text-center">Empty</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <input
+                                                        onInput={onlynum}
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, LoadingLoad: e.target.value }))}
+                                                        value={tripSheetInfo?.LoadingLoad}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="ex: 123Kg"
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        onInput={onlynum}
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, LoadingEmpty: e.target.value }))}
+                                                        value={tripSheetInfo?.LoadingEmpty}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="ex: 123Kg"
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        onInput={onlynum}
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, UnloadingLoad: e.target.value }))}
+                                                        value={tripSheetInfo?.UnloadingLoad}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="ex: 123Kg"
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        onInput={onlynum}
+                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, UnloadingEmpty: e.target.value }))}
+                                                        value={tripSheetInfo?.UnloadingEmpty}
+                                                        className="cus-inpt p-2"
+                                                        placeholder="ex: 123Kg"
                                                     />
                                                 </td>
                                             </tr>
@@ -498,7 +573,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         EnableSerialNumber
                         disablePagination
                         title={`
-                            Selected Items: ${selectedItems.length} 
+                            ITEMS: ${selectedItems.length}, 
                             QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o.QTY ?? 0), 0)}
                         `}
                         maxHeightOption
@@ -509,27 +584,55 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 isCustomCell: true,
                                 Cell: ({ row }) => findProductDetails(products, row.Product_Id)?.Product_Name
                             },
-                            createCol('Journal_no', 'string'),
                             createCol('HSN_Code', 'string', 'HSN Code'),
-                            createCol('QTY', 'number', 'Quantity'),
-                            createCol('KGS', 'number', 'KGs'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Units',
+                                isCustomCell: true,
+                                Cell: ({ row }) => uom.find(u =>
+                                    isEqualNumber(u.Unit_Id, row.Unit_Id)
+                                )?.Units
+                            },
+                            createCol('QTY', 'number', 'Tonnage'),
                             createCol('Gst_Rate', 'number', 'Rate'),
                             createCol('Total_Value', 'number', 'Amount'),
                             {
                                 isVisible: 1,
+                                ColumnHeader: 'From',
+                                isCustomCell: true,
+                                Cell: ({ row }) => godown.find(g =>
+                                    isEqualNumber(g.Godown_Id, row.From_Location)
+                                )?.Godown_Name
+                            },
+                            {
+                                isVisible: 1,
                                 ColumnHeader: '#',
                                 isCustomCell: true,
-                                Cell: ({ row }) => <IconButton
-                                    variant="contained"
-                                    color="error"
-                                    size="small"
-                                    onClick={() => {
-                                        const filteredItems = selectedItems.filter(o =>
-                                            !isEqualNumber(o.STJ_Id, row.STJ_Id)
-                                        );
-                                        setSelectedItems(filteredItems);
-                                    }}
-                                ><Delete className="fa-20" /></IconButton>
+                                Cell: ({ row }) => (
+                                    <>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setProductInput(Object.fromEntries(
+                                                    Object.entries(tripDetailsColumns).map(([key, value]) => [key, row[key] ? row[key] : value])
+                                                ));
+                                                setFilters(pre => ({...pre, addItemDialog: true}))
+                                            }}
+                                        ><Edit className="fa-20" /></IconButton>
+                                        <IconButton
+                                            color="error"
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedItems(prev => {
+                                                    const prevArray = [...prev];
+                                                    return prevArray.filter(pro =>
+                                                        !isEqualNumber(pro.Product_Id, row.Product_Id)
+                                                    );
+                                                });
+                                            }}
+                                        ><Delete className="fa-20" /></IconButton>
+                                    </>
+                                )
                             },
                         ]}
                     />
@@ -544,182 +647,210 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 </div>
             </Card>
 
-
-
             <Dialog
                 open={filters.addItemDialog}
-                onClose={() => setFilters(pre => ({ ...pre, addItemDialog: false }))}
-                maxWidth='lg' fullWidth fullScreen
+                onClose={closeDialog}
+                maxWidth='sm' fullWidth
             >
-                <form onSubmit={searchTransaction}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        setSelectedItems(prev => {
+                            const prevArray = [...prev];
+                            const proIndex = prevArray.findIndex(pro =>
+                                isEqualNumber(pro.Product_Id, productInput.Product_Id)
+                            );
+                            if (proIndex !== -1) {
+                                prevArray[proIndex] = productInput;
+                            } else {
+                                prevArray.push(productInput);
+                            }
+                            return prevArray;
+                        });
+                        closeDialog();
+                    }}
+                >
+
                     <DialogTitle
                         className="d-flex align-items-center"
                     >
                         <span className="flex-grow-1">Add Item</span>
-                        <Button
-                            variant="outlined"
-                            type="submit" className="me-2"
-                            disabled={!filters.FromGodown || !filters.ToGodown}
-                            startIcon={<Search />}
-                        >Search</Button>
                         <IconButton
                             size="small" color="error"
-                            onClick={() => setFilters(pre => ({ ...pre, addItemDialog: false }))}
+                            onClick={closeDialog}
                         ><Close /></IconButton>
                     </DialogTitle>
 
                     <DialogContent>
-                        <div className="table-responsive">
-                            <table className="table table-bordered">
-                                <tbody>
-                                    <tr>
-                                        <td className="text-center fa-13 fw-bold" colSpan={2}>Godown Location</td>
-                                        <td className="text-center fa-13 fw-bold" colSpan={2}>Date</td>
-                                    </tr>
-
-                                    <tr>
-                                        <td className="text-center fa-13 fw-bold">
-                                            From
-                                        </td>
-                                        <td className="text-center fa-13 fw-bold">To</td>
-                                        <td className="text-center fa-13 fw-bold">
-                                            From
-                                        </td>
-                                        <td className="text-center fa-13 fw-bold">To</td>
-                                    </tr>
-
-
-                                    <tr>
-                                        <td className="fa-13 ">
-                                            <Select
-                                                value={{ value: filters.FromGodown, label: filters.FromGodownName }}
-                                                onChange={e => setFilters(pre => ({
+                        <table className="table m-0">
+                            <tbody>
+                                <tr>
+                                    <td className={tdStyle}>Item Name <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <Select
+                                            value={{
+                                                value: productInput.Product_Id, label: products.find(pro => isEqualNumber(
+                                                    pro.Product_Id, productInput.Product_Id
+                                                ))?.Product_Name
+                                            }}
+                                            onChange={e => {
+                                                const productId = Number(e.value || 0);
+                                                const product = products.find(pro => isEqualNumber(
+                                                    pro.Product_Id, productId
+                                                ))
+                                                setProductInput(pre => ({
                                                     ...pre,
-                                                    FromGodown: e.value,
-                                                    FromGodownName: e.label
-                                                }))}
-                                                menuPortalTarget={document.body}
-                                                options={[
-                                                    { value: '', label: 'Search', isDisabled: true },
-                                                    ...godown.filter(fil => !isEqualNumber(fil.Godown_Id, filters.ToGodown)).map(obj => ({
-                                                        value: obj?.Godown_Id,
-                                                        label: obj?.Godown_Name
-                                                    }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Select Godown"}
-                                                maxMenuHeight={300}
-                                            />
-                                        </td>
-
-                                        <td className="fa-13 ">
-                                            <Select
-                                                value={{ value: filters.ToGodown, label: filters.ToGodownName }}
-                                                onChange={e => setFilters(pre => ({
+                                                    Product_Id: e.value,
+                                                    HSN_Code: product?.HSN_Code,
+                                                    Gst_P: product?.Gst_P,
+                                                    Cgst_P: product?.Cgst_P,
+                                                    Sgst_P: product?.Sgst_P,
+                                                    Igst_P: product?.Igst_P,
+                                                    Unit_Id: product?.UOM_Id,
+                                                    Units: product?.Units
+                                                }))
+                                            }}
+                                            options={[
+                                                { value: '', label: 'select product', isDisabled: true },
+                                                ...products.map(obj => ({
+                                                    value: obj?.Product_Id,
+                                                    label: obj?.Product_Name,
+                                                    isDisabled: (selectedItems.findIndex(o => isEqualNumber(
+                                                        o?.Product_Id, obj?.Product_Id
+                                                    ))) === -1 ? false : true
+                                                }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            required
+                                            isSearchable={true}
+                                            placeholder={"Select Product"}
+                                            maxMenuHeight={200}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>From Godown</td>
+                                    <td className={tdStyle}>
+                                        <select
+                                            value={productInput.From_Location}
+                                            onChange={e => setProductInput({
+                                                ...productInput,
+                                                From_Location: e.target.value,
+                                                BatchLocation: godown.find(g => isEqualNumber(g.Godown_Id, e.target.value)).Godown_Name || ''
+                                            })}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value={''} disabled>select godown</option>
+                                            {godown.map((god, godInd) => (
+                                                <option value={god.Godown_Id} key={godInd}>{god.Godown_Name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Weight <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className='cus-inpt p-2 w-50'
+                                            value={productInput.QTY ? productInput.QTY : ''}
+                                            required
+                                            placeholder='Weight'
+                                            onInput={onlynum}
+                                            onChange={e => {
+                                                const amount = checkIsNumber(productInput.Gst_Rate) ?
+                                                    Multiplication(e.target.value, productInput.Gst_Rate) :
+                                                    productInput.Taxable_Value;
+                                                setProductInput(
+                                                    pre => ({
+                                                        ...pre,
+                                                        QTY: e.target.value,
+                                                        Taxable_Value: amount,
+                                                        Total_Value: amount
+                                                    })
+                                                )
+                                            }}
+                                        />
+                                        <select
+                                            className='cus-inpt p-2 w-50'
+                                            value={productInput.Unit_Id}
+                                            placeholder='Units ex: kg, l, ml...'
+                                            onChange={e => setProductInput(
+                                                pre => ({
                                                     ...pre,
-                                                    ToGodown: e.value,
-                                                    ToGodownName: e.label
+                                                    Unit_Id: e.target.value,
+                                                    Units: uom.find(u => isEqualNumber(u.Unit_Id, e.target.value)).Units
                                                 }))}
-                                                menuPortalTarget={document.body}
-                                                options={[
-                                                    { value: '', label: 'Search', isDisabled: true },
-                                                    ...godown.filter(fil => !isEqualNumber(fil.Godown_Id, filters.FromGodown)).map(obj => ({
-                                                        value: obj?.Godown_Id,
-                                                        label: obj?.Godown_Name
-                                                    }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Select Godown"}
-                                                maxMenuHeight={300}
-                                            />
-                                        </td>
-
-                                        <td className="fa-13 text-center ">
-                                            <input
-                                                type="date"
-                                                value={filters.Fromdate}
-                                                className="cus-inpt p-2"
-                                                required
-                                                max={filters.Todate}
-                                                onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
-                                            />
-                                        </td>
-
-                                        <td className="fa-13 text-center ">
-                                            <input
-                                                type="date"
-                                                value={filters.Todate}
-                                                className="cus-inpt p-2"
-                                                min={filters.Fromdate}
-                                                required
-                                                onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
-                                            />
-                                        </td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <FilterableTable
-                            dataArray={transactionData}
-                            // EnableSerialNumber
-                            disablePagination
-                            title={`Godown Transactions From: ${transactionData[0]?.Source_Godown_Name}`}
-                            maxHeightOption
-                            columns={[
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: '#',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => {
-
-                                        const isChecked = selectedItems.findIndex(o =>
-                                            isEqualNumber(o.STJ_Id, row.STJ_Id)
-                                            && isEqualNumber(o.From_Location, row.Sour_Goodown_Id)
-                                            && isEqualNumber(o.Product_Id, row.Sour_Item_Id)
-                                        ) === -1 ? false : true;
-
-                                        return (
-                                            <div>
-                                                <input
-                                                    className="form-check-input shadow-none pointer"
-                                                    style={{ padding: '0.7em' }}
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() => {
-                                                        if (isChecked) changeItems(row, true)
-                                                        else changeItems(row)
-                                                    }}
-                                                />
-                                            </div>
-                                        )
-                                    }
-                                },
-                                createCol('Journal_no', 'string', 'Journal_no'),
-                                createCol('Sour_Item_Name', 'string', 'Item'),
-                                createCol('Stock_Journal_Voucher_type', 'string', 'Voucher'),
-                                createCol('Stock_Journal_Bill_type', 'string', 'Bill-Type'),
-                                createCol('Sour_Batch_Lot_No', 'string', 'Batch'),
-                                createCol('Sour_Qty', 'number', 'Quantity'),
-                                createCol('Sour_Amt', 'number', 'Amount'),
-                                createCol('Source_Godown_Name', 'string', 'From'),
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'To',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => godown.find(g => isEqualNumber(g.Godown_Id, row?.Dest_Goodown_Id)).Godown_Name ?? ' - '
-                                },
-                            ]}
-                        />
+                                        >
+                                            <option value="" disabled>select uom</option>
+                                            {uom.map((uomObj, ind) => (
+                                                <option value={uomObj.Unit_Id} key={ind}>{uomObj.Units}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Rate <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            required
+                                            className='cus-inpt p-2'
+                                            value={productInput.Gst_Rate ? productInput.Gst_Rate : ''}
+                                            placeholder='Rate'
+                                            onInput={onlynum}
+                                            onChange={e => {
+                                                const amount = checkIsNumber(productInput.QTY) ?
+                                                    Multiplication(e.target.value, productInput.QTY) :
+                                                    productInput.Taxable_Value;
+                                                setProductInput(
+                                                    pre => ({
+                                                        ...pre,
+                                                        Gst_Rate: e.target.value,
+                                                        Taxable_Value: amount,
+                                                        Total_Value: amount
+                                                    })
+                                                )
+                                            }}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Batch / Lot Number</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            value={productInput.Batch_No}
+                                            onChange={e => setProductInput({ ...productInput, Batch_No: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>BillNo</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            value={productInput.BillNo}
+                                            onChange={e => setProductInput({ ...productInput, BillNo: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Concern</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            value={productInput.Concern}
+                                            onChange={e => setProductInput({ ...productInput, Concern: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </DialogContent>
 
                     <DialogActions>
-                        <Button type="button" onClick={() => setFilters(pre => ({ ...pre, addItemDialog: false }))}>close</Button>
+                        <Button type="button" onClick={closeDialog}>close</Button>
+                        <Button type="submit" variant="outlined">Add</Button>
                     </DialogActions>
-
                 </form>
             </Dialog>
         </>

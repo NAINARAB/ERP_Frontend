@@ -1,8 +1,5 @@
-
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-// import '../common.css'
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
@@ -10,11 +7,10 @@ import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate"
 import { Edit, FilterAlt } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
-// import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
-// import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NewDeliveryOrder from "./NewDeliveryOrder";
-const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
+
+const DeliveryDetailsList = ({ loadingOn, loadingOff, reload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -23,9 +19,8 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
-    
+
     const [deleteConfirm, setDeleteConfirm] = useState(false)
-//    const [itemTodelete,setItemToDelete]=useState({})
     const [isDeliveryDetailsVisible, setIsDeliveryDetailsVisible] = useState(false)
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
@@ -52,8 +47,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                 setSaleOrders(data?.data)
             }
         }).catch(e => console.error(e))
-
-       
     }, [
         filters.Fromdate,
         filters?.Todate,
@@ -65,7 +58,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
     ])
 
     useEffect(() => {
-
         fetchLink({
             address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
         }).then(data => {
@@ -75,7 +67,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
         }).catch(e => console.error(e))
 
         fetchLink({
-            address: `dataEntry/costCenter`
+            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
         }).then(data => {
             if (data.success) {
                 setSalePerson(data.data)
@@ -91,15 +83,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
         }).catch(e => console.error(e))
 
     }, [])
-    // const openDeleteDialog = (itemData) => {
-      
-    //     setItemToDelete({
-    //         So_No: itemData.So_No,
-    //         Do_Id: itemData.Do_Id
-    //     });
-    //     setDeleteConfirm(true);
-    // };
-    
+
     const saleOrderColumn = [
         {
             Field_Name: 'Do_Id',
@@ -182,7 +166,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
         //     Field_Data:'String',
         //     align: 'center',
         //     // isCustomCell: true,
-         
+
         // },
         // {
         //     Field_Name: 'Sales_Person_Name',
@@ -197,7 +181,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
             Cell: ({ row }) => {
                 return (
                     <>
-                      
+
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
@@ -225,10 +209,8 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
     ];
 
     const ExpendableComponent = ({ row }) => {
-
         return (
             <>
-
                 <table className="table">
                     <tbody>
                         <tr>
@@ -276,32 +258,11 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-   
-      
-        setDeleteConfirm(false)  
-      }
 
-        // const confirmData = async () => {
-       
-        //     if (!itemTodelete) return;
-        //     fetchLink({
-        //         address: 'delivery/deliveryOrder',
-        //         method: 'DELETE',
-        //         bodyData: ({ Order_Id: itemTodelete.So_No, Do_Id: itemTodelete.Do_Id })
 
-        //     }).then(data => {
-        //         if (data.success) {
-        //             toast.success(data?.message);
-        //            reload()
-        //         } else {
-        //             toast.error(data?.message)
-        //         }
-        //     }).catch(e => console.error(e)).finally(() => loadingOff())
+        setDeleteConfirm(false)
+    }
 
-        //     setDeleteConfirm(false) 
-        
-        // };
-        
     return (
         <>
             <Card>
@@ -311,7 +272,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                             ? 'Delivery Orders'
                             : isValidObject(orderInfo)
                                 ? 'Modify Delivery Order'
-                                : ''  }
+                                : ''}
                     </h6>
                     <span>
                         {screen && (
@@ -324,16 +285,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                 </IconButton>
                             </Tooltip>
                         )}
-
-                        {/* {screen && (
-                          <Switch
-                                checked={!screen}
-                                onChange={onToggle}
-                                label={'Delivery Details'}
-                                inputProps={{ 'aria-label': 'controlled' }}
-                                
-                            />
-                        )} */}
                     </span>
                 </div>
 
@@ -342,7 +293,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                         <FilterableTable
                             dataArray={saleOrders}
                             columns={saleOrderColumn}
-                            // EnableSerialNumber={true}
                             isExpendable={true}
                             tableMaxHeight={550}
                             expandableComp={ExpendableComponent}
@@ -361,7 +311,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                 </CardContent>
             </Card>
 
-
             {Object.keys(viewOrder).length > 0 && (
                 <DeliveryInvoiceTemplate
                     orderDetails={viewOrder?.orderDetails}
@@ -373,17 +322,16 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                 />
             )}
 
-
             <Dialog
                 open={deleteConfirm}
                 fullWidth maxWidth='sm'
             >
                 <DialogTitle>Delete</DialogTitle>
                 <DialogContent>
-                 <div>Are You Want to Move the order Into the Sale Order Again</div>
+                    <div>Are You Want to Move the order Into the Sale Order Again</div>
                 </DialogContent>
                 <DialogActions>
-                   
+
                     <Button onClick={closeDialog}>close</Button>
                     {/* <Button onClick={confirmData}>Delete</Button> */}
                 </DialogActions>
@@ -399,7 +347,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                     <div className="table-responsive pb-4">
                         <table className="table">
                             <tbody>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Retailer</td>
                                     <td>
@@ -416,7 +363,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Delivery Person</td>
                                     <td>
@@ -425,7 +371,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                             onChange={(e) => setFilters({ ...filters, Delivery_Person_Id: e.value, Delivery_Person_Name: e.label })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.Cost_Center_Id, label: obj?.Cost_Center_Name }))
+                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -433,7 +379,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Created By</td>
                                     <td>
@@ -450,7 +395,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -462,7 +406,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
@@ -474,7 +417,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
                                     <td>
@@ -489,7 +431,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                                         </select>
                                     </td>
                                 </tr>
-
                             </tbody>
                         </table>
                     </div>
@@ -498,7 +439,6 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff,reload }) => {
                     <Button onClick={closeDialog}>close</Button>
                 </DialogActions>
             </Dialog>
-
         </>
     )
 }
