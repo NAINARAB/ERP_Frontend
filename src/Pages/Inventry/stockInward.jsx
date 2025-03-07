@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ISOString, isValidDate } from '../../Components/functions';
+import { isEqualNumber, ISOString, isValidDate, toNumber } from '../../Components/functions';
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { FilterAlt, Search, ShoppingCart } from "@mui/icons-material";
@@ -17,20 +17,35 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     const query = useQuery();
     const [reportData, setReportData] = useState([]);
+    const [godowns, setGodowns] = useState([]);
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
         fetchFrom: defaultFilters.Fromdate,
         fetchTo: defaultFilters.Todate,
+        sourceGodown: "",
+        destinationGodown: "",
         filterDialog: false,
         refresh: false,
     })
 
     useEffect(() => {
+        fetchLink({
+            address: `dataEntry/godownLocationMaster`
+        }).then(data => {
+            const godownLocations = (data.success ? data.data : []).sort(
+                (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
+            );
+            setGodowns(godownLocations);
+        })
+    }, [])
+
+    useEffect(() => {
         if (loadingOn) loadingOn();
+        const { fetchFrom, fetchTo, sourceGodown = '', destinationGodown = '' } = filters
 
         fetchLink({
-            address: `inventory/stockJournal/inwardsReport?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
+            address: `inventory/stockJournal/inwardsReport?Fromdate=${fetchFrom}&Todate=${fetchTo}&sourceGodown=${sourceGodown}&destinationGodown=${destinationGodown}`,
         }).then(data => {
             if (data.success) {
                 setReportData(data.data);
@@ -38,7 +53,7 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters?.fetchFrom, filters?.fetchTo])
+    }, [filters?.fetchFrom, filters?.fetchTo, filters?.refresh])
 
     useEffect(() => {
         const queryFilters = {
@@ -96,6 +111,18 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
                     createCol('Dest_Qty', 'number', 'Tonnage'),
                     {
                         isVisible: 1,
+                        ColumnHeader: 'Source Validation',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <span 
+                                className={` 
+                                    rounded-3 px-2 py-1 fa-10 fw-bold text-white
+                                    ${isEqualNumber(row?.Sour_Qty, row?.Dest_Qty) ? ' bg-success' : " bg-warning "}`}
+                            >{isEqualNumber(row?.Sour_Qty, row?.Dest_Qty) ? 'Verified': 'Miss-Matched'}</span>
+                        )
+                    },
+                    {
+                        isVisible: 1,
                         ColumnHeader: 'Actions',
                         isCustomCell: true,
                         Cell: ({ row }) => (
@@ -141,6 +168,36 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
                                     />
                                 </td>
                             </tr>
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Source Godown</td>
+                                <td className="py-1">
+                                    <select
+                                        value={filters.sourceGodown}
+                                        onChange={e => setFilters(pre => ({ ...pre, sourceGodown: e.target.value }))}
+                                        className="cus-inpt p-2"
+                                    >
+                                        <option value="">All Godown</option>
+                                        {godowns.map((g, gi) => (
+                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Destination Godown</td>
+                                <td className="py-1">
+                                    <select
+                                        value={filters.destinationGodown}
+                                        onChange={e => setFilters(pre => ({ ...pre, destinationGodown: e.target.value }))}
+                                        className="cus-inpt p-2"
+                                    >
+                                        <option value="">All Godown</option>
+                                        {godowns.map((g, gi) => (
+                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
                         </table>
                     </div>
                 </DialogContent>
@@ -150,10 +207,11 @@ const StockInwards = ({ loadingOn, loadingOff }) => {
                         onClick={() => {
                             const updatedFilters = {
                                 Fromdate: filters?.Fromdate,
-                                Todate: filters?.Todate
+                                Todate: filters?.Todate,
                             };
                             updateQueryString(updatedFilters);
                             closeDialog();
+                            setFilters(pre => ({...pre, refresh: !pre.refresh}))
                         }}
                         startIcon={<Search />}
                         variant="outlined"

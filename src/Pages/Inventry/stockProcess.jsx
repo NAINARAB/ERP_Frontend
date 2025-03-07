@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { checkIsNumber, ISOString, isValidDate, Subraction } from '../../Components/functions';
+import { useEffect, useMemo, useState } from "react";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, Subraction } from '../../Components/functions';
 import FilterableTable, { formatString } from '../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { FilterAlt, Search } from "@mui/icons-material";
@@ -21,8 +21,8 @@ const transformStockJournalData = (data) => {
         const totalSourceQty = entry.SourceDetails.reduce((sum, item) => sum + (item.Sour_Qty || 0), 0);
         const totalDestinationQty = entry.DestinationDetails.reduce((sum, item) => sum + (item.Dest_Qty || 0), 0);
 
-        const diffPercentage = totalSourceQty !== 0 
-            ? ((totalDestinationQty - totalSourceQty) / totalSourceQty) * 100 
+        const diffPercentage = totalSourceQty !== 0
+            ? ((totalDestinationQty - totalSourceQty) / totalSourceQty) * 100
             : 0;
 
         transformedData.push({
@@ -31,7 +31,7 @@ const transformStockJournalData = (data) => {
             VoucherType: entry.Stock_Journal_Voucher_type,
             VoucherNo: entry.Journal_no,
             SourceItem: "",
-            SourceGodown: "", 
+            SourceGodown: "",
             SourceQty: totalSourceQty,
             DestinationItem: "",
             DestinationGodown: "",
@@ -67,15 +67,29 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const query = useQuery();
-    const [reportData, setReportData] = useState([]);
+    const [responseData, setResponseData] = useState([]);
+    const [godowns, setGodowns] = useState([]);
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
         fetchFrom: defaultFilters.Fromdate,
         fetchTo: defaultFilters.Todate,
+        sourceGodown: "",
+        destinationGodown: "",
         filterDialog: false,
         refresh: false,
     })
+
+    useEffect(() => {
+        fetchLink({
+            address: `dataEntry/godownLocationMaster`
+        }).then(data => {
+            const godownLocations = (data.success ? data.data : []).sort(
+                (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
+            );
+            setGodowns(godownLocations);
+        })
+    }, [])
 
     useEffect(() => {
         if (loadingOn) loadingOn();
@@ -91,8 +105,7 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
                 //         && stj?.StaffsDetails?.length === 0
                 //     ))
                 //     : []
-                const repData = transformStockJournalData(data.data);
-                setReportData(repData)
+                setResponseData(data.data)
             }
         }).finally(() => {
             if (loadingOff) loadingOff();
@@ -123,12 +136,43 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
         });
     }
 
+    const filteredData = useMemo(() => {
+        return responseData.filter((stj) => {
+            const hasFromGodownMatch = filters.sourceGodown
+                ? stj.SourceDetails.some((product) =>
+                    isEqualNumber(filters.sourceGodown, product.Sour_Goodown_Id)
+                )
+                : true;
+
+            const hasToGodownMatch = filters.destinationGodown
+                ? stj.DestinationDetails.some((product) =>
+                    isEqualNumber(filters.destinationGodown, product.Dest_Goodown_Id)
+                )
+                : true;
+
+            return (
+                hasFromGodownMatch &&
+                hasToGodownMatch
+            );
+        });
+    }, [
+        filters.sourceGodown,
+        filters.destinationGodown,
+        responseData
+    ]);
+
+    const displayData = useMemo(() => {
+        return (filters.sourceGodown || filters.destinationGodown)
+            ? transformStockJournalData(filteredData)
+            : transformStockJournalData(responseData)
+    }, [filters.sourceGodown, filters.destinationGodown, filteredData, responseData])
+
     return (
         <>
             <FilterableTable
                 headerFontSizePx={11}
                 bodyFontSizePx={11}
-                dataArray={reportData}
+                dataArray={displayData}
                 title="PRODUCTIONS"
                 maxHeightOption
                 ButtonArea={
@@ -177,7 +221,7 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
                         <table className="table">
                             <tr>
                                 <td style={{ verticalAlign: 'middle' }}>From</td>
-                                <td>
+                                <td className="py-1">
                                     <input
                                         type="date"
                                         value={filters.Fromdate}
@@ -188,13 +232,43 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
                             </tr>
                             <tr>
                                 <td style={{ verticalAlign: 'middle' }}>To</td>
-                                <td>
+                                <td className="py-1">
                                     <input
                                         type="date"
                                         value={filters.Todate}
                                         onChange={e => setFilters({ ...filters, Todate: e.target.value })}
                                         className="cus-inpt p-2"
                                     />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Source Godown</td>
+                                <td className="py-1">
+                                    <select
+                                        value={filters.sourceGodown}
+                                        onChange={e => setFilters(pre => ({ ...pre, sourceGodown: e.target.value }))}
+                                        className="cus-inpt p-2"
+                                    >
+                                        <option value="">All Godown</option>
+                                        {godowns.map((g, gi) => (
+                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Destination Godown</td>
+                                <td className="py-1">
+                                    <select
+                                        value={filters.destinationGodown}
+                                        onChange={e => setFilters(pre => ({ ...pre, destinationGodown: e.target.value }))}
+                                        className="cus-inpt p-2"
+                                    >
+                                        <option value="">All Godown</option>
+                                        {godowns.map((g, gi) => (
+                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                        ))}
+                                    </select>
                                 </td>
                             </tr>
                         </table>

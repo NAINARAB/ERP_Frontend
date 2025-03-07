@@ -7,7 +7,7 @@ import { customSelectStyles } from "../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import RequiredStar from '../../Components/requiredStar';
 import { toast } from 'react-toastify';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const { user } = getSessionUser();
 
@@ -83,7 +83,7 @@ const soruceAndDestination = [
 
 const StockJournalCreate = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
-    const navigation = useNavigate();
+    // const navigation = useNavigate();
     const stateDetails = location.state;
     const [baseData, setBaseData] = useState({
         products: [],
