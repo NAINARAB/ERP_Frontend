@@ -2,6 +2,8 @@ import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multipli
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
+const isArr = (arr) => Array.isArray(arr)
+
 export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
     switch (status) {
@@ -26,8 +28,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             CreatedAt: item.CreatedAt,
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
-                            DeliveryDetails: item.DeliveryDetails ?? [],
-                            StaffDetails: item.StaffDetails ?? [],
+                            StaffDetails: isArr(item.StaffDetails) ? item.StaffDetails : [],
+                            TranspoterDetails: isArr(item.TranspoterDetails) ? item.TranspoterDetails : [],
+                            DeliveryDetails: isArr(item.DeliveryDetails) ? item.DeliveryDetails : [],
+                            ConvertedAsInvoices: isArr(item.ConvertedAsInvoices) ? item.ConvertedAsInvoices : [],
                             LoadingDate: item.LoadingDate,
                             IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
@@ -38,7 +42,6 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             PaymentCondition: item.PaymentCondition,
                             Remarks: item.Remarks,
                             TradeConfirmDate: item.TradeConfirmDate,
-                            TranspoterDetails: item.TranspoterDetails ?? [],
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                         }
@@ -72,8 +75,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             CreatedAt: item.CreatedAt,
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
-                            DeliveryDetails: item.DeliveryDetails ?? [],
-                            StaffDetails: item.StaffDetails ?? [],
+                            StaffDetails: isArr(item.StaffDetails) ? item.StaffDetails : [],
+                            TranspoterDetails: isArr(item.TranspoterDetails) ? item.TranspoterDetails : [],
+                            DeliveryDetails: isArr(item.DeliveryDetails) ? item.DeliveryDetails : [],
+                            ConvertedAsInvoices: isArr(item.ConvertedAsInvoices) ? item.ConvertedAsInvoices : [],
                             LoadingDate: item.LoadingDate,
                             IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
@@ -84,7 +89,6 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             PaymentCondition: item.PaymentCondition,
                             Remarks: item.Remarks,
                             TradeConfirmDate: item.TradeConfirmDate,
-                            TranspoterDetails: item.TranspoterDetails ?? [],
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                         }
@@ -117,8 +121,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             CreatedAt: item.CreatedAt,
                             ItemDetails: item?.ItemDetails,
                             OrderStatus: item?.OrderStatus,
-                            DeliveryDetails: item.DeliveryDetails ?? [],
-                            StaffDetails: item.StaffDetails ?? [],
+                            StaffDetails: isArr(item.StaffDetails) ? item.StaffDetails : [],
+                            TranspoterDetails: isArr(item.TranspoterDetails) ? item.TranspoterDetails : [],
+                            DeliveryDetails: isArr(item.DeliveryDetails) ? item.DeliveryDetails : [],
+                            ConvertedAsInvoices: isArr(item.ConvertedAsInvoices) ? item.ConvertedAsInvoices : [],
                             LoadingDate: item.LoadingDate,
                             IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
@@ -129,7 +135,6 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             PaymentCondition: item.PaymentCondition,
                             Remarks: item.Remarks,
                             TradeConfirmDate: item.TradeConfirmDate,
-                            TranspoterDetails: item.TranspoterDetails ?? [],
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                         }
@@ -157,10 +162,12 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             BrokerName: item.BrokerName,
                             CreatedBy: item.CreatedBy,
                             CreatedAt: item.CreatedAt,
-                            DeliveryDetails: item?.DeliveryDetails ?? [],
-                            StaffDetails: item.StaffDetails ?? [],
+                            ItemDetails: isArr(item.ItemDetails) ? item.ItemDetails : [],
+                            StaffDetails: isArr(item.StaffDetails) ? item.StaffDetails : [],
+                            TranspoterDetails: isArr(item.TranspoterDetails) ? item.TranspoterDetails : [],
+                            DeliveryDetails: isArr(item.DeliveryDetails) ? item.DeliveryDetails : [],
+                            ConvertedAsInvoices: isArr(item.ConvertedAsInvoices) ? item.ConvertedAsInvoices : [],
                             OrderStatus: item?.OrderStatus,
-                            ItemDetails: item.ItemDetails ?? [],
                             LoadingDate: item.LoadingDate,
                             IsConvertedAsInvoice: item?.IsConvertedAsInvoice,
                             OwnerId: item.OwnerId ?? '',
@@ -171,7 +178,6 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             PaymentCondition: item.PaymentCondition,
                             Remarks: item.Remarks,
                             TradeConfirmDate: item.TradeConfirmDate,
-                            TranspoterDetails: item.TranspoterDetails ?? [],
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                         }
@@ -299,11 +305,18 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             ColumnHeader: 'Action',
             isCustomCell: true,
             Cell: ({ row }) => {
-                const OrderDetails = row ?? {};
-                const OrderItemsArray = row?.ItemDetails ?? [];
-                const DeliveryArray = row?.DeliveryDetails ?? [];
-                const StaffArray = row?.StaffDetails ?? [];
-                const TranspoterArray = row?.TranspoterDetails ?? [];
+                const OrderDetails = row;
+                const { 
+                    ItemDetails = [], 
+                    DeliveryDetails = [], 
+                    StaffDetails = [], 
+                    TranspoterDetails = [], 
+                    ConvertedAsInvoices = [] 
+                } = OrderDetails;
+                const OrderItemsArray = row.ItemDetails;
+                const DeliveryArray = row.DeliveryDetails;
+                const StaffArray = row.StaffDetails;
+                const TranspoterArray = row.TranspoterDetails;
 
                 return (
                     <>
@@ -314,11 +327,12 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                     color='primary'
                                     onClick={() => setOrderPreview(pre => ({
                                         ...pre,
-                                        OrderDetails,
-                                        OrderItemsArray,
-                                        DeliveryArray,
-                                        TranspoterArray,
-                                        StaffArray,
+                                        OrderDetails: OrderDetails,
+                                        OrderItemsArray: ItemDetails,
+                                        DeliveryArray: DeliveryDetails,
+                                        TranspoterArray: TranspoterDetails,
+                                        StaffArray: StaffDetails,
+                                        // ConvertedAsInvoices: ConvertedAsInvoices,
                                         display: true,
                                     }))}
                                 ><Visibility className="fa-16" /></IconButton>
@@ -344,7 +358,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Retailer_Id: OrderDetails?.PartyId,
                                                         Retailer_Name: OrderDetails?.PartyName
                                                     },
-                                                    orderInfo: DeliveryArray.map(item => ({
+                                                    orderInfo: DeliveryDetails.map(item => ({
                                                         POI_St_Id: '',
                                                         DeliveryId: item?.Id,
                                                         OrderId: item?.OrderId,
@@ -358,7 +372,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Free_Qty: 0,
                                                         Batch_No: item?.BatchLocation,
                                                     })),
-                                                    staffInfo: StaffArray.map(staff => ({
+                                                    staffInfo: StaffDetails.map(staff => ({
                                                         Involved_Emp_Id: Number(staff.EmployeeId),
                                                         Involved_Emp_Name: staff.Emp_Name,
                                                         Cost_Center_Type_Id: Number(staff.CostType),
@@ -379,11 +393,11 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                             navigation({
                                                 page: '/dataEntry/purchaseOrder/create',
                                                 stateToTransfer: {
-                                                    OrderDetails,
-                                                    OrderItemsArray,
-                                                    DeliveryArray,
-                                                    TranspoterArray,
-                                                    StaffArray,
+                                                    OrderDetails: OrderDetails,
+                                                    OrderItemsArray: ItemDetails,
+                                                    DeliveryArray: DeliveryDetails,
+                                                    TranspoterArray: TranspoterDetails,
+                                                    StaffArray: StaffDetails,
                                                     editPage: 'PurchaseOderWithDelivery'
                                                 }
                                             })

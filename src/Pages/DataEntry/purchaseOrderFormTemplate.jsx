@@ -4,8 +4,8 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum } from '../../Components/functions';
-import { Delete, Add, Save, ClearAll, Edit, Launch, Search, Close, Download } from '@mui/icons-material';
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum, toNumber } from '../../Components/functions';
+import { Delete, Add, Save, ClearAll, Edit, Search, Close, Download } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
 const storage = JSON.parse(localStorage.getItem('user'));
@@ -148,11 +148,10 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `masters/products?Company_Id=${storage?.Company_id}`
         }).then(data => {
-            if (data.success) {
-                setProducts(data.data);
-            } else {
-                setProducts([]);
-            }
+            const productsData = (data.success ? data.data : []).sort(
+                (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+            );
+            setProducts(productsData);
         }).catch(e => console.error(e));
 
         fetchLink({
@@ -357,10 +356,72 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     }
 
     const changeTripItems = (itemDetail, deleteRow = false) => {
+        const trip = tripData.find((trp) =>
+            isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
+        );
+        const getTripDate = trip?.Trip_Date;
+        const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
+
+        const notInStaffList = trip?.Employees_Involved?.filter(staff =>
+            !StaffArray.some(arrObj => isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id))
+        ) || [];
+
+        if (notInStaffList.length > 0) {
+            setStaffArray(prevStaffArray => [
+                ...prevStaffArray,
+                ...notInStaffList.map(staff => Object.fromEntries(
+                    Object.entries(initialStaffDetailsValue).map(([key, value]) => {
+                        switch (key) {
+                            case 'EmployeeId': return [key, staff?.Involved_Emp_Id];
+                            case 'CostType': return [key, staff?.Cost_Center_Type_Id];
+                            default: return [key, value];
+                        }
+                    })
+                ))
+            ]);
+        }
+
+        setTranspoterArray(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o.indexValue, itemDetail.Trip_Id));
+
+            if (deleteRow) {
+                return preItems;
+            } else {
+
+                const tripObj = Object.fromEntries(
+                    Object.entries(initialTranspoterDetailsValue).map(([key, value]) => {
+                        switch (key) {
+                            case "indexValue":
+                                return [key, trip?.Trip_Id];
+                            case "Loading_Load":
+                                return [key, toNumber(trip?.LoadingLoad)];
+                            case 'Loading_Empty':
+                                return [key, toNumber(trip?.LoadingEmpty)]
+                            case 'Unloading_Load':
+                                return [key, toNumber(trip?.UnloadingLoad)]
+                            case "Unloading_Empty":
+                                return [key, toNumber(trip?.UnloadingEmpty)];
+                            case "EX_SH":
+                                return [key, 0];
+                            case "VehicleNo":
+                                return [key, trip?.Vehicle_No];
+                            case "PhoneNumber":
+                                return [key, trip?.PhoneNumber];
+                            default:
+                                return [key, value];
+                        }
+                    })
+                );
+
+                return [...preItems, tripObj].sort((a, b) => a.Trip_Id - b.Trip_Id);
+            }
+        })
+
         setDeliveryArray((prev) => {
             const preItems = prev.filter(o => !(
                 isEqualNumber(o.Trip_Id, itemDetail.Trip_Id) &&
-                isEqualNumber(o.Trip_Item_SNo, itemDetail.S_No)
+                isEqualNumber(o.LocationId, itemDetail.To_Location) &&
+                isEqualNumber(o.ItemId, itemDetail.Product_Id)
             ));
 
             if (deleteRow) {
@@ -370,54 +431,12 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                     .flatMap(t => t.Products_List)
                     .filter(o => (
                         isEqualNumber(o.Trip_Id, itemDetail.Trip_Id) &&
-                        isEqualNumber(o.S_No, itemDetail.S_No)
+                        isEqualNumber(o.From_Location, itemDetail.From_Location) &&
+                        isEqualNumber(o.Product_Id, itemDetail.Product_Id)
                     ));
-
-                const trip = tripData.find((trp) =>
-                    isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
-                );
-
-                const notInStaffList = trip?.Employees_Involved?.filter(staff =>
-                    !StaffArray.some(arrObj => isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id))
-                ) || [];
-
-                if (notInStaffList.length > 0) {
-                    setStaffArray(prevStaffArray => [
-                        ...prevStaffArray,
-                        ...notInStaffList.map(staff => Object.fromEntries(
-                            Object.entries(initialStaffDetailsValue).map(([key, value]) => {
-                                switch (key) {
-                                    case 'EmployeeId': return [key, staff?.Involved_Emp_Id];
-                                    case 'CostType': return [key, staff?.Cost_Center_Type_Id];
-                                    default: return [key, value];
-                                }
-                            })
-                        ))
-                    ]);
-                }
-
-                // const notInStaffList = trip?.Employees_Involved?.filter(staff => (
-                //     StaffArray.findIndex(arrObj => (
-                //         isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id)
-                //     ) === -1 ? true : false)
-                // ));
-
-                // notInStaffList.forEach(staff => (
-                //     StaffArray.concat(Object.fromEntries(
-                //         Object.entries(initialStaffDetailsValue).map(([key, value]) => {
-                //             switch (key) {
-                //                 case 'EmployeeId': return [key, staff?.Involved_Emp_Id]
-                //                 case 'CostType': return [key, staff?.Cost_Center_Type_Id]
-                //                 default: return [key, value]
-                //             }
-                //         })
-                //     ))
-                // ))
 
                 const reStruc = currentProduct.map((item, curProIndex) => {
 
-                    const getTripDate = trip?.Trip_Date;
-                    const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
                     const productDetails = findProductDetails(products, item?.Product_Id);
                     const pack = parseFloat(productDetails?.PackGet ?? 0);
                     const Quantity = Division(item.QTY, pack);
@@ -438,13 +457,17 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                 case "Trip_Item_SNo":
                                     return [key, item?.S_No ?? null];
                                 case "TransporterIndex":
-                                    return [key, 0];
+                                    return [key, toNumber(trip?.Trip_Id)];
                                 case "ArrivalDate":
                                     return [key, tripDate];
                                 case "ItemId":
-                                    return [key, Number(item?.Product_Id)];
+                                    return [key, Number(item?.Product_Id)]; 
                                 case "ItemName":
                                     return [key, item?.Product_Name];
+                                case "Concern":
+                                    return [key, item?.Concern ? item?.Concern : value];
+                                case "BillNo":
+                                    return [key, item?.BillNo ? item?.BillNo : value];
                                 case "BillDate":
                                     return [key, tripDate];
                                 case "BilledRate":
@@ -856,6 +879,14 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
                     {(options.PurchaseOderWithDelivery || options.DeliveryEntry) && (
                         <>
+                            <div className="d-flex justify-content-end">
+                                <Button
+                                    startIcon={<Download />}
+                                    varient='outlined'
+                                    // disabled={TranspoterArray.length === 0}
+                                    onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: true }))}
+                                >From Trips</Button>
+                            </div>
                             {/* TRANSPOTER DETAILS */}
                             <table className="table m-0">
                                 <thead>
@@ -922,7 +953,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         });
                                                     }}
                                                     size='small'
-                                                    disabled={DeliveryArray.some(d => isEqualNumber(d.TransporterIndex, i))}
+                                                    disabled={DeliveryArray.some(d => isEqualNumber(d.TransporterIndex, o?.indexValue))}
                                                     color='error'
                                                 >
                                                     <Delete />
@@ -948,12 +979,6 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                 disabled={TranspoterArray.length === 0}
                                                 onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
                                             >Add Delivery</Button>
-                                            <Button
-                                                startIcon={<Download />}
-                                                varient='outlined'
-                                                disabled={TranspoterArray.length === 0}
-                                                onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: true }))}
-                                            >From Trips</Button>
                                         </td>
                                     </tr>
                                     <tr>

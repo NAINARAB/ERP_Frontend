@@ -190,8 +190,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         setFilters(pre => ({ ...pre, addItemDialog: false }));
     }
 
-    console.log(productInput)
-
     return (
         <>
             <Card>
@@ -655,19 +653,23 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        setSelectedItems(prev => {
-                            const prevArray = [...prev];
-                            const proIndex = prevArray.findIndex(pro =>
-                                isEqualNumber(pro.Product_Id, productInput.Product_Id)
-                            );
-                            if (proIndex !== -1) {
-                                prevArray[proIndex] = productInput;
-                            } else {
-                                prevArray.push(productInput);
-                            }
-                            return prevArray;
-                        });
-                        closeDialog();
+                        if (checkIsNumber(productInput.Product_Id)) {
+                            setSelectedItems(prev => {
+                                const prevArray = [...prev];
+                                const proIndex = prevArray.findIndex(pro =>
+                                    isEqualNumber(pro.Product_Id, productInput.Product_Id)
+                                );
+                                if (proIndex !== -1) {
+                                    prevArray[proIndex] = productInput;
+                                } else {
+                                    prevArray.push(productInput);
+                                }
+                                return prevArray;
+                            });
+                            closeDialog();
+                        } else {
+                            toast.error('Select Item');
+                        }
                     }}
                 >
 
@@ -729,7 +731,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className={tdStyle}>From Godown</td>
+                                    <td className={tdStyle}>From Godown <RequiredStar /></td>
                                     <td className={tdStyle}>
                                         <select
                                             value={productInput.From_Location}
@@ -739,6 +741,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 BatchLocation: godown.find(g => isEqualNumber(g.Godown_Id, e.target.value)).Godown_Name || ''
                                             })}
                                             className="cus-inpt p-2"
+                                            required
                                         >
                                             <option value={''} disabled>select godown</option>
                                             {godown.map((god, godInd) => (

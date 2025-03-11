@@ -365,7 +365,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             switch (key) {
                                 case 'DeliveryId': return [key, Number(item?.Id)]
                                 case 'OrderId': return [key, Number(item?.OrderId)]
-                                // case 'PIN_Id': return [key, Number(item?.OrderId)]
                                 case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
