@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat, filterableText } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
@@ -60,7 +60,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                     const itemDetails = item?.ItemDetails?.filter(fil => {
                         const itemsInDelivery = item?.DeliveryDetails?.filter(del => isEqualNumber(del.ItemId, fil?.ItemId));
                         const WeightTotal = itemsInDelivery.reduce((sum, delivery) => Addition(sum, delivery?.Weight), 0);
-                        return Number(WeightTotal) < Number(fil?.Weight);
+                        return (
+                            Number(WeightTotal) < Number(fil?.Weight)
+                            && filterableText(item.OrderStatus) !== filterableText('Canceled')
+                        );
                     }).map(o => ({
                         ...o,
                         OrderDetails: {
