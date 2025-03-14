@@ -4,40 +4,12 @@ import { DaysBetween, getPreviousDate, ISOString } from "../../Components/functi
 // import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
 import DisplayArrayData from './SalesReportComponent/DataSetDisplay'
 import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
-import ProductDayBasedSalesReport from "./SalesReportComponent//ProductDayBasedTable";
+import ProductDayBasedSalesReport from "./SalesReportComponent/ProductDayBasedTable";
 import { FilterAlt, Refresh } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
+import LedgerBasedSalesReport from "./SalesReportComponent/LedgerBasedTable";
 
-
-const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
-    const [salesData, setSalesData] = useState([]);
-    const [dataTypes, setDataTypes] = useState([]);
-
-    useEffect(() => {
-        fetchLink({
-            address: `reports/salesReport/ledger/itemDetails?Fromdate=${Fromdate}&Todate=${Todate}&Ledger_Id=${row?.Ledger_Tally_Id}`,
-            headers: {
-                'Db': DB
-            }
-        }).then(({ success, data, others }) => {
-            if (success) {
-                const { dataTypeInfo } = others;
-                setSalesData(data);
-                setDataTypes(pre => ({...pre, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : []}))
-            } else {
-                setSalesData([]);
-            }
-        })
-        .catch(console.error);
-    }, [row?.Ledger_Tally_Id, Fromdate, Todate])
-
-    return (
-        <DisplayArrayData dataArray={salesData} columns={dataTypes.salesInfo} />
-    )
-}
-
-
-const SalesReport = () => {
+const SalesReport = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem("user"));
     const [salesData, setSalesData] = useState(null);
     const [dataTypes, setDataTypes] = useState({
@@ -63,12 +35,12 @@ const SalesReport = () => {
             if (success) {
                 const { dataTypeInfo } = others;
                 setSalesData(data);
-                setDataTypes(pre => ({...pre, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : []}))
+                setDataTypes(pre => ({ ...pre, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }))
             } else {
                 setSalesData([]);
             }
         })
-        .catch(console.error);
+            .catch(console.error);
 
         fetchLink({
             address: `reports/salesReport/products?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
@@ -84,13 +56,13 @@ const SalesReport = () => {
                     StockTransaction: Array.isArray(data.data) ? [...data.data].filter(losDetails => losDetails.Stock_Group === los.Stock_Group) : []
                 })) : [];
 
-                setDataTypes(pre => ({...pre, salesItemInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : []}))
+                setDataTypes(pre => ({ ...pre, salesItemInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }))
                 setSalesDataOfProduct(combinedData);
             } else {
                 setSalesDataOfProduct([])
             }
         })
-        .catch(e => console.error(e))
+            .catch(e => console.error(e))
     }
 
     useEffect(() => {
@@ -176,19 +148,16 @@ const SalesReport = () => {
                     )}
 
                     {(filters.ReportType === "LedgerBased" && Array.isArray(salesData)) && (
-                        // <LedgerBasedSalesReport filterDialog={filters.filterDialog} closeDialog={closeDialog} dataArray={salesData} />
-                        <DisplayArrayData 
-                            dataArray={salesData} 
-                            columns={dataTypes.salesInfo} 
-                            ExpandableComp={({ row }) => (
-                                <LedgerDetails 
-                                    row={row} 
-                                    DB={storage?.Company_id} 
-                                    Fromdate={filters?.Fromdate} 
-                                    Todate={filters?.Todate} 
-                                />
-                            )}
-                            enableFilters={true} 
+                        <LedgerBasedSalesReport
+                            filterDialog={filters.filterDialog}
+                            closeDialog={closeDialog}
+                            dataArray={salesData}
+                            colTypes={dataTypes.salesInfo}
+                            DB={storage?.Company_id}
+                            Fromdate={filters?.Fromdate}
+                            Todate={filters?.Todate}
+                            loadingOn={loadingOn} 
+                            loadingOff={loadingOff}
                         />
                     )}
 

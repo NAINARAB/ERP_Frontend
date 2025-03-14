@@ -165,6 +165,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                     createCol('Challan_No', 'string', 'Challan'),
                     createCol('FromLocation', 'string', 'From'),
                     createCol('ToLocation', 'string', 'To'),
+                    createCol('Narration', 'string', 'Narration'),
                     // createCol('StartTime', 'time', 'Start Time'),
                     // createCol('EndTime', 'time', 'End Time'),
                     {

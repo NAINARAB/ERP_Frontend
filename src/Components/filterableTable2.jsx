@@ -135,9 +135,17 @@ const exportToExcel = (dataArray, columns) => {
     }
 };
 
-const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', tdClass = '') => {
+const createCol = (
+    field = '', 
+    type = 'string', 
+    ColumnHeader = '', 
+    align = 'left', 
+    verticalAlign = 'center', 
+    tdClass = '', 
+    isVisible = 1
+) => {
     return {
-        isVisible: 1,
+        isVisible: isVisible,
         Field_Name: field,
         Fied_Data: type,
         align,
@@ -343,58 +351,55 @@ const FilterableTable = ({
                         const isColumnVisible = isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1);
                         const isCustomCell = Boolean(column?.isCustomCell) && column.Cell;
                         const isCommonValue = !isCustomCell;
-                        const tdClass = (row, Field_Name, tdIndex) => (
-                            column?.tdClass
-                                ? String(' ' + column?.tdClass({ row, Field_Name, index: tdIndex }) + ' ')
-                                : ''
-                        );
-                        const horizondalalignClass = column.align ? columnAlign.find(
-                            align => align.type === String(column.align).toLowerCase()
-                        )?.class : '';
-                        const verticalAlignClass = column.verticalAlign ? columnVerticalAlign.find(
-                            align => align.type === String(column.verticalAlign).toLowerCase()
-                        )?.class : ' vctr ';
 
-                        if (isColumnVisible && isCommonValue) return Object.entries(row).map(
-                            ([key, value]) => column.Field_Name === key && (
+                        const tdClass = (row, Field_Name, tdIndex) => (
+                            column?.tdClass ? ` ${column?.tdClass({ row, Field_Name, index: tdIndex })} ` : ''
+                        );
+
+                        const horizondalalignClass = column.align
+                            ? columnAlign.find(align => align.type === String(column.align).toLowerCase())?.class
+                            : '';
+
+                        const verticalAlignClass = column.verticalAlign
+                            ? columnVerticalAlign.find(align => align.type === String(column.verticalAlign).toLowerCase())?.class
+                            : ' vctr ';
+
+                        if (isColumnVisible && isCommonValue) {
+                            const foundEntry = Object.entries(row).find(([key]) => key === column.Field_Name);
+
+                            return (
                                 <TableCell
                                     key={columnInd}
-                                    className={`
-                                        border-end`
-                                        + horizondalalignClass
-                                        + verticalAlignClass
-                                        + tdClass(row, column.Field_Name, index)
-                                    }
+                                    className={`border-end ${horizondalalignClass} ${verticalAlignClass} ${tdClass(row, column.Field_Name, index)}`}
                                     sx={{ fontSize: `${bodyFontSizePx}px` }}
                                     onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
                                 >
-                                    {formatString(value, column?.Fied_Data)}
+                                    {foundEntry ? formatString(foundEntry[1], column?.Fied_Data) : '-'}
                                 </TableCell>
-                            )
-                        )
+                            );
+                        }
 
-                        if (isColumnVisible && isCustomCell) return (
-                            <TableCell
-                                key={columnInd}
-                                className={`
-                                    border-end`
-                                    + horizondalalignClass
-                                    + verticalAlignClass
-                                    + tdClass(row, column.Field_Name, index)
-                                }
-                                sx={{ fontSize: `${bodyFontSizePx}px` }}
-                            >
-                                {column.Cell({ row, Field_Name: column.Field_Name, index })}
-                            </TableCell>
-                        )
+                        if (isColumnVisible && isCustomCell) {
+                            return (
+                                <TableCell
+                                    key={columnInd}
+                                    className={`border-end ${horizondalalignClass} ${verticalAlignClass} ${tdClass(row, column.Field_Name, index)}`}
+                                    sx={{ fontSize: `${bodyFontSizePx}px` }}
+                                >
+                                    {column.Cell({ row, Field_Name: column.Field_Name, index })}
+                                </TableCell>
+                            );
+                        }
 
                         return (
                             <TableCell
                                 key={columnInd}
                                 sx={{ fontSize: `${bodyFontSizePx}px` }}
-                                className={`border-end ` + horizondalalignClass + verticalAlignClass}
-                            ></TableCell>
-                        )
+                                className={`border-end ${horizondalalignClass} ${verticalAlignClass}`}
+                            >
+                                -
+                            </TableCell>
+                        );
                     })}
 
                 </TableRow>
@@ -627,3 +632,79 @@ export {
     ButtonActions,
     formatString
 }
+
+
+
+
+{/* {columns?.map((column, columnInd) => {
+                        const isColumnVisible = isEqualNumber(column?.Defult_Display, 1) || isEqualNumber(column?.isVisible, 1);
+                        const isCustomCell = Boolean(column?.isCustomCell) && column.Cell;
+                        const isCommonValue = !isCustomCell;
+                        const tdClass = (row, Field_Name, tdIndex) => (
+                            column?.tdClass
+                                ? String(' ' + column?.tdClass({ row, Field_Name, index: tdIndex }) + ' ')
+                                : ''
+                        );
+                        const horizondalalignClass = column.align ? columnAlign.find(
+                            align => align.type === String(column.align).toLowerCase()
+                        )?.class : '';
+                        const verticalAlignClass = column.verticalAlign ? columnVerticalAlign.find(
+                            align => align.type === String(column.verticalAlign).toLowerCase()
+                        )?.class : ' vctr ';
+
+                        // if (isColumnVisible && isCommonValue) return Object.entries(row).map(
+                        //     ([key, value]) => column.Field_Name === key && (
+                        //         <TableCell
+                        //             key={columnInd}
+                        //             className={`
+                        //                 border-end`
+                        //                 + horizondalalignClass
+                        //                 + verticalAlignClass
+                        //                 + tdClass(row, column.Field_Name, index)
+                        //             }
+                        //             sx={{ fontSize: `${bodyFontSizePx}px` }}
+                        //             onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
+                        //         >
+                        //             {formatString(value, column?.Fied_Data)}
+                        //         </TableCell>
+                        //     )
+                        // )
+
+                        if (isColumnVisible && isCommonValue) {
+                            const foundEntry = Object.entries(row).find(([key]) => key === column.Field_Name);
+                    
+                            return (
+                                <TableCell
+                                    key={columnInd}
+                                    className={`border-end ${horizondalalignClass} ${verticalAlignClass} ${tdClass(row, column.Field_Name, index)}`}
+                                    sx={{ fontSize: `${bodyFontSizePx}px` }}
+                                    onClick={() => onClickFun ? onClickFun(row) : console.log('Function not supplied')}
+                                >
+                                    {foundEntry ? formatString(foundEntry[1], column?.Fied_Data) : '-'}
+                                </TableCell>
+                            );
+                        }
+
+                        if (isColumnVisible && isCustomCell) return (
+                            <TableCell
+                                key={columnInd}
+                                className={`
+                                    border-end`
+                                    + horizondalalignClass
+                                    + verticalAlignClass
+                                    + tdClass(row, column.Field_Name, index)
+                                }
+                                sx={{ fontSize: `${bodyFontSizePx}px` }}
+                            >
+                                {column.Cell({ row, Field_Name: column.Field_Name, index })}
+                            </TableCell>
+                        )
+
+                        return (
+                            <TableCell
+                                key={columnInd}
+                                sx={{ fontSize: `${bodyFontSizePx}px` }}
+                                className={`border-end ` + horizondalalignClass + verticalAlignClass}
+                            ></TableCell>
+                        )
+                    })} */}

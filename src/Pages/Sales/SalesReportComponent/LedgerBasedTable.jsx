@@ -1,57 +1,104 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
-import { isEqualNumber, checkIsNumber } from '../../../Components/functions'
+import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division } from '../../../Components/functions'
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
 import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, Download } from '@mui/icons-material'
-import { mkConfig, generateCsv, download } from 'export-to-csv';
 import * as XLSX from 'xlsx';
-
-const csvConfig = mkConfig({
-    fieldSeparator: ',',
-    decimalSeparator: '.',
-    useKeysAsHeaders: true,
-});
+import { fetchLink } from "../../../Components/fetchComponent";
+import DisplayArrayData from "./DataSetDisplay";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
-const columnsInitialValue = [
-    { Field_Name: "Ledger_Name", Fied_Data: "string", isVisible: 1, isDefault: 1, OrderBy: 1 },
-    { Field_Name: "Billed_Qty", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 2 },
-    { Field_Name: "M2_Avg", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 3 },
-    { Field_Name: "M3_Avg", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 4 },
-    { Field_Name: "M6_Avg", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 5 },
-    { Field_Name: "M9_Avg", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: 6 },
-    { Field_Name: "M12_Avg", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 7 },
-    { Field_Name: "A1", Fied_Data: "string", isVisible: 1, isDefault: 0, OrderBy: null },
-    { Field_Name: "A2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "A3", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "A4", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "A5", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Q_Pay_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Freq_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Ledger_Alias", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Actual_Party_Name_with_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Name", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Location", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Nature", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Group", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Ref_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Ref_Owners", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Mobile_1", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_Mobile_2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "Party_District", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-    { Field_Name: "File_No", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null }
-]
+const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
+    const [salesData, setSalesData] = useState([]);
+    const [dataTypes, setDataTypes] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
+    useEffect(() => {
+        setLoading(true);
+        fetchLink({
+            address: `reports/salesReport/ledger/itemDetails?Fromdate=${Fromdate}&Todate=${Todate}&Ledger_Id=${row?.Ledger_Tally_Id}`,
+            headers: {
+                'Db': DB
+            }
+        }).then(({ success, data, others }) => {
+            if (success) {
+                const { dataTypeInfo } = others;
+                setSalesData(data);
+                setDataTypes(pre => ({ ...pre, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }))
+            } else {
+                setSalesData([]);
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            setLoading(false);
+        });
+    }, [row?.Ledger_Tally_Id, Fromdate, Todate])
+
+    return (
+        loading
+            ? <h5 className="text-center text-primary ">Loading...</h5>
+            : <DisplayArrayData dataArray={salesData} columns={dataTypes.salesInfo} />
+    )
+}
+
+const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes, DB, Fromdate, Todate }) => {
     const [filters, setFilters] = useState({});
-    const [showData, setShowData] = useState([]);
-    const [filteredData, setFilteredData] = useState(showData);
+    const [groupBy, setGroupBy] = useState('');
+    const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
-    const [columns, setColumns] = useState(columnsInitialValue);
-    const DisplayColumn = [...columns].filter(
-        col => (isEqualNumber(col?.Defult_Display, 1) || isEqualNumber(col?.isVisible, 1))
-    ).map(col => col.Field_Name)
+    const propsColumns = colTypes.map((col, colInd) => ({
+        isVisible: colInd < 12 ? 1 : 0,
+        Field_Name: col?.Column_Name,
+        Fied_Data: col?.Data_Type,
+        OrderBy: colInd + 1
+    }));
+    const [columns, setColumns] = useState(propsColumns);
+
+    const sortedCoulumns = useMemo(() => {
+        return columns.sort(
+            (a, b) => (
+                a?.OrderBy && b?.OrderBy
+            ) ? a?.OrderBy - b?.OrderBy : b?.OrderBy - a?.OrderBy
+        )
+    }, [columns])
+
+    const DisplayColumn = useMemo(() => {
+        return sortedCoulumns.filter(
+            col => (isEqualNumber(col?.Defult_Display, 1) || isEqualNumber(col?.isVisible, 1))
+        )
+    }, [sortedCoulumns])
+
+    const showData = useMemo(() => {
+        const filter = Object.keys(filters).length > 0, grouping = groupBy ? true : false;
+
+        const filtered = filter ? filteredData : dataArray;
+        const groupFiltered = grouping ? groupData(filtered, groupBy) : [];
+
+        const aggKeys = DisplayColumn.filter(fil => (
+            filterableText(fil.Fied_Data) === "number"
+        )).map(col => col.Field_Name);
+
+        const groupAggregations = groupFiltered.map(grp => {
+            return {
+                ...grp,
+                ...Object.fromEntries(
+                    aggKeys.map(key => [
+                        key,
+                        Division(
+                            grp?.groupedData?.reduce(
+                                (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
+                                0
+                            ),
+                            grp.groupedData.length
+                        )
+                    ])
+                )
+            }
+        })
+        console.log(groupAggregations)
+
+        return grouping ? groupAggregations : filtered
+    }, [filters, dataArray, filteredData, groupBy, DisplayColumn])
 
     useEffect(() => {
         applyFilters();
@@ -66,7 +113,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
 
     const applyFilters = () => {
         let filtered = [...dataArray];
-        for (const column of columns) {
+        for (const column of sortedCoulumns) {
             if (filters[column.Field_Name]) {
                 if (filters[column.Field_Name].type === 'range') {
                     const { min, max } = filters[column.Field_Name];
@@ -163,131 +210,54 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
         }
     };
 
-    const ledgerAndTransactionExport = (excludeDetails, transactions) => {
-        const wb = XLSX.utils.book_new();
-
-        const excludeDetailsSheet = XLSX.utils.json_to_sheet(excludeDetails);
-        XLSX.utils.book_append_sheet(wb, excludeDetailsSheet, 'Sheet1');
-
-        const transactionsSheet = XLSX.utils.json_to_sheet(transactions);
-        XLSX.utils.book_append_sheet(wb, transactionsSheet, 'Sheet2');
-
-        XLSX.writeFile(wb, 'exported_data.xlsx');
-    };
-
-    const handleExportData = () => {
-        const dataForDownload = showData.map(row => {
-            const excludeDetails = Object.fromEntries(
-                Object.entries(row).filter(([key]) => key !== 'LedgerSales' && DisplayColumn.find(colKey => colKey === key))
-            );
-
-            return excludeDetails
-        })
-        const csv = generateCsv(csvConfig)(dataForDownload);
-        download(csvConfig)(csv);
-    };
-
-    useEffect(() => {
-        const dataToUse = (Object.keys(filters).length > 0) ? filteredData : dataArray;
-        setShowData(dataToUse);
-    }, [filters, dataArray, filteredData])
-
-    useEffect(() => {
-        setColumns(pre => pre.sort((a, b) => (a?.OrderBy && b?.OrderBy) ? a?.OrderBy - b?.OrderBy : b?.OrderBy - a?.OrderBy))
-    }, [columns])
-
     return (
         <Fragment>
-            <Button
-                variant="outlined"
-                className="mb-2"
-                onClick={handleExportData}
-                startIcon={<Download />}
-            >
-                Download Ledger Data
-            </Button>
-
             <div className="row">
-
                 <div className="col-xxl-10 col-lg-9 col-md-8">
                     <FilterableTable
-                        columns={[
-                            {
-                                Field_Name: "Excel_Export",
-                                Fied_Data: "string",
-                                isVisible: 1,
-                                OrderBy: 1,
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-                                    const excludeDetails = Object.fromEntries(
-                                        Object.entries(row).filter(([key]) => key !== 'LedgerSales' && DisplayColumn.find(colKey => colKey === key))
-                                    );
-                                    return (
-                                        <>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    ledgerAndTransactionExport([excludeDetails], row.LedgerSales);
-                                                }}
-                                            >
-                                                <Download />
-                                            </IconButton>
-                                        </>
-                                    )
-                                }
-                            },
-                            ...columns.map(col => (isEqualNumber(col.isVisible, 1)) && col),
-                        ]}
+                        title="LOL - Sales Reports"
+                        ButtonArea={
+                            <>
+                                <select
+                                    className="cus-inpt p-2 w-auto m-1"
+                                    value={groupBy}
+                                    onChange={e => setGroupBy(e.target.value)}
+                                >
+                                    <option value="">Group By</option>
+                                    {DisplayColumn.filter(fil => (
+                                        filterableText(fil.Fied_Data) === "string"
+                                        && fil?.Field_Name !== 'Ledger_Name'
+                                    )).map((col, colInd) => (
+                                        <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
+                                    ))}
+                                </select>
+                            </>
+                        }
+                        ExcelPrintOption
+                        columns={
+                            groupBy
+                                ? DisplayColumn.filter(fil =>
+                                    showData.length > 0 && Object.keys(showData[0]).includes(fil.Field_Name)
+                                ).map(col => ({
+                                    ...col,
+                                    ColumnHeader: col.Field_Name === groupBy ? groupBy : col.ColumnHeader
+                                }))
+                                : DisplayColumn
+                        }
                         dataArray={showData}
                         isExpendable={true}
-                        expandableComp={({ row }) => {
-                            return (
-                                <FilterableTable
-                                    initialPageCount={15}
-                                    dataArray={Array.isArray(row.LedgerSales) ? row.LedgerSales : []}
-                                    columns={[
-                                        {
-                                            Field_Name: 'Stock_Group',
-                                            isVisible: 1,
-                                            Fied_Data: 'string',
-                                        },
-                                        {
-                                            Field_Name: 'bill_qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                        {
-                                            Field_Name: 'M2_AVG_Qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                        {
-                                            Field_Name: 'M3_AVG_Qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                        {
-                                            Field_Name: 'M6_AVG_Qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                        {
-                                            Field_Name: 'M9_AVG_Qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                        {
-                                            Field_Name: 'One_Year_AVG_Qty',
-                                            isVisible: 1,
-                                            Fied_Data: 'number',
-                                        },
-                                    ]}
-                                />
-                            )
-                        }}
+                        expandableComp={({ row }) => (
+                            <LedgerDetails
+                                row={row}
+                                DB={DB}
+                                Fromdate={Fromdate}
+                                Todate={Todate}
+                            />
+                        )}
                         tableMaxHeight={540}
                     />
                 </div>
+
                 <div className="col-xxl-2 col-lg-3 col-md-4 d-none d-md-block">
                     <h5 className="d-flex justify-content-between px-2">
                         <span>Filters</span>
@@ -311,21 +281,16 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
                         </span>
                     </h5>
                     <div className="border rounded-3 " style={{ maxHeight: '58vh', overflow: 'auto' }}>
-                        {columns.map((column, ke) => (
-                            isEqualNumber(column.isVisible, 1)
-                            // && column.Field_Name !== 'M3_Avg'
-                            // && column.Field_Name !== 'M6_Avg'
-                            // && column.Field_Name !== 'M12_Avg'
-                            // && column.Field_Name !== 'Billed_Qty'
-                        ) && (
-                                <div key={ke} className="py-3 px-3 hov-bg border-bottom">
-                                    <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
-                                    {renderFilter(column)}
-                                </div>
-                            ))}
+                        {DisplayColumn.map((column, ke) => (
+                            <div key={ke} className="py-3 px-3 hov-bg border-bottom">
+                                <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
+                                {renderFilter(column)}
+                            </div>
+                        ))}
                         <br />
                     </div>
                 </div>
+
             </div>
 
             <Dialog
@@ -356,18 +321,12 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
                         </span>
                     </h5>
                     <div className="border rounded-3 " >
-                        {columns.map((column, ke) => (
-                            isEqualNumber(column.isVisible, 1)
-                            // && column.Field_Name !== 'M3_Avg'
-                            // && column.Field_Name !== 'M6_Avg'
-                            // && column.Field_Name !== 'M12_Avg'
-                            // && column.Field_Name !== 'Billed_Qty'
-                        ) && (
-                                <div key={ke} className="py-3 px-3 hov-bg border-bottom">
-                                    <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
-                                    {renderFilter(column)}
-                                </div>
-                            ))}
+                        {DisplayColumn.map((column, ke) => (
+                            <div key={ke} className="py-3 px-3 hov-bg border-bottom">
+                                <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
+                                {renderFilter(column)}
+                            </div>
+                        ))}
                         <br />
                     </div>
                 </DialogContent>
@@ -384,7 +343,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
                 <DialogTitle>Column Settings</DialogTitle>
                 <DialogContent>
                     <div className="row">
-                        {columns.map((o, i) => (
+                        {sortedCoulumns.map((o, i) => (
                             <div className="col-lg-4 col-md-6 p-2" key={i}>
                                 <Card
                                     component={Paper}
@@ -429,13 +388,108 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog }) => {
                     </div>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setColumns(columnsInitialValue)} variant="outlined">Reset</Button>
+                    <Button onClick={() => setColumns(propsColumns)} variant="outlined">Reset</Button>
                     <Button onClick={() => setDialog(false)} color='error'>close</Button>
                 </DialogActions>
             </Dialog>
+
         </Fragment>
     )
 
 }
 
 export default LedgerBasedSalesReport;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const ledgerAndTransactionExport = (excludeDetails, transactions) => {
+//     const wb = XLSX.utils.book_new();
+
+//     const excludeDetailsSheet = XLSX.utils.json_to_sheet(excludeDetails);
+//     XLSX.utils.book_append_sheet(wb, excludeDetailsSheet, 'Sheet1');
+
+//     const transactionsSheet = XLSX.utils.json_to_sheet(transactions);
+//     XLSX.utils.book_append_sheet(wb, transactionsSheet, 'Sheet2');
+
+//     XLSX.writeFile(wb, 'exported_data.xlsx');
+// };
+
+
+// {
+//     Field_Name: "Excel_Export",
+//     Fied_Data: "string",
+//     isVisible: 1,
+//     OrderBy: 1,
+//     isCustomCell: true,
+//     Cell: ({ row }) => {
+//         const excludeDetails = Object.fromEntries(
+//             Object.entries(row).filter(([key]) => key !== 'LedgerSales' && DisplayColumn.find(colKey => colKey === key))
+//         );
+//         return (
+//             <>
+//                 <IconButton
+//                     size="small"
+//                     onClick={() => {
+//                         ledgerAndTransactionExport([excludeDetails], row.LedgerSales);
+//                     }}
+//                 >
+//                     <Download />
+//                 </IconButton>
+//             </>
+//         )
+//     }
+// },
+
+
+
+
+
+// const columnsInitialValue = [
+//     { Field_Name: "Ledger_Name", Fied_Data: "string", isVisible: 1, isDefault: 1, OrderBy: 4 },
+//     { Field_Name: "Total_Qty", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 5 },
+//     { Field_Name: "ALL_Avg_M2", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 3, ColumnHeader: 'M2' },
+//     { Field_Name: "ALL_Avg_M3", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: 6, ColumnHeader: 'M3' },
+//     { Field_Name: "ALL_Avg_M6", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 2, ColumnHeader: 'M6' },
+//     { Field_Name: "ALL_Avg_M9", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: 7, ColumnHeader: 'M9' },
+//     { Field_Name: "ALL_Avg_One_Year", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 1, ColumnHeader: 'Y1' },
+//     { Field_Name: "Q_Pay_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Freq_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Ledger_Alias", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Actual_Party_Name_with_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Name", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Location", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Nature", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Group", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Ref_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Ref_Owners", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Mobile_1", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_Mobile_2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Party_District", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "File_No", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Payment_Mode", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "A2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "A3", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "A4", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "M2_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "M3_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "M6_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "M9_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Y_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Q_Pay_Group", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
+//     { Field_Name: "Ledger_Tally_Id", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null }
+// ].sort((a, b) => a.OrderBy - b.OrderBy);

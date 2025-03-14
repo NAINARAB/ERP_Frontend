@@ -15,7 +15,14 @@ const csvConfig = mkConfig({
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
-const DisplayArrayData = ({ dataArray = [], columns = [], ExpandableComp, enableFilters = false }) => {
+const DisplayArrayData = ({ 
+    dataArray = [], 
+    columns = [], 
+    ExpandableComp, 
+    enableFilters = false,
+    ExportAllData = false,
+
+}) => {
     const [dispColmn, setDispColmn] = useState([]);
     const [filters, setFilters] = useState({});
     const [filteredData, setFilteredData] = useState(dataArray);
@@ -44,16 +51,6 @@ const DisplayArrayData = ({ dataArray = [], columns = [], ExpandableComp, enable
     useEffect(() => {
         applyFilters();
     }, [filters]);
-
-    const handleExportRows = (rows) => {
-        const csv = generateCsv(csvConfig)(rows);
-        download(csvConfig)(csv);
-    };
-
-    const handleExportData = () => {
-        const csv = generateCsv(csvConfig)(dataArray);
-        download(csvConfig)(csv);
-    };
 
     const handleFilterChange = (column, value) => {
         setFilters(prevFilters => ({
@@ -173,22 +170,6 @@ const DisplayArrayData = ({ dataArray = [], columns = [], ExpandableComp, enable
                 }}
             >
                 <Button
-                    onClick={handleExportData}
-                    startIcon={<FileDownload />}
-                >
-                    All Data
-                </Button>
-                <Button
-                    disabled={filteredData.length === 0}
-                    className={enableFilters ? '' : 'd-none'}
-                    onClick={() =>
-                        handleExportRows(filteredData)
-                    }
-                    startIcon={<FileDownload />}
-                >
-                    Filtered Rows
-                </Button>
-                <Button
                     onClick={() => setDialogs(pre => ({ ...pre, filters: true }))}
                     className={enableFilters ? "d-md-none d-inline" : 'd-none'}
                     startIcon={<FilterAlt />}
@@ -207,6 +188,7 @@ const DisplayArrayData = ({ dataArray = [], columns = [], ExpandableComp, enable
                             isExpendable={ExpandableComp ? true : false}
                             expandableComp={ExpandableComp ? ExpandableComp : undefined}
                             tableMaxHeight={650}
+                            ExcelPrintOption
                         />
                     </div>
                 </div>

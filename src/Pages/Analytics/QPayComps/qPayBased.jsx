@@ -85,11 +85,6 @@ const QPayBasedComp = ({ dataArray, columns, filters }) => {
         localStorage.setItem('qPayGroup', val.target.value)
     }
 
-    // const onChangeGroup = (val) => {
-    //     setLocalState(pre => ({ ...pre, group: val }))
-    //     localStorage.setItem('qPayGroup', JSON.stringify(val))
-    // }
-
     return (
         <>
             <div className="col-xxl-3 col-lg-4 col-md-6 col-sm-8">

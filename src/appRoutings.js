@@ -72,7 +72,7 @@ const RouteMaster = lazy(() => import("./Pages/UserModule/routeMaster"))
 const AreaMaster = lazy(() => import("./Pages/UserModule/areaMaster"))
 
 // Sales
-const SalesReport = lazy(() => import("./Pages/Sales/LedgerTransaction"))
+const SalesReport = lazy(() => import("./Pages/Sales/salesReports"))
 const SalesTransaction = lazy(() => import("./Pages/Analytics/SalesReport"))
 const SaleOrderList = lazy(() => import("./Pages/Sales/saleOrder"))
 const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
