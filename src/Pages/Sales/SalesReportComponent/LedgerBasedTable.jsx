@@ -2,8 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division } from '../../../Components/functions'
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
-import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, Download } from '@mui/icons-material'
-import * as XLSX from 'xlsx';
+import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings } from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -47,7 +46,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const propsColumns = colTypes.map((col, colInd) => ({
-        isVisible: colInd < 12 ? 1 : 0,
+        isVisible: colInd < 5 ? 1 : 0,
         Field_Name: col?.Column_Name,
         Fied_Data: col?.Data_Type,
         OrderBy: colInd + 1
@@ -55,7 +54,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
     const [columns, setColumns] = useState(propsColumns);
 
     const sortedCoulumns = useMemo(() => {
-        return columns.sort(
+        return [...columns].sort(
             (a, b) => (
                 a?.OrderBy && b?.OrderBy
             ) ? a?.OrderBy - b?.OrderBy : b?.OrderBy - a?.OrderBy
@@ -94,8 +93,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
                     ])
                 )
             }
-        })
-        console.log(groupAggregations)
+        });
 
         return grouping ? groupAggregations : filtered
     }, [filters, dataArray, filteredData, groupBy, DisplayColumn])
@@ -216,6 +214,8 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
                 <div className="col-xxl-10 col-lg-9 col-md-8">
                     <FilterableTable
                         title="LOL - Sales Reports"
+                        headerFontSizePx={12}
+                        bodyFontSizePx={12}
                         ButtonArea={
                             <>
                                 <select
@@ -247,14 +247,32 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
                         dataArray={showData}
                         isExpendable={true}
                         expandableComp={({ row }) => (
-                            <LedgerDetails
-                                row={row}
-                                DB={DB}
-                                Fromdate={Fromdate}
-                                Todate={Todate}
-                            />
+                            groupBy ? (
+                                <FilterableTable
+                                    title={row[groupBy] + ' - Ledgers'}
+                                    dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
+                                    columns={DisplayColumn}
+                                    ExcelPrintOption
+                                    isExpendable={true}
+                                    expandableComp={({ row }) => (
+                                        <LedgerDetails
+                                            row={row}
+                                            DB={DB}
+                                            Fromdate={Fromdate}
+                                            Todate={Todate}
+                                        />
+                                    )}
+                                />
+                            ) : (
+                                <LedgerDetails
+                                    row={row}
+                                    DB={DB}
+                                    Fromdate={Fromdate}
+                                    Todate={Todate}
+                                />
+                            )
                         )}
-                        tableMaxHeight={540}
+                        maxHeightOption
                     />
                 </div>
 
@@ -343,7 +361,7 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
                 <DialogTitle>Column Settings</DialogTitle>
                 <DialogContent>
                     <div className="row">
-                        {sortedCoulumns.map((o, i) => (
+                        {columns.map((o, i) => (
                             <div className="col-lg-4 col-md-6 p-2" key={i}>
                                 <Card
                                     component={Paper}

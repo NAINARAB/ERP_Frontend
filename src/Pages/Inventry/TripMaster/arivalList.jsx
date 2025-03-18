@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { Addition, filterableText, ISOString, isValidDate, NumberFormat, Subraction, timeDuration, toNumber } from "../../../Components/functions";
+import { Addition, filterableText, ISOString, isValidDate, toNumber } from "../../../Components/functions";
 import { FilterAlt, Search } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import Select from 'react-select';
@@ -28,8 +28,8 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         refresh: false,
         printPreviewDialog: false,
-        FromGodown: [],
-        ToGodown: [],
+        FromGodown: { label: 'Select Godown', value: '' },
+        ToGodown: { label: 'Select Godown', value: '' },
         Items: []
     });
 
@@ -97,21 +97,45 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
 
     const filteredData = useMemo(() => {
         return tripData.filter(trip => {
-            const hasFromGodownMatch = filters.FromGodown.length > 0
-                ? filters.FromGodown.some(selected => filterableText(selected.value) === filterableText(trip.FromLocation))
+            const selectedFromGodown = filters.FromGodown?.value || null;
+            const selectedToGodown = filters.ToGodown?.value || null;
+            const selectedItems = filters.Items || [];
+
+            const hasFromGodownMatch = selectedFromGodown
+                ? filterableText(selectedFromGodown) === filterableText(trip.FromLocation)
                 : false;
 
-            const hasToGodownMatch = filters.ToGodown.length > 0
-                ? filters.ToGodown.some(selected => filterableText(selected.value) === filterableText(trip.ToLocation))
+            const hasToGodownMatch = selectedToGodown
+                ? filterableText(selectedToGodown) === filterableText(trip.ToLocation)
                 : false;
 
-            const hasItemMatch = filters.Items.length > 0
-                ? filters.Items.some(selected => filterableText(selected.value) === filterableText(trip.Product_Name))
+            const hasItemMatch = selectedItems.length > 0
+                ? selectedItems.some(item =>
+                    filterableText(item.value) === filterableText(trip.Product_Name) 
+                )
                 : false;
+
+            if (selectedFromGodown && selectedToGodown && selectedItems.length > 0) {
+                return hasFromGodownMatch && hasToGodownMatch && hasItemMatch;
+            }
+
+            if (selectedFromGodown && selectedToGodown) {
+                return hasFromGodownMatch && hasToGodownMatch;
+            }
+
+            if (selectedFromGodown && selectedItems.length > 0) {
+                return hasFromGodownMatch && hasItemMatch;
+            }
+
+            if (selectedToGodown && selectedItems.length > 0) {
+                return hasToGodownMatch && hasItemMatch;
+            }
 
             return hasFromGodownMatch || hasToGodownMatch || hasItemMatch;
         });
     }, [tripData, filters.FromGodown, filters.ToGodown, filters.Items]);
+
+
 
     const bgColor = (total = 0, current = 0) => {
         const isCompleted = toNumber(current) >= toNumber(total);
@@ -125,8 +149,8 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
 
             <FilterableTable
                 dataArray={(
-                    filters.FromGodown.length > 0 ||
-                    filters.ToGodown.length > 0 ||
+                    filters.FromGodown.value ||
+                    filters.ToGodown.value ||
                     filters.Items.length > 0
                 ) ? filteredData : tripData}
                 title="Arrival List"
@@ -149,25 +173,11 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                     createCol('Product_Name', 'string', 'Item'),
                     createCol('QTY', 'string', 'Weight'),
                     createCol('Batch_No', 'string', 'Batch'),
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Po-Orders',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => toNumber(row?.ConvertedOrders?.length)
-                    // },
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'P-Invoices',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => toNumber(row?.ConvertedAsInvoices?.length)
-                    // },
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('Challan_No', 'string', 'Challan'),
                     createCol('FromLocation', 'string', 'From'),
                     createCol('ToLocation', 'string', 'To'),
                     createCol('Narration', 'string', 'Narration'),
-                    // createCol('StartTime', 'time', 'Start Time'),
-                    // createCol('EndTime', 'time', 'End Time'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'P-Orders',
@@ -260,7 +270,6 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                                             }
                                             menuPortalTarget={document.body}
                                             options={uniqueFromLocations}
-                                            isMulti
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             placeholder={"Select From Godown"}
@@ -274,12 +283,12 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                                     <td colSpan={3}>
                                         <Select
                                             value={filters.ToGodown}
-                                            onChange={(selectedOptions) =>
+                                            onChange={(selectedOptions) => {
+                                                console.log(selectedOptions)
                                                 setFilters((prev) => ({ ...prev, ToGodown: selectedOptions }))
-                                            }
+                                            }}
                                             menuPortalTarget={document.body}
                                             options={uniqueToLocations}
-                                            isMulti
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             placeholder={"Select To Godown"}

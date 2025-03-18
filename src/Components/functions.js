@@ -242,6 +242,28 @@ export const timeDifferenceHHMM = (startDate, endDate) => {
     return `${pad(hours)}:${pad(minutes)}`;
 }
 
+export const formatDateForDatetimeLocal = (date) => {
+    try {
+        const pad = (num) => num?.toString().padStart(2, '0');
+
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+        console.log('Error in formatDateForDatetimeLocal function: ', e);
+        return formatDateForDatetimeLocal(new Date())
+    }
+}
+
+export const convertUTCToLocal = (utcDateString) => {
+    const utcDate = new Date(utcDateString + "Z"); // Append 'Z' to indicate UTC time
+    return utcDate.toLocaleString();
+}
+
 export const onlynum = (e) => {
     let value = e.target.value;
     value = value.replace(/[^0-9.]/g, '');
@@ -263,12 +285,12 @@ export const isEqualNumber = (a, b) => {
 }
 
 export const toNumber = (value) => {
-    if (!value) return 0; 
+    if (!value) return 0;
     if (typeof value === 'string') {
-        const parsed = parseFloat(value.replace(/,/g, '')); 
+        const parsed = parseFloat(value.replace(/,/g, ''));
         return isNaN(parsed) ? 0 : parsed;
     }
-    return typeof value === 'number' ? value : 0; 
+    return typeof value === 'number' ? value : 0;
 };
 
 export const isEqualObject = (obj1, obj2) => {
@@ -355,7 +377,7 @@ export const filterableText = (text) => {
     }
 }
 
-export const stringCompare = (str1, str2) => filterableText(str1) === filterableText(str2) 
+export const stringCompare = (str1, str2) => filterableText(str1) === filterableText(str2)
 
 export const validValue = (val) => {
     return Boolean(val) ? val : ''

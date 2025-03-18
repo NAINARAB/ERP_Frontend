@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate, Subraction } from '../../Components/functions';
-import FilterableTable, { formatString } from '../../Components/filterableTable2';
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, Subraction } from '../../../Components/functions';
+import FilterableTable, { formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { FilterAlt, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { fetchLink } from "../../Components/fetchComponent";
+import { fetchLink } from "../../../Components/fetchComponent";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -27,9 +27,9 @@ const transformStockJournalData = (data) => {
 
         transformedData.push({
             SNo: entryIndex + 1,
-            Date: entry.Stock_Journal_date.split("T")[0],
-            VoucherType: entry.Stock_Journal_Voucher_type,
-            VoucherNo: entry.Journal_no,
+            Date: ISOString(entry.Process_date),
+            VoucherType: entry.VoucherTypeGet,
+            VoucherNo: entry.PR_Inv_Id,
             SourceItem: "",
             SourceGodown: "",
             SourceQty: totalSourceQty,
@@ -55,7 +55,7 @@ const transformStockJournalData = (data) => {
                 DestinationQty: entry.DestinationDetails[i]?.Dest_Qty || "",
                 DifferentQTY: "",
                 DifferentPercentage: "",
-                Staffs: entry.StaffsDetails[i]?.Cost_Center_Name || "",
+                Staffs: entry.StaffsDetails[i]?.EmpNameGet || "",
             });
         }
     });
@@ -63,7 +63,7 @@ const transformStockJournalData = (data) => {
     return transformedData;
 };
 
-const StockProcess = ({ loadingOn, loadingOff }) => {
+const StockMangement = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const query = useQuery();
@@ -95,7 +95,7 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
 
         fetchLink({
-            address: `inventory/stockJournal?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&billType=PROCESSING`,
+            address: `inventory/stockProcessing?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&billType=PROCESSING`,
         }).then(data => {
             if (data.success) {
                 // const filterForEmptyArrays = Array.isArray(data.data)
@@ -298,4 +298,4 @@ const StockProcess = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default StockProcess;
+export default StockMangement;

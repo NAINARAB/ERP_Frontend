@@ -271,7 +271,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         placeholder={"Select Staff"}
                                                     />
                                                 </td>
-                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
+                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '80px' }}>
                                                     <select
                                                         value={row?.Cost_Center_Type_Id}
                                                         onChange={e => setStaffInvolvedList((prev) => {

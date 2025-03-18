@@ -1,36 +1,42 @@
 import { useEffect, useState } from "react"
-import { Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM, getSessionUser, isEqualNumber, isGraterNumber, isValidObject } from "../../Components/functions"
+import {
+    Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM,
+    formatDateForDatetimeLocal,
+    getSessionUser, isEqualNumber, isGraterNumber, isValidObject
+} from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
-import { fetchLink } from "../../Components/fetchComponent"
+import { fetchLink } from "../../../Components/fetchComponent"
 import Select from 'react-select';
-import { customSelectStyles } from "../../Components/tablecolumn";
+import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
-import RequiredStar from '../../Components/requiredStar';
+import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation } from "react-router-dom";
 
 const { user } = getSessionUser();
 
 const initialStockJournalInfoValues = {
-    STJ_Id: '',
-    ST_Inv_Id: '',
-    Journal_no: '',
-
+    PR_Id: '',
+    PR_Inv_Id: '',
+    Year_Id: '',
     Branch_Id: '',
-    Stock_Journal_date: ISOString(),
-    Stock_Journal_Bill_type: 'MATERIAL INWARD',
-    Stock_Journal_Voucher_type: '',
-    Invoice_no: '',
+    Process_no: '',
+    P_No: '',
+
+    Godownlocation: '',
+    BillType: 'New',
+    VoucherType: '',
+    Process_date: '',
+    Machine_No: '',
+    StartDateTime: '',
+    EndDateTime: '',
+    ST_Reading: '',
+    EN_Reading: '',
+    Total_Reading: '',
     Narration: '',
-    Trip_No: '',
-    Created_by: user?.Name,
-    altered_by: user?.Name,
-
-    Start_Time: '',
-    End_Time: '',
-
-    Vehicle_Start_KM: '',
-    Vehicle_End_KM: '',
+    PR_Status: 'NEW',
+    Created_By: user?.name,
+    Updated_By: user?.name,
 }
 
 const initialSoruceValue = {
@@ -81,7 +87,7 @@ const soruceAndDestination = [
     { source: 'Sour_Amt', destination: 'Dest_Amt' },
 ];
 
-const StockJournalCreate = ({ loadingOn, loadingOff }) => {
+const StockManagementCreate = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     // const navigation = useNavigate();
     const stateDetails = location.state;
@@ -92,6 +98,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         voucherType: [],
         uom: [],
         staff: [],
+        staffType: []
     });
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [stockJorunalInfo, setStockJorunalInfo] = useState(initialStockJournalInfoValues);
@@ -108,14 +115,16 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                     godownLocationsResponse,
                     voucherTypeResponse,
                     uomResponse,
-                    staffResponse
+                    staffResponse,
+                    staffCategory,
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `purchase/voucherType` }),
                     fetchLink({ address: `masters/uom` }),
-                    fetchLink({ address: `dataEntry/costCenter` })
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -136,6 +145,9 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                 const staffData = (staffResponse.success ? staffResponse.data : []).sort(
                     (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
                 );
+                const staffCategoryData = (staffCategory.success ? staffCategory.data : []).sort(
+                    (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
+                );
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -145,6 +157,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                     voucherType: voucherType,
                     uom: uomData,
                     staff: staffData,
+                    staffType: staffCategoryData,
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -170,9 +183,9 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
             setStockJorunalInfo(
                 Object.fromEntries(
                     Object.entries(initialStockJournalInfoValues).map(([key, value]) => {
-                        if (key === 'Stock_Journal_date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
-                        if (key === 'Start_Time') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
-                        if (key === 'End_Time') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
+                        if (key === 'Process_date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
+                        if (key === 'StartDateTime') return [key, stateDetails[key] ? formatDateForDatetimeLocal(stateDetails[key]) : value]
+                        if (key === 'EndDateTime') return [key, stateDetails[key] ? formatDateForDatetimeLocal(stateDetails[key]) : value]
                         return [key, stateDetails[key] ?? value]
                     })
                 )
@@ -210,17 +223,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
     const changeSourceValue = (rowIndex, key, value) => {
         setSourceList((prev) => {
             return prev.map((item, index) => {
-
-                if (
-                    stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'
-                    && key !== 'Sour_Goodown_Id'
-                    && key !== 'Sour_Batch_Lot_No'
-                ) {
-                    const destinationKey = soruceAndDestination.find(
-                        (obj) => obj.source === key
-                    )?.destination;
-                    changeDestinationValues(rowIndex, destinationKey, value);
-                }
 
                 if (isEqualNumber(index, rowIndex)) {
                     switch (key) {
@@ -286,13 +288,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
     const changeDestinationValues = (rowIndex, key, value) => {
         setDestinationList((prev) => {
             return prev.map((item, index) => {
-
-                if (stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' && key !== 'Dest_Goodown_Id') {
-                    const sourceKey = soruceAndDestination.find(
-                        (obj) => obj.destination === key
-                    )?.source;
-                    changeSourceValue(rowIndex, sourceKey, value);
-                }
 
                 if (isEqualNumber(index, rowIndex)) {
                     switch (key) {
@@ -366,12 +361,10 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
 
         fetchLink({
-            address: `inventory/stockJournal`,
+            address: `inventory/stockProcessing`,
             method: checkIsNumber(stockJorunalInfo?.STJ_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...stockJorunalInfo,
-                Start_Time: combineDateTime(stockJorunalInfo?.Stock_Journal_date, stockJorunalInfo?.Start_Time),
-                End_Time: combineDateTime(stockJorunalInfo?.Stock_Journal_date, stockJorunalInfo?.End_Time),
                 Source: sourceList.filter(item => checkIsNumber(item?.Sour_Item_Id) && isGraterNumber(item.Sour_Qty, 0)),
                 Destination: destinationList.filter(item => checkIsNumber(item?.Dest_Item_Id) && isGraterNumber(item.Dest_Qty, 0)),
                 StaffInvolve: staffInvolvedList.filter(item => checkIsNumber(item?.Staff_Id)),
@@ -392,14 +385,14 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
         <>
             <Card>
                 <CardContent sx={{ minHeight: '80vh' }}>
-                    <h5 className="text-center mb-2 border-bottom pb-2">STOCK JOURNAL</h5>
+                    <h5 className="text-center mb-2 border-bottom pb-2">STOCK MANAGEMENT</h5>
                     <form onSubmit={e => {
                         e.preventDefault();
                         saveStockJournal();
                     }}>
                         <div className="row ">
                             {/* Staff involved Info */}
-                            <div className="col-xxl-2 col-lg-3 col-md-4 p-2">
+                            <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
                                 <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
                                     <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
                                         <h6 className="flex-grow-1 m-0">Staff Involved</h6>
@@ -415,7 +408,8 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                         <thead>
                                             <tr>
                                                 <th className="fa-13">Sno</th>
-                                                <th className="fa-13">Staff Name</th>
+                                                <th className="fa-13">Name</th>
+                                                <th className="fa-13">Type</th>
                                                 <th className="fa-13">#</th>
                                             </tr>
                                         </thead>
@@ -426,11 +420,18 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 w-100 p-0'>
                                                         <Select
                                                             value={{ value: row?.Staff_Id, label: row?.Staff_Name }}
-                                                            onChange={e => setStaffInvolvedList((prev) => {
+                                                            onChange={e => setStaffInvolvedList(prev => {
                                                                 return prev.map((item, ind) => {
                                                                     if (isEqualNumber(ind, index)) {
+                                                                        const staff = baseData.staff.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
                                                                         return {
                                                                             ...item,
+                                                                            Staff_Type_Id:
+                                                                                checkIsNumber(item.Staff_Type_Id)
+                                                                                    ? item.Staff_Type_Id
+                                                                                    : checkIsNumber(staff.User_Type)
+                                                                                        ? staff.User_Type
+                                                                                        : 0,
                                                                             Staff_Id: e.value,
                                                                             Staff_Name: e.label
                                                                         }
@@ -453,6 +454,30 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             placeholder={"Select Staff"}
                                                         />
                                                     </td>
+
+                                                    <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '80px' }}>
+                                                        <select
+                                                            value={row?.Staff_Type_Id}
+                                                            onChange={e => setStaffInvolvedList(prev => {
+                                                                return prev.map((item, ind) => {
+                                                                    if (isEqualNumber(ind, index)) {
+                                                                        return {
+                                                                            ...item,
+                                                                            Staff_Type_Id: e.target.value
+                                                                        }
+                                                                    }
+                                                                    return item;
+                                                                });
+                                                            })}
+                                                            className="cus-inpt p-2"
+                                                        >
+                                                            <option value="">Select</option>
+                                                            {baseData.staffType.map((st, sti) =>
+                                                                <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
+                                                            )}
+                                                        </select>
+                                                    </td>
+
                                                     <td className='fa-13 vctr p-0'>
                                                         <IconButton
                                                             onClick={() => {
@@ -462,7 +487,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             }}
                                                             size='small'
                                                         >
-                                                            <Delete color='error' />
+                                                            <Delete className="fa-20" color='error' />
                                                         </IconButton>
                                                     </td>
                                                 </tr>
@@ -473,86 +498,11 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             {/* Stock Journal Details */}
-                            <div className="col-xxl-10 col-lg-9 col-md-8 py-2 px-0">
+                            <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0 fa-12">
                                 <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
-
-                                    {/* Check Boxes */}
-                                    <div className="d-flex align-items-center justify-content-center flex-wrap mb-2 border-bottom pb-2">
-
-                                        <div className="form-check">
-                                            <input
-                                                className="form-check-input shadow-none"
-                                                style={{ padding: '0.7em' }}
-                                                type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
-                                                name="radioType"
-                                                id="MATERIALINWARD"
-                                                checked={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD'}
-                                                onChange={() => {
-                                                    setStockJorunalInfo(pre => ({ ...pre, Stock_Journal_Bill_type: 'MATERIAL INWARD' }));
-                                                    setSourceList([]);
-                                                    setDestinationList([]);
-                                                }}
-                                            />
-                                            <label
-                                                className="form-check-label p-1 me-3"
-                                                htmlFor="MATERIALINWARD"
-                                            >
-                                                MATERIAL INWARD
-                                            </label>
-                                        </div>
-
-                                        <div className="form-check">
-                                            <input
-                                                className="form-check-input shadow-none"
-                                                style={{ padding: '0.7em' }}
-                                                type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
-                                                name="radioType"
-                                                id="OTHERGODOWN"
-                                                checked={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN'}
-                                                onChange={() => {
-                                                    setStockJorunalInfo(pre => ({ ...pre, Stock_Journal_Bill_type: 'OTHER GODOWN' }));
-                                                    setSourceList([]);
-                                                    setDestinationList([]);
-                                                }}
-                                            />
-                                            <label
-                                                className="form-check-label p-1 me-3"
-                                                htmlFor="OTHERGODOWN"
-                                            >
-                                                OTHER GODOWN
-                                            </label>
-                                        </div>
-
-                                        <div className="form-check">
-                                            <input
-                                                className="form-check-input shadow-none"
-                                                style={{ padding: '0.7em' }}
-                                                type="radio"
-                                                disabled={checkIsNumber(stockJorunalInfo?.STJ_Id) || isViewOnly}
-                                                name="radioType"
-                                                id="PROCESSING"
-                                                checked={stockJorunalInfo.Stock_Journal_Bill_type === 'PROCESSING'}
-                                                onChange={() => {
-                                                    setStockJorunalInfo(pre => ({ ...pre, Stock_Journal_Bill_type: 'PROCESSING' }));
-                                                    setSourceList([]);
-                                                    setDestinationList([]);
-                                                }}
-                                            />
-                                            <label
-                                                className="form-check-label p-1 me-3"
-                                                htmlFor="PROCESSING"
-                                            >
-                                                PROCESSING
-                                            </label>
-                                        </div>
-
-                                    </div>
-
-                                    <div className="row px-2">
+                                    <div className="row px-3">
                                         {/* Common Details - 1 */}
-                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                             <label>Branch</label>
                                             <select
                                                 value={stockJorunalInfo.Branch_Id}
@@ -568,80 +518,107 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                             </select>
                                         </div>
 
-                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                             <label>Date</label>
                                             <input
-                                                value={stockJorunalInfo.Stock_Journal_date}
+                                                value={stockJorunalInfo.Process_date}
                                                 type="date"
                                                 disabled={isViewOnly}
-                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_date: e.target.value })}
+                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Process_date: e.target.value })}
                                                 className="cus-inpt p-2 mb-2"
                                             />
                                         </div>
 
-                                        <div className="col-lg-3 col-sm-6 p-2">
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                             <label>Voucher Type</label>
-                                            <Select
-                                                value={{ value: stockJorunalInfo.Stock_Journal_Voucher_type, label: stockJorunalInfo.Stock_Journal_Voucher_type }}
-                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Stock_Journal_Voucher_type: e.value })}
-                                                options={[
-                                                    { value: '', label: 'Select Voucher Type', isDisabled: true },
-                                                    ...baseData.voucherType.map(vt => ({
-                                                        value: vt?.Voucher_Type,
-                                                        label: vt?.Voucher_Type
-                                                    }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Select Voucher Type"}
-                                                isDisabled={isViewOnly}
-                                            />
+                                            <select
+                                                value={stockJorunalInfo.VoucherType}
+                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, VoucherType: e.target.value })}
+                                                className="cus-inpt p-2"
+                                                disabled={isViewOnly}
+                                            >
+                                                <option value="">Select Voucher</option>
+                                                {baseData.voucherType.filter(fil => fil.Type === 'PROCESSING').map((vt, vInd) => (
+                                                    <option value={vt.Vocher_Type_Id} key={vInd}>{vt.Voucher_Type}</option>
+                                                ))}
+                                            </select>
                                         </div>
 
-                                        <div className="col-lg-3 col-sm-6 p-2">
-                                            <label>Trip Number</label>
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                            <label>Machine Number</label>
                                             <input
-                                                value={stockJorunalInfo.Trip_No}
-                                                placeholder="Trip / Machine / Vehicle"
-                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Trip_No: e.target.value })}
-                                                className="cus-inpt p-2 mb-2"
+                                                value={stockJorunalInfo.Machine_No}
+                                                placeholder="Machine Number"
+                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Machine_No: e.target.value })}
+                                                className="cus-inpt p-2"
                                                 disabled={isViewOnly}
                                             />
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                            <label>Activity Location</label>
+                                            <select
+                                                value={stockJorunalInfo.Godownlocation}
+                                                onChange={e => setStockJorunalInfo({ ...stockJorunalInfo, Godownlocation: e.target.value })}
+                                                className="cus-inpt p-2"
+                                            >
+                                                <option value={''} disabled>select godown</option>
+                                                {baseData.godown.map((god, godInd) => (
+                                                    <option value={god.Godown_Id} key={godInd}>{god.Godown_Name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                            <label>Order Status</label>
+                                            <select
+                                                className="cus-inpt p-2"
+                                                value={stockJorunalInfo?.PR_Status}
+                                                onChange={e => setStockJorunalInfo(pre => ({ ...pre, PR_Status: e.target.value }))}
+                                            >
+                                                <option value="New">New</option>
+                                                <option value="On Process">On Process</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Canceled">Canceled</option>
+                                            </select>
                                         </div>
 
                                         {/* Common Details - 2 */}
                                         <div className="col-12 p-2 ">
 
-                                            {/* <div className="table-responsive">
+                                            <div className="table-responsive">
                                                 <table className="table table-bordered">
                                                     <thead>
                                                         <tr>
-                                                            <th colSpan={2} className="fa-13 text-center">Time</th>
-                                                            <th colSpan={2} className="fa-13 text-center">Distance</th>
+                                                            <th colSpan={2} className="fa-13 text-center">Time-Taken</th>
+                                                            <th colSpan={2} className="fa-13 text-center">Meter-Reading</th>
                                                         </tr>
                                                         <tr>
                                                             <th className="fa-13 text-center">Start</th>
                                                             <th className="fa-13 text-center">End</th>
-                                                            <th className="fa-13 text-center">Start (Km)</th>
-                                                            <th className="fa-13 text-center">End (Km)</th>
+                                                            <th className="fa-13 text-center">Start</th>
+                                                            <th className="fa-13 text-center">End</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr>
                                                             <td className="fa-13">
                                                                 <input
-                                                                    type='time'
-                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, Start_Time: e.target.value }))}
-                                                                    value={stockJorunalInfo?.Start_Time}
+                                                                    type='datetime-local'
+                                                                    onChange={e => {
+                                                                        setStockJorunalInfo(pre => ({ ...pre, StartDateTime: e.target.value }));
+                                                                    }}
+                                                                    value={stockJorunalInfo?.StartDateTime}
                                                                     className="cus-inpt p-2"
                                                                     disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                             <td className="fa-13">
                                                                 <input
-                                                                    type='time'
-                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, End_Time: e.target.value }))}
-                                                                    value={stockJorunalInfo?.End_Time}
+                                                                    type='datetime-local'
+                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, EndDateTime: e.target.value }))}
+                                                                    value={stockJorunalInfo?.EndDateTime}
+                                                                    min={stockJorunalInfo?.StartDateTime}
                                                                     className="cus-inpt p-2"
                                                                     disabled={isViewOnly}
                                                                 />
@@ -649,29 +626,29 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             <td className="fa-13">
                                                                 <input
                                                                     type="number"
-                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, Vehicle_Start_KM: e.target.value }))}
-                                                                    value={stockJorunalInfo?.Vehicle_Start_KM}
+                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, ST_Reading: e.target.value }))}
+                                                                    value={stockJorunalInfo?.ST_Reading}
                                                                     min={0}
                                                                     className="cus-inpt p-2"
-                                                                    placeholder="Kilometers"
+                                                                    placeholder="Ex: 2000"
                                                                     disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                             <td className="fa-13">
                                                                 <input
                                                                     type="number"
-                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, Vehicle_End_KM: e.target.value }))}
-                                                                    value={stockJorunalInfo?.Vehicle_End_KM}
-                                                                    min={Addition(stockJorunalInfo?.Vehicle_Start_KM, 1)}
+                                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, EN_Reading: e.target.value }))}
+                                                                    value={stockJorunalInfo?.EN_Reading}
+                                                                    min={Addition(stockJorunalInfo?.ST_Reading, 1)}
                                                                     className="cus-inpt p-2"
-                                                                    placeholder="Kilometers"
+                                                                    placeholder="Ex: 2200"
                                                                     disabled={isViewOnly}
                                                                 />
                                                             </td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
-                                            </div> */}
+                                            </div>
 
                                             <textarea
                                                 className="cus-inpt"
@@ -692,18 +669,14 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                             <div className="col-12 p-2 mb-2">
                                 <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
                                     <h5 className="flex-grow-1 ">
-                                        {stockJorunalInfo.Stock_Journal_Bill_type == 'PROCESSING' ? 'CONSUMPTION' : 'SORUCE'}
+                                        CONSUMPTION
                                     </h5>
                                     <Button
                                         variant="outlined"
                                         color="primary"
                                         type="button"
-                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                         onClick={() => {
                                             setSourceList([...sourceList, { ...initialSoruceValue }]);
-                                            if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') setDestinationList(
-                                                [...destinationList, { ...initialDestinationValue }]
-                                            );
                                         }}
                                     >Add</Button>
                                 </div>
@@ -740,7 +713,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             menuPortalTarget={document.body}
                                                             styles={customSelectStyles}
                                                             isSearchable={true}
-                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
                                                         />
@@ -751,7 +723,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Sour_Batch_Lot_No ?? ""}
                                                             onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
                                                             className="cus-inpt p-2"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                         />
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>
@@ -760,7 +731,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             type="number"
                                                             min={1}
                                                             required
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -771,7 +741,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Unit</option>
                                                             {baseData.uom.map((uom, ind) => (
@@ -782,7 +751,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Rate ?? ""}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             type="number"
                                                             min={1}
                                                             onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
@@ -792,7 +760,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Amt ?? ""}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             type="number"
                                                             min={1}
                                                             onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
@@ -806,7 +773,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeSourceValue(index, 'Sour_Goodown_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Location</option>
                                                             {baseData.godown.map((god, ind) => (
@@ -819,15 +785,9 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             variant="contained"
                                                             color="error"
                                                             type="button"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             size="small"
                                                             onClick={() => {
-                                                                if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') {
-                                                                    setDestinationList(destinationList.filter((_, ind) => ind !== index));
-                                                                    setSourceList(sourceList.filter((_, ind) => ind !== index));
-                                                                } else {
-                                                                    setSourceList(sourceList.filter((_, ind) => ind !== index));
-                                                                }
+                                                                setSourceList(sourceList.filter((_, ind) => ind !== index));
                                                             }}
                                                         ><Delete className="fa-20" /></IconButton>
                                                     </td>
@@ -850,18 +810,14 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                             <div className="col-12 p-2 mb-2">
                                 <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
                                     <h5 className="flex-grow-1 ">
-                                        {stockJorunalInfo.Stock_Journal_Bill_type == 'PROCESSING' ? 'PRODUCTION' : 'DESTINATION'}
+                                        PRODUCTION
                                     </h5>
                                     <Button
                                         variant="outlined"
                                         color="primary"
                                         type="button"
-                                        disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                         onClick={() => {
                                             setDestinationList([...destinationList, { ...initialDestinationValue }]);
-                                            if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') setSourceList(
-                                                [...sourceList, { ...initialSoruceValue }]
-                                            );
                                         }}
                                     >Add</Button>
                                 </div>
@@ -900,14 +856,12 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             isSearchable={true}
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
-                                                            isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                         />
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Dest_Batch_Lot_No ?? ""}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Batch_Lot_No', e.target.value)}
-                                                            disabled={isViewOnly}
                                                             className="cus-inpt p-2"
                                                         />
                                                     </td>
@@ -918,7 +872,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             min={1}
                                                             required
                                                             onChange={e => changeDestinationValues(index, 'Dest_Qty', e.target.value)}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             className="cus-inpt p-2"
                                                         />
                                                     </td>
@@ -928,7 +881,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeDestinationValues(index, 'Dest_Unit_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Unit</option>
                                                             {baseData.uom.map((uom, ind) => (
@@ -941,7 +893,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Dest_Rate ?? ""}
                                                             type="number"
                                                             min={1}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Rate', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -951,7 +902,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             value={row?.Dest_Amt ?? ""}
                                                             type="number"
                                                             min={1}
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Amt', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -963,7 +913,6 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             onChange={e => changeDestinationValues(index, 'Dest_Goodown_Id', e.target.value)}
                                                             className="cus-inpt p-2"
                                                             style={{ minWidth: '40px' }}
-                                                            disabled={isViewOnly}
                                                         >
                                                             <option value="" disabled>Select Location</option>
                                                             {baseData.godown.map((god, ind) => (
@@ -975,16 +924,10 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                         <IconButton
                                                             variant="contained"
                                                             color="error"
-                                                            disabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
                                                             type="button"
                                                             size="small"
                                                             onClick={() => {
-                                                                if (stockJorunalInfo.Stock_Journal_Bill_type !== 'PROCESSING') {
-                                                                    setDestinationList(destinationList.filter((_, ind) => ind !== index));
-                                                                    setSourceList(sourceList.filter((_, ind) => ind !== index));
-                                                                } else {
-                                                                    setDestinationList(destinationList.filter((_, ind) => ind !== index));
-                                                                }
+                                                                setDestinationList(destinationList.filter((_, ind) => ind !== index));
                                                             }}
                                                         ><Delete className="fa-20" /></IconButton>
                                                     </td>
@@ -1002,7 +945,9 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                     </span>
                                 </div>
                             </div>
+
                         </div>
+
                         <div className="my-2 d-flex justify-content-end align-items-center ">
                             <Button
                                 variant="outlined"
@@ -1022,6 +967,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                 {checkIsNumber(stockJorunalInfo?.STJ_Id) ? "Update" : "Save"}
                             </Button>
                         </div>
+
                     </form>
                 </CardContent>
             </Card>
@@ -1029,7 +975,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default StockJournalCreate;
+export default StockManagementCreate;
 
 export {
     initialStockJournalInfoValues,

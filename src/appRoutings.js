@@ -87,7 +87,9 @@ const StockJournalEntry = lazy(() => import("./Pages/Inventry/stockJournalCreate
 const TripSheets = lazy(() => import('./Pages/Inventry/TripMaster/TripSheets'))
 const TripSheetGodownSearch = lazy(() => import('./Pages/Inventry/TripMaster/TripSheetGodownSearch'));
 const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'))
-const StockProcess = lazy(() => import('./Pages/Inventry/stockProcess'));
+// const StockProcess = lazy(() => import('./Pages/Inventry/stockProcess'));
+const StockMangement = lazy(() => import('./Pages/Inventry/Processing/listProcessing'));
+const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/AddProcessing'));
 const ArrivalList = lazy(() => import("./Pages/Inventry/TripMaster/arivalList"))
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
@@ -207,7 +209,8 @@ const RoutingArray = [
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetGodownSearch />, path: '/erp/inventory/tripSheet/searchGodown' },
     { component: <StockInwards />, path: '/erp/inventory/stockInward' },
-    { component: <StockProcess />, path: '/erp/inventory/stockProcessing' },
+    { component: <StockMangement />, path: '/erp/inventory/stockProcessing' },
+    { component: <StockManagementCreate />, path: '/erp/inventory/stockProcessing/create' },
     { component: <ArrivalList />, path: '/erp/inventory/arrivalList' },
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
