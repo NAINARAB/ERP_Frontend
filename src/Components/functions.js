@@ -242,6 +242,22 @@ export const timeDifferenceHHMM = (startDate, endDate) => {
     return `${pad(hours)}:${pad(minutes)}`;
 }
 
+export const formatDateForTimeLocal = (dateInput) => {
+    try {
+        const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+
+        const pad = (num) => num.toString().padStart(2, '0');
+
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+
+        return `${hours}:${minutes}`;
+    } catch (e) {
+        console.error('Error in formatDateForTimeLocal function:', e);
+        return formatDateForTimeLocal(new Date()); 
+    }
+};
+
 export const formatDateForDatetimeLocal = (date) => {
     try {
         const pad = (num) => num?.toString().padStart(2, '0');

@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration } from "../../../Components/functions";
+import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration, toNumber } from "../../../Components/functions";
 import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
@@ -269,7 +269,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                                 isEditable: false,
                                             },
                                         }),
-                                        disabled: checkIsNumber(row?.convertedPurchaseOrderId) ? true : false
+                                        disabled: toNumber(row?.ConvertedPurchaseOrders?.length) > 0 ? true : false
                                     },
                                     {
                                         name: 'Preview',

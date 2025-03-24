@@ -2,7 +2,8 @@ import { useEffect, useState } from "react"
 import {
     Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM,
     formatDateForDatetimeLocal,
-    getSessionUser, isEqualNumber, isGraterNumber, isValidObject
+    getSessionUser, isEqualNumber, isGraterNumber, isValidObject,
+    onlynum
 } from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
 import { fetchLink } from "../../../Components/fetchComponent"
@@ -728,9 +729,8 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Qty ?? ""}
-                                                            type="number"
-                                                            min={1}
                                                             required
+                                                            onInput={onlynum}
                                                             onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -751,8 +751,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Rate ?? ""}
-                                                            type="number"
-                                                            min={1}
+                                                            onInput={onlynum}
                                                             onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -760,8 +759,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Sour_Amt ?? ""}
-                                                            type="number"
-                                                            min={1}
+                                                            onInput={onlynum}
                                                             onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -868,9 +866,8 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Dest_Qty ?? ""}
-                                                            type="number"
-                                                            min={1}
                                                             required
+                                                            onInput={onlynum}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Qty', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -891,8 +888,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Dest_Rate ?? ""}
-                                                            type="number"
-                                                            min={1}
+                                                            onInput={onlynum}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Rate', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -900,8 +896,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                     <td className='fa-13 px-1 py-0 vctr'>
                                                         <input
                                                             value={row?.Dest_Amt ?? ""}
-                                                            type="number"
-                                                            min={1}
+                                                            onInput={onlynum}
                                                             onChange={e => changeDestinationValues(index, 'Dest_Amt', e.target.value)}
                                                             className="cus-inpt p-2"
                                                         />
@@ -962,7 +957,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                 variant="contained" className="ms-2"
                                 color="primary"
                                 type="submit"
-                                disabled={sourceList.length === 0 || destinationList.length === 0 || isViewOnly}
+                                disabled={isViewOnly}
                             >
                                 {checkIsNumber(stockJorunalInfo?.STJ_Id) ? "Update" : "Save"}
                             </Button>

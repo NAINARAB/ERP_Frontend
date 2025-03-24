@@ -12,6 +12,9 @@ const UserType = lazy(() => import("./Pages/Masters/UserType"))
 // const BaseGroup = lazy(() => import("./Pages/Masters/BaseGroup"))
 const TaskType = lazy(() => import("./Pages/Masters/TaskType"))
 const ProductsMaster = lazy(() => import("./Pages/Masters/newProduct"))
+const PosMaster = lazy(() => import("./Pages/Masters/posMaster"))
+const UomMaster = lazy(() => import("./Pages/Masters/uomMaster"))
+const RateMaster = lazy(() => import("./Pages/Masters/rateMaster"))
 
 
 // Authorization
@@ -90,7 +93,8 @@ const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'))
 // const StockProcess = lazy(() => import('./Pages/Inventry/stockProcess'));
 const StockMangement = lazy(() => import('./Pages/Inventry/Processing/listProcessing'));
 const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/AddProcessing'));
-const ArrivalList = lazy(() => import("./Pages/Inventry/TripMaster/arivalList"))
+const ArrivalList = lazy(() => import("./Pages/Inventry/TripMaster/arivalList"));
+const ArrivalMaster = lazy(() => import("./Pages/Inventry/TripMaster/arrivalMaster"));
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
 const DeliveryTripSheetAdd = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
@@ -184,7 +188,13 @@ const RoutingArray = [
     { component: <RetailersMaster />, path: '/erp/master/retailers' },
     { component: <TallyLolSyncDashboard />, path: '/erp/master/tallyLOL' },
     { component: <TallyLosSyncDashboard />, path: '/erp/master/tallyLOS' },
+    { component: <RateMaster />, path: '/erp/master/RateMaster' },
+    { component: <UomMaster />, path: '/erp/master/uomMaster' },
+    { component: <PosMaster />, path: '/erp/master/posMaster' },
+
+    // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
+
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
@@ -212,6 +222,7 @@ const RoutingArray = [
     { component: <StockMangement />, path: '/erp/inventory/stockProcessing' },
     { component: <StockManagementCreate />, path: '/erp/inventory/stockProcessing/create' },
     { component: <ArrivalList />, path: '/erp/inventory/arrivalList' },
+    { component: <ArrivalMaster />, path: '/erp/inventory/arrivalEntry' },
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
     { component: <DeliveryTripSheetAdd />, path: '/erp/sales/Tripsheet/Tripsheetcreation' },
@@ -225,7 +236,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/crm' },
     { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED
     { component: <ClosingStockReports />, path: '/erp/crm/closingStock' },
-    
+
     { component: <DisplayNavigations />, path: '/erp/reports' },
     { component: <CostCenterReports />, path: '/erp/reports/costCenter' },
 

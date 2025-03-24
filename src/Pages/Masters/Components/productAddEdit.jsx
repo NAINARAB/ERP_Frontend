@@ -22,6 +22,9 @@ const initialInputValue = {
     Sgst_P: '',
     Igst_P: '',
     ERP_Id: '',
+    Pos_Brand_Id:'',
+    IsActive:''
+
 }
 
 const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loadingOn, loadingOff }) => {
@@ -32,7 +35,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
     const [productInputValue, setProductInputValue] = useState(initialInputValue);
     const [dialog, setDialog] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
-
+    const [posbrand, setPosBrand] = useState([]);
     useEffect(() => setDialog(openAction ? true : false), [openAction]);
 
     useEffect(() => {
@@ -83,6 +86,14 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
         }).then(data => {
             if (data.success) {
                 setProductGroups(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/posbranch/dropdown`
+        }).then(data => {
+            if (data.success) {
+                setPosBrand(data.data)
             }
         }).catch(e => console.error(e))
 
@@ -201,6 +212,32 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             event: e => setProductInputValue(value => ({ ...value, ERP_Id: e.target.value })),
             value: productInputValue.ERP_Id,
         },
+        {
+            label: 'POS BRAND',
+            elem: 'select',
+            options: [
+                { value: '', label: ' - Select - ', disabled: true, selected: true },
+                ...posbrand.map(obj => ({
+                    value: Number(obj.value),
+                    label: obj.label
+                }))
+            ],
+            event: e => setProductInputValue(value => ({ ...value, Pos_Brand_Id: e.target.value })),
+            value: productInputValue.Pos_Brand_Id,
+        },
+        {
+            label: 'Status',
+            elem: 'select',
+            options: [
+                { value: '', label: ' - Select - ', disabled: true },
+                { value: '0', label: 'Active' },
+                { value: '1', label: 'Inactive' }
+            ],
+            event: e => setProductInputValue(value => ({ ...value, Is_Active_Decative: e.target.value })),
+            value: productInputValue.Is_Active_Decative || '0', 
+        },
+        
+        
         {
             label: 'Product Description',
             elem: 'textarea',

@@ -2,27 +2,24 @@ import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import {
-    Addition, checkIsNumber, combineDateTime, extractHHMM, isEqualNumber,
-    isValidDate, isValidObject, Multiplication, onlynum, ISOString,
-    Subraction, stringCompare
+    Addition, checkIsNumber, combineDateTime, isEqualNumber,
+    isValidDate, isValidObject, onlynum, ISOString,
+    Subraction, stringCompare, LocalDate, formatDateForTimeLocal
 } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Close, Delete, Edit } from "@mui/icons-material";
+import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
 import { toast } from 'react-toastify'
-import { useLocation, useNavigate } from "react-router-dom";
-import RequiredStar from "../../../Components/requiredStar";
+import { useLocation } from "react-router-dom";
 
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
-    // const navigation = useNavigate();
     const stateDetails = location.state;
-    const tdStyle = 'border fa-14 vctr';
 
     const [filters, setFilters] = useState({
         FromGodown: '',
@@ -33,6 +30,11 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         Todate: ISOString(),
         search: false,
         addItemDialog: false,
+        importDialog: false,
+        fromGodownSearchDate: ISOString(),
+        toGodownSearchDate: ISOString(),
+        fromSearchGodown: '',
+        toSearchGodown: '',
     });
 
     const [godown, setGodown] = useState([]);
@@ -42,9 +44,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [costCenterCategory, setCostCenterCategory] = useState([])
     const [branch, setBranch] = useState([]);
     const [voucherType, setVoucherType] = useState([]);
-
+    const [godownActivity, setGodownActivity] = useState([]);
     const [tripSheetInfo, setTripSheetInfo] = useState(tripMasterDetails);
-    const [productInput, setProductInput] = useState(tripDetailsColumns);
     const [selectedItems, setSelectedItems] = useState([]);
     const [staffInvolvedList, setStaffInvolvedList] = useState([]);
 
@@ -122,7 +123,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
                         if (
                             key === 'StartTime' || key === 'EndTime'
-                        ) return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value]
+                        ) return [key, stateDetails[key] ? formatDateForTimeLocal(stateDetails[key]) : value]
                         return [key, stateDetails[key] ?? value]
                     })
                 )
@@ -131,9 +132,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             setSelectedItems(
                 productsArray.map(productsData => Object.fromEntries(
                     Object.entries(tripDetailsColumns).map(([key, value]) => {
-                        if (
-                            key === 'Dispatch_Date' || key === 'Delivery_Date'
-                        ) return [key, productsData[key] ? ISOString(productsData[key]) : value]
                         return [key, productsData[key] ?? value]
                     })
                 ))
@@ -186,8 +184,48 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const closeDialog = () => {
-        setProductInput(tripDetailsColumns);
-        setFilters(pre => ({ ...pre, addItemDialog: false }));
+        setFilters(pre => ({ ...pre, addItemDialog: false, importDialog: false }));
+    }
+
+    const searchGodownActivity = (from, to, fromGodown, toGodown) => {
+        if (checkIsNumber(fromGodown) && checkIsNumber(toGodown)) {
+            if (loadingOn) loadingOn();
+            fetchLink({
+                address: `inventory/tripSheet/arrivalEntry?Fromdate=${from}&Todate=${to}&FromGodown=${fromGodown}&ToGodown=${toGodown}&convertedStatus=0`
+            }).then(data => {
+                if (data.success) {
+                    setGodownActivity(data.data);
+                }
+            }).catch(e => console.log(e)).finally(() => {
+                if (loadingOff) loadingOff();
+            })
+        } else {
+            toast.warn('Select godown location')
+        }
+    }
+
+    const changeTripDetails = (itemDetail, deleteRow = false) => {
+        setSelectedItems(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.Arrival_Id, itemDetail.Arr_Id));
+
+            let updatedDeliveryArray;
+            if (deleteRow) {
+                updatedDeliveryArray = preItems;
+            } else {
+                const currentProduct = { ...itemDetail };
+                const reStruc = Object.fromEntries(
+                    Object.entries(tripDetailsColumns).map(([key, value]) => {
+                        if (key === 'Arrival_Id') {
+                            return [key, currentProduct['Arr_Id'] ?? value]
+                        } else {
+                            return [key, currentProduct[key] ?? value]
+                        }
+                    })
+                )
+                updatedDeliveryArray = [...preItems, reStruc];
+            }
+            return updatedDeliveryArray;
+        });
     }
 
     return (
@@ -378,7 +416,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         <label>Activity Location</label>
                                         <select
                                             value={tripSheetInfo.Godownlocation}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Godownlocation: e.target.value })}
+                                            onChange={e => {
+                                                setTripSheetInfo({ ...tripSheetInfo, Godownlocation: e.target.value });
+                                                setSelectedItems([]);
+                                            }}
                                             className="cus-inpt p-2"
                                         >
                                             <option value={''} disabled>select godown</option>
@@ -392,8 +433,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         <label>Bill Type</label>
                                         <select
                                             value={tripSheetInfo.BillType}
-                                            onChange={e => setTripSheetInfo({ 
-                                                ...tripSheetInfo, 
+                                            onChange={e => setTripSheetInfo({
+                                                ...tripSheetInfo,
                                                 BillType: e.target.value,
                                                 VoucherType: ''
                                             })}
@@ -453,7 +494,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 <td>
                                                     <input
                                                         type='time'
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))}
+                                                        onChange={e => {
+                                                            console.log(e.target.value);
+                                                            setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))
+                                                        }}
                                                         value={tripSheetInfo?.StartTime}
                                                         className="cus-inpt p-2"
                                                     />
@@ -560,8 +604,12 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         ButtonArea={
                             <>
                                 <Button
-                                    onClick={() => setFilters(pre => ({ ...pre, addItemDialog: true }))}
-                                >Add</Button>
+                                    onClick={() => {
+                                        checkIsNumber(tripSheetInfo.Godownlocation)
+                                            ? setFilters(pre => ({ ...pre, importDialog: true }))
+                                            : toast.warn('Select Godown Location')
+                                    }}
+                                >Import Arrivals</Button>
                                 <Button
                                     onClick={() => setSelectedItems([])}
                                     className="me-2"
@@ -572,8 +620,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         disablePagination
                         title={`
                             ITEMS: ${selectedItems.length}, 
-                            QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o.QTY ?? 0), 0)}
-                        `}
+                            QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o?.QTY ?? 0), 0)}`
+                        }
                         maxHeightOption
                         columns={[
                             {
@@ -609,22 +657,13 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 Cell: ({ row }) => (
                                     <>
                                         <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setProductInput(Object.fromEntries(
-                                                    Object.entries(tripDetailsColumns).map(([key, value]) => [key, row[key] ? row[key] : value])
-                                                ));
-                                                setFilters(pre => ({...pre, addItemDialog: true}))
-                                            }}
-                                        ><Edit className="fa-20" /></IconButton>
-                                        <IconButton
                                             color="error"
                                             size="small"
                                             onClick={() => {
                                                 setSelectedItems(prev => {
                                                     const prevArray = [...prev];
                                                     return prevArray.filter(pro =>
-                                                        !isEqualNumber(pro.Product_Id, row.Product_Id)
+                                                        !isEqualNumber(pro.Arrival_Id, row.Arrival_Id)
                                                     );
                                                 });
                                             }}
@@ -646,215 +685,129 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             </Card>
 
             <Dialog
-                open={filters.addItemDialog}
-                onClose={closeDialog}
-                maxWidth='sm' fullWidth
+                open={filters.importDialog}
+                onClose={closeDialog} fullScreen
             >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        if (checkIsNumber(productInput.Product_Id)) {
-                            setSelectedItems(prev => {
-                                const prevArray = [...prev];
-                                const proIndex = prevArray.findIndex(pro =>
-                                    isEqualNumber(pro.Product_Id, productInput.Product_Id)
-                                );
-                                if (proIndex !== -1) {
-                                    prevArray[proIndex] = productInput;
-                                } else {
-                                    prevArray.push(productInput);
-                                }
-                                return prevArray;
-                            });
-                            closeDialog();
-                        } else {
-                            toast.error('Select Item');
-                        }
-                    }}
+                <DialogTitle
+                    className="d-flex align-items-center"
                 >
+                    <span className="flex-grow-1">Import From Arrival</span>
+                    <IconButton
+                        size="small" color="error"
+                        onClick={closeDialog}
+                    ><Close /></IconButton>
+                </DialogTitle>
 
-                    <DialogTitle
-                        className="d-flex align-items-center"
-                    >
-                        <span className="flex-grow-1">Add Item</span>
-                        <IconButton
-                            size="small" color="error"
-                            onClick={closeDialog}
-                        ><Close /></IconButton>
-                    </DialogTitle>
+                <DialogContent>
 
-                    <DialogContent>
-                        <table className="table m-0">
+                    <form className="p-2" onSubmit={e => {
+                        e.preventDefault();
+                        searchGodownActivity(
+                            filters?.fromGodownSearchDate,
+                            filters?.toGodownSearchDate,
+                            filters?.fromSearchGodown,
+                            tripSheetInfo?.Godownlocation
+                        )
+                    }}>
+                        <div className="d-flex flex-wrap align-items-end">
+                            <div>
+                                <label className='d-block ms-2'>From Date</label>
+                                <input
+                                    className="cus-inpt p-2 w-auto"
+                                    type="date"
+                                    value={filters?.fromGodownSearchDate}
+                                    onChange={e => setFilters(pre => ({ ...pre, fromGodownSearchDate: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className='d-block ms-2'>To Date</label>
+                                <input
+                                    className="cus-inpt p-2 w-auto ms-2"
+                                    type="date"
+                                    value={filters?.toGodownSearchDate}
+                                    onChange={e => setFilters(pre => ({ ...pre, toGodownSearchDate: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className='d-block ms-2'>From Godown</label>
+                                <select
+                                    className="cus-inpt p-2 w-auto ms-2"
+                                    value={filters?.fromSearchGodown}
+                                    required
+                                    onChange={e => setFilters(pre => ({ ...pre, fromSearchGodown: e.target.value }))}
+                                >
+                                    <option value="">Select From Godown</option>
+                                    {godown.map((g, gi) => (
+                                        <option value={g?.Godown_Id} key={gi}>{g?.Godown_Name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className='d-block ms-2'>To Godown</label>
+                                <input
+                                    className="cus-inpt p-2 w-auto ms-2"
+                                    value={godown.find(g => isEqualNumber(g.Godown_Id, tripSheetInfo?.Godownlocation))?.Godown_Name}
+                                    required disabled
+                                />
+                            </div>
+                            <Button
+                                variant="outlined"
+                                className="ms-2"
+                                type="submit"
+                            >search</Button>
+                        </div>
+                    </form>
+
+                    <div className="table-responsive">
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {['#', 'SNo', 'Date', 'Item', 'Rate', 'Quantity', 'Batch'].map((o, i) => (
+                                        <th className="fa-13" key={i}>{o}</th>
+                                    ))}
+                                </tr>
+                            </thead>
                             <tbody>
-                                <tr>
-                                    <td className={tdStyle}>Item Name <RequiredStar /></td>
-                                    <td className={tdStyle}>
-                                        <Select
-                                            value={{
-                                                value: productInput.Product_Id, label: products.find(pro => isEqualNumber(
-                                                    pro.Product_Id, productInput.Product_Id
-                                                ))?.Product_Name
-                                            }}
-                                            onChange={e => {
-                                                const productId = Number(e.value || 0);
-                                                const product = products.find(pro => isEqualNumber(
-                                                    pro.Product_Id, productId
-                                                ))
-                                                setProductInput(pre => ({
-                                                    ...pre,
-                                                    Product_Id: e.value,
-                                                    HSN_Code: product?.HSN_Code,
-                                                    Gst_P: product?.Gst_P,
-                                                    Cgst_P: product?.Cgst_P,
-                                                    Sgst_P: product?.Sgst_P,
-                                                    Igst_P: product?.Igst_P,
-                                                    Unit_Id: product?.UOM_Id,
-                                                    Units: product?.Units
-                                                }))
-                                            }}
-                                            options={[
-                                                { value: '', label: 'select product', isDisabled: true },
-                                                ...products.map(obj => ({
-                                                    value: obj?.Product_Id,
-                                                    label: obj?.Product_Name,
-                                                    isDisabled: (selectedItems.findIndex(o => isEqualNumber(
-                                                        o?.Product_Id, obj?.Product_Id
-                                                    ))) === -1 ? false : true
-                                                }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            required
-                                            isSearchable={true}
-                                            placeholder={"Select Product"}
-                                            maxMenuHeight={200}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>From Godown <RequiredStar /></td>
-                                    <td className={tdStyle}>
-                                        <select
-                                            value={productInput.From_Location}
-                                            onChange={e => setProductInput({
-                                                ...productInput,
-                                                From_Location: e.target.value,
-                                                BatchLocation: godown.find(g => isEqualNumber(g.Godown_Id, e.target.value)).Godown_Name || ''
-                                            })}
-                                            className="cus-inpt p-2"
-                                            required
-                                        >
-                                            <option value={''} disabled>select godown</option>
-                                            {godown.map((god, godInd) => (
-                                                <option value={god.Godown_Id} key={godInd}>{god.Godown_Name}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>Weight <RequiredStar /></td>
-                                    <td className={tdStyle}>
-                                        <input
-                                            className='cus-inpt p-2 w-50'
-                                            value={productInput.QTY ? productInput.QTY : ''}
-                                            required
-                                            placeholder='Weight'
-                                            onInput={onlynum}
-                                            onChange={e => {
-                                                const amount = checkIsNumber(productInput.Gst_Rate) ?
-                                                    Multiplication(e.target.value, productInput.Gst_Rate) :
-                                                    productInput.Taxable_Value;
-                                                setProductInput(
-                                                    pre => ({
-                                                        ...pre,
-                                                        QTY: e.target.value,
-                                                        Taxable_Value: amount,
-                                                        Total_Value: amount
-                                                    })
+                                {godownActivity.map((arrival, arrivalIndex) => (
+                                    <tr key={arrivalIndex}>
+                                        <td className='fa-12'>
+                                            {(() => {
+                                                const isChecked = selectedItems.findIndex(o =>
+                                                    isEqualNumber(o?.Arrival_Id, arrival.Arr_Id)
+                                                ) !== -1;
+
+                                                return (
+                                                    <div>
+                                                        <input
+                                                            className="form-check-input shadow-none pointer"
+                                                            style={{ padding: '0.7em' }}
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {
+                                                                if (isChecked) changeTripDetails(arrival, true)
+                                                                else changeTripDetails(arrival)
+                                                            }}
+                                                        />
+                                                    </div>
                                                 )
-                                            }}
-                                        />
-                                        <select
-                                            className='cus-inpt p-2 w-50'
-                                            value={productInput.Unit_Id}
-                                            placeholder='Units ex: kg, l, ml...'
-                                            onChange={e => setProductInput(
-                                                pre => ({
-                                                    ...pre,
-                                                    Unit_Id: e.target.value,
-                                                    Units: uom.find(u => isEqualNumber(u.Unit_Id, e.target.value)).Units
-                                                }))}
-                                        >
-                                            <option value="" disabled>select uom</option>
-                                            {uom.map((uomObj, ind) => (
-                                                <option value={uomObj.Unit_Id} key={ind}>{uomObj.Units}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>Rate <RequiredStar /></td>
-                                    <td className={tdStyle}>
-                                        <input
-                                            required
-                                            className='cus-inpt p-2'
-                                            value={productInput.Gst_Rate ? productInput.Gst_Rate : ''}
-                                            placeholder='Rate'
-                                            onInput={onlynum}
-                                            onChange={e => {
-                                                const amount = checkIsNumber(productInput.QTY) ?
-                                                    Multiplication(e.target.value, productInput.QTY) :
-                                                    productInput.Taxable_Value;
-                                                setProductInput(
-                                                    pre => ({
-                                                        ...pre,
-                                                        Gst_Rate: e.target.value,
-                                                        Taxable_Value: amount,
-                                                        Total_Value: amount
-                                                    })
-                                                )
-                                            }}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>Batch / Lot Number</td>
-                                    <td className={tdStyle}>
-                                        <input
-                                            value={productInput.Batch_No}
-                                            onChange={e => setProductInput({ ...productInput, Batch_No: e.target.value })}
-                                            className="cus-inpt p-2"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>BillNo</td>
-                                    <td className={tdStyle}>
-                                        <input
-                                            value={productInput.BillNo}
-                                            onChange={e => setProductInput({ ...productInput, BillNo: e.target.value })}
-                                            className="cus-inpt p-2"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={tdStyle}>Concern</td>
-                                    <td className={tdStyle}>
-                                        <input
-                                            value={productInput.Concern}
-                                            onChange={e => setProductInput({ ...productInput, Concern: e.target.value })}
-                                            className="cus-inpt p-2"
-                                        />
-                                    </td>
-                                </tr>
+                                            })()}
+                                        </td>
+                                        <td className='fa-12'>{arrivalIndex + 1}</td>
+                                        <td className='fa-12'>{arrival?.Arrival_Date ? LocalDate(arrival.Arrival_Date) : ''}</td>
+                                        <td className='fa-12'>{arrival?.Product_Name}</td>
+                                        <td className='fa-12'>{arrival?.Gst_Rate}</td>
+                                        <td className='fa-12'>{arrival?.QTY}</td>
+                                        <td className='fa-12'>{arrival?.Batch_No}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
-                    </DialogContent>
+                    </div>
 
-                    <DialogActions>
-                        <Button type="button" onClick={closeDialog}>close</Button>
-                        <Button type="submit" variant="outlined">Add</Button>
-                    </DialogActions>
-                </form>
+                </DialogContent>
+                <DialogActions></DialogActions>
             </Dialog>
         </>
     )

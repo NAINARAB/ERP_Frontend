@@ -54,6 +54,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     }
 
     const itemsRowDetails = {
+        Trip_Id: '',
+        Trip_Item_SNo: '',
         POI_St_Id: '',
         DeliveryId: '',
         OrderId: '',
@@ -310,14 +312,17 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         setSelectedItems((prev) => {
             const preItems = prev.filter(o => !(
                 isEqualNumber(o?.OrderId, itemDetail?.OrderId)
-                && isEqualNumber(itemDetail?.ItemId, o?.Item_Id)
+                && isEqualNumber(o?.Item_Id, itemDetail?.ItemId)
+                && isEqualNumber(o?.DeliveryId, itemDetail?.Trip_Item_SNo)
             ));
+            console.log(prev)
             if (deleteOption) {
                 return preItems;
             } else {
                 const currentOrders = deliveryDetails.filter(item => (
                     isEqualNumber(item.OrderId, itemDetail.OrderId)
                     && isEqualNumber(itemDetail?.ItemId, item?.ItemId)
+                    && isEqualNumber(itemDetail?.Trip_Item_SNo, item?.Trip_Item_SNo)
                 ));
 
                 const notInStaffList = [...new Map(
@@ -363,12 +368,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     return Object.fromEntries(
                         Object.entries(itemsRowDetails).map(([key, value]) => {
                             switch (key) {
-                                case 'DeliveryId': return [key, Number(item?.Id)]
+                                case 'DeliveryId': return [key, Number(item?.Trip_Item_SNo)]
                                 case 'OrderId': return [key, Number(item?.OrderId)]
                                 case 'Po_Inv_Date': return [key, invoiceDetails?.Po_Inv_Date]
                                 case 'Location_Id': return [key, Number(item?.LocationId) ?? '']
                                 case 'Item_Id': return [key, Number(item?.ItemId)]
-                                case 'Bill_Qty': return [key, item?.convertableQuantity]
+                                case 'Bill_Qty': return [key, item?.pendingInvoiceWeight]
                                 case 'Act_Qty': return [key, Bill_Qty]
                                 case 'Item_Rate': return [key, Item_Rate]
                                 case 'Bill_Alt_Qty': return [key, Number(item?.Quantity)]
@@ -939,11 +944,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     <span className="flex-grow-1">Select Purchase Order</span>
                     <span>
                         <Button onClick={closeDialogs} type="button" className='me-2'>close</Button>
-                        {/* <Button 
-                            type="button" 
-                            onClick={() => searchFromArrival(invoiceDetails.Retailer_Id)}
-                            variant="contained" startIcon={<Search />}
-                        >Search Arrival Details</Button> */}
                     </span>
                 </DialogTitle>
                 <DialogContent>
@@ -962,9 +962,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 className="form-check-input shadow-none pointer"
                                                 style={{ padding: '0.7em' }}
                                                 type="checkbox"
-                                                checked={selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1}
+                                                checked={selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Trip_Item_SNo)) !== -1}
                                                 onChange={() => {
-                                                    if (selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Id)) !== -1) changeItems(row, true)
+                                                    if (selectedItems.findIndex(o => isEqualNumber(o?.DeliveryId, row?.Trip_Item_SNo)) !== -1) changeItems(row, true)
                                                     else changeItems(row)
                                                 }}
                                             />
@@ -983,7 +983,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     row?.Weight ?? 0
                                 ) + ' ' + row?.Units
                             },
-                            createCol('convertableQuantity', 'number', 'Pending Tonnage'),
+                            createCol('pendingInvoiceWeight', 'number', 'Pending Tonnage'),
                             createCol('Quantity', 'number'),
                             createCol('PO_ID', 'string'),
                             createCol('Location', 'string'),

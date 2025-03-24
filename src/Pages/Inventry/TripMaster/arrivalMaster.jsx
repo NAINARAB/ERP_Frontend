@@ -1,12 +1,13 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
 import { Addition, checkIsNumber, filterableText, ISOString, isValidDate, toNumber } from "../../../Components/functions";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { Edit, FilterAlt, Search } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
+import CreateArrival from "./createArrival";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -38,7 +39,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
 
         fetchLink({
-            address: `inventory/tripSheet/arrivalList?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
+            address: `inventory/tripSheet/arrivalEntry?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}`,
         }).then(data => {
             if (data.success) {
                 setTripData(data.data);
@@ -46,7 +47,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters?.fetchFrom, filters?.fetchTo]);
+    }, [filters?.fetchFrom, filters?.fetchTo, filters?.refresh]);
 
     useEffect(() => {
         const queryFilters = {
@@ -149,6 +150,23 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
         return { cls, str }
     }
 
+    const EditComp = ({ row }) => {
+        const [open, setOpen] = useState(false);
+        return !checkIsNumber(row?.Trip_Id) && (
+            // <CreateArrival
+            //     productValue={open ? row : undefined}
+            //     onClose={() => setOpen(false)}
+            //     onSubmit={() => {
+            //         setOpen(false);
+            //         setFilters(pre => ({...pre, refresh: !pre.refresh}));
+            //     }}
+            // >
+            //     <IconButton onClick={() => setOpen(true)}><Edit className="fa-20" /></IconButton>
+            // </CreateArrival>
+            <></>
+        )
+    }
+
     return (
         <>
 
@@ -171,24 +189,23 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                             size="small"
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
                         ><FilterAlt /></IconButton>
+                        <CreateArrival onSubmit={() => setFilters(pre => ({...pre, refresh: !pre.refresh}))}><Button>Add</Button></CreateArrival>
                     </>
                 }
                 columns={[
-                    createCol('Trip_Date', 'date', 'Date'),
+                    createCol('Arrival_Date', 'date', 'Date'),
                     createCol('Product_Name', 'string', 'Item'),
                     createCol('QTY', 'string', 'Weight'),
+                    createCol('Gst_Rate', 'string', 'Rate'),
                     createCol('Batch_No', 'string', 'Batch'),
-                    createCol('Vehicle_No', 'string', 'Vehicle'),
-                    createCol('Challan_No', 'string', 'Challan'),
                     createCol('FromLocation', 'string', 'From'),
                     createCol('ToLocation', 'string', 'To'),
-                    createCol('Narration', 'string', 'Narration'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Trip-?',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            const Trip_Id = checkIsNumber(row?.Trip_Id)
+                            const Trip_Id = checkIsNumber(row?.Arrival_Id)
                             return (
                                 <span className={`cus-badge text-white fa-10 fw-bold ${Trip_Id ? 'bg-success' : 'bg-warning'}`}>
                                     {Trip_Id ? 'Converted' : 'Not'}
@@ -224,6 +241,12 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                             )
                         }
                     },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Action',
+                        isCustomCell: true,
+                        Cell: ({ row }) => <EditComp row={row} />
+                    }
                 ]}
             />
 
@@ -319,7 +342,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                                     <td colSpan={3}>
                                         <select
                                             value={filters.TripConvertion}
-                                            onChange={e => setFilters(pre => ({...pre, TripConvertion: e.target.value}))}
+                                            onChange={e => setFilters(pre => ({ ...pre, TripConvertion: e.target.value }))}
                                             className="cus-inpt p-2"
                                         >
                                             <option value="">ALL</option>

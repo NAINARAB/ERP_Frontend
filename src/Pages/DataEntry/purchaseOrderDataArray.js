@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat, filterableText } from "../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat, filterableText, toNumber } from "../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
 
@@ -316,10 +316,9 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                     TranspoterDetails = [], 
                     ConvertedAsInvoices = [] 
                 } = OrderDetails;
-                const OrderItemsArray = row.ItemDetails;
-                const DeliveryArray = row.DeliveryDetails;
-                const StaffArray = row.StaffDetails;
-                const TranspoterArray = row.TranspoterDetails;
+
+                const isConvertableArrivalExist = isEqualNumber(row?.isConvertableArrivalExist, 1);
+                const IsConvertedAsInvoice = isEqualNumber(row?.IsConvertedAsInvoice, 1);
 
                 return (
                     <>
@@ -344,7 +343,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
 
                         {(
                             navigation
-                            && isEqualNumber(row?.IsConvertedAsInvoice, 0)
+                            && isConvertableArrivalExist
                             && OrderDetails?.OrderStatus === 'Completed'
                         ) && (
                                 <Tooltip title='Convert to invoice'>
@@ -361,13 +360,15 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                                         Retailer_Id: OrderDetails?.PartyId,
                                                         Retailer_Name: OrderDetails?.PartyName
                                                     },
-                                                    orderInfo: DeliveryDetails.map(item => ({
+                                                    orderInfo: DeliveryDetails.filter(
+                                                        fil => toNumber(fil.pendingInvoiceWeight) > 0
+                                                    ).map(item => ({
                                                         POI_St_Id: '',
-                                                        DeliveryId: item?.Id,
+                                                        DeliveryId: item?.Trip_Item_SNo,
                                                         OrderId: item?.OrderId,
                                                         Location_Id: item?.LocationId,
                                                         Item_Id: item?.ItemId,
-                                                        Bill_Qty: item?.Weight,
+                                                        Bill_Qty: item?.pendingInvoiceWeight,
                                                         Act_Qty: item?.Weight,
                                                         Bill_Alt_Qty: item?.Quantity,
                                                         Item_Rate: item?.BilledRate,
@@ -387,7 +388,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                 </Tooltip>
                             )}
 
-                        {(navigation && isEqualNumber(row?.IsConvertedAsInvoice, 0)) && (
+                        {(navigation && !IsConvertedAsInvoice) && (
                             <Tooltip title='Edit'>
                                 <span>
                                     <IconButton
@@ -410,7 +411,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </Tooltip >
                         )}
 
-                        {isEqualNumber(row?.IsConvertedAsInvoice, 0) && (
+                        {isConvertableArrivalExist && (
                             <Tooltip title='Delete Order'>
                                 <span>
                                     <IconButton
