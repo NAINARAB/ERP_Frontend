@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import {
-    Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM,
-    formatDateForDatetimeLocal,
+    Addition, Division, ISOString, Multiplication, checkIsNumber,
+    formatSQLDateTimeObjectToInputDateTime,
     getSessionUser, isEqualNumber, isGraterNumber, isValidObject,
     onlynum
 } from "../../../Components/functions"
@@ -179,14 +179,14 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
             && Array.isArray(staff)
         ) {
             const isEditable = stateDetails?.isEditable ? true : false;
-            setIsViewOnly(isEditable);
+            setIsViewOnly(!isEditable);
 
             setStockJorunalInfo(
                 Object.fromEntries(
                     Object.entries(initialStockJournalInfoValues).map(([key, value]) => {
                         if (key === 'Process_date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
-                        if (key === 'StartDateTime') return [key, stateDetails[key] ? formatDateForDatetimeLocal(stateDetails[key]) : value]
-                        if (key === 'EndDateTime') return [key, stateDetails[key] ? formatDateForDatetimeLocal(stateDetails[key]) : value]
+                        if (key === 'StartDateTime') return [key, stateDetails[key] ? formatSQLDateTimeObjectToInputDateTime(stateDetails[key]) : value]
+                        if (key === 'EndDateTime') return [key, stateDetails[key] ? formatSQLDateTimeObjectToInputDateTime(stateDetails[key]) : value]
                         return [key, stateDetails[key] ?? value]
                     })
                 )
@@ -213,7 +213,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
             setStaffInvolvedList(
                 staff.map(staffData => Object.fromEntries(
                     Object.entries(initialStaffInvolvedValue).map(([key, value]) => {
-                        if (key === 'Staff_Name') return [key, staffData['Cost_Center_Name'] ? staffData['Cost_Center_Name'] : value]
+                        if (key === 'Staff_Name') return [key, staffData['EmpNameGet'] ? staffData['EmpNameGet'] : value]
                         return [key, staffData[key] ?? value]
                     })
                 ))
@@ -363,7 +363,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
 
         fetchLink({
             address: `inventory/stockProcessing`,
-            method: checkIsNumber(stockJorunalInfo?.STJ_Id) ? 'PUT' : 'POST',
+            method: checkIsNumber(stockJorunalInfo?.PR_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...stockJorunalInfo,
                 Source: sourceList.filter(item => checkIsNumber(item?.Sour_Item_Id) && isGraterNumber(item.Sour_Qty, 0)),

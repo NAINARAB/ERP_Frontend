@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { checkIsNumber, isEqualNumber, ISOString, isValidDate, Subraction } from '../../../Components/functions';
 import FilterableTable, { formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { Edit, FilterAlt, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 
@@ -38,7 +38,8 @@ const transformStockJournalData = (data) => {
             DestinationQty: totalDestinationQty,
             DifferentQTY: Subraction(totalDestinationQty, totalSourceQty),
             DifferentPercentage: diffPercentage,
-            Staffs: ""
+            Staffs: "",
+            processObjecet: entry
         });
 
         for (let i = 0; i < maxRows; i++) {
@@ -191,7 +192,7 @@ const StockMangement = ({ loadingOn, loadingOff }) => {
                 }
                 ExcelPrintOption
                 PDFPrintOption
-                columns={[
+                columns={[...[
                     { col: 'SNo', type: 'string', title: 'Sno' },
                     { col: 'Date', type: 'date', title: 'Date' },
                     { col: 'VoucherNo', type: 'string', title: 'Vch.No' },
@@ -204,14 +205,36 @@ const StockMangement = ({ loadingOn, loadingOff }) => {
                     { col: 'DestinationQty', type: 'number', title: 'P.Tonnage' },
                     { col: 'DifferentQTY', type: 'number', title: 'Diff' },
                     { col: 'DifferentPercentage', type: 'number', title: 'Diff (%)' },
-                    { col: 'Staffs', type: 'string', title: 'Staffs' }
+                    { col: 'Staffs', type: 'string', title: 'Staffs' },
                 ].map(cel => ({
                     isVisible: 1,
                     ColumnHeader: cel.title,
                     isCustomCell: true,
                     Cell: ({ row }) => formatString(row[cel.col], cel.type),
                     tdClass: ({ row }) => checkIsNumber(row?.SNo) ? 'fw-bold bg-light' : ''
-                }))}
+                })), {
+                    isVisible: 1,
+                    ColumnHeader: 'Action',
+                    isCustomCell: true,
+                    Cell: ({ row }) => {
+                        return row?.processObjecet && (
+                            <>
+                                <IconButton size="small" onClick={() => {
+                                    navigate('create', { state : {
+                                        ...row.processObjecet,
+                                        SourceDetails: Array.isArray(row?.processObjecet?.SourceDetails) ? row?.processObjecet?.SourceDetails : [],
+                                        DestinationDetails: Array.isArray(row?.processObjecet?.DestinationDetails) ? row?.processObjecet?.DestinationDetails : [],
+                                        StaffsDetails: Array.isArray(row?.processObjecet?.StaffsDetails) ? row?.processObjecet?.StaffsDetails : [],
+                                        isEditable: true
+                                    }})
+                                }}>
+                                    <Edit className="fa-20" />
+                                </IconButton>
+                            </>
+                        )
+                    }
+                }
+                ]}
             />
 
             <Dialog
@@ -223,58 +246,60 @@ const StockMangement = ({ loadingOn, loadingOff }) => {
                 <DialogContent>
                     <div className="table-responsive pb-4">
                         <table className="table">
-                            <tr>
-                                <td style={{ verticalAlign: 'middle' }}>From</td>
-                                <td className="py-1">
-                                    <input
-                                        type="date"
-                                        value={filters.Fromdate}
-                                        onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                        className="cus-inpt p-2"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style={{ verticalAlign: 'middle' }}>To</td>
-                                <td className="py-1">
-                                    <input
-                                        type="date"
-                                        value={filters.Todate}
-                                        onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                        className="cus-inpt p-2"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style={{ verticalAlign: 'middle' }}>Source Godown</td>
-                                <td className="py-1">
-                                    <select
-                                        value={filters.sourceGodown}
-                                        onChange={e => setFilters(pre => ({ ...pre, sourceGodown: e.target.value }))}
-                                        className="cus-inpt p-2"
-                                    >
-                                        <option value="">All Godown</option>
-                                        {godowns.map((g, gi) => (
-                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
-                                        ))}
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style={{ verticalAlign: 'middle' }}>Destination Godown</td>
-                                <td className="py-1">
-                                    <select
-                                        value={filters.destinationGodown}
-                                        onChange={e => setFilters(pre => ({ ...pre, destinationGodown: e.target.value }))}
-                                        className="cus-inpt p-2"
-                                    >
-                                        <option value="">All Godown</option>
-                                        {godowns.map((g, gi) => (
-                                            <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
-                                        ))}
-                                    </select>
-                                </td>
-                            </tr>
+                            <tbody>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>From</td>
+                                    <td className="py-1">
+                                        <input
+                                            type="date"
+                                            value={filters.Fromdate}
+                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>To</td>
+                                    <td className="py-1">
+                                        <input
+                                            type="date"
+                                            value={filters.Todate}
+                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Source Godown</td>
+                                    <td className="py-1">
+                                        <select
+                                            value={filters.sourceGodown}
+                                            onChange={e => setFilters(pre => ({ ...pre, sourceGodown: e.target.value }))}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value="">All Godown</option>
+                                            {godowns.map((g, gi) => (
+                                                <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Destination Godown</td>
+                                    <td className="py-1">
+                                        <select
+                                            value={filters.destinationGodown}
+                                            onChange={e => setFilters(pre => ({ ...pre, destinationGodown: e.target.value }))}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value="">All Godown</option>
+                                            {godowns.map((g, gi) => (
+                                                <option value={g.Godown_Id} key={gi}>{g.Godown_Name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </DialogContent>
