@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import {
-    checkIsNumber, isEqualNumber, Multiplication, onlynum,
+    checkIsNumber, isEqualNumber, ISOString, Multiplication, onlynum,
 } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -11,55 +11,58 @@ import { initialArrivalValue } from './tableColumns'
 import { toast } from 'react-toastify'
 import RequiredStar from "../../../Components/requiredStar";
 
-
-
-const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onSubmit, onClose }) => {
+const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onSubmit, open = false, close = () => { } }) => {
     const tdStyle = 'border fa-14 vctr';
     const [godown, setGodown] = useState([]);
     const [products, setProducts] = useState([]);
     const [uom, setUom] = useState([]);
-    const [productInput, setProductInput] = useState({ ...initialArrivalValue, dialog: false });
+    const [productInput, setProductInput] = useState({ ...initialArrivalValue });
 
     useEffect(() => {
-
-        const fetchData = async () => {
-            try {
-                const [
-                    productsResponse,
-                    godownLocationsResponse,
-                    uomResponse
-                ] = await Promise.all([
-                    fetchLink({ address: `masters/products` }),
-                    fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `masters/uom` }),
-                ]);
-
-                const productsData = (productsResponse.success ? productsResponse.data : []).sort(
-                    (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
-                );
-                const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
-                    (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
-                );
-                const uomOrdered = (uomResponse.success ? uomResponse.data : []).sort(
-                    (a, b) => String(a?.Units).localeCompare(b?.Units)
-                );
-
-                setProducts(productsData);
-                setGodown(godownLocations);
-                setUom(uomOrdered);
-
-            } catch (e) {
-                console.error("Error fetching data:", e);
-            }
-        };
-
-        fetchData();
-    }, [])
+        if (open) {
+            const fetchData = async () => {
+                try {
+                    if (loadingOn) loadingOn();
+                    const [
+                        productsResponse,
+                        godownLocationsResponse,
+                        uomResponse
+                    ] = await Promise.all([
+                        fetchLink({ address: `masters/products` }),
+                        fetchLink({ address: `dataEntry/godownLocationMaster` }),
+                        fetchLink({ address: `masters/uom` }),
+                    ]);
+    
+                    const productsData = (productsResponse.success ? productsResponse.data : []).sort(
+                        (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+                    );
+                    const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
+                        (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
+                    );
+                    const uomOrdered = (uomResponse.success ? uomResponse.data : []).sort(
+                        (a, b) => String(a?.Units).localeCompare(b?.Units)
+                    );
+    
+                    setProducts(productsData);
+                    setGodown(godownLocations);
+                    setUom(uomOrdered);
+    
+                } catch (e) {
+                    console.error("Error fetching data:", e);
+                } finally {
+                    if (loadingOff) loadingOff();
+                }
+            };
+    
+            fetchData();
+        }
+    }, [open])
 
     useEffect(() => {
-        if (productValue?.Product_Id) {
+        if (checkIsNumber(productValue?.Arr_Id)) {
             setProductInput(pre => Object.fromEntries(
                 Object.entries(pre).map(([key, value]) => {
+                    if (key === 'Arrival_Date') return [key, productValue[key] ? ISOString(productValue[key]) : value]
                     return [key, productValue[key] ? productValue[key] : value]
                 })
             ))
@@ -67,13 +70,12 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
     }, [productValue])
 
     const closeDialog = () => {
-        setProductInput({ ...initialArrivalValue, dialog: false });
-        if (onClose) onClose();
+        if (close) close();
     }
 
     const saveArrival = () => {
         if (loadingOn) loadingOn();
-        const method = checkIsNumber(productInput?.Id) ? 'PUT' : 'POST'; 
+        const method = checkIsNumber(productInput?.Arr_Id) ? 'PUT' : 'POST';
         fetchLink({
             address: `inventory/tripSheet/arrivalEntry`,
             method: method,
@@ -95,12 +97,12 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
 
     return (
         <>
-            <span onClick={() => setProductInput(pre => ({ ...pre, dialog: true }))}>
+            <span className="p-0 m-0">
                 {children}
             </span>
 
             <Dialog
-                open={productInput.dialog}
+                open={open}
                 onClose={closeDialog}
                 fullWidth maxWidth='sm'
             >
@@ -124,13 +126,13 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                     <DialogContent>
                         <table className="table m-0">
                             <tbody>
-                            <tr>
+                                <tr>
                                     <td className={tdStyle}>Date <RequiredStar /></td>
                                     <td className={tdStyle}>
-                                        <input 
-                                            type="date" 
+                                        <input
+                                            type="date"
                                             value={productInput.Arrival_Date}
-                                            onChange={e => setProductInput(pre => ({...pre, Arrival_Date: e.target.value }))}
+                                            onChange={e => setProductInput(pre => ({ ...pre, Arrival_Date: e.target.value }))}
                                             className="cus-inpt p-2 "
                                             required
                                         />

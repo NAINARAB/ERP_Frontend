@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { Addition, checkIsNumber, filterableText, ISOString, isValidDate, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, filterableText, isEqualNumber, ISOString, isValidDate, toNumber } from "../../../Components/functions";
 import { Edit, FilterAlt, Search } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import Select from 'react-select';
@@ -32,7 +32,8 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
         FromGodown: { label: 'Select Godown', value: '' },
         ToGodown: { label: 'Select Godown', value: '' },
         Items: [],
-        TripConvertion: { label: 'ALL', value: '' }
+        TripConvertion: { label: 'ALL', value: '' },
+        addDialog: false
     });
 
     useEffect(() => {
@@ -152,20 +153,29 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
 
     const EditComp = ({ row }) => {
         const [open, setOpen] = useState(false);
+
         return !checkIsNumber(row?.Trip_Id) && (
-            // <CreateArrival
-            //     productValue={open ? row : undefined}
-            //     onClose={() => setOpen(false)}
-            //     onSubmit={() => {
-            //         setOpen(false);
-            //         setFilters(pre => ({...pre, refresh: !pre.refresh}));
-            //     }}
-            // >
-            //     <IconButton onClick={() => setOpen(true)}><Edit className="fa-20" /></IconButton>
-            // </CreateArrival>
-            <></>
-        )
-    }
+            <>
+                <IconButton onClick={() => setOpen(true)}>
+                    <Edit className="fa-20" />
+                </IconButton>
+
+                {open && (
+                    <CreateArrival
+                        productValue={{ ...row, dialog: open }}
+                        open={open}
+                        close={() => setOpen(false)}
+                        onSubmit={() => {
+                            setOpen(false);
+                            setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
+                        }}
+                    >
+                        H
+                    </CreateArrival>
+                )}
+            </>
+        );
+    };
 
     return (
         <>
@@ -189,7 +199,15 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                             size="small"
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
                         ><FilterAlt /></IconButton>
-                        <CreateArrival onSubmit={() => setFilters(pre => ({...pre, refresh: !pre.refresh}))}><Button>Add</Button></CreateArrival>
+                        <CreateArrival
+                            onSubmit={() => setFilters(pre => ({ ...pre, refresh: !pre.refresh }))}
+                            open={filters.addDialog}
+                            close={() => setFilters(pre => ({ ...pre, addDialog: false }))}
+                        >
+                            <Button onClick={() => setFilters(pre => ({ ...pre, addDialog: true }))}>
+                                Add
+                            </Button>
+                        </CreateArrival>
                     </>
                 }
                 columns={[
@@ -218,11 +236,12 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'P-Orders',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            const convertedWeight = row?.ConvertedAsOrders?.reduce((acc, order) => Addition(acc, order?.Weight), 0);
-                            const { cls, str } = bgColor(row?.QTY, convertedWeight)
+                            // const convertedWeight = row?.ConvertedAsOrders?.reduce((acc, order) => Addition(acc, order?.Weight), 0);
+                            // const { cls, str } = bgColor(row?.QTY, convertedWeight)
+                            const order = isEqualNumber(row?.ConvertedAsOrder, 1);
                             return (
-                                <span className={`cus-badge text-white fa-10 fw-bold ${cls}`}>
-                                    {str}
+                                <span className={`cus-badge text-white fa-10 fw-bold ${order ? ' bg-success ' : ' bg-warning '}`}>
+                                    {order ? 'Converted' : 'Not'}
                                 </span>
                             )
                         }
@@ -232,11 +251,12 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'P-Invoices',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            const convertedWeight = row?.ConvertedAsInvoices?.reduce((acc, order) => Addition(acc, order?.Bill_Qty), 0);
-                            const { cls, str } = bgColor(row?.QTY, convertedWeight)
+                            // const convertedWeight = row?.ConvertedAsInvoices?.reduce((acc, order) => Addition(acc, order?.Bill_Qty), 0);
+                            // const { cls, str } = bgColor(row?.QTY, convertedWeight)
+                            const invoice = isEqualNumber(row?.ConvertedAsInvoice, 1);
                             return (
-                                <span className={`cus-badge text-white fa-10 fw-bold ${cls}`}>
-                                    {str}
+                                <span className={`cus-badge text-white fa-10 fw-bold ${invoice ? ' bg-success ' : ' bg-warning '}`}>
+                                    {invoice ? 'Converted' : 'Not'}
                                 </span>
                             )
                         }

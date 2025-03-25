@@ -154,33 +154,37 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const saveTripSheet = () => {
-        if (loadingOn) loadingOn();
-        fetchLink({
-            address: `inventory/tripSheet`,
-            method: checkIsNumber(tripSheetInfo?.Trip_Id) ? 'PUT' : 'POST',
-            bodyData: {
-                ...tripSheetInfo,
-                StartTime: (
-                    tripSheetInfo.StartTime && tripSheetInfo.Trip_Date
-                ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.StartTime) : '',
-                EndTime: (
-                    tripSheetInfo.EndTime && tripSheetInfo.Trip_Date
-                ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.EndTime) : '',
-                Product_Array: selectedItems,
-                EmployeesInvolved: staffInvolvedList.filter(staff => checkIsNumber(staff.Involved_Emp_Id) && checkIsNumber(staff.Cost_Center_Type_Id))
-            }
-        }).then(data => {
-            if (data.success) {
-                resetForm();
-                toast.success(data.message);
-            } else {
-                toast.error(data.message)
-            }
-        }).catch(
-            e => console.log(e)
-        ).finally(() => {
-            if (loadingOff) loadingOff();
-        })
+        if (tripSheetInfo.BillType && tripSheetInfo.VoucherType) {
+            if (loadingOn) loadingOn();
+            fetchLink({
+                address: `inventory/tripSheet`,
+                method: checkIsNumber(tripSheetInfo?.Trip_Id) ? 'PUT' : 'POST',
+                bodyData: {
+                    ...tripSheetInfo,
+                    StartTime: (
+                        tripSheetInfo.StartTime && tripSheetInfo.Trip_Date
+                    ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.StartTime) : '',
+                    EndTime: (
+                        tripSheetInfo.EndTime && tripSheetInfo.Trip_Date
+                    ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.EndTime) : '',
+                    Product_Array: selectedItems,
+                    EmployeesInvolved: staffInvolvedList.filter(staff => checkIsNumber(staff.Involved_Emp_Id) && checkIsNumber(staff.Cost_Center_Type_Id))
+                }
+            }).then(data => {
+                if (data.success) {
+                    resetForm();
+                    toast.success(data.message);
+                } else {
+                    toast.error(data.message)
+                }
+            }).catch(
+                e => console.log(e)
+            ).finally(() => {
+                if (loadingOff) loadingOff();
+            })
+        } else {
+            toast.warn('Select BillType and Voucher')
+        }
     }
 
     const closeDialog = () => {

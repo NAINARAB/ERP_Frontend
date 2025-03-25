@@ -257,7 +257,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
     const changeItems = (itemDetail) => {
         setOrderItemArray(prev => {
-            const preItems = prev.filter(o => !isEqualNumber(o?.ItemId, itemDetail?.ItemId));
+            const preItems = prev.filter(o => !isEqualNumber(o?.Trip_Item_SNo, itemDetail?.Trip_Item_SNo));
 
             const reStruc = Object.fromEntries(
                 Object.entries(initialItemDetailsValue).map(([key, value]) => {

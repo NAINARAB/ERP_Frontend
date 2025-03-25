@@ -104,7 +104,7 @@ const SalesConvert = lazy(() => import("./Pages/Sales/TripMaster/SalesDeliveryAd
 // Purchase
 const PurchaseReport = lazy(() => import("./Pages/Purchase/purchaseReport"))
 const PurchaseReportForCustomer = lazy(() => import("./Pages/Purchase/purchaseReportForCustomer"))
-const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
+// const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
 const PurchaseOrderTallyBasedReport = lazy(() => import("./Pages/Purchase/tallyBasedReport"))
 const PurchaseInvoiceManagement = lazy(() => import("./Pages/Purchase/purchaseInvoiceManagement"))
 const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
@@ -176,11 +176,10 @@ const RoutingArray = [
     { component: <WeightCheckActivity />, path: '/dataEntry/weightCheckingActivity' },
     { component: <DataEntryAttendance />, path: '/dataEntry/staffAttendance' },
     { component: <DataEntryAbstract />, path: '/dataEntry/report' },
-    { component: <PurchaseOrderEntries />, path: '/dataEntry/purchaseOrder' },
-    { component: <PurchaseOrderDataEntry />, path: '/dataEntry/purchaseOrder/create' },
     { component: <CostCenter />, path: '/dataEntry/costCenter' },
-
-
+  
+    
+    
     // ERP 
     // ERP - master
     { component: <DisplayNavigations />, path: '/erp/master' },
@@ -191,11 +190,11 @@ const RoutingArray = [
     { component: <RateMaster />, path: '/erp/master/RateMaster' },
     { component: <UomMaster />, path: '/erp/master/uomMaster' },
     { component: <PosMaster />, path: '/erp/master/posMaster' },
-
+    
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
-
-
+    
+    
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
     { component: <SalesReport />, path: '/erp/sales/salesReport' },
@@ -205,7 +204,9 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/purchase' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
     { component: <PurchaseReportForCustomer />, path: '/erp/purchase/myPurchase' },
-    { component: <PurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
+    { component: <PurchaseOrderEntries />, path: '/erp/purchase/purchaseOrder' },
+    { component: <PurchaseOrderDataEntry />, path: '/erp/purchase/purchaseOrder/create' },
+    // { component: <PurchaseOrderEntries />, path: '/dataEntry/purchaseOrder' },
     { component: <PurchaseOrderTallyBasedReport />, path: '/erp/purchase/tallyBasedReport' },
     { component: <PurchaseInvoiceManagement />, path: '/erp/purchase/invoice/create' },
     { component: <PurchaseInvoces />, path: '/erp/purchase/invoice' },

@@ -22,7 +22,7 @@ export const tripMasterDetails = {
     UnloadingEmpty: '',
     MachineNo: '',
     PhoneNumber: '',
-    BillType: '',
+    BillType: 'MATERIAL INWARD',
     VoucherType: '',
     Narration: '',
     Created_By: user.UserId,
