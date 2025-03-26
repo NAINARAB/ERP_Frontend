@@ -44,6 +44,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             TradeConfirmDate: item.TradeConfirmDate,
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
+                            isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
                         }
                     }));
 
@@ -94,6 +96,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             TradeConfirmDate: item.TradeConfirmDate,
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
+                            isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
                         }
                     }));
 
@@ -140,6 +144,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             TradeConfirmDate: item.TradeConfirmDate,
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
+                            isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
                         }
                     }));
 
@@ -183,6 +189,8 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             TradeConfirmDate: item.TradeConfirmDate,
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
+                            isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
                         }
                     }));
 
@@ -309,12 +317,12 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
             isCustomCell: true,
             Cell: ({ row }) => {
                 const OrderDetails = row;
-                const { 
-                    ItemDetails = [], 
-                    DeliveryDetails = [], 
-                    StaffDetails = [], 
-                    TranspoterDetails = [], 
-                    ConvertedAsInvoices = [] 
+                const {
+                    ItemDetails = [],
+                    DeliveryDetails = [],
+                    StaffDetails = [],
+                    TranspoterDetails = [],
+                    ConvertedAsInvoices = []
                 } = OrderDetails;
 
                 const isConvertableArrivalExist = isEqualNumber(row?.isConvertableArrivalExist, 1);
@@ -512,7 +520,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                     staff.Emp_Name
                 )).join(', ')
             }
-        },ItemActions = {
+        }, ItemActions = {
             isVisible: 1,
             ColumnHeader: 'Action',
             isCustomCell: true,
@@ -520,6 +528,9 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
 
                 const OrderDetails = row?.OrderDetails;
                 const { ItemDetails, DeliveryDetails, TranspoterDetails, StaffDetails } = OrderDetails;
+                // const isConvertableArrivalExist = isEqualNumber(row?.isConvertableArrivalExist, 1);
+                const IsConvertedAsInvoice = isEqualNumber(row?.IsConvertedAsInvoice, 1);
+
 
                 return (
                     <>
@@ -541,7 +552,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </span>
                         </Tooltip>
 
-                        {navigation && (
+                        {(navigation && !IsConvertedAsInvoice) && (
                             <Tooltip title='Edit'>
                                 <span>
                                     <IconButton
@@ -608,7 +619,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
         case 'ITEMS PENDING':
         case 'ITEMS ARRIVED':
             return [
-                ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM, 
+                ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM,
                 ItemArrivedQuantity, PendingItemQuantity, Rate, ItemOwnerName, ItemBrokerName, ItemActions
             ];
         case 'ORDERS':
