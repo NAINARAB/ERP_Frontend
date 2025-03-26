@@ -504,7 +504,7 @@ const MainComponent = (props) => {
                 {desktopMenu && (
                     <aside className="fixed-fullheight-sidebar" >
                         <div className="sidebar-head">
-                            <h4 className="my-0 ps-3">ERP  <span className="fa-10">v{process.env.REACT_APP_VERSION}</span></h4>
+                            <h4 className="my-0 ps-3">ERP  <span className="fa-10 text-gold">v{process.env.REACT_APP_VERSION}</span></h4>
                         </div>
                         <hr className="my-2" />
                         <div className="sidebar-body-div">

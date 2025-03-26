@@ -189,6 +189,10 @@
   flex-direction: column;
 }
 
+.text-gold {
+  color: #FFD700;
+}
+
 .messages {
   width: fit-content;
   max-width: 85%;

@@ -257,7 +257,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
     const changeItems = (itemDetail) => {
         setOrderItemArray(prev => {
-            const preItems = prev.filter(o => !isEqualNumber(o?.Trip_Item_SNo, itemDetail?.Trip_Item_SNo));
+            const preItems = prev.filter(o => !isEqualNumber(o?.ItemId, itemDetail?.ItemId));
 
             const reStruc = Object.fromEntries(
                 Object.entries(initialItemDetailsValue).map(([key, value]) => {
@@ -271,15 +271,17 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     }
 
     const changeDeliveryInfo = (details) => {
-        if (checkIsNumber(details.indexValue)) {
-            setDeliveryArray(pre => {
-                const deliveryData = [...pre];
-                deliveryData[details.indexValue] = { ...details };
-                return deliveryData;
-            })
-        } else {
-            setDeliveryArray(pre => [...pre, { ...details, indexValue: pre.length }]);
-        }
+        setDeliveryArray(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.Trip_Item_SNo, details?.Trip_Item_SNo));
+
+            const reStruc = Object.fromEntries(
+                Object.entries(initialDeliveryDetailsValue).map(([key, value]) => {
+                    return [key, details[key] ?? value]
+                })
+            )
+            return [...preItems, reStruc];
+        });
+
         setDeliveryInput(initialDeliveryDetailsValue);
         setDialogs(pre => ({ ...pre, deliveryDialog: false }));
     }

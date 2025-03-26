@@ -23,8 +23,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const initialInvoiceValue = {
         PIN_Id: '',
         Po_Inv_No: '',
-        Ref_Po_Inv_No: '',
         Branch_Id: '',
+        Voucher_Type: 0,
+        Ref_Po_Inv_No: '',
         Po_Inv_Date: ISOString(),
         Po_Entry_Date: ISOString(),
         Retailer_Id: '',
@@ -41,7 +42,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         Total_Tax: 0,
         Total_Invoice_value: 0,
         Cancel_status: 0,
-        Voucher_Type: '',
         Stock_Item_Ledger_Name: '',
         Created_by: storage.UserId,
         Altered_by: storage.UserId,
@@ -645,12 +645,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <div className="col-sm-4 p-2">
                                             <label className='fa-13'>Voucher Type</label>
                                             <Select
-                                                value={{ value: invoiceDetails.Voucher_Type, label: invoiceDetails.Voucher_Type }}
-                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.label }))}
+                                                value={{ 
+                                                    value: invoiceDetails.Voucher_Type, 
+                                                    label: voucherType.find(v => isEqualNumber(v.Vocher_Type_Id, invoiceDetails.Voucher_Type))?.Voucher_Type
+                                                }}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.value }))}
                                                 options={[
                                                     { value: '', label: 'Search', isDisabled: true },
                                                     ...voucherType.map(obj => ({
-                                                        value: obj?.Voucher_Type,
+                                                        value: obj?.Vocher_Type_Id,
                                                         label: obj?.Voucher_Type
                                                     }))
                                                 ]}

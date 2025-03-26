@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { Button } from "react-bootstrap";
 import { ISOString, isValidDate } from "../../Components/functions";
-import * as XLSX from 'xlsx'; // Import xlsx library
+// import * as XLSX from 'xlsx'; // Import xlsx library
 
 
 import ExcelJS from "exceljs";
@@ -262,58 +262,48 @@ function RateMaster() {
  
   
    
-    const handleDownload = async () => {
+      const handleDownload = async () => {
         const groupedData = groupByPosBrandId(posData);
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("PriceList_Data");
     
-   
-        worksheet.addRow(["Date", "Product_Name", "Rate"]).font = { bold: true };
+       
+        const uniqueDate = posData.length > 0 ? posData[0].Rate_Date.split("T")[0].split("-").reverse().join("-") : "";
     
-        const brandCells = [];
-        const uniqueDate = posData.length > 0 ? posData[0].Rate_Date.split("T")[0] : "";
-    
- 
-        let firstRow = true;
+       
+        worksheet.addRow([uniqueDate, "PriceList"]).font = { bold: true, size: 14 };
     
         Object.entries(groupedData).forEach(([brandId, products]) => {
-            if (firstRow) {
-                worksheet.addRow([uniqueDate, products[0].POS_Brand_Name, ""]); 
-                firstRow = false;
-            } else {
-                worksheet.addRow(["", products[0].POS_Brand_Name, ""]); 
-            }
-            
-            brandCells.push(worksheet.rowCount); 
+        
+            const brandRow = worksheet.addRow([products[0].POS_Brand_Name]);
+            const brandCell = brandRow.getCell(1); 
     
+          
+            brandCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFF00" } 
+            };
+            brandCell.font = { bold: true, size: 12 };
+    
+           
             products.forEach((item) => {
-                worksheet.addRow(["", item.Product_Name, item.Rate]);
+                worksheet.addRow([item.Short_Name, item.Rate]);
             });
         });
     
-   
+      
         worksheet.columns = [
-            { width: 15 },
-            { width: 40 },
-            { width: 15 }
+            { width: 40 }, 
+            { width: 15 } 
         ];
     
-      
-        brandCells.forEach((rowIdx) => {
-            const cell = worksheet.getRow(rowIdx).getCell(2); 
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FFFF00" }
-            };
-            cell.font = { bold: true };
-        });
-    
-      
+   
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         saveAs(blob, "PriceList_Data.xlsx");
     };
+    
     
     
     
@@ -380,7 +370,7 @@ function RateMaster() {
                 columns={[
                     createCol('Rate_Date', 'date', 'Rate Date'),
                     createCol('POS_Brand_Name', 'string', 'Brand'),
-                    createCol('Product_Name', 'string', 'Product'),
+                    createCol('Short_Name', 'string', 'Product'),
                     createCol('Rate', 'string', 'Rate'),
                     {
                         Field_Name: 'Actions',
