@@ -395,7 +395,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                         size='small'
                                         onClick={() => {
                                             navigation({
-                                                page: '/dataEntry/purchaseOrder/create',
+                                                page: 'create',
                                                 stateToTransfer: {
                                                     OrderDetails: OrderDetails,
                                                     OrderItemsArray: ItemDetails,
@@ -547,7 +547,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                     <IconButton
                                         size='small'
                                         onClick={() => navigation({
-                                            page: '/dataEntry/purchaseOrder/create',
+                                            page: 'create',
                                             stateToTransfer: {
                                                 OrderDetails,
                                                 OrderItemsArray: ItemDetails,
