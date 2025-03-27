@@ -20,7 +20,8 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(1),
         Todate: ISOString(),
-        ReportType: 'LedgerBased',
+        // ReportType: 'LedgerBased',
+        ReportType: 'ProductBased',
         filterDialog: false,
         reload: true
     });
@@ -61,8 +62,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
             } else {
                 setSalesDataOfProduct([])
             }
-        })
-            .catch(e => console.error(e))
+        }).catch(e => console.error(e))
     }
 
     useEffect(() => {
@@ -128,7 +128,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                             </IconButton>
                         </Tooltip>
 
-                        <Tooltip title="Filters">
+                        {/* <Tooltip title="Filters">
                             <IconButton
                                 onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
                                 size="small"
@@ -136,7 +136,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                             >
                                 <FilterAlt />
                             </IconButton>
-                        </Tooltip>
+                        </Tooltip> */}
                     </div>
 
                     {salesData === null && filters.ReportType === "LedgerBased" && (

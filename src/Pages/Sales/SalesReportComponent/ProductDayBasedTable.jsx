@@ -1,14 +1,11 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { calcTotal, getDaysInPreviousMonths, Division } from "../../../Components/functions";
 
 const ProductDayBasedSalesReport = ({ dataArray, days }) => {
-    const [showData, setShowData] = useState([]);
 
-    useEffect(() => {
-        let temp = Array.isArray(dataArray) ? [...dataArray] : [];
-
-        const modifyCol = temp.map(o => ({
+    const showData = useMemo(() => {
+        return dataArray.map(o => ({
             ...o,
             M2_Avg: Division(o.ALL_Avg_M2, (getDaysInPreviousMonths(2) / 2)) ?? 0,
             M3_Avg: Division(o.ALL_Avg_M3, (getDaysInPreviousMonths(3) / 3)) ?? 0,
@@ -26,14 +23,10 @@ const ProductDayBasedSalesReport = ({ dataArray, days }) => {
                 M9_Avg: Division(st.M9_AVG_Qty, (getDaysInPreviousMonths(9) / 9)) ?? 0,
                 M12_Avg: Division(st.One_Year_AVG_Qty, (getDaysInPreviousMonths(12) / 12)) ?? 0,
             }))
-        }));
-
-        const withQtySum = modifyCol.map(o => ({
+        })).map(o => ({
             ...o,
             Billed_Qty: calcTotal(o.StockTransaction, 'bill_qty')
         }));
-
-        setShowData(withQtySum)
 
     }, [dataArray])
 

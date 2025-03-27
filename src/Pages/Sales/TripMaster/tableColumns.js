@@ -15,7 +15,9 @@ export const tripMasterDetails = {
     Created_By: '',
     Updated_By: '',
     DO_Date:ISOString(),
-    Delivery_Person_Id:''
+    Delivery_Person_Id:'',
+    BillType:'',
+    VoucherType:''
 }
 
 export const tripDetailsColumns = {

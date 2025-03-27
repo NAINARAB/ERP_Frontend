@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division } from '../../../Components/functions'
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
-import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings } from '@mui/icons-material'
+import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt } from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -40,13 +40,14 @@ const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
     )
 }
 
-const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes, DB, Fromdate, Todate }) => {
+const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) => {
     const [filters, setFilters] = useState({});
     const [groupBy, setGroupBy] = useState('');
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
+    const [filterDialog, setFilterDialog] = useState(false);
     const propsColumns = colTypes.map((col, colInd) => ({
-        isVisible: colInd < 5 ? 1 : 0,
+        isVisible: colInd < 10 ? 1 : 0,
         Field_Name: col?.Column_Name,
         Fied_Data: col?.Data_Type,
         OrderBy: colInd + 1
@@ -208,72 +209,16 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
         }
     };
 
+    const closeDialog = () => {
+        setDialog(false);
+        setFilterDialog(false);
+    }
+
     return (
         <Fragment>
-            <div className="row">
+            {/* <div className="row">
                 <div className="col-xxl-10 col-lg-9 col-md-8">
-                    <FilterableTable
-                        title="LOL - Sales Reports"
-                        headerFontSizePx={12}
-                        bodyFontSizePx={12}
-                        ButtonArea={
-                            <>
-                                <select
-                                    className="cus-inpt p-2 w-auto m-1"
-                                    value={groupBy}
-                                    onChange={e => setGroupBy(e.target.value)}
-                                >
-                                    <option value="">Group By</option>
-                                    {DisplayColumn.filter(fil => (
-                                        filterableText(fil.Fied_Data) === "string"
-                                        && fil?.Field_Name !== 'Ledger_Name'
-                                    )).map((col, colInd) => (
-                                        <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
-                                    ))}
-                                </select>
-                            </>
-                        }
-                        ExcelPrintOption
-                        columns={
-                            groupBy
-                                ? DisplayColumn.filter(fil =>
-                                    showData.length > 0 && Object.keys(showData[0]).includes(fil.Field_Name)
-                                ).map(col => ({
-                                    ...col,
-                                    ColumnHeader: col.Field_Name === groupBy ? groupBy : col.ColumnHeader
-                                }))
-                                : DisplayColumn
-                        }
-                        dataArray={showData}
-                        isExpendable={true}
-                        expandableComp={({ row }) => (
-                            groupBy ? (
-                                <FilterableTable
-                                    title={row[groupBy] + ' - Ledgers'}
-                                    dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
-                                    columns={DisplayColumn}
-                                    ExcelPrintOption
-                                    isExpendable={true}
-                                    expandableComp={({ row }) => (
-                                        <LedgerDetails
-                                            row={row}
-                                            DB={DB}
-                                            Fromdate={Fromdate}
-                                            Todate={Todate}
-                                        />
-                                    )}
-                                />
-                            ) : (
-                                <LedgerDetails
-                                    row={row}
-                                    DB={DB}
-                                    Fromdate={Fromdate}
-                                    Todate={Todate}
-                                />
-                            )
-                        )}
-                        maxHeightOption
-                    />
+                    
                 </div>
 
                 <div className="col-xxl-2 col-lg-3 col-md-4 d-none d-md-block">
@@ -309,7 +254,95 @@ const LedgerBasedSalesReport = ({ dataArray, filterDialog, closeDialog, colTypes
                     </div>
                 </div>
 
-            </div>
+            </div> */}
+
+            <FilterableTable
+                title="LOL - Sales Reports"
+                headerFontSizePx={12}
+                bodyFontSizePx={12}
+                ButtonArea={
+                    <>
+                        <Tooltip title='Column Visiblity'>
+                            <IconButton
+                                size="small"
+                                onClick={() => setDialog(true)}
+                            >
+                                <Settings />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title='Clear Filters'>
+                            <IconButton
+                                size="small"
+                                onClick={() => setFilters({})}
+                            >
+                                <FilterAltOff />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Filters">
+                            <IconButton
+                                onClick={() => setFilterDialog(true)}
+                                size="small"
+                            // className="d-md-none d-inline"
+                            >
+                                <FilterAlt />
+                            </IconButton>
+                        </Tooltip>
+                        <select
+                            className="cus-inpt p-2 w-auto m-1"
+                            value={groupBy}
+                            onChange={e => setGroupBy(e.target.value)}
+                        >
+                            <option value="">Group By</option>
+                            {DisplayColumn.filter(fil => (
+                                filterableText(fil.Fied_Data) === "string"
+                                && fil?.Field_Name !== 'Ledger_Name'
+                            )).map((col, colInd) => (
+                                <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
+                            ))}
+                        </select>
+                    </>
+                }
+                ExcelPrintOption
+                columns={
+                    groupBy
+                        ? DisplayColumn.filter(fil =>
+                            showData.length > 0 && Object.keys(showData[0]).includes(fil.Field_Name)
+                        ).map(col => ({
+                            ...col,
+                            ColumnHeader: col.Field_Name === groupBy ? groupBy : col.ColumnHeader
+                        }))
+                        : DisplayColumn
+                }
+                dataArray={showData}
+                isExpendable={true}
+                expandableComp={({ row }) => (
+                    groupBy ? (
+                        <FilterableTable
+                            title={row[groupBy] + ' - Ledgers'}
+                            dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
+                            columns={DisplayColumn}
+                            ExcelPrintOption
+                            isExpendable={true}
+                            expandableComp={({ row }) => (
+                                <LedgerDetails
+                                    row={row}
+                                    DB={DB}
+                                    Fromdate={Fromdate}
+                                    Todate={Todate}
+                                />
+                            )}
+                        />
+                    ) : (
+                        <LedgerDetails
+                            row={row}
+                            DB={DB}
+                            Fromdate={Fromdate}
+                            Todate={Todate}
+                        />
+                    )
+                )}
+                maxHeightOption
+            />
 
             <Dialog
                 open={filterDialog}

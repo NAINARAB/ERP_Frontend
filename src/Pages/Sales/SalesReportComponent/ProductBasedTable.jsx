@@ -1,44 +1,31 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
-import { calcTotal } from "../../../Components/functions";
+import { calcTotal, checkIsNumber } from "../../../Components/functions";
 
 const ProductBasedSalesReport = ({ dataArray }) => {
-    const [showData, setShowData] = useState([]);
 
-    useEffect(() => {
-        let temp = Array.isArray(dataArray) ? [...dataArray] : [];
-
-        const modifyCol = temp.map(o => ({
-            ...o,
-            M2_Avg: o.ALL_Avg_M2 ?? 0,
-            M3_Avg: o.ALL_Avg_M3 ?? 0,
-            M6_Avg: o.ALL_Avg_M6 ?? 0,
-            M9_Avg: o.ALL_Avg_M9 ?? 0,
-            M12_Avg: o.ALL_Avg_One_Year ?? 0,
-            Billed_Qty: calcTotal(o.StockTransaction, 'bill_qty'),
-            StockTransaction: o.StockTransaction.map(st => ({
-                ...st,
-                M2_Avg: st.M2_AVG_Qty ?? 0,
-                M3_Avg: st.M3_AVG_Qty ?? 0,
-                M6_Avg: st.M6_AVG_Qty ?? 0,
-                M9_Avg: st.M9_AVG_Qty ?? 0,
-                M12_Avg: st.One_Year_AVG_Qty ?? 0,
-            }))
-        }));
-
-        const withQtySum = modifyCol.map(o => ({
-            ...o,
-            Billed_Qty: calcTotal(o.StockTransaction, 'bill_qty')
-        }));
-
-        setShowData(withQtySum)
+    const showData = useMemo(() => {
+        return dataArray.map(o => {
+            return Object.fromEntries(
+                Object.entries(o).map(([key, value]) =>  {
+                    const productColumns = ['LM', 'M2', 'M6', 'Stock_Group', 'Total_Qty', 'Y1']
+                    const isProductKey = productColumns.findIndex(pro => pro === key) !== -1
+                    
+                    if (isProductKey) {
+                        return [key, value]
+                    } else {
+                        return [key, calcTotal(o?.StockTransaction, key)]
+                    }
+                })
+            )
+        });
 
     }, [dataArray])
 
     return (
         <Fragment>
             <FilterableTable
-                dataArray={showData}
+                dataArray={dataArray}
                 isExpendable={true}
                 columns={[
                     {

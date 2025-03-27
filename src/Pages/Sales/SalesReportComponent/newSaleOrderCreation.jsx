@@ -32,15 +32,17 @@ const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumbe
 
 const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
-
-    const [retailers, setRetailers] = useState([]);
-    const [products, setProducts] = useState([]);
-    // const [productGroup, setProductGroup] = useState([]);
-    const [voucherType, setVoucherType] = useState([]);
-    const [productBrand, setProductBrand] = useState([]);
-    const [productUOM, setProductUOM] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
-    const [branch, setBranch] = useState([]);
+    const [baseData, setBaseData] = useState({
+        products: [],
+        branch: [],
+        retailers: [],
+        voucherType: [],
+        uom: [],
+        staff: [],
+        staffType: [],
+        salesPerson: [],
+        brand: [],
+    })
     const [companyInfo, setCompanyInfo] = useState({});
 
     const initialValue = {
@@ -75,13 +77,20 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
         Amount: 0
     }
 
+    const staffInitialDetails = {
+        So_Id: '',
+        Involved_Emp_Id: '',
+        Cost_Center_Type_Id: '',
+    }
+
     const [orderDetails, setOrderDetails] = useState(initialValue)
     const [orderProducts, setOrderProducts] = useState([]);
     const [productDetails, setProductDetails] = useState(productInitialDetails);
+    // const [staffDetails, setStaffDetails] = useState(staffInitialDetails);
     const [isEdit, setIsEdit] = useState(false);
     const [addProductDialog, setAddProductDialog] = useState(false);
 
-    const isExclusiveBill = isEqualNumber(orderDetails.GST_Inclusive, 0);
+    // const isExclusiveBill = isEqualNumber(orderDetails.GST_Inclusive, 0);
     const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(orderDetails.IS_IGST, 1);
@@ -104,102 +113,108 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                 GST_Inclusive: editValues?.GST_Inclusive,
                 IS_IGST: editValues?.IS_IGST,
             }));
-            setOrderProducts(editValues?.Products_List?.map(pro => ({
-                ...pro,
-                Item_Id: pro.Item_Id ?? '',
-                ItemName: pro?.Product_Name ?? "",
-                Bill_Qty: pro?.Bill_Qty ?? 0,
-                Item_Rate: pro?.Item_Rate ?? 0,
-                UOM: pro?.Unit_Id ?? '',
-                Units: pro?.Units ?? '',
-                Product: {
+            setOrderProducts(editValues?.Products_List?.map(pro => {
+                const productDetails = findProductDetails(baseData.products, pro.Item_Id);
+                return {
                     ...pro,
-                    Cgst_P: Number(findProductDetails(products, pro.Item_Id)?.Cgst_P) ?? 0,
-                    Sgst_P: Number(findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0,
-                    Igst_P: Number(findProductDetails(products, pro.Item_Id)?.Igst_P) ?? 0,
-                    Gst_P: Addition(findProductDetails(products, pro.Item_Id)?.Cgst_P, findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0
-                } ?? {},
-                Group: 'Search Group',
-                GroupID: '',
-                Brand: 'Search Brand',
-                BrandID: '',
-                Amount: pro?.Amount ?? 0
-            })));
+                    Item_Id: pro?.Item_Id ?? '',
+                    ItemName: pro?.Product_Name ?? "",
+                    Bill_Qty: pro?.Bill_Qty ?? 0,
+                    Item_Rate: pro?.Item_Rate ?? 0,
+                    UOM: pro?.Unit_Id ?? '',
+                    Units: pro?.Units ?? '',
+                    Product: {
+                        ...pro,
+                        Cgst_P: Number(productDetails?.Cgst_P) ?? 0,
+                        Sgst_P: Number(productDetails?.Sgst_P) ?? 0,
+                        Igst_P: Number(productDetails?.Igst_P) ?? 0,
+                        Gst_P: Addition(productDetails?.Cgst_P, productDetails?.Sgst_P) ?? 0
+                    } ?? {},
+                    Group: 'Search Group',
+                    GroupID: '',
+                    Brand: 'Search Brand',
+                    BrandID: '',
+                    Amount: pro?.Amount ?? 0
+                }
+            }));
             setIsEdit(true)
         } else {
             setOrderDetails(initialValue);
             setOrderProducts([])
             setIsEdit(false)
         }
-    }, [editValues, products])
+    }, [editValues, baseData.products])
 
     useEffect(() => {
 
-        fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setRetailers(data.data);
-            }
-        }).catch(e => console.error(e))
+        const fetchData = async () => {
+            try {
+                const [
+                    branchResponse,
+                    productsResponse,
+                    retailerResponse,
+                    voucherTypeResponse,
+                    uomResponse,
+                    staffResponse,
+                    staffCategory,
+                    salesPersonResponse,
+                    companyResponse,
+                ] = await Promise.all([
+                    fetchLink({ address: `masters/branch/dropDown` }),
+                    fetchLink({ address: `masters/products` }),
+                    fetchLink({ address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}` }),
+                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/uom` }),
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `masters/users/salesPerson/dropDown` }),
+                    fetchLink({ address: `masters/company?Company_id=${storage?.Company_id}` }),
+                ]);
 
-        fetchLink({
-            address: `masters/uom`
-        }).then(data => {
-            if (data.success) {
-                setProductUOM(data.data);
-            }
-        }).catch(e => console.error(e))
+                const branchData = (branchResponse.success ? branchResponse.data : []).sort(
+                    (a, b) => String(a?.BranchName).localeCompare(b?.BranchName)
+                );
+                const productsData = (productsResponse.success ? productsResponse.data : []).sort(
+                    (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+                );
+                const retailersData = (retailerResponse.success ? retailerResponse.data : []).sort(
+                    (a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)
+                );
+                const voucherType = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
+                    (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
+                );
+                const uomData = (uomResponse.success ? uomResponse.data : []).sort(
+                    (a, b) => String(a.Units).localeCompare(b.Units)
+                );
+                const staffData = (staffResponse.success ? staffResponse.data : []).sort(
+                    (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
+                );
+                const staffCategoryData = (staffCategory.success ? staffCategory.data : []).sort(
+                    (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
+                );
+                const salesPersonData = (salesPersonResponse.success ? salesPersonResponse.data : []).sort(
+                    (a, b) => String(a?.Name).localeCompare(b?.Name)
+                );
 
-        fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setProducts(data.data);
-                // const uniqueGroup = getUniqueData(data.data, 'Product_Group', ['Pro_Group']);
-                // setProductGroup(uniqueGroup);
-                const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
-                setProductBrand(uniqueBrand);
-                // const uniqueUOM = getUniqueData(data.data, 'UOM_Id', ['Units']);
-                // setProductUOM(uniqueUOM)
-            } else {
-                setProducts([]);
-                // setProductGroup([])
-                setProductBrand([]);
+                setBaseData((pre) => ({
+                    ...pre,
+                    products: productsData,
+                    branch: branchData,
+                    retailers: retailersData,
+                    voucherType: voucherType,
+                    uom: uomData,
+                    staff: staffData,
+                    staffType: staffCategoryData,
+                    salesPerson: salesPersonData,
+                    brand: getUniqueData(productsData, 'Brand', ['Brand_Name'])
+                }));
+                setCompanyInfo((companyResponse.success && companyResponse?.data[0]) ? companyResponse?.data[0] : {})
+            } catch (e) {
+                console.error("Error fetching data:", e);
             }
-        }).catch(e => console.error(e))
+        };
 
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown`
-        }).then(data => {
-            if (data.success) {
-                setSalePerson(data.data)
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/company?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setCompanyInfo(data?.data[0] ? data?.data[0] : {})
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `purchase/voucherType`
-        }).then(data => {
-            if (data.success) {
-                setVoucherType(data.data)
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/branch/dropDown`
-        }).then(data => {
-            if (data.success) {
-                setBranch(data.data)
-            }
-        }).catch(e => console.error(e))
+        fetchData();
 
     }, [storage?.Company_id])
 
@@ -270,7 +285,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
 
         if (isNotTaxableBill) return Addition(acc, Amount);
 
-        const product = findProductDetails(products, item.Item_Id);
+        const product = findProductDetails(baseData.products, item.Item_Id);
         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
         if (isInclusive) {
@@ -288,7 +303,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
             TotalTax: 0
         }
 
-        const product = findProductDetails(products, item.Item_Id);
+        const product = findProductDetails(baseData.products, item.Item_Id);
         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
         const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
@@ -393,7 +408,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                             >
                                                 <option value='' disabled>select sales person</option>
                                                 <option value={storage?.UserId}>{storage?.Name}</option>
-                                                {salesPerson?.map((vou, ind) => (
+                                                {baseData.salesPerson?.map((vou, ind) => (
                                                     <option value={vou.UserId} key={ind}>{vou.Name}</option>
                                                 ))}
                                             </select>
@@ -408,7 +423,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                                 value={orderDetails.VoucherType}
                                             >
                                                 <option value='' disabled>select voucher</option>
-                                                {voucherType?.filter(vou => vou.Type === 'SALES').map((vou, ind) => (
+                                                {baseData.voucherType?.filter(vou => vou.Type === 'SALES').map((vou, ind) => (
                                                     <option value={vou.Vocher_Type_Id} key={ind}>{vou.Voucher_Type}</option>
                                                 ))}
                                             </select>
@@ -423,7 +438,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                                 value={orderDetails.Branch_Id}
                                             >
                                                 <option value='' disabled>select Branch</option>
-                                                {branch.map((branch, ind) => (
+                                                {baseData.branch.map((branch, ind) => (
                                                     <option value={branch.BranchId} key={ind}>{branch.BranchName}</option>
                                                 ))}
                                             </select>
@@ -451,7 +466,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                                 onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
                                                 options={[
                                                     { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                    ...baseData.retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
                                                 ]}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
@@ -531,7 +546,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                             ColumnHeader: 'Taxable Amount',
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = findProductDetails(products, row?.Item_Id)?.Gst_P
+                                const percentage = findProductDetails(baseData.products, row?.Item_Id)?.Gst_P
                                 const amount = row.Amount ?? 0;
                                 const taxDetails = calculateGSTDetails(amount, percentage, taxType);
                                 return NumberFormat(taxDetails.base_amount)
@@ -542,7 +557,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                         {
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = findProductDetails(products, row?.Item_Id)?.Gst_P
+                                const percentage = findProductDetails(baseData.products, row?.Item_Id)?.Gst_P
                                 const amount = row.Amount ?? 0;
                                 const taxDetails = calculateGSTDetails(amount, percentage, taxType);
                                 return NumberFormat(taxDetails.tax_amount) + ' (' + taxDetails.tax_per + '%)'
@@ -728,7 +743,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     onChange={(e) => setProductDetails(pre => ({ ...pre, BrandID: e.value, Brand: e.label }))}
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
-                                        ...productBrand.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
+                                        ...baseData.brand.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
@@ -760,7 +775,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     }
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
-                                        ...products
+                                        ...baseData.products
                                             .filter(
                                                 (pro) =>
                                                     productDetails.BrandID
@@ -790,7 +805,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                 <Select
                                     value={{ value: productDetails.Item_Id, label: productDetails.ItemName }}
                                     onChange={e => {
-                                        const productInfo = products.find(pro => isEqualNumber(pro.Product_Id, e.value))
+                                        const productInfo = baseData.products.find(pro => isEqualNumber(pro.Product_Id, e.value))
                                         setProductDetails(pre => ({
                                             ...pre,
                                             Item_Id: e.value,
@@ -810,7 +825,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
                                         ...[
-                                            ...products
+                                            ...baseData.products
                                                 .filter(pro => productDetails.BrandID ? isEqualNumber(pro.Brand, productDetails.BrandID) : true)
                                                 .filter(pro => productDetails.GroupID ? isEqualNumber(pro.Product_Group, productDetails.GroupID) : true)
                                         ].map(obj => ({
@@ -887,7 +902,7 @@ const NewSaleOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switc
                                     className="cus-inpt"
                                 >
                                     <option value="" disabled>select</option>
-                                    {productUOM.map((o, i) => (
+                                    {baseData.uom.map((o, i) => (
                                         <option value={o.Unit_Id} key={i} >{o.Units}</option>
                                     ))}
                                 </select>

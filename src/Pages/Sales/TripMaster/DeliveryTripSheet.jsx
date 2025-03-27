@@ -3,12 +3,12 @@ import FilterableTable, { ButtonActions, createCol } from "../../../Components/f
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ISOString, isValidDate, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration } from "../../../Components/functions";
-import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Delete, Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
-
+import { toast } from 'react-toastify'
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -36,6 +36,9 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         Items: []
     });
     const [selectedRow, setSelectedRow] = useState([]);
+    const [deleteDialog, setDeleteDialog] = useState(false);
+const [selectedId, setSelectedId] = useState(null);
+const[reload,setReload]=useState(false)
     const printRef = useRef(null);
 
     useEffect(() => {
@@ -51,7 +54,24 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters?.fetchFrom, filters?.fetchTo]);
+    }, [filters?.fetchFrom, filters?.fetchTo,reload]);
+
+    const handleDeleteConfirm = async () => {
+      
+        fetchLink({
+                  address: `delivery/tripDetails`,
+                  method: "DELETE",
+                  bodyData: { Trip_Id:selectedId },
+              }).then((data) => {
+                  if (data.success) {
+                      setReload(!reload);
+                      setDeleteDialog(false);
+                      toast.success("Trip deleted successfully!");
+                  } else {
+                      toast.error("Failed to delete area:", data.message);
+                  }
+              }).catch(e => console.error(e));
+    };
 
     useEffect(() => {
         const queryFilters = {
@@ -178,6 +198,15 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     };
 
 
+    const closeDeleteDialog = () => {
+        setDeleteDialog(false);
+        setSelectedId(null);
+    };
+    
+    const openDeleteDialog = (id) => {
+        setSelectedId(id);
+        setDeleteDialog(true);
+    };
     return (
         <>
 
@@ -205,6 +234,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </>
                 }
                 EnableSerialNumber
+                
                 initialPageCount={10}
                 columns={[
                     createCol('Trip_Date', 'date', 'Date'),
@@ -269,6 +299,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             return <span>{totalQty}</span>;
                         },
                     },
+                    
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',
@@ -277,14 +308,27 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             <ButtonActions
                                 buttonsData={[
                                     {
+                                        name: 'Delete',
+                                        icon: <Visibility className="fa-14" />,
+                                        onclick: () => {
+                                            openDeleteDialog(true)
+                                          
+                                            setSelectedId(row?.Trip_Id)
+                                        }
+                                    },
+                                    {
                                         name: 'Edit',
                                         icon: <Edit className="fa-14" />,
+                                     
                                         onclick: () => nav('/erp/sales/Tripsheet/Tripsheetcreation', {
+                                         
                                             state: {
                                                 ...row,
                                                 isEditable: false,
+                                                
                                             },
                                         }),
+                                        
                                     },
                                     {
                                         name: 'Short Preview',
@@ -792,6 +836,22 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+
+
+            <Dialog open={deleteDialog} onClose={closeDeleteDialog} fullWidth maxWidth="sm">
+    <DialogTitle>Confirm Delete</DialogTitle>
+    <DialogContent>
+        <p>Are you sure you want to delete this item?</p>
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={closeDeleteDialog}>Cancel</Button>
+
+        <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+            Delete
+        </Button>
+    </DialogActions>
+</Dialog>
 
             {/* <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({tripData?.length}) : {Total_Invoice_value}</h6> */}
         </>

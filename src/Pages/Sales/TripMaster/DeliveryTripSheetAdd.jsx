@@ -92,38 +92,39 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             const date = new Date(timeString);
             const hours = date.getHours();
             const minutes = date.getMinutes();
-
             return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
         };
+    
         const productsArray = stateDetails?.Product_Array;
         const employeesArray = stateDetails?.Employees_Involved;
-
         if (
-            isValidObject(stateDetails)
-            && Array.isArray(productsArray)
-            && Array.isArray(employeesArray)
+            isValidObject(stateDetails) &&
+            Array.isArray(productsArray) &&
+            Array.isArray(employeesArray)
         ) {
             setTripSheetInfo((prev) => ({
                 ...prev,
                 ...Object.fromEntries(
                     Object.entries(tripMasterDetails).map(([key, value]) => {
                         if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value];
-                        if (key === 'DO_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value];
                         if (key === 'Branch_Id') return [key, stateDetails[key] ?? value];
                         if (key === 'StartTime' || key === 'EndTime') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value];
+                      
                         return [key, stateDetails[key] ?? value];
                     })
                 ),
                 Product_Array: productsArray,
             }));
-            setSelectedItems(productsArray)
+    
+            setSelectedItems(productsArray);
             setStaffInvolvedList(
                 employeesArray.map(staffData => Object.fromEntries(
                     Object.entries(tripStaffsColumns).map(([key, value]) => {
-                        return [key, staffData[key] ?? value]
+                        return [key, staffData[key] ?? value];
                     })
                 ))
             );
+    
             const deliveryStaff = employeesArray.find(staff => Number(staff.Cost_Center_Type_Id) === 9);
             if (deliveryStaff) {
                 setDeliveryPerson({
@@ -135,7 +136,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             }
         }
     }, [stateDetails]);
-
+    
+    
     const searchTransaction = (e) => {
         e.preventDefault();
         const { Fromdate, Todate, Sales_Person_Id } = filters;
@@ -144,7 +146,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             if (loadingOn) loadingOn();
             setTransactionData([]);
             fetchLink({
-                address: `sales/saleDelivery?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}`
+                address: `delivery/deliveryDetailsList?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}`
             }).then(data => {
                 if (data.success) setTransactionData(data.data);
             }).catch(e => console.log(e)).finally(() => {
@@ -153,26 +155,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }
     }
 
-    const changeItems = (itemDetail, deleteOption) => {
-        if (deleteOption) {
-            setSelectedItems(prev => {
-                return prev.map(item => ({
-                    ...item,
-                    Products_List: item.Products_List.filter(product => product.Do_Id !== itemDetail.Delivery_Order_Id)
-                })).filter(item => item.Products_List.length > 0);
-            });
-        } else {
-            setSelectedItems(prev => {
-                const preItems = prev.filter(item =>
-                    !isEqualNumber(item.Do_Id, itemDetail.Delivery_Order_Id)
-                );
-                const currentOrders = transactionData.filter(item =>
-                    isEqualNumber(item.So_Id, itemDetail.So_Id)
-                );
-                return preItems.concat(currentOrders);
-            });
-        }
-    };
+  
+    
 
     const resetForm = () => {
         setSelectedItems([]);
@@ -272,6 +256,23 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         });
     };
 
+
+    
+    const handleCheckboxChange = (row) => {
+        setSelectedItems((prevSelectedItems) => {
+            const isSelected = prevSelectedItems.some((selectedRow) => selectedRow.Do_Id == row.Do_Id);
+    
+            if (isSelected) {
+             
+                return prevSelectedItems.filter((selectedRow) => selectedRow.Do_Id != row.Do_Id);
+            } else {
+          
+                return [...prevSelectedItems, row];
+            }
+        });
+    };
+    
+
     return (
         <>
 
@@ -308,11 +309,12 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <th className="fa-13">Category</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    {/* <tbody>
                                         {staffInvolvedList.map((row, index) => (
                                             <tr key={index}>
                                                 <td className='fa-13 vctr text-center'>{index + 1}</td>
                                                 <td className='fa-13 w-100 p-0'>
+                                                    
                                                     <Select
                                                         value={{
                                                             value: row?.Involved_Emp_Id,
@@ -321,6 +323,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         onChange={e => {
                                                             setStaffInvolvedList((prev) => {
                                                                 const updatedList = prev.map((item, ind) => {
+                                                                    
                                                                     if (isEqualNumber(ind, index)) {
                                                                         const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
                                                                         const updatedItem = {
@@ -349,6 +352,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                                 return updatedList;
                                                             });
                                                         }}
+                                                        
                                                         options={costCenter.filter(fil => (
                                                             staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
                                                         )).map(st => ({
@@ -376,7 +380,95 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 </td>
                                             </tr>
                                         ))}
-                                    </tbody>
+                                    </tbody> */}
+                                
+                                <tbody>
+    {staffInvolvedList.map((row, index) => (
+        <tr key={index}>
+            <td className='fa-13 vctr text-center'>{index + 1}</td>
+            <td className='fa-13 w-100 p-0'>
+                <Select
+                    value={{
+                        value: row?.Involved_Emp_Id,
+                        label: row?.Emp_Name
+                    }}
+                    onChange={e => {
+                        setStaffInvolvedList((prev) => {
+                            const updatedList = prev.map((item, ind) => {
+                                if (isEqualNumber(ind, index)) {
+                                    const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
+                                    const updatedItem = {
+                                        ...item,
+                                        Cost_Center_Type_Id: item.Cost_Center_Type_Id || staff.User_Type || 0,
+                                        Involved_Emp_Id: e.value,
+                                        Emp_Name: staff.Cost_Center_Name ?? ''
+                                    };
+
+                                    if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
+                                        setDeliveryPerson({
+                                            UserId: updatedItem.Involved_Emp_Id,
+                                            Name: updatedItem.Emp_Name,
+                                        });
+                                    } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
+                                        setDeliveryPerson(null);
+                                    }
+
+                                    return updatedItem;
+                                }
+                                return item;
+                            });
+
+                            return updatedList;
+                        });
+                    }}
+                    options={costCenter.filter(fil => (
+                        staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
+                    )).map(st => ({
+                        value: st.Cost_Center_Id,
+                        label: st.Cost_Center_Name
+                    }))}
+                    styles={customSelectStyles}
+                    isSearchable
+                    placeholder="Select Staff"
+                />
+            </td>
+            <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
+                <select
+                    value={row?.Cost_Center_Type_Id}
+                    onChange={e => handleCostCenterChange(e, index)}
+                    className="cus-inpt p-2"
+                >
+                    <option value="">Select</option>
+                    {costCenterCategory.map((st, sti) => (
+                        <option value={st?.Cost_Category_Id} key={sti}>
+                            {st?.Cost_Category}
+                        </option>
+                    ))}
+                </select>
+            </td>
+            <td className='fa-13 vctr text-center'>
+                <button 
+                    className="btn btn-danger btn-sm"
+                    onClick={() => {
+                        setStaffInvolvedList(prev => {
+                            const updatedList = prev.filter((_, i) => i !== index);
+
+                           
+                            if (deliveryPerson?.UserId === row.Involved_Emp_Id) {
+                                setDeliveryPerson(null);
+                            }
+
+                            return updatedList;
+                        });
+                    }}
+                >
+                    <Close  />
+                </button>
+            </td>
+        </tr>
+    ))}
+</tbody>
+
                                 </table>
                             </div>
                         </div>
@@ -410,7 +502,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             className="cus-inpt p-2 mb-2"
                                         />
                                     </div>
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    {/* <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Delivery Date <span style={{ color: "red" }}>*</span></label>
                                         <input
                                             value={tripSheetInfo?.DO_Date || ""}
@@ -418,7 +510,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             onChange={e => setTripSheetInfo({ ...tripSheetInfo, Do_Date: e.target.value })}
                                             className="cus-inpt p-2 mb-2"
                                         />
-                                    </div>
+                                    </div> */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Vehicle No</label>
                                         <input
@@ -447,6 +539,31 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             className="cus-inpt p-2 mb-2"
                                         />
                                     </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+    <label>Voucher Type</label>
+    <select
+        className="cus-inpt p-2 mb-2"
+        value={tripSheetInfo?.VoucherType ?? ""} // FIXED
+        onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
+    >
+        <option value="">Select Voucher Type</option>
+        <option value="0">SALES</option>
+    </select>
+</div>
+<div className="col-xl-3 col-md-4 col-sm-6 p-2">
+    <label>Bill Type</label>
+    <select
+        className="cus-inpt p-2 mb-2"
+        value={tripSheetInfo?.BillType ?? ""} 
+        onChange={e => setTripSheetInfo({ ...tripSheetInfo, BillType: e.target.value })}
+    >
+        <option value="">Select Bill Type</option>
+        <option value="SALES">SALES</option>
+    </select>
+</div>
+
+
                                 </div>
 
                                 <div className="table-responsive">
@@ -670,40 +787,67 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             disablePagination
                             maxHeightOption
                             columns={[
+                                // {
+                                //     isVisible: 1,
+                                //     ColumnHeader: '#',
+                                //     isCustomCell: true,
+                                //     Cell: ({ row }) => {
+                                //         console.log("row",row)
+                                //         // Check if this row is selected
+                                //         const isChecked = selectedItems.some(o =>
+                                //             isEqualNumber(o.Do_Id, row.Do_Id)
+                                //         );
+
+                                //         return (
+                                //             <div>
+                                //                 <input
+                                //                     className="form-check-input shadow-none pointer"
+                                //                     style={{ padding: '0.7em' }}
+                                //                     type="checkbox"
+                                //                     checked={isChecked}
+                                //                     onChange={() => {
+
+                                //                         if (isChecked) {
+                                //                             changeItems(row, true);
+                                //                         } else {
+                                //                             changeItems(row);
+                                //                         }
+                                //                     }}
+                                //                 />
+                                //             </div>
+                                //         );
+                                //     }
+                                // },
                                 {
+                                    Field_Name: 'checkbox',
+                                    ColumnHeader: '',
                                     isVisible: 1,
-                                    ColumnHeader: '#',
+                                    pointer:true,
                                     isCustomCell: true,
                                     Cell: ({ row }) => {
-                                        // Check if this row is selected
-                                        const isChecked = selectedItems.some(o =>
-                                            isEqualNumber(o.So_Id, row.So_Id)
-                                        );
-
+                                        const isSelected = selectedItems.some((selectedRow) => selectedRow.So_Id === row.So_Id);
+                            
                                         return (
-                                            <div>
-                                                <input
-                                                    className="form-check-input shadow-none pointer"
-                                                    style={{ padding: '0.7em' }}
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() => {
-
-                                                        if (isChecked) {
-                                                            changeItems(row, true);
-                                                        } else {
-                                                            changeItems(row);
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedItems.some((selectedRow) => selectedRow.Do_Id === row.Do_Id)}
+                                                onChange={() => handleCheckboxChange(row)}
+                                             
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    transform: 'scale(1.5)',
+                                                    width: '14px',  
+                                                    height: '20px', 
+                                                }}
+                                          
+                                            />
                                         );
-                                    }
+                                    },
                                 },
                                 createCol('Retailer_Name', 'string', 'Retailer_Name'),
                                 createCol('Branch_Name', 'string', 'Branch_Name'),
                                 createCol('AreaName', 'string', 'AreaName'),
-                                createCol('So_Date', 'date', 'So_Date'),
+                                createCol('Do_Date', 'date', 'Do_Date'),
                                 createCol('Total_Before_Tax', 'string', 'Total_Before_Tax'),
                                 createCol('Total_Tax', 'number', 'Total_Tax'),
                                 createCol('Total_Invoice_value', 'number', 'Total_Invoice_value'),
