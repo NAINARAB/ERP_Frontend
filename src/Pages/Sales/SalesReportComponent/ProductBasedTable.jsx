@@ -1,120 +1,72 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import FilterableTable from "../../../Components/filterableTable2";
-import { calcTotal, checkIsNumber } from "../../../Components/functions";
+import { Fragment, useMemo, useState } from "react";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 
 const ProductBasedSalesReport = ({ dataArray }) => {
+    const productColumns = ['Stock_Group', 'Item_Name_Modified', 'Y1', 'M6', 'M2', 'LM', 'Total_Qty'];
+    const [daysCol, setDaysCol] = useState([])
 
     const showData = useMemo(() => {
         return dataArray.map(o => {
-            return Object.fromEntries(
-                Object.entries(o).map(([key, value]) =>  {
-                    const productColumns = ['LM', 'M2', 'M6', 'Stock_Group', 'Total_Qty', 'Y1']
-                    const isProductKey = productColumns.findIndex(pro => pro === key) !== -1
-                    
-                    if (isProductKey) {
-                        return [key, value]
-                    } else {
-                        return [key, calcTotal(o?.StockTransaction, key)]
-                    }
+            const transaction = Array.isArray(o?.StockTransaction) ? o?.StockTransaction : [];
+            const stkObj = transaction[0] || {}; 
+            const DaySum = Object.fromEntries(
+                Object.entries(stkObj).filter(([key]) => 
+                    !productColumns.includes(key) && !isNaN(Number(key)) 
+                ).map(([key]) => {
+                    setDaysCol(pre => pre.includes(key) ? pre : [...pre, key])
+                    const total = transaction.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
+                    return [key, total];
                 })
-            )
-        });
+            );
 
-    }, [dataArray])
+            return {
+                ...o,
+                ...DaySum
+            };
+        });
+    }, [dataArray]);
 
     return (
         <Fragment>
             <FilterableTable
-                dataArray={dataArray}
+                dataArray={showData}
                 isExpendable={true}
                 columns={[
-                    {
-                        Field_Name: 'Stock_Group',
-                        isVisible: 1,
-                        Fied_Data: 'string',
-                    },
-                    {
-                        Field_Name: 'Billed_Qty',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
-                    {
-                        Field_Name: 'M2_Avg',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
-                    {
-                        Field_Name: 'M3_Avg',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
-                    {
-                        Field_Name: 'M6_Avg',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
-                    {
-                        Field_Name: 'M9_Avg',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
-                    {
-                        Field_Name: 'M12_Avg',
-                        isVisible: 1,
-                        Fied_Data: 'number',
-                    },
+                    createCol('Stock_Group', 'string'),
+                    createCol('Y1', 'number'),
+                    createCol('M6', 'number'),
+                    createCol('M2', 'number'),
+                    createCol('LM', 'number'),
+                    createCol('Total_Qty', 'number'),
+                    ...daysCol.map(day => createCol(day, 'number', `Day ${day}`))
                 ]}
                 expandableComp={({ row }) => {
+                    const transaction = Array.isArray(row?.StockTransaction) ? row?.StockTransaction : [];
+                    const preDefinedCol = [
+                        createCol('Item_Name_Modified', 'string', 'Item'),
+                        createCol('Y1', 'number'),
+                        createCol('M6', 'number'),
+                        createCol('M2', 'number'),
+                        createCol('LM', 'number'),
+                        createCol('Total_Qty', 'number')
+                    ];
+                    
+                    const columns = Object.keys(transaction[0] || {}).filter(
+                        key => !productColumns.includes(key) && key !== 'Stock_Group'
+                    ).map(key => createCol(key, 'number'));
+
                     return (
                         <FilterableTable
                             initialPageCount={10}
-                            dataArray={Array.isArray(row.StockTransaction) ? row.StockTransaction : []}
-                            columns={[
-                                {
-                                    Field_Name: 'Item_Name_Modified',
-                                    isVisible: 1,
-                                    Fied_Data: 'string',
-                                },
-                                {
-                                    Field_Name: 'bill_qty',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                                {
-                                    Field_Name: 'M2_Avg',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                                {
-                                    Field_Name: 'M3_Avg',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                                {
-                                    Field_Name: 'M6_Avg',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                                {
-                                    Field_Name: 'M9_Avg',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                                {
-                                    Field_Name: 'M12_Avg',
-                                    isVisible: 1,
-                                    Fied_Data: 'number',
-                                },
-                            ]}
-
+                            dataArray={transaction}
+                            columns={[...preDefinedCol, ...columns]}
                         />
-                    )
+                    );
                 }}
                 tableMaxHeight={540}
             />
         </Fragment>
-    )
-
-}
+    );
+};
 
 export default ProductBasedSalesReport;

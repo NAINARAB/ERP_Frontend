@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { DaysBetween, getPreviousDate, ISOString } from "../../Components/functions";
+import { DaysBetween, firstDayOfMonth, getPreviousDate, ISOString } from "../../Components/functions";
 // import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
 import DisplayArrayData from './SalesReportComponent/DataSetDisplay'
 import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
@@ -20,8 +20,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(1),
         Todate: ISOString(),
-        // ReportType: 'LedgerBased',
-        ReportType: 'ProductBased',
+        ReportType: 'LedgerBased',
         filterDialog: false,
         reload: true
     });
@@ -96,7 +95,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                         >
                             <option value={'LedgerBased'}>Ledger Based</option>
                             <option value={'ProductBased'}>Product Based</option>
-                            <option value={'ProductDayAverage'}>Product/Day Based</option>
+                            {/* <option value={'ProductDayAverage'}>Product/Day Based</option> */}
                         </select>
                     </span>
                 </div>
@@ -104,29 +103,35 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                 <CardContent>
 
                     <div className="mb-3">
-                        <input
-                            type={'date'}
-                            className='cus-inpt w-auto ps-3 border rounded-5 me-1'
-                            value={filters.Fromdate}
-                            onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
-                        />
+                        <form onSubmit={e => { 
+                            e.preventDefault();
+                            setFilters(pre => ({ ...pre, reload: !pre.reload }))
+                        }}>
+                            <input
+                                type={'date'}
+                                className='cus-inpt w-auto ps-3 border rounded-5 me-1'
+                                min={firstDayOfMonth()}
+                                value={filters.Fromdate}
+                                onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                            />
 
-                        <input
-                            type={'date'}
-                            className='cus-inpt w-auto ps-3 border rounded-5'
-                            value={filters.Todate}
-                            onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
-                        />
+                            <input
+                                type={'date'}
+                                className='cus-inpt w-auto ps-3 border rounded-5'
+                                value={filters.Todate}
+                                onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                            />
 
-                        <Tooltip title='Reload Data'>
-                            <IconButton
-                                onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
-                                size="small"
-                                className="ms-2"
-                            >
-                                <Refresh />
-                            </IconButton>
-                        </Tooltip>
+                            <Tooltip title='Reload Data'>
+                                <IconButton
+                                    size="small"
+                                    className="ms-2"
+                                    type="submit"
+                                >
+                                    <Refresh />
+                                </IconButton>
+                            </Tooltip>
+                        </form>
 
                         {/* <Tooltip title="Filters">
                             <IconButton
@@ -156,13 +161,19 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                             DB={storage?.Company_id}
                             Fromdate={filters?.Fromdate}
                             Todate={filters?.Todate}
-                            loadingOn={loadingOn} 
+                            loadingOn={loadingOn}
                             loadingOff={loadingOff}
                         />
                     )}
 
                     {(filters.ReportType === "ProductBased" && Array.isArray(salesDataOFProduct)) && (
-                        <ProductBasedSalesReport filterDialog={filters.filterDialog} closeDialog={closeDialog} dataArray={salesDataOFProduct} />
+                        <ProductBasedSalesReport
+                            filterDialog={filters.filterDialog}
+                            closeDialog={closeDialog}
+                            dataArray={salesDataOFProduct}
+                            fromDate={filters.Fromdate}
+                            toDate={filters.Todate}
+                        />
                     )}
 
                     {(filters.ReportType === "ProductDayAverage" && Array.isArray(salesDataOFProduct)) && (
