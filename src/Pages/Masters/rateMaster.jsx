@@ -311,8 +311,9 @@ function RateMaster() {
         fetchLink({
             address: `masters/posproductSync`,
         }).then((data) => {
-            if (data.success) {
-               toast(data?.message)
+          
+            if (data) {
+               toast.success(data?.message)
             }
         }).catch(e => console.error(e));
         
