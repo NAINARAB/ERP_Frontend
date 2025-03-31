@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
-import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, rgbToHex } from "@mui/material";
-import { Search, Edit, Delete } from "@mui/icons-material";
+import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
+import { Search, Edit, Delete, Sync } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { Button } from "react-bootstrap";
 import { ISOString, isValidDate } from "../../Components/functions";
 // import * as XLSX from 'xlsx'; // Import xlsx library
-
+import moment from "moment/moment";
 
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -57,7 +57,6 @@ function RateMaster() {
     const [selectedPosBrand, setSelectedPosBrand] = useState("");
     const [bulkData, setBulkData] = useState([])
     const [reload, setReload] = useState(false);
-
 
     const [exportDialog, setExportDialog] = useState(false)
     useEffect(() => {
@@ -208,7 +207,7 @@ function RateMaster() {
                     Pos_Brand_Id: "",
                     Item_Id: "",
                     Rate: "",
-                    Is_Active_Decative: "0",
+                    Is_Active_Decative: "1",
                     POS_Brand_Name: "",
                     Product_Name: ""
                 });
@@ -227,13 +226,12 @@ function RateMaster() {
         if (!filters?.Fromdate || !filters?.NewDate) {
             throw new Error("Both 'From Date' and 'New Date' are required.");
         }
-       
+
 
         fetchLink({
             address: `masters/exportRateMaster?FromDate=${filters?.Fromdate}&NewDate=${filters?.NewDate}`,
-
             method: "POST",
-            bodyData: {bulkData }
+            bodyData: { bulkData }
         })
 
             .then((data) => {
@@ -244,7 +242,7 @@ function RateMaster() {
                     toast.error(data.message);
                 }
             }).catch(e => console.error(e));
-           
+
     };
 
     const groupByPosBrandId = (data) => {
@@ -257,56 +255,71 @@ function RateMaster() {
             return result;
         }, {});
     };
-    
-    
- 
-  
-   
-      const handleDownload = async () => {
-        const groupedData = groupByPosBrandId(posData);
+
+
+
+
+
+    const handleDownload = async () => {
+
+        const activePosData = posData.filter(item => item.Is_Active_Decative === 1);
+        if (activePosData.length === 0) {
+            alert("No active data available for download.");
+            return;
+        }
+
+        const groupedData = groupByPosBrandId(activePosData);
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("PriceList_Data");
-    
-       
-        const uniqueDate = posData.length > 0 ? posData[0].Rate_Date.split("T")[0].split("-").reverse().join("-") : "";
-    
-       
+
+        const uniqueDate = activePosData.length > 0
+            ? activePosData[0].Rate_Date.split("T")[0].split("-").reverse().join("-")
+            : "";
+
+
         worksheet.addRow([uniqueDate, "PriceList"]).font = { bold: true, size: 14 };
-    
+
         Object.entries(groupedData).forEach(([brandId, products]) => {
-        
+
             const brandRow = worksheet.addRow([products[0].POS_Brand_Name]);
-            const brandCell = brandRow.getCell(1); 
-    
-          
+            const brandCell = brandRow.getCell(1);
+
+            // Style brand cell
             brandCell.fill = {
                 type: "pattern",
                 pattern: "solid",
-                fgColor: { argb: "FFFF00" } 
+                fgColor: { argb: "FFFF00" }
             };
             brandCell.font = { bold: true, size: 12 };
-    
-           
+
             products.forEach((item) => {
                 worksheet.addRow([item.Short_Name, item.Rate]);
             });
         });
-    
-      
+
         worksheet.columns = [
-            { width: 40 }, 
-            { width: 15 } 
+            { width: 40 },
+            { width: 15 }
         ];
-    
-   
+
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         saveAs(blob, "PriceList_Data.xlsx");
     };
+   
+    const syncLOS = () => {
+        fetchLink({
+            address: `masters/posproductSync`,
+        }).then((data) => {
+            if (data.success) {
+               toast(data?.message)
+            }
+        }).catch(e => console.error(e));
+        
+    };
     
     
-    
-    
+
     return (
         <div>
             <div className="date-inputs">
@@ -315,9 +328,9 @@ function RateMaster() {
                     <h5 className="m-0 my-1 flex-grow-1 d-flex align-items-center flex-wrap">
                         <span className="mx-2">Rate Master</span>
                         <Button onClick={() => setExportDialog(true)}>Export To</Button>
-                        <Button className="mx-2 btn btn-dark"   style={{ outline: 'none', boxShadow: 'none' }}  onClick={handleDownload}>Download Excel</Button> 
+                        <Button className="mx-2 btn btn-dark" style={{ outline: 'none', boxShadow: 'none' }} onClick={handleDownload}>Download Excel</Button>
                     </h5>
-
+                    <Tooltip title='Sync Data'><IconButton onClick={syncLOS}><Sync /></IconButton></Tooltip>
                     <div>
                         <input
                             type="date"
@@ -347,6 +360,7 @@ function RateMaster() {
                         }}
                         className="cus-inpt me-2 w-auto p-1"
                     /> */}
+
                     <IconButton
                         onClick={() => {
                             const updatedFilters = {
@@ -358,7 +372,10 @@ function RateMaster() {
                     >
                         <Search />
                     </IconButton>
-                    <Button onClick={() => setAddDialog(true)}>Add</Button>
+                    {filters?.Fromdate === moment().format("YYYY-MM-DD") ? (
+                        <Button onClick={() => setAddDialog(true)}>Add</Button>
+                    ) : null}
+
                 </div>
             </div>
 
@@ -373,33 +390,61 @@ function RateMaster() {
                     createCol('Short_Name', 'string', 'Product'),
                     createCol('Rate', 'string', 'Rate'),
                     {
-                        Field_Name: 'Actions',
-                        ColumnHeader: 'Actions',
+                        Field_Name: 'Is_Active_Decative',
+                        ColumnHeader: 'Status',
                         isVisible: 1,
                         isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <td style={{ minWidth: "80px" }}>
-                                <IconButton
-                                    onClick={() => editRow(row)}
-                                    size="small"
-                                >
-                                    <Edit className="fa-in" />
-                                </IconButton>
-                                <IconButton
-                                    onClick={() => {
-                                        setOpen(true);
-                                        setInputValue({ Id: row.Id });
-                                    }}
-                                    size="small"
-                                    color='error'
-                                >
-                                    <Delete className="fa-in " />
-                                </IconButton>
-                            </td>
 
+                        Cell: ({ row }) => {
+                            const values = row.Is_Active_Decative === 1 ? 'Active' : 'Inactive';
 
-                        ),
+                            return (
+                                <span
+                                    className="py-0 fw-bold px-2 rounded-4 fa-12 text-white"
+                                    style={{ backgroundColor: values === 'Active' ? 'green' : 'red' }}
+                                >
+                                    {values}
+                                </span>
+                            );
+                        }
                     },
+
+
+                    filters?.Fromdate === moment().format("YYYY-MM-DD")
+                        ? {
+                            Field_Name: "Actions",
+                            ColumnHeader: "Actions",
+                            isVisible: 1,
+                            isCustomCell: true,
+                            Cell: ({ row }) => (
+                                <td style={{ minWidth: "80px" }}>
+                                    <IconButton onClick={() => editRow(row)} size="small">
+                                        <Edit className="fa-in" />
+                                    </IconButton>
+                                    <IconButton
+                                        onClick={() => {
+                                            setOpen(true);
+                                            setInputValue({ Id: row.Id });
+                                        }}
+                                        size="small"
+                                        color="error"
+                                    >
+                                        <Delete className="fa-in " />
+                                    </IconButton>
+                                </td>
+                            ),
+                        }
+                        : {
+                            Field_Name: "Actions",
+                            ColumnHeader: "Actions",
+                            isVisible: 1,
+                            isCustomCell: true,
+                            Cell: ({ row }) => (
+                                <td>-</td>
+                            )
+                        }
+
+
                 ]}
             />
 
@@ -431,7 +476,7 @@ function RateMaster() {
                                 const selectedBrand = e.target.value;
                                 setSelectedPosBrand(selectedBrand);
                                 setInputValue({ ...inputValue, Pos_Brand_Id: selectedBrand });
-                                console.log("Selected POS Brand:", selectedBrand);
+                           
                             }}
                             className="cus-inpt"
                         >
@@ -488,12 +533,18 @@ function RateMaster() {
                             value={inputValue.Is_Active_Decative}
                             onChange={(e) => setInputValue({ ...inputValue, Is_Active_Decative: e.target.value })}
                         >
-                            <option value="0">Active</option>
-                            <option value="1">Inactive</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
                         </select>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setAddDialog(false)}>Cancel</Button>
+                        <Button onClick={() => {
+                            setInputValue({});
+                            setAddDialog(false);
+                        }}>Cancel</Button>
+
+
+
                         <Button type="submit" variant="contained">Save</Button>
                     </DialogActions>
                 </form>

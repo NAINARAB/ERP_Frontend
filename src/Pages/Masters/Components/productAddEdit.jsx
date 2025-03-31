@@ -23,7 +23,9 @@ const initialInputValue = {
     Igst_P: '',
     ERP_Id: '',
     Pos_Brand_Id:'',
-    IsActive:''
+    IsActive:'',
+    Product_Rate:'',
+    Max_Rate:''
 
 }
 
@@ -230,14 +232,33 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             elem: 'select',
             options: [
                 { value: '', label: ' - Select - ', disabled: true },
-                { value: '0', label: 'Active' },
-                { value: '1', label: 'Inactive' }
+                { value: '1', label: 'Active' },
+                { value: '0', label: 'Inactive' }
             ],
-            event: e => setProductInputValue(value => ({ ...value, Is_Active_Decative: e.target.value })),
-            value: productInputValue.Is_Active_Decative || '0', 
+            event: e => setProductInputValue(value => ({ ...value, IsActive: e.target.value })),
+            value: productInputValue.IsActive , 
         },
         
         
+    
+        {
+            label: 'Product Rate',
+            elem: 'input',
+            // oninput: e => onlynum(e),
+            placeholder: "Enter Price",
+            event: e => setProductInputValue(value => ({ ...value, Product_Rate: e.target.value })),
+         
+            value: productInputValue.Product_Rate,
+        },
+        {
+            label: 'Max Rate',
+            elem: 'input',
+            // oninput: e => onlynum(e),
+            placeholder: "Enter Max_Rate",
+            event: e => setProductInputValue(value => ({ ...value, Max_Rate: e.target.value })),
+         
+            value: productInputValue.Max_Rate,
+        },
         {
             label: 'Product Description',
             elem: 'textarea',

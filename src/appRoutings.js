@@ -77,7 +77,9 @@ const AreaMaster = lazy(() => import("./Pages/UserModule/areaMaster"))
 // Sales
 const SalesReport = lazy(() => import("./Pages/Sales/salesReports"))
 const SalesTransaction = lazy(() => import("./Pages/Analytics/SalesReport"))
-const SaleOrderList = lazy(() => import("./Pages/Sales/saleOrder"))
+const SaleOrderList = lazy(() => import("./Pages/Sales/SaleOrder/saleOrderList"))
+// const SaleOrderCreate = lazy(() => import("./Pages/Sales/SaleOrder/saleOrderCreation"))
+const SaleOrderCreation = lazy(() => import("./Pages/Sales/SaleOrder/saleOrderCreation"))
 const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 
 
@@ -199,6 +201,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/sales' },
     { component: <SalesReport />, path: '/erp/sales/salesReport' },
     { component: <SaleOrderList />, path: '/erp/sales/saleOrder' },
+    { component: <SaleOrderCreation />, path: '/erp/sales/saleOrder/create' },
     { component: <PartySalesReport />, path: '/erp/sales/partyBasedReport' },
     // ERP - purchase
     { component: <DisplayNavigations />, path: '/erp/purchase' },

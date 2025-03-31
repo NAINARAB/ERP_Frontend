@@ -141,7 +141,6 @@ const createCol = (
     ColumnHeader = '', 
     align = 'left', 
     verticalAlign = 'center', 
-    tdClass = '', 
     isVisible = 1
 ) => {
     return {
@@ -150,7 +149,6 @@ const createCol = (
         Fied_Data: type,
         align,
         verticalAlign,
-        tdClass,
         ...(ColumnHeader && { ColumnHeader })
     }
 }

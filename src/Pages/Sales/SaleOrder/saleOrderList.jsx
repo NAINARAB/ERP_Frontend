@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import '../common.css'
+import React, { useState, useEffect, useMemo } from "react";
+import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
-import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, isEqualNumber, ISOString, isValidDate, isValidObject } from "../../Components/functions";
-import InvoiceBillTemplate from "./SalesReportComponent/newInvoiceTemplate";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import { Addition, isEqualNumber, ISOString, isValidDate, toNumber } from "../../../Components/functions";
+import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
-import { convertedStatus } from "./convertedStatus";
-import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable from "../../Components/filterableTable2";
-import NewSaleOrderCreation from "./SalesReportComponent/newSaleOrderCreation";
+import { convertedStatus } from "../convertedStatus";
+import { fetchLink } from "../../../Components/fetchComponent";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -28,8 +26,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [retailers, setRetailers] = useState([]);
     const [salesPerson, setSalePerson] = useState([]);
     const [users, setUsers] = useState([]);
-    const [screen, setScreen] = useState(true);
-    const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
 
@@ -120,100 +116,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         navigate(`?${params.toString()}`, { replace: true });
     };
 
-    const saleOrderColumn = [
-        {
-            Field_Name: 'So_Id',
-            ColumnHeader: 'Order ID',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
-        {
-            Field_Name: 'Retailer_Name',
-            ColumnHeader: 'Customer',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
-        {
-            Field_Name: 'So_Date',
-            ColumnHeader: 'Date',
-            Fied_Data: 'date',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Before_Tax',
-            ColumnHeader: 'Before Tax',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Tax',
-            ColumnHeader: 'Tax',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Invoice_value',
-            ColumnHeader: 'Invoice Value',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            ColumnHeader: 'Status',
-            isVisible: 1,
-            align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
-                return (
-                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-                        {convert?.label ?? 'Undefined'}
-                    </span>
-                )
-            },
-        },
-        {
-            Field_Name: 'Action',
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                return (
-                    <>
-                        <Tooltip title='View Order'>
-                            <IconButton
-                                onClick={() => {
-                                    setViewOrder({
-                                        orderDetails: row,
-                                        orderProducts: row?.Products_List ? row?.Products_List : [],
-                                    })
-                                }}
-                                color='primary' size="small"
-                            >
-                                <Visibility className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title='Edit'>
-                            <IconButton
-                                onClick={() => {
-                                    switchScreen();
-                                    setOrderInfo({ ...row, isEdit: true });
-                                }}
-                                size="small"
-                            >
-                                <Edit className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                    </>
-                )
-            },
-        },
-    ];
-
     const ExpendableComponent = ({ row }) => {
 
         return (
@@ -252,83 +154,109 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         )
     }
 
-    const switchScreen = () => {
-        setScreen(!screen)
-        setOrderInfo({});
-    }
-
     const closeDialog = () => {
         setDialog({
             ...dialog,
             filters: false,
             orderDetails: false,
         });
-        setOrderInfo({});
     }
 
-    const Total_Invoice_value = saleOrders.reduce((acc, orders) => Addition(acc, orders?.Total_Invoice_value), 0);
+    const Total_Invoice_value = useMemo(() => saleOrders.reduce(
+        (acc, orders) => Addition(acc, orders?.Total_Invoice_value), 0
+    ), [saleOrders])
 
     return (
         <>
-            <Card>
-                <div className="p-3 py-2 d-flex align-items-center justify-content-between">
-                    <h6 className="fa-18 m-0 p-0">{
-                        screen
-                            ? 'Sale Orders'
-                            : isValidObject(orderInfo)
-                                ? 'Modify Sale Order'
-                                : 'Sale Order Creation'}
-                    </h6>
-                    <span>
-                        {screen && (
-                            <Tooltip title='Filters'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setDialog({ ...dialog, filters: true })}
-                                >
-                                    <FilterAlt />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        {screen && (
-                            <Button
-                                variant='outlined'
-                                startIcon={<Add />}
-                                onClick={switchScreen}
+            <FilterableTable
+                title="Sale Orders"
+                dataArray={saleOrders}
+                columns={[
+                    createCol('So_Id', 'string', 'ID'),
+                    createCol('Retailer_Name', 'string', 'Customer'),
+                    createCol('So_Date', 'date', 'Date'),
+                    createCol('Total_Before_Tax', 'number', 'Before Tax'),
+                    createCol('Total_Tax', 'number', 'Tax'),
+                    createCol('Total_Invoice_value', 'number', 'Invoice Value'),
+                    {
+                        ColumnHeader: 'Status',
+                        isVisible: 1,
+                        align: 'center',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
+                            return (
+                                <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
+                                    {convert?.label ?? 'Undefined'}
+                                </span>
+                            )
+                        },
+                    },
+                    {
+                        Field_Name: 'Action',
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            return (
+                                <>
+                                    <Tooltip title='View Order'>
+                                        <IconButton
+                                            onClick={() => {
+                                                setViewOrder({
+                                                    orderDetails: row,
+                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
+                                                })
+                                            }}
+                                            color='primary' size="small"
+                                        >
+                                            <Visibility className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip>
+            
+                                    <Tooltip title='Edit'>
+                                        <IconButton
+                                            onClick={() => navigate('create', {
+                                                state: {
+                                                    ...row,
+                                                    isEdit: true
+                                                }
+                                            })}
+                                            size="small"
+                                        >
+                                            <Edit className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip>
+            
+                                </>
+                            )
+                        },
+                    },
+                ]}
+                ButtonArea={
+                    <>
+                        <Button
+                            variant='outlined'
+                            startIcon={<Add />}
+                            onClick={() => navigate('create')}
+                        >
+                            {'New'}
+                        </Button>
+                        <Tooltip title='Filters'>
+                            <IconButton
+                                size="small"
+                                onClick={() => setDialog({ ...dialog, filters: true })}
                             >
-                                {'New'}
-                            </Button>
-                        )}
-                    </span>
-                </div>
-
-                <CardContent className="p-0 ">
-                    {screen ? (
-                        <>
-                            <FilterableTable
-                                dataArray={saleOrders}
-                                columns={saleOrderColumn}
-                                // EnableSerialNumber={true}
-                                isExpendable={true}
-                                tableMaxHeight={550}
-                                expandableComp={ExpendableComponent}
-                            />
-                            <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({saleOrders?.length}) : {Total_Invoice_value}</h6>
-                        </>
-                    ) : (
-                        <NewSaleOrderCreation
-                            editValues={orderInfo}
-                            loadingOn={loadingOn}
-                            loadingOff={loadingOff}
-                            reload={() => {
-                                setReload(pre => !pre);
-                                setScreen(pre => !pre)
-                            }}
-                            switchScreen={switchScreen}
-                        />
-                    )}
-                </CardContent>
-            </Card>
+                                <FilterAlt />
+                            </IconButton>
+                        </Tooltip>
+                        {toNumber(Total_Invoice_value) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {Total_Invoice_value}</h6>}
+                    </>
+                }
+                // EnableSerialNumber={true}
+                isExpendable={true}
+                tableMaxHeight={550}
+                expandableComp={ExpendableComponent}
+            />
 
             {Object.keys(viewOrder).length > 0 && (
                 <InvoiceBillTemplate

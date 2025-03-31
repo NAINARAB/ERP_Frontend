@@ -779,7 +779,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     </tr>
                                 </tbody>
                             </table>
-
                         </div>
 
                         <FilterableTable

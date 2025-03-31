@@ -528,6 +528,20 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
     };
 
 
+
+
+    const retailersSync=()=>{
+       
+            fetchLink({
+                address: `masters/posRetailersSync`,
+            }).then((data) => {
+                if (data.success) {
+                   toast(data?.message)
+                }
+            }).catch(e => console.error(e));
+            
+       
+    }
     return (
         <>
 
@@ -559,6 +573,7 @@ const RetailersMaster = ({ loadingOn, loadingOff }) => {
                 <div className="p-3 pb-0 d-flex align-items-center ">
                     <h6 className="fa-18 flex-grow-1 ">Retailers</h6>
                     <div className="d-flex gap-2">
+                          <Button variant='outlined' onClick={() => retailersSync()} style={{ justifyContent: "space-between" }}>POS Retailer Sync</Button><br />
                         <Button variant='outlined' onClick={() => setRetailersDialog(true)} style={{ justifyContent: "space-between" }}>Retailers Map</Button><br />
                         <Button variant='outlined' onClick={DownloadRetailers}>DOWNLOAD</Button><br />
                         <Button variant='outlined' startIcon={<Add />} onClick={() => setDialog(true)}>Add Retailers</Button>
