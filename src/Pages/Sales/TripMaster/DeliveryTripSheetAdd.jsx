@@ -94,7 +94,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             const minutes = date.getMinutes();
             return `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
         };
-    
+
         const productsArray = stateDetails?.Product_Array;
         const employeesArray = stateDetails?.Employees_Involved;
         if (
@@ -109,13 +109,13 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value];
                         if (key === 'Branch_Id') return [key, stateDetails[key] ?? value];
                         if (key === 'StartTime' || key === 'EndTime') return [key, stateDetails[key] ? extractHHMM(stateDetails[key]) : value];
-                      
+
                         return [key, stateDetails[key] ?? value];
                     })
                 ),
                 Product_Array: productsArray,
             }));
-    
+
             setSelectedItems(productsArray);
             setStaffInvolvedList(
                 employeesArray.map(staffData => Object.fromEntries(
@@ -124,7 +124,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-    
+
             const deliveryStaff = employeesArray.find(staff => Number(staff.Cost_Center_Type_Id) === 9);
             if (deliveryStaff) {
                 setDeliveryPerson({
@@ -136,8 +136,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
             }
         }
     }, [stateDetails]);
-    
-    
+
+
     const searchTransaction = (e) => {
         e.preventDefault();
         const { Fromdate, Todate, Sales_Person_Id } = filters;
@@ -155,8 +155,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }
     }
 
-  
-    
+
+
 
     const resetForm = () => {
         setSelectedItems([]);
@@ -257,21 +257,21 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     };
 
 
-    
+
     const handleCheckboxChange = (row) => {
         setSelectedItems((prevSelectedItems) => {
             const isSelected = prevSelectedItems.some((selectedRow) => selectedRow.Do_Id == row.Do_Id);
-    
+
             if (isSelected) {
-             
+
                 return prevSelectedItems.filter((selectedRow) => selectedRow.Do_Id != row.Do_Id);
             } else {
-          
+
                 return [...prevSelectedItems, row];
             }
         });
     };
-    
+
 
     return (
         <>
@@ -381,93 +381,93 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             </tr>
                                         ))}
                                     </tbody> */}
-                                
-                                <tbody>
-    {staffInvolvedList.map((row, index) => (
-        <tr key={index}>
-            <td className='fa-13 vctr text-center'>{index + 1}</td>
-            <td className='fa-13 w-100 p-0'>
-                <Select
-                    value={{
-                        value: row?.Involved_Emp_Id,
-                        label: row?.Emp_Name
-                    }}
-                    onChange={e => {
-                        setStaffInvolvedList((prev) => {
-                            const updatedList = prev.map((item, ind) => {
-                                if (isEqualNumber(ind, index)) {
-                                    const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
-                                    const updatedItem = {
-                                        ...item,
-                                        Cost_Center_Type_Id: item.Cost_Center_Type_Id || staff.User_Type || 0,
-                                        Involved_Emp_Id: e.value,
-                                        Emp_Name: staff.Cost_Center_Name ?? ''
-                                    };
 
-                                    if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
-                                        setDeliveryPerson({
-                                            UserId: updatedItem.Involved_Emp_Id,
-                                            Name: updatedItem.Emp_Name,
-                                        });
-                                    } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
-                                        setDeliveryPerson(null);
-                                    }
+                                    <tbody>
+                                        {staffInvolvedList.map((row, index) => (
+                                            <tr key={index}>
+                                                <td className='fa-13 vctr text-center'>{index + 1}</td>
+                                                <td className='fa-13 w-100 p-0'>
+                                                    <Select
+                                                        value={{
+                                                            value: row?.Involved_Emp_Id,
+                                                            label: row?.Emp_Name
+                                                        }}
+                                                        onChange={e => {
+                                                            setStaffInvolvedList((prev) => {
+                                                                const updatedList = prev.map((item, ind) => {
+                                                                    if (isEqualNumber(ind, index)) {
+                                                                        const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
+                                                                        const updatedItem = {
+                                                                            ...item,
+                                                                            Cost_Center_Type_Id: item.Cost_Center_Type_Id || staff.User_Type || 0,
+                                                                            Involved_Emp_Id: e.value,
+                                                                            Emp_Name: staff.Cost_Center_Name ?? ''
+                                                                        };
 
-                                    return updatedItem;
-                                }
-                                return item;
-                            });
+                                                                        if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
+                                                                            setDeliveryPerson({
+                                                                                UserId: updatedItem.Involved_Emp_Id,
+                                                                                Name: updatedItem.Emp_Name,
+                                                                            });
+                                                                        } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
+                                                                            setDeliveryPerson(null);
+                                                                        }
 
-                            return updatedList;
-                        });
-                    }}
-                    options={costCenter.filter(fil => (
-                        staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
-                    )).map(st => ({
-                        value: st.Cost_Center_Id,
-                        label: st.Cost_Center_Name
-                    }))}
-                    styles={customSelectStyles}
-                    isSearchable
-                    placeholder="Select Staff"
-                />
-            </td>
-            <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
-                <select
-                    value={row?.Cost_Center_Type_Id}
-                    onChange={e => handleCostCenterChange(e, index)}
-                    className="cus-inpt p-2"
-                >
-                    <option value="">Select</option>
-                    {costCenterCategory.map((st, sti) => (
-                        <option value={st?.Cost_Category_Id} key={sti}>
-                            {st?.Cost_Category}
-                        </option>
-                    ))}
-                </select>
-            </td>
-            <td className='fa-13 vctr text-center'>
-                <button 
-                    className="btn btn-danger btn-sm"
-                    onClick={() => {
-                        setStaffInvolvedList(prev => {
-                            const updatedList = prev.filter((_, i) => i !== index);
+                                                                        return updatedItem;
+                                                                    }
+                                                                    return item;
+                                                                });
 
-                           
-                            if (deliveryPerson?.UserId === row.Involved_Emp_Id) {
-                                setDeliveryPerson(null);
-                            }
+                                                                return updatedList;
+                                                            });
+                                                        }}
+                                                        options={costCenter.filter(fil => (
+                                                            staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
+                                                        )).map(st => ({
+                                                            value: st.Cost_Center_Id,
+                                                            label: st.Cost_Center_Name
+                                                        }))}
+                                                        styles={customSelectStyles}
+                                                        isSearchable
+                                                        placeholder="Select Staff"
+                                                    />
+                                                </td>
+                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
+                                                    <select
+                                                        value={row?.Cost_Center_Type_Id}
+                                                        onChange={e => handleCostCenterChange(e, index)}
+                                                        className="cus-inpt p-2"
+                                                    >
+                                                        <option value="">Select</option>
+                                                        {costCenterCategory.map((st, sti) => (
+                                                            <option value={st?.Cost_Category_Id} key={sti}>
+                                                                {st?.Cost_Category}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </td>
+                                                <td className='fa-13 vctr text-center'>
+                                                    <button
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={() => {
+                                                            setStaffInvolvedList(prev => {
+                                                                const updatedList = prev.filter((_, i) => i !== index);
 
-                            return updatedList;
-                        });
-                    }}
-                >
-                    <Close  />
-                </button>
-            </td>
-        </tr>
-    ))}
-</tbody>
+
+                                                                if (deliveryPerson?.UserId === row.Involved_Emp_Id) {
+                                                                    setDeliveryPerson(null);
+                                                                }
+
+                                                                return updatedList;
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Close />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
 
                                 </table>
                             </div>
@@ -541,29 +541,41 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     </div>
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-    <label>Voucher Type</label>
-    <select
-        className="cus-inpt p-2 mb-2"
-        value={tripSheetInfo?.VoucherType ?? ""} // FIXED
-        onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
-    >
-        <option value="">Select Voucher Type</option>
-        <option value="0">SALES</option>
-    </select>
-</div>
-<div className="col-xl-3 col-md-4 col-sm-6 p-2">
-    <label>Bill Type</label>
-    <select
-        className="cus-inpt p-2 mb-2"
-        value={tripSheetInfo?.BillType ?? ""} 
-        onChange={e => setTripSheetInfo({ ...tripSheetInfo, BillType: e.target.value })}
-    >
-        <option value="">Select Bill Type</option>
-        <option value="SALES">SALES</option>
-    </select>
-</div>
-
-
+                                        <label>Voucher Type</label>
+                                        <select
+                                            className="cus-inpt p-2 mb-2"
+                                            value={tripSheetInfo?.VoucherType ?? ""} // FIXED
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
+                                        >
+                                            <option value="">Select Voucher Type</option>
+                                            <option value="0">SALES</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label>Bill Type</label>
+                                        <select
+                                            className="cus-inpt p-2 mb-2"
+                                            value={tripSheetInfo?.BillType ?? ""}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, BillType: e.target.value })}
+                                        >
+                                            <option value="">Select Bill Type</option>
+                                            <option value="SALES">SALES</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label>Trip Status</label>
+                                        <select
+                                            value={tripSheetInfo?.TripStatus || ''}
+                                            onChange={e => setTripSheetInfo(pre => ({ ...pre, TripStatus: e.target.value }))}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="New">New</option>
+                                            <option value="OnProcess">OnProcess</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Canceled">Canceled</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="table-responsive">
@@ -821,24 +833,24 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     Field_Name: 'checkbox',
                                     ColumnHeader: '',
                                     isVisible: 1,
-                                    pointer:true,
+                                    pointer: true,
                                     isCustomCell: true,
                                     Cell: ({ row }) => {
                                         const isSelected = selectedItems.some((selectedRow) => selectedRow.So_Id === row.So_Id);
-                            
+
                                         return (
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItems.some((selectedRow) => selectedRow.Do_Id === row.Do_Id)}
                                                 onChange={() => handleCheckboxChange(row)}
-                                             
-                                                style={{ 
+
+                                                style={{
                                                     cursor: 'pointer',
                                                     transform: 'scale(1.5)',
-                                                    width: '14px',  
-                                                    height: '20px', 
+                                                    width: '14px',
+                                                    height: '20px',
                                                 }}
-                                          
+
                                             />
                                         );
                                     },
