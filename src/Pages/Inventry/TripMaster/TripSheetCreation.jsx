@@ -396,16 +396,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     </div>
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Trip No</label>
-                                        <input
-                                            value={tripSheetInfo.Trip_No}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
-                                            className="cus-inpt p-2"
-                                            placeholder="ex: 1, 2, 3"
-                                        />
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                         <label>Phone Number</label>
                                         <input
                                             value={tripSheetInfo.PhoneNumber}
@@ -464,6 +454,27 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             ).map((voucher, voucherInd) => (
                                                 <option value={voucher.Vocher_Type_Id} key={voucherInd}>{voucher.Voucher_Type}</option>
                                             ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                        <label>Status</label>
+                                        {/* <input
+                                            value={tripSheetInfo.Trip_No}
+                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
+                                            className="cus-inpt p-2"
+                                            placeholder="ex: 1, 2, 3"
+                                        /> */}
+                                        <select
+                                            value={tripSheetInfo?.TripStatus || ''}
+                                            onChange={e => setTripSheetInfo(pre => ({ ...pre, TripStatus: e.target.value }))}
+                                            className="cus-inpt p-2"
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="New">New</option>
+                                            <option value="OnProcess">OnProcess</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Canceled">Canceled</option>
                                         </select>
                                     </div>
 

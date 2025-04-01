@@ -25,6 +25,7 @@ export const tripMasterDetails = {
     BillType: 'MATERIAL INWARD',
     VoucherType: '',
     Narration: '',
+    TripStatus: 'New',
     Created_By: user.UserId,
     Updated_By: user.UserId,
 }

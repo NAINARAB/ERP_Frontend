@@ -184,6 +184,22 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
+    const statusColor = {
+        NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
+        OnProcess: ' bg-warning fw-bold fa-11 px-2 py-1 rounded-3 ',
+        Completed: ' bg-success text-light fa-11 px-2 py-1 rounded-3 ',
+        Canceled: ' bg-danger text-light fw-bold fa-11 px-2 py-1 rounded-3 '
+    }
+
+    const chooseColor = (orderStatus) => {
+        switch (orderStatus) {
+            case 'New': return statusColor.NewOrder;
+            case 'OnProcess': return statusColor.OnProcess;
+            case 'Completed': return statusColor.Completed;
+            case 'Canceled': return statusColor.Canceled;
+            default: return ''
+        }
+    }
 
     return (
         <>
@@ -243,16 +259,29 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     },
                     {
                         isVisible: 1,
-                        ColumnHeader: 'Total Qty',
+                        ColumnHeader: 'Status',
                         isCustomCell: true,
-                        Cell: ({ row }) => row?.Products_List?.reduce((acc, product) => Addition(product.QTY ?? 0, acc), 0)
+                        Cell: ({ row }) => {
+                            const OrderStatus = row?.TripStatus;
+                            return (
+                                <span className={chooseColor(OrderStatus)}>
+                                    {String(OrderStatus).replace(' ', '')}
+                                </span>
+                            )
+                        }
                     },
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Total Item',
-                        isCustomCell: true,
-                        Cell: ({ row }) => NumberFormat(row.Products_List.length ?? 0)
-                    },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Total Qty',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => row?.Products_List?.reduce((acc, product) => Addition(product.QTY ?? 0, acc), 0)
+                    // },
+                    // {
+                    //     isVisible: 1,
+                    //     ColumnHeader: 'Total Item',
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => NumberFormat(row.Products_List.length ?? 0)
+                    // },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',
