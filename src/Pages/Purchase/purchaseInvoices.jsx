@@ -6,7 +6,7 @@ import { isEqualNumber, ISOString, isValidDate } from "../../Components/function
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable from "../../Components/filterableTable2";
+import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -18,6 +18,7 @@ const defaultFilters = {
 const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
+    const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
     const navigate = useNavigate();
     const location = useLocation();
@@ -29,11 +30,9 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
         Todate: defaultFilters.Todate,
         fetchFrom: defaultFilters.Fromdate,
         fetchTo: defaultFilters.Todate,
-        Retailer_Id: '',
-        RetailerGet: 'ALL',
-        Created_by: '',
-        CreatedByGet: 'ALL',
-        Cancel_status: 0
+        Retailer: { value: '', label: 'Select Retailer' },
+        VoucherType: { value: '', label: 'Select Voucher' },
+        Cancel_status: 0,
     });
 
     const [dialog, setDialog] = useState({
@@ -44,7 +43,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer?.value}&Cancel_status=${filters?.Cancel_status}&VoucherType=${filters?.VoucherType?.value}`
         }).then(data => {
             if (data.success) {
                 setPurchaseOrder(data?.data)
@@ -55,9 +54,9 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
 
     }, [
         filters?.fetchFrom, filters?.fetchTo,
-        filters?.Retailer_Id,
-        filters?.Created_by,
+        filters?.Retailer?.value,
         filters?.Cancel_status,
+        filters?.VoucherType
     ])
 
     useEffect(() => {
@@ -67,6 +66,14 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/voucher`
+        }).then(data => {
+            if (data.success) {
+                setVoucher(data.data);
             }
         }).catch(e => console.error(e))
 
@@ -121,6 +128,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
             Fied_Data: 'string',
             isVisible: 1,
         },
+        createCol('VoucherTypeGet', 'string', 'Voucher'),
         {
             Field_Name: 'Total_Before_Tax',
             ColumnHeader: 'Before Tax',
@@ -310,7 +318,6 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                 }
             />
 
-
             {Object.keys(viewOrder).length > 0 && (
                 <InvoiceBillTemplate
                     orderDetails={viewOrder?.orderDetails}
@@ -321,7 +328,6 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                     TitleText={'Purchase Order'}
                 />
             )}
-
 
             <Dialog
                 open={dialog.filters}
@@ -338,35 +344,39 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                     <td style={{ verticalAlign: 'middle' }}>Retailer</td>
                                     <td>
                                         <Select
-                                            value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                            onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
+                                            value={filters?.Retailer}
+                                            onChange={(e) => setFilters({ ...filters, Retailer: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
                                                 ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
                                             ]}
                                             styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
                                         />
                                     </td>
                                 </tr>
 
-                                {/* <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Voucher</td>
                                     <td>
                                         <Select
-                                            value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                            onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
+                                            value={filters?.VoucherType}
+                                            onChange={(e) => setFilters({ ...filters, VoucherType: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                                ...voucher.filter(
+                                                    obj => obj.Type === 'PURCHASE'
+                                                ).map(obj => ({ value: obj?.Vocher_Type_Id, label: obj?.Voucher_Type }))
                                             ]}
                                             styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
                                             isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            placeholder={"Retailer Name"}
                                         />
                                     </td>
-                                </tr> */}
+                                </tr>
 
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
@@ -392,7 +402,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                     </td>
                                 </tr>
 
-                                {/* <tr>
+                                <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
                                     <td>
                                         <select
@@ -405,7 +415,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                             <option value={0}>Hide</option>
                                         </select>
                                     </td>
-                                </tr> */}
+                                </tr>
 
                             </tbody>
                         </table>

@@ -32,7 +32,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
-        Items: []
+        Items: [],
+        VoucherType: [],
     });
     const [selectedRow, setSelectedRow] = useState({});
     const printRef = useRef(null);
@@ -154,6 +155,14 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         }));
     }, [tripData]);
 
+    const uniqueVoucher = useMemo(() => {
+        const allVoucher = tripData.map(trip => trip?.VoucherTypeGet);
+        return [...new Set(allVoucher)].map((name) => ({
+            value: name,
+            label: name,
+        }));
+    }, [tripData]);
+    
     const filteredData = useMemo(() => {
         return tripData.filter(trip => {
             const hasFromGodownMatch = filters.FromGodown.length > 0
@@ -161,28 +170,33 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     filters.FromGodown.some(selected => selected.value === product.FromLocation)
                 )
                 : false;
-
+    
             const hasToGodownMatch = filters.ToGodown.length > 0
                 ? trip.Products_List.some(product =>
                     filters.ToGodown.some(selected => selected.value === product.ToLocation)
                 )
                 : false;
-
+    
             const hasItemMatch = filters.Items.length > 0
                 ? trip.Products_List.some(product =>
                     filters.Items.some(selected => selected.value === product.Product_Name)
                 )
                 : false;
-
+    
             const hasEmployeeMatch = filters.Staffs.length > 0
                 ? trip.Employees_Involved.some(staff =>
                     filters.Staffs.some(selected => selected.value === staff.Emp_Name)
                 )
                 : false;
-
-            return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch;
+    
+            const hasVoucherMatch = filters.VoucherType.length > 0
+                ? filters.VoucherType.some(selected => selected.value === trip.VoucherTypeGet)
+                : false;
+    
+            return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch || hasVoucherMatch;
         });
     }, [tripData, filters]);
+    
 
     const statusColor = {
         NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
@@ -209,7 +223,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     filters.FromGodown.length > 0 ||
                     filters.ToGodown.length > 0 ||
                     filters.Staffs.length > 0 ||
-                    filters.Items.length > 0
+                    filters.Items.length > 0 ||
+                    filters.VoucherType.length > 0
                 ) ? filteredData : tripData}
                 title="Trip Sheets"
                 maxHeightOption
@@ -233,7 +248,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 columns={[
                     createCol('Trip_Date', 'date', 'Date'),
                     createCol('Trip_No', 'string'),
-                    createCol('Challan_No', 'string', 'Challan'),
+                    createCol('TR_INV_ID', 'string', 'Inovice'),
+                    createCol('VoucherTypeGet', 'string', 'Voucher'),
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('Branch_Name', 'string', 'Branch'),
                     createCol('StartTime', 'time', 'Start Time'),
@@ -469,6 +485,25 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             placeholder={"Select To Godown"}
+                                            maxMenuHeight={300}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Voucher</td>
+                                    <td colSpan={3}>
+                                        <Select
+                                            value={filters.VoucherType}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, VoucherType: selectedOptions }))
+                                            }
+                                            menuPortalTarget={document.body}
+                                            options={uniqueVoucher}
+                                            styles={customSelectStyles}
+                                            isMulti
+                                            isSearchable={true}
+                                            placeholder={"Select Voucher"}
                                             maxMenuHeight={300}
                                         />
                                     </td>
