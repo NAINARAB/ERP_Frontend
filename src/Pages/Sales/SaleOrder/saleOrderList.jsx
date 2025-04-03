@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, isEqualNumber, ISOString, isValidDate, toNumber } from "../../../Components/functions";
+import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
@@ -26,18 +26,17 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     const [retailers, setRetailers] = useState([]);
     const [salesPerson, setSalePerson] = useState([]);
     const [users, setUsers] = useState([]);
+    const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
 
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
-        Retailer_Id: '',
-        RetailerGet: 'ALL',
-        Created_by: '',
-        CreatedByGet: 'ALL',
-        Sales_Person_Id: '',
-        SalsePersonGet: 'ALL',
+        Retailer: { value: '', label: 'ALL' },
+        CreatedBy: { value: '', label: 'ALL' },
+        SalesPerson: { value: '', label: 'ALL' },
+        VoucherType: { value: '', label: 'ALL' },
         Cancel_status: 0
     });
 
@@ -49,7 +48,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer?.value}&Sales_Person_Id=${filters?.SalesPerson?.value}&Created_by=${filters?.CreatedBy?.value}&VoucherType=${filters?.VoucherType?.value}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSaleOrders(data?.data)
@@ -64,7 +63,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
 
         fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
+            address: `sales/saleOrder/retailers`
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
@@ -84,6 +83,14 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 setUsers(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/voucher`
+        }).then(data => {
+            if (data.success) {
+                setVoucher(data.data);
             }
         }).catch(e => console.error(e))
 
@@ -171,10 +178,12 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
             <FilterableTable
                 title="Sale Orders"
                 dataArray={saleOrders}
+                EnableSerialNumber
                 columns={[
-                    createCol('So_Id', 'string', 'ID'),
-                    createCol('Retailer_Name', 'string', 'Customer'),
                     createCol('So_Date', 'date', 'Date'),
+                    createCol('So_Inv_No', 'string', 'ID'),
+                    createCol('Retailer_Name', 'string', 'Customer'),
+                    createCol('VoucherTypeGet', 'string', 'Voucher'),
                     createCol('Total_Before_Tax', 'number', 'Before Tax'),
                     createCol('Total_Tax', 'number', 'Tax'),
                     createCol('Total_Invoice_value', 'number', 'Invoice Value'),
@@ -212,7 +221,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                             <Visibility className="fa-16" />
                                         </IconButton>
                                     </Tooltip>
-            
+
                                     <Tooltip title='Edit'>
                                         <IconButton
                                             onClick={() => navigate('create', {
@@ -226,7 +235,7 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                             <Edit className="fa-16" />
                                         </IconButton>
                                     </Tooltip>
-            
+
                                 </>
                             )
                         },
@@ -281,57 +290,6 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                             <tbody>
 
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                            onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Retailer Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                            onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
                                         <input
@@ -351,6 +309,83 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                             value={filters.Todate}
                                             onChange={e => setFilters({ ...filters, Todate: e.target.value })}
                                             className="cus-inpt"
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.Retailer}
+                                            onChange={(e) => setFilters({ ...filters, Retailer: e })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...retailers.map(obj => ({ 
+                                                    value: obj?.Retailer_Id, 
+                                                    label: obj?.Retailer_Name 
+                                                    + '- ₹' 
+                                                    + NumberFormat(toNumber(obj?.TotalSales)) 
+                                                    + ` (${toNumber(obj?.OrderCount)})`
+                                                }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Retailer Name"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.SalesPerson}
+                                            onChange={(e) => setFilters(pre => ({ ...pre, SalesPerson: e }))}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.CreatedBy}
+                                            onChange={(e) => setFilters(pre => ({ ...pre, CreatedBy: e }))}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Voucher </td>
+                                    <td>
+                                        <Select
+                                            value={filters?.VoucherType}
+                                            onChange={(e) => setFilters({ ...filters, VoucherType: e })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...voucher.filter(
+                                                    obj => obj.Type === 'SALES'
+                                                ).map(obj => ({ value: obj?.Vocher_Type_Id, label: obj?.Voucher_Type }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            isSearchable={true}
+                                            placeholder={"Voucher Name"}
                                         />
                                     </td>
                                 </tr>

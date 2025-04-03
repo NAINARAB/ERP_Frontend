@@ -3,6 +3,7 @@
 .pnp.js
 .package-lock.json
 .env
+.prettierrc.js
 
 # testing
 /coverage

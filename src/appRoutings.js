@@ -13,6 +13,7 @@ const UserType = lazy(() => import("./Pages/Masters/UserType"))
 const TaskType = lazy(() => import("./Pages/Masters/TaskType"))
 const ProductsMaster = lazy(() => import("./Pages/Masters/newProduct"))
 const PosMaster = lazy(() => import("./Pages/Masters/posMaster"))
+const POSProductList = lazy(() => import("./Pages/Masters/posproductListing"))
 const UomMaster = lazy(() => import("./Pages/Masters/uomMaster"))
 const RateMaster = lazy(() => import("./Pages/Masters/rateMaster"))
 
@@ -179,9 +180,9 @@ const RoutingArray = [
     { component: <DataEntryAttendance />, path: '/dataEntry/staffAttendance' },
     { component: <DataEntryAbstract />, path: '/dataEntry/report' },
     { component: <CostCenter />, path: '/dataEntry/costCenter' },
-  
-    
-    
+
+
+
     // ERP 
     // ERP - master
     { component: <DisplayNavigations />, path: '/erp/master' },
@@ -192,11 +193,11 @@ const RoutingArray = [
     { component: <RateMaster />, path: '/erp/master/RateMaster' },
     { component: <UomMaster />, path: '/erp/master/uomMaster' },
     { component: <PosMaster />, path: '/erp/master/posMaster' },
-    
+    { component: <POSProductList />, path: '/erp/master/POSProductList' },
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
-    
-    
+
+
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
     { component: <SalesReport />, path: '/erp/sales/salesReport' },
