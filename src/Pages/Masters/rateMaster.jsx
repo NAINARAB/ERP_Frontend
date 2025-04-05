@@ -42,9 +42,10 @@ function RateMaster({ loadingOn, loadingOff }) {
         Pos_Brand_Id: "",
         Item_Id: "",
         Rate: "",
-        Is_Active_Decative: "0",
+        Is_Active_Decative: "",
         POS_Brand_Name: "",
         Product_Name: "",
+        MaxRate: ""
     });
     const [open, setOpen] = useState(false);
     const [posBrand, setPosBrand] = useState([]);
@@ -137,9 +138,10 @@ function RateMaster({ loadingOn, loadingOff }) {
                         Pos_Brand_Id: "",
                         Item_Id: "",
                         Rate: "",
-                        Is_Active_Decative: "0",
+                        Is_Active_Decative: "-",
                         POS_Brand_Name: "",
                         Product_Name: "",
+                        MaxRate: ""
                     });
                     setSelectedPosBrand("");
                     setReload(!reload);
@@ -169,9 +171,10 @@ function RateMaster({ loadingOn, loadingOff }) {
                         Pos_Brand_Id: "",
                         Item_Id: "",
                         Rate: "",
-                        Is_Active_Decative: "0",
+                        Is_Active_Decative: "",
                         POS_Brand_Name: "",
                         Product_Name: "",
+                        MaxRate: ""
                     });
                     setSelectedPosBrand("");
                 } else {
@@ -196,6 +199,7 @@ function RateMaster({ loadingOn, loadingOff }) {
             Pos_Brand_Id: data.Pos_Brand_Id,
             Item_Id: data.Item_Id,
             Rate: data.Rate,
+            MaxRate: data.Max_Rate,
             Is_Active_Decative: data.Is_Active_Decative,
             POS_Brand_Name: data.POS_Brand_Name,
             Product_Name: data.Product_Name,
@@ -219,9 +223,10 @@ function RateMaster({ loadingOn, loadingOff }) {
                         Pos_Brand_Id: "",
                         Item_Id: "",
                         Rate: "",
-                        Is_Active_Decative: "1",
+                        Is_Active_Decative: "",
                         POS_Brand_Name: "",
                         Product_Name: "",
+                        MaxRate: ""
                     });
                     setSelectedPosBrand("");
 
@@ -286,9 +291,9 @@ function RateMaster({ loadingOn, loadingOff }) {
         const uniqueDate =
             activePosData.length > 0
                 ? activePosData[0].Rate_Date.split("T")[0]
-                      .split("-")
-                      .reverse()
-                      .join("-")
+                    .split("-")
+                    .reverse()
+                    .join("-")
                 : "";
 
         worksheet.addRow([uniqueDate, "PriceList"]).font = {
@@ -308,7 +313,7 @@ function RateMaster({ loadingOn, loadingOff }) {
             brandCell.font = { bold: true, size: 12 };
 
             products.forEach(item => {
-                worksheet.addRow([item.Short_Name, item.Rate]);
+                worksheet.addRow([item.Short_Name, item.Max_Rate]);
             });
         });
 
@@ -411,6 +416,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                     createCol("POS_Brand_Name", "string", "Brand"),
                     createCol("Short_Name", "string", "Product"),
                     createCol("Rate", "string", "Rate"),
+                    createCol("Max_Rate", "string", "MaxRate"),
                     {
                         Field_Name: "Is_Active_Decative",
                         ColumnHeader: "Status",
@@ -440,36 +446,36 @@ function RateMaster({ loadingOn, loadingOff }) {
 
                     filters?.Fromdate === moment().format("YYYY-MM-DD")
                         ? {
-                              Field_Name: "Actions",
-                              ColumnHeader: "Actions",
-                              isVisible: 1,
-                              isCustomCell: true,
-                              Cell: ({ row }) => (
-                                  <td style={{ minWidth: "80px" }}>
-                                      <IconButton
-                                          onClick={() => editRow(row)}
-                                          size="small">
-                                          <Edit className="fa-in" />
-                                      </IconButton>
-                                      <IconButton
-                                          onClick={() => {
-                                              setOpen(true);
-                                              setInputValue({ Id: row.Id });
-                                          }}
-                                          size="small"
-                                          color="error">
-                                          <Delete className="fa-in " />
-                                      </IconButton>
-                                  </td>
-                              ),
-                          }
+                            Field_Name: "Actions",
+                            ColumnHeader: "Actions",
+                            isVisible: 1,
+                            isCustomCell: true,
+                            Cell: ({ row }) => (
+                                <td style={{ minWidth: "80px" }}>
+                                    <IconButton
+                                        onClick={() => editRow(row)}
+                                        size="small">
+                                        <Edit className="fa-in" />
+                                    </IconButton>
+                                    <IconButton
+                                        onClick={() => {
+                                            setOpen(true);
+                                            setInputValue({ Id: row.Id });
+                                        }}
+                                        size="small"
+                                        color="error">
+                                        <Delete className="fa-in " />
+                                    </IconButton>
+                                </td>
+                            ),
+                        }
                         : {
-                              Field_Name: "Actions",
-                              ColumnHeader: "Actions",
-                              isVisible: 1,
-                              isCustomCell: true,
-                              Cell: ({ row }) => <td>-</td>,
-                          },
+                            Field_Name: "Actions",
+                            ColumnHeader: "Actions",
+                            isVisible: 1,
+                            isCustomCell: true,
+                            Cell: ({ row }) => <td>-</td>,
+                        },
                 ]}
             />
 
@@ -565,8 +571,25 @@ function RateMaster({ loadingOn, loadingOff }) {
                             variant="outlined"
                         />
 
+
+                        <label>Max Rate</label>
+                        <TextField
+                            label=""
+                            value={inputValue.MaxRate ?? ""}
+                            onChange={e =>
+                                setInputValue({
+                                    ...inputValue,
+                                    MaxRate: e.target.value,
+                                })
+                            }
+                            fullWidth
+                            margin="dense"
+                            variant="outlined"
+                        />
+
                         <label>Status</label>
                         <select
+                            className="cus-inpt"
                             value={inputValue.Is_Active_Decative}
                             onChange={e =>
                                 setInputValue({
@@ -574,6 +597,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                                     Is_Active_Decative: e.target.value,
                                 })
                             }>
+                            <option value="" disabled>Select </option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                         </select>
@@ -581,7 +605,16 @@ function RateMaster({ loadingOn, loadingOff }) {
                     <DialogActions>
                         <Button
                             onClick={() => {
-                                setInputValue({});
+                                setInputValue({
+                                    Rate_Date: new Date().toISOString().split("T")[0],
+                                    Pos_Brand_Id: "",
+                                    Item_Id: "",
+                                    Rate: "",
+                                    Is_Active_Decative: "",
+                                    POS_Brand_Name: "",
+                                    Product_Name: "",
+                                    MaxRate: ""
+                                });
                                 setAddDialog(false);
                             }}>
                             Cancel

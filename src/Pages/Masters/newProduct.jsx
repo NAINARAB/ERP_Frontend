@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Card, Button, Paper, CardContent, Tooltip } from "@mui/material";
-import { Add, AddPhotoAlternate, Edit, Sync } from "@mui/icons-material";
+import { Add, AddPhotoAlternate, Edit, Sync, FilterAlt, Search } from "@mui/icons-material";
+import Select from "react-select";
 import api from '../../API';
 import { toast } from 'react-toastify';
 import ImagePreviewDialog from "../../Components/imagePreview";
@@ -9,7 +10,7 @@ import ProductAddEditComp from "./Components/productAddEdit";
 import FilterableTable from "../../Components/filterableTable2";
 import './Components/productCss.css';
 import { indianCurrency } from "../../Components/functions";
-
+import { customSelectStyles } from "../../Components/tablecolumn";
 const initialInputValue = {
     Product_Id: '',
     Product_Code: '',
@@ -135,14 +136,47 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         createAndUpdate: false
     });
 
+    const [productDetails, setProductDetails] = useState([])
+    const [shortname, setShortname] = useState([])
+    const [posBrand, setPosBrand] = useState([])
+    const [productGroup, setProductGroup] = useState([])
+    const [brand, setBrand] = useState([])
+
+
+
+    const [filters, setFilters] = useState({
+        Product_Id: '',
+        Products: 'ALL',
+        ShortName_Id: '',
+        ShortName: 'ALL',
+        PosBrand_Id: '',
+        PosBrand: 'ALL',
+        ProductGroup_Id: '',
+        ProductGroup: 'ALL',
+        Brand_Id: '',
+        Brand: 'ALL'
+    });
+    const [dialogFilter, setDialogFilter] = useState({
+        filters: false,
+        orderDetails: false,
+    });
+
+
+
+
+
+
     useEffect(() => {
+        if (loadingOn) loadingOn();
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
+            address: `masters/products?Company_Id=${storage?.Company_id}&Products=${filters?.Product_Id}&ShortName=${filters?.ShortName_Id}&PosBrand=${filters?.PosBrand_Id}&ProductGroup=${filters?.ProductGroup_Id}&Brand=${filters?.Brand_Id}`
         }).then(data => {
             if (data.success) {
                 setProducts(data.data)
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     }, [reload, storage?.Company_id])
 
     useEffect(() => {
@@ -210,11 +244,63 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         })
     }
 
+
+    useEffect(() => {
+        fetchLink({
+            address: `masters/products/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setProductDetails(data.data);
+                setShortname(data.data)
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/posbranch/dropdown`
+        }).then(data => {
+            if (data.success) {
+                setPosBrand(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/products/productGroups`
+        }).then(data => {
+            if (data.success) {
+                setProductGroup(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/brand`
+        }).then(data => {
+            if (data.success) {
+                setBrand(data.data);
+            }
+        }).catch(e => console.error(e))
+    }, [])
+
+
+    const closeDialog = () => {
+        setDialogFilter({
+            ...dialog,
+            filters: false,
+            orderDetails: false,
+        });
+    }
     return (
         <>
             <Card component={Paper}>
                 <div className="p-3 pb-1 d-flex align-items-center flex-wrap">
                     <h6 className="flex-grow-1 fa-18">Products</h6>
+                    <Tooltip title='Filters'>
+                        <IconButton
+                            size="small"
+                            onClick={() => setDialogFilter({ ...dialogFilter, filters: true })}
+                        >
+                            <FilterAlt />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title='Sync Tally LOS'><IconButton onClick={syncLOS}><Sync /></IconButton></Tooltip>
 
                     <ProductAddEditComp
@@ -314,6 +400,165 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                     }}
                 />
             )}
+
+
+
+
+
+            <Dialog
+                open={dialogFilter.filters}
+                onClose={closeDialog}
+                fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Filters</DialogTitle>
+                <DialogContent>
+                    <div className="table-responsive pb-5">
+                        <table className="table">
+                            <tbody>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>productDetails</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Product_Id, label: filters?.Products }}
+                                            // value={filters?.Products}
+                                            onChange={(e) => setFilters({ ...filters, Product_Id: e.value, Products: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...productDetails.map(obj => ({ value: obj?.Product_Id, label: obj?.Product_Name }))
+                                            ]}
+
+                                            placeholder={"Product Name"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Short Name</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.ShortName_Id, label: filters?.ShortName }}
+                                            onChange={(e) => setFilters({ ...filters, ShortName_Id: e.value, ShortName: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...shortname.map(obj => ({ value: obj?.Product_Id, label: obj?.Short_Name }))
+                                            ]}
+
+                                            placeholder={"Short Name"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Pos Brand</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.PosBrand_Id, label: filters?.PosBrand }}
+                                            onChange={(e) => setFilters({ ...filters, PosBrand_Id: e.value, PosBrand: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...posBrand.map(obj => ({ value: obj?.value, label: obj?.label }))
+                                            ]}
+
+                                            placeholder={"Pos Brand"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Product Group</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.ProductGroup_Id, label: filters?.ProductGroup }}
+                                            onChange={(e) => setFilters({ ...filters, ProductGroup_Id: e.value, ProductGroup: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...productGroup.map(obj => ({ value: obj?.Pro_Group_Id, label: obj?.Pro_Group }))
+                                            ]}
+                                            placeholder={"Product Group"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Brand</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.Brand_Id, label: filters?.Brand }}
+                                            onChange={(e) => setFilters({ ...filters, Brand_Id: e.value, Brand: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...brand.map(obj => ({ value: obj?.Brand_Id, label: obj?.Brand_Name }))
+                                            ]}
+                                            placeholder={"Brand"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+
+
+                            </tbody>
+                        </table>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDialog}>close</Button>
+                    <Button
+                        onClick={() => {
+                            closeDialog();
+
+                            // updateQueryString(updatedFilters);
+                            setReload(pre => !pre);
+                        }}
+                        startIcon={<Search />}
+                        variant="outlined"
+                    >Search</Button>
+                </DialogActions>
+            </Dialog>
+
         </>
     )
 }
