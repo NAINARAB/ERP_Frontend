@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, ISOString, LocalDate, Multiplication, toNumber } from "../../../Components/functions";
 import { Button, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
@@ -66,7 +66,7 @@ const ImportFromPOS = ({
                             const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                             const isTaxable = gstPercentage > 0;
 
-                            const { Bill_Qty, Item_Rate, Amount } = cur;
+                            const { Item_Rate, Amount, Tonnage } = cur;
 
                             const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
                             const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
@@ -81,14 +81,14 @@ const ImportFromPOS = ({
                                 case 'Pre_Id': return [key, cur['Pre_Id'] ?? value];
                                 case 'Item_Id': return [key, cur['Item_Id'] ?? value];
                                 case 'Item_Rate': return [key, toNumber(Item_Rate)];
-                                case 'Bill_Qty': return [key, toNumber(Bill_Qty)];
+                                case 'Bill_Qty': return [key, toNumber(Tonnage)];
                                 case 'Amount': return [key, toNumber(Amount)];
                                 case 'Unit_Id': return [key, cur['Unit_Id'] ?? value];
                                 case 'Unit_Name': return [key, cur['Units'] ?? value];
                                 case 'HSN_Code': return [key, productMaster.HSN_Code ?? value];
 
                                 case 'Taxable_Rate': return [key, itemRateGst.base_amount]
-                                case 'Total_Qty': return [key, Bill_Qty]
+                                case 'Total_Qty': return [key, toNumber(Tonnage)]
                                 case 'Taxble': return [key, isTaxable ? 1 : 0]
                                 case 'Taxable_Amount': return [key, gstInfo.base_amount]
                                 case 'Tax_Rate': return [key, gstPercentage]
@@ -176,7 +176,7 @@ const ImportFromPOS = ({
                         <table className="table table-bordered fa-13">
                             <thead>
                                 <tr>
-                                    {['Sno', '#', 'Item', 'Qty', 'Rate', 'Amount', 'Order ID', 'Date', 'Invoice Value'].map((col, ind) => (
+                                    {['Sno', '#', 'Item', 'Qty', 'Pack', 'Rate', 'Amount', 'Order ID', 'Date', 'Invoice Value'].map((col, ind) => (
                                         <th key={ind} >{col}</th>
                                     ))}
                                 </tr>
@@ -211,6 +211,7 @@ const ImportFromPOS = ({
                                         </td>
                                         <td>{sale?.Product_Name}</td>
                                         <td>{sale?.Bill_Qty}</td>
+                                        <td>{sale?.Tonnage}</td>
                                         <td>{sale?.Item_Rate}</td>
                                         <td>{sale?.Amount}</td>
                                         <td>{sale?.Pre_Id}</td>
