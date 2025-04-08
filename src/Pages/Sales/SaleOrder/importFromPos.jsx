@@ -158,6 +158,7 @@ const ImportFromPOS = ({
                                 <input
                                     className="cus-inpt p-2 w-auto ms-2"
                                     type="date"
+                                    min={filters.Fromdate}
                                     value={filters?.Todate}
                                     onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
                                     required

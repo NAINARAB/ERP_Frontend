@@ -116,6 +116,8 @@ const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
 // Payments
 const PendingInvoice = lazy(() => import("./Pages/Payments/pendingInvoice"))
 const PaymentReport = lazy(() => import("./Pages/Payments/paymentReport"))
+const ReceiptsList = lazy(() => import("./Pages/Payments/Receipts/listReceipts"))
+const ReceiptsCreate = lazy(() => import("./Pages/Payments/Receipts/createReceipts"))
 
 
 // Data Entry
@@ -237,6 +239,8 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
     { component: <PaymentReport />, path: '/erp/payments/paymentReport' },
+    { component: <ReceiptsList />, path: '/erp/payments/receipts' },
+    { component: <ReceiptsCreate />, path: '/erp/payments/receipts/create' },
     // ERP - CRM
     { component: <DisplayNavigations />, path: '/erp/crm' },
     { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { Division, isEqualNumber, isValidObject, Multiplication, onlynum, RoundNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, RoundNumber } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { saleOrderStockInfo } from "./column";
 import { ClearAll } from "@mui/icons-material";
@@ -169,6 +169,7 @@ const AddItemToSaleOrderCart = ({
                                         value: productDetails.Item_Id,
                                         label: findProductDetails(productDetails.Item_Id)?.Product_Name
                                     }}
+                                    isDisabled={checkIsNumber(productDetails.Pre_Id)}
                                     onChange={e => {
                                         const productInfo = findProductDetails(e.value);
                                         setProductDetails(pre => ({

@@ -44,6 +44,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
     const [orderProducts, setOrderProducts] = useState([]);
 
     const [companyInfo, setCompanyInfo] = useState({});
+    const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
     const [addProductDialog, setAddProductDialog] = useState(false);
     const [importPosDialog, setImportPosDialog] = useState(false);
 
@@ -236,17 +237,17 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                         const productMaster = findProductDetails(baseData.products, item?.Item_Id);
                         const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                         const isTaxable = gstPercentage > 0;
-    
+
                         const { Bill_Qty, Item_Rate, Amount } = item;
-    
+
                         const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
                         const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
-    
+
                         const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
                         const igstPer = IS_IGST ? gstInfo.igst_per : 0;
                         const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
                         const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
-    
+
                         switch (key) {
                             case 'Taxable_Rate': return [key, itemRateGst.base_amount]
                             case 'Total_Qty': return [key, Bill_Qty]
@@ -260,7 +261,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                             case 'Igst': return [key, igstPer ?? 0]
                             case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
                             case 'Final_Amo': return [key, gstInfo.with_tax]
-    
+
                             default: return [key, item[key] || value]
                         }
                     })
@@ -268,14 +269,30 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
             })
         });
     }, [
-        saleOrderStockInfo, 
-        baseData.products, 
+        saleOrderStockInfo,
+        baseData.products,
         IS_IGST,
         taxType,
     ])
 
     return (
         <>
+            <AddItemToSaleOrderCart
+                orderProducts={orderProducts}
+                setOrderProducts={setOrderProducts}
+                open={addProductDialog}
+                onClose={() => {
+                    setAddProductDialog(false);
+                    setSelectedProductToEdit(null);
+                }}
+                products={baseData.products}
+                brands={baseData.brand}
+                uom={baseData.uom}
+                GST_Inclusive={orderDetails.GST_Inclusive}
+                IS_IGST={IS_IGST}
+                editValues={selectedProductToEdit}
+            />
+
             <Card>
 
                 <div className="d-flex align-items-center flex-wrap p-2">
@@ -489,7 +506,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                             title="Products"
                             ButtonArea={
                                 <>
-                                    <AddItemToSaleOrderCart
+                                    {/* <AddItemToSaleOrderCart
                                         orderProducts={orderProducts}
                                         setOrderProducts={setOrderProducts}
                                         open={addProductDialog}
@@ -511,7 +528,22 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                                     && orderProducts.some(pro => checkIsNumber(pro.Pre_Id)))
                                             }
                                         >Add Product</Button>
-                                    </AddItemToSaleOrderCart>
+                                    </AddItemToSaleOrderCart> */}
+
+                                    <Button
+                                        onClick={() => {
+                                            setSelectedProductToEdit(null); 
+                                            setAddProductDialog(true);
+                                        }}
+                                        sx={{ ml: 1 }}
+                                        variant='outlined'
+                                        startIcon={<Add />}
+                                        disabled={
+                                            !checkIsNumber(orderDetails.Retailer_Id)
+                                            || (orderProducts.length > 0
+                                                && orderProducts.some(pro => checkIsNumber(pro.Pre_Id)))
+                                        }
+                                    >Add Product</Button>
 
                                     <ImportFromPOS
                                         loadingOn={loadingOn} loadingOff={loadingOff}
@@ -593,27 +625,36 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                     Cell: ({ row }) => {
                                         return (
                                             <>
-                                                {!checkIsNumber(row?.Pre_Id) && (
-                                                    <AddItemToSaleOrderCart
-                                                        orderProducts={orderProducts}
-                                                        setOrderProducts={setOrderProducts}
-                                                        open={addProductDialog}
-                                                        onClose={() => setAddProductDialog(false)}
-                                                        products={baseData.products}
-                                                        brands={baseData.brand}
-                                                        uom={baseData.uom}
-                                                        GST_Inclusive={orderDetails.GST_Inclusive}
-                                                        IS_IGST={IS_IGST}
-                                                        editValues={row}
+                                                {/* {!checkIsNumber(row?.Pre_Id) && ( */}
+                                                {/* <AddItemToSaleOrderCart
+                                                    orderProducts={orderProducts}
+                                                    setOrderProducts={setOrderProducts}
+                                                    open={addProductDialog}
+                                                    onClose={() => setAddProductDialog(false)}
+                                                    products={baseData.products}
+                                                    brands={baseData.brand}
+                                                    uom={baseData.uom}
+                                                    GST_Inclusive={orderDetails.GST_Inclusive}
+                                                    IS_IGST={IS_IGST}
+                                                    editValues={row}
+                                                >
+                                                    <IconButton
+                                                        onClick={() => setAddProductDialog(true)}
+                                                        size="small"
                                                     >
-                                                        <IconButton
-                                                            onClick={() => setAddProductDialog(true)}
-                                                            size="small"
-                                                        >
-                                                            <Edit />
-                                                        </IconButton>
-                                                    </AddItemToSaleOrderCart>
-                                                )}
+                                                        <Edit />
+                                                    </IconButton>
+                                                </AddItemToSaleOrderCart> */}
+                                                {/* )} */}
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedProductToEdit(row);
+                                                        setAddProductDialog(true);
+                                                    }}
+                                                    size="small"
+                                                >
+                                                    <Edit />
+                                                </IconButton>
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => {
