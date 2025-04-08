@@ -66,7 +66,8 @@ const ImportFromPOS = ({
                             const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                             const isTaxable = gstPercentage > 0;
 
-                            const { Item_Rate, Amount, Tonnage } = cur;
+                            const { Item_Rate, Bill_Qty, Tonnage, PackValue } = cur;
+                            const Amount = Multiplication(Item_Rate, Multiplication(Bill_Qty, PackValue))
 
                             const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
                             const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
@@ -82,7 +83,7 @@ const ImportFromPOS = ({
                                 case 'Item_Id': return [key, cur['Item_Id'] ?? value];
                                 case 'Item_Rate': return [key, toNumber(Item_Rate)];
                                 case 'Bill_Qty': return [key, toNumber(Tonnage)];
-                                case 'Amount': return [key, toNumber(Amount)];
+                                case 'Amount': return [key, Amount];
                                 case 'Unit_Id': return [key, cur['Unit_Id'] ?? value];
                                 case 'Unit_Name': return [key, cur['Units'] ?? value];
                                 case 'HSN_Code': return [key, productMaster.HSN_Code ?? value];
