@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -13,7 +13,7 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable from "../../../Components/filterableTable2";
 import RequiredStar from "../../../Components/requiredStar";
 
-
+import { calculateGSTDetails } from '../../../Components/taxCalculator';
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
         case 0:
@@ -31,7 +31,17 @@ const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumbe
 
 const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScreen, editOn }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
-
+    const [baseData, setBaseData] = useState({
+        products: [],
+        branch: [],
+        retailers: [],
+        voucherType: [],
+        uom: [],
+        staff: [],
+        staffType: [],
+        salesPerson: [],
+        brand: [],
+    });
     const [retailers, setRetailers] = useState([]);
     const [products, setProducts] = useState([]);
     const [productBrand, setProductBrand] = useState([]);
@@ -310,53 +320,54 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         setProductDetails(productInitialDetails);
     }
 
-    const Total_Invoice_value = orderProducts.reduce((o, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate);
+    const Total_Invoice_value = useMemo(() => {
+        return orderProducts.reduce((acc, item) => {
+            const Amount = RoundNumber(item?.Amount);
 
-        if (isInclusive || isNotTaxableBill) {
-            return o += Amount;
-        }
+            if (isNotTaxableBill) return Addition(acc, Amount);
 
-        if (isExclusiveBill) {
-            const product = findProductDetails(products, item.Item_Id);
+            const product = findProductDetails(baseData.products, item.Item_Id);
             const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
-            const tax = taxCalc(0, itemRate, gstPercentage)
-            return o += (Amount + (tax * billQty));
-        }
-        return o;
-    }, 0);
 
-    const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty) || 0;
+            if (isInclusive) {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+            } else {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+            }
+        }, 0)
+    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
 
-        if (isNotTaxableBill) {
-            acc.TotalValue += Multiplication(billQty, itemRate);
-            return acc;
-        }
+    const totalValueBeforeTax = useMemo(() => {
+        return orderProducts.reduce((acc, item) => {
+            const Amount = RoundNumber(item?.Amount);
 
-        const product = findProductDetails(products, item.Item_Id);
-        const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+            if (isNotTaxableBill) return {
+                TotalValue: Addition(acc.TotalValue, Amount),
+                TotalTax: 0
+            }
 
-        if (isInclusive) {
-            const itemTax = taxCalc(1, itemRate, gstPercentage);
-            const basePrice = Subraction(itemRate, itemTax);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, basePrice);
-        }
-        if (isExclusiveBill) {
-            const itemTax = taxCalc(0, itemRate, gstPercentage);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, itemRate);
-        }
+            const product = findProductDetails(baseData.products, item.Item_Id);
+            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
-        return acc;
-    }, {
-        TotalValue: 0,
-        TotalTax: 0
-    });
+            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+            const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
+            const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
+
+            return {
+                TotalValue, TotalTax
+            };
+        }, {
+            TotalValue: 0,
+            TotalTax: 0
+        });
+    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+
+    useEffect(() => {
+        setOrderProducts(pre => pre?.map(pro => ({
+            ...pro,
+            Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty)
+        })));
+    }, [orderDetails.GST_Inclusive])
 
     useEffect(() => {
         setOrderProducts(pre => pre?.map(pro => ({
@@ -447,7 +458,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Branch</td>
+                                        <td className="border-0 bg-light">Voucher Type <span style={{ color: "red" }}>*</span></td>
 
                                         <td className="border-0 bg-light">
                                             <select
@@ -474,7 +485,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
 
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Branch</td>
+                                        <td className="border-0 bg-light">Branch <span style={{ color: "red" }}>*</span></td>
 
                                         <td className="border-0 bg-light">
                                             <select
@@ -677,7 +688,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                         },
                         {
                             isCustomCell: true,
-                            Cell: ({ row }) => row?.Bill_Qty + ' ' + (row?.Units ?? ''),
+                            Cell: ({ row }) => row?.Bill_Qty + (row?.Units ?? ''),
                             ColumnHeader: 'Quantity',
                             isVisible: 1,
                             align: 'center'
@@ -822,19 +833,24 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                     </tr>
                                 )}
                                 <tr>
+                                    {/* {
+                                            Total_Invoice_value}
+                                            {
+                                                totalValueBeforeTax}
+                                                 { totalValueBeforeTax.TotalTax
+                                             }
+                                        */}
+
                                     <td className="border p-2">Round Off</td>
                                     <td className="border p-2">
-                                        {NumberFormat(
-                                            Total_Invoice_value - (
-                                                totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax
-                                            )
-                                        )}
+                                        {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
                                     </td>
                                 </tr>
+
                                 <tr>
                                     <td className="border p-2">Total</td>
                                     <td className="border p-2">
-                                        {NumberFormat(Total_Invoice_value)}
+                                        {NumberFormat(Math.round(Total_Invoice_value))}
                                     </td>
                                 </tr>
                             </tbody>
@@ -1007,7 +1023,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Quantity <RequiredStar /></label>
                                 <input
-                                    type="number"
+                                    type="input"
                                     required
                                     value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
                                     onChange={e => {
@@ -1037,8 +1053,8 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
-                                    type="number"
-                                    value={productDetails.Item_Rate ? NumberFormat(productDetails.Item_Rate) : ''}
+                                    type="float"
+                                    value={productDetails.Item_Rate ? (productDetails.Item_Rate) : ''}
                                     onChange={e => setProductDetails(pre => ({
                                         ...pre,
                                         Item_Rate: e.target.value,
@@ -1069,7 +1085,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                             <div className="col-md-6 p-2">
                                 <label>Amount</label>
                                 <input
-                                    type="number"
+                                    type="input"
                                     value={productDetails.Amount ? productDetails.Amount : ''}
                                     onChange={e => setProductDetails(pre => ({
                                         ...pre,
