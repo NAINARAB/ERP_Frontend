@@ -86,8 +86,8 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(orderDetails.IS_IGST, 1);
-    const [deliveryPerson, setDeliveryPerson] = useState(null);
-    const [deliveryPersonList, setDeliveryPersonList] = useState([]);
+    const deliveryPerson = useState(0);
+    // const [deliveryPersonList, setDeliveryPersonList] = useState([]);
 
 
 
@@ -107,7 +107,6 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                     Delivery_Longitude: longitude,
                 }));
             } catch (error) {
-                console.error(error)
                 toast.warn('Unable to fetch location. Allow location access.');
             }
         };
@@ -122,8 +121,8 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                 Retailer_Id: editValues?.Retailer_Id,
                 Retailer_Name: editValues?.Retailer_Name,
                 Delivery_Status: editValues?.Delivery_Status,
-                Delivery_Person_Id: editValues?.Delivery_Person_Id,
-                Delivery_Person_Name: editValues?.Delivery_Person_Name,
+                // Delivery_Person_Id: editValues?.Delivery_Person_Id,
+                // Delivery_Person_Name: editValues?.Delivery_Person_Name,
                 Payment_Status: editValues?.Payment_Status,
                 Payment_Mode: editValues?.Payment_Mode,
                 Branch_Id: editValues?.Branch_Id,
@@ -201,13 +200,13 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         }).catch(e => console.error(e))
 
 
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setDeliveryPersonList(data.data);
-            }
-        }).catch(e => console.error(e));
+        // fetchLink({
+        //     address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
+        // }).then(data => {
+        //     if (data.success) {
+        //         setDeliveryPersonList(data.data);
+        //     }
+        // }).catch(e => console.error(e));
 
 
         fetchLink({
@@ -275,7 +274,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                 bodyData: {
                     ...orderDetails,
                     Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0)),
-                    Delivery_Person_Id: deliveryPerson ? deliveryPerson.UserId : Number(orderDetails?.Delivery_Person_Id),
+                    Delivery_Person_Id: deliveryPerson ?? Number(orderDetails?.Delivery_Person_Id) ?? 0,
                     Payment_Status: (orderDetails?.Payment_Status) ? Number(orderDetails?.Payment_Status) : 1,
                     Payment_Ref_No: orderDetails?.Payment_Ref_No,
                     Delivery_Status: (orderDetails?.Delivery_Status) ? Number(orderDetails?.Delivery_Status) : 1,
@@ -366,10 +365,10 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         })));
     }, [orderDetails.GST_Inclusive])
 
-    const handleDeliveryPersonChange = (selectedOption) => {
+    // const handleDeliveryPersonChange = (selectedOption) => {
 
-        setDeliveryPerson(selectedOption ? { UserId: selectedOption.value, Name: selectedOption.label } : null);
-    };
+    //     setDeliveryPerson(selectedOption ? { UserId: selectedOption.value, Name: selectedOption.label } : null);
+    // };
 
     return (
         <>
@@ -600,7 +599,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                             </select>
                                         </td>
                                     </tr>
-                                    <tr>
+                                    {/* <tr>
                                         <td className="border-0 bg-light">Delivery Person Name:</td>
                                         <td className="border-0 bg-light">
                                             <Select
@@ -626,7 +625,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                                 }
                                             />
                                         </td>
-                                    </tr>
+                                    </tr> */}
 
 
                                     <tr>

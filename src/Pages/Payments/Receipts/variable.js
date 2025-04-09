@@ -10,15 +10,21 @@ export const receiptGeneralInfo = {
     retailer_id: '',
     payed_by: '',
     collection_date: ISOString(),
-    collection_type: '',
+    collection_type: 'CASH',
+    payment_status: '',
     latitude: '',
     longitude: '',
     collected_by: '',
-    created_by: storage.UserId,
     total_amount: 0,
     created_on: '',
     alterd_on: '',
-    updated_by: storage.UserId
+    narration: '',
+    verify_status: 0,
+    bank_date: '',
+    created_by: storage.UserId,
+    updated_by: storage.UserId,
+    verified_by: storage.UserId,
+    verified_at: '',
 };
 
 export const receiptDetailsInfo = {
@@ -26,11 +32,5 @@ export const receiptDetailsInfo = {
     collection_id: '',
     bill_id: '',
     bill_amount: 0,
-    collected_amount: 0,
-    payment_status: 'ADMIN ENTRY',
-    narration: '',
-    verify_status: 0,
-    bank_date: '',
-    verified_by: storage.UserId,
-    verified_at: '',
+    collected_amount: 0
 };

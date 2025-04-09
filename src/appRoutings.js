@@ -58,6 +58,7 @@ const TallyLolSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/ta
 const TallyLosSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLosSyncDashboard"))
 const TripReports = lazy(() => import("./Pages/Reports/tripReports"))
 const CostCenterReports = lazy(() => import("./Pages/Reports/costCenterReports"))
+const ClosingStockReportsProduct = lazy(() => import("./Pages/Reports/productclosingStockReports"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -248,6 +249,7 @@ const RoutingArray = [
 
     { component: <DisplayNavigations />, path: '/erp/reports' },
     { component: <CostCenterReports />, path: '/erp/reports/costCenter' },
+    { component: <ClosingStockReportsProduct />, path: '/erp/reports/ClosingStock' },
 
 
     // Task management

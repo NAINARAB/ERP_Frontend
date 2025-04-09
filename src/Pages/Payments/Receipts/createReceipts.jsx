@@ -16,6 +16,29 @@ import { receiptGeneralInfo, receiptDetailsInfo } from "./variable";
 import { toast } from 'react-toastify'
 import RequiredStar from "../../../Components/requiredStar";
 
+const payTypeAndStatus = [
+    {
+        type: 'CASH',
+        default: 'CREATED-CASH',
+        statusOptions: ['CREATED-CASH', 'CASH-PROCESSING', 'CASH-MISSING']
+    },
+    {
+        type: 'UPI',
+        default: 'CREATED-UPI',
+        statusOptions: ['CREATED-UPI', 'UPI-PROCESSING', 'UPI-NOT-RECEIVED']
+    },
+    {
+        type: 'CHECK',
+        default: 'CREATED-CHECK',
+        statusOptions: ['CREATED-CHECK', 'CHECK-PROCESSING', 'CHECK-BOUNCE']
+    },
+    {
+        type: 'BANK ACCOUNT',
+        default: 'CREATED-BANK-TRANSFER',
+        statusOptions: ['CREATED-BANK-TRANSFER', 'BANK-PROCESSING', 'BANK-NOT-RECEIVED']
+    },
+];
+
 const useQuery = () => new URLSearchParams(useLocation().search);
 const CreateReceipts = ({ loadingOn, loadingOff }) => {
     const storage = getSessionUser().user;
@@ -38,6 +61,8 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
         Retailer: { value: "", label: "Search by Retailer..." },
     });
 
+    const paymentStatus = payTypeAndStatus.find(val => val.type === receiptInfo?.collection_type).statusOptions;
+
     useEffect(() => {
 
         fetchLink({
@@ -54,8 +79,8 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
             else setBaseData(pre => ({ ...pre, salesPerson: [] }))
         }).catch(e => console.error(e))
 
-        fetchLink({ 
-            address: `masters/voucher` 
+        fetchLink({
+            address: `masters/voucher`
         }).then(data => {
             if (data.success) setBaseData(pre => ({ ...pre, voucherData: data.data }));
             else setBaseData(pre => ({ ...pre, voucherData: [] }))
@@ -86,7 +111,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
         if (loadingOn) loadingOn();
         fetchLink({
             address: `delivery/paymentCollection`,
-            method: (checkIsNumber(receiptInfo.collection_id) &&  receiptInfo.collection_id > 0) ? 'PUT': 'POST',
+            method: (checkIsNumber(receiptInfo.collection_id) && receiptInfo.collection_id > 0) ? 'PUT' : 'POST',
             bodyData: {
                 ...receiptInfo,
                 Collections: receiptsPaymentInfo
@@ -95,6 +120,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
             if (data.success) {
                 toast.success(data?.message || 'Receipt Created');
                 resetValue();
+                setFilters(pre => ({...pre, Retailer: { value: '', label: 'Search by Retailer...'}}))
             } else {
                 toast.error(data?.message || 'Failed to create Receipt')
             }
@@ -165,13 +191,33 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                     className="cus-inpt p-2"
                                     value={receiptInfo.collection_type}
                                     required
-                                    onChange={e => setReceiptInfo(pre => ({ ...pre, collection_type: e.target.value }))}
+                                    onChange={e => setReceiptInfo(pre => ({
+                                        ...pre,
+                                        collection_type: e.target.value,
+                                        payment_status: payTypeAndStatus.find(typ => typ.type === e.target.value)?.default
+                                    }))}
                                 >
                                     <option value="" disabled>Select</option>
                                     <option value="CASH">CASH</option>
                                     <option value="UPI">UPI</option>
                                     <option value="CHECK">CHECK</option>
                                     <option value="BANK ACCOUNT">BANK ACCOUNT</option>
+                                </select>
+                            </div>
+
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Payment Status</label>
+                                <select
+                                    className="cus-inpt p-2"
+                                    value={receiptInfo.payment_status}
+                                    required
+                                    disabled={!receiptInfo.collection_type}
+                                    onChange={e => setReceiptInfo(pre => ({ ...pre, payment_status: e.target.value }))}
+                                >
+                                    <option value="" disabled>Select</option>
+                                    {paymentStatus.map((status, ind) => (
+                                        <option value={status} key={ind}>{status}</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -203,6 +249,39 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                         <option value={sp.UserId} key={spInd}>{sp.Name}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-1">
+                                <label className="fa-14">Bank Date</label>
+                                <input
+                                    type="date"
+                                    value={receiptInfo?.bank_date ? receiptInfo?.bank_date : ''}
+                                    onChange={e => setReceiptInfo(pre => ({ ...pre, bank_date: e.target.value }))}
+                                    className="cus-inpt border p-2"
+                                />
+                            </div>
+
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-1">
+                                <label className="fa-14">Verify Status</label>
+                                <select
+                                    value={receiptInfo?.verify_status}
+                                    onChange={e => setReceiptInfo(pre => ({ ...pre, verify_status: e.target.value }))}
+                                    className="cus-inpt border p-2"
+                                >
+                                    <option value={0}>Not-verified</option>
+                                    <option value={1}>verified</option>
+                                </select>
+                            </div>
+
+                            <div className="col-12 p-1">
+                                <label className="fa-14 w-100">Narration</label>
+                                <textarea
+                                    style={{ width: '100%', maxWidth: '450px' }}
+                                    className="cus-inpt border p-2"
+                                    value={receiptInfo?.narration}
+                                    onChange={e => setReceiptInfo(pre => ({ ...pre, narration: e.target.value }))}
+                                    placeholder="Narration..."
+                                />
                             </div>
 
                         </div>

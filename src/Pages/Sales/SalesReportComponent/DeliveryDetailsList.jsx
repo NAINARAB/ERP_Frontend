@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Switch } from "@mui/material";
 // import '../common.css'
@@ -7,14 +6,14 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
 import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Edit, FilterAlt,Delete } from "@mui/icons-material";
+import { Edit, FilterAlt, Delete } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
 // import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NewDeliveryOrder from "./NewDeliveryOrder";
-const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
+const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -23,9 +22,10 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
     const [screen, setScreen] = useState(true);
     const [orderInfo, setOrderInfo] = useState({});
     const [viewOrder, setViewOrder] = useState({});
-    
+
+
     const [deleteConfirm, setDeleteConfirm] = useState(false)
-   const [itemTodelete,setItemToDelete]=useState({})
+    const [itemTodelete, setItemToDelete] = useState({})
     const [isDeliveryDetailsVisible, setIsDeliveryDetailsVisible] = useState(false)
     const [filters, setFilters] = useState({
         Fromdate: getPreviousDate(7),
@@ -38,6 +38,9 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
         Delivery_Person_Name: 'ALL',
         Cancel_status: 0
     });
+
+    const [pageLoad, setPageLoad] = useState(false)
+
 
     const [dialog, setDialog] = useState({
         filters: false,
@@ -53,7 +56,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             }
         }).catch(e => console.error(e))
 
-       
+
     }, [
         filters.Fromdate,
         filters?.Todate,
@@ -61,7 +64,8 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
         filters?.Delivery_Person_Id,
         filters?.Created_by,
         filters?.Cancel_status,
-        reload
+        reload,
+        pageLoad
     ])
 
     useEffect(() => {
@@ -92,14 +96,14 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
 
     }, [])
     const openDeleteDialog = (itemData) => {
-      
+
         setItemToDelete({
             So_No: itemData.So_No,
             Do_Id: itemData.Do_Id
         });
         setDeleteConfirm(true);
     };
-    
+
     const saleOrderColumn = [
         {
             Field_Name: 'Do_Id',
@@ -112,6 +116,14 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             ColumnHeader: 'Sale Order ID',
             Fied_Data: 'string',
             isVisible: 1,
+        },
+
+        {
+            Field_Name: 'Do_Inv_No',
+            ColumnHeader: 'Do_Inv_No ',
+            Fied_Data: 'string',
+            isVisible: 1,
+            align: 'center',
         },
         {
             Field_Name: 'Retailer_Name',
@@ -133,6 +145,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             isVisible: 1,
             align: 'center',
         },
+
 
         // {
         //     Field_Name: 'Products',
@@ -175,6 +188,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             isVisible: 1,
             align: 'center',
         },
+
         // {
         //     Field_Name: 'DeliveryStatusName',
         //     // ColumnHeader: 'DeliveryStatusName',
@@ -182,7 +196,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
         //     Field_Data:'String',
         //     align: 'center',
         //     // isCustomCell: true,
-         
+
         // },
         // {
         //     Field_Name: 'Sales_Person_Name',
@@ -197,7 +211,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             Cell: ({ row }) => {
                 return (
                     <>
-                      
+
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
@@ -211,8 +225,8 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
                         </Tooltip>
                         <Tooltip title='Delete'>
                             <IconButton
-                               onClick={()=>openDeleteDialog(row)}
-                            
+                                onClick={() => openDeleteDialog(row)}
+
                                 size="small"
                             >
                                 <Delete className="fa-16" />
@@ -276,32 +290,48 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             orderDetails: false,
         });
         setOrderInfo({});
-   
-      
-        setDeleteConfirm(false)  
-      }
 
-        const confirmData = async () => {
-       
-            if (!itemTodelete) return;
-            fetchLink({
+
+        setDeleteConfirm(false)
+    }
+
+
+
+
+
+    const confirmData = async () => {
+        if (!itemTodelete) return;
+
+        try {
+            const data = await fetchLink({
                 address: 'delivery/deliveryOrder',
                 method: 'DELETE',
-                bodyData: ({ Order_Id: itemTodelete.So_No, Do_Id: itemTodelete.Do_Id })
-
-            }).then(data => {
-                if (data.success) {
-                    toast.success(data?.message);
-                   reload()
-                } else {
-                    toast.error(data?.message)
+                bodyData: {
+                    Order_Id: itemTodelete.So_No,
+                    Do_Id: itemTodelete.Do_Id
                 }
-            }).catch(e => console.error(e)).finally(() => loadingOff())
+            });
 
-            setDeleteConfirm(false) 
-        
-        };
-        
+            if (data.success) {
+                toast.success('Delivery Deleted successfully');
+
+
+
+                setDeleteConfirm(false);
+
+                setPageLoad(prev => !prev);
+                setIsDeliveryDetailsVisible(false);
+            } else {
+                toast.error(data?.message || 'Deletion failed');
+            }
+        } catch (error) {
+            toast.error('An error occurred while deleting.');
+        } finally {
+            setDeleteConfirm(false);
+
+        }
+    };
+
     return (
         <>
             <Card>
@@ -311,7 +341,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
                             ? 'Delivery Orders'
                             : isValidObject(orderInfo)
                                 ? 'Modify Delivery Order'
-                                : ''  }
+                                : ''}
                     </h6>
                     <span>
                         {screen && (
@@ -326,12 +356,12 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
                         )}
 
                         {screen && (
-                          <Switch
+                            <Switch
                                 checked={!screen}
                                 onChange={onToggle}
                                 label={'Delivery Details'}
                                 inputProps={{ 'aria-label': 'controlled' }}
-                                
+
                             />
                         )}
                     </span>
@@ -380,10 +410,10 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
             >
                 <DialogTitle>Delete</DialogTitle>
                 <DialogContent>
-                 <div>Are You Want to Move the order Into the Sale Order Again</div>
+                    <div>Are You Want to Delete Delivery Details</div>
                 </DialogContent>
                 <DialogActions>
-                   
+
                     <Button onClick={closeDialog}>close</Button>
                     <Button onClick={confirmData}>Delete</Button>
                 </DialogActions>
@@ -504,5 +534,4 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle,reload }) => {
 }
 
 export default DeliveryDetailsList;
-
 
