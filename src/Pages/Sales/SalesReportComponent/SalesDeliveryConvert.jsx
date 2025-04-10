@@ -80,6 +80,11 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     };
 
     const [filters, setFilters] = useState(initialValue);
+     const [reloadKey, setReloadKey] = useState(false);
+
+    const handleReload = () => setReloadKey(prev => !prev);
+
+
 
     const [deliveryDetails, setDeliveryDetails] = useState({
         Do_Date: ISOString(),
@@ -114,6 +119,11 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         orderDetails: false,
     });
 
+    const triggerReload = () => {
+        setReload((prev) => !prev);
+      };
+      
+
     useEffect(() => {
         fetchLink({
             address: `sales/saleDelivery?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}&Route_Id=${filters?.Route_Id}&Area_Id=${filters?.Area_Id}`,
@@ -134,6 +144,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         filters?.Route_Id,
         filters?.Area_Id,
         reload,
+        reloadKey 
     ]);
 
     const handleSubmit = async () => {
@@ -569,6 +580,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                             }}
                             switchScreen={() => setScreen(true)}
                             onToggle={handleToggle}
+                            triggerReload={triggerReload} // ✅ you're passing it
                         />
                     ) : (
                         <NewDeliveryOrder

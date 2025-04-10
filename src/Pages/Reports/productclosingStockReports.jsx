@@ -122,7 +122,7 @@ function ProductclosingStockReports({ loadingOn, loadingOff, }) {
                                 <tr>
                                     {[
                                         "SNo",
-                                        "Product_Id",
+                                        // "Product_Id",
                                         "Product_Name",
                                         "OpeningStock",
                                         "Total_Arrival",
@@ -144,9 +144,9 @@ function ProductclosingStockReports({ loadingOn, loadingOff, }) {
                                     activityData?.map((o, i) => (
                                         <tr key={i}>
                                             <td className="border text-center fa-13">{i + 1}</td>
-                                            <td className="border fa-13 cellHoverColor">
+                                            {/* <td className="border fa-13 cellHoverColor">
                                                 {o?.Product_Id}
-                                            </td>
+                                            </td> */}
                                             <td className="border text-center fa-13">
                                                 {o?.Product_Name ? o?.Product_Name : "-"}
                                             </td>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Switch } from "@mui/material";
 // import '../common.css'
@@ -13,7 +12,7 @@ import FilterableTable from "../../../Components/filterableTable2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NewDeliveryOrder from "./NewDeliveryOrder";
-const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload }) => {
+const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload, triggerReload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -67,6 +66,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload }) => {
         reload,
         pageLoad
     ])
+
 
     useEffect(() => {
 
@@ -316,16 +316,18 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload }) => {
                 toast.success('Delivery Deleted successfully');
 
 
-
+                triggerReload();
                 setDeleteConfirm(false);
 
                 setPageLoad(prev => !prev);
                 setIsDeliveryDetailsVisible(false);
+
             } else {
                 toast.error(data?.message || 'Deletion failed');
             }
+            // throw error
         } catch (error) {
-            toast.error('An error occurred while deleting.');
+            toast.error('An error occurred while deleting.', error);
         } finally {
             setDeleteConfirm(false);
 
@@ -534,4 +536,3 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload }) => {
 }
 
 export default DeliveryDetailsList;
-

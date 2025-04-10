@@ -276,7 +276,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
-            console.log("fasdadadas", orderProducts)
+          
             fetchLink({
                 address: `delivery/deliveryOrder`,
                 method: (isEdit && !editOn) ? 'PUT' : 'POST',

@@ -3,6 +3,7 @@ import { HideSource, List } from '@mui/icons-material'
 import { Addition, checkIsNumber, isEqualNumber, isValidObject, LocalDate, NumberFormat, onlynum, toNumber } from "../../../Components/functions";
 import { receiptDetailsInfo } from "./variable";
 import { useMemo, useState } from "react";
+import RequiredStar from "../../../Components/requiredStar";
 
 
 const DeliveryBillTableRow = ({ row = {}, receiptsPaymentInfo = [], setReceiptsPaymentInfo, Sno }) => {
@@ -87,7 +88,7 @@ const DeliveryBillTableRow = ({ row = {}, receiptsPaymentInfo = [], setReceiptsP
                 <td colSpan={8}>
                     <div className="d-flex align-items-end flex-wrap">
                         <div className="flex-grow-1">
-                            <label className="fa-14 w-100">Receipt Amount (₹)</label>
+                            <label className="fa-14 w-100">Receipt Amount (₹){isChecked && <RequiredStar />}</label>
                             <input
                                 onInput={onlynum}
                                 disabled={!isChecked}
@@ -169,7 +170,9 @@ const DeliveryBillTableRow = ({ row = {}, receiptsPaymentInfo = [], setReceiptsP
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(Array.isArray(row?.Payments) ? row?.Payments : [])?.map((pay, payInd) => (
+                                        {(Array.isArray(row?.Payments) ? row?.Payments : [])?.filter(
+                                            fil => !isEqualNumber(fil.auto_id, row?.auto_id)
+                                        ).map((pay, payInd) => (
                                             <tr key={payInd}>
                                                 <td className="border">{payInd + 1}</td>
                                                 <td className="border">{pay?.CreatedByGet}</td>
