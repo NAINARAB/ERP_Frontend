@@ -15,6 +15,7 @@ import DeliveryBillCard from "./billDeliveryCard";
 import { receiptGeneralInfo, receiptDetailsInfo } from "./variable";
 import { toast } from 'react-toastify'
 import RequiredStar from "../../../Components/requiredStar";
+import DeliveryBillTableRow from "./billDeliveryTableRow";
 
 const payTypeAndStatus = [
     {
@@ -120,7 +121,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
             if (data.success) {
                 toast.success(data?.message || 'Receipt Created');
                 resetValue();
-                setFilters(pre => ({...pre, Retailer: { value: '', label: 'Search by Retailer...'}}))
+                setFilters(pre => ({ ...pre, Retailer: { value: '', label: 'Search by Retailer...' } }))
             } else {
                 toast.error(data?.message || 'Failed to create Receipt')
             }
@@ -132,14 +133,22 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
     return (
         <>
             <Card>
-                <div className="px-3 py-2">
-                    <h5 className="m-0">Receipt Creation</h5>
+                <div className="px-3 py-2 d-flex align-items-center">
+                    <h5 className="m-0 flex-grow-1">Receipt Creation</h5>
+                    <Button
+                        variant="outlined"
+                        type="submit"
+                        disabled={
+                            receiptsPaymentInfo.length === 0
+                            || receiptsPaymentInfo.every(bill => toNumber(bill.collected_amount) <= 0)
+                        }
+                    >save receipt</Button>
                 </div>
                 <form onSubmit={e => {
                     e.preventDefault();
                     saveReceipt();
                 }}>
-                    <CardContent className="pb-2">
+                    <CardContent>
                         <label>Retailer</label>
                         <div className="d-flex">
                             <div style={{ width: "100%", maxWidth: "400px" }}>
@@ -163,11 +172,11 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             </div>
                         </div>
 
-                        <div className="row fa-13 border-bottom pb-3">
+                        <div className="row fa-13 pb-3">
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Payed By</label>
                                 <input
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.payed_by}
                                     placeholder="Owner, Shop Keeper.."
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, payed_by: e.target.value }))}
@@ -178,7 +187,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 <label>Date</label>
                                 <input
                                     type="date"
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.collection_date}
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, collection_date: e.target.value }))}
                                     required
@@ -188,7 +197,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Type</label>
                                 <select
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.collection_type}
                                     required
                                     onChange={e => setReceiptInfo(pre => ({
@@ -208,7 +217,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Payment Status</label>
                                 <select
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.payment_status}
                                     required
                                     disabled={!receiptInfo.collection_type}
@@ -224,7 +233,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Voucher</label>
                                 <select
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.voucher_id}
                                     required
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, voucher_id: e.target.value }))}
@@ -239,7 +248,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Amount Received By</label>
                                 <select
-                                    className="cus-inpt p-2"
+                                    className="cus-inpt border p-2"
                                     value={receiptInfo.collected_by}
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, collected_by: e.target.value }))}
                                     required
@@ -257,7 +266,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                     type="date"
                                     value={receiptInfo?.bank_date ? receiptInfo?.bank_date : ''}
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, bank_date: e.target.value }))}
-                                    className="cus-inpt border p-2"
+                                    className="cus-inpt border border p-2"
                                 />
                             </div>
 
@@ -266,7 +275,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 <select
                                     value={receiptInfo?.verify_status}
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, verify_status: e.target.value }))}
-                                    className="cus-inpt border p-2"
+                                    className="cus-inpt border border p-2"
                                 >
                                     <option value={0}>Not-verified</option>
                                     <option value={1}>verified</option>
@@ -286,21 +295,34 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
 
                         </div>
 
-                        <div className="d-flex justify-content-end mt-2">
-                            <Button
-                                variant="outlined"
-                                type="submit"
-                                disabled={
-                                    receiptsPaymentInfo.length === 0
-                                    || receiptsPaymentInfo.every(bill => toNumber(bill.collected_amount) <= 0)
-                                }
-                            >save receipt</Button>
+                        <div className="table-responsive">
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        {['Sno', '#', 'Invoice No', 'Date', 'Invoice Value', 'Paid', 'Pending', 'Receipts'].map(
+                                            (col, colInd) => <th className="bg-light fa-13 border" key={colInd}>{col}</th>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {salesPayments.map((row, rowIndex) => (
+                                        <DeliveryBillTableRow
+                                            row={row}
+                                            Sno={rowIndex + 1}
+                                            key={rowIndex}
+                                            receiptsPaymentInfo={receiptsPaymentInfo}
+                                            setReceiptsPaymentInfo={setReceiptsPaymentInfo}
+                                        />
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
+
                     </CardContent>
                 </form>
             </Card>
 
-            {salesPayments.map((row, rowIndex) => (
+            {/* {salesPayments.map((row, rowIndex) => (
                 <DeliveryBillCard
                     loadingOff={loadingOff}
                     loadingOn={loadingOn}
@@ -310,7 +332,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                     receiptsPaymentInfo={receiptsPaymentInfo}
                     setReceiptsPaymentInfo={setReceiptsPaymentInfo}
                 />
-            ))}
+            ))} */}
         </>
     );
 };
