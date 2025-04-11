@@ -8,6 +8,8 @@ export const getSessionUser = () => {
     return { storage, user }
 }
 
+export const toArray = (array) => Array.isArray(array) ? array : [] 
+
 export const encryptPasswordFun = (str) => {
     return CryptoJS.AES.encrypt(str, encryptionKey).toString();
 }

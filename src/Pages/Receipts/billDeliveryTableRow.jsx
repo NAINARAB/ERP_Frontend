@@ -1,9 +1,9 @@
 import { Button, Card, CardContent, CardHeader } from "@mui/material"
 import { HideSource, List } from '@mui/icons-material'
-import { Addition, checkIsNumber, isEqualNumber, isValidObject, LocalDate, NumberFormat, onlynum, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, isValidObject, LocalDate, NumberFormat, onlynum, toNumber } from "../../Components/functions";
 import { receiptDetailsInfo } from "./variable";
 import { useMemo, useState } from "react";
-import RequiredStar from "../../../Components/requiredStar";
+import RequiredStar from "../../Components/requiredStar";
 
 
 const DeliveryBillTableRow = ({ row = {}, receiptsPaymentInfo = [], setReceiptsPaymentInfo, Sno }) => {

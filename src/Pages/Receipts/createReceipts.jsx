@@ -5,8 +5,8 @@ import {
     isEqualNumber,
     ISOString,
     toNumber,
-} from "../../../Components/functions";
-import { fetchLink } from "../../../Components/fetchComponent";
+} from "../../Components/functions";
+import { fetchLink } from "../../Components/fetchComponent";
 import Select from "react-select";
 import { useEffect, useState } from "react";
 import { Search } from "@mui/icons-material";
@@ -14,7 +14,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import DeliveryBillCard from "./billDeliveryCard";
 import { receiptGeneralInfo, receiptDetailsInfo } from "./variable";
 import { toast } from 'react-toastify'
-import RequiredStar from "../../../Components/requiredStar";
+import RequiredStar from "../../Components/requiredStar";
 import DeliveryBillTableRow from "./billDeliveryTableRow";
 
 const payTypeAndStatus = [
@@ -67,7 +67,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
 
         fetchLink({
-            address: "delivery/getRetailersWhoHasBills"
+            address: "receipt/getRetailersWhoHasBills"
         }).then(data => {
             if (data.success) setRetailers(data.data);
             else setRetailers([]);
@@ -93,7 +93,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
         if (checkIsNumber(receiptInfo.retailer_id)) {
             if (loadingOn) loadingOn();
             fetchLink({
-                address: `delivery/retailerPendingBills?retailer_id=${receiptInfo.retailer_id}`,
+                address: `receipt/retailerBills?retailer_id=${receiptInfo.retailer_id}`,
             }).then(data => {
                 if (data.success) setSalesPayments(data.data);
                 else setSalesPayments([]);
@@ -113,7 +113,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
     const saveReceipt = () => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `delivery/paymentCollection`,
+            address: `receipt/collectionReceipts`,
             method: (checkIsNumber(receiptInfo.collection_id) && receiptInfo.collection_id > 0) ? 'PUT' : 'POST',
             bodyData: {
                 ...receiptInfo,
@@ -145,7 +145,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             variant="outlined"
                             type="button"
                             className="me-1"
-                            onClick={() => navigate('/erp/payments/receipts')}
+                            onClick={() => navigate('/erp/receipts/listReceipts')}
                         >Back</Button>
                         <Button
                             variant="outlined"
@@ -273,7 +273,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             <div className="col-lg-3 col-md-4 col-sm-6 p-1">
-                                <label className="fa-14">Bank Date</label>
+                                <label className="fa-14">Verify Date</label>
                                 <input
                                     type="date"
                                     value={receiptInfo?.bank_date ? receiptInfo?.bank_date : ''}
