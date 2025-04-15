@@ -16,8 +16,8 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
-import ImportFromPOS from "./importFromPos";
 import { saleOrderGeneralInfo, saleOrderStockInfo } from "./column";
+import ImportFromPOS from "./importFromPos";
 import AddItemToSaleOrderCart from "./addItemToCart";
 
 const storage = getSessionUser().user;
