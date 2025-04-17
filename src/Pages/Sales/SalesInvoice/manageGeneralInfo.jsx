@@ -77,6 +77,18 @@ const ManageSalesInvoiceGeneralInfo = ({
                     />
                 </div>
 
+                {/* Date */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Entry Date <RequiredStar /></label>
+                    <input
+                        value={invoiceInfo?.Do_Date}
+                        type="date"
+                        required
+                        className={inputStyle}
+                        onChange={e => setInvoiceInfo(pre => ({ ...pre, Do_Date: e.target.value }))}
+                    />
+                </div>
+
                 {/* branch */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label className='fa-13'>Branch <RequiredStar /></label>
@@ -91,18 +103,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                             <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
                         ))}
                     </select>
-                </div>
-
-                {/* Date */}
-                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                    <label className='fa-13'>Entry Date <RequiredStar /></label>
-                    <input
-                        value={invoiceInfo?.Po_Entry_Date}
-                        type="date"
-                        required
-                        className={inputStyle}
-                        onChange={e => setInvoiceInfo(pre => ({ ...pre, Po_Entry_Date: e.target.value }))}
-                    />
                 </div>
 
                 {/* GST TYPE */}

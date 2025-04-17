@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, RoundNumber } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { saleOrderStockInfo } from "./column";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -18,12 +17,14 @@ const AddItemToSaleOrderCart = ({
     products = [],
     brands = [],
     uom = [],
+    godowns = [],
     GST_Inclusive,
     IS_IGST,
-    editValues = null
+    editValues = null,
+    initialValue = {}
 }) => {
 
-    const [productDetails, setProductDetails] = useState(saleOrderStockInfo);
+    const [productDetails, setProductDetails] = useState(initialValue);
 
     const isInclusive = isEqualNumber(GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(GST_Inclusive, 2);
@@ -36,7 +37,7 @@ const AddItemToSaleOrderCart = ({
             const existingProducts = pre.filter(ordered => !isEqualNumber(ordered.Item_Id, productDetails.Item_Id));
 
             const currentProductDetails = Object.fromEntries(
-                Object.entries(saleOrderStockInfo).map(([key, value]) => {
+                Object.entries(initialValue).map(([key, value]) => {
                     const productMaster = findProductDetails(productDetails.Item_Id);
                     const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                     const isTaxable = gstPercentage > 0;
@@ -53,6 +54,7 @@ const AddItemToSaleOrderCart = ({
                     const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
 
                     switch (key) {
+                        case 'Item_Name': return [key, productMaster.Product_Name]
                         case 'Taxable_Rate': return [key, itemRateGst.base_amount]
                         case 'Total_Qty': return [key, Bill_Qty]
                         case 'Taxble': return [key, isTaxable ? 1 : 0]
@@ -74,7 +76,7 @@ const AddItemToSaleOrderCart = ({
             return [...existingProducts, currentProductDetails];
         });
 
-        setProductDetails(saleOrderStockInfo);
+        setProductDetails(initialValue);
         onClose();
     };
 
@@ -111,6 +113,7 @@ const AddItemToSaleOrderCart = ({
                     <DialogContent>
                         <div className="row pb-5">
 
+                            {/* brand */}
                             <div className="col-6 p-2">
                                 <label>Brand</label>
                                 <Select
@@ -121,12 +124,14 @@ const AddItemToSaleOrderCart = ({
                                         brands.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
                                     ]}
                                     styles={customSelectStyles}
+                                    menuPortalTarget={document.body}
                                     isSearchable={true}
                                     placeholder={"Select Brand"}
                                     maxMenuHeight={200}
                                 />
                             </div>
 
+                            {/* group */}
                             <div className="col-6 p-2">
                                 <label>Group</label>
                                 <Select
@@ -156,12 +161,14 @@ const AddItemToSaleOrderCart = ({
                                             }, []),
                                     ]}
                                     styles={customSelectStyles}
+                                    menuPortalTarget={document.body}
                                     isSearchable={true}
                                     placeholder={"Select Group"}
                                     maxMenuHeight={200}
                                 />
                             </div>
 
+                            {/* item name */}
                             <div className="col-12 p-2">
                                 <label>Item Name <RequiredStar /></label>
                                 <Select
@@ -170,6 +177,7 @@ const AddItemToSaleOrderCart = ({
                                         label: findProductDetails(productDetails.Item_Id)?.Product_Name
                                     }}
                                     isDisabled={checkIsNumber(productDetails.Pre_Id)}
+                                    menuPortalTarget={document.body}
                                     onChange={e => {
                                         const productInfo = findProductDetails(e.value);
                                         setProductDetails(pre => ({
@@ -213,6 +221,7 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {/* quantity */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Quantity <RequiredStar /></label>
                                 <input
@@ -244,6 +253,7 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {/* Rate */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
@@ -259,6 +269,7 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {/* UOM */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>UOM</label>
                                 <select
@@ -278,6 +289,7 @@ const AddItemToSaleOrderCart = ({
                                 </select>
                             </div>
 
+                            {/* Amount */}
                             <div className="col-md-6 p-2">
                                 <label>Amount</label>
                                 <input
@@ -294,11 +306,33 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
+                                <div className="col-md-6 p-2">
+                                    <label>Godown</label>
+                                    <Select
+                                        value={{ 
+                                            value: productDetails?.GoDown_Id, 
+                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
+                                        }}
+                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
+                                        options={[
+                                            { value: '', label: 'select', isDisabled: true },
+                                            ...godowns.map(obj => ({ value: obj?.Godown_Id, label: obj?.Godown_Name }))
+                                        ]}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                        isSearchable={true}
+                                        placeholder={"Select Godown"}
+                                        maxMenuHeight={200}
+                                    />
+                                </div>
+                            )}
+
                         </div>
 
                     </DialogContent>
                     <DialogActions className="d-flex justify-content-between align-items-center">
-                        <Button onClick={() => setProductDetails(saleOrderStockInfo)} type='button' startIcon={<ClearAll />}>Clear</Button>
+                        <Button onClick={() => setProductDetails(initialValue)} type='button' startIcon={<ClearAll />}>Clear</Button>
                         <span>
                             <Button type="button" onClick={onClose}>cancel</Button>
                             <Button type='submit' variant="outlined">Add</Button>

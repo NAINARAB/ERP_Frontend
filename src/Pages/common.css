@@ -7,8 +7,8 @@
 }
 
 .tble-hed-stick {
-  position:sticky;
-  top: 0 ;
+  position: sticky;
+  top: 0;
 }
 
 .tab-container::-webkit-scrollbar {
@@ -129,8 +129,55 @@
 .cus-badge {
   padding: 3px 9px;
   border-radius: 10px;
-
 }
+
+/* sales invoice */
+
+.selectCard {
+  cursor: pointer !important;
+  transition: all 0.3s;
+}
+
+.selectCard:active {
+  border: 1px solid blue;
+}
+
+.invoice-card {
+  max-width: 100%;
+}
+.invoice-header {
+  border-bottom: 1px solid #dee2e6;
+}
+.invoice-summary {
+  border-top: 1px solid #dee2e6;
+}
+
+
+.sales-card {
+  transition: all 0.3s ease-in-out;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sales-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.product-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.product-item {
+  border-left: 3px solid #0d6efd;
+  padding-left: 10px;
+}
+
+/* sales invoice */
 
 .multiple-colors-gradient {
   background: linear-gradient(310deg, #b5cce6, #87CEEB, #D8BFD8, #b5e6dd);
@@ -294,7 +341,7 @@
 
 .cellHover:active {
   box-shadow: none;
-  
+
 }
 
 .cellHoverColor {
@@ -421,13 +468,13 @@
   background-image: none !important;
 }
 
-.cus-grid{
+.cus-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.grid-card{
+.grid-card {
   padding: 1em;
   border: none;
   border-radius: 6px;
@@ -441,17 +488,17 @@
   font-weight: bold;
 }
 
-.hov{
+.hov {
   cursor: pointer !important;
   transition: all 0.3s;
 }
 
-.hov:hover{
+.hov:hover {
   transform: translateY(-2px);
   box-shadow: 2px 2px 4px rgb(119, 117, 117);
 }
 
-.hov-bg:hover{
+.hov-bg:hover {
   background-color: #f2f5f8 !important;
 }
 

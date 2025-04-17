@@ -291,6 +291,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 GST_Inclusive={orderDetails.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
+                initialValue={saleOrderStockInfo}
             />
 
             <Card>
@@ -625,27 +626,6 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                     Cell: ({ row }) => {
                                         return (
                                             <>
-                                                {/* {!checkIsNumber(row?.Pre_Id) && ( */}
-                                                {/* <AddItemToSaleOrderCart
-                                                    orderProducts={orderProducts}
-                                                    setOrderProducts={setOrderProducts}
-                                                    open={addProductDialog}
-                                                    onClose={() => setAddProductDialog(false)}
-                                                    products={baseData.products}
-                                                    brands={baseData.brand}
-                                                    uom={baseData.uom}
-                                                    GST_Inclusive={orderDetails.GST_Inclusive}
-                                                    IS_IGST={IS_IGST}
-                                                    editValues={row}
-                                                >
-                                                    <IconButton
-                                                        onClick={() => setAddProductDialog(true)}
-                                                        size="small"
-                                                    >
-                                                        <Edit />
-                                                    </IconButton>
-                                                </AddItemToSaleOrderCart> */}
-                                                {/* )} */}
                                                 <IconButton
                                                     onClick={() => {
                                                         setSelectedProductToEdit(row);

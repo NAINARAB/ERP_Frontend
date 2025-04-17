@@ -16,7 +16,7 @@ const SalesInvoiceTaxDetails = ({
 }) => {
 
     const Total_Invoice_value = useMemo(() => {
-        return invoiceProducts.reduce((acc, item) => {
+        const invValue = invoiceProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return Addition(acc, Amount);
@@ -29,7 +29,11 @@ const SalesInvoiceTaxDetails = ({
             } else {
                 return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
             }
-        }, 0)
+        }, 0);
+
+        const invExpences = invoiceExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0);
+
+        return Addition(invValue, invExpences);
     }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive])
 
     const totalValueBeforeTax = useMemo(() => {

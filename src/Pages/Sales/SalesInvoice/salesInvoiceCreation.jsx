@@ -20,6 +20,8 @@ import { salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesI
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
 import SalesInvoiceTaxDetails from "./taxDetails";
+import AddItemToSaleOrderCart from "../SaleOrder/addItemToCart";
+import AddProductsInSalesInvoice from "./importFromSaleOrder";
 
 
 const storage = getSessionUser().user;
@@ -58,6 +60,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const isNotTaxableBill = isEqualNumber(invoiceInfo.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(invoiceInfo.IS_IGST, 1);
     const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
+    const minimumRows = 3;
+    const dummyRowCount = minimumRows - invoiceProducts.length
 
     useEffect(() => {
 
@@ -136,11 +140,102 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         setStaffArray([]);
     }
 
+    // re-calculate the tax after changeing tax-type, invoice-type
+    useEffect(() => {
+        setInvoiceProduct(pre => {
+            const exist = [...pre];
+
+            return exist.map(item => {
+                return Object.fromEntries(
+                    Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                        const productMaster = findProductDetails(baseData.products, item?.Item_Id);
+                        const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
+                        const isTaxable = gstPercentage > 0;
+
+                        const { Bill_Qty, Item_Rate, Amount } = item;
+
+                        const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
+                        const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
+
+                        const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
+                        const igstPer = IS_IGST ? gstInfo.igst_per : 0;
+                        const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
+                        const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
+
+                        switch (key) {
+                            case 'Taxable_Rate': return [key, itemRateGst.base_amount]
+                            case 'Total_Qty': return [key, Bill_Qty]
+                            case 'Taxble': return [key, isTaxable ? 1 : 0]
+                            case 'Taxable_Amount': return [key, gstInfo.base_amount]
+                            case 'Tax_Rate': return [key, gstPercentage]
+                            case 'Cgst':
+                            case 'Sgst': return [key, cgstPer ?? 0]
+                            case 'Cgst_Amo':
+                            case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
+                            case 'Igst': return [key, igstPer ?? 0]
+                            case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
+                            case 'Final_Amo': return [key, gstInfo.with_tax]
+
+                            default: return [key, item[key] || value]
+                        }
+                    })
+                )
+            })
+        });
+    }, [
+        salesInvoiceDetailsInfo,
+        baseData.products,
+        IS_IGST,
+        taxType,
+    ]);
+
+    const saveSalesInvoice = () => {
+        if (loadingOn) loadingOn();
+
+        fetchLink({
+            address: `sales/salesInvoice`,
+            method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
+            bodyData: {
+                ...invoiceInfo,
+                Product_Array: invoiceProducts,
+                Staffs_Array: staffArray
+            }
+        }).then(data => {
+            if (data.success) {
+                clearValues();
+                toast.success(data.message);
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
+
+    console.log(invoiceProducts)
+
     return (
         <>
+
+            <AddItemToSaleOrderCart
+                orderProducts={invoiceProducts}
+                setOrderProducts={setInvoiceProduct}
+                open={dialog.addProductDialog}
+                onClose={() => {
+                    setDialog(pre => ({ ...pre, addProductDialog: false }))
+                    setSelectedProductToEdit(null);
+                }}
+                products={baseData.products}
+                brands={baseData.brand}
+                uom={baseData.uom}
+                godowns={baseData.godown}
+                GST_Inclusive={invoiceInfo.GST_Inclusive}
+                IS_IGST={IS_IGST}
+                editValues={selectedProductToEdit}
+                initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
+            />
+
             <form onSubmit={e => {
                 e.preventDefault();
-
+                saveSalesInvoice();
             }}>
                 <Card>
                     <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
@@ -196,20 +291,62 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             ButtonArea={
                                 <>
                                     <Button
-                                        variant="outlined"
-                                        disabled={!checkIsNumber(invoiceInfo.Retailer_Id)}
+                                        onClick={() => {
+                                            setSelectedProductToEdit(null);
+                                            setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                        }}
+                                        sx={{ ml: 1 }}
+                                        variant='outlined'
                                         startIcon={<Add />}
+                                        disabled={
+                                            !checkIsNumber(invoiceInfo.Retailer_Id)
+                                            || (invoiceProducts.length > 0
+                                                && checkIsNumber(invoiceInfo.So_No))
+                                        }
                                     >Add Product</Button>
 
-                                    <Button
+                                    {/* <Button
                                         variant="outlined"
                                         className="me-2"
                                         disabled={!checkIsNumber(invoiceInfo.Retailer_Id)}
                                         startIcon={<ReceiptLong />}
-                                    >Choose Sale Order</Button>
+                                    >Choose Sale Order</Button> */}
+
+                                    <AddProductsInSalesInvoice
+                                        loadingOn={loadingOn}
+                                        loadingOff={loadingOff}
+                                        open={dialog.importFromSaleOrder}
+                                        onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
+                                        retailer={invoiceInfo?.Retailer_Id}
+                                        selectedItems={invoiceProducts}
+                                        setSelectedItems={setInvoiceProduct}
+                                        products={baseData.products}
+                                        GST_Inclusive={invoiceInfo.GST_Inclusive}
+                                        IS_IGST={IS_IGST}
+                                        setInvoiceInfo={setInvoiceInfo}
+                                    >
+                                        <Button
+                                            onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
+                                            disabled={
+                                                !checkIsNumber(invoiceInfo.Retailer_Id)
+                                                || (
+                                                    invoiceProducts.length > 0
+                                                    && !checkIsNumber(invoiceInfo.So_No)
+                                                )
+                                            }
+                                            sx={{ ml: 1 }}
+                                            variant='outlined'
+                                            startIcon={<ReceiptLong />}
+                                        >Choose Sale Order</Button>
+                                    </AddProductsInSalesInvoice>
                                 </>
                             }
-                            dataArray={invoiceProducts}
+                            dataArray={[
+                                ...invoiceProducts,
+                                ...Array.from({
+                                    length: dummyRowCount > 0 ? dummyRowCount : 0
+                                }).map(d => salesInvoiceDetailsInfo)
+                            ]}
                             columns={[
                                 createCol('Item_Name', 'string'),
                                 createCol('HSN_Code', 'string'),
@@ -224,7 +361,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         const taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
                                         const taxAmount = IS_IGST ? Igst_Amo : Addition(Cgst_Amo, Sgst_Amo);
 
-                                        return `${taxAmount} - (${taxPercentage} %)`
+                                        return !checkIsNumber(row?.Item_Id) ? '' : `${taxAmount} - (${taxPercentage} %)`
                                     }
                                 },
                                 {
@@ -236,6 +373,37 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     )?.Godown_Name ?? ''
                                 },
                                 createCol('Amount', 'number'),
+                                {
+                                    isCustomCell: true,
+                                    Cell: ({ row }) => {
+                                        return (
+                                            <>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedProductToEdit(row);
+                                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                                    }}
+                                                    size="small"
+                                                    disabled={!checkIsNumber(row?.Item_Id)}
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => setInvoiceProduct(
+                                                        pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id))
+                                                    )}
+                                                    color='error'
+                                                    disabled={!checkIsNumber(row?.Item_Id)}
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </>
+                                        )
+                                    },
+                                    ColumnHeader: 'Action',
+                                    isVisible: 1,
+                                },
                             ]}
                         />
 
