@@ -5,7 +5,7 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
-import { convertedStatus } from "../convertedStatus";
+import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -48,7 +48,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer?.value}&Sales_Person_Id=${filters?.SalesPerson?.value}&Created_by=${filters?.CreatedBy?.value}&VoucherType=${filters?.VoucherType?.value}&Cancel_status=${filters?.Cancel_status}`
+            address: `sales/salesInvoice?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer?.value}&Sales_Person_Id=${filters?.SalesPerson?.value}&Created_by=${filters?.CreatedBy?.value}&VoucherType=${filters?.VoucherType?.value}&Cancel_status=${filters?.Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSalesInvoice(data?.data)
@@ -56,9 +56,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e)).finally(() => {
             if (loadingOff) loadingOff();
         })
-    }, [
-        reload
-    ])
+    }, [reload])
 
     useEffect(() => {
 
@@ -176,10 +174,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                 dataArray={salesInvoice}
                 EnableSerialNumber
                 columns={[
-                    createCol('So_Date', 'date', 'Date'),
-                    createCol('So_Inv_No', 'string', 'ID'),
+                    createCol('Do_Date', 'date', 'Date'),
+                    createCol('Do_Inv_No', 'string', 'ID'),
                     createCol('Retailer_Name', 'string', 'Customer'),
-                    createCol('VoucherTypeGet', 'string', 'Voucher'),
+                    createCol('Voucher_Type', 'string', 'Voucher'),
                     createCol('Total_Before_Tax', 'number', 'Before Tax'),
                     createCol('Total_Tax', 'number', 'Tax'),
                     createCol('Total_Invoice_value', 'number', 'Invoice Value'),
@@ -189,10 +187,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                         align: 'center',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
+                            const convert = dbStatus.find(status => status.id === Number(row?.Cancel_status));
                             return (
                                 <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-                                    {convert?.label ?? 'Undefined'}
+                                    {convert?.label ?? ''}
                                 </span>
                             )
                         },

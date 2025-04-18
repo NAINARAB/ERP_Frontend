@@ -22,6 +22,7 @@ import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
 import SalesInvoiceTaxDetails from "./taxDetails";
 import AddItemToSaleOrderCart from "../SaleOrder/addItemToCart";
 import AddProductsInSalesInvoice from "./importFromSaleOrder";
+import ExpencesOfSalesInvoice from "./manageExpences";
 
 
 const storage = getSessionUser().user;
@@ -41,12 +42,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         staff: [],
         staffType: [],
         brand: [],
-        godown: []
+        godown: [],
+        expence: [],
     });
 
     const [dialog, setDialog] = useState({
         addProductDialog: false,
-        importFromSaleOrder: false
+        importFromSaleOrder: false,
     })
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo)
@@ -76,6 +78,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffResponse,
                     staffCategory,
                     godownLocationsResponse,
+                    expenceResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -85,6 +88,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
+                    fetchLink({ address: `masters/expences` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -111,6 +115,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
                     (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
                 );
+                const expencesMaster = (expenceResponse.success ? expenceResponse.data : []).sort(
+                    (a, b) => String(a?.Expence_Name).localeCompare(b?.Expence_Name)
+                );
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -122,7 +129,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staff: staffData,
                     staffType: staffCategoryData,
                     godown: godownLocations,
-                    brand: getUniqueData(productsData, 'Brand', ['Brand_Name'])
+                    brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
+                    expence: expencesMaster
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -147,7 +155,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
             return exist.map(item => {
                 return Object.fromEntries(
-                    Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                    Object.entries(item).map(([key, value]) => {
                         const productMaster = findProductDetails(baseData.products, item?.Item_Id);
                         const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                         const isTaxable = gstPercentage > 0;
@@ -183,11 +191,40 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             })
         });
     }, [
-        salesInvoiceDetailsInfo,
         baseData.products,
         IS_IGST,
         taxType,
     ]);
+
+    useEffect(() => {
+        setInvoiceExpences(pre => {
+            const exist = [...pre];
+
+            return exist.map(item => {
+                const
+                    Igst = IS_IGST ? toNumber(item?.Igst) : 0,
+                    Cgst = !IS_IGST ? toNumber(item?.Cgst) : 0,
+                    Sgst = !IS_IGST ? toNumber(item?.Sgst) : 0,
+                    Expence_Value = toNumber(item?.Expence_Value),
+                    taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
+
+                const taxAmount = calculateGSTDetails(Expence_Value, taxPercentage, taxType);
+
+                return {
+                    ...item,
+                    Cgst, Sgst, Igst,
+                    Expence_Value,
+                    Cgst_Amo: Cgst > 0 ? taxAmount.cgst_amount : 0,
+                    Sgst_Amo: Sgst > 0 ? taxAmount.sgst_amount : 0,
+                    Igst_Amo: Igst > 0 ? taxAmount.igst_amount : 0,
+                }
+            })
+        })
+    }, [
+        baseData.expence,
+        IS_IGST,
+        taxType,
+    ])
 
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
@@ -209,8 +246,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             if (loadingOff) loadingOff();
         })
     }
-
-    console.log(invoiceProducts)
 
     return (
         <>
@@ -405,6 +440,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     isVisible: 1,
                                 },
                             ]}
+                        />
+
+                        <br />
+
+                        <ExpencesOfSalesInvoice
+                            invoiceExpences={invoiceExpences}
+                            setInvoiceExpences={setInvoiceExpences}
+                            expenceMaster={baseData.expence}
+                            IS_IGST={IS_IGST}
+                            taxType={taxType}
                         />
 
                         <br />

@@ -96,7 +96,13 @@ export const salesInvoiceExpencesInfo = {
     Do_Id: '',
     Sno: '',
     Expence_Id: '',
-    Expence_Value: '',
+    Cgst: 0,
+    Cgst_Amo: 0,
+    Sgst: 0,
+    Sgst_Amo: 0,
+    Igst: 0,
+    Igst_Amo: 0,
+    Expence_Value: 0
 }
 
 
