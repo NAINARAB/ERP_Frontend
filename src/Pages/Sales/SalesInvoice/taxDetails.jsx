@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Addition, isEqualNumber, NumberFormat, numberToWords, RoundNumber } from "../../../Components/functions";
+import { Addition, isEqualNumber, NumberFormat, numberToWords, RoundNumber, toArray } from "../../../Components/functions";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 
 
@@ -12,8 +12,12 @@ const SalesInvoiceTaxDetails = ({
     isNotTaxableBill,
     isInclusive,
     IS_IGST,
-    products = []
+    products = [],
 }) => {
+
+    const invExpencesTotal = useMemo(() => {
+        return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    }, [invoiceExpences]);
 
     const Total_Invoice_value = useMemo(() => {
         const invValue = invoiceProducts.reduce((acc, item) => {
@@ -31,13 +35,11 @@ const SalesInvoiceTaxDetails = ({
             }
         }, 0);
 
-        const invExpences = invoiceExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0);
-
-        return Addition(invValue, invExpences);
-    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive])
+        return Addition(invValue, invExpencesTotal);
+    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invExpencesTotal])
 
     const totalValueBeforeTax = useMemo(() => {
-        return invoiceProducts.reduce((acc, item) => {
+        const productTax = invoiceProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return {
@@ -59,14 +61,24 @@ const SalesInvoiceTaxDetails = ({
             TotalValue: 0,
             TotalTax: 0
         });
-    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive])
+
+        const invoiceExpencesTaxTotal = toArray(invoiceExpences).reduce((acc, exp) => Addition(
+            acc, 
+            IS_IGST ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
+        ), 0);
+
+        return {
+            TotalValue: productTax.TotalValue,
+            TotalTax: Addition(productTax.TotalTax, invoiceExpencesTaxTotal),
+        }
+    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invoiceExpences])
 
     return (
         <>
             <table className="table">
                 <tbody>
                     <tr>
-                        <td className="border p-2" rowSpan={IS_IGST ? 4 : 5}>
+                        <td className="border p-2" rowSpan={IS_IGST ? 5 : 6}>
                             Total in words: {numberToWords(parseInt(Total_Invoice_value))}
                         </td>
                         <td className="border p-2">Total Taxable Amount</td>
@@ -97,6 +109,12 @@ const SalesInvoiceTaxDetails = ({
                             </td>
                         </tr>
                     )}
+                    <tr>
+                        <td className="border p-2">Total Expences</td>
+                        <td className="border p-2">
+                            {RoundNumber(invExpencesTotal)}
+                        </td>
+                    </tr>
                     <tr>
                         <td className="border p-2">Round Off</td>
                         <td className="border p-2">

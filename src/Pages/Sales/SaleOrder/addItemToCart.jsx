@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, RoundNumber } from "../../../Components/functions";
-import { customSelectStyles } from "../../../Components/tablecolumn";
+import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, RoundNumber, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
-import { toast } from "react-toastify";
 import Select from "react-select";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import { toast } from "react-toastify";
+import { validStockValue } from "../SalesInvoice/importFromSaleOrder";
 
 const AddItemToSaleOrderCart = ({
     children,
@@ -21,7 +22,8 @@ const AddItemToSaleOrderCart = ({
     GST_Inclusive,
     IS_IGST,
     editValues = null,
-    initialValue = {}
+    initialValue = {},
+    stockInGodown = [],
 }) => {
 
     const [productDetails, setProductDetails] = useState(initialValue);
@@ -114,7 +116,7 @@ const AddItemToSaleOrderCart = ({
                         <div className="row pb-5">
 
                             {/* brand */}
-                            <div className="col-6 p-2">
+                            {/* <div className="col-6 p-2">
                                 <label>Brand</label>
                                 <Select
                                     value={{ value: productDetails.BrandID, label: productDetails.Brand }}
@@ -129,7 +131,29 @@ const AddItemToSaleOrderCart = ({
                                     placeholder={"Select Brand"}
                                     maxMenuHeight={200}
                                 />
-                            </div>
+                            </div> */}
+
+                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
+                                <div className="col-md-6 p-2">
+                                    <label>Godown</label>
+                                    <Select
+                                        value={{
+                                            value: productDetails?.GoDown_Id,
+                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
+                                        }}
+                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
+                                        options={[
+                                            { value: '', label: 'select', isDisabled: true },
+                                            ...godowns.map(obj => ({ value: obj?.Godown_Id, label: obj?.Godown_Name }))
+                                        ]}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                        isSearchable={true}
+                                        placeholder={"Select Godown"}
+                                        maxMenuHeight={200}
+                                    />
+                                </div>
+                            )}
 
                             {/* group */}
                             <div className="col-6 p-2">
@@ -174,9 +198,16 @@ const AddItemToSaleOrderCart = ({
                                 <Select
                                     value={{
                                         value: productDetails.Item_Id,
-                                        label: findProductDetails(productDetails.Item_Id)?.Product_Name
+                                        label: (
+                                            findProductDetails(productDetails.Item_Id)?.Product_Name
+                                        )
                                     }}
-                                    isDisabled={checkIsNumber(productDetails.Pre_Id)}
+                                    isDisabled={
+                                        checkIsNumber(productDetails.Pre_Id) || (
+                                            Object.hasOwn(productDetails, 'GoDown_Id')
+                                            && !checkIsNumber(productDetails?.GoDown_Id)
+                                        )
+                                    }
                                     menuPortalTarget={document.body}
                                     onChange={e => {
                                         const productInfo = findProductDetails(e.value);
@@ -205,7 +236,20 @@ const AddItemToSaleOrderCart = ({
                                                 .filter(pro => productDetails.GroupID ? isEqualNumber(pro.Product_Group, productDetails.GroupID) : true)
                                         ].map(obj => ({
                                             value: obj?.Product_Id,
-                                            label: obj?.Product_Name,
+                                            label: (() => {
+                                                const showBalance =
+                                                    Object.hasOwn(productDetails, 'GoDown_Id') &&
+                                                    checkIsNumber(productDetails?.GoDown_Id); 
+                                                    const balanceText = showBalance
+                                                    ? ` (Bal: ${validStockValue(
+                                                        obj?.Product_Id,
+                                                        productDetails.GoDown_Id,
+                                                        stockInGodown
+                                                    )})`
+                                                    : '';
+                                                    
+                                                return `${obj?.Product_Name || ''}${balanceText}`;
+                                            })(),                                            
                                             isDisabled: (
                                                 orderProducts.findIndex(ind => isEqualNumber(
                                                     ind?.Item_Id, obj?.Product_Id
@@ -228,6 +272,7 @@ const AddItemToSaleOrderCart = ({
                                     required
                                     value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
                                     onInput={onlynum}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
                                         if (productDetails.Item_Rate) {
                                             setProductDetails(pre => ({
@@ -259,6 +304,7 @@ const AddItemToSaleOrderCart = ({
                                 <input
                                     value={productDetails.Item_Rate ? productDetails.Item_Rate : ''}
                                     onInput={onlynum}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => setProductDetails(pre => ({
                                         ...pre,
                                         Item_Rate: e.target.value,
@@ -281,6 +327,7 @@ const AddItemToSaleOrderCart = ({
                                         setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
                                     }}
                                     className="cus-inpt"
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
                                 >
                                     <option value="" disabled>select</option>
                                     {uom.map((o, i) => (
@@ -296,6 +343,7 @@ const AddItemToSaleOrderCart = ({
                                     required
                                     value={productDetails.Amount ? productDetails.Amount : ''}
                                     onInput={onlynum}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => setProductDetails(pre => ({
                                         ...pre,
                                         Amount: e.target.value,
@@ -305,28 +353,6 @@ const AddItemToSaleOrderCart = ({
                                     min={1}
                                 />
                             </div>
-
-                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
-                                <div className="col-md-6 p-2">
-                                    <label>Godown</label>
-                                    <Select
-                                        value={{ 
-                                            value: productDetails?.GoDown_Id, 
-                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
-                                        }}
-                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
-                                        options={[
-                                            { value: '', label: 'select', isDisabled: true },
-                                            ...godowns.map(obj => ({ value: obj?.Godown_Id, label: obj?.Godown_Name }))
-                                        ]}
-                                        styles={customSelectStyles}
-                                        menuPortalTarget={document.body}
-                                        isSearchable={true}
-                                        placeholder={"Select Godown"}
-                                        maxMenuHeight={200}
-                                    />
-                                </div>
-                            )}
 
                         </div>
 

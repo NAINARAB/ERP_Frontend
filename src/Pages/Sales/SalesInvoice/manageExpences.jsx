@@ -270,7 +270,7 @@ const ExpencesOfSalesInvoice = ({
             <Card >
                 <div className="d-flex align-items-center justify-content-between flex-wrap px-3 py-2">
                     <h5 className="m-0">Expenses</h5>
-                    <Button variant="outlined" onClick={addNewRow}>Add</Button>
+                    <Button variant="outlined" type="button" onClick={addNewRow}>Add</Button>
                 </div>
                 <div className="table-responsive">
 
@@ -325,7 +325,7 @@ const ExpencesOfSalesInvoice = ({
                                             onChange={e => handleInputChange(index, 'Expence_Value', e.target.value)}
                                         />
                                     </td>
-                                    <td className="p-0 vctr">
+                                    <td className="p-0 vctr  text-center ">
                                         <IconButton onClick={() => removeRow(index)} size="small">
                                             <Delete color="error" fontSize="small" />
                                         </IconButton>

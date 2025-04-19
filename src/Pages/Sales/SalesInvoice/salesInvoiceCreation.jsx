@@ -44,6 +44,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         brand: [],
         godown: [],
         expence: [],
+        stockInGodown: []
     });
 
     const [dialog, setDialog] = useState({
@@ -78,7 +79,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffResponse,
                     staffCategory,
                     godownLocationsResponse,
-                    expenceResponse
+                    expenceResponse,
+                    godownWiseStock
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -89,6 +91,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `masters/expences` }),
+                    fetchLink({ address: `sales/stockInGodown` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -118,6 +121,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 const expencesMaster = (expenceResponse.success ? expenceResponse.data : []).sort(
                     (a, b) => String(a?.Expence_Name).localeCompare(b?.Expence_Name)
                 );
+                const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
+                    (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
+                );
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -130,7 +136,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffType: staffCategoryData,
                     godown: godownLocations,
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
-                    expence: expencesMaster
+                    expence: expencesMaster,
+                    stockInGodown: stockInGodowns
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -266,6 +273,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
                 initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
+                stockInGodown={baseData.stockInGodown}
             />
 
             <form onSubmit={e => {
@@ -332,6 +340,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         }}
                                         sx={{ ml: 1 }}
                                         variant='outlined'
+                                        type="button"
                                         startIcon={<Add />}
                                         disabled={
                                             !checkIsNumber(invoiceInfo.Retailer_Id)
@@ -359,6 +368,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         GST_Inclusive={invoiceInfo.GST_Inclusive}
                                         IS_IGST={IS_IGST}
                                         setInvoiceInfo={setInvoiceInfo}
+                                        godowns={baseData.godown}
+                                        stockInGodown={baseData.stockInGodown}
                                     >
                                         <Button
                                             onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
@@ -370,6 +381,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                                 )
                                             }
                                             sx={{ ml: 1 }}
+                                            type="button"
                                             variant='outlined'
                                             startIcon={<ReceiptLong />}
                                         >Choose Sale Order</Button>
@@ -419,12 +431,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                                         setDialog(pre => ({ ...pre, addProductDialog: true }));
                                                     }}
                                                     size="small"
+                                                    type="button"
                                                     disabled={!checkIsNumber(row?.Item_Id)}
                                                 >
                                                     <Edit />
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
+                                                    type="button"
                                                     onClick={() => setInvoiceProduct(
                                                         pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id))
                                                     )}

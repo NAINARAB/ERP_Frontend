@@ -5,6 +5,28 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
 import { salesInvoiceDetailsInfo } from "./variable";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
+import Select from "react-select";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+
+const validStockValue = (Item_Id, Godown_Id, stockInGodown) => {
+    const godownStockValue = toArray(stockInGodown).find(
+        godownItem => (
+            isEqualNumber(godownItem?.Product_Id, Item_Id) &&
+            isEqualNumber(godownItem?.Godown_Id, Godown_Id)
+        )
+    )?.Bal_Qty;
+
+    if (
+        godownStockValue === null ||
+        godownStockValue === undefined ||
+        Number.isNaN(godownStockValue) ||
+        godownStockValue == 0
+    ) {
+        return 0;
+    }
+
+    return godownStockValue;
+};
 
 const AddProductsInSalesInvoice = ({
     loadingOn,
@@ -18,7 +40,9 @@ const AddProductsInSalesInvoice = ({
     products = [],
     GST_Inclusive,
     IS_IGST,
-    setInvoiceInfo
+    setInvoiceInfo,
+    godowns = [],
+    stockInGodown = [],
 }) => {
 
     const isInclusive = isEqualNumber(GST_Inclusive, 1);
@@ -30,7 +54,8 @@ const AddProductsInSalesInvoice = ({
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
-        search: false
+        search: false,
+        Godown: { value: '', label: 'Select Godown For Stock Details' }
     })
 
     useEffect(() => {
@@ -61,8 +86,7 @@ const AddProductsInSalesInvoice = ({
                         const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                         const isTaxable = gstPercentage > 0;
 
-                        const { Item_Rate, Bill_Qty, Tonnage, PackValue } = cur;
-                        const Amount = Multiplication(Item_Rate, Multiplication(Bill_Qty, PackValue))
+                        const { Item_Rate, Bill_Qty, Amount } = cur;
 
                         const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
                         const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
@@ -79,9 +103,9 @@ const AddProductsInSalesInvoice = ({
                             case 'Item_Name': return [key, productMaster?.Product_Name ?? value];
                             case 'Item_Rate': return [key, toNumber(Item_Rate)];
 
-                            case 'Bill_Qty': return [key, toNumber(Tonnage)];
-                            case 'Act_Qty': return [key, toNumber(Tonnage)];
-                            case 'Alt_Act_Qty': return [key, toNumber(Tonnage)];
+                            case 'Bill_Qty': return [key, toNumber(Bill_Qty)];
+                            case 'Act_Qty': return [key, toNumber(Bill_Qty)];
+                            case 'Alt_Act_Qty': return [key, toNumber(Bill_Qty)];
 
                             case 'Amount': return [key, Amount];
                             case 'HSN_Code': return [key, productMaster.HSN_Code ?? value];
@@ -92,7 +116,7 @@ const AddProductsInSalesInvoice = ({
                             case 'Unit_Name': return [key, cur['Units'] ?? value];
 
                             case 'Taxable_Rate': return [key, itemRateGst.base_amount]
-                            case 'Total_Qty': return [key, toNumber(Tonnage)]
+                            case 'Total_Qty': return [key, toNumber(Bill_Qty)]
                             case 'Taxble': return [key, isTaxable ? 1 : 0]
                             case 'Taxable_Amount': return [key, gstInfo.base_amount]
                             case 'Tax_Rate': return [key, gstPercentage]
@@ -110,7 +134,7 @@ const AddProductsInSalesInvoice = ({
                 )
             ))
         );
-        
+
         closeDialog();
     }
 
@@ -141,39 +165,53 @@ const AddProductsInSalesInvoice = ({
                 </DialogTitle>
                 <DialogContent>
 
-                    <form onSubmit={e => {
-                        e.preventDefault();
-                        setFilters(pre => ({ ...pre, search: !pre.search }))
-                    }}>
-                        <div className="d-flex flex-wrap align-items-end">
-                            <div>
-                                <label className='d-block ms-2'>From Date</label>
-                                <input
-                                    className="cus-inpt p-2 w-auto"
-                                    type="date"
-                                    value={filters?.Fromdate}
-                                    onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className='d-block ms-2'>To Date</label>
-                                <input
-                                    className="cus-inpt p-2 w-auto ms-2"
-                                    type="date"
-                                    min={filters.Fromdate}
-                                    value={filters?.Todate}
-                                    onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
-                                    required
-                                />
-                            </div>
+                    <div className="d-flex flex-wrap align-items-end">
+                        <div className="p-2">
+                            <label className='d-block ms-2'>From Date</label>
+                            <input
+                                className="cus-inpt p-2 w-auto"
+                                type="date"
+                                value={filters?.Fromdate}
+                                onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <div className="p-2">
+                            <label className='d-block ms-2'>To Date</label>
+                            <input
+                                className="cus-inpt p-2 w-auto"
+                                type="date"
+                                min={filters.Fromdate}
+                                value={filters?.Todate}
+                                onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <div style={{ minWidth: '170px', maxWidth: '100%' }} className="p-2">
+                            <label className='d-block ms-2'>Godown</label>
+                            <Select
+                                value={filters.Godown}
+                                onChange={e => setFilters(pre => ({ ...pre, Godown: e }))}
+                                options={[
+                                    { value: '', label: 'select', isDisabled: true },
+                                    ...toArray(godowns).map(obj => ({ value: obj?.Godown_Id, label: obj?.Godown_Name }))
+                                ]}
+                                styles={customSelectStyles}
+                                menuPortalTarget={document.body}
+                                isSearchable={true}
+                                placeholder={"Select Godown"}
+                                maxMenuHeight={200}
+                            />
+                        </div>
+                        <div className="p-2">
                             <Button
                                 variant="outlined"
-                                className="ms-2"
-                                type="submit"
+                                type="button"
+                                onClick={() => setFilters(pre => ({ ...pre, search: !pre.search }))}
                             >search</Button>
                         </div>
-                    </form>
+                    </div>
+
                     <br />
 
                     {saleOrders.map((invoice, ind) => {
@@ -223,7 +261,12 @@ const AddProductsInSalesInvoice = ({
                                                     <tr key={item.SO_St_Id}>
                                                         <td>{index + 1}</td>
                                                         <td>{item.Product_Name}</td>
-                                                        <td>{item.Bill_Qty}</td>
+                                                        <td>
+                                                            {item.Bill_Qty}
+                                                            {checkIsNumber(filters.Godown.value) && (
+                                                                ' (Bal: ' + validStockValue(item.Item_Id, filters.Godown.value, stockInGodown) + ') '
+                                                            )}
+                                                        </td>
                                                         <td>₹{item.Item_Rate}</td>
                                                         <td>₹{item.Amount}</td>
                                                         <td>{item.Tax_Rate}%</td>
@@ -250,3 +293,6 @@ const AddProductsInSalesInvoice = ({
 }
 
 export default AddProductsInSalesInvoice;
+export {
+    validStockValue,
+}
