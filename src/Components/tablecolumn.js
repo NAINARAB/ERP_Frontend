@@ -34,7 +34,27 @@ export const customSelectStyles = {
         ...provided,
         zIndex: 9999,
     }),
-    menuPortal: base => ({ ...base, zIndex: 9999 })
+    menuPortal: base => ({ ...base, zIndex: 9999 }),
+    groupHeading: (base) => ({
+        ...base,
+        backgroundColor: '#f5f5f5',
+        color: '#333',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        padding: '8px 12px',
+        borderBottom: '1px solid #ddd',
+        textTransform: 'uppercase',
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected
+            ? '#2684FF'
+            : state.isFocused
+            ? '#E2ECF9'
+            : 'white',
+        color: state.isSelected ? 'white' : '#333',
+        padding: '10px 12px',
+    }),
 };
 
 export const customSelectStyles2 = {

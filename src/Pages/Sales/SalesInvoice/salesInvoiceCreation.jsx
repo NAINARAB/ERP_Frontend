@@ -9,7 +9,8 @@ import {
     RoundNumber, Addition,
     getSessionUser,
     checkIsNumber,
-    toNumber
+    toNumber,
+    toArray
 } from "../../../Components/functions";
 import { Add, ArrowLeft, Clear, Delete, Download, Edit, ReceiptLong, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -233,6 +234,44 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         taxType,
     ])
 
+    useEffect(() => {
+        if (
+            isValidObject(editValues) &&
+            Array.isArray(editValues?.Products_List)
+        ) {
+            const { Products_List, Expence_Array, Staffs_Array } = editValues;
+            setInvoiceInfo(
+                Object.fromEntries(
+                    Object.entries(salesInvoiceGeneralInfo).map(([key, value]) => {
+                        if (key === 'Do_Date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        return [key, editValues[key] ?? value]
+                    })
+                )
+            );
+            setInvoiceProduct(
+                Products_List.map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            );
+            setInvoiceExpences(
+                toArray(Expence_Array).map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            );
+            setStaffArray(
+                toArray(Staffs_Array).map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            );
+        }
+    }, [editValues])
+
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
 
@@ -242,12 +281,15 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             bodyData: {
                 ...invoiceInfo,
                 Product_Array: invoiceProducts,
-                Staffs_Array: staffArray
+                Staffs_Array: staffArray,
+                Expence_Array: invoiceExpences
             }
         }).then(data => {
             if (data.success) {
                 clearValues();
                 toast.success(data.message);
+            } else {
+                toast.warn(data.message)
             }
         }).catch(e => console.error(e)).finally(() => {
             if (loadingOff) loadingOff();
@@ -276,10 +318,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 stockInGodown={baseData.stockInGodown}
             />
 
-            <form onSubmit={e => {
+            {/* <form onSubmit={e => {
                 e.preventDefault();
                 saveSalesInvoice();
-            }}>
+            }}> */}
                 <Card>
                     <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
                         <span className="flex-grow-1 fa-16 fw-bold">Sales Invoice</span>
@@ -291,7 +333,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     navigate(location.pathname, { replace: true, state: null });
                                 }
                             }}>Cancel</Button>
-                            <Button type='submit' variant="contained">submit</Button>
+                            <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
                         </span>
                     </div>
                     <CardContent>
@@ -367,6 +409,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         products={baseData.products}
                                         GST_Inclusive={invoiceInfo.GST_Inclusive}
                                         IS_IGST={IS_IGST}
+                                        invoiceInfo={invoiceInfo}
                                         setInvoiceInfo={setInvoiceInfo}
                                         godowns={baseData.godown}
                                         stockInGodown={baseData.stockInGodown}
@@ -478,7 +521,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         />
                     </CardContent>
                 </Card>
-            </form>
+            {/* </form> */}
         </>
     )
 }

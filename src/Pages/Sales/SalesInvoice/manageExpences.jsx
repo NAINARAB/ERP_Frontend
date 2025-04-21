@@ -73,7 +73,7 @@ const ExpencesOfSalesInvoice = ({
                 if (i !== index) return item;
                 return {
                     ...item,
-                    Expence_Id: selected.Id,
+                    Expense_Id: selected.Id,
                     Cgst: IS_IGST ? 0 : toNumber(selected.Cgst_p),
                     Sgst: IS_IGST ? 0 : toNumber(selected.Sgst_p),
                     Igst: IS_IGST ? toNumber(selected.Igst_p) : 0,
@@ -96,177 +96,6 @@ const ExpencesOfSalesInvoice = ({
 
     return (
         <>
-            {/* <FilterableTable
-                title="Expences"
-                headerFontSizePx={13}
-                bodyFontSizePx={13}
-                EnableSerialNumber
-                ButtonArea={
-                    <>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setInvoiceExpences(
-                                pre => [...pre, { ...salesInvoiceExpencesInfo, Sno: invoiceExpences.length }]
-                            )}
-                        >Add</Button>
-                    </>
-                }
-                dataArray={invoiceExpences}
-                columns={[
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Expence',
-                        isCustomCell: true,
-                        Cell: ({ row, Field_Name, index }) => (
-                            <div style={{ minWidth: '160px' }}>
-                                <Select
-                                    value={{
-                                        value: row?.Expence_Id,
-                                        label: expenceMaster.find(
-                                            exp => isEqualNumber(exp.Id, row?.Expence_Id)
-                                        )?.Expence_Name || '',
-                                    }}
-                                    onChange={e => setInvoiceExpences(prev => {
-
-                                        const expenceDetails = expenceMaster.find(
-                                            exp => isEqualNumber(exp?.Id, e.value)
-                                        ) || {};
-
-                                        return prev.map((expRow, expInd) => {
-                                            if (isEqualNumber(expInd, index)) {
-                                                return {
-                                                    ...expRow,
-                                                    Expence_Id: Number(e.value),
-                                                    Cgst: IS_IGST ? 0 : toNumber(expenceDetails?.Cgst_p),
-                                                    Sgst: IS_IGST ? 0 : toNumber(expenceDetails?.Sgst_p),
-                                                    Igst: IS_IGST ? toNumber(expenceDetails?.Igst_p) : 0,
-                                                    Cgst_Amo: 0, Sgst_Amo: 0, Igst_Amo: 0, Expence_Value: 0
-                                                }
-                                            }
-                                            return expRow;
-                                        });
-
-                                    })}
-                                    options={
-                                        [...toArray(expenceMaster).filter(fil => (
-                                            !invoiceExpences.some(exp => (
-                                                isEqualNumber(exp?.Expence_Id, fil?.Id)
-                                            ))
-                                        ))].map(exp => ({
-                                            value: exp.Id,
-                                            label: exp.Expence_Name
-                                        }))
-                                    }
-                                    styles={customSelectStyles}
-                                    menuPortalTarget={document.body}
-                                    isSearchable={true}
-                                    placeholder={"Select Expence Name"}
-                                />
-                            </div>
-                        )
-                    },
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Gst %',
-                        isCustomCell: true,
-                        Cell: ({ row, Field_Name, index }) => {
-                            const GST_P = 0;
-
-                            return (
-                                <input
-                                    value={toNumber(row?.Igst) || ''}
-                                    className="cus-inpt p-2"
-                                    disabled={!checkIsNumber(row?.Expence_Id)}
-                                    onChange={e => setInvoiceExpences(prev => {
-                                        const enteredValue = e.target.value;
-                                        const Expence_Value = toNumber(row?.Expence_Value);
-                                        const Cgst = Division(enteredValue / 2);
-                                        const Sgst = Division(enteredValue / 2);
-                                        const Igst = enteredValue;
-
-                                        return prev.map((expRow, expInd) => {
-                                            if (isEqualNumber(expInd, index)) {
-                                                return {
-                                                    ...expRow,
-                                                    Cgst: Cgst,
-                                                    Sgst: Sgst,
-                                                    Igst: Igst,
-                                                    Cgst_Amo: checkIsNumber(row?.Cgst)
-                                                        ? calculateGSTDetails(Expence_Value, Cgst, taxType).cgst_amount
-                                                        : 0,
-                                                    Sgst_Amo: checkIsNumber(row?.Sgst)
-                                                        ? calculateGSTDetails(Expence_Value, Sgst, taxType).sgst_amount
-                                                        : 0,
-                                                    Igst_Amo: checkIsNumber(row?.Igst)
-                                                        ? calculateGSTDetails(Expence_Value, Igst, taxType).igst_amount
-                                                        : 0,
-                                                }
-                                            }
-                                            return expRow;
-                                        });
-
-                                    })}
-                                />
-                            )
-                        }
-                    },
-                    createCol('Igst_Amo', 'number', 'Tax'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Expence',
-                        isCustomCell: true,
-                        Cell: ({ row, Field_Name, index }) => (
-                            <input
-                                value={toNumber(row?.Expence_Value) || ''}
-                                className="cus-inpt p-2"
-                                disabled={!checkIsNumber(row?.Expence_Id)}
-                                onChange={e => setInvoiceExpences(prev => {
-
-                                    return prev.map((expRow, expInd) => {
-                                        if (isEqualNumber(expInd, index)) {
-                                            const enterdValue = e.target.value;
-
-                                            return {
-                                                ...expRow,
-                                                Expence_Value: enterdValue,
-                                                Cgst_Amo: checkIsNumber(row?.Cgst)
-                                                    ? calculateGSTDetails(enterdValue, row?.Cgst, taxType).cgst_amount
-                                                    : 0,
-                                                Sgst_Amo: checkIsNumber(row?.Sgst)
-                                                    ? calculateGSTDetails(enterdValue, row?.Sgst, taxType).sgst_amount
-                                                    : 0,
-                                                Igst_Amo: checkIsNumber(row?.Igst)
-                                                    ? calculateGSTDetails(enterdValue, row?.Igst, taxType).igst_amount
-                                                    : 0,
-                                            }
-                                        }
-                                        return expRow;
-                                    });
-
-                                })}
-                            />
-                        )
-                    },
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Action',
-                        isCustomCell: true,
-                        Cell: ({ row, Field_Name, index }) => (
-                            <IconButton
-                                onClick={() => {
-                                    setInvoiceExpences(prev => {
-                                        return prev.filter((_, filIndex) => index !== filIndex);
-                                    });
-                                }}
-                                size='small'
-                            >
-                                <Delete color='error' />
-                            </IconButton>
-                        )
-                    },
-                ]}
-            /> */}
-
             <Card >
                 <div className="d-flex align-items-center justify-content-between flex-wrap px-3 py-2">
                     <h5 className="m-0">Expenses</h5>
@@ -289,14 +118,14 @@ const ExpencesOfSalesInvoice = ({
                                     <td className="p-0 vctr" style={{ minWidth: '180px' }}>
                                         <Select
                                             value={{
-                                                value: row?.Expence_Id,
+                                                value: row?.Expense_Id,
                                                 label: expenceMaster.find(
-                                                    exp => isEqualNumber(exp.Id, row?.Expence_Id)
+                                                    exp => isEqualNumber(exp.Id, row?.Expense_Id)
                                                 )?.Expence_Name || '',
                                             }}
                                             onChange={e => handleSelectChange(index, e)}
                                             options={expenceMaster
-                                                .filter(exp => !invoiceExpences.some(inv => inv.Expence_Id === exp.Id))
+                                                .filter(exp => !invoiceExpences.some(inv => inv.Expense_Id === exp.Id))
                                                 .map(exp => ({ value: exp.Id, label: exp.Expence_Name }))
                                             }
                                             menuPortalTarget={document.body}
@@ -309,7 +138,7 @@ const ExpencesOfSalesInvoice = ({
                                             onInput={onlynum}
                                             className="cus-inpt p-2 border-0"
                                             value={(IS_IGST ? toNumber(row.Igst) : Addition(row?.Cgst, row?.Sgst)) || ''}
-                                            disabled={!checkIsNumber(row.Expence_Id)}
+                                            disabled={!checkIsNumber(row.Expense_Id)}
                                             onChange={e => handleInputChange(index, 'Igst', e.target.value)}
                                         />
                                     </td>
@@ -321,7 +150,7 @@ const ExpencesOfSalesInvoice = ({
                                             onInput={onlynum}
                                             className="cus-inpt p-2 border-0"
                                             value={toNumber(row.Expence_Value) || ''}
-                                            disabled={!checkIsNumber(row.Expence_Id)}
+                                            disabled={!checkIsNumber(row.Expense_Id)}
                                             onChange={e => handleInputChange(index, 'Expence_Value', e.target.value)}
                                         />
                                     </td>

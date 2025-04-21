@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { checkIsNumber, Division, isEqualNumber, ISOString, LocalDate, Multiplication, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber } from "../../../Components/functions";
 import { Button, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
@@ -40,6 +40,7 @@ const AddProductsInSalesInvoice = ({
     products = [],
     GST_Inclusive,
     IS_IGST,
+    invoiceInfo = {},
     setInvoiceInfo,
     godowns = [],
     stockInGodown = [],
@@ -56,7 +57,7 @@ const AddProductsInSalesInvoice = ({
         Todate: ISOString(),
         search: false,
         Godown: { value: '', label: 'Select Godown For Stock Details' }
-    })
+    });
 
     useEffect(() => {
         if (checkIsNumber(retailer) && open) {
@@ -73,12 +74,19 @@ const AddProductsInSalesInvoice = ({
         }
     }, [filters.search])
 
-    const changeSelectedItems = (itemDetail) => {
+    const changeSelectedItems = (itemDetail, godownDetails = {}, deleteRow) => {
+
+        if (deleteRow) {
+            setInvoiceInfo(pre => ({ ...pre, So_No: '' }));
+            setSelectedItems([])
+            return;
+        }
 
         setInvoiceInfo(pre => ({ ...pre, So_No: Number(itemDetail?.So_Id) }));
 
-        setSelectedItems(
-            toArray(itemDetail?.Products_List).map((cur, curIndex) => (
+        setSelectedItems(pre => {
+            const oldData = [...pre];
+            return toArray(itemDetail?.Products_List).map((cur, curIndex) => (
                 Object.fromEntries(
                     Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
 
@@ -114,6 +122,20 @@ const AddProductsInSalesInvoice = ({
                             case 'Act_unit_Id': return [key, cur['Unit_Id'] ?? value];
                             case 'Alt_Act_Unit_Id': return [key, cur['Unit_Id'] ?? value];
                             case 'Unit_Name': return [key, cur['Units'] ?? value];
+                            case 'GoDown_Id': {
+                                const isValidGodown = checkIsNumber(godownDetails?.Godown_Id);
+                                const isValidItem = checkIsNumber(godownDetails?.Item_Id);
+                                const isSameItem = isEqualNumber(cur?.Item_Id, godownDetails?.Item_Id);
+                                const oldGodown = oldData.find(
+                                    fndOld => isEqualNumber(fndOld.Item_Id, cur?.Item_Id)
+                                )?.GoDown_Id
+
+                                const newValue = (isValidGodown && isValidItem && isSameItem)
+                                    ? godownDetails.Godown_Id 
+                                    : checkIsNumber(oldGodown) ? oldGodown : value;
+
+                                return [key, newValue];
+                            }
 
                             case 'Taxable_Rate': return [key, itemRateGst.base_amount]
                             case 'Total_Qty': return [key, toNumber(Bill_Qty)]
@@ -133,9 +155,9 @@ const AddProductsInSalesInvoice = ({
                     })
                 )
             ))
-        );
+        });
 
-        closeDialog();
+        // closeDialog();
     }
 
     const closeDialog = () => {
@@ -187,7 +209,7 @@ const AddProductsInSalesInvoice = ({
                                 required
                             />
                         </div>
-                        <div style={{ minWidth: '170px', maxWidth: '100%' }} className="p-2">
+                        {/* <div style={{ minWidth: '170px', maxWidth: '100%' }} className="p-2">
                             <label className='d-block ms-2'>Godown</label>
                             <Select
                                 value={filters.Godown}
@@ -202,7 +224,7 @@ const AddProductsInSalesInvoice = ({
                                 placeholder={"Select Godown"}
                                 maxMenuHeight={200}
                             />
-                        </div>
+                        </div> */}
                         <div className="p-2">
                             <Button
                                 variant="outlined"
@@ -220,15 +242,35 @@ const AddProductsInSalesInvoice = ({
                             Sales_Person_Name, Total_Tax, Total_Invoice_value, Products_List
                         } = invoice;
 
+                        const isChecked = isEqualNumber(invoiceInfo?.So_No, invoice.So_Id)
+
                         return (
-                            <div className="container-fluid" key={ind} onClick={() => changeSelectedItems(invoice)}>
-                                <div className="invoice-card bg-white p-4 shadow-sm mb-4 border rounded hov">
+                            <div className="container-fluid" key={ind} >
+                                <div
+                                    className={`
+                                        invoice-card bg-white p-4 shadow-sm mb-4 border rounded  
+                                        ${isChecked ? ' border-primary ' : ''}
+                                        `
+                                    }
+                                >
                                     {/* Header */}
+                                    <h5 className="d-flex align-items-center flex-wrap">
+                                        <span className="me-2">
+                                            <input
+                                                className="form-check-input shadow-none pointer"
+                                                style={{ padding: '0.7em' }}
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => {
+                                                    if (isChecked) changeSelectedItems(invoice, null, true)
+                                                    else changeSelectedItems(invoice, null, false)
+                                                }}
+                                            />
+                                        </span>
+                                        <span>Invoice No: <span className="text-primary">{So_Inv_No}</span></span>
+                                    </h5>
                                     <div className="invoice-header d-flex justify-content-between flex-wrap border-bottom pb-3 mb-3">
                                         <div>
-                                            <h5>
-                                                Invoice No: <span className="text-primary">{So_Inv_No}</span>
-                                            </h5>
                                             <div><strong>Invoice Date:</strong> {LocalDate(So_Date)}</div>
                                             <div><strong>Voucher Type:</strong> {VoucherTypeGet}</div>
                                             <div><strong>Branch:</strong> {Branch_Name}</div>
@@ -247,13 +289,17 @@ const AddProductsInSalesInvoice = ({
                                         <table className="table table-bordered table-striped product-table">
                                             <thead className="table-light">
                                                 <tr>
-                                                    <th>#</th>
-                                                    <th>Product</th>
-                                                    <th>Qty</th>
-                                                    <th>Rate</th>
-                                                    <th>Amount</th>
-                                                    <th>Tax %</th>
-                                                    <th>Final Amount</th>
+                                                    {['#', 'Product', 'Qty', 'Rate', 'Amount', 'Tax %', 'Final Amount', 'Godown'].map(
+                                                        (o, i) => (
+                                                            <th
+                                                                key={i}
+                                                                style={{
+                                                                    minWidth: '150px',
+                                                                    maxWidth: '160px'
+                                                                }}
+                                                            >{o}</th>
+                                                        )
+                                                    )}
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -271,6 +317,74 @@ const AddProductsInSalesInvoice = ({
                                                         <td>₹{item.Amount}</td>
                                                         <td>{item.Tax_Rate}%</td>
                                                         <td>₹{item.Final_Amo}</td>
+                                                        <td>
+                                                            <select
+                                                                disabled={!isChecked}
+                                                                className="cus-inpt p-2"
+                                                                value={
+                                                                    toArray(godowns).find(
+                                                                        godFnd => toArray(selectedItems).find(
+                                                                            fnd => (
+                                                                                isEqualNumber(fnd.Item_Id, item?.Item_Id)
+                                                                                && isChecked
+                                                                                && isEqualNumber(godFnd?.Godown_Id, fnd?.GoDown_Id)
+                                                                            )
+                                                                        )
+                                                                    )?.Godown_Id
+                                                                }
+                                                                onChange={e => changeSelectedItems(
+                                                                    invoice,
+                                                                    {
+                                                                        Godown_Id: e.target.value,
+                                                                        Item_Id: item?.Item_Id
+                                                                    },
+                                                                    false
+                                                                )}
+                                                            >
+                                                                <option value="" disabled>Select</option>
+                                                                <optgroup label="Stock-Available-Godown">
+                                                                    {
+                                                                        toArray(godowns).filter(
+                                                                            fil => (
+                                                                                toArray(stockInGodown).some(
+                                                                                    fnd => (
+                                                                                        isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
+                                                                                        && isEqualNumber(item?.Item_Id, fnd?.Product_Id)
+                                                                                    )
+                                                                                )
+                                                                            )
+                                                                        ).map((obj, objInd) => (
+                                                                            <option
+                                                                                value={obj?.Godown_Id}
+                                                                                key={objInd}
+                                                                            >
+                                                                                {obj?.Godown_Name
+                                                                                    + ' (Bal: '
+                                                                                    + validStockValue(item?.Item_Id, obj?.Godown_Id, stockInGodown)
+                                                                                    + ')'
+                                                                                }
+                                                                            </option>
+                                                                        ))
+                                                                    }
+                                                                </optgroup>
+                                                                <optgroup label="Other-Godown">
+                                                                    {
+                                                                        toArray(godowns).filter(
+                                                                            fil => !(
+                                                                                toArray(stockInGodown).some(
+                                                                                    fnd => (
+                                                                                        isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
+                                                                                        && isEqualNumber(item?.Item_Id, fnd?.Product_Id)
+                                                                                    )
+                                                                                )
+                                                                            )
+                                                                        ).map((obj, objInd) => (
+                                                                            <option value={obj?.Godown_Id} key={objInd}>{obj?.Godown_Name}</option>
+                                                                        ))
+                                                                    }
+                                                                </optgroup>
+                                                            </select>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

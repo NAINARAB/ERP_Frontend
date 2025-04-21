@@ -37,7 +37,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
         CreatedBy: { value: '', label: 'ALL' },
         SalesPerson: { value: '', label: 'ALL' },
         VoucherType: { value: '', label: 'ALL' },
-        Cancel_status: 0
+        Cancel_status: ''
     });
 
     const [dialog, setDialog] = useState({
@@ -314,12 +314,12 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                             onChange={(e) => setFilters({ ...filters, Retailer: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({ 
-                                                    value: obj?.Retailer_Id, 
-                                                    label: obj?.Retailer_Name 
-                                                    + '- ₹' 
-                                                    + NumberFormat(toNumber(obj?.TotalSales)) 
-                                                    + ` (${toNumber(obj?.OrderCount)})`
+                                                ...retailers.map(obj => ({
+                                                    value: obj?.Retailer_Id,
+                                                    label: obj?.Retailer_Name
+                                                        + '- ₹'
+                                                        + NumberFormat(toNumber(obj?.TotalSales))
+                                                        + ` (${toNumber(obj?.OrderCount)})`
                                                 }))
                                             ]}
                                             styles={customSelectStyles}
@@ -389,11 +389,13 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                         <select
                                             type="date"
                                             value={filters.Cancel_status}
-                                            onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
+                                            onChange={e => setFilters({ ...filters, Cancel_status: e.target.value })}
                                             className="cus-inpt"
                                         >
-                                            <option value={1}>Show</option>
-                                            <option value={0}>Hide</option>
+                                            <option value={''}>All</option>
+                                            {dbStatus.map((sts, ind) => (
+                                                <option value={sts.id} key={ind}>{sts.label}</option>
+                                            ))}
                                         </select>
                                     </td>
                                 </tr>
