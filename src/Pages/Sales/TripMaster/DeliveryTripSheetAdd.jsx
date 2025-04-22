@@ -791,7 +791,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             </div>
                         </div>
                     </div>
-
+                    {
+                        <div className="d-flex justify-content-end gap-3">
+                            <h6 className="m-0 text-muted">Selected Sales Orders: {selectedItems.length}</h6> <span></span>
+                            <h6 className="m-0 text-muted">
+                                Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
+                            </h6>
+                        </div>
+                    }
                     <FilterableTable
                         dataArray={selectedItems?.map((item) => item?.Products_List).flat()}
                         expandableComp={ExpendableComponent}
@@ -973,43 +980,44 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 </tbody>
                             </table>
                         </div>
+                        {/* <div className="w-100 p-2 d-flex justify-content-center"> */}
+
+                        <div className="d-flex justify-content-between align-items-center">
+                            {transactionData.length > 0 && (
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => {
+                                        if (selectedItems.length === transactionData.length) {
+                                            setSelectedItems([]);
+                                        } else {
+                                            setSelectedItems(transactionData);
+                                        }
+                                    }}
+                                >
+                                    {selectedItems.length === transactionData.length
+                                        ? "Unselect All"
+                                        : "Select All"}
+                                </Button>
+                            )}
+
+
+
+                            {selectedItems.length >= 0 && (
+                                <div className="d-flex justify-content-end gap-3">
+                                    <h6 className="m-0 text-muted">Selected Sales Orders: {selectedItems.length}</h6>
+                                    <h6 className="m-0 text-muted">
+                                        Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
+                                    </h6>
+                                </div>
+                            )}
+                        </div>
 
                         <FilterableTable
                             dataArray={transactionData}
                             disablePagination
                             maxHeightOption
                             columns={[
-                                // {
-                                //     isVisible: 1,
-                                //     ColumnHeader: '#',
-                                //     isCustomCell: true,
-                                //     Cell: ({ row }) => {
-                                //         console.log("row",row)
-                                //         // Check if this row is selected
-                                //         const isChecked = selectedItems.some(o =>
-                                //             isEqualNumber(o.Do_Id, row.Do_Id)
-                                //         );
 
-                                //         return (
-                                //             <div>
-                                //                 <input
-                                //                     className="form-check-input shadow-none pointer"
-                                //                     style={{ padding: '0.7em' }}
-                                //                     type="checkbox"
-                                //                     checked={isChecked}
-                                //                     onChange={() => {
-
-                                //                         if (isChecked) {
-                                //                             changeItems(row, true);
-                                //                         } else {
-                                //                             changeItems(row);
-                                //                         }
-                                //                     }}
-                                //                 />
-                                //             </div>
-                                //         );
-                                //     }
-                                // },
                                 {
                                     Field_Name: "checkbox",
                                     ColumnHeader: "",
@@ -1045,11 +1053,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 createCol("Do_Date", "date", "Do_Date"),
                                 createCol("Total_Before_Tax", "string", "Total_Before_Tax"),
                                 createCol("Total_Tax", "number", "Total_Tax"),
-                                createCol(
-                                    "Total_Invoice_value",
-                                    "number",
-                                    "Total_Invoice_value"
-                                ),
+                                createCol("Total_Invoice_value", "number", "Total_Invoice_value"),
                             ]}
                         />
                     </DialogContent>

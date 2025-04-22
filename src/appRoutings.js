@@ -85,6 +85,7 @@ const SaleOrderCreation = lazy(() => import("./Pages/Sales/SaleOrder/saleOrderCr
 const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 const SalesInvoiceList = lazy(() => import("./Pages/Sales/SalesInvoice/salesInvoiceList"))
 const SalesInvoiceCreation = lazy(() => import("./Pages/Sales/SalesInvoice/salesInvoiceCreation"))
+const PreSaleorder = lazy(() => import("./Pages/Sales/PreSaleOrder/orderList"));
 
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
@@ -211,7 +212,7 @@ const RoutingArray = [
     { component: <PartySalesReport />, path: '/erp/sales/partyBasedReport' },
     { component: <SalesInvoiceList />, path: '/erp/sales/invoice' },
     { component: <SalesInvoiceCreation />, path: '/erp/sales/invoice/create' },
-
+    { component: <PreSaleorder />, path: '/erp/sales/PreSaleorder' },
     // ERP - purchase
     { component: <DisplayNavigations />, path: '/erp/purchase' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
@@ -245,7 +246,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/payments' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
     { component: <PaymentReport />, path: '/erp/payments/paymentReport' },
-    
+
     // ERP - receipts
     { component: <DisplayNavigations />, path: '/erp/receipt' },
     { component: <ReceiptsList />, path: '/erp/receipts/listReceipts' },

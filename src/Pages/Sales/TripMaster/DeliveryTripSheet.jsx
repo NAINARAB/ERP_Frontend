@@ -1,9 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, json } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ISOString, isValidDate, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration } from "../../../Components/functions";
-import { Delete, Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
@@ -37,8 +37,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     });
     const [selectedRow, setSelectedRow] = useState([]);
     const [deleteDialog, setDeleteDialog] = useState(false);
-const [selectedId, setSelectedId] = useState(null);
-const[reload,setReload]=useState(false)
+    const [selectedId, setSelectedId] = useState(null);
+    const [reload, setReload] = useState(false)
     const printRef = useRef(null);
 
     useEffect(() => {
@@ -54,23 +54,23 @@ const[reload,setReload]=useState(false)
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
-    }, [filters?.fetchFrom, filters?.fetchTo,reload]);
+    }, [filters?.fetchFrom, filters?.fetchTo, reload]);
 
     const handleDeleteConfirm = async () => {
-      
+
         fetchLink({
-                  address: `delivery/tripDetails`,
-                  method: "DELETE",
-                  bodyData: { Trip_Id:selectedId },
-              }).then((data) => {
-                  if (data.success) {
-                      setReload(!reload);
-                      setDeleteDialog(false);
-                      toast.success("Trip deleted successfully!");
-                  } else {
-                      toast.error("Failed to delete area:", data.message);
-                  }
-              }).catch(e => console.error(e));
+            address: `delivery/tripDetails`,
+            method: "DELETE",
+            bodyData: { Trip_Id: selectedId },
+        }).then((data) => {
+            if (data.success) {
+                setReload(!reload);
+                setDeleteDialog(false);
+                toast.success("Trip deleted successfully!");
+            } else {
+                toast.error("Failed to delete area:");
+            }
+        }).catch(e => console.error(e));
     };
 
     useEffect(() => {
@@ -202,7 +202,7 @@ const[reload,setReload]=useState(false)
         setDeleteDialog(false);
         setSelectedId(null);
     };
-    
+
     const openDeleteDialog = (id) => {
         setSelectedId(id);
         setDeleteDialog(true);
@@ -234,7 +234,7 @@ const[reload,setReload]=useState(false)
                     </>
                 }
                 EnableSerialNumber
-                
+
                 initialPageCount={10}
                 columns={[
                     createCol('Trip_Date', 'date', 'Date'),
@@ -299,7 +299,7 @@ const[reload,setReload]=useState(false)
                             return <span>{totalQty}</span>;
                         },
                     },
-                    
+
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',
@@ -312,23 +312,23 @@ const[reload,setReload]=useState(false)
                                         icon: <Visibility className="fa-14" />,
                                         onclick: () => {
                                             openDeleteDialog(true)
-                                          
+
                                             setSelectedId(row?.Trip_Id)
                                         }
                                     },
                                     {
                                         name: 'Edit',
                                         icon: <Edit className="fa-14" />,
-                                     
+
                                         onclick: () => nav('/erp/sales/Tripsheet/Tripsheetcreation', {
-                                         
+
                                             state: {
                                                 ...row,
                                                 isEditable: false,
-                                                
+
                                             },
                                         }),
-                                        
+
                                     },
                                     {
                                         name: 'Short Preview',
@@ -377,6 +377,8 @@ const[reload,setReload]=useState(false)
                             </table>
                         )}
 
+
+
                         <FilterableTable
                             title="Items"
                             EnableSerialNumber
@@ -408,6 +410,7 @@ const[reload,setReload]=useState(false)
                                     },
                                 },
                                 createCol('Final_Amo', 'number', 'Final_Amo'),
+
                                 {
                                     isVisible: 1,
                                     ColumnHeader: 'Round off',
@@ -573,7 +576,7 @@ const[reload,setReload]=useState(false)
                                                 return (
                                                     <tr key={idx}>
                                                         <td className="fw-bold">{group.Retailer_Name}</td>
-                                                        <td className="fw-bold text-end">{group.Do_Date}</td>
+                                                        <td className="fw-bold text-end">{group.Product_Do_Date}</td>
                                                         <td className="fw-bold text-end">{deliveryDetail?.Name || "N/A"}</td>
                                                         <td className="fw-bold text-end">{NumberFormat(totalAmount)}</td>
                                                     </tr>
@@ -840,18 +843,18 @@ const[reload,setReload]=useState(false)
 
 
             <Dialog open={deleteDialog} onClose={closeDeleteDialog} fullWidth maxWidth="sm">
-    <DialogTitle>Confirm Delete</DialogTitle>
-    <DialogContent>
-        <p>Are you sure you want to delete this item?</p>
-    </DialogContent>
-    <DialogActions>
-        <Button onClick={closeDeleteDialog}>Cancel</Button>
+                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogContent>
+                    <p>Are you sure you want to delete this item?</p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDeleteDialog}>Cancel</Button>
 
-        <Button onClick={handleDeleteConfirm} variant="contained" color="error">
-            Delete
-        </Button>
-    </DialogActions>
-</Dialog>
+                    <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* <h6 className="m-0 text-end text-muted px-3">Total Invoice Amount ({tripData?.length}) : {Total_Invoice_value}</h6> */}
         </>

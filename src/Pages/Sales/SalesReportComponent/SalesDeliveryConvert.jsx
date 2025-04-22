@@ -80,7 +80,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     };
 
     const [filters, setFilters] = useState(initialValue);
-     const [reloadKey, setReloadKey] = useState(false);
+    const [reloadKey, setReloadKey] = useState(false);
 
     const handleReload = () => setReloadKey(prev => !prev);
 
@@ -121,8 +121,8 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
 
     const triggerReload = () => {
         setReload((prev) => !prev);
-      };
-      
+    };
+
 
     useEffect(() => {
         fetchLink({
@@ -144,7 +144,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         filters?.Route_Id,
         filters?.Area_Id,
         reload,
-        reloadKey 
+        reloadKey
     ]);
 
     const handleSubmit = async () => {
@@ -524,7 +524,13 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
                         {screen ? "Sale Orders" : isValidObject(orderInfo)}
                     </h6>
 
-                    <div>
+                    <div className="d-flex align-items-center gap-2">
+
+                        {selectedRows.length > 0 && (
+                            <h6 className="m-0 text-muted">
+                                Selected Rows: {selectedRows.length}
+                            </h6>
+                        )}
                         {screen && (
                             <Tooltip title="Filters">
                                 <IconButton

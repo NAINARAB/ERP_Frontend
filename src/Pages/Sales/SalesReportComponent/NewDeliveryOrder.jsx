@@ -57,7 +57,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         Retailer_Id: '',
         Retailer_Name: 'Select',
         Delivery_Status: 1,
-        Delivery_Person_Id: 0,
+        Delivery_Person_Id: '',
         Payment_Ref_No: '',
         Delivery_Person_Name: '',
         Payment_Mode: 0,
@@ -276,7 +276,7 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
-          
+
             fetchLink({
                 address: `delivery/deliveryOrder`,
                 method: (isEdit && !editOn) ? 'PUT' : 'POST',
