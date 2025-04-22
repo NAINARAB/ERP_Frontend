@@ -235,6 +235,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     ])
 
     useEffect(() => {
+        console.log(editValues)
         if (
             isValidObject(editValues) &&
             Array.isArray(editValues?.Products_List)
