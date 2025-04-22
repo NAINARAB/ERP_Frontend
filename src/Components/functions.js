@@ -315,6 +315,63 @@ export const onlynum = (e) => {
     e.target.value = value;
 };
 
+// export const onlynumAndNegative = (e) => {
+//     let value = e.target.value;
+
+//     // Remove everything except digits, dot, and minus
+//     value = value.replace(/[^0-9.-]/g, '');
+
+//     // Handle multiple dots
+//     const parts = value.split('.');
+//     if (parts.length > 2) {
+//         // Rebuild by keeping only the first dot
+//         value = parts.shift() + '.' + parts.join('');
+//     }
+
+//     // Handle minus sign
+//     const minusCount = (value.match(/-/g) || []).length;
+//     if (minusCount > 1) {
+//         value = value.replace(/-+/g, '-'); // reduce multiple minuses to one
+//     }
+//     if (value.includes('-') && !value.startsWith('-')) {
+//         // Move minus to the front if misplaced
+//         value = value.replace(/-/g, '');
+//         value = '-' + value;
+//     }
+
+//     e.target.value = value;
+// };
+
+export const onlynumAndNegative = (e) => {
+    let value = e.target.value;
+
+    // Allow only digits, dot, and minus
+    value = value.replace(/[^0-9.-]/g, '');
+
+    // Fix multiple minus signs
+    const minusCount = (value.match(/-/g) || []).length;
+    if (minusCount > 1) {
+        value = value.replace(/-/g, '');
+        value = '-' + value;
+    }
+
+    // Ensure minus is only at the start
+    if (value.includes('-') && !value.startsWith('-')) {
+        value = value.replace(/-/g, '');
+        value = '-' + value;
+    }
+
+    // Fix multiple dots (keep only the first)
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts.shift() + '.' + parts.join('');
+    }
+
+    e.target.value = value;
+};
+
+
+
 
 // export const onlynum = (e) => {
 //     const value = e.target.value;

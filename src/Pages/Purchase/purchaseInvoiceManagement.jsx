@@ -4,7 +4,7 @@ import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButt
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Add, Delete } from "@mui/icons-material";
-import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber } from "../../Components/functions";
+import { Addition, checkIsNumber, Division, filterableText, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
@@ -652,7 +652,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.value }))}
                                                 options={[
                                                     { value: '', label: 'Search', isDisabled: true },
-                                                    ...voucherType.map(obj => ({
+                                                    ...voucherType.filter(
+                                                        fil => filterableText(fil.Type) === filterableText('PURCHASE')
+                                                    ).map(obj => ({
                                                         value: obj?.Vocher_Type_Id,
                                                         label: obj?.Voucher_Type
                                                     }))

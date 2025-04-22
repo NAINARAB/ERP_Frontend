@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
+import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -17,16 +17,16 @@ const defaultFilters = {
 };
 
 const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
     const navigate = useNavigate();
     const location = useLocation();
     const stateDetails = location.state;
     const query = useQuery();
     const [salesInvoice, setSalesInvoice] = useState([]);
-    const [retailers, setRetailers] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [voucher, setVoucher] = useState([]);
+    const [filtersDropDown, setFiltersDropDown] = useState({
+        voucherType: [],
+        retailers: [],
+        createdBy: []
+    });
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false)
 
@@ -47,8 +47,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         if (loadingOn) loadingOn();
+
+        const Fromdate = filters?.Fromdate;
+        const Todate = filters?.Todate;
+        const Retailer = filters?.Retailer?.value;
+        const CreatedBy = filters?.CreatedBy?.value;
+        const VoucherType = filters?.VoucherType?.value;
+        const Cancel_status = filters?.Cancel_status;
+
         fetchLink({
-            address: `sales/salesInvoice?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer?.value}&Sales_Person_Id=${filters?.SalesPerson?.value}&Created_by=${filters?.CreatedBy?.value}&VoucherType=${filters?.VoucherType?.value}&Cancel_status=${filters?.Cancel_status}`
+            address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer}&Created_by=${CreatedBy}&VoucherType=${VoucherType}&Cancel_status=${Cancel_status}`
         }).then(data => {
             if (data.success) {
                 setSalesInvoice(data?.data)
@@ -61,34 +69,14 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
 
         fetchLink({
-            address: `sales/saleOrder/retailers`
+            address: `sales/salesInvoice/filterValues`
         }).then(data => {
             if (data.success) {
-                setRetailers(data.data);
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setSalePerson(data.data)
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/user/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setUsers(data.data)
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/voucher`
-        }).then(data => {
-            if (data.success) {
-                setVoucher(data.data);
+                setFiltersDropDown({
+                    voucherType: toArray(data?.others?.voucherType),
+                    retailers: toArray(data?.others?.retailers),
+                    createdBy: toArray(data?.others?.createdBy),
+                })
             }
         }).catch(e => console.error(e))
 
@@ -314,51 +302,12 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                             onChange={(e) => setFilters({ ...filters, Retailer: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({
-                                                    value: obj?.Retailer_Id,
-                                                    label: obj?.Retailer_Name
-                                                        + '- ₹'
-                                                        + NumberFormat(toNumber(obj?.TotalSales))
-                                                        + ` (${toNumber(obj?.OrderCount)})`
-                                                }))
+                                                ...filtersDropDown.retailers
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                                    <td>
-                                        <Select
-                                            value={filters?.SalesPerson}
-                                            onChange={(e) => setFilters(pre => ({ ...pre, SalesPerson: e }))}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={filters?.CreatedBy}
-                                            onChange={(e) => setFilters(pre => ({ ...pre, CreatedBy: e }))}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
+                                            menuPortalTarget={document.body}
                                         />
                                     </td>
                                 </tr>
@@ -371,9 +320,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                             onChange={(e) => setFilters({ ...filters, VoucherType: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...voucher.filter(
-                                                    obj => obj.Type === 'SALES'
-                                                ).map(obj => ({ value: obj?.Vocher_Type_Id, label: obj?.Voucher_Type }))
+                                                ...filtersDropDown.voucherType
                                             ]}
                                             styles={customSelectStyles}
                                             menuPortalTarget={document.body}
@@ -397,6 +344,24 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                                 <option value={sts.id} key={ind}>{sts.label}</option>
                                             ))}
                                         </select>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.CreatedBy}
+                                            onChange={(e) => setFilters(pre => ({ ...pre, CreatedBy: e }))}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...filtersDropDown.createdBy
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                            menuPortalTarget={document.body}
+                                        />
                                     </td>
                                 </tr>
 

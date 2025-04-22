@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { Addition, checkIsNumber, Division, isEqualNumber, NumberFormat, onlynum, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, RoundNumber, toArray, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
 import { useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -147,7 +147,7 @@ const ExpencesOfSalesInvoice = ({
                                     </td>
                                     <td className="p-0 vctr">
                                         <input
-                                            onInput={onlynum}
+                                            onInput={onlynumAndNegative}
                                             className="cus-inpt p-2 border-0"
                                             value={toNumber(row.Expence_Value) || ''}
                                             disabled={!checkIsNumber(row.Expense_Id)}
