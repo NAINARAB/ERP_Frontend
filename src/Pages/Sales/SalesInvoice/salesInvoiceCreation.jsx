@@ -45,7 +45,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         brand: [],
         godown: [],
         expence: [],
-        stockInGodown: []
+        stockInGodown: [],
+        stockItemLedgerName: [],
     });
 
     const [dialog, setDialog] = useState({
@@ -81,7 +82,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffCategory,
                     godownLocationsResponse,
                     expenceResponse,
-                    godownWiseStock
+                    godownWiseStock,
+                    stockItemLedgerNameResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -93,6 +95,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `masters/expences` }),
                     fetchLink({ address: `sales/stockInGodown` }),
+                    fetchLink({ address: `purchase/stockItemLedgerName` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -125,6 +128,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
                     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
                 );
+                const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : []).sort(
+                    (a, b) => String(a?.Stock_Item_Ledger_Name).localeCompare(b?.Stock_Item_Ledger_Name)
+                );
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -138,7 +144,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     godown: godownLocations,
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
                     expence: expencesMaster,
-                    stockInGodown: stockInGodowns
+                    stockInGodown: stockInGodowns,
+                    stockItemLedgerName: stockItemLedgerName
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -235,7 +242,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     ])
 
     useEffect(() => {
-        console.log(editValues)
         if (
             isValidObject(editValues) &&
             Array.isArray(editValues?.Products_List)
@@ -359,6 +365,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         retailers={baseData.retailers}
                                         branches={baseData.branch}
                                         voucherType={baseData.voucherType}
+                                        stockItemLedgerName={baseData.stockItemLedgerName}
                                         onChangeRetailer={() => {
                                             setInvoiceProduct([]);
                                             setInvoiceExpences([]);
@@ -442,6 +449,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                 createCol('Item_Name', 'string'),
                                 createCol('HSN_Code', 'string'),
                                 createCol('Bill_Qty', 'number'),
+                                createCol('Act_Qty', 'number'),
                                 createCol('Item_Rate', 'number'),
                                 {
                                     isVisible: 1,

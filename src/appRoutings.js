@@ -120,7 +120,10 @@ const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
 const PendingInvoice = lazy(() => import("./Pages/Payments/pendingInvoice"))
 const PaymentReport = lazy(() => import("./Pages/Payments/paymentReport"));
 
+
+// Receipts
 const ReceiptsList = lazy(() => import("./Pages/Receipts/listReceipts"))
+// const ReceiptsCreate = lazy(() => import("./Pages/Receipts/createReceipts"))
 const ReceiptsCreate = lazy(() => import("./Pages/Receipts/createReceipts"))
 
 

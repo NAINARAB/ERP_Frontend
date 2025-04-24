@@ -29,6 +29,7 @@ export const salesInvoiceGeneralInfo = {
     Total_Before_Tax: '',
     Total_Tax: '',
     Total_Invoice_value: '',
+    Stock_Item_Ledger_Name: '',
 
     // Delivery_Status: '',
     // Delivery_Time: '',

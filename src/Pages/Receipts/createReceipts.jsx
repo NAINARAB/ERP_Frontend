@@ -1,14 +1,18 @@
 import { Button, Card, CardContent } from "@mui/material";
 import {
+    Addition,
     checkIsNumber,
+    filterableText,
     getSessionUser,
     isEqualNumber,
     ISOString,
+    RoundNumber,
+    stringCompare,
     toNumber,
 } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
 import Select from "react-select";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import DeliveryBillCard from "./billDeliveryCard";
@@ -17,7 +21,7 @@ import { toast } from 'react-toastify'
 import RequiredStar from "../../Components/requiredStar";
 import DeliveryBillTableRow from "./billDeliveryTableRow";
 
-const payTypeAndStatus = [
+export const payTypeAndStatus = [
     {
         type: 'CASH',
         default: 'CREATED-CASH',
@@ -29,12 +33,12 @@ const payTypeAndStatus = [
         statusOptions: ['CREATED-UPI', 'UPI-PROCESSING', 'UPI-NOT-RECEIVED']
     },
     {
-        type: 'CHECK',
-        default: 'CREATED-CHECK',
-        statusOptions: ['CREATED-CHECK', 'CHECK-PROCESSING', 'CHECK-BOUNCE']
+        type: 'CHEQUE',
+        default: 'CREATED-CHEQUE',
+        statusOptions: ['CREATED-CHEQUE', 'CHEQUE-PROCESSING', 'CHEQUE-BOUNCE']
     },
     {
-        type: 'BANK ACCOUNT',
+        type: 'BANK',
         default: 'CREATED-BANK-TRANSFER',
         statusOptions: ['CREATED-BANK-TRANSFER', 'BANK-PROCESSING', 'BANK-NOT-RECEIVED']
     },
@@ -53,6 +57,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
     const [baseData, setBaseData] = useState({
         salesPerson: [],
         voucherData: [],
+        creditAccount: []
     });
     const [receiptInfo, setReceiptInfo] = useState(receiptGeneralInfo);
     const [receiptsPaymentInfo, setReceiptsPaymentInfo] = useState([]);
@@ -62,7 +67,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
         Retailer: { value: "", label: "Search by Retailer..." },
     });
 
-    const paymentStatus = payTypeAndStatus.find(val => val.type === receiptInfo?.collection_type).statusOptions;
+    const paymentStatus = payTypeAndStatus.find(val => val.type === receiptInfo?.collection_type)?.statusOptions || {};
 
     useEffect(() => {
 
@@ -87,6 +92,13 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
             else setBaseData(pre => ({ ...pre, voucherData: [] }))
         }).catch(e => console.error(e))
 
+        fetchLink({
+            address: `receipt/creditAccounts`
+        }).then(data => {
+            if (data.success) setBaseData(pre => ({ ...pre, creditAccount: data.data }));
+            else setBaseData(pre => ({ ...pre, creditAccount: [] }))
+        }).catch(e => console.error(e))
+
     }, []);
 
     useEffect(() => {
@@ -102,6 +114,12 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
             });
         }
     }, [receiptInfo.retailer_id])
+
+    const totalReceiptValue = useMemo(() => {
+        return receiptsPaymentInfo.reduce((acc, rec) => {
+            return Addition(acc, rec?.collected_amount)
+        }, 0)
+    }, [receiptsPaymentInfo])
 
     const resetValue = () => {
         setFilters(pre => ({ ...pre, Retailer: { value: '', label: 'Search by Retailer...' } }))
@@ -182,8 +200,10 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             </div>
                         </div>
 
-                        <div className="row fa-13 pb-3">
+                        {/* row 1 */}
+                        <div className="row fa-13 pb-3 mt-2">
 
+                            {/* Date */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Date<RequiredStar /></label>
                                 <input
@@ -195,6 +215,30 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
+                            {/* voucher */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Voucher<RequiredStar /></label>
+                                <select
+                                    className="cus-inpt border p-2"
+                                    value={receiptInfo.voucher_id}
+                                    required
+                                    onChange={e => setReceiptInfo(pre => ({ ...pre, voucher_id: e.target.value }))}
+                                >
+                                    <option value="" disabled>Select</option>
+                                    {baseData.voucherData.filter(
+                                        fil => stringCompare(fil.Type, 'Receipt')
+                                    ).map((vou, vouInd) => (
+                                        <option value={vou.Vocher_Type_Id} key={vouInd}>{vou.Voucher_Type}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                        </div>
+
+                        {/* row 2 */}
+                        <div className="row fa-13 pb-3">
+
+                            {/* payment type  */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Payment Type<RequiredStar /></label>
                                 <select
@@ -210,11 +254,36 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                     <option value="" disabled>Select</option>
                                     <option value="CASH">CASH</option>
                                     <option value="UPI">UPI</option>
-                                    <option value="CHECK">CHECK</option>
-                                    <option value="BANK ACCOUNT">BANK ACCOUNT</option>
+                                    <option value="CHEQUE">CHEQUE</option>
+                                    <option value="BANK">BANK</option>
                                 </select>
                             </div>
 
+                            {/* cash accounts  */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Payment Account <RequiredStar /></label>
+                                <select
+                                    className="cus-inpt border p-2"
+                                    value={receiptInfo.collection_account}
+                                    required
+                                    disabled={!receiptInfo.collection_type}
+                                    onChange={e => setReceiptInfo(pre => ({
+                                        ...pre,
+                                        collection_account: e.target.value,
+                                    }))}
+                                >
+                                    <option value="" disabled>Select</option>
+                                    {baseData.creditAccount.filter(
+                                        fil => stringCompare(receiptInfo.collection_type, 'CASH') 
+                                            ? stringCompare(fil.Type, 'CASH')
+                                            : !stringCompare(fil.Type, 'CASH')
+                                    ).map(
+                                        (o, i) => <option value={o?.Id} key={i}>{o?.Bank_Name}</option>
+                                    )}
+                                </select>
+                            </div>
+
+                            {/* payment status */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Payment Status<RequiredStar /></label>
                                 <select
@@ -232,6 +301,12 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 </select>
                             </div>
 
+                        </div>
+
+                        {/* row 3 */}
+                        <div className="row fa-13 pb-3">
+
+                            {/* payed by */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Payed By</label>
                                 <input
@@ -242,21 +317,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Voucher<RequiredStar /></label>
-                                <select
-                                    className="cus-inpt border p-2"
-                                    value={receiptInfo.voucher_id}
-                                    required
-                                    onChange={e => setReceiptInfo(pre => ({ ...pre, voucher_id: e.target.value }))}
-                                >
-                                    <option value="" disabled>Select</option>
-                                    {baseData.voucherData.map((vou, vouInd) => (
-                                        <option value={vou.Vocher_Type_Id} key={vouInd}>{vou.Voucher_Type}</option>
-                                    ))}
-                                </select>
-                            </div>
-
+                            {/* amount received by */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Amount Received By<RequiredStar /></label>
                                 <select
@@ -272,6 +333,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 </select>
                             </div>
 
+                            {/* verify date */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-1">
                                 <label className="fa-14">Verify Date</label>
                                 <input
@@ -282,6 +344,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
+                            {/* verify status */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-1">
                                 <label className="fa-14">Verify Status</label>
                                 <select
@@ -294,7 +357,8 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 </select>
                             </div>
 
-                            <div className="col-12 p-1">
+                            {/* Narration */}
+                            <div className="col-lg-6 col-sm-8 p-1">
                                 <label className="fa-14 w-100">Narration</label>
                                 <textarea
                                     style={{ width: '100%', maxWidth: '450px' }}
@@ -302,6 +366,15 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                     value={receiptInfo?.narration}
                                     onChange={e => setReceiptInfo(pre => ({ ...pre, narration: e.target.value }))}
                                     placeholder="Narration..."
+                                />
+                            </div>
+
+                            <div className="col-lg-6 col-sm-4 p-1 text-end">
+                                <label className="fa-14 w-100">Total Receipt Amount</label>
+                                <input
+                                    className="cus-inpt bg-white p-2 w-auto border border-primary text-primary"
+                                    value={RoundNumber(totalReceiptValue)}
+                                    disabled
                                 />
                             </div>
 

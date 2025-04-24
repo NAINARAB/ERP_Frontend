@@ -112,24 +112,33 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     };
 
 
-
     const postSaleOrder = (data) => {
         loadingOn();
 
+        const extractWeightFromName = (name) => {
+            const match = name?.match(/(\d+)\s?kg/i);
+            return match ? parseInt(match[1]) : 1;
+        };
+
         const validProducts = Array.isArray(data.ProductList)
-            ? data.ProductList.filter(p => isGraterNumber(p?.Bill_Qty, 0)).map(p => ({
-                ...p,
-                Pre_Id: data?.Pre_Id
-            }))
+            ? data.ProductList
+                .filter(p => isGraterNumber(p?.Bill_Qty, 0))
+                .map(p => {
+                    const weight = extractWeightFromName(p?.Product_Name);
+                    return {
+                        ...p,
+                        Pre_Id: data?.Pre_Id,
+                        Bill_Qty: weight * p?.Bill_Qty,
+                        Total_Qty: p?.Bill_Qty
+                    };
+                })
             : [];
 
         const payload = {
             ...data,
             Product_Array: validProducts,
-
             Retailer_Id: data?.Custome_Id
         };
-
 
         fetchLink({
             address: `sales/presaleOrder/saleOrderCreationWithPso`,
@@ -139,16 +148,53 @@ const OrderList = ({ loadingOn, loadingOff }) => {
             .then((response) => {
                 if (response.success) {
                     toast.success(response?.message);
-                    setLoad(true)
+                    setLoad(true);
                 } else {
                     toast.error(response?.message);
                 }
             })
-            .catch((e) => {
+            .catch(() => {
                 toast.error("Something went wrong!");
             })
             .finally(() => loadingOff());
     };
+
+    // const postSaleOrder = (data) => {
+    //     loadingOn();
+
+    //     const validProducts = Array.isArray(data.ProductList)
+    //         ? data.ProductList.filter(p => isGraterNumber(p?.Bill_Qty, 0)).map(p => ({
+    //             ...p,
+    //             Pre_Id: data?.Pre_Id
+    //         }))
+    //         : [];
+
+    //     const payload = {
+    //         ...data,
+    //         Product_Array: validProducts,
+
+    //         Retailer_Id: data?.Custome_Id
+    //     };
+
+
+    //     fetchLink({
+    //         address: `sales/presaleOrder/saleOrderCreationWithPso`,
+    //         method: data?.isConverted !== 0 ? 'PUT' : 'POST',
+    //         bodyData: payload
+    //     })
+    //         .then((response) => {
+    //             if (response.success) {
+    //                 toast.success(response?.message);
+    //                 setLoad(true)
+    //             } else {
+    //                 toast.error(response?.message);
+    //             }
+    //         })
+    //         .catch((e) => {
+    //             toast.error("Something went wrong!");
+    //         })
+    //         .finally(() => loadingOff());
+    // };
 
     useEffect(() => {
         if (load) {

@@ -103,7 +103,7 @@ const AddItemToSaleOrderCart = ({
             <Dialog
                 open={open}
                 onClose={closeDialog}
-                maxWidth='sm' fullWidth
+                maxWidth='md' fullWidth
             >
                 <DialogTitle className="border-bottom">
                     <span>Add Products Details</span>
@@ -127,7 +127,7 @@ const AddItemToSaleOrderCart = ({
                                     onChange={(e) => setProductDetails(pre => ({ ...pre, BrandID: e.value, Brand: e.label }))}
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
-                                        brands.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
+                                        ...brands.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
                                     ]}
                                     styles={customSelectStyles}
                                     menuPortalTarget={document.body}
@@ -147,7 +147,7 @@ const AddItemToSaleOrderCart = ({
                                     }
                                     options={[
                                         { value: '', label: 'select', isDisabled: true },
-                                        products
+                                        ...products
                                             .filter(
                                                 (pro) =>
                                                     productDetails.BrandID
@@ -175,7 +175,9 @@ const AddItemToSaleOrderCart = ({
                             </div>
 
                             {/* item name */}
-                            <div className="col-12 p-2">
+                            <div className={
+                                Object.hasOwn(productDetails, 'GoDown_Id') ? 'col-md-8 p-2' : "col-12 p-2"
+                            }>
                                 <label>Item Name <RequiredStar /></label>
                                 <Select
                                     value={{
@@ -229,6 +231,66 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {/* godown  */}
+                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
+                                <div className="col-md-4 p-2">
+                                    <label>Godown</label>
+                                    <Select
+                                        value={{
+                                            value: productDetails?.GoDown_Id,
+                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
+                                        }}
+                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
+                                        options={[
+                                            { value: '', label: 'select', isDisabled: true },
+                                            {
+                                                label: 'Stock-Available-Godowns',
+                                                options: toArray(godowns).filter(fil => {
+                                                    const stockList = toArray(stockInGodown);
+
+                                                    if (stockList.length === 0) return false;
+
+                                                    return stockList.some(
+                                                        fnd => (
+                                                            isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
+                                                            && isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
+                                                        )
+                                                    )
+                                                }).map(obj => ({
+                                                    value: obj?.Godown_Id,
+                                                    label: obj?.Godown_Name
+                                                        + " (Bal: "
+                                                        + validStockValue(productDetails?.Item_Id, obj?.Godown_Id, stockInGodown)
+                                                        + ")"
+                                                }))
+                                            },
+                                            {
+                                                label: 'Other Godowns',
+                                                options: toArray(godowns).filter(fil => {
+                                                    const stockList = toArray(stockInGodown);
+
+                                                    if (stockList.length === 0) return true;
+
+                                                    return !stockList.some(fnd =>
+                                                        isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id) &&
+                                                        isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
+                                                    );
+                                                }).map(obj => ({
+                                                    value: obj?.Godown_Id,
+                                                    label: obj?.Godown_Name
+                                                }))
+                                            }
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isDisabled={!checkIsNumber(productDetails?.Item_Id)}
+                                        menuPortalTarget={document.body}
+                                        isSearchable={true}
+                                        placeholder={"Select Godown"}
+                                        // maxMenuHeight={200}  
+                                    />
+                                </div>
+                            )}
+
                             {/* quantity */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Quantity <RequiredStar /></label>
@@ -261,6 +323,23 @@ const AddItemToSaleOrderCart = ({
                                     min={1}
                                 />
                             </div>
+
+                            {Object.hasOwn(productDetails, 'Act_Qty') && (
+                                <div className="col-lg-4 col-md-6 p-2">
+                                    <label>Actual Quantity </label>
+                                    <input
+                                        value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
+                                        onInput={onlynum}
+                                        disabled={!checkIsNumber(productDetails.Item_Id)}
+                                        onChange={e => setProductDetails(pre => ({
+                                            ...pre,
+                                            Act_Qty: e.target.value,
+                                        }))}
+                                        required
+                                        className="cus-inpt"
+                                    />
+                                </div>
+                            )}
 
                             {/* Rate */}
                             <div className="col-lg-4 col-md-6 p-2">
@@ -318,59 +397,6 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
-                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
-                                <div className="col-md-6 p-2">
-                                    <label>Godown</label>
-                                    <Select
-                                        value={{
-                                            value: productDetails?.GoDown_Id,
-                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
-                                        }}
-                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
-                                        options={[
-                                            { value: '', label: 'select', isDisabled: true },
-                                            {
-                                                label: 'Stock-Available-Godowns',
-                                                options: toArray(godowns).filter(
-                                                    fil => (
-                                                        toArray(stockInGodown).some(
-                                                            fnd => (
-                                                                isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
-                                                                && isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                            )
-                                                        )
-                                                    )
-                                                ).map(obj => ({
-                                                    value: obj?.Godown_Id,
-                                                    label: obj?.Godown_Name
-                                                        + " (Bal: "
-                                                        + validStockValue(productDetails?.Item_Id, obj?.Godown_Id, stockInGodown)
-                                                        + ")"
-                                                }))
-                                            },
-                                            {
-                                                label: 'Other Godowns',
-                                                options: toArray(godowns).filter(
-                                                    fil => (
-                                                        toArray(stockInGodown).some(
-                                                            fnd => !(
-                                                                isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
-                                                                && isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                            )
-                                                        )
-                                                    )
-                                                ).map(obj => ({ value: obj?.Godown_Id, label: obj?.Godown_Name }))
-                                            }
-                                        ]}
-                                        styles={customSelectStyles}
-                                        isDisabled={!checkIsNumber(productDetails?.Item_Id)}
-                                        menuPortalTarget={document.body}
-                                        isSearchable={true}
-                                        placeholder={"Select Godown"}
-                                        maxMenuHeight={200}
-                                    />
-                                </div>
-                            )}
 
                         </div>
 

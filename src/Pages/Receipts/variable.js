@@ -11,6 +11,7 @@ export const receiptGeneralInfo = {
     payed_by: '',
     collection_date: ISOString(),
     collection_type: 'CASH',
+    collection_account: '',
     payment_status: '',
     latitude: '',
     longitude: '',

@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import {
+    getSessionUser,
     isEqualNumber,
     ISOString,
     isValidDate,
@@ -7,12 +8,15 @@ import {
     toArray,
 } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../Components/filterableTable2";
 import Select from "react-select";
 import { useEffect, useState } from "react";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { Delete, Edit, FilterAlt, Search } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { customSelectStyles } from "../../Components/tablecolumn";
+import { toast } from "react-toastify";
+import UpdateGeneralInfoDialog from "./updateGeneralInfo";
+import { receiptGeneralInfo } from "./variable";
 
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -33,9 +37,13 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const query = useQuery();
+    const storage = getSessionUser().user;
 
     const [salesReceipts, setSalesReceipts] = useState([]);
     const [drowDownValues, setDropDownValues] = useState(defaultFilterDropDown);
+    const [baseData, setBaseData] = useState({
+        creditAccount: []
+    })
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
@@ -47,9 +55,14 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
         verify_status: { value: "", label: "Search by verify status" },
         payment_status: { value: "", label: "Search by payment status" },
         collected_by: { value: "", label: "Search by collection person" },
-        filterDialog: false, 
+        filterDialog: false,
+        deleteDialog: false,
+        updateDialog: false,
         refresh: false,
     });
+
+    const [deleteId, setDeleteId] = useState(null);
+    const [updateValues, setUpdateValues] = useState(receiptGeneralInfo);
 
     useEffect(() => {
         fetchLink({
@@ -65,6 +78,14 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                 })
             }
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `receipt/creditAccounts`
+        }).then(data => {
+            if (data.success) setBaseData(pre => ({ ...pre, creditAccount: data.data }));
+            else setBaseData(pre => ({ ...pre, creditAccount: [] }))
+        }).catch(e => console.error(e));
+
     }, [])
 
     useEffect(() => {
@@ -90,7 +111,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                 ? query.get("Todate")
                 : defaultFilters.Todate,
         };
-        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate}));
+        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
     }, [location.search]);
 
     const updateQueryString = (newFilters) => {
@@ -99,7 +120,46 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
     };
 
     const closeDialog = () => {
-        setFilters(pre => ({ ...pre, filterDialog: false }));
+        setFilters(pre => ({ ...pre, filterDialog: false, deleteDialog: false, updateDialog: false }));
+        setDeleteId(null);
+        setUpdateValues(receiptGeneralInfo)
+    }
+
+    const deleteReceipt = (id) => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `receipt/collectionReceipts`,
+            method: 'DELETE',
+            bodyData: { collection_id: id }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data?.message || 'Receipt deleted successfully');
+                setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
+                closeDialog();
+            } else {
+                toast.error(data?.message || 'Failed to delete Receipt')
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
+
+    const updateReceipt = (receiptInfo) => {
+        if (loadingOn) loadingOn();
+        fetchLink({
+            address: `receipt/collectionReceipts`,
+            method: 'PUT',
+            bodyData: receiptInfo
+        }).then(data => {
+            if (data.success) {
+                toast.success(data?.message || 'Changes saved');
+                closeDialog();
+            } else {
+                toast.error(data?.message || 'Failed to save changes')
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     }
 
     return (
@@ -139,12 +199,11 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'Verifyed-?',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            const verified = isEqualNumber(row?.verify_status);
+                            const verified = isEqualNumber(row?.verify_status, 1);
                             return (
                                 <span
                                     className={
-                                        verified
-                                            ? 'bg-success' : 'bg-warning'
+                                        (verified ? 'bg-success' : 'bg-warning')
                                             + " text-light fa-11 px-2 py-1 rounded-3"
                                     }
                                 >
@@ -153,14 +212,48 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                             )
                         }
                     },
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Action',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         <span className="">{isEqualNumber(row?.verify_status) ? 'Verified' : 'Pending'}</span>
-                    //     )
-                    // },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Action',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const collection_id = row?.collection_id;
+                            return (
+                                <>
+                                    <ButtonActions
+                                        buttonsData={[
+                                            {
+                                                name: 'Edit',
+                                                icon: <Edit className="fa-20" />,
+                                                onclick: () => {
+                                                    setUpdateValues({
+                                                        collection_id: Number(row?.collection_id),
+                                                        collection_date: ISOString(row?.collection_date),
+                                                        bank_date: row?.bank_date ? ISOString(row?.bank_date) : '',
+                                                        collection_type: row?.collection_type || 'CASH',
+                                                        collection_account: row?.collection_account || '',
+                                                        verify_status: row?.verify_status,
+                                                        payment_status: row?.payment_status,
+                                                        narration: row?.narration,
+                                                        verified_by: storage.UserId,
+                                                    });
+                                                    setFilters(pre => ({ ...pre, updateDialog: true }))
+                                                }
+                                            },
+                                            {
+                                                name: 'Delete',
+                                                icon: <Delete className="fa-20 text-danger" />,
+                                                onclick: () => {
+                                                    setDeleteId(collection_id);
+                                                    setFilters(pre => ({ ...pre, deleteDialog: true }))
+                                                }
+                                            }
+                                        ]}
+                                    />
+                                </>
+                            )
+                        }
+                    },
                 ]}
                 isExpendable={true}
                 expandableComp={({ row }) => (
@@ -187,6 +280,15 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                         />
                     </div>
                 )}
+            />
+
+            <UpdateGeneralInfoDialog
+                update={updateReceipt}
+                updateValues={updateValues}
+                setUpdateValues={setUpdateValues}
+                open={filters.updateDialog}
+                onClose={closeDialog}
+                creditAccount={baseData.creditAccount}
             />
 
             <Dialog
@@ -330,6 +432,24 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                         startIcon={<Search />}
                         variant="outlined"
                     >Search</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={filters.deleteDialog}
+                onClose={closeDialog}
+                maxWidth='sm' fullWidth
+            >
+                <DialogTitle>Confirmation</DialogTitle>
+                <DialogContent>
+                    Do you want to delete the receipt permanently?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDialog}>cancel</Button>
+                    <Button
+                        onClick={() => deleteReceipt(deleteId)}
+                        variant="outlined" color="error"
+                    >Delete</Button>
                 </DialogActions>
             </Dialog>
         </>

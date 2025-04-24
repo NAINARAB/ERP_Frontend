@@ -14,7 +14,7 @@ const validStockValue = (Item_Id, Godown_Id, stockInGodown) => {
             isEqualNumber(godownItem?.Product_Id, Item_Id) &&
             isEqualNumber(godownItem?.Godown_Id, Godown_Id)
         )
-    )?.Bal_Qty;
+    )?.Act_Bal_Qty;
 
     if (
         godownStockValue === null ||

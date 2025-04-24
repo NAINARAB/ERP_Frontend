@@ -10,7 +10,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     retailers = [],
     voucherType = [],
     branches = [],
-    onChangeRetailer
+    onChangeRetailer,
+    stockItemLedgerName = []
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -131,6 +132,28 @@ const ManageSalesInvoiceGeneralInfo = ({
                         <option value='0'>GST</option>
                         <option value='1'>IGST</option>
                     </select>
+                </div>
+
+                {/* stock item ledger name */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Stock Item Ledger Name</label>
+                    <Select
+                        value={{ value: invoiceInfo.Stock_Item_Ledger_Name, label: invoiceInfo.Stock_Item_Ledger_Name }}
+                        onChange={e => setInvoiceInfo(pre => ({ ...pre, Stock_Item_Ledger_Name: e.value }))}
+                        options={[
+                            { value: '', label: 'Search', isDisabled: true },
+                            ...stockItemLedgerName.map(obj => ({
+                                value: obj?.Stock_Item_Ledger_Name,
+                                label: obj?.Stock_Item_Ledger_Name
+                            }))
+                        ]}
+                        styles={customSelectStyles}
+                        menuPortalTarget={document.body}
+                        required={true}
+                        isSearchable={true}
+                        placeholder={"Select"}
+                        maxMenuHeight={300}
+                    />
                 </div>
 
                 {/* STATUS */}
