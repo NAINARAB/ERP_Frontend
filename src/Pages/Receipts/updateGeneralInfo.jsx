@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/
 import { useEffect } from "react";
 import RequiredStar from "../../Components/requiredStar";
 import { payTypeAndStatus } from "./createReceipts";
-import { checkIsNumber, isEqualNumber, stringCompare, toArray } from "../../Components/functions";
+import { checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
 
 
 
@@ -22,7 +22,7 @@ const UpdateGeneralInfoDialog = ({
             <Dialog
                 open={open}
                 onClose={onClose}
-                maxWidth='sm' fullWidth
+                maxWidth='md' fullWidth
             >
                 <DialogTitle>Update Receipt</DialogTitle>
                 <form onSubmit={e => {
@@ -160,6 +160,52 @@ const UpdateGeneralInfoDialog = ({
                                         </td>
                                     </tr>
 
+                                </tbody>
+                            </table>
+
+                            <table className="table table-bordered fa-13">
+                                <thead>
+                                    <tr>
+                                        {['Sno', 'Invoice No', 'Invoice Date', 'Invoice Value', 'Total Receipt', 'Receipt Amount'].map(
+                                            (receipt, receiptIndex) => (
+                                                <th key={receiptIndex}>{receipt}</th>
+                                            )
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {toArray(updateValues?.Receipts).map(
+                                        (receipt, receiptIndex) => {
+                                            const preCollectAmount = toNumber(receipt?.collected_amount);
+                                            return (
+                                                <tr key={receiptIndex}>
+                                                    <td>{receiptIndex + 1}</td>
+                                                    <td>{receipt?.Do_Inv_No}</td>
+                                                    <td>{LocalDate(receipt?.Do_Date)}</td>
+                                                    <td>{NumberFormat(receipt?.Total_Invoice_value)}</td>
+                                                    <td>{NumberFormat(receipt?.total_receipt_amount)}</td>
+                                                    <td>
+                                                        <input
+                                                            className="cus-inpt"
+                                                            value={receipt?.collected_amount}
+                                                            // onInput={onlynum}
+                                                            type="number"
+                                                            max={Subraction(
+                                                                receipt?.Total_Invoice_value,
+                                                                Subraction(receipt?.total_receipt_amount, preCollectAmount)
+                                                            )}
+                                                            onChange={e => setUpdateValues(pre => {
+                                                                const prevReceipts = [...pre.Receipts];
+
+                                                                prevReceipts[receiptIndex].collected_amount = e.target.value;
+                                                                return { ...pre, Receipts: prevReceipts };
+                                                            })}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }
+                                    )}
                                 </tbody>
                             </table>
                         </div>

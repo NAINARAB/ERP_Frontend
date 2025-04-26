@@ -6,7 +6,7 @@ import FilterableTable, {
 } from "../../../Components/filterableTable2";
 import { Card, IconButton, Button } from "@mui/material";
 import { toast } from "react-toastify";
-import { AddBox, Edit } from "@mui/icons-material";
+import { AddBox, Edit, Search } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
 
 const OrderList = ({ loadingOn, loadingOff }) => {
@@ -20,8 +20,10 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     const [data, setData] = useState([]);
     const [tallyLOL, setTallyLOL] = useState([]);
     const [load, setLoad] = useState(false)
+    const [search, setSearch] = useState(false)
 
     useEffect(() => {
+        if (!search) return;
         if (loadingOn) loadingOn();
         setLoad(true);
         fetchLink({
@@ -38,9 +40,10 @@ const OrderList = ({ loadingOn, loadingOff }) => {
             })
             .finally(() => {
                 setLoad(false)
+                setSearch(false); // Reset after fetch
                 if (loadingOff) loadingOff();
             });
-    }, [filters.refresh, filters.FromDate, filters.ToDate]);
+    }, [filters.refresh, search]);
 
     const filterableText = (text) =>
         String(text)
@@ -90,6 +93,9 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                 <th className="border p-2 bg-light">Product_Name</th>
                                 <th className="border p-2 bg-light">Bill_Qty</th>
                                 <th className="border p-2 bg-light">Item_Rate</th>
+
+                                <th className="border p-2 bg-light">Unit_Id</th>
+                                <th className="border p-2 bg-light">Unit_Name</th>
                                 <th className="border p-2 bg-light">Amount</th>
                             </tr>
                         </thead>
@@ -101,6 +107,10 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                     <td className="border p-2">{data?.Product_Name}</td>
                                     <td className="border p-2">{data?.Bill_Qty}</td>
                                     <td className="border p-2">{data?.Item_Rate}</td>
+
+                                    <td className="border p-2">{data?.Unit_Id}</td>
+                                    <td className="border p-2">{data?.Unit_Name}</td>
+
                                     <td className="border p-2">{data?.Amount}</td>
                                 </tr>
                             ))}
@@ -240,7 +250,14 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                 className="cus-inpt"
                             />
                         </td>
-
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                setSearch(true)
+                            }}
+                        >
+                            {<Search />}
+                        </IconButton>
                         <IconButton
                             size="small"
                             onClick={() => {
@@ -262,7 +279,7 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                 {
                     filters.search ? (
                         <FilterableTable
-                            title={"Not synced list "}
+                            title={"Pre-Sale Order List"}
                             bodyFontSizePx={11}
                             headerFontSizePx={11}
                             dataArray={FilteredData}
@@ -347,7 +364,7 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                         />
                     ) : (
                         <FilterableTable
-                            title={"Not synced list "}
+                            title={"Pre-Sale Order List"}
                             bodyFontSizePx={11}
                             headerFontSizePx={11}
                             dataArray={data}

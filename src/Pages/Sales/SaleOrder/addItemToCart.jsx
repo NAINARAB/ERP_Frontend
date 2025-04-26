@@ -362,12 +362,15 @@ const AddItemToSaleOrderCart = ({
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>UOM</label>
                                 <select
-                                    value={productDetails.UOM}
+                                    value={
+                                        Object.hasOwn(productDetails, 'UOM') ? productDetails.UOM : 
+                                        Object.hasOwn(productDetails, 'Unit_Id') ? productDetails.Unit_Id : '' 
+                                    }
                                     onChange={e => {
                                         const selectedIndex = e.target.selectedIndex;
                                         const label = e.target.options[selectedIndex].text;
                                         const value = e.target.value;
-                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
+                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label, Unit_Id: value }));
                                     }}
                                     className="cus-inpt"
                                     disabled={!checkIsNumber(productDetails.Item_Id)}

@@ -154,6 +154,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
             if (data.success) {
                 toast.success(data?.message || 'Changes saved');
                 closeDialog();
+                setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
             } else {
                 toast.error(data?.message || 'Failed to save changes')
             }
@@ -204,7 +205,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                 <span
                                     className={
                                         (verified ? 'bg-success' : 'bg-warning')
-                                            + " text-light fa-11 px-2 py-1 rounded-3"
+                                        + " text-light fa-11 px-2 py-1 rounded-3"
                                     }
                                 >
                                     {verified ? 'Verified' : 'Pending'}
@@ -231,11 +232,12 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                                         collection_date: ISOString(row?.collection_date),
                                                         bank_date: row?.bank_date ? ISOString(row?.bank_date) : '',
                                                         collection_type: row?.collection_type || 'CASH',
-                                                        collection_account: row?.collection_account || '',
+                                                        collection_account: row?.collection_account || 0,
                                                         verify_status: row?.verify_status,
                                                         payment_status: row?.payment_status,
                                                         narration: row?.narration,
                                                         verified_by: storage.UserId,
+                                                        Receipts: toArray(row?.Receipts)
                                                     });
                                                     setFilters(pre => ({ ...pre, updateDialog: true }))
                                                 }
