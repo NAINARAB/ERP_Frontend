@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
 import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Add, Delete } from "@mui/icons-material";
-import { Addition, checkIsNumber, Division, filterableText, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, RoundNumber } from "../../Components/functions";
+import { Addition, checkIsNumber, Division, filterableText, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
@@ -118,43 +118,90 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const isNotTaxableBill = isEqualNumber(invoiceDetails?.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(invoiceDetails?.IS_IGST, 1);
 
-    const Total_Invoice_value = selectedItems.reduce((acc, item) => {
-        const Amount = RoundNumber(item?.Amount);
+    const Total_Invoice_value = useMemo(() => {
+        return selectedItems.reduce((acc, item) => {
+            const Amount = RoundNumber(item?.Amount);
 
-        if (isNotTaxableBill) return Addition(acc, Amount);
+            if (isNotTaxableBill) return Addition(acc, Amount);
 
-        const product = findProductDetails(products, item.Item_Id);
-        const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+            const product = findProductDetails(products, item.Item_Id);
+            const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
 
-        if (isInclusive) {
-            return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
-        } else {
-            return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
-        }
-    }, 0)
+            if (isInclusive) {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+            } else {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+            }
+        }, 0);
+    }, [selectedItems, isNotTaxableBill, products, IS_IGST, isInclusive])
 
-    const totalValueBeforeTax = selectedItems.reduce((acc, item) => {
-        const Amount = RoundNumber(item?.Amount);
+    const totalValueBeforeTax = useMemo(() => {
+        return selectedItems.reduce((acc, item) => {
+            const Amount = RoundNumber(item?.Amount);
 
-        if (isNotTaxableBill) return {
-            TotalValue: Addition(acc.TotalValue, Amount),
+            if (isNotTaxableBill) return {
+                TotalValue: Addition(acc.TotalValue, Amount),
+                TotalTax: 0
+            }
+
+            const product = findProductDetails(products, item.Item_Id);
+            const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+
+            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+            const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
+            const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
+
+            return {
+                TotalValue, TotalTax
+            };
+        }, {
+            TotalValue: 0,
             TotalTax: 0
-        }
+        });
+    }, [selectedItems, isNotTaxableBill, products, IS_IGST, isInclusive])
 
-        const product = findProductDetails(products, item.Item_Id);
-        const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+    const taxSplitUp = useMemo(() => {
+        if (!selectedItems || selectedItems.length === 0) return {};
 
-        const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
-        const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
-        const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
+        let totalTaxable = 0;
+        let totalTax = 0;
+
+        selectedItems.forEach(item => {
+            const Amount = RoundNumber(item?.Amount || 0);
+
+            if (isNotTaxableBill) {
+                totalTaxable = Addition(totalTaxable, Amount);
+                return;
+            }
+
+            const product = findProductDetails(products, item.Item_Id);
+            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+
+            totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
+            totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
+        });
+
+        const totalWithTax = Addition(totalTaxable, totalTax);
+        const roundedTotal = Math.round(totalWithTax);
+        const roundOff = RoundNumber(roundedTotal - totalWithTax);
+
+        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
 
         return {
-            TotalValue, TotalTax
+            totalTaxable: RoundNumber(totalTaxable),
+            totalTax: RoundNumber(totalTax),
+            cgst,
+            sgst,
+            igst,
+            roundOff,
+            invoiceTotal: roundedTotal
         };
-    }, {
-        TotalValue: 0,
-        TotalTax: 0
-    });
+
+    }, [selectedItems, products, IS_IGST, isNotTaxableBill, isInclusive]);
 
     useEffect(() => {
         fetchLink({
@@ -645,8 +692,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <div className="col-sm-4 p-2">
                                             <label className='fa-13'>Voucher Type</label>
                                             <Select
-                                                value={{ 
-                                                    value: invoiceDetails.Voucher_Type, 
+                                                value={{
+                                                    value: invoiceDetails.Voucher_Type,
                                                     label: voucherType.find(v => isEqualNumber(v.Vocher_Type_Id, invoiceDetails.Voucher_Type))?.Voucher_Type
                                                 }}
                                                 onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.value }))}
@@ -762,11 +809,11 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     </div>
 
                                     <label className='fa-13'>Narration</label>
-                                    <textarea 
-                                        className="cus-inpt fa-14" 
+                                    <textarea
+                                        className="cus-inpt fa-14"
                                         rows={2}
                                         value={invoiceDetails.Narration}
-                                        onChange={e => setInvoiceDetails(pre => ({...pre, Narration: e.target.value}))} 
+                                        onChange={e => setInvoiceDetails(pre => ({ ...pre, Narration: e.target.value }))}
                                     />
 
                                 </div>
@@ -893,7 +940,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         </td>
                                         <td className="border p-2">Total Taxable Amount</td>
                                         <td className="border p-2">
-                                            {NumberFormat(totalValueBeforeTax.TotalValue)}
+                                            {/* {NumberFormat(totalValueBeforeTax.TotalValue)} */}
+                                            {taxSplitUp.totalTaxable}
                                         </td>
                                     </tr>
                                     {!IS_IGST ? (
@@ -901,13 +949,15 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             <tr>
                                                 <td className="border p-2">CGST</td>
                                                 <td className="border p-2">
-                                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
+                                                    {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))} */}
+                                                    {taxSplitUp.cgst}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td className="border p-2">SGST</td>
                                                 <td className="border p-2">
-                                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
+                                                    {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))} */}
+                                                    {taxSplitUp.sgst}
                                                 </td>
                                             </tr>
                                         </>
@@ -915,14 +965,29 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <tr>
                                             <td className="border p-2">IGST</td>
                                             <td className="border p-2">
-                                                {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax))}
+                                                {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax))} */}
+                                                {taxSplitUp.igst}
                                             </td>
                                         </tr>
                                     )}
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
-                                            {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
+                                            {/* {taxSplitUp.roundOff} */}
+                                            <input
+                                                value={invoiceDetails.Round_off}
+                                                defaultValue={taxSplitUp.roundOff}
+                                                style={{ minWidth: '200px', maxWidth: '350px' }}
+                                                className="cus-inpt p-2"
+                                                onInput={onlynumAndNegative}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Round_off: e.target.value }))}
+                                            />
+                                            {/* {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)} */}
+                                            {/* {console.log({
+                                                Total_Invoice_value,
+                                                TotalTax: totalValueBeforeTax.TotalTax,
+                                                TotalValue: totalValueBeforeTax.TotalValue,
+                                            })} */}
                                         </td>
                                     </tr>
                                     <tr>

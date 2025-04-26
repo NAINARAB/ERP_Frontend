@@ -190,6 +190,7 @@ const UpdateGeneralInfoDialog = ({
                                                             value={receipt?.collected_amount}
                                                             // onInput={onlynum}
                                                             type="number"
+                                                            required
                                                             max={Subraction(
                                                                 receipt?.Total_Invoice_value,
                                                                 Subraction(receipt?.total_receipt_amount, preCollectAmount)
