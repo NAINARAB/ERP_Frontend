@@ -16,7 +16,7 @@ const defaultFilters = {
     Todate: ISOString(),
 };
 
-const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
+const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const stateDetails = location.state;
@@ -204,19 +204,21 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                                         </IconButton>
                                     </Tooltip>
 
-                                    <Tooltip title='Edit'>
-                                        <IconButton
-                                            onClick={() => navigate('create', {
-                                                state: {
-                                                    ...row,
-                                                    isEdit: true
-                                                }
-                                            })}
-                                            size="small"
-                                        >
-                                            <Edit className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
+                                    {EditRights && (
+                                        <Tooltip title='Edit'>
+                                            <IconButton
+                                                onClick={() => navigate('create', {
+                                                    state: {
+                                                        ...row,
+                                                        isEdit: true
+                                                    }
+                                                })}
+                                                size="small"
+                                            >
+                                                <Edit className="fa-16" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
 
                                 </>
                             )
@@ -225,13 +227,15 @@ const SaleInvoiceList = ({ loadingOn, loadingOff }) => {
                 ]}
                 ButtonArea={
                     <>
-                        <Button
-                            variant='outlined'
-                            startIcon={<Add />}
-                            onClick={() => navigate('create')}
-                        >
-                            {'New'}
-                        </Button>
+                        {AddRights && (
+                            <Button
+                                variant='outlined'
+                                startIcon={<Add />}
+                                onClick={() => navigate('create')}
+                            >
+                                {'New'}
+                            </Button>
+                        )}
                         <Tooltip title='Filters'>
                             <IconButton
                                 size="small"

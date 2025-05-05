@@ -67,7 +67,7 @@ const transformStockJournalData = (data) => {
     return transformedData;
 };
 
-const StockMangement = ({ loadingOn, loadingOff }) => {
+const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const query = useQuery();
@@ -206,10 +206,13 @@ const StockMangement = ({ loadingOn, loadingOff }) => {
                     onClick={() => setFilters({ ...filters, filterDialog: true })}
                 ><FilterAlt /></IconButton>
             </Tooltip>
-            <Button
-                variant="outlined"
-                onClick={() => navigate('create')}
-            >Add</Button>
+
+            {AddRights && (
+                <Button
+                    variant="outlined"
+                    onClick={() => navigate('create')}
+                >Add</Button>
+            )}
 
             <select
                 value={filters.view} className="cus-inpt p-1 py-2 mx-1 w-auto"
@@ -258,7 +261,7 @@ const StockMangement = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'Action',
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            return row?.processObjecet && (
+                            return (row?.processObjecet && EditRights) && (
                                 <>
                                     <IconButton size="small" onClick={() => {
                                         navigate('create', {

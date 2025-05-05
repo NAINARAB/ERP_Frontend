@@ -32,6 +32,23 @@ export const LocalDateWithTime = (dateObj) => {
     return receivedDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+export const getDaysBetween = (invoiceDateStr, currentDateStr = new Date().toISOString()) => {
+    const invoiceDate = new Date(invoiceDateStr);
+    const currentDate = new Date(currentDateStr);
+
+    // Get UTC midnight for both dates to avoid timezone discrepancies
+    invoiceDate.setUTCHours(0, 0, 0, 0);
+    currentDate.setUTCHours(0, 0, 0, 0);
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+
+    const diffInMs = currentDate - invoiceDate;
+    const diffInDays = Math.floor(diffInMs / msPerDay);
+
+    return diffInDays;
+}
+
+
 export const DaysBetween = (StartDate, EndDate) => {
     const oneDay = 1000 * 60 * 60 * 24;
 
@@ -212,6 +229,19 @@ export const timeDuration = (startDate, endDate) => {
     const pad = num => String(num).padStart(2, '0');
 
     return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+export const formatDateToCustom = (dateString) => {
+    // sample output: 05-Mar-25
+    const date = new Date(dateString);
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+
+    return `${day}-${month}-${year}`;  
 }
 
 export const customTimeDifference = (startTime, endTime) => {

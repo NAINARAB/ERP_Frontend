@@ -16,7 +16,7 @@ const defaultFilters = {
     Todate: ISOString(),
 };
 
-const SaleOrderList = ({ loadingOn, loadingOff }) => {
+const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const navigate = useNavigate();
     const location = useLocation();
@@ -222,19 +222,21 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                         </IconButton>
                                     </Tooltip>
 
-                                    <Tooltip title='Edit'>
-                                        <IconButton
-                                            onClick={() => navigate('create', {
-                                                state: {
-                                                    ...row,
-                                                    isEdit: true
-                                                }
-                                            })}
-                                            size="small"
-                                        >
-                                            <Edit className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
+                                    {EditRights && (
+                                        <Tooltip title='Edit'>
+                                            <IconButton
+                                                onClick={() => navigate('create', {
+                                                    state: {
+                                                        ...row,
+                                                        isEdit: true
+                                                    }
+                                                })}
+                                                size="small"
+                                            >
+                                                <Edit className="fa-16" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
 
                                 </>
                             )
@@ -243,13 +245,15 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                 ]}
                 ButtonArea={
                     <>
-                        <Button
-                            variant='outlined'
-                            startIcon={<Add />}
-                            onClick={() => navigate('create')}
-                        >
-                            {'New'}
-                        </Button>
+                        {AddRights && (
+                            <Button
+                                variant='outlined'
+                                startIcon={<Add />}
+                                onClick={() => navigate('create')}
+                            >
+                                {'New'}
+                            </Button>
+                        )}
                         <Tooltip title='Filters'>
                             <IconButton
                                 size="small"
@@ -321,12 +325,12 @@ const SaleOrderList = ({ loadingOn, loadingOff }) => {
                                             onChange={(e) => setFilters({ ...filters, Retailer: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({ 
-                                                    value: obj?.Retailer_Id, 
-                                                    label: obj?.Retailer_Name 
-                                                    + '- ₹' 
-                                                    + NumberFormat(toNumber(obj?.TotalSales)) 
-                                                    + ` (${toNumber(obj?.OrderCount)})`
+                                                ...retailers.map(obj => ({
+                                                    value: obj?.Retailer_Id,
+                                                    label: obj?.Retailer_Name
+                                                        + '- ₹'
+                                                        + NumberFormat(toNumber(obj?.TotalSales))
+                                                        + ` (${toNumber(obj?.OrderCount)})`
                                                 }))
                                             ]}
                                             styles={customSelectStyles}

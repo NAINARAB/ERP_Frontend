@@ -21,7 +21,7 @@ const defaultFilters = {
     vendor: '',
 };
 
-const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
+const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
     const [purchaseOrderData, setPurchaseOrderData] = useState([]);
     const [orderPreview, setOrderPreview] = useState({
         OrderDetails: {},
@@ -169,7 +169,10 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                     dialogs: setFilters,
                     setOrderPreview,
                     navigation: navigateToPageWithState,
-                    products: products
+                    products: products,
+                    EditRights,
+                    DeleteRights,
+                    AddRights
                 })}
                 tableMaxHeight={650}
                 EnableSerialNumber
@@ -179,10 +182,12 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff }) => {
                 PDFPrintOption
                 ButtonArea={
                     <>
-                        <Button
-                            variant="outlined"
-                            onClick={() => navigate('create')}
-                        >Add</Button>
+                        {AddRights && (
+                            <Button
+                                variant="outlined"
+                                onClick={() => navigate('create')}
+                            >Add</Button>
+                        )}
                         <IconButton
                             size="small"
                             className="me-2"

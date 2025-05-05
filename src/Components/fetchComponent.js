@@ -6,7 +6,9 @@ export const fetchLink = async ({
     headers,
     bodyData = null,
     others = {},
-    autoHeaders = false
+    autoHeaders = false,
+    loadingOn,
+    loadingOff
 }) => {
 
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -38,6 +40,7 @@ export const fetchLink = async ({
     }
 
     try {
+        if (loadingOn) loadingOn();
         const response = await fetch(api + address, options);
 
         // if (!response.ok) {
@@ -53,6 +56,8 @@ export const fetchLink = async ({
     } catch (e) {
         console.error('Fetch Error', e);
         throw e;
+    } finally {
+        if (loadingOff) loadingOff();
     }
 };
 

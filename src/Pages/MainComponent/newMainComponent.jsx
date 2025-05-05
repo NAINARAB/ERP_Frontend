@@ -609,6 +609,20 @@ const MainComponent = (props) => {
                             <InvalidPageComp message={'Invalid Credential'} />
                         )}
 
+                        {/* {isEqualNumber(contextObj?.Read_Rights, 1) ? (
+                            // React.Children.map(props.children, (child) => {
+                            //     if (React.isValidElement(child)) {
+                            //         return React.cloneElement(child, { pageDetails: contextObj });
+                            //     }
+                            //     return child;
+                            // })
+                            React.isValidElement(props.children) ? (
+                                React.cloneElement(props.children, { pageDetails: contextObj })
+                            ) : <></>
+                        ) : (
+                            <InvalidPageComp message={'Invalid Credential'} />
+                        )} */}
+
                     </div>
 
                 </div>

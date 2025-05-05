@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Addition, filterableText, getSessionUser, ISOString, isValidDate, NumberFormat } from '../../Components/functions'
+import { useEffect, useMemo, useState } from "react";
+import { Addition, filterableText, getSessionUser, ISOString, isValidDate, NumberFormat, stringCompare, toArray } from '../../Components/functions'
 import { fetchLink } from "../../Components/fetchComponent";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
 import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
@@ -71,18 +71,35 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
     const RowComp = ({ row, Sno }) => {
         const [open, setOpen] = useState(false);
 
+        const ERP_Rows = useMemo(() => toArray(row?.groupedData).filter(
+            item => stringCompare(item?.dataSource, 'ERP')
+        ), [row]);
+
+        const Tally_Rows = useMemo(() => toArray(row?.groupedData).filter(
+            item => stringCompare(item?.dataSource, 'TALLY')
+        ), [row]);
+
         return (
             <>
                 <tr>
                     <td>{Sno}</td>
                     <td>{row?.ModuleName}</td>
                     <td>
-                        {row?.groupedData?.length
+                        {ERP_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)}
+                        {/* {ERP_Rows.length
                             + ' ( ' +
-                            row?.groupedData?.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
-                            + ' - Entry )'}
+                            ERP_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
+                            + ' - Entry )'} */}
                     </td>
-                    <td>{NumberFormat(row?.groupedData?.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
+                    <td>{NumberFormat(ERP_Rows.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
+                    <td>
+                        {Tally_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)}
+                        {/* {Tally_Rows.length
+                            + ' ( ' +
+                            Tally_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
+                            + ' - Entry )'} */}
+                    </td>
+                    <td>{NumberFormat(Tally_Rows.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
                     <td className="p-0 text-center vctr">
                         <IconButton onClick={() => setOpen(!open)} size="small">
                             {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
@@ -105,33 +122,79 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                 </tr>
 
                 {open && (
-                    row?.groupedData?.map((item, index) => (
-                        <tr key={index}>
-                            <td>{Sno + '.' + (index + 1)}</td>
-                            <td>{item?.Voucher_Type}</td>
-                            <td>{item?.VoucherBreakUpCount}</td>
-                            <td>{NumberFormat(item?.Amount)}</td>
-                            <td className="p-0 text-center vctr">
-                                <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
-                                    <button
-                                        onClick={() => {
-                                            navigate(item?.navLink, {
-                                                state: {
-                                                    ...item,
-                                                    Fromdate: filters?.fetchFrom,
-                                                    Todate: filters?.fetchTo
-                                                }
-                                            })
-                                        }}
-                                        className="icon-btn"
-                                    >
-                                        <ArrowRight sx={{ fontSize: 'inherit' }} />
-                                    </button>
-                                </Tooltip>
+                    <>
+                        <tr>
+                            <td colSpan={7} className="bg-light fw-bold">
+                                ERP {`(${ERP_Rows.length})`}
                             </td>
                         </tr>
-                    ))
+
+                        {ERP_Rows.map((item, index) => (
+                            <tr key={index}>
+                                <td>{Sno + '.1.' + (index + 1)}</td>
+                                <td>{item?.Voucher_Type}</td>
+                                <td>{item?.VoucherBreakUpCount}</td>
+                                <td>{NumberFormat(item?.Amount)}</td>
+                                <td></td>
+                                <td></td>
+                                <td className="p-0 text-center vctr">
+                                    <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
+                                        <button
+                                            onClick={() => {
+                                                navigate(item?.navLink, {
+                                                    state: {
+                                                        ...item,
+                                                        Fromdate: filters?.fetchFrom,
+                                                        Todate: filters?.fetchTo
+                                                    }
+                                                })
+                                            }}
+                                            className="icon-btn"
+                                        >
+                                            <ArrowRight sx={{ fontSize: 'inherit' }} />
+                                        </button>
+                                    </Tooltip>
+                                </td>
+                            </tr>
+                        ))}
+
+                        <tr>
+                            <td colSpan={7} className="bg-light fw-bold">
+                                TALLY {`(${Tally_Rows.length})`}
+                            </td>
+                        </tr>
+
+                        {Tally_Rows?.map((item, index) => (
+                            <tr key={index}>
+                                <td>{Sno + '.2.' + (index + 1)}</td>
+                                <td>{item?.Voucher_Type}</td>
+                                <td></td>
+                                <td></td>
+                                <td>{item?.VoucherBreakUpCount}</td>
+                                <td>{NumberFormat(item?.Amount)}</td>
+                                <td className="p-0 text-center vctr">
+                                    <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
+                                        <button
+                                            onClick={() => {
+                                                navigate(item?.navLink, {
+                                                    state: {
+                                                        ...item,
+                                                        Fromdate: filters?.fetchFrom,
+                                                        Todate: filters?.fetchTo
+                                                    }
+                                                })
+                                            }}
+                                            className="icon-btn"
+                                        >
+                                            <ArrowRight sx={{ fontSize: 'inherit' }} />
+                                        </button>
+                                    </Tooltip>
+                                </td>
+                            </tr>
+                        ))}
+                    </>
                 )}
+
             </>
         )
     }
@@ -179,8 +242,12 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                                 <tr>
                                     <th>Sno</th>
                                     <th>Voucher</th>
-                                    <th>Voucher Count</th>
-                                    <th>Total Amount</th>
+                                    {/* <th>Voucher Count</th> */}
+                                    {/* <th>Total Amount</th> */}
+                                    <th>ERP Entries</th>
+                                    <th>ERP Amount</th>
+                                    <th>Tally Entries</th>
+                                    <th>Tally Amount</th>
                                     <th>Detilas</th>
                                 </tr>
                             </thead>

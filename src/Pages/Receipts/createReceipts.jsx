@@ -2,9 +2,6 @@ import { Button, Card, CardContent } from "@mui/material";
 import {
     Addition,
     checkIsNumber,
-    filterableText,
-    getSessionUser,
-    isEqualNumber,
     ISOString,
     RoundNumber,
     stringCompare,
@@ -13,10 +10,8 @@ import {
 import { fetchLink } from "../../Components/fetchComponent";
 import Select from "react-select";
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "@mui/icons-material";
-import { useLocation, useNavigate } from "react-router-dom";
-import DeliveryBillCard from "./billDeliveryCard";
-import { receiptGeneralInfo, receiptDetailsInfo } from "./variable";
+import { useNavigate } from "react-router-dom";
+import { receiptGeneralInfo } from "./variable";
 import { toast } from 'react-toastify'
 import RequiredStar from "../../Components/requiredStar";
 import DeliveryBillTableRow from "./billDeliveryTableRow";
@@ -44,13 +39,8 @@ export const payTypeAndStatus = [
     },
 ];
 
-const useQuery = () => new URLSearchParams(useLocation().search);
 const CreateReceipts = ({ loadingOn, loadingOff }) => {
-    const storage = getSessionUser().user;
     const navigate = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
-    const query = useQuery();
 
     const [salesPayments, setSalesPayments] = useState([]);
     const [retailers, setRetailers] = useState([]);
@@ -274,7 +264,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                 >
                                     <option value="" disabled>Select</option>
                                     {baseData.creditAccount.filter(
-                                        fil => stringCompare(receiptInfo.collection_type, 'CASH') 
+                                        fil => stringCompare(receiptInfo.collection_type, 'CASH')
                                             ? stringCompare(fil.Type, 'CASH')
                                             : !stringCompare(fil.Type, 'CASH')
                                     ).map(
@@ -297,6 +287,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                     {paymentStatus.map((status, ind) => (
                                         <option value={status} key={ind}>{status}</option>
                                     ))}
+                                    <option value="Canceled">Canceled</option>
                                     <option value="Completed">Completed</option>
                                 </select>
                             </div>

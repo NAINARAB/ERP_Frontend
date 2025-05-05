@@ -1,21 +1,21 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Edit } from '@mui/icons-material';
+import React, { useEffect, useState } from "react";
+import { Edit, LocalMallOutlined } from '@mui/icons-material';
 import { IconButton, Box, Tooltip, Button } from "@mui/material";
-import 'react-toastify/dist/ReactToastify.css';
-import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
 import CustomerAddScreen from "./customerCreation";
-import { fetchLink } from '../../Components/fetchComponent'
-// import '../../com.css';
+import { fetchLink } from '../../Components/fetchComponent';
+import FilterableTable, { createCol } from '../../Components/filterableTable2';
 
-const CustomerList = () => {
+const CustomerList = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
     const [customers, setCustomers] = useState([])
     const [refresh, setRefresh] = useState(false);
     const [rowValue, setRowValue] = useState({})
     const [screen, setScreen] = useState(true);
 
     useEffect(() => {
+        // if (loadingOn) loadingOn();
         fetchLink({
             address: `userModule/customer`,
+            loadingOn, loadingOff
         }).then(data => {
             setCustomers(data.data ? data.data : [])
         }).catch(e => console.error(e))
@@ -28,125 +28,63 @@ const CustomerList = () => {
         }
     }, [screen])
 
-    const CustomerColumn = useMemo(() => [
-        {
-            header: 'Action',
-            size: 130,
-            Cell: ({ renderedCellValue, row }) => (
-                <Box >
-                    <Tooltip title="Edit">
-                        <span>
-                            <IconButton onClick={() => {
-                                setRowValue(row.original);
-                                setScreen(!screen);
-                            }}>
-                                <Edit />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    {/* <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => console.log(row.original)}>
-                            <Delete />
-                        </IconButton>
-                    </Tooltip> */}
-                </Box>
-            )
-        },
-        {
-            header: 'No',
-            accessorKey: 'Cust_No',
-            size: 110,
-
-        },
-        {
-            header: 'Name',
-            accessorKey: 'Customer_name',
-            size: 250
-        },
-        {
-            header: 'Phone',
-            accessorKey: 'Mobile_no',
-            size: 140
-        },
-        {
-            header: 'Type',
-            accessorKey: 'UserTypeGet',
-        },
-        {
-            header: 'Contact Person',
-            accessorKey: 'Contact_Person',
-        },
-        {
-            header: 'Email',
-            accessorKey: 'Email_Id',
-        },
-        {
-            header: 'Under',
-            accessorKey: 'underGet',
-        },
-        {
-            header: 'State',
-            accessorKey: 'State',
-        },
-        {
-            header: 'Pincode',
-            accessorKey: 'Pincode',
-        },
-        {
-            header: 'Gstin',
-            accessorKey: 'Gstin',
-        },
-        {
-            header: 'Created By',
-            accessorKey: 'EnteyByGet',
-        }
-    ], [])
-
-    const table = useMaterialReactTable({
-        columns: CustomerColumn,
-        data: customers,
-        enableColumnResizing: true,
-        enableGrouping: true,
-        enableStickyHeader: true,
-        enableStickyFooter: true,
-        enableRowVirtualization: true,
-        enableColumnOrdering: true,
-        enableColumnPinning: true,
-        enableRowNumbers: true,
-        initialState: {
-            density: 'compact',
-            expanded: true,
-            grouping: [],
-            pagination: { pageIndex: 0, pageSize: 100 },
-            sorting: [{ id: 'Customer_name', desc: false }],
-            columnVisibility: { EnteyByGet: false, Gstin: false, Pincode: false, State: false },
-        },
-        muiToolbarAlertBannerChipProps: { color: 'primary' },
-        muiTableContainerProps: { sx: { maxHeight: '60vh' } },
-    })
-
     const doRefresh = () => {
         setRefresh(!refresh)
     }
 
-    // useEffect(() => { console.error = function () { } })
-
     return (
         <>
             {screen ?
-                <>
-                    <div className="card">
-                        <div className="card-header d-flex justify-content-between">
-                            <h5 className="mb-0">Customers</h5>
-                            <span>
-                                <Button variant='outlined' onClick={() => setScreen(!screen)} >Add</Button>
-                            </span>
-                        </div>
-                        <div className="card-body p-0">
-                            <MaterialReactTable table={table} />
-                        </div>
-                    </div>
-                </>
+                <FilterableTable
+                    title="Customers"
+                    dataArray={customers}
+                    headerFontSizePx={13}
+                    bodyFontSizePx={12}
+                    columns={[
+                        createCol('Cust_No', 'string', 'CusID'),
+                        createCol('Customer_name', 'string', 'Name'),
+                        createCol('UserTypeGet', 'string', 'Type'),
+                        createCol('Mobile_no', 'string', 'Phone'),
+                        createCol('Contact_Person', 'string', 'Contact Person'),
+                        createCol('Email_Id', 'string', 'Email'),
+                        createCol('State', 'string', 'State'),
+                        createCol('Gstin', 'string', 'Gstin'),
+                        {
+                            isVisible: 1,
+                            ColumnHeader: 'Action',
+                            isCustomCell: true,
+                            Cell: ({ row }) => (
+                                <>
+                                    <Tooltip title="Edit">
+                                        <span>
+                                            <IconButton size="small" onClick={() => {
+                                                setRowValue(row);
+                                                setScreen(!screen);
+                                            }}>
+                                                <Edit className="fa-20" />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                    {/* <Tooltip title="Outstanding">
+                                        <span>
+                                            <IconButton 
+                                                size="small" 
+                                                onClick={() => {}}
+                                            >
+                                                <LocalMallOutlined className="fa-20" />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip> */}
+                                </>
+                            )
+                        },
+                    ]}
+                    ButtonArea={
+                        <>
+                            <Button variant='outlined' onClick={() => setScreen(!screen)} >Add</Button>
+                        </>
+                    }
+                />
                 : <CustomerAddScreen
                     screen={screen}
                     setScreen={setScreen}

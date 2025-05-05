@@ -1,8 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { useEffect } from "react";
 import RequiredStar from "../../Components/requiredStar";
 import { payTypeAndStatus } from "./createReceipts";
-import { checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
+import { isEqualNumber, LocalDate, NumberFormat, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
 
 
 
@@ -127,6 +126,7 @@ const UpdateGeneralInfoDialog = ({
                                                 {paymentStatus.map((status, ind) => (
                                                     <option value={status} key={ind}>{status}</option>
                                                 ))}
+                                                <option value="Canceled">Canceled</option>
                                                 <option value="Completed">Completed</option>
                                             </select>
                                         </td>

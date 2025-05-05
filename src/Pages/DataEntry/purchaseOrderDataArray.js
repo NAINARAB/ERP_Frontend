@@ -275,7 +275,16 @@ const createCol = (field, type, ColumnHeader) => {
 //     return Quantity;
 // }
 
-export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview, navigation, products }) => {
+export const displayColumns = ({ 
+    OrderStatus = 'ITEMS', 
+    dialogs, 
+    setOrderPreview, 
+    navigation, 
+    products,
+    EditRights,
+    DeleteRights,
+    AddRights,
+}) => {
 
     // Order Based Cells
     const OrderId = createCol('OrderId', 'string', 'Order Id'),
@@ -353,6 +362,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             navigation
                             && isConvertableArrivalExist
                             && OrderDetails?.OrderStatus === 'Completed'
+                            && AddRights
                         ) && (
                                 <Tooltip title='Convert to invoice'>
                                     <IconButton
@@ -396,7 +406,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                                 </Tooltip>
                             )}
 
-                        {(navigation && !IsConvertedAsInvoice) && (
+                        {(navigation && !IsConvertedAsInvoice && EditRights) && (
                             <Tooltip title='Edit'>
                                 <span>
                                     <IconButton
@@ -552,7 +562,7 @@ export const displayColumns = ({ OrderStatus = 'ITEMS', dialogs, setOrderPreview
                             </span>
                         </Tooltip>
 
-                        {(navigation && !IsConvertedAsInvoice) && (
+                        {(navigation && !IsConvertedAsInvoice && EditRights) && (
                             <Tooltip title='Edit'>
                                 <span>
                                     <IconButton
