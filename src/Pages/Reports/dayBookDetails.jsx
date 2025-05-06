@@ -22,7 +22,7 @@ const DayBookDetails = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
-        ModuleName: 'Sales',
+        ModuleName: 'PurchaseOrder',
         Voucher_Type: null,
         filterDialog: false,
         dynamicFilters: false,
@@ -323,7 +323,10 @@ const DayBookDetails = ({ loadingOn, loadingOff }) => {
                                                 setDynamicFilters({});
                                             }}
                                         >
-                                            {['Sales', 'Payment', 'Receipt', 'Journal', 'Contra'].map((item, key) => (
+                                            {[
+                                                'PurchaseOrder', 'PurchaseInvoice', 'SaleOrder', 'SalesInvoice',
+                                                'StockJournal', 'Journal', 'Payment', 'Receipt', 'Contra'
+                                            ].map((item, key) => (
                                                 <option value={item} key={key}>{item}</option>
                                             ))}
                                         </select>

@@ -3,24 +3,27 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, NumberFormat, toArray, toNumber } from "../../../Components/functions";
-import { FilterAlt, Print } from "@mui/icons-material";
+import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, ISOString, LocalDate, NumberFormat, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { FilterAlt, Print, Search } from "@mui/icons-material";
 import { useReactToPrint } from 'react-to-print';
+import { toast } from 'react-toastify';
 
 const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
     const printRef = useRef(null);
     const [filters, setFilters] = useState({
-        customer: { value: '', label: 'Select Customer' },
+        broker: { value: '', label: 'Select Broker' },
+        ledger: { value: '', label: 'Select Ledger' },
         customersArray: [],
         refresh: false,
         filterDialog: false,
-        dueDays: 0
+        dueDays: 0,
+        reqDate: ISOString()
     });
 
     useEffect(() => {
         fetchLink({
-            address: `userModule/customer/dropDown`,
+            address: `userModule/customer/lol/dropDown`,
         }).then(data => {
             if (data.success) {
                 setFilters(pre => ({ ...pre, customersArray: toArray(data.data) }));
@@ -30,28 +33,68 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         setReportData([]);
-        if (checkIsNumber(filters.customer.value)) {
-            fetchLink({
-                address: `userModule/customer/paymentInvoiceList?UserId=${filters.customer.value}`,
-                loadingOn: loadingOn,
-                loadingOff: loadingOff
-            }).then(data => {
-                if (data.success) {
-                    const withDueDate = toArray(data.data).map(
-                        row => ({
-                            ...row, 
-                            dueDays: toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date) : '') 
-                        })
-                    ).sort((a, b) => b.dueDays - a.dueDays)
-                    setReportData(withDueDate);
+
+        const brokerValue = filters?.broker?.value || '';
+
+        const ledgers = checkIsNumber(filters?.ledger?.value)
+            ? [{ Ledger_Tally_Id: filters?.ledger?.value }]
+            : brokerValue
+                ? toArray(filters?.customersArray).filter(
+                    fil => stringCompare(fil?.Actual_Party_Name_with_Brokers, brokerValue)
+                ).map(
+                    ledger => ({ Ledger_Tally_Id: ledger?.Ledger_Tally_Id })
+                )
+                : [];
+
+        const resultLedger = toArray(ledgers);
+        const reqDate = filters?.reqDate;
+
+        if (resultLedger === 0) return toast.error('Select any Ledger or Broker');
+        if (!reqDate) return toast.error('Enter Till Date');
+
+        fetchLink({
+            address: `userModule/customer/paymentInvoiceList/filters`,
+            loadingOn: loadingOn,
+            loadingOff: loadingOff,
+            method: 'POST',
+            bodyData: {
+                ledgerId: resultLedger,
+                reqDate: reqDate
+            }
+        }).then(data => {
+            if (data.success) {
+                setReportData(data.data);
+            }
+        }).catch(e => console.error(e));
+
+    }, [filters.refresh])
+
+    const withDueDays = useMemo(() => {
+        return toArray(reportData).map(
+            row => {
+                const dueDay = toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date) : '');
+
+                return {
+                    ...row,
+                    dueDays: dueDay,
+                    showDueDay: filters.dueDays ? filters.dueDays <= dueDay : true
                 }
-            }).catch(e => console.error(e))
-        }
-    }, [filters.customer.value])
+            }
+        ).sort((a, b) => b.dueDays - a.dueDays)
+    }, [reportData, filters.dueDays])
 
     const totalPendingAmount = useMemo(() => {
-        return reportData.reduce((acc, inv) => Addition(acc, inv.Bal_Amount), 0);
+        return reportData.reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
     }, [reportData]);
+
+    const brokersDropDown = useMemo(() => {
+        const allBroker = toArray(filters.customersArray).map(trip => trip?.Actual_Party_Name_with_Brokers);
+
+        return [...new Set(allBroker)].map((name) => ({
+            value: name,
+            label: name,
+        }));
+    }, [filters.customersArray])
 
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -64,12 +107,9 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     return (
         <>
             <Card>
+
                 <div className="p-2 px-3 d-flex align-items-center flex-wrap">
                     <h6 className=" flex-grow-1 m-0">Pending Invoices</h6>
-
-                    <div style={{ width: '100%', maxWidth: '300px', minWidth: '220px' }} className="m-1">
-
-                    </div>
 
                     <IconButton
                         size="small"
@@ -86,44 +126,52 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
 
                 <hr className="m-2" />
 
-                <div className="p-2" ref={printRef}>
-                    <h6 className="d-flex align-items-center justify-content-between fw-bold m-2">
-                        <span>{filters.customer.label}</span>
-                        <span>₹{NumberFormat(totalPendingAmount)}</span>
-                    </h6>
+                <div className="table-responsive" ref={printRef}>
+                    <table className="table table-bordered fa-11">
+                        <thead>
+                            <tr>
+                                <td
+                                    colSpan={6}
+                                    className="fw-bold text-center fa-15"
+                                >
+                                    {filters.ledger.value ? filters.ledger.label : filters.broker.label } - Till {LocalDate(filters.reqDate).replaceAll('/', '-')}
+                                </td>
+                            </tr>
+                            <tr>
+                                {['Sno', 'Date', 'Ref.No', 'Concern', 'Pending Amount', 'Overdue by days'].map(
+                                    (row, rowIndex) => <th key={rowIndex}>{row}</th>
+                                )}
+                            </tr>
+                        </thead>
+                        <tbody>
 
-                    <hr className="m-2" />
+                            {withDueDays.map((row, rowIndex) => {
+                                const isGraterDueDay = filters.dueDays ? filters.dueDays <= toNumber(row?.dueDays) : false;
 
-                    <div className="table-responsive">
-                        <table className="table table-bordered fa-11">
-                            <thead>
-                                <tr>
-                                    {['Sno', 'Date', 'Ref.No', '', 'Pending Amount', 'Overdue by days'].map(
-                                        (row, rowIndex) => <th key={rowIndex}>{row}</th>
-                                    )}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {reportData.map((row, rowIndex) => {
-                                    const isGraterDueDay = filters.dueDays ? filters.dueDays <= toNumber(row?.dueDays) : false;
+                                return (
+                                    <tr key={rowIndex} className={`
+                                            ${(isGraterDueDay) ? ' fw-bold text-primary ' : ''}`
+                                    }>
+                                        <td>{rowIndex + 1}</td>
+                                        <td>{row?.invoice_date ? formatDateToCustom(row?.invoice_date) : '-'}</td>
+                                        <td>{row?.invoice_no}</td>
+                                        <td>{row?.Bill_Company}</td>
+                                        <td>₹{NumberFormat(row?.Bal_Amount)}</td>
+                                        <td className={row?.showDueDay ? '' : ' text-white '}>{row?.dueDays}</td>
+                                    </tr>
+                                )
+                            })}
 
-                                    return (
-                                        <tr key={rowIndex} className={`
-                                            ${(isGraterDueDay) ? ' fw-bold text-primary ' : '' }`
-                                        }>
-                                            <td>{rowIndex + 1}</td>
-                                            <td>{row?.invoice_date ? formatDateToCustom(row?.invoice_date) : '-'}</td>
-                                            <td>{row?.invoice_no}</td>
-                                            <td>{row?.Bill_Company}</td>
-                                            <td>₹{NumberFormat(row?.Bal_Amount)}</td>
-                                            <td>{row?.dueDays}</td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                            <tr className="fw-bold">
+                                <td colSpan={4} className=" text-center">TOTAL</td>
+                                <td>₹{NumberFormat(totalPendingAmount)}/-</td>
+                                <td>₹{NumberFormat(totalPendingAmount)}/-</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
                 </div>
+
             </Card>
 
             <Dialog
@@ -135,18 +183,47 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                     <div className="table-responsive">
                         <table className="table m-0 table-borderless">
                             <tbody>
+                                {/* broker */}
+                                <tr>
+                                    <td className="vctr">Broker</td>
+                                    <td className="vctr">
+                                        <Select
+                                            value={filters?.broker}
+                                            onChange={(e) => setFilters({ ...filters, broker: e })}
+                                            options={[
+                                                { value: '', label: 'ALL Brokers' },
+                                                ...brokersDropDown
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            isSearchable={true}
+                                            placeholder={"Broker Name"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                {/* individual ledger */}
                                 <tr>
                                     <td className="vctr">Customer</td>
                                     <td className="vctr">
                                         <Select
-                                            value={filters?.customer}
-                                            onChange={(e) => setFilters({ ...filters, customer: e })}
+                                            value={filters?.ledger}
+                                            onChange={(e) => setFilters({ ...filters, ledger: e })}
                                             options={[
                                                 { value: '', label: 'Select', isDisabled: true },
-                                                ...toArray(filters.customersArray).map(obj => ({
-                                                    value: obj?.UserId,
-                                                    label: obj?.label
-                                                }))
+                                                ...(
+                                                    filters.broker.value
+                                                        ? toArray(filters.customersArray).filter(
+                                                            fil => stringCompare(fil.Actual_Party_Name_with_Brokers, filters.broker.value)
+                                                        ).map(obj => ({
+                                                            value: obj?.Ledger_Tally_Id,
+                                                            label: obj?.Ledger_Name
+                                                        }))
+                                                        : toArray(filters.customersArray).map(obj => ({
+                                                            value: obj?.Ledger_Tally_Id,
+                                                            label: obj?.Ledger_Name
+                                                        }))
+                                                )
                                             ]}
                                             styles={customSelectStyles}
                                             menuPortalTarget={document.body}
@@ -155,27 +232,55 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
+
+                                {/* till date (before the day) */}
                                 <tr>
-                                    <td className="vctr">Due Days</td>
+                                    <td className="vctr">Till Date</td>
                                     <td className="vctr">
-                                        <input 
-                                            type="number"
+                                        <input
+                                            type="date"
                                             className="cus-inpt p-2"
-                                            value={filters.dueDays ? filters.dueDays : ''} 
-                                            onChange={e => setFilters(pre => ({...pre, dueDays: toNumber(e.target.value)}))}
+                                            value={filters.reqDate ? filters.reqDate : ''}
+                                            onChange={e => setFilters(pre => ({ ...pre, reqDate: e.target.value }))}
                                         />
                                     </td>
                                 </tr>
+
+                                {/* due days (grater than) */}
+                                <tr>
+                                    <td className="vctr">Due Days</td>
+                                    <td className="vctr">
+                                        <input
+                                            type="number"
+                                            className="cus-inpt p-2"
+                                            value={filters.dueDays ? filters.dueDays : ''}
+                                            onChange={e => setFilters(pre => ({ ...pre, dueDays: toNumber(e.target.value) }))}
+                                        />
+                                    </td>
+                                </tr>
+
                             </tbody>
                         </table>
                     </div>
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                        variant="outlined" 
+
+                    <Button
+                        variant="outlined"
                         onClick={closeDialog}
                         color="error"
                     >Close</Button>
+
+                    <Button
+                        variant="outlined"
+                        onClick={() => setFilters(pre => ({ ...pre, refresh: !pre.refresh, filterDialog: false }))}
+                        startIcon={<Search />}
+                        disabled={
+                            !filters.broker.value
+                            && !filters.ledger.value
+                        }
+                    >Search</Button>
+
                 </DialogActions>
             </Dialog>
         </>

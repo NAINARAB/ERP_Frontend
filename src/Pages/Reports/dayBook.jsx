@@ -5,6 +5,7 @@ import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
 import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import LastSynedTime from "../Dashboard/tallyLastSyncedTime";
+import { ButtonActions } from "../../Components/filterableTable2";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -86,38 +87,52 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                     <td>{row?.ModuleName}</td>
                     <td>
                         {ERP_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)}
-                        {/* {ERP_Rows.length
-                            + ' ( ' +
-                            ERP_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
-                            + ' - Entry )'} */}
                     </td>
                     <td>{NumberFormat(ERP_Rows.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
                     <td>
                         {Tally_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)}
-                        {/* {Tally_Rows.length
-                            + ' ( ' +
-                            Tally_Rows.reduce((acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0)
-                            + ' - Entry )'} */}
                     </td>
                     <td>{NumberFormat(Tally_Rows.reduce((acc, item) => Addition(acc, item.Amount), 0))}</td>
                     <td className="p-0 text-center vctr">
-                        <IconButton onClick={() => setOpen(!open)} size="small">
-                            {open ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />}
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            onClick={() => {
-                                navigate(row?.groupedData[0]?.navLink, {
-                                    state: {
-                                        ModuleName: row.ModuleName,
-                                        Fromdate: filters?.fetchFrom,
-                                        Todate: filters?.fetchTo
+
+                        <ButtonActions 
+                            buttonsData={[
+                                {
+                                    name: 'Expand',
+                                    onclick: () => setOpen(pre => !pre),
+                                    icon: open 
+                                        ? <KeyboardArrowUp sx={{ fontSize: 'inherit' }} /> 
+                                        : <KeyboardArrowDown sx={{ fontSize: 'inherit' }} />
+                                },
+                                {
+                                    name: 'Open Detail (T)',
+                                    icon: <OpenInNew sx={{ fontSize: 'inherit' }} />,
+                                    onclick: () => {
+                                        navigate(Tally_Rows[0]?.navLink, {
+                                            state: {
+                                                ModuleName: row.ModuleName,
+                                                Fromdate: filters?.fetchFrom,
+                                                Todate: filters?.fetchTo
+                                            }
+                                        })
                                     }
-                                })
-                            }} className="ms-2"
-                        >
-                            {<OpenInNew sx={{ fontSize: 'inherit' }} />}
-                        </IconButton>
+                                },
+                                {
+                                    name: 'Open Detail (ERP)',
+                                    icon: <OpenInNew sx={{ fontSize: 'inherit' }} />,
+                                    onclick: () => {
+                                        navigate(ERP_Rows[0]?.navLink, {
+                                            state: {
+                                                ModuleName: row.ModuleName,
+                                                Fromdate: filters?.fetchFrom,
+                                                Todate: filters?.fetchTo
+                                            }
+                                        })
+                                    }
+                                }
+                            ]}
+                        />
+
                     </td>
                 </tr>
 

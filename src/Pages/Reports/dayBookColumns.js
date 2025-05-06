@@ -13,12 +13,17 @@ export const dayBookColumn = (moduleName) => {
     const CreditAmt = createCol('CreditAmt', 'number', 'Credit (₹)');
 
     switch (moduleName) {
-        case 'Sales':
+        case 'PurchaseOrder':
+        case 'PurchaseInvoice':
+        case 'SaleOrder':
+        case 'SalesInvoice':
             return [ModuleID, EventDate, VoucherName, SalesLedgerName, SalesTotal]
+        case 'StockJournal':
+            return [ModuleID, EventDate, VoucherName]
+        case 'Journal':
         case 'Payment':
         case 'Receipt':
-        case 'Journal':
-        case 'Contra': 
+        case 'Contra':
             return [ModuleID, EventDate, VoucherName, DebitLedger, DebitAmt, CreditLedger, CreditAmt]
         default:
             return []
