@@ -72,7 +72,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     const withDueDays = useMemo(() => {
         return toArray(reportData).map(
             row => {
-                const dueDay = toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date) : '');
+                const dueDay = toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date, filters.reqDate) : '');
 
                 return {
                     ...row,
@@ -81,11 +81,20 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                 }
             }
         ).sort((a, b) => b.dueDays - a.dueDays)
-    }, [reportData, filters.dueDays])
+    }, [reportData, filters.dueDays, filters.reqDate])
 
     const totalPendingAmount = useMemo(() => {
         return reportData.reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
     }, [reportData]);
+
+    const tillDateAmount = useMemo(() => {
+        return reportData.filter(
+            row => {
+                const dueDay = toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date, filters.reqDate) : '');
+                return filters.dueDays ? filters.dueDays <= dueDay : true
+            }
+        ).reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
+    }, [reportData, filters.dueDays, filters.reqDate]);
 
     const brokersDropDown = useMemo(() => {
         const allBroker = toArray(filters.customersArray).map(trip => trip?.Actual_Party_Name_with_Brokers);
@@ -165,7 +174,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                             <tr className="fw-bold">
                                 <td colSpan={4} className=" text-center">TOTAL</td>
                                 <td>₹{NumberFormat(totalPendingAmount)}/-</td>
-                                <td>₹{NumberFormat(totalPendingAmount)}/-</td>
+                                <td>₹{NumberFormat(tillDateAmount)}/-</td>
                             </tr>
 
                         </tbody>
