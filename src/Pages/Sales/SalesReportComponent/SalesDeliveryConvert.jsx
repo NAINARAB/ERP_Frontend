@@ -228,10 +228,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
         })
             .then((data) => {
                 if (data.success) {
-                    const filtered = data.data.filter(
-                        (item) => Number(item.Godown_Id) === 2
-                    );
-                    setGodDown(filtered);
+                    setGodDown(data.data);
                 }
             })
             .catch((e) => console.error(e));
