@@ -4,14 +4,15 @@ import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, Di
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { getPreviousDate, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
-import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Edit, FilterAlt, Delete } from "@mui/icons-material";
+// import DeliveryInvoiceTemplate from "../SalesReportComponent/newInvoiceTemplate";
+import { Edit, FilterAlt, Delete, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
 // import SalesDelivery from "./SalesReportComponent/SalesDeliveryConvert"
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NewDeliveryOrder from "./NewDeliveryOrder";
+import DeliveryInvoiceTemplate from "../SalesReportComponent/previewInvoice"
 const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload, triggerReload }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const [saleOrders, setSaleOrders] = useState([]);
@@ -211,7 +212,19 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload, triggerR
             Cell: ({ row }) => {
                 return (
                     <>
-
+                        <Tooltip title='View Order'>
+                            <IconButton
+                                onClick={() => {
+                                    setViewOrder({
+                                        orderDetails: row,
+                                        orderProducts: row?.Products_List ? row?.Products_List : [],
+                                    })
+                                }}
+                                color='primary' size="small"
+                            >
+                                <Visibility className="fa-16" />
+                            </IconButton>
+                        </Tooltip>
                         <Tooltip title='Edit'>
                             <IconButton
                                 onClick={() => {
@@ -237,6 +250,7 @@ const DeliveryDetailsList = ({ loadingOn, loadingOff, onToggle, reload, triggerR
             },
         },
     ];
+
 
     const ExpendableComponent = ({ row }) => {
 

@@ -1,12 +1,26 @@
 import CryptoJS from "crypto-js";
 import { encryptionKey } from "../encryptionKey";
 
+export const isValidJSON = (str) => {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 export const getSessionUser = () => {
     const storage = localStorage.getItem('user');
     const user = isValidJSON(storage) ? JSON.parse(storage) : {};
-
+    
     return { storage, user }
 }
+
+export const isValidObject = (obj) => {
+    return Object.prototype.toString.call(obj) === '[object Object]' && Object.keys(obj).length !== 0;
+}
+
+export const storageValue = isValidObject(getSessionUser().user) ? getSessionUser().user : {};
 
 export const toArray = (array) => Array.isArray(array) ? array : [];
 
@@ -605,15 +619,6 @@ export const checkIsNumber = (num) => {
     return (num !== '' && num !== null && num !== undefined) ? isNaN(num) ? false : true : false
 }
 
-export const isValidJSON = (str) => {
-    try {
-        JSON.parse(str);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
 export const parseJSON = (str) => {
     try {
         const value = JSON.parse(str);
@@ -625,10 +630,6 @@ export const parseJSON = (str) => {
 
 export const isObject = (val) => {
     return Object.prototype.toString.call(val) === '[object Object]'
-}
-
-export const isValidObject = (obj) => {
-    return Object.prototype.toString.call(obj) === '[object Object]' && Object.keys(obj).length !== 0;
 }
 
 export const numbersRange = [

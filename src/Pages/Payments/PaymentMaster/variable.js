@@ -1,22 +1,52 @@
+import { checkIsNumber, ISOString, storageValue } from "../../../Components/functions";
 
-
-export const paymentGeneralInfo = {
+export const paymentGeneralInfoInitialValue = {
     pay_id: '',
     year_id: '',
     payment_voucher_type_id: '',
     payment_sno: '',
     payment_invoice_no: '',
-    payment_date: '',
-    pay_bill_type: '',
+    payment_date: ISOString(),
+    pay_bill_type: 1,
     credit_ledger: '',
-    credit_amount: '',
+    credit_ledger_name: 'Select',
+    credit_amount: 0,
     debit_ledger: '',
-    debit_amount: '',
+    debit_ledger_name: 'Select',
+    debit_amount: 0,
     remarks: '',
     bank_date: '',
-    status: '',
-    created_by: '',
-    altered_by: '',
+    status: 1,
+    created_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
+    altered_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
     created_on: '',
     alterd_on: '',
+}
+
+export const paymentBillInfoInitialValue = {
+    auto_id: '',
+    payment_id: '',
+    payment_no: '',
+    payment_date: '',
+    bill_type: '',
+    pay_bill_id: '',
+    bill_name: '',
+    bill_amount: 0,
+    DR_CR_Acc_Id: '',
+    Debit_Amo: 0,
+    Credit_Amo: 0,
+    created_on: '',
+}
+
+export const paymentCostingInfoInitialValue = {
+    pay_cost_id: '',
+    payment_id: '',
+    payment_no: '',
+    pur_date: '',
+    Debit_Ledger_Id: '',
+    item_id: '',
+    item_name: '',
+    expence_id: '',
+    expence_value: 0,
+    created_on: '',
 }
