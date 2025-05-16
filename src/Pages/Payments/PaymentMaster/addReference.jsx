@@ -1,0 +1,157 @@
+import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, stringCompare, Subraction, toArray } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
+import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
+import Select from "react-select";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import RequiredStar from "../../../Components/requiredStar";
+import { Close, Done, Search } from "@mui/icons-material";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import PurchaseInvoicePayment from "./purchasePayment";
+import ChoosePaymentComponent from "./choosePayment";
+
+const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const editValues = location.state;
+    const cellStyle = { minWidth: '130px' };
+    const cellHeadStype = { width: '150px' };
+    const initialSelectValue = { value: '', label: '' };
+
+    const [paymentGeneralInfo, setPaymentGeneralInfo] = useState(paymentGeneralInfoInitialValue)
+    const [paymentBillInfo, setPaymentBillInfo] = useState([]);
+    const [paymentCostingInfo, setPaymentCostingInfo] = useState([]);
+
+    const [baseData, setBaseData] = useState({
+        accountGroup: [],
+        accounts: [],
+        paymentInvoiceSearchResult: [],
+        stockJournalSearchResult: [],
+        purchaseInvoiceSearchResult: [],
+    });
+
+    const [filters, setFilters] = useState({
+        paymentInvoice: initialSelectValue,
+        debitAccount: initialSelectValue,
+        creditAccount: initialSelectValue,
+        paymentType: initialSelectValue,
+        journalType: initialSelectValue,
+        itemFilter: initialSelectValue,
+        journalDate: '',
+        selectPaymentDialog: false,
+        selectPurchaseInvoice: false,
+    })
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [
+                    accountGroupResponse,
+                    accountResponse,
+                ] = await Promise.all([
+                    fetchLink({ address: `payment/accountGroup` }),
+                    fetchLink({ address: `payment/accounts` }),
+                ]);
+
+                const accountGroup = toArray(accountGroupResponse.success ? accountGroupResponse.data : []).sort(
+                    (a, b) => String(a?.Group_Name).localeCompare(b?.Group_Name)
+                );
+                const accounts = toArray(accountResponse.success ? accountResponse.data : []).sort(
+                    (a, b) => String(a?.Account_name).localeCompare(b?.Account_name)
+                );
+
+                updateBaseData('accountGroup', accountGroup);
+                updateBaseData('accounts', accounts);
+
+            } catch (e) {
+                console.error("Error fetching data:", e);
+            }
+        };
+
+        fetchData();
+    }, [])
+
+    useEffect(() => {
+        if (!isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) || !paymentGeneralInfo.debit_ledger || !checkIsNumber(paymentGeneralInfo.debit_ledger)) {
+            updateBaseData('purchaseInvoiceSearchResult', []);
+            return;
+        }
+
+        fetchLink({
+            address: `purchase/paymentPendingInvoices?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
+        }).then(data => {
+            if (data.success) {
+                updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));
+            }
+        }).catch(e => console.log(e))
+    }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type])
+
+    const updateBaseData = (key = '', value = []) => {
+        setBaseData(pre => ({ ...pre, [key]: value }));
+    }
+
+    const updateFilterData = (key = '', value = []) => {
+        setFilters(pre => ({ ...pre, [key]: value }));
+    }
+
+    const closeDialog = () => {
+        updateFilterData('selectPaymentDialog', false);
+        updateFilterData('selectPurchaseInvoice', false);
+    }
+
+    return (
+        <>
+
+            {/* payment invoices */}
+            <div className="table-responsive bg-white p-2 rounded-2">
+
+                <div className="p-2 d-flex align-items-center mb-3">
+                    <h5 className="m-0 flex-grow-1">Payment Reference Creation</h5>
+
+                    <Button
+                        type="button"
+                        variant='contained'
+                        className="mx-1"
+                        onClick={() => navigate('/erp/payments/paymentList')}
+                    >back</Button>
+                </div>
+
+                {/* choose Payment */}
+                <ChoosePaymentComponent
+                    cellHeadStype={cellHeadStype}
+                    cellStyle={cellStyle}
+                    paymentGeneralInfo={paymentGeneralInfo}
+                    filters={filters}
+                    baseData={baseData}
+                    setPaymentGeneralInfo={setPaymentGeneralInfo}
+                    updateFilterData={updateFilterData}
+                    updateBaseData={updateBaseData}
+                    closeDialog={closeDialog}
+                />
+
+                {/* choose Purchase invoice */}
+                {isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) && (
+                    <PurchaseInvoicePayment
+                        cellHeadStype={cellHeadStype}
+                        cellStyle={cellStyle}
+                        paymentGeneralInfo={paymentGeneralInfo}
+                        filters={filters}
+                        baseData={baseData}
+                        setPaymentGeneralInfo={setPaymentGeneralInfo}
+                        updateFilterData={updateFilterData}
+                        updateBaseData={updateBaseData}
+                        closeDialog={closeDialog}
+                        paymentBillInfo={paymentBillInfo} 
+                        setPaymentBillInfo={setPaymentBillInfo}
+                    />
+                )}
+
+            </div>
+
+        </>
+    )
+}
+
+export default AddPaymentReference;

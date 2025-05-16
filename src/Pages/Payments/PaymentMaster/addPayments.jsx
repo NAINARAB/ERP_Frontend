@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { paymentGeneralInfoInitialValue } from "./variable";
+import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -149,10 +149,9 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     required
                                 >
                                     <option value="" disabled>Select</option>
-                                    <option value={'1'}>VENDOR - PURCHASE INVOICE</option>
-                                    <option value={'2'}>EXPENCES / OTHERS</option>
-                                    <option value={'3'}>EXPENCES - STOCK JOURNAL</option>
-                                    <option value={'4'}>ON ACCOUNT</option>
+                                    {paymentTypes.map(
+                                        (type, ind) => <option value={type.value} key={ind}>{type.label}</option>
+                                    )}
                                 </select>
                             </div>
 

@@ -36,6 +36,12 @@ export const paymentBillInfoInitialValue = {
     Debit_Amo: 0,
     Credit_Amo: 0,
     created_on: '',
+
+    // frontEndColumns
+
+    PurchaseInvoiceDate: '',
+    TotalPaidAmount: 0,
+    PendingAmount: 0,
 }
 
 export const paymentCostingInfoInitialValue = {
@@ -50,3 +56,22 @@ export const paymentCostingInfoInitialValue = {
     expence_value: 0,
     created_on: '',
 }
+
+export const paymentTypes = [
+    {
+        value: 1,
+        label: 'VENDOR - PURCHASE INVOICE'
+    },
+    {
+        value: 2,
+        label: 'EXPENCES / OTHERS'
+    },
+    {
+        value: 3,
+        label: 'EXPENCES - STOCK JOURNAL'
+    },
+    {
+        value: 4,
+        label: 'ON ACCOUNT'
+    },
+];

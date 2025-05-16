@@ -81,10 +81,19 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
-                        <Button
-                            onClick={() => navigate('create')}
-                            variant="outlined"
-                        >Add</Button>
+                        {AddRights && (
+                            <Button
+                                onClick={() => navigate('create')}
+                                variant="outlined"
+                            >Add</Button>
+                        )}
+                        {AddRights && (
+                            <Button
+                                onClick={() => navigate('addReference')}
+                                variant="outlined"
+                                className="me-2"
+                            >Add Reference</Button>
+                        )}
                         {toNumber(TotalPayment) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {NumberFormat(TotalPayment)}</h6>}
                     </>
                 }
