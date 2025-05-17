@@ -479,7 +479,7 @@ export const isLesserOrEqual = (a, b) => {
 }
 
 export const NumberFormat = (num) => {
-    return Number(num).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+    return toNumber(num).toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
 export const limitFractionDigits = (num = 0, maxFractionDigits = 2) => {

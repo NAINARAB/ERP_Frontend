@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogContent, DialogTitle, DialogActions, IconButton } from "@mui/material";
-import { checkIsNumber, isEqualNumber, NumberFormat, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, NumberFormat, Subraction, toArray } from "../../../Components/functions";
 import { paymentTypes } from "./variable";
 import { Close, Search, Done } from "@mui/icons-material";
 import Select from "react-select";
@@ -20,6 +20,8 @@ const ChoosePaymentComponent = ({
     updateFilterData,
     updateBaseData,
     closeDialog,
+    loadingOn,
+    loadingOff
 }) => {
 
     const searchPayments = (debitAccount, creditAccount, paymentType) => {
@@ -27,7 +29,9 @@ const ChoosePaymentComponent = ({
         if (!checkIsNumber(paymentType)) return toast.warn('Select Bill Type')
 
         fetchLink({
-            address: `payment/paymentMaster/search?debit_ledger=${debitAccount}&credit_ledger=${creditAccount}&pay_bill_type=${paymentType}`
+            address: `payment/paymentMaster/search?debit_ledger=${debitAccount}&credit_ledger=${creditAccount}&pay_bill_type=${paymentType}`,
+            loadingOn,
+            loadingOff
         }).then(data => {
             if (data.success) {
                 updateBaseData('paymentInvoiceSearchResult', toArray(data.data))
@@ -199,7 +203,13 @@ const ChoosePaymentComponent = ({
                             createCol('debit_ledger_name', 'string', 'Debit Acc'),
                             createCol('credit_ledger_name', 'string', 'Credit Acc'),
                             createCol('debit_amount', 'number', 'Amount'),
-                            createCol('debit_amount', 'number', 'Pending Ref Amount'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Pending Ref Amount',
+                                isCustomCell: true,
+                                Cell: ({ row }) => Subraction(row?.debit_amount, row?.TotalReferenceAdded)
+                            },
+                            createCol('debit_amount', 'number', ''),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Action',

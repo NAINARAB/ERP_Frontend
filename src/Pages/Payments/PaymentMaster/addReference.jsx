@@ -7,10 +7,25 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import RequiredStar from "../../../Components/requiredStar";
-import { Close, Done, Search } from "@mui/icons-material";
+import { Close, Done, Save, Search } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import PurchaseInvoicePayment from "./purchasePayment";
 import ChoosePaymentComponent from "./choosePayment";
+import { toast } from "react-toastify";
+
+
+const initialSelectValue = { value: '', label: '' };
+const filterInitialValue = {
+    paymentInvoice: initialSelectValue,
+    debitAccount: initialSelectValue,
+    creditAccount: initialSelectValue,
+    paymentType: initialSelectValue,
+    journalType: initialSelectValue,
+    itemFilter: initialSelectValue,
+    journalDate: '',
+    selectPaymentDialog: false,
+    selectPurchaseInvoice: false,
+}
 
 const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
     const navigate = useNavigate();
@@ -18,7 +33,6 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const editValues = location.state;
     const cellStyle = { minWidth: '130px' };
     const cellHeadStype = { width: '150px' };
-    const initialSelectValue = { value: '', label: '' };
 
     const [paymentGeneralInfo, setPaymentGeneralInfo] = useState(paymentGeneralInfoInitialValue)
     const [paymentBillInfo, setPaymentBillInfo] = useState([]);
@@ -32,17 +46,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         purchaseInvoiceSearchResult: [],
     });
 
-    const [filters, setFilters] = useState({
-        paymentInvoice: initialSelectValue,
-        debitAccount: initialSelectValue,
-        creditAccount: initialSelectValue,
-        paymentType: initialSelectValue,
-        journalType: initialSelectValue,
-        itemFilter: initialSelectValue,
-        journalDate: '',
-        selectPaymentDialog: false,
-        selectPurchaseInvoice: false,
-    })
+    const [filters, setFilters] = useState(filterInitialValue)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -86,7 +90,21 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                 updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));
             }
         }).catch(e => console.log(e))
-    }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type])
+    }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type]);
+
+    useEffect(() => {
+        if (!checkIsNumber(paymentGeneralInfo.pay_id) || !checkIsNumber(paymentGeneralInfo.pay_bill_type)) {
+            return;
+        }
+
+        fetchLink({
+            address: `payment/paymentMaster/againstRef?payment_id=${paymentGeneralInfo.pay_id}`
+        }).then(data => {
+            if (data.success) {
+                setPaymentBillInfo(data.data)
+            }
+        }).catch(e => console.log(e))
+    }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type])
 
     const updateBaseData = (key = '', value = []) => {
         setBaseData(pre => ({ ...pre, [key]: value }));
@@ -101,39 +119,57 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         updateFilterData('selectPurchaseInvoice', false);
     }
 
+    const resetAll = () => {
+        setPaymentGeneralInfo(paymentGeneralInfoInitialValue);
+        setPaymentBillInfo([]);
+        setPaymentCostingInfo([]);
+        setFilters(filterInitialValue);
+        updateBaseData('paymentInvoiceSearchResult', []);
+        updateBaseData('stockJournalSearchResult', []);
+        updateBaseData('purchaseInvoiceSearchResult', []);
+    }
+
+    const SavePayment = () => {
+        fetchLink({
+            address: `payment/paymentMaster/againstRef`,
+            method: 'POST',
+            bodyData: {
+                payment_id: paymentGeneralInfo.pay_id,
+                payment_no: paymentGeneralInfo.payment_invoice_no,
+                payment_date: paymentGeneralInfo.payment_date,
+                bill_type: paymentGeneralInfo.pay_bill_type,
+                BillsDetails: toArray(paymentBillInfo)
+            }
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                resetAll();
+            } else {
+                toast.error(data.message);
+            }
+        })
+    }
+
     return (
         <>
+            <div className="bg-white p-2 rounded-2">
 
-            {/* payment invoices */}
-            <div className="table-responsive bg-white p-2 rounded-2">
+                <div className="table-responsive">
 
-                <div className="p-2 d-flex align-items-center mb-3">
-                    <h5 className="m-0 flex-grow-1">Payment Reference Creation</h5>
+                    {/* payment invoices */}
+                    <div className="p-2 d-flex align-items-center mb-3">
+                        <h5 className="m-0 flex-grow-1">Payment Reference Creation</h5>
 
-                    <Button
-                        type="button"
-                        variant='contained'
-                        className="mx-1"
-                        onClick={() => navigate('/erp/payments/paymentList')}
-                    >back</Button>
-                </div>
+                        <Button
+                            type="button"
+                            variant='contained'
+                            className="mx-1"
+                            onClick={() => navigate('/erp/payments/paymentList')}
+                        >back</Button>
+                    </div>
 
-                {/* choose Payment */}
-                <ChoosePaymentComponent
-                    cellHeadStype={cellHeadStype}
-                    cellStyle={cellStyle}
-                    paymentGeneralInfo={paymentGeneralInfo}
-                    filters={filters}
-                    baseData={baseData}
-                    setPaymentGeneralInfo={setPaymentGeneralInfo}
-                    updateFilterData={updateFilterData}
-                    updateBaseData={updateBaseData}
-                    closeDialog={closeDialog}
-                />
-
-                {/* choose Purchase invoice */}
-                {isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) && (
-                    <PurchaseInvoicePayment
+                    {/* choose Payment */}
+                    <ChoosePaymentComponent
                         cellHeadStype={cellHeadStype}
                         cellStyle={cellStyle}
                         paymentGeneralInfo={paymentGeneralInfo}
@@ -143,10 +179,42 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         updateFilterData={updateFilterData}
                         updateBaseData={updateBaseData}
                         closeDialog={closeDialog}
-                        paymentBillInfo={paymentBillInfo} 
-                        setPaymentBillInfo={setPaymentBillInfo}
+                        loadingOn={loadingOn}
+                        loadingOff={loadingOff}
                     />
-                )}
+
+                    {/* choose Purchase invoice */}
+                    {isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) && (
+                        <PurchaseInvoicePayment
+                            cellHeadStype={cellHeadStype}
+                            cellStyle={cellStyle}
+                            paymentGeneralInfo={paymentGeneralInfo}
+                            filters={filters}
+                            baseData={baseData}
+                            setPaymentGeneralInfo={setPaymentGeneralInfo}
+                            updateFilterData={updateFilterData}
+                            updateBaseData={updateBaseData}
+                            closeDialog={closeDialog}
+                            paymentBillInfo={paymentBillInfo}
+                            setPaymentBillInfo={setPaymentBillInfo}
+                        />
+                    )}
+
+                </div>
+
+                <hr className="my-2" />
+
+                <div className="p-2 d-flex justify-content-end">
+                    <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        disabled={
+                            !checkIsNumber(paymentGeneralInfo.pay_id)
+                            || paymentBillInfo.length === 0
+                        }
+                        onClick={SavePayment}
+                    >Save</Button>
+                </div>
 
             </div>
 

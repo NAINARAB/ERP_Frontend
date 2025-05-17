@@ -25,6 +25,8 @@ export const paymentGeneralInfoInitialValue = {
 
 export const paymentBillInfoInitialValue = {
     auto_id: '',
+    // general info
+    created_on: '',
     payment_id: '',
     payment_no: '',
     payment_date: '',
@@ -35,10 +37,9 @@ export const paymentBillInfoInitialValue = {
     DR_CR_Acc_Id: '',
     Debit_Amo: 0,
     Credit_Amo: 0,
-    created_on: '',
-
+    
+    // bill details
     // frontEndColumns
-
     PurchaseInvoiceDate: '',
     TotalPaidAmount: 0,
     PendingAmount: 0,
