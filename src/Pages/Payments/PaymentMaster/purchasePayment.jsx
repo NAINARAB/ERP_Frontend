@@ -79,53 +79,12 @@ const PurchaseInvoicePayment = ({
 
     return (
         <>
-            {/* <FilterableTable
-                title="Against Reference"
-                disablePagination
-                EnableSerialNumber
-                ButtonArea={
-                    <>
-                        <Button
-                            type="button"
-                            variant="outlined"
-                            disabled={toArray(baseData.purchaseInvoiceSearchResult).length === 0}
-                            onClick={() => updateFilterData('selectPurchaseInvoice', true)}
-                        >Add reference</Button>
-                    </>
-                }
-                dataArray={paymentBillInfo}
-                columns={[
-                    createCol('bill_name', 'string', 'P.Invoice No'),
-                    createCol('PurchaseInvoiceDate', 'date', 'Date'),
-                    createCol('bill_amount', 'number', 'Invoice Value'),
-                    createCol('TotalPaidAmount', 'number', 'Total Paid Amount'),
-                    createCol('PendingAmount', 'number', 'Pending Payment'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Action',
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-                            // const isChecked = paymentBillInfo.findIndex(o =>
-                            //     isEqualNumber(o?.pay_bill_id, row.PIN_Id)
-                            // ) !== -1;
-                            <>
-                                <IconButton
-                                    onClick={() => {
-
-                                    }}
-                                ></IconButton>
-                            </>
-                        }
-                    }
-                ]}
-            /> */}
-
             <div className="table-responsive">
                 <table className="table table-bordered fa-13">
                     <thead>
                         <tr>
                             <th className="text-primary fa-15 vctr" style={cellHeadStype}>Against Reference</th>
-                            <th colSpan={5} className="text-end">
+                            <th colSpan={6} className="text-end">
                                 <Button
                                     type="button"
                                     variant="outlined"
@@ -136,7 +95,8 @@ const PurchaseInvoicePayment = ({
                         </tr>
                         <tr>
                             {['Sno', 'Purchase InvoiceNo', 'Date', 'Invoice Value',
-                                // 'Paid Amount', 'Pending Amount',
+                                'Paid Amount',
+                                // 'Pending Amount',
                                 'Payment Amount', 'Action'].map(
                                     (col, colInd) => <th key={colInd} className="bg-light text-muted">{col}</th>
                                 )}
@@ -150,12 +110,12 @@ const PurchaseInvoicePayment = ({
                                     <td>{invoice?.bill_name}</td>
                                     <td>{LocalDate(invoice?.PurchaseInvoiceDate)}</td>
                                     <td>{NumberFormat(invoice?.bill_amount)}</td>
-                                    {/* <td>{invoice?.TotalPaidAmount}</td> */}
+                                    <td>{invoice?.TotalPaidAmount}</td>
                                     {/* <td>{Subraction(invoice?.bill_amount, invoice?.TotalPaidAmount)}</td> */}
                                     <td className="p-0">
                                         <input
                                             value={invoice.Debit_Amo || ''}
-                                            className="cus-inpt p-2 border-0"
+                                            className="cus-inpt p-2 border-0 text-primary"
                                             placeholder="Enter Amount"
                                             type="number"
                                             onChange={e => {
@@ -185,6 +145,7 @@ const PurchaseInvoicePayment = ({
                                     (acc, invoice) => Addition(acc, invoice.bill_amount), 0
                                 )}
                             </td>
+                            <td></td>
                             <td className="fw-bold text-muted">
                                 {paymentBillInfo.reduce(
                                     (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0

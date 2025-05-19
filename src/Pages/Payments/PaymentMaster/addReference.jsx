@@ -1,7 +1,7 @@
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, stringCompare, Subraction, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, LocalDate, NumberFormat, stringCompare, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import Select from "react-select";
@@ -12,6 +12,7 @@ import FilterableTable, { createCol } from "../../../Components/filterableTable2
 import PurchaseInvoicePayment from "./purchasePayment";
 import ChoosePaymentComponent from "./choosePayment";
 import { toast } from "react-toastify";
+import ExpencePayment from "./expencesPayment";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -25,6 +26,7 @@ const filterInitialValue = {
     journalDate: '',
     selectPaymentDialog: false,
     selectPurchaseInvoice: false,
+    selectStockJournal: false,
 }
 
 const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
@@ -106,6 +108,19 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         }).catch(e => console.log(e))
     }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type])
 
+    useEffect(() => {
+        if (isValidObject(editValues)) {
+            setPaymentGeneralInfo(
+                Object.fromEntries(
+                    Object.entries(paymentGeneralInfoInitialValue).map(([key, value]) => {
+                        if (key === 'payment_date') return [key, editValues[key] ? ISOString(editValues[key]) : value];
+                        return [key, editValues[key] ?? value]
+                    })
+                )
+            );
+        }
+    }, [editValues])
+
     const updateBaseData = (key = '', value = []) => {
         setBaseData(pre => ({ ...pre, [key]: value }));
     }
@@ -129,7 +144,15 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         updateBaseData('purchaseInvoiceSearchResult', []);
     }
 
+    const TotalAgainstRef = useMemo(() => {
+        return paymentBillInfo.reduce(
+            (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+        )
+    }, [paymentBillInfo]);
+
     const SavePayment = () => {
+        if (TotalAgainstRef > paymentGeneralInfo.debit_amount) return toast.warn('Payment amount is invalid');
+
         fetchLink({
             address: `payment/paymentMaster/againstRef`,
             method: 'POST',
@@ -144,10 +167,11 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             if (data.success) {
                 toast.success(data.message);
                 resetAll();
+                navigate('/erp/payments/paymentList');
             } else {
                 toast.error(data.message);
             }
-        })
+        }).catch(e => console.log(e))
     }
 
     return (
@@ -173,6 +197,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         cellHeadStype={cellHeadStype}
                         cellStyle={cellStyle}
                         paymentGeneralInfo={paymentGeneralInfo}
+                        paymentBillInfo={paymentBillInfo}
                         filters={filters}
                         baseData={baseData}
                         setPaymentGeneralInfo={setPaymentGeneralInfo}
@@ -197,6 +222,25 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             closeDialog={closeDialog}
                             paymentBillInfo={paymentBillInfo}
                             setPaymentBillInfo={setPaymentBillInfo}
+                        />
+                    )}
+
+                    {/* choose Purchase invoice */}
+                    {isEqualNumber(paymentGeneralInfo.pay_bill_type, 3) && (
+                        <ExpencePayment
+                            cellHeadStype={cellHeadStype}
+                            cellStyle={cellStyle}
+                            filters={filters}
+                            baseData={baseData}
+                            paymentGeneralInfo={paymentGeneralInfo}
+                            paymentBillInfo={paymentBillInfo}
+                            paymentCostingInfo={paymentCostingInfo}
+                            setPaymentGeneralInfo={setPaymentGeneralInfo}
+                            setPaymentBillInfo={setPaymentBillInfo}
+                            setPaymentCostingInfo={setPaymentCostingInfo}
+                            updateFilterData={updateFilterData}
+                            updateBaseData={updateBaseData}
+                            closeDialog={closeDialog}
                         />
                     )}
 

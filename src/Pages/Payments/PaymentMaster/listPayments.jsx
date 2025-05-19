@@ -3,8 +3,8 @@ import { Button } from '@mui/material';
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
-import { Edit } from "@mui/icons-material";
+import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
+import { Edit, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -118,6 +118,16 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                         icon: <Edit />,
                                         onclick: () => navigate('create', { state: row }),
                                         disabled: !EditRights
+                                    },
+                                    {
+                                        name: 'Add Reference',
+                                        icon: <Timeline />,
+                                        onclick: () => navigate('addReference', { state: row }),
+                                        disabled: (
+                                            !EditRights 
+                                            || isEqualNumber(row.pay_bill_type, 2) 
+                                            || isEqualNumber(row.pay_bill_type, 4) 
+                                        )
                                     },
                                     // {
 

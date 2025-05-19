@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogContent, DialogTitle, DialogActions, IconButton } from "@mui/material";
-import { checkIsNumber, isEqualNumber, NumberFormat, Subraction, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, NumberFormat, Subraction, toArray } from "../../../Components/functions";
 import { paymentTypes } from "./variable";
 import { Close, Search, Done } from "@mui/icons-material";
 import Select from "react-select";
@@ -8,12 +8,14 @@ import RequiredStar from "../../../Components/requiredStar";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
+import { useMemo } from "react";
 
 const ChoosePaymentComponent = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
     paymentGeneralInfo = {},
+    paymentBillInfo = [],
     filters,
     baseData,
     setPaymentGeneralInfo,
@@ -46,6 +48,16 @@ const ChoosePaymentComponent = ({
             )
         })
     }
+
+    const TotalAgainstRef = useMemo(() => {
+        return paymentBillInfo.reduce(
+            (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+        )
+    }, [paymentBillInfo]);
+
+    const PendingAgainstRef = useMemo(() => {
+        return Subraction(paymentGeneralInfo.debit_amount, TotalAgainstRef)
+    }, [TotalAgainstRef, paymentGeneralInfo.debit_amount])
 
     return (
         <>
@@ -84,7 +96,7 @@ const ChoosePaymentComponent = ({
                         <td style={cellStyle}>{paymentGeneralInfo.credit_ledger_name}</td>
 
                         <th className="text-muted">Pending Against Amount</th>
-                        <td style={cellStyle} className="text-danger fw-bold">{NumberFormat(paymentGeneralInfo.credit_amount)}</td>
+                        <td style={cellStyle} className="text-danger fw-bold">{NumberFormat(PendingAgainstRef)}</td>
                     </tr>
                 </tbody>
             </table>

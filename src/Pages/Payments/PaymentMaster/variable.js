@@ -7,7 +7,7 @@ export const paymentGeneralInfoInitialValue = {
     payment_sno: '',
     payment_invoice_no: '',
     payment_date: ISOString(),
-    pay_bill_type: 1,
+    pay_bill_type: 3,
     credit_ledger: '',
     credit_ledger_name: 'Select',
     credit_amount: 0,
@@ -38,9 +38,9 @@ export const paymentBillInfoInitialValue = {
     Debit_Amo: 0,
     Credit_Amo: 0,
     
-    // bill details
     // frontEndColumns
     PurchaseInvoiceDate: '',
+    StockJournalDate: '',
     TotalPaidAmount: 0,
     PendingAmount: 0,
 }
