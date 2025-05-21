@@ -37,25 +37,35 @@ export const paymentBillInfoInitialValue = {
     DR_CR_Acc_Id: '',
     Debit_Amo: 0,
     Credit_Amo: 0,
-    
+
     // frontEndColumns
     PurchaseInvoiceDate: '',
     StockJournalDate: '',
+    JournalBillType: '',
     TotalPaidAmount: 0,
     PendingAmount: 0,
 }
 
 export const paymentCostingInfoInitialValue = {
-    pay_cost_id: '',
+    // backend
+    auto_id: '',
     payment_id: '',
     payment_no: '',
-    pur_date: '',
+    payment_date: '',
+    bill_type : '',
     Debit_Ledger_Id: '',
+    created_on: '',
+
+    // frontend 
+    pay_bill_id: '',
+    pur_date: '',
     item_id: '',
     item_name: '',
-    expence_id: '',
     expence_value: 0,
-    created_on: '',
+
+    // to show previous payment (frontend only).
+    itemQuantity: 0,
+    PaidAmount: 0,
 }
 
 export const paymentTypes = [
@@ -76,3 +86,18 @@ export const paymentTypes = [
         label: 'ON ACCOUNT'
     },
 ];
+
+export const stockJournalTypes = [
+    {
+        label: 'MATERIAL INWARD',
+        value: 1
+    },
+    {
+        label: 'GODOWN TRANSFER',
+        value: 2
+    },
+    {
+        label: 'PROCESSING',
+        value: 3
+    },
+]

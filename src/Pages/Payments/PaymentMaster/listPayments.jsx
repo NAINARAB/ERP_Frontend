@@ -6,6 +6,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
 import { Edit, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
+import { paymentTypes } from "./variable";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -105,7 +106,12 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                     createCol('debit_ledger_name', 'string', 'Debit-Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
                     createCol('Voucher_Type', 'string', 'Voucher'),
-                    createCol('pay_bill_type', 'string', 'Type'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Bill Type',
+                        isCustomCell: true,
+                        Cell: ({ row }) => paymentTypes.find(type => isEqualNumber(type.value, row.pay_bill_type))?.label
+                    },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',

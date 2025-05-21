@@ -46,6 +46,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         paymentInvoiceSearchResult: [],
         stockJournalSearchResult: [],
         purchaseInvoiceSearchResult: [],
+        itemDropDownData: []
     });
 
     const [filters, setFilters] = useState(filterInitialValue)
@@ -95,7 +96,12 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type]);
 
     useEffect(() => {
-        if (!checkIsNumber(paymentGeneralInfo.pay_id) || !checkIsNumber(paymentGeneralInfo.pay_bill_type)) {
+        if (
+            !checkIsNumber(paymentGeneralInfo.pay_id) 
+            || !checkIsNumber(paymentGeneralInfo.pay_bill_type)
+            || !isEqualNumber(paymentGeneralInfo.pay_bill_type, 1)
+            || !isEqualNumber(paymentGeneralInfo.pay_bill_type, 3)
+        ) {
             return;
         }
 
@@ -132,6 +138,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const closeDialog = () => {
         updateFilterData('selectPaymentDialog', false);
         updateFilterData('selectPurchaseInvoice', false);
+        updateFilterData('selectStockJournal', false);
     }
 
     const resetAll = () => {
@@ -225,7 +232,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         />
                     )}
 
-                    {/* choose Purchase invoice */}
+                    {/* choose Stock journal */}
                     {isEqualNumber(paymentGeneralInfo.pay_bill_type, 3) && (
                         <ExpencePayment
                             cellHeadStype={cellHeadStype}
@@ -241,6 +248,8 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             updateFilterData={updateFilterData}
                             updateBaseData={updateBaseData}
                             closeDialog={closeDialog}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
                         />
                     )}
 

@@ -25,11 +25,11 @@ export const customTableStyles = {
 };
 
 export const customSelectStyles = {
-    control: (provided, state) => ({
-        ...provided,
-        height: '45px',
-        background: 'rgba(255, 255, 255, 0.322)'
-    }),
+    // control: (provided, state) => ({
+    //     ...provided,
+    //     height: '45px',
+    //     background: 'rgba(255, 255, 255, 0.322)'
+    // }),
     menu: (provided, state) => ({
         ...provided,
         zIndex: 9999,
