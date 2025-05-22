@@ -484,8 +484,8 @@ const DeliveryDetailsList = ({
                                             options={[
                                                 { value: "", label: "ALL" },
                                                 ...deliveryPerson.map((obj) => ({
-                                                    value: obj?.Cost_Center_Id,
-                                                    label: obj?.Cost_Center_Name,
+                                                    value: obj?.User_Id,
+                                                    label: obj?.UserGet,
                                                 })),
                                             ]}
                                             styles={customSelectStyles}
@@ -494,7 +494,7 @@ const DeliveryDetailsList = ({
                                         />
                                     </td>
                                 </tr>
-                                <tr>
+                                {/* <tr>
                                     <td style={{ verticalAlign: "middle" }}>Sales Person</td>
                                     <td>
                                         <Select
@@ -521,7 +521,45 @@ const DeliveryDetailsList = ({
                                             placeholder={"Delivery Person Name"}
                                         />
                                     </td>
+                                </tr> */}
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Sales Person</td>
+                                    <td>
+                                        <Select
+                                            value={{
+                                                value: filters?.Sales_Person_Id,
+                                                label: filters?.Sales_Person_Name,
+                                            }}
+                                            onChange={(e) =>
+                                                setFilters({
+                                                    ...filters,
+                                                    Sales_Person_Id: e.value,
+                                                    Sales_Person_Name: e.label,
+                                                })
+                                            }
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                ...salesPerson.map((obj) => ({
+                                                    value: obj?.UserId,
+                                                    label: obj?.Name,
+                                                })),
+                                            ]}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menu: (provided) => ({
+                                                    ...provided,
+                                                    zIndex: 9999,
+                                                }),
+                                            }}
+                                            isSearchable={true}
+                                            placeholder={"Sales Person Name"}
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                        />
+                                    </td>
                                 </tr>
+
                                 <tr>
                                     <td style={{ verticalAlign: "middle" }}>Created By</td>
                                     <td>
