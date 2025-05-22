@@ -103,6 +103,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                     createCol('payment_date', 'date', 'Date'),
                     createCol('payment_invoice_no', 'string', 'Payment ID'),
                     createCol('debit_amount', 'number', 'Amount'),
+                    createCol('TotalReferencedAmount', 'number', 'Added Ref'),
                     createCol('debit_ledger_name', 'string', 'Debit-Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
                     createCol('Voucher_Type', 'string', 'Voucher'),

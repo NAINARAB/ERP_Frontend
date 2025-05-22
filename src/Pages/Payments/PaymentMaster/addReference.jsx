@@ -92,15 +92,17 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             if (data.success) {
                 updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));
             }
-        }).catch(e => console.log(e))
+        }).catch(e => console.error(e))
     }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type]);
 
     useEffect(() => {
         if (
             !checkIsNumber(paymentGeneralInfo.pay_id) 
             || !checkIsNumber(paymentGeneralInfo.pay_bill_type)
-            || !isEqualNumber(paymentGeneralInfo.pay_bill_type, 1)
-            || !isEqualNumber(paymentGeneralInfo.pay_bill_type, 3)
+            || (
+                !isEqualNumber(paymentGeneralInfo.pay_bill_type, 1)
+                && !isEqualNumber(paymentGeneralInfo.pay_bill_type, 3)
+            )
         ) {
             return;
         }
@@ -109,9 +111,24 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             address: `payment/paymentMaster/againstRef?payment_id=${paymentGeneralInfo.pay_id}`
         }).then(data => {
             if (data.success) {
-                setPaymentBillInfo(data.data)
+                const reSturc = toArray(data.data).map(bill => ({
+                    ...bill,
+                    PurchaseInvoiceDate: bill.referenceBillDate,
+                    StockJournalDate: bill.referenceBillDate,
+                    TotalPaidAmount: bill.totalPaidAmount,
+                    PendingAmount: Subraction(bill?.Total_Invoice_value, bill.totalPaidAmount),
+                }));
+                setPaymentBillInfo(reSturc);
             }
-        }).catch(e => console.log(e))
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `payment/paymentMaster/againstRef/costingDetails?payment_id=${paymentGeneralInfo.pay_id}`
+        }).then(data => {
+            if (data.success) {
+                setPaymentCostingInfo(toArray(data.data));
+            }
+        }).catch(e => console.error(e))
     }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type])
 
     useEffect(() => {
@@ -168,8 +185,11 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                 payment_no: paymentGeneralInfo.payment_invoice_no,
                 payment_date: paymentGeneralInfo.payment_date,
                 bill_type: paymentGeneralInfo.pay_bill_type,
-                BillsDetails: toArray(paymentBillInfo)
-            }
+                BillsDetails: toArray(paymentBillInfo),
+                CostingDetails: toArray(paymentCostingInfo),
+                DR_CR_Acc_Id: paymentGeneralInfo.debit_ledger
+            },
+            loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 toast.success(data.message);
@@ -178,7 +198,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             } else {
                 toast.error(data.message);
             }
-        }).catch(e => console.log(e))
+        }).catch(e => console.error(e))
     }
 
     return (

@@ -20,7 +20,6 @@ const PurchaseInvoicePayment = ({
     updateBaseData,
     closeDialog,
 }) => {
-
     const onClickPurchaseInvoice = (invoiceDetails, deleteOption) => {
         setPaymentBillInfo(pre => {
             const previousValue = toArray(pre);
@@ -39,6 +38,7 @@ const PurchaseInvoicePayment = ({
                             case 'bill_amount': return [key, toNumber(invoiceDetails?.Total_Invoice_value)];
                             case 'Debit_Amo': return [key, 0];
                             case 'Credit_Amo': return [key, 0];
+                            case 'JournalBillType': return [key, 'PURCHASE INVOICE'];
 
                             case 'PurchaseInvoiceDate': return [key, invoiceDetails.Po_Inv_Date];
                             case 'TotalPaidAmount': return [key, invoiceDetails.Paid_Amount];

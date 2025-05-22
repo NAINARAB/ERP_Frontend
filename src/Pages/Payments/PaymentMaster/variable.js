@@ -31,17 +31,19 @@ export const paymentBillInfoInitialValue = {
     payment_no: '',
     payment_date: '',
     bill_type: '',
+    DR_CR_Acc_Id: '',
+    
+    // form values
     pay_bill_id: '',
+    JournalBillType: '',
     bill_name: '',
     bill_amount: 0,
-    DR_CR_Acc_Id: '',
     Debit_Amo: 0,
     Credit_Amo: 0,
 
     // frontEndColumns
     PurchaseInvoiceDate: '',
     StockJournalDate: '',
-    JournalBillType: '',
     TotalPaidAmount: 0,
     PendingAmount: 0,
 }
@@ -58,7 +60,7 @@ export const paymentCostingInfoInitialValue = {
 
     // frontend 
     pay_bill_id: '',
-    pur_date: '',
+    JournalBillType: '',
     item_id: '',
     item_name: '',
     expence_value: 0,

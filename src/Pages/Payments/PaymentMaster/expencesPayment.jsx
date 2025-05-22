@@ -103,6 +103,7 @@ const ExpencePayment = ({
                         switch (key) {
                             case 'pay_bill_id': return [key, invoiceDetails?.journalId];
                             case 'pur_date': return [key, invoiceDetails?.journalDate];
+                            case 'JournalBillType': return [key, invoiceDetails?.BillType];
 
                             case 'item_id': return [key, journalProduct?.productId];
                             case 'item_name': return [key, journalProduct?.productNameGet];
