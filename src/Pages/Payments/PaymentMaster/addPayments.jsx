@@ -3,7 +3,7 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
@@ -46,6 +46,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 Object.fromEntries(
                     Object.entries(paymentGeneralInfoInitialValue).map(([key, value]) => {
                         if (key === 'payment_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        if (key === 'check_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        if (key === 'bank_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
                         return [key, editValues[key] ?? value]
                     })
                 )
@@ -94,9 +96,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
     }, [])
 
     const onChangePaymentValue = (key, value) => {
-        if (key, value) {
-            setPaymentValue(pre => ({ ...pre, [key]: value }))
-        }
+        setPaymentValue(pre => ({ ...pre, [key]: value }));
     }
 
     // recursive function to get all child group ids
@@ -145,7 +145,22 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             if (data.success) {
                 clearValues();
                 toast.success(data?.message || 'post successfully');
-                navigate('/erp/payments/paymentList');
+
+                if (
+                    data.data[0]
+                    && isValidObject(data.data[0])
+                    && (
+                        isEqualNumber(data?.data[0]?.pay_bill_type, 1) 
+                        || isEqualNumber(data?.data[0]?.pay_bill_type, 3)
+                    )
+                ) {
+                    navigate('/erp/payments/paymentList/addReference', {
+                        state: data.data[0]
+                    })
+                } else {
+                    navigate('/erp/payments/paymentList')
+                }
+
             } else {
                 toast.error(data?.message || 'post failed')
             }
@@ -156,27 +171,36 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         <>
             <Card>
 
-                <div className="p-2 px-3 d-flex align-items-center">
-                    <h5 className="m-0 flex-grow-1">Payment Creation</h5>
-
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        className="mx-1"
-                        onClick={() => navigate('/erp/payments/paymentList')}
-                    >back</Button>
-                </div>
-
-                <hr className="my-2" />
-
                 <form onSubmit={e => {
                     e.preventDefault();
                     if (!checkIsNumber(paymentValue.debit_ledger) || !checkIsNumber(paymentValue.credit_ledger)) {
                         toast.warn('Select Debit-Acc / Credit-Acc!')
+                    } else if (paymentValue.debit_amount < 1 || !paymentValue.debit_amount) {
+                        toast.warn('Enter valid amount!')
                     } else {
                         savePayment(paymentValue)
                     }
                 }}>
+
+                    <div className="p-2 px-3 d-flex align-items-center">
+                        <h5 className="m-0 flex-grow-1">Payment Creation</h5>
+
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            className="mx-1"
+                            onClick={() => navigate('/erp/payments/paymentList')}
+                        >back</Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            className="mx-1"
+                        >Save</Button>
+                    </div>
+
+                    <hr className="my-2" />
+
+
                     <CardContent className="pb-0">
                         <div className="row p-2 pb-0">
 
@@ -194,12 +218,13 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                             {/* bill type */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Bill Type</label>
+                                <label>Bill Type<RequiredStar /></label>
                                 <select
                                     className="cus-inpt p-2"
                                     value={paymentValue.pay_bill_type}
                                     onChange={e => onChangePaymentValue('pay_bill_type', toNumber(e.target.value))}
                                     required
+                                    disabled={checkIsNumber(paymentValue.pay_id)}
                                 >
                                     <option value="" disabled>Select</option>
                                     {paymentTypes.map(
@@ -251,9 +276,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 <input
                                     type="number"
                                     required
-                                    min={1}
                                     className="cus-inpt p-2"
-                                    value={paymentValue.debit_amount}
+                                    value={paymentValue.debit_amount || ''}
                                     onChange={e => onChangePaymentValue('debit_amount', e.target.value)}
                                 />
                             </div>
@@ -406,6 +430,54 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     isSearchable={true}
                                     required
                                     placeholder={"Select Product"}
+                                />
+                            </div>
+
+                            <div className="col-12">
+                                <hr className=" text-dark" />
+                            </div>
+
+                            {/* bank name */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Bank Name</label>
+                                <input
+                                    value={paymentValue.bank_name}
+                                    className="cus-inpt p-2"
+                                    onChange={e => onChangePaymentValue('bank_name', e.target.value)}
+                                />
+                            </div>
+
+                            {/* bank date */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Bank Date</label>
+                                <input
+                                    value={paymentValue.bank_date}
+                                    type="date"
+                                    className="cus-inpt p-2"
+                                    onChange={e => onChangePaymentValue('bank_date', e.target.value)}
+                                />
+                            </div>
+
+                            <div className="col-12"></div>
+
+                            {/* check no */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Check No</label>
+                                <input
+                                    value={paymentValue.check_no}
+                                    className="cus-inpt p-2"
+                                    onChange={e => onChangePaymentValue('check_no', e.target.value)}
+                                />
+                            </div>
+
+                            {/* Check date */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Check Date</label>
+                                <input
+                                    value={paymentValue.check_date}
+                                    type="date"
+                                    className="cus-inpt p-2"
+                                    onChange={e => onChangePaymentValue('check_date', e.target.value)}
                                 />
                             </div>
 

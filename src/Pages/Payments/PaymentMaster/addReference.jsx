@@ -1,14 +1,10 @@
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Button } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, LocalDate, NumberFormat, stringCompare, Subraction, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
-import RequiredStar from "../../../Components/requiredStar";
-import { Close, Done, Save, Search } from "@mui/icons-material";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import { paymentGeneralInfoInitialValue } from "./variable";
+import { Save } from "@mui/icons-material";
 import PurchaseInvoicePayment from "./purchasePayment";
 import ChoosePaymentComponent from "./choosePayment";
 import { toast } from "react-toastify";
@@ -46,7 +42,8 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         paymentInvoiceSearchResult: [],
         stockJournalSearchResult: [],
         purchaseInvoiceSearchResult: [],
-        itemDropDownData: []
+        itemDropDownData: [],
+        journalVoucherData: [],
     });
 
     const [filters, setFilters] = useState(filterInitialValue)

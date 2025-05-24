@@ -1,7 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, onlynum, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
-import { Close, Delete, Search } from "@mui/icons-material";
-import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
+import { checkIsNumber, isEqualNumber, ISOString, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { Close, Search } from "@mui/icons-material";
 import { paymentBillInfoInitialValue, paymentCostingInfoInitialValue, stockJournalTypes } from "./variable";
 import { useEffect, useState } from "react";
 import RequiredStar from "../../../Components/requiredStar";
@@ -33,7 +32,8 @@ const ExpencePayment = ({
     const [searchFilter, setSearchFilter] = useState({
         reqDate: ISOString(),
         stockJournalType: stockJournalTypes[0].value,
-        itemFilter: []
+        itemFilter: [],
+        journalVoucher: { label: 'ALL', value: '' }
     });
 
     useEffect(() => {
@@ -42,13 +42,19 @@ const ExpencePayment = ({
         }).then(data => {
             if (data.success) return updateBaseData('itemDropDownData', toArray(data.data));
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/voucher`,
+        }).then(data => {
+            if (data.success) return updateBaseData('journalVoucherData', toArray(data.data));
+        }).catch(e => console.error(e))
     }, [])
 
-    const searchStockJournal = (date, journalType, items) => {
+    const searchStockJournal = (date, journalType, items, voucher) => {
         fetchLink({
             address: `payment/paymentMaster/searchStockJournal`,
             method: 'POST',
-            bodyData: { reqDate: date, stockJournalType: journalType, filterItems: items },
+            bodyData: { reqDate: date, stockJournalType: journalType, filterItems: items, voucher: voucher },
             loadingOn, loadingOff
         }).then(data => {
             if (data.data) {
@@ -139,6 +145,23 @@ const ExpencePayment = ({
         const inputValue = checkIsNumber(input) ? RoundNumber(input) : 0;
         return inputValue < max ? inputValue : max;
     };
+
+    const getJournalType = (typeId) => {
+        return [
+            {
+                label: 'MATERIAL INWARD',
+                value: 1
+            },
+            {
+                label: 'OTHER GODOWN',
+                value: 2
+            },
+            {
+                label: 'PROCESSING',
+                value: 3
+            },
+        ].find(journal => isEqualNumber(journal.value, typeId)).label
+    }
 
     return (
         <>
@@ -237,6 +260,7 @@ const ExpencePayment = ({
                             searchFilter.reqDate,
                             searchFilter.stockJournalType,
                             searchFilter.itemFilter.map((item) => item.value),
+                            searchFilter.journalVoucher.value
                         );
                     }}>
                         <div className="row">
@@ -258,7 +282,11 @@ const ExpencePayment = ({
                                 <select
                                     value={searchFilter.stockJournalType}
                                     className="cus-inpt p-2 "
-                                    onChange={e => setSearchFilter(pre => ({ ...pre, stockJournalType: e.target.value }))}
+                                    onChange={e => setSearchFilter(pre => ({
+                                        ...pre,
+                                        stockJournalType: e.target.value,
+                                        journalVoucher: { label: 'ALL ', value: '' }
+                                    }))}
                                     required
                                 >
                                     {stockJournalTypes.map((type, typeIndex) => (
@@ -283,6 +311,30 @@ const ExpencePayment = ({
                                     styles={customSelectStyles}
                                     isSearchable={true}
                                     isMulti={true}
+                                    closeMenuOnSelect={false}
+                                />
+                            </div>
+
+                            {/* voucher filter */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 col-12 p-2">
+                                <label>Journal Voucher <RequiredStar /></label>
+                                <Select
+                                    value={searchFilter.journalVoucher}
+                                    onChange={e => setSearchFilter(pre => ({ ...pre, journalVoucher: e }))}
+                                    menuPortalTarget={document.body}
+                                    options={[
+                                        { value: '', label: 'ALL' },
+                                        ...toArray(baseData.journalVoucherData).filter(
+                                            fil => stringCompare(
+                                                fil.Type,
+                                                getJournalType(searchFilter.stockJournalType)
+                                            )
+                                        ).map(
+                                            (voucher) => ({ value: voucher.Vocher_Type_Id, label: voucher.Voucher_Type })
+                                        )
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
                                     closeMenuOnSelect={false}
                                 />
                             </div>

@@ -6,8 +6,9 @@ export const paymentGeneralInfoInitialValue = {
     payment_voucher_type_id: '',
     payment_sno: '',
     payment_invoice_no: '',
+
     payment_date: ISOString(),
-    pay_bill_type: 3,
+    pay_bill_type: 1,
     credit_ledger: '',
     credit_ledger_name: 'Select',
     credit_amount: 0,
@@ -15,8 +16,13 @@ export const paymentGeneralInfoInitialValue = {
     debit_ledger_name: 'Select',
     debit_amount: 0,
     remarks: '',
-    bank_date: '',
     status: 1,
+    
+    check_no: '',
+    check_date: '',
+    bank_name: '',
+    bank_date: '',
+    
     created_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
     altered_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
     created_on: '',
@@ -77,11 +83,11 @@ export const paymentTypes = [
     },
     {
         value: 2,
-        label: 'EXPENCES / OTHERS'
+        label: 'EXPENCES / OTHERS (IN-DIRECT)'
     },
     {
         value: 3,
-        label: 'EXPENCES - STOCK JOURNAL'
+        label: 'EXPENCES - STOCK JOURNAL (DIRECT)'
     },
     {
         value: 4,
@@ -101,5 +107,24 @@ export const stockJournalTypes = [
     {
         label: 'PROCESSING',
         value: 3
+    },
+]
+
+export const paymentStatus = [
+    {
+        label: 'New',
+        value: 1
+    },
+    {
+        label: 'Process',
+        value: 2
+    },
+    {
+        label: 'Completed',
+        value: 3
+    },
+    {
+        label: 'Canceled',
+        value: 0
     },
 ]
