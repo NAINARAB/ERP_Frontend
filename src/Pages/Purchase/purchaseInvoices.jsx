@@ -8,6 +8,7 @@ import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -15,7 +16,7 @@ const defaultFilters = {
     Todate: ISOString(),
 };
 
-const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
+const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights }) => {
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [voucher, setVoucher] = useState([]);
@@ -32,12 +33,16 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
         fetchTo: defaultFilters.Todate,
         Retailer: { value: '', label: 'Select Retailer' },
         VoucherType: { value: '', label: 'Select Voucher' },
-        Cancel_status: 0,
+        Cancel_status: '',
+        reload: false
     });
 
     const [dialog, setDialog] = useState({
         filters: false,
         orderDetails: false,
+        cancelDialog: false,
+        cancelPIN_Id: null,
+        isCanceled: null,
     });
 
     useEffect(() => {
@@ -56,7 +61,8 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
         filters?.fetchFrom, filters?.fetchTo,
         filters?.Retailer?.value,
         filters?.Cancel_status,
-        filters?.VoucherType
+        filters?.VoucherType,
+        filters.reload
     ])
 
     useEffect(() => {
@@ -109,61 +115,38 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
     }
 
     const purchaseOrderColumn = [
-        {
-            Field_Name: 'Po_Inv_No',
-            ColumnHeader: 'Order ID',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
-        {
-            Field_Name: 'Po_Entry_Date',
-            ColumnHeader: 'Date',
-            Fied_Data: 'date',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Retailer_Name',
-            ColumnHeader: 'Party',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
+        createCol('Po_Inv_No', 'string', 'Order ID'),
+        createCol('Po_Entry_Date', 'date', 'Date', 'center'),
+        createCol('Retailer_Name', 'string', 'Party'),
         createCol('VoucherTypeGet', 'string', 'Voucher'),
+        createCol('Total_Before_Tax', 'number', 'Before Tax', 'center'),
+        createCol('Total_Tax', 'number', 'Tax', 'center'),
+        createCol('Total_Invoice_value', 'number', 'Invoice Value', 'center'),
         {
-            Field_Name: 'Total_Before_Tax',
-            ColumnHeader: 'Before Tax',
-            Fied_Data: 'number',
+            ColumnHeader: 'Canceled-?',
             isVisible: 1,
             align: 'center',
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                const isCanceled = isEqualNumber(row?.Cancel_status, 1);
+                return (
+                    <Button
+                        className={'fw-bold fa-12 rounded-4 p-1 shadow-0 '}
+                        color={isCanceled ? "error" : 'primary'}
+                        variant={isCanceled ? "contained" : 'text'}
+                        disabled={!DeleteRights}
+                        onClick={() => setDialog(pre => ({
+                            ...pre,
+                            cancelPIN_Id: row.PIN_Id,
+                            cancelDialog: true,
+                            isCanceled: isCanceled
+                        }))}
+                    >
+                        {isCanceled ? 'Yes' : 'No'}
+                    </Button>
+                )
+            },
         },
-        {
-            Field_Name: 'Total_Tax',
-            ColumnHeader: 'Tax',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Invoice_value',
-            ColumnHeader: 'Invoice Value',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        // {
-        //     ColumnHeader: 'Status',
-        //     isVisible: 1,
-        //     align: 'center',
-        //     isCustomCell: true,
-        //     Cell: ({ row }) => {
-        //         const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
-        //         return (
-        //             <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-        //                 {convert?.label ?? 'Undefined'}
-        //             </span>
-        //         )
-        //     },
-        // },
         {
             Field_Name: 'Action',
             isVisible: 1,
@@ -241,8 +224,8 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                 <table className="table table-bordered m-0 fa-12">
                                     <tbody>
                                         {row?.Staff_List?.filter(cost =>
-                                            !(cost.Involved_Emp_Type === 'Owners' || 
-                                            cost.Involved_Emp_Type === 'Broker') 
+                                            !(cost.Involved_Emp_Type === 'Owners' ||
+                                                cost.Involved_Emp_Type === 'Broker')
                                         ).map(staff => (
                                             <tr>
                                                 <td>{staff?.Involved_Emp_Name}</td>
@@ -283,7 +266,25 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
             ...dialog,
             filters: false,
             orderDetails: false,
+            cancelDialog: false,
+            cancelPIN_Id: null
         });
+    }
+
+    const cancelPurchaseInvoice = () => {
+        fetchLink({
+            address: `purchase/purchaseOrder?PIN_Id=${dialog.cancelPIN_Id}`,
+            method: 'DELETE',
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                setFilters(pre => ({ ...pre, reload: !pre.reload }));
+                closeDialog();
+            } else {
+                toast.error(data.data)
+            }
+        }).catch(e => console.error(e))
     }
 
     return (
@@ -411,6 +412,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                                             onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
                                             className="cus-inpt"
                                         >
+                                            <option value={''}>ALL</option>
                                             <option value={1}>Show</option>
                                             <option value={0}>Hide</option>
                                         </select>
@@ -438,6 +440,25 @@ const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+            <Dialog
+                open={dialog.cancelDialog}
+                onClose={closeDialog} fullWidth maxWidth='sm'
+            >
+                <DialogTitle>Confirmation</DialogTitle>
+                <DialogContent>
+                    {dialog.isCanceled
+                        ? 'This invoice has already been canceled. Do you want to restore it?'
+                        : 'Are you sure you want to cancel this invoice? This action can be undone later.'}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button onClick={closeDialog}>Close</Button>
+                    <Button onClick={cancelPurchaseInvoice} color="primary" variant="outlined">
+                        {dialog.isCanceled ? 'Restore Invoice' : 'Cancel Invoice'}
+                    </Button>
+                </DialogActions>
+
+            </Dialog>
         </>
     )
 }
