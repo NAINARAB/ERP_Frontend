@@ -124,6 +124,8 @@ const PaymentReport = lazy(() => import("./Pages/Payments/paymentReport"));
 const PaymentsMasterList = lazy(() => import("./Pages/Payments/PaymentMaster/listPayments"));
 const AddPaymentMaster = lazy(() => import("./Pages/Payments/PaymentMaster/addPayments"));
 const AddPaymentReference = lazy(() => import("./Pages/Payments/PaymentMaster/addReference"));
+const PaymentReference = lazy(() => import('./Pages/Payments/PaymentReport/pendingReference'));
+const PaymentAccountTransaction = lazy(() => import('./Pages/Payments/PaymentReport/accountTransaction'));
 
 // Receipts
 const ReceiptsList = lazy(() => import("./Pages/Receipts/listReceipts"))
@@ -258,6 +260,8 @@ const RoutingArray = [
     { component: <PaymentsMasterList />, path: '/erp/payments/paymentList' },
     { component: <AddPaymentMaster />, path: '/erp/payments/paymentList/create' },
     { component: <AddPaymentReference />, path: '/erp/payments/paymentList/addReference' },
+    { component: <PaymentReference />, path: '/erp/payments/pendingReference' },
+    { component: <PaymentAccountTransaction />, path: '/erp/payments/accountTransaction' },
 
     // ERP - receipts
     { component: <DisplayNavigations />, path: '/erp/receipt' },
