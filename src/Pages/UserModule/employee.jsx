@@ -110,13 +110,13 @@ const DispEmployee = ({ emp, edit, del, setVal }) => {
                                     {emp.Address_2 ? emp.Address_2 : '-'}
                                 </span>
                             </h3>
-                            <br/>
+                            <br />
                             <h3 className="h6">
                                 <span className="float-start">Department Name</span>
                                 <span className="float-end">{emp.Department ? emp.Department : '-'}</span>
                             </h3>
-                            <br/>
-                            
+                            <br />
+
                             <h3 className="h6">
                                 <span className="float-start">Location</span>
                                 <span className="float-end">{emp.Location ? emp.Location : '-'}</span>
@@ -158,8 +158,8 @@ const EmployeeMaster = () => {
         enter_by: parseInt(storage?.UserId),
         fingerPrintEmpId: null,
         Department_ID: '',
-        department:'',
-        location:''
+        department: '',
+        location: ''
     }
     const [empFormData, setEmpFormData] = useState(initialEmpValue);
     const [empData, setEmpData] = useState([]);
@@ -209,6 +209,16 @@ const EmployeeMaster = () => {
         }).then((data) => {
             if (data.success) {
                 setDepartments(data.data)
+            }
+        }).catch(e => console.log(e));
+
+
+        fetchLink({
+            address: `empAttendance/department`
+        }).then((data) => {
+            if (data.success) {
+                console.log("Data", data)
+                setDepartments(data.others.department);
             }
         }).catch(e => console.log(e));
     }, [])
@@ -422,12 +432,16 @@ const EmployeeMaster = () => {
         },
         {
             label: 'Department Name',
-            elem: 'input',
-            type: 'text',
+            elem: 'dataset',
+            list: 'departmentList',
             class: inputclass,
-            placeholder: "Enter Department Name",
+            placeholder: "Type or Search Department Name",
             event: (e) => setEmpFormData({ ...empFormData, department: e.target.value }),
+            required: true,
             value: empFormData.department,
+            options: departments && departments.length > 0
+                ? departments
+                : [{ value: '', label: ' - No Departments Available - ', disabled: true }],
         },
         {
             label: 'Location',
@@ -456,7 +470,7 @@ const EmployeeMaster = () => {
             fetchLink({
                 address: `userModule/employee`,
                 method: 'POST',
-                bodyData: { data: {...empFormData, createAsUser: userCreate}, userMGT: true }
+                bodyData: { data: { ...empFormData, createAsUser: userCreate }, userMGT: true }
             }).then(data => {
                 if (data.success) {
                     toast.success(data.message)
@@ -479,7 +493,7 @@ const EmployeeMaster = () => {
             fetchLink({
                 address: `userModule/employee`,
                 method: 'PUT',
-                bodyData: { data: {...empFormData, createAsUser: userCreate}, ID: pk }
+                bodyData: { data: { ...empFormData, createAsUser: userCreate }, ID: pk }
             }).then(data => {
                 if (data.success) {
                     toast.success(data.message)
@@ -527,8 +541,8 @@ const EmployeeMaster = () => {
                 enter_by: parseInt(storage?.UserId),
                 fingerPrintEmpId: emp?.fingerPrintEmpId,
                 Department_ID: emp?.Department_ID,
-                department:emp?.Department,
-                location:emp?.Location
+                department: emp?.Department,
+                location: emp?.Location
             }))
             setDispScreen(!dispScreen);
         }
@@ -595,6 +609,33 @@ const EmployeeMaster = () => {
                                                 onChange={field.event}
                                                 rows={1} value={field.value}>
                                             </textarea>
+                                        ) : field.elem === 'dataset' ? (
+                                            <>
+                                                <input
+                                                    type="search"
+                                                    className={field.class}
+                                                    list={field.list}
+                                                    placeholder={field.placeholder}
+                                                    value={field.value}
+                                                    onChange={field.event}
+                                                    required={field.required}
+                                                />
+                                                <datalist id={field.list}>
+                                                    {field.options && field.options.length > 0 ? (
+                                                        field.options.map((option, idx) => (
+                                                            <option
+                                                                key={idx}
+                                                                value={option.value}
+                                                                disabled={option.disabled}
+                                                            >
+                                                                {option.label}
+                                                            </option>
+                                                        ))
+                                                    ) : (
+                                                        <option value="">No options available</option>
+                                                    )}
+                                                </datalist>
+                                            </>
                                         ) : null}
                                     </div>
                                 ))}
