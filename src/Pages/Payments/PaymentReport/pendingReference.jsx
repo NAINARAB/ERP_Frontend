@@ -102,7 +102,7 @@ const PaymentReference = ({ loadingOn, loadingOff }) => {
                     createCol('debit_ledger_name', 'string', 'Debit Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit Acc'),
                     createCol('debit_amount', 'number', 'Payed'),
-                    createCol('total_referenced', 'number', 'Reference'),
+                    createCol('total_referenced', 'number', 'Reference added'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Pending Reference',

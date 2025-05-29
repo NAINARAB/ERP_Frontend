@@ -72,6 +72,7 @@ const BaseGroup = () => {
     };
 
     const [editBase, setEditBase] = useState(false);
+    
     const editRow = (group) => {
         setEditBase(true);
         setInputValue({
