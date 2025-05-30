@@ -127,6 +127,7 @@ const ItemPaymentExpences = ({ loadingOn, loadingOff }) => {
                 bodyFontSizePx={12}
                 dataArray={groupedReportData}
                 EnableSerialNumber
+                disablePagination
                 ButtonArea={
                     <>
                         <IconButton
@@ -154,6 +155,8 @@ const ItemPaymentExpences = ({ loadingOn, loadingOff }) => {
                         isExpendable={true}
                         expandableComp={({ row }) => (
                             <FilterableTable
+                                headerFontSizePx={13}
+                                bodyFontSizePx={12}
                                 EnableSerialNumber
                                 dataArray={toArray(row?.groupedData)}
                                 columns={[
