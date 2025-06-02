@@ -6,14 +6,14 @@ import {
     RoundNumber,
     stringCompare,
     toNumber,
-} from "../../Components/functions";
-import { fetchLink } from "../../Components/fetchComponent";
+} from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 import Select from "react-select";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { receiptGeneralInfo } from "./variable";
+import { receiptGeneralInfo } from "../variable";
 import { toast } from 'react-toastify'
-import RequiredStar from "../../Components/requiredStar";
+import RequiredStar from "../../../Components/requiredStar";
 import DeliveryBillTableRow from "./billDeliveryTableRow";
 
 export const payTypeAndStatus = [
@@ -153,7 +153,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                             variant="outlined"
                             type="button"
                             className="me-1"
-                            onClick={() => navigate('/erp/receipts/listReceipts')}
+                            onClick={() => navigate('/erp/crm/paymentCollection')}
                         >Back</Button>
                         <Button
                             variant="outlined"

@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import RequiredStar from "../../Components/requiredStar";
+import RequiredStar from "../../../Components/requiredStar";
 import { payTypeAndStatus } from "./createReceipts";
-import { isEqualNumber, LocalDate, NumberFormat, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
+import { isEqualNumber, LocalDate, NumberFormat, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
 
 
 

@@ -129,10 +129,11 @@ const PaymentAccountTransaction = lazy(() => import('./Pages/Payments/PaymentRep
 const ItemPaymentExpences = lazy(() => import('./Pages/Payments/PaymentReport/itemExpences'));
 
 // Receipts
-const ReceiptsList = lazy(() => import("./Pages/Receipts/listReceipts"))
+const PaymentCollectionList = lazy(() => import("./Pages/Receipts/collcetionModule/listReceipts"))
+const PaymentCollectionCreate = lazy(() => import("./Pages/Receipts/collcetionModule/createReceipts"));
 const TallyPendingReceipt = lazy(() => import("./Pages/Receipts/TallyPendingReceipt/tallyPendingReceipt"))
-// const ReceiptsCreate = lazy(() => import("./Pages/Receipts/createReceipts"))
-const ReceiptsCreate = lazy(() => import("./Pages/Receipts/createReceipts"));
+const ReceiptList = lazy(() => import("./Pages/Receipts/ReceiptMaster/listReceipts"));
+const ReceiptsCreate = lazy(() => import("./Pages/Receipts/ReceiptMaster/addReceipt"));
 const PaymentCollectionReport = lazy(() => import("./Pages/Reports/paymentCollectionReport"))
 
 
@@ -267,7 +268,9 @@ const RoutingArray = [
 
     // ERP - receipts
     { component: <DisplayNavigations />, path: '/erp/receipt' },
-    { component: <ReceiptsList />, path: '/erp/receipts/listReceipts' },
+    { component: <PaymentCollectionList />, path: '/erp/crm/paymentCollection' },
+    { component: <PaymentCollectionCreate />, path: '/erp/crm/paymentCollection/create' },
+    { component: <ReceiptList />, path: '/erp/receipts/listReceipts' },
     { component: <ReceiptsCreate />, path: '/erp/receipts/listReceipts/create' },
     { component: <TallyPendingReceipt />, path: '/erp/receipt/tallyPendingReceipt' },
     { component: <PaymentCollectionReport />, path: '/erp/reports/paymentCollectionReport' },

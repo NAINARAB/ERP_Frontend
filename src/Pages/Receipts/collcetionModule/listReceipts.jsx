@@ -14,20 +14,20 @@ import {
     isValidDate,
     Subraction,
     toArray,
-} from "../../Components/functions";
-import { fetchLink } from "../../Components/fetchComponent";
+} from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, {
     ButtonActions,
     createCol,
-} from "../../Components/filterableTable2";
+} from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { useEffect, useState } from "react";
 import { Delete, Edit, FilterAlt, Search } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
-import { customSelectStyles } from "../../Components/tablecolumn";
+import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
 import UpdateGeneralInfoDialog from "./updateGeneralInfo";
-import { receiptGeneralInfo } from "./variable";
+import { receiptGeneralInfo } from "../variable";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
