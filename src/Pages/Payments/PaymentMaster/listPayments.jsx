@@ -48,6 +48,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
     const location = useLocation();
     const stateDetails = location.state;
     const query = useQuery();
+    console.log(stateDetails)
 
     useEffect(() => {
         fetchLink({

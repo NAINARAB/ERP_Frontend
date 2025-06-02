@@ -1,6 +1,11 @@
 import CryptoJS from "crypto-js";
 import { encryptionKey } from "../encryptionKey";
 
+export const setSessionFilters = (obj = {}) => {
+    sessionStorage.removeItem('filterValues');
+    sessionStorage.setItem('filterValues', obj);
+}
+
 export const isValidJSON = (str) => {
     try {
         JSON.parse(str);
@@ -9,6 +14,7 @@ export const isValidJSON = (str) => {
         return false;
     }
 }
+
 export const getSessionUser = () => {
     const storage = localStorage.getItem('user');
     const user = isValidJSON(storage) ? JSON.parse(storage) : {};
