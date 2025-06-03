@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
+import { isEqualNumber, ISOString, isValidDate, toArray } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -26,13 +26,20 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
     const query = useQuery();
     const stateDetails = location.state;
 
+    const [baseData, setBaseData] = useState({
+        Employees: [],
+        EmployeeTypes: []
+    })
+
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
         fetchFrom: defaultFilters.Fromdate,
         fetchTo: defaultFilters.Todate,
-        Retailer: { value: '', label: 'Select Retailer' },
-        VoucherType: { value: '', label: 'Select Voucher' },
+        Retailer: { value: '', label: 'ALL' },
+        VoucherType: { value: '', label: 'ALL' },
+        EmployeeType: { value: '', label: 'ALL' },
+        Employee: { value: '', label: 'ALL' },
         Cancel_status: '',
         reload: false
     });
@@ -48,7 +55,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
     useEffect(() => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer?.value}&Cancel_status=${filters?.Cancel_status}&VoucherType=${filters?.VoucherType?.value}`
+            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer?.value}&Cancel_status=${filters?.Cancel_status}&VoucherType=${filters?.VoucherType?.value}&Cost_Center_Type_Id=${filters.EmployeeType.value}&Involved_Emp_Id=${filters.Employee.value}`
         }).then(data => {
             if (data.success) {
                 setPurchaseOrder(data?.data)
@@ -59,9 +66,6 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
 
     }, [
         filters?.fetchFrom, filters?.fetchTo,
-        filters?.Retailer?.value,
-        filters?.Cancel_status,
-        filters?.VoucherType,
         filters.reload
     ])
 
@@ -80,6 +84,18 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
         }).then(data => {
             if (data.success) {
                 setVoucher(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `purchase/purchaseOrder/involvedStaffs`
+        }).then(data => {
+            if (data.success) {
+                setBaseData(pre => ({
+                    ...pre,
+                    Employees: toArray(data?.others?.Employees),
+                    EmployeeTypes: toArray(data?.others?.EmployeeTypes)
+                }));
             }
         }).catch(e => console.error(e))
 
@@ -341,8 +357,35 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                         <table className="table">
                             <tbody>
 
+                                {/* from date */}
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
+                                    <td style={{ verticalAlign: 'middle' }}>From</td>
+                                    <td>
+                                        <input
+                                            type="date"
+                                            value={filters.Fromdate}
+                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
+                                            className="cus-inpt"
+                                        />
+                                    </td>
+                                </tr>
+
+                                {/* to date */}
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>To</td>
+                                    <td>
+                                        <input
+                                            type="date"
+                                            value={filters.Todate}
+                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
+                                            className="cus-inpt"
+                                        />
+                                    </td>
+                                </tr>
+
+                                {/* vendor */}
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Vendor</td>
                                     <td>
                                         <Select
                                             value={filters?.Retailer}
@@ -354,11 +397,54 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             styles={customSelectStyles}
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
-                                            placeholder={"Retailer Name"}
+                                            placeholder={"Vendor Name"}
                                         />
                                     </td>
                                 </tr>
 
+                                {/* Employee Types */}
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Cost Center Type</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.EmployeeType}
+                                            onChange={(e) => setFilters({ ...filters, EmployeeType: e })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...baseData.EmployeeTypes.map(
+                                                    obj => ({ value: obj?.Emp_Type_Id, label: obj?.Emp_Type_Get })
+                                                )
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            isSearchable={true}
+                                            placeholder={"Cost Center Type"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                {/* Employee */}
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Cost Center Name</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.Employee}
+                                            onChange={(e) => setFilters({ ...filters, Employee: e })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...baseData.Employees.map(
+                                                    obj => ({ value: obj?.Emp_Id, label: obj?.Emp_Name_Get })
+                                                )
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            isSearchable={true}
+                                            placeholder={"Cost Center Type"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                {/* voucher */}
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Voucher</td>
                                     <td>
@@ -375,30 +461,6 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>From</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Fromdate}
-                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>To</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Todate}
-                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                            className="cus-inpt"
                                         />
                                     </td>
                                 </tr>
@@ -432,6 +494,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                 Todate: filters?.Todate
                             };
                             updateQueryString(updatedFilters);
+                            setFilters(pre => ({...pre, reload: !pre.reload}));
                             closeDialog();
                         }}
                         startIcon={<Search />}

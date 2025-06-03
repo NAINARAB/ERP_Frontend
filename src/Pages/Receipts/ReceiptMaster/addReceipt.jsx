@@ -198,6 +198,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                         <div className="row p-2 pb-0">
 
+                            <div className="col-12 p-2">
+                                <h5 className=" border-start border-primary border-3 p-2 m-0">Receipt Info</h5>
+                            </div>
+
                             {/* date */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Date<RequiredStar /></label>
@@ -278,6 +282,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                             <div className="col-12">
                                 <hr className=" text-dark" />
+                            </div>
+
+                            <div className="col-12 p-2">
+                                <h5 className=" border-start border-primary border-3 p-2 m-0">Ledger Info</h5>
                             </div>
 
                             {/* debit group */}
@@ -418,6 +426,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                             <div className="col-12">
                                 <hr className=" text-dark" />
+                            </div>
+
+                            <div className="col-12 p-2">
+                                <h5 className=" border-start border-primary border-3 p-2 m-0">Others Details</h5>
                             </div>
 
                         </div>
