@@ -10,7 +10,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
 import { useMemo } from "react";
 
-const ChoosePaymentComponent = ({
+const ChooseReceiptComponent = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
@@ -251,4 +251,4 @@ const ChoosePaymentComponent = ({
     )
 }
 
-export default ChoosePaymentComponent;
+export default ChooseReceiptComponent;

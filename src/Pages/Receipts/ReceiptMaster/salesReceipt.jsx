@@ -6,7 +6,7 @@ import { paymentBillInfoInitialValue } from "./variable";
 
 
 
-const PurchaseInvoicePayment = ({
+const SalesInvoiceReceipt = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
@@ -268,4 +268,4 @@ const PurchaseInvoicePayment = ({
     )
 }
 
-export default PurchaseInvoicePayment;
+export default SalesInvoiceReceipt;

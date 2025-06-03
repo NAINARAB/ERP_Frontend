@@ -3,25 +3,25 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { paymentGeneralInfoInitialValue } from "./variable";
+import { receiptValueInitialValue, receiptGeneralInfoInitialValue } from "./variable";
 import { Save } from "@mui/icons-material";
-import PurchaseInvoicePayment from "./purchasePayment";
-import ChoosePaymentComponent from "./choosePayment";
+import SalesInvoiceReceipt from "./purchasePayment";
+import ChooseReceiptComponent from "./choosePayment";
 import { toast } from "react-toastify";
-import ExpencePayment from "./expencesPayment";
+import ExpenceReceipt from "./expencesPayment";
 
 
 const initialSelectValue = { value: '', label: '' };
 const filterInitialValue = {
-    paymentInvoice: initialSelectValue,
+    receiptInvoice: initialSelectValue,
     debitAccount: initialSelectValue,
     creditAccount: initialSelectValue,
-    paymentType: initialSelectValue,
+    receiptType: initialSelectValue,
     journalType: initialSelectValue,
     itemFilter: initialSelectValue,
     journalDate: '',
-    selectPaymentDialog: false,
-    selectPurchaseInvoice: false,
+    selectReceiptDialog: false,
+    selectSalesInvoice: false,
     selectStockJournal: false,
 }
 
@@ -32,16 +32,16 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const cellStyle = { minWidth: '130px' };
     const cellHeadStype = { width: '150px' };
 
-    const [paymentGeneralInfo, setPaymentGeneralInfo] = useState(paymentGeneralInfoInitialValue)
-    const [paymentBillInfo, setPaymentBillInfo] = useState([]);
-    const [paymentCostingInfo, setPaymentCostingInfo] = useState([]);
+    const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
+    const [receiptBillInfo, setReceiptBillInfo] = useState([]);
+    const [receiptCostingInfo, setReceiptCostingInfo] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountGroup: [],
         accounts: [],
-        paymentInvoiceSearchResult: [],
+        receiptInvoiceSearchResult: [],
         stockJournalSearchResult: [],
-        purchaseInvoiceSearchResult: [],
+        salesInvoiceSearchResult: [],
         itemDropDownData: [],
         journalVoucherData: [],
     });
@@ -78,62 +78,63 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }, [])
 
     useEffect(() => {
-        if (!isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) || !paymentGeneralInfo.debit_ledger || !checkIsNumber(paymentGeneralInfo.debit_ledger)) {
-            updateBaseData('purchaseInvoiceSearchResult', []);
+        if (!isEqualNumber(receiptValue.receipt_bill_type, 1) || !receiptValue.debit_ledger || !checkIsNumber(receiptValue.debit_ledger)) {
+            updateBaseData('salesInvoiceSearchResult', []);
             return;
         }
 
         fetchLink({
-            address: `purchase/paymentPendingInvoices?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
+            address: `purchase/paymentPendingInvoices?Acc_Id=${receiptValue.debit_ledger}`,
         }).then(data => {
             if (data.success) {
-                updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));
+                updateBaseData('salesInvoiceSearchResult', toArray(data.data));
             }
         }).catch(e => console.error(e))
-    }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type]);
+    }, [receiptValue.debit_ledger, receiptValue.receipt_bill_type]);
 
     useEffect(() => {
         if (
-            !checkIsNumber(paymentGeneralInfo.pay_id) 
-            || !checkIsNumber(paymentGeneralInfo.pay_bill_type)
+            !checkIsNumber(receiptValue.receipt_id) 
+            || !checkIsNumber(receiptValue.receipt_bill_type)
             || (
-                !isEqualNumber(paymentGeneralInfo.pay_bill_type, 1)
-                && !isEqualNumber(paymentGeneralInfo.pay_bill_type, 3)
+                !isEqualNumber(receiptValue.receipt_bill_type, 1)
+                && !isEqualNumber(receiptValue.receipt_bill_type, 3)
             )
         ) {
             return;
         }
 
         fetchLink({
-            address: `payment/paymentMaster/againstRef?payment_id=${paymentGeneralInfo.pay_id}`
+            address: `payment/paymentMaster/againstRef?payment_id=${receiptValue.receipt_id}`
         }).then(data => {
             if (data.success) {
                 const reSturc = toArray(data.data).map(bill => ({
                     ...bill,
-                    PurchaseInvoiceDate: bill.referenceBillDate,
+                    SalesInvoiceDate: bill.referenceBillDate,
                     StockJournalDate: bill.referenceBillDate,
                     TotalPaidAmount: bill.totalPaidAmount,
                     PendingAmount: Subraction(bill?.Total_Invoice_value, bill.totalPaidAmount),
                 }));
-                setPaymentBillInfo(reSturc);
+                setReceiptBillInfo(reSturc);
             }
         }).catch(e => console.error(e));
 
         fetchLink({
-            address: `payment/paymentMaster/againstRef/costingDetails?payment_id=${paymentGeneralInfo.pay_id}`
+            address: `payment/paymentMaster/againstRef/costingDetails?payment_id=${receiptValue.receipt_id}`
         }).then(data => {
             if (data.success) {
-                setPaymentCostingInfo(toArray(data.data));
+                setReceiptCostingInfo(toArray(data.data));
             }
-        }).catch(e => console.error(e))
-    }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type])
+        }).catch(e => console.error(e));
+
+    }, [receiptValue.receipt_id, receiptValue.receipt_bill_type])
 
     useEffect(() => {
         if (isValidObject(editValues)) {
-            setPaymentGeneralInfo(
+            setReceiptValue(
                 Object.fromEntries(
-                    Object.entries(paymentGeneralInfoInitialValue).map(([key, value]) => {
-                        if (key === 'payment_date') return [key, editValues[key] ? ISOString(editValues[key]) : value];
+                    Object.entries(receiptGeneralInfoInitialValue).map(([key, value]) => {
+                        if (key === 'receipt_date') return [key, editValues[key] ? ISOString(editValues[key]) : value];
                         return [key, editValues[key] ?? value]
                     })
                 )
@@ -150,41 +151,41 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }
 
     const closeDialog = () => {
-        updateFilterData('selectPaymentDialog', false);
-        updateFilterData('selectPurchaseInvoice', false);
+        updateFilterData('selectReceiptDialog', false);
+        updateFilterData('selectSalesInvoice', false);
         updateFilterData('selectStockJournal', false);
     }
 
     const resetAll = () => {
-        setPaymentGeneralInfo(paymentGeneralInfoInitialValue);
-        setPaymentBillInfo([]);
-        setPaymentCostingInfo([]);
+        setReceiptValue(receiptGeneralInfoInitialValue);
+        setReceiptBillInfo([]);
+        setReceiptCostingInfo([]);
         setFilters(filterInitialValue);
-        updateBaseData('paymentInvoiceSearchResult', []);
+        updateBaseData('receiptInvoiceSearchResult', []);
         updateBaseData('stockJournalSearchResult', []);
-        updateBaseData('purchaseInvoiceSearchResult', []);
+        updateBaseData('salesInvoiceSearchResult', []);
     }
 
     const TotalAgainstRef = useMemo(() => {
-        return paymentBillInfo.reduce(
+        return receiptBillInfo.reduce(
             (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
         )
-    }, [paymentBillInfo]);
+    }, [receiptBillInfo]);
 
     const SavePayment = () => {
-        if (TotalAgainstRef > paymentGeneralInfo.debit_amount) return toast.warn('Payment amount is invalid');
+        if (TotalAgainstRef > receiptValue.debit_amount) return toast.warn('Payment amount is invalid');
 
         fetchLink({
             address: `payment/paymentMaster/againstRef`,
             method: 'POST',
             bodyData: {
-                payment_id: paymentGeneralInfo.pay_id,
-                payment_no: paymentGeneralInfo.payment_invoice_no,
-                payment_date: paymentGeneralInfo.payment_date,
-                bill_type: paymentGeneralInfo.pay_bill_type,
-                BillsDetails: toArray(paymentBillInfo),
-                CostingDetails: toArray(paymentCostingInfo),
-                DR_CR_Acc_Id: paymentGeneralInfo.debit_ledger
+                payment_id: receiptValue.receipt_id,
+                payment_no: receiptValue.receipt_invoice_no,
+                receipt_date: receiptValue.receipt_date,
+                bill_type: receiptValue.receipt_bill_type,
+                BillsDetails: toArray(receiptBillInfo),
+                CostingDetails: toArray(receiptCostingInfo),
+                DR_CR_Acc_Id: receiptValue.debit_ledger
             },
             loadingOn, loadingOff
         }).then(data => {
@@ -217,14 +218,14 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                     </div>
 
                     {/* choose Payment */}
-                    <ChoosePaymentComponent
+                    <ChooseReceiptComponent
                         cellHeadStype={cellHeadStype}
                         cellStyle={cellStyle}
-                        paymentGeneralInfo={paymentGeneralInfo}
-                        paymentBillInfo={paymentBillInfo}
+                        receiptValue={receiptValue}
+                        receiptBillInfo={receiptBillInfo}
                         filters={filters}
                         baseData={baseData}
-                        setPaymentGeneralInfo={setPaymentGeneralInfo}
+                        setReceiptValue={setReceiptValue}
                         updateFilterData={updateFilterData}
                         updateBaseData={updateBaseData}
                         closeDialog={closeDialog}
@@ -233,35 +234,35 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                     />
 
                     {/* choose Purchase invoice */}
-                    {isEqualNumber(paymentGeneralInfo.pay_bill_type, 1) && (
-                        <PurchaseInvoicePayment
+                    {isEqualNumber(receiptValue.receipt_bill_type, 1) && (
+                        <SalesInvoiceReceipt
                             cellHeadStype={cellHeadStype}
                             cellStyle={cellStyle}
-                            paymentGeneralInfo={paymentGeneralInfo}
+                            receiptValue={receiptValue}
                             filters={filters}
                             baseData={baseData}
-                            setPaymentGeneralInfo={setPaymentGeneralInfo}
+                            setReceiptValue={setReceiptValue}
                             updateFilterData={updateFilterData}
                             updateBaseData={updateBaseData}
                             closeDialog={closeDialog}
-                            paymentBillInfo={paymentBillInfo}
-                            setPaymentBillInfo={setPaymentBillInfo}
+                            receiptBillInfo={receiptBillInfo}
+                            setReceiptBillInfo={setReceiptBillInfo}
                         />
                     )}
 
                     {/* choose Stock journal */}
-                    {isEqualNumber(paymentGeneralInfo.pay_bill_type, 3) && (
-                        <ExpencePayment
+                    {isEqualNumber(receiptValue.receipt_bill_type, 3) && (
+                        <ExpenceReceipt
                             cellHeadStype={cellHeadStype}
                             cellStyle={cellStyle}
                             filters={filters}
                             baseData={baseData}
-                            paymentGeneralInfo={paymentGeneralInfo}
-                            paymentBillInfo={paymentBillInfo}
-                            paymentCostingInfo={paymentCostingInfo}
-                            setPaymentGeneralInfo={setPaymentGeneralInfo}
-                            setPaymentBillInfo={setPaymentBillInfo}
-                            setPaymentCostingInfo={setPaymentCostingInfo}
+                            receiptValue={receiptValue}
+                            receiptBillInfo={receiptBillInfo}
+                            receiptCostingInfo={receiptCostingInfo}
+                            setReceiptValue={setReceiptValue}
+                            setReceiptBillInfo={setReceiptBillInfo}
+                            setReceiptCostingInfo={setReceiptCostingInfo}
                             updateFilterData={updateFilterData}
                             updateBaseData={updateBaseData}
                             closeDialog={closeDialog}
@@ -279,8 +280,8 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         variant="contained"
                         startIcon={<Save />}
                         disabled={
-                            !checkIsNumber(paymentGeneralInfo.pay_id)
-                            || paymentBillInfo.length === 0
+                            !checkIsNumber(receiptValue.receipt_id)
+                            || receiptBillInfo.length === 0
                         }
                         onClick={SavePayment}
                     >Save</Button>

@@ -10,7 +10,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayStockJournal from "./displayStockJournal";
 import ListCostingDetails from "./listCostingDetail";
 
-const ExpencePayment = ({
+const ExpenceReceipt = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
@@ -368,4 +368,4 @@ const ExpencePayment = ({
     )
 }
 
-export default ExpencePayment;
+export default ExpenceReceipt;
