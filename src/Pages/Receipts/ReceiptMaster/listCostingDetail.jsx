@@ -15,10 +15,10 @@ const numberFormat = (num) => new Intl.NumberFormat().format(toNumber(num));
 const localDate = (dateStr) => new Date(dateStr).toLocaleDateString();
 
 const ListCostingDetails = ({
-    paymentBillInfo = [],
-    paymentCostingInfo = [],
-    setPaymentBillInfo,
-    setPaymentCostingInfo,
+    receiptBillInfo = [],
+    receiptCostingInfo = [],
+    setReceiptBillInfo,
+    setReceiptCostingInfo,
     onInputValidate,
     onSelectStockJournal,
     journalAmountOnChange,
@@ -26,11 +26,11 @@ const ListCostingDetails = ({
     const [open, setOpen] = useState(true);
 
     const onChangeAmount = (itemDetails, amount) => {
-        setPaymentCostingInfo((pre) => {
+        setReceiptCostingInfo((pre) => {
             const selectedItem = [...pre];
             const indexOfInvoice = selectedItem.findIndex(
                 (inv) =>
-                    isEqualNumber(itemDetails.pay_bill_id, inv.pay_bill_id) &&
+                    isEqualNumber(itemDetails.bill_id, inv.bill_id) &&
                     isEqualNumber(itemDetails.item_id, inv.item_id)
             );
 
@@ -45,15 +45,15 @@ const ListCostingDetails = ({
     const onChangeJournalAmount = (journal, amount = 0) => {
         const totalAmount = toNumber(amount);
 
-        setPaymentBillInfo((pre) => {
+        setReceiptBillInfo((pre) => {
             const updated = [...pre];
-            const index = updated.findIndex((b) => isEqualNumber(b.pay_bill_id, journal.pay_bill_id));
-            if (index !== -1) updated[index].Debit_Amo = totalAmount;
+            const index = updated.findIndex((b) => isEqualNumber(b.bill_id, journal.bill_id));
+            if (index !== -1) updated[index].Credit_Amo = totalAmount;
             return updated;
         });
 
-        setPaymentCostingInfo((prev) => {
-            const items = prev.filter((item) => isEqualNumber(item.pay_bill_id, journal.pay_bill_id));
+        setReceiptCostingInfo((prev) => {
+            const items = prev.filter((item) => isEqualNumber(item.bill_id, journal.bill_id));
 
             // const shouldDistribute = items.every((item) => !item.expence_value || Number(item.expence_value) === 0);
 
@@ -81,7 +81,7 @@ const ListCostingDetails = ({
             });
 
             return prev.map((item) => {
-                if (isEqualNumber(item.pay_bill_id, journal.pay_bill_id)) {
+                if (isEqualNumber(item.bill_id, journal.bill_id)) {
                     const updated = updatedItems.find((i) => i.item_id === item.item_id);
                     return updated || item;
                 }
@@ -93,7 +93,7 @@ const ListCostingDetails = ({
     return (
         <>
             <div className="table-responsive">
-                {paymentBillInfo.map((journal, journalIndex) => (
+                {receiptBillInfo.map((journal, journalIndex) => (
                     <table className="table table-bordered fa-12 my-3" key={journalIndex}>
                         <thead>
                             <tr>
@@ -106,7 +106,7 @@ const ListCostingDetails = ({
                                 <th className="bg-light">Paid: {journal.TotalPaidAmount}</th>
                                 <th className="bg-light vctr p-0 text-end">
                                     <input
-                                        value={journal.Debit_Amo || ""}
+                                        value={journal.Credit_Amo || ""}
                                         className="cus-inpt p-2 border-dark text-primary bg-light"
                                         placeholder="Enter Amount"
                                         type="number"
@@ -120,7 +120,7 @@ const ListCostingDetails = ({
                                             onSelectStockJournal(
                                                 {
                                                     ...journal,
-                                                    journalId: journal.pay_bill_id,
+                                                    journalId: journal.bill_id,
                                                 },
                                                 true
                                             )
@@ -156,7 +156,7 @@ const ListCostingDetails = ({
                                         <div className="d-flex justify-content-between align-items-center">
                                             <span>Payment Amount</span>
                                             <span className="fa-17 text-primary">
-                                                {numberFormat(toNumber(journal.Debit_Amo))}
+                                                {numberFormat(toNumber(journal.Credit_Amo))}
                                             </span>
                                         </div>
                                     </td>
@@ -165,8 +165,8 @@ const ListCostingDetails = ({
                         </thead>
                         {open && (
                             <tbody>
-                                {paymentCostingInfo
-                                    .filter((itemDetails) => isEqualNumber(itemDetails.pay_bill_id, journal.pay_bill_id))
+                                {receiptCostingInfo
+                                    .filter((itemDetails) => isEqualNumber(itemDetails.bill_id, journal.bill_id))
                                     .map((item, itemIndex) => (
                                         <tr key={itemIndex}>
                                             <td>{`${journalIndex + 1}.${itemIndex + 1}`}</td>

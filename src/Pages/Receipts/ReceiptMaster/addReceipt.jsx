@@ -89,7 +89,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         setReceiptCostingInfo([]);
     };
 
-    const savePayment = (postValues = {}) => {
+    const saveReceipt = (postValues = {}) => {
         fetchLink({
             address: `receipt/receiptMaster`,
             method: checkIsNumber(postValues?.receipt_id) ? 'PUT' : 'POST',
@@ -132,7 +132,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     } else if (receiptValue.debit_amount < 1 || !receiptValue.debit_amount) {
                         toast.warn('Enter valid amount!')
                     } else {
-                        savePayment(receiptValue)
+                        saveReceipt(receiptValue)
                     }
                 }}>
 
@@ -143,7 +143,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             type="button"
                             variant="outlined"
                             className="mx-1"
-                            onClick={() => navigate('/erp/payments/paymentList')}
+                            onClick={() => navigate('/erp/receipts/listReceipts')}
                         >back</Button>
                         <Button
                             type="submit"

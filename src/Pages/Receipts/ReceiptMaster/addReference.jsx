@@ -1,14 +1,16 @@
 import { Button } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Save } from "@mui/icons-material";
+import { toast } from "react-toastify";
+
 import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { receiptValueInitialValue, receiptGeneralInfoInitialValue } from "./variable";
-import { Save } from "@mui/icons-material";
-import SalesInvoiceReceipt from "./purchasePayment";
-import ChooseReceiptComponent from "./choosePayment";
-import { toast } from "react-toastify";
-import ExpenceReceipt from "./expencesPayment";
+
+import SalesInvoiceReceipt from "./salesReceipt";
+import ChooseReceiptComponent from "./chooseReceipt";
+import ExpenceReceipt from "./expencesReceipt";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -168,31 +170,31 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
 
     const TotalAgainstRef = useMemo(() => {
         return receiptBillInfo.reduce(
-            (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+            (acc, invoice) => Addition(acc, invoice.Credit_Amo), 0
         )
     }, [receiptBillInfo]);
 
     const SavePayment = () => {
-        if (TotalAgainstRef > receiptValue.debit_amount) return toast.warn('Payment amount is invalid');
+        if (TotalAgainstRef > receiptValue.debit_amount) return toast.warn('Receipt amount is invalid');
 
         fetchLink({
-            address: `payment/paymentMaster/againstRef`,
+            address: `receipt/receiptMaster/againstRef`,
             method: 'POST',
             bodyData: {
-                payment_id: receiptValue.receipt_id,
+                receipt_id: receiptValue.receipt_id,
                 payment_no: receiptValue.receipt_invoice_no,
                 receipt_date: receiptValue.receipt_date,
-                bill_type: receiptValue.receipt_bill_type,
+                receipt_bill_type: receiptValue.receipt_bill_type,
                 BillsDetails: toArray(receiptBillInfo),
                 CostingDetails: toArray(receiptCostingInfo),
-                DR_CR_Acc_Id: receiptValue.debit_ledger
+                DR_CR_Acc_Id: receiptValue.credit_ledger
             },
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 toast.success(data.message);
                 resetAll();
-                navigate('/erp/payments/paymentList');
+                navigate('/erp/receipts/listReceipts');
             } else {
                 toast.error(data.message);
             }
@@ -207,13 +209,13 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
 
                     {/* payment invoices */}
                     <div className="p-2 d-flex align-items-center mb-3">
-                        <h5 className="m-0 flex-grow-1">Payment Reference Creation</h5>
+                        <h5 className="m-0 flex-grow-1">Receipt Reference Creation</h5>
 
                         <Button
                             type="button"
                             variant='contained'
                             className="mx-1"
-                            onClick={() => navigate('/erp/payments/paymentList')}
+                            onClick={() => navigate('/erp/receipts/listReceipts')}
                         >back</Button>
                     </div>
 
@@ -251,7 +253,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                     )}
 
                     {/* choose Stock journal */}
-                    {isEqualNumber(receiptValue.receipt_bill_type, 3) && (
+                    {isEqualNumber(receiptValue.receipt_bill_type, 2) && (
                         <ExpenceReceipt
                             cellHeadStype={cellHeadStype}
                             cellStyle={cellStyle}

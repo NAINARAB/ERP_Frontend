@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
-import { paymentBillInfoInitialValue } from "./variable";
+import { receiptBillInfoInitialValue } from "./variable";
 
 
 
@@ -10,37 +10,38 @@ const SalesInvoiceReceipt = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
-    paymentGeneralInfo = {},
-    paymentBillInfo = [],
-    setPaymentBillInfo,
+    receiptValue = {},
+    receiptBillInfo = [],
+    setReceiptBillInfo,
     filters,
     baseData,
-    setPaymentGeneralInfo,
+    setreceiptValue,
     updateFilterData,
     updateBaseData,
     closeDialog,
 }) => {
-    const onClickPurchaseInvoice = (invoiceDetails, deleteOption) => {
-        setPaymentBillInfo(pre => {
+
+    const onClickSalesInvoice = (invoiceDetails, deleteOption) => {
+        setReceiptBillInfo(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.pay_bill_id, invoiceDetails.PIN_Id));
+            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.bill_id, invoiceDetails.Do_Id));
 
             let updateBillInfo;
             if (deleteOption) {
                 updateBillInfo = excludeCurrentValue;
             } else {
                 const reStruc = Object.fromEntries(
-                    Object.entries(paymentBillInfoInitialValue).map(([key, value]) => {
+                    Object.entries(receiptBillInfoInitialValue).map(([key, value]) => {
                         switch (key) {
-                            case 'pay_bill_id': return [key, invoiceDetails?.PIN_Id];
-                            case 'bill_name': return [key, invoiceDetails?.Po_Inv_No];
+                            case 'bill_id': return [key, invoiceDetails?.Do_Id];
+                            case 'bill_name': return [key, invoiceDetails?.Do_Inv_No];
                             case 'bill_amount': return [key, toNumber(invoiceDetails?.Total_Invoice_value)];
                             case 'Debit_Amo': return [key, 0];
                             case 'Credit_Amo': return [key, 0];
-                            case 'JournalBillType': return [key, 'PURCHASE INVOICE'];
+                            case 'JournalBillType': return [key, 'SALES INVOICE'];
 
-                            case 'PurchaseInvoiceDate': return [key, invoiceDetails.Po_Inv_Date];
+                            case 'SalesInvoiceDate': return [key, invoiceDetails.Do_Date];
                             case 'TotalPaidAmount': return [key, invoiceDetails.Paid_Amount];
                             case 'PendingAmount': return [key, Subraction(
                                 invoiceDetails?.Total_Invoice_value,
@@ -57,15 +58,15 @@ const SalesInvoiceReceipt = ({
     }
 
     const onChangeAmount = (invoice, amount) => {
-        setPaymentBillInfo(pre => {
+        setReceiptBillInfo(pre => {
             const selectedInvoices = [...pre];
 
             const indexOfInvoice = selectedInvoices.findIndex(
-                inv => isEqualNumber(invoice.pay_bill_id, inv.pay_bill_id)
+                inv => isEqualNumber(invoice.bill_id, inv.bill_id)
             );
 
             if (indexOfInvoice !== -1) {
-                selectedInvoices[indexOfInvoice].Debit_Amo = toNumber(amount);
+                selectedInvoices[indexOfInvoice].Credit_Amo = toNumber(amount);
             }
             return selectedInvoices;
         })
@@ -88,13 +89,13 @@ const SalesInvoiceReceipt = ({
                                 <Button
                                     type="button"
                                     variant="outlined"
-                                    disabled={toArray(baseData.purchaseInvoiceSearchResult).length === 0}
-                                    onClick={() => updateFilterData('selectPurchaseInvoice', true)}
+                                    disabled={toArray(baseData.salesInvoiceSearchResult).length === 0}
+                                    onClick={() => updateFilterData('selectSalesInvoice', true)}
                                 >Add reference</Button>
                             </th>
                         </tr>
                         <tr>
-                            {['Sno', 'Purchase InvoiceNo', 'Date', 'Invoice Value',
+                            {['Sno', 'Sales InvoiceNo', 'Date', 'Invoice Value',
                                 'Paid Amount',
                                 // 'Pending Amount',
                                 'Payment Amount', 'Action'].map(
@@ -103,18 +104,18 @@ const SalesInvoiceReceipt = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {paymentBillInfo.map(
+                        {receiptBillInfo.map(
                             (invoice, invoiceInd) => (
                                 <tr key={invoiceInd}>
                                     <td>{invoiceInd + 1}</td>
                                     <td>{invoice?.bill_name}</td>
-                                    <td>{LocalDate(invoice?.PurchaseInvoiceDate)}</td>
+                                    <td>{LocalDate(invoice?.SalesInvoiceDate)}</td>
                                     <td>{NumberFormat(invoice?.bill_amount)}</td>
                                     <td>{invoice?.TotalPaidAmount}</td>
                                     {/* <td>{Subraction(invoice?.bill_amount, invoice?.TotalPaidAmount)}</td> */}
                                     <td className="p-0">
                                         <input
-                                            value={invoice.Debit_Amo || ''}
+                                            value={invoice.Credit_Amo || ''}
                                             className="cus-inpt p-2 border-0 text-primary"
                                             placeholder="Enter Amount"
                                             type="number"
@@ -129,9 +130,9 @@ const SalesInvoiceReceipt = ({
                                     <td className="p-0 vctr cntr">
                                         <IconButton
                                             size="small"
-                                            onClick={() => onClickPurchaseInvoice({
+                                            onClick={() => onClickSalesInvoice({
                                                 ...invoice,
-                                                PIN_Id: invoice.pay_bill_id
+                                                Do_Id: invoice.bill_id
                                             }, true)}
                                         ><Delete className="fa-20" color="error" /></IconButton>
                                     </td>
@@ -141,14 +142,14 @@ const SalesInvoiceReceipt = ({
                         <tr>
                             <td colSpan={3} className="text-end fw-bold">Total</td>
                             <td className="fw-bold text-muted">
-                                {paymentBillInfo.reduce(
+                                {receiptBillInfo.reduce(
                                     (acc, invoice) => Addition(acc, invoice.bill_amount), 0
                                 )}
                             </td>
                             <td></td>
                             <td className="fw-bold text-muted">
-                                {paymentBillInfo.reduce(
-                                    (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+                                {receiptBillInfo.reduce(
+                                    (acc, invoice) => Addition(acc, invoice.Credit_Amo), 0
                                 )}
                             </td>
                             <td></td>
@@ -159,13 +160,14 @@ const SalesInvoiceReceipt = ({
 
 
             <Dialog
-                open={filters.selectPurchaseInvoice}
+                open={filters.selectSalesInvoice}
                 onClose={closeDialog} fullScreen
             >
                 <DialogTitle className="d-flex justify-content-between align-items-center">
-                    <span>Add Ref - Purchase Invoice</span>
+                    <span>Add Ref - Sales Invoice</span>
                     <IconButton onClick={closeDialog}><Close color="error" /></IconButton>
                 </DialogTitle>
+
                 <DialogContent>
                     <table className="table table-bordered fa-13">
                         <thead>
@@ -176,25 +178,25 @@ const SalesInvoiceReceipt = ({
                                 </th>
                             </tr>
                             <tr>
-                                {['Sno', 'Payment InvoiceNo', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
+                                {['Sno', 'Sales InvoiceNo', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
                                     (col, colInd) => <td key={colInd}>{col}</td>
                                 )}
                             </tr>
                         </thead>
                         <tbody>
-                            {baseData.purchaseInvoiceSearchResult.map(
+                            {baseData.salesInvoiceSearchResult.map(
                                 (invoice, invoiceInd) => (
                                     <tr key={invoiceInd}>
                                         <td>{invoiceInd + 1}</td>
-                                        <td>{invoice?.Po_Inv_No}</td>
-                                        <td>{LocalDate(invoice?.Po_Inv_Date)}</td>
+                                        <td>{invoice?.Do_Inv_No}</td>
+                                        <td>{LocalDate(invoice?.Do_Date)}</td>
                                         <td>{invoice?.Total_Invoice_value}</td>
                                         <td>{invoice?.Paid_Amount}</td>
                                         <td>{Subraction(invoice?.Total_Invoice_value, invoice?.Paid_Amount)}</td>
                                         <td>
                                             {(() => {
-                                                const isChecked = paymentBillInfo.findIndex(o =>
-                                                    isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+                                                const isChecked = receiptBillInfo.findIndex(o =>
+                                                    isEqualNumber(o?.bill_id, invoice.Do_Id)
                                                 ) !== -1;
 
                                                 return (
@@ -205,8 +207,8 @@ const SalesInvoiceReceipt = ({
                                                             type="checkbox"
                                                             checked={isChecked}
                                                             onChange={() => {
-                                                                if (isChecked) onClickPurchaseInvoice(invoice, true)
-                                                                else onClickPurchaseInvoice(invoice)
+                                                                if (isChecked) onClickSalesInvoice(invoice, true)
+                                                                else onClickSalesInvoice(invoice)
                                                             }}
                                                         />
                                                     </div>
@@ -220,7 +222,7 @@ const SalesInvoiceReceipt = ({
                                 <td colSpan={4} rowSpan={3}></td>
                                 <td>Total Amount: </td>
                                 <td colSpan={2} className="fw-bold fa-15">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
+                                    {baseData.salesInvoiceSearchResult.reduce(
                                         (acc, invoice) => Addition(acc, invoice?.Total_Invoice_value), 0
                                     )}
                                 </td>
@@ -228,10 +230,10 @@ const SalesInvoiceReceipt = ({
                             <tr>
                                 <td>Selected Bill Amount: </td>
                                 <td colSpan={2} className="text-primary fw-bold">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
+                                    {baseData.salesInvoiceSearchResult.reduce(
                                         (acc, invoice) => {
-                                            const isChecked = paymentBillInfo.findIndex(o =>
-                                                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+                                            const isChecked = receiptBillInfo.findIndex(o =>
+                                                isEqualNumber(o?.bill_id, invoice.Do_Id)
                                             ) !== -1;
 
                                             if (isChecked) return Addition(acc, invoice?.Total_Invoice_value);
@@ -244,10 +246,10 @@ const SalesInvoiceReceipt = ({
                             <tr>
                                 <td>Pending Bill Amount: </td>
                                 <td colSpan={2} className="text-danger">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
+                                    {baseData.salesInvoiceSearchResult.reduce(
                                         (acc, invoice) => {
-                                            const isNotChecked = paymentBillInfo.findIndex(o =>
-                                                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+                                            const isNotChecked = receiptBillInfo.findIndex(o =>
+                                                isEqualNumber(o?.bill_id, invoice.Do_Id)
                                             ) === -1;
 
                                             if (isNotChecked) return Addition(acc, invoice?.Total_Invoice_value);

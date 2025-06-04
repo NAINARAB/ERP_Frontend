@@ -11,7 +11,7 @@ const DisplayStockJournal = ({
     cellHeadStype = { width: '150px' },
     cellStyle = { minWidth: '130px' },
     initialSelectValue = { value: '', label: '' },
-    paymentBillInfo = [],
+    receiptBillInfo = [],
     onSelect
 }) => {
 
@@ -32,8 +32,8 @@ const DisplayStockJournal = ({
                     <td>
                         <div className="d-flex align-items-center">
                             {(() => {
-                                const isChecked = paymentBillInfo.findIndex(o =>
-                                    isEqualNumber(o?.pay_bill_id, row.journalId)
+                                const isChecked = receiptBillInfo.findIndex(o =>
+                                    isEqualNumber(o?.bill_id, row.journalId)
                                 ) !== -1;
 
                                 return (

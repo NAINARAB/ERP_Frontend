@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { checkIsNumber, isEqualNumber, ISOString, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { Close, Search } from "@mui/icons-material";
-import { paymentBillInfoInitialValue, paymentCostingInfoInitialValue, stockJournalTypes } from "./variable";
+import { receiptBillInfoInitialValue, receiptCostingInfoInitialValue, stockJournalTypes } from "./variable";
 import { useEffect, useState } from "react";
 import RequiredStar from "../../../Components/requiredStar";
 import Select from "react-select";
@@ -16,12 +16,12 @@ const ExpenceReceipt = ({
     initialSelectValue = { value: '', label: '' },
     filters,
     baseData,
-    paymentGeneralInfo = {},
-    paymentBillInfo = [],
-    paymentCostingInfo = [],
-    setPaymentGeneralInfo,
-    setPaymentBillInfo,
-    setPaymentCostingInfo,
+    receiptValue = {},
+    receiptBillInfo = [],
+    receiptCostingInfo = [],
+    setreceiptValue,
+    setReceiptBillInfo,
+    setReceiptCostingInfo,
     updateFilterData,
     updateBaseData,
     closeDialog,
@@ -67,22 +67,22 @@ const ExpenceReceipt = ({
 
     const onSelectStockJournal = (invoiceDetails, deleteOption) => {
 
-        setPaymentBillInfo(pre => {
+        setReceiptBillInfo(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.pay_bill_id, invoiceDetails.journalId));
+            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.bill_id, invoiceDetails.journalId));
 
             let updateBillInfo;
             if (deleteOption) {
                 updateBillInfo = excludeCurrentValue;
             } else {
                 const reStruc = Object.fromEntries(
-                    Object.entries(paymentBillInfoInitialValue).map(([key, value]) => {
+                    Object.entries(receiptBillInfoInitialValue).map(([key, value]) => {
                         switch (key) {
-                            case 'pay_bill_id': return [key, invoiceDetails?.journalId];
+                            case 'bill_id': return [key, invoiceDetails?.journalId];
                             case 'bill_name': return [key, invoiceDetails?.journalVoucherNo];
                             case 'JournalBillType': return [key, invoiceDetails?.BillType];
-                            case 'Debit_Amo': return [key, 0];
+                            case 'Credit_Amo': return [key, 0];
 
                             case 'StockJournalDate': return [key, invoiceDetails.journalDate];
                             case 'TotalPaidAmount': return [key, invoiceDetails.Paid_Amount];
@@ -95,19 +95,19 @@ const ExpenceReceipt = ({
             return updateBillInfo;
         });
 
-        setPaymentCostingInfo(pre => {
+        setReceiptCostingInfo(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.pay_bill_id, invoiceDetails.journalId));
+            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.bill_id, invoiceDetails.journalId));
 
             let updateCostinInfo;
             if (deleteOption) {
                 updateCostinInfo = excludeCurrentValue;
             } else {
                 const reStruc = invoiceDetails.Products_List.map(journalProduct => Object.fromEntries(
-                    Object.entries(paymentCostingInfoInitialValue).map(([key, value]) => {
+                    Object.entries(receiptCostingInfoInitialValue).map(([key, value]) => {
                         switch (key) {
-                            case 'pay_bill_id': return [key, invoiceDetails?.journalId];
+                            case 'bill_id': return [key, invoiceDetails?.journalId];
                             case 'pur_date': return [key, invoiceDetails?.journalDate];
                             case 'JournalBillType': return [key, invoiceDetails?.BillType];
 
@@ -127,15 +127,15 @@ const ExpenceReceipt = ({
     }
 
     const onChangeAmount = (invoice, amount) => {
-        setPaymentBillInfo(pre => {
+        setReceiptBillInfo(pre => {
             const selectedInvoices = [...pre];
 
             const indexOfInvoice = selectedInvoices.findIndex(
-                inv => isEqualNumber(invoice.pay_bill_id, inv.pay_bill_id)
+                inv => isEqualNumber(invoice.bill_id, inv.bill_id)
             );
 
             if (indexOfInvoice !== -1) {
-                selectedInvoices[indexOfInvoice].Debit_Amo = toNumber(amount);
+                selectedInvoices[indexOfInvoice].Credit_Amo = toNumber(amount);
             }
             return selectedInvoices;
         })
@@ -167,65 +167,8 @@ const ExpenceReceipt = ({
         <>
             <div className="table-responsive">
 
-                {/* <table className="table table-bordered fa-13">
-                    <thead>
-                        <tr>
-                            <th className="text-primary fa-15 vctr" style={cellHeadStype}>Against Reference</th>
-                            <th colSpan={6} className="text-end">
-                                <Button
-                                    type="button"
-                                    variant="outlined"
-                                    onClick={() => updateFilterData('selectStockJournal', true)}
-                                >Add reference</Button>
-                            </th>
-                        </tr>
-                        <tr>
-                            {['Sno', 'Journal-No', 'Date', 'Journal Type', 'Paid Amount', 'Payment Amount', 'Action'].map(
-                                (col, colInd) => <th key={colInd} className="bg-light text-muted">{col}</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paymentBillInfo.map(
-                            (journal, journalIndex) => (
-                                <tr key={journalIndex}>
-                                    <td>{journalIndex + 1}</td>
-                                    <td>{journal.bill_name}</td>
-                                    <td>{journal.StockJournalDate ? LocalDate(journal.StockJournalDate) : '-'}</td>
-                                    <td>{journal.JournalBillType}</td>
-                                    <td>{journal.TotalPaidAmount}</td>
-                                    <td className="p-0">
-                                        <input
-                                            value={journal.Debit_Amo || ''}
-                                            className="cus-inpt p-2 border-0 text-primary"
-                                            placeholder="Enter Amount"
-                                            type="number"
-                                            onChange={e => {
-                                                const maxAmount = Subraction(journal?.bill_amount, journal?.TotalPaidAmount);
-                                                const validated = onInputValidate(e.target.value, maxAmount);
-                                                onChangeAmount(journal, validated);
-                                            }}
-                                        />
-                                    </td>
-                                    <td className="p-0 vctr cntr">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onSelectStockJournal({
-                                                ...journal,
-                                                journalId: journal.pay_bill_id
-                                            }, true)}
-                                        ><Delete className="fa-20" color="error" /></IconButton>
-                                    </td>
-                                </tr>
-                            )
-                        )}
-                    </tbody>
-                </table> */}
-
-                {/* <hr className="m-2" /> */}
-
                 <div className="border d-flex align-items-center fw-bold text-primary justify-content-between p-2">
-                    <span>Against Reference ({paymentBillInfo.length})</span>
+                    <span>Against Reference ({receiptBillInfo.length})</span>
                     <Button
                         type="button"
                         variant="outlined"
@@ -234,10 +177,10 @@ const ExpenceReceipt = ({
                 </div>
 
                 <ListCostingDetails
-                    paymentBillInfo={paymentBillInfo}
-                    setPaymentBillInfo={setPaymentBillInfo}
-                    paymentCostingInfo={paymentCostingInfo}
-                    setPaymentCostingInfo={setPaymentCostingInfo}
+                    receiptBillInfo={receiptBillInfo}
+                    setReceiptBillInfo={setReceiptBillInfo}
+                    receiptCostingInfo={receiptCostingInfo}
+                    setReceiptCostingInfo={setReceiptCostingInfo}
                     onInputValidate={onInputValidate}
                     onChangeAmount={onChangeAmount}
                     onSelectStockJournal={onSelectStockJournal}
@@ -355,7 +298,7 @@ const ExpenceReceipt = ({
 
                     <DisplayStockJournal
                         arrayData={toArray(baseData.stockJournalSearchResult)}
-                        paymentBillInfo={paymentBillInfo}
+                        receiptBillInfo={receiptBillInfo}
                         onSelect={onSelectStockJournal}
                     />
 
