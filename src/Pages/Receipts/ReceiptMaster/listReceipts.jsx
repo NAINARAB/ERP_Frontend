@@ -48,7 +48,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
     const location = useLocation();
     const stateDetails = location.state;
     const query = useQuery();
-    console.log(stateDetails)
+    // console.log(stateDetails)
 
     useEffect(() => {
         fetchLink({
@@ -98,7 +98,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
         const payment_type = filters.payment_type;
 
         fetchLink({
-            address: `payment/paymentMaster?Fromdate=${From}&Todate=${To}&voucher=${voucher}&debit=${debit}&credit=${credit}&createdBy=${createdBy}&status=${status}&payment_type=${payment_type}`,
+            address: `receipt/receiptMaster?Fromdate=${From}&Todate=${To}&voucher=${voucher}&debit=${debit}&credit=${credit}&createdBy=${createdBy}&status=${status}&payment_type=${payment_type}`,
             loadingOff, loadingOn
         }).then(data => {
             if (data.success) {
@@ -186,8 +186,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                                         onclick: () => navigate('addReference', { state: row }),
                                         disabled: (
                                             !EditRights
-                                            || isEqualNumber(row.bill_type, 2)
-                                            || isEqualNumber(row.bill_type, 4)
+                                            || isEqualNumber(row.bill_type, 3)
                                         )
                                     },
                                 ]}

@@ -1,4 +1,4 @@
-import { getSessionUser, ISOString } from "../../Components/functions";
+import { getSessionUser, ISOString } from "../../../Components/functions";
 const storage = getSessionUser().user;
 
 export const receiptGeneralInfo = {

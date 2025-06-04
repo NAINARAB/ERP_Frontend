@@ -139,8 +139,8 @@ const ReceiptGeneralInfo = ({
                         type="number"
                         required
                         className="cus-inpt p-2"
-                        value={receiptValue.debit_amount || ''}
-                        onChange={e => onChangePaymentValue('debit_amount', e.target.value)}
+                        value={receiptValue.credit_amount || ''}
+                        onChange={e => onChangePaymentValue('credit_amount', e.target.value)}
                     />
                 </div>
 

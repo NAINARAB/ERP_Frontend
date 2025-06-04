@@ -1,25 +1,7 @@
-import {
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Tooltip,
-} from "@mui/material";
-import {
-    getSessionUser,
-    isEqualNumber,
-    ISOString,
-    isValidDate,
-    Subraction,
-    toArray,
-} from "../../../Components/functions";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { getSessionUser, isEqualNumber, ISOString, isValidDate, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import FilterableTable, {
-    ButtonActions,
-    createCol,
-} from "../../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { useEffect, useState } from "react";
 import { Delete, Edit, FilterAlt, Search } from "@mui/icons-material";
@@ -27,7 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
 import UpdateGeneralInfoDialog from "./updateGeneralInfo";
-import { receiptGeneralInfo } from "../variable";
+import { receiptGeneralInfo } from "./variable";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -58,6 +40,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
     });
 
     // const [transactionData, setTransactionData] = useState([]);
+
     const [filters, setFilters] = useState({
         Fromdate: defaultFilters.Fromdate,
         Todate: defaultFilters.Todate,
@@ -75,6 +58,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
         updateDialog: false,
         refresh: false,
     });
+
     const [totalCollectionAmount, setTotalCollectionAmount] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const [deleteId, setDeleteId] = useState(null);
@@ -86,56 +70,52 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         fetchLink({
             address: `receipt/filterValues`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setDropDownValues({
-                        voucherType: toArray(data?.others?.voucherType),
-                        retailers: toArray(data?.others?.retailers),
-                        collectionType: toArray(data?.others?.collectionType),
-                        paymentStatus: toArray(data?.others?.paymentStatus),
-                        collectedBy: toArray(data?.others?.collectedBy),
-                        verifyStatus: toArray(data?.others?.verifyStatus)
-                    });
-                }
-            })
-            .catch((e) => console.error(e));
+        }).then((data) => {
+            if (data.success) {
+                setDropDownValues({
+                    voucherType: toArray(data?.others?.voucherType),
+                    retailers: toArray(data?.others?.retailers),
+                    collectionType: toArray(data?.others?.collectionType),
+                    paymentStatus: toArray(data?.others?.paymentStatus),
+                    collectedBy: toArray(data?.others?.collectedBy),
+                    verifyStatus: toArray(data?.others?.verifyStatus)
+                });
+            }
+        }).catch((e) => console.error(e));
 
         fetchLink({
             address: `receipt/creditAccounts`,
-        })
-            .then((data) => {
-                if (data.success)
-                    setBaseData((pre) => ({ ...pre, creditAccount: data.data }));
-                else setBaseData((pre) => ({ ...pre, creditAccount: [] }));
-            })
-            .catch((e) => console.error(e));
+        }).then((data) => {
+            if (data.success)
+                setBaseData((pre) => ({ ...pre, creditAccount: data.data }));
+            else setBaseData((pre) => ({ ...pre, creditAccount: [] }));
+        }).catch((e) => console.error(e));
+
     }, []);
 
     useEffect(() => {
+
         if (loadingOn) loadingOn();
 
         fetchLink({
             address: `receipt/collectionReceipts?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&retailer_id=${filters.retailer_id.value}&voucher_id=${filters.voucher_id.value}&collection_type=${filters.collection_type.value}&verify_status=${filters.verify_status.value}&payment_status=${filters.payment_status.value}&collected_by=${filters.collected_by.value}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setSalesReceipts(data.data);
-                    const totalCount = data.data.length;
-                    setTotalCount(totalCount);
+        }).then((data) => {
+            if (data.success) {
+                setSalesReceipts(data.data);
+                const totalCount = data.data.length;
+                setTotalCount(totalCount);
 
-                    const totalCollection = data.data.reduce((sum, receipt) => {
-                        const amount = parseFloat(receipt.total_amount) || 0;
-                        return sum + amount;
-                    }, 0);
+                const totalCollection = data.data.reduce((sum, receipt) => {
+                    const amount = parseFloat(receipt.total_amount) || 0;
+                    return sum + amount;
+                }, 0);
 
-                    setTotalCollectionAmount(totalCollection);
-                }
-            })
-            .finally(() => {
-                if (loadingOff) loadingOff();
-            })
-            .catch((e) => console.error(e));
+                setTotalCollectionAmount(totalCollection);
+            }
+        }).finally(() => {
+            if (loadingOff) loadingOff();
+        }).catch((e) => console.error(e));
+
     }, [filters?.fetchFrom, filters?.fetchTo, filters?.refresh]);
 
     useEffect(() => {
@@ -149,11 +129,13 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                     ? query.get("Todate")
                     : defaultFilters.Todate,
         };
+
         setFilters((pre) => ({
             ...pre,
             fetchFrom: queryFilters.Fromdate,
             fetchTo: queryFilters.Todate,
         }));
+
     }, [location.search]);
 
     const updateQueryString = (newFilters) => {

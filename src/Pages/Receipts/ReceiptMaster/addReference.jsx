@@ -80,19 +80,19 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }, [])
 
     useEffect(() => {
-        if (!isEqualNumber(receiptValue.receipt_bill_type, 1) || !receiptValue.debit_ledger || !checkIsNumber(receiptValue.debit_ledger)) {
+        if (!isEqualNumber(receiptValue.receipt_bill_type, 1) || !receiptValue.credit_ledger || !checkIsNumber(receiptValue.credit_ledger)) {
             updateBaseData('salesInvoiceSearchResult', []);
             return;
         }
 
         fetchLink({
-            address: `purchase/paymentPendingInvoices?Acc_Id=${receiptValue.debit_ledger}`,
+            address: `receipt/receiptMaster/pendingSalesInvoiceReceipt?Acc_Id=${receiptValue.credit_ledger}`,
         }).then(data => {
             if (data.success) {
                 updateBaseData('salesInvoiceSearchResult', toArray(data.data));
             }
         }).catch(e => console.error(e))
-    }, [receiptValue.debit_ledger, receiptValue.receipt_bill_type]);
+    }, [receiptValue.credit_ledger, receiptValue.receipt_bill_type]);
 
     useEffect(() => {
         if (
@@ -100,14 +100,14 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             || !checkIsNumber(receiptValue.receipt_bill_type)
             || (
                 !isEqualNumber(receiptValue.receipt_bill_type, 1)
-                && !isEqualNumber(receiptValue.receipt_bill_type, 3)
+                && !isEqualNumber(receiptValue.receipt_bill_type, 2)
             )
         ) {
             return;
         }
 
         fetchLink({
-            address: `payment/paymentMaster/againstRef?payment_id=${receiptValue.receipt_id}`
+            address: `receipt/receiptMaster/againstRef?receipt_id=${receiptValue.receipt_id}`
         }).then(data => {
             if (data.success) {
                 const reSturc = toArray(data.data).map(bill => ({
@@ -122,7 +122,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         }).catch(e => console.error(e));
 
         fetchLink({
-            address: `payment/paymentMaster/againstRef/costingDetails?payment_id=${receiptValue.receipt_id}`
+            address: `receipt/receiptMaster/againstRef/costingInfo?receipt_id=${receiptValue.receipt_id}`
         }).then(data => {
             if (data.success) {
                 setReceiptCostingInfo(toArray(data.data));
@@ -182,7 +182,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             method: 'POST',
             bodyData: {
                 receipt_id: receiptValue.receipt_id,
-                payment_no: receiptValue.receipt_invoice_no,
+                receipt_no: receiptValue.receipt_invoice_no,
                 receipt_date: receiptValue.receipt_date,
                 receipt_bill_type: receiptValue.receipt_bill_type,
                 BillsDetails: toArray(receiptBillInfo),
@@ -283,7 +283,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         startIcon={<Save />}
                         disabled={
                             !checkIsNumber(receiptValue.receipt_id)
-                            || receiptBillInfo.length === 0
+                            // || receiptBillInfo.length === 0
                         }
                         onClick={SavePayment}
                     >Save</Button>
