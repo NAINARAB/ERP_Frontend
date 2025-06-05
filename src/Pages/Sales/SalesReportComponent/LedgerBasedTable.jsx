@@ -84,7 +84,10 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                 ...Object.fromEntries(
                     aggKeys.map(key => [
                         key,
-                        Division(
+                        key === 'Total_Qty' ? grp?.groupedData?.reduce(
+                            (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
+                            0
+                        ) : Division(
                             grp?.groupedData?.reduce(
                                 (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
                                 0

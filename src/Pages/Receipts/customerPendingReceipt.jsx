@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
-import FilterableTable, { ButtonActions, createCol } from '../../Components/filterableTable2';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Button } from '@mui/material';
+import FilterableTable, { createCol } from '../../Components/filterableTable2';
+import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidDate, NumberFormat, Subraction, toArray, toNumber } from "../../Components/functions";
-import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
-import { useMemo } from "react";
-import { receiptGeneralInfoInitialValue, receiptStatus, receiptTypes } from "./ReceiptMaster/variable";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, Subraction, toArray } from "../../Components/functions";
+import { receiptGeneralInfoInitialValue } from "./ReceiptMaster/variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 
@@ -53,10 +51,6 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
             }
         }).catch(e => console.error(e))
     }, [filters.ledger.value]);
-
-    const closeDialog = () => {
-        setFilters(pre => ({ ...pre, filterDialog: false }));
-    }
 
     const CountCard = ({ label = '', value = '' }) => {
         return (
@@ -202,41 +196,6 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                     </div>
                 </div>
             </div>
-
-            {/* <Dialog
-                open={filters.filterDialog}
-                onClose={closeDialog} maxWidth='sm' fullWidth
-            >
-                <DialogTitle>Filters</DialogTitle>
-                <DialogContent>
-
-                    <div className="table-responsive pb-4">
-                        <table className="table">
-                            <tbody>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={filters?.created_by_Filter}
-                                            onChange={(e) => setFilters(pre => ({ ...pre, created_by_Filter: e }))}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...filters.created_by
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                            menuPortalTarget={document.body}
-                                        />
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
-                </DialogContent>
-            </Dialog> */}
         </>
     )
 }

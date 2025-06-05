@@ -110,7 +110,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                             <input
                                 type={'date'}
                                 className='cus-inpt w-auto ps-3 border rounded-5 me-1'
-                                min={firstDayOfMonth()}
+                                // min={firstDayOfMonth()}
                                 value={filters.Fromdate}
                                 onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
                             />

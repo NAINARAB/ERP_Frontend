@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { receiptGeneralInfoInitialValue, receiptTypes } from "./variable";
+import { receiptGeneralInfoInitialValue } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, ISOString, isValidObject } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
 import ReceiptGeneralInfo from "./receiptGeneralInfo";
@@ -17,8 +14,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
     const editValues = location.state;
 
     const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
-    const [receiptBillInfo, setReceiptBillInfo] = useState([]);
-    const [receiptCostingInfo, setReceiptCostingInfo] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
@@ -85,8 +80,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     const clearValues = () => {
         setReceiptValue(receiptGeneralInfoInitialValue);
-        setReceiptBillInfo([]);
-        setReceiptCostingInfo([]);
     };
 
     const saveReceipt = (postValues = {}) => {
