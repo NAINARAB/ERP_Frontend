@@ -26,12 +26,12 @@ const ChooseReceiptComponent = ({
     loadingOff
 }) => {
 
-    const searchPayments = (debitAccount, creditAccount, receiptType) => {
+    const searchReceipts = (debitAccount, creditAccount, receiptType) => {
 
         if (!checkIsNumber(receiptType)) return toast.warn('Select Bill Type')
 
         fetchLink({
-            address: `payment/paymentMaster/search?debit_ledger=${debitAccount}&credit_ledger=${creditAccount}&receipt_bill_type=${receiptType}`,
+            address: `receipt/receiptMaster/search?debit_ledger=${debitAccount}&credit_ledger=${creditAccount}&receipt_bill_type=${receiptType}`,
             loadingOn,
             loadingOff
         }).then(data => {
@@ -41,7 +41,7 @@ const ChooseReceiptComponent = ({
         })
     }
 
-    const onSelectPayment = (invoiceDetails) => {
+    const onSelectReceipt = (invoiceDetails) => {
         setReceiptValue(pre => {
             return Object.fromEntries(
                 Object.entries(pre).map(([key, value]) => [key, invoiceDetails[key] || value])
@@ -61,21 +61,21 @@ const ChooseReceiptComponent = ({
 
     return (
         <>
-            {/* choose Payment */}
+            {/* choose Receipt */}
             <table className="table table-bordered fa-13">
                 <tbody>
                     <tr>
-                        <th className="text-primary fa-15 vctr" style={cellHeadStype}>Payment Details</th>
+                        <th className="text-primary fa-15 vctr" style={cellHeadStype}>Receipt Details</th>
                         <th colSpan={5} className="text-end">
                             <Button
                                 variant="outlined"
                                 type="button"
                                 onClick={() => updateFilterData('selectReceiptDialog', true)}
-                            >Choose Payment</Button>
+                            >Choose Receipt</Button>
                         </th>
                     </tr>
                     <tr>
-                        <th className="text-muted">Payment Type</th>
+                        <th className="text-muted">Receipt Type</th>
                         <td style={cellStyle}>
                             {receiptTypes.find(
                                 type => isEqualNumber(type.value, receiptValue.receipt_bill_type)
@@ -85,17 +85,17 @@ const ChooseReceiptComponent = ({
                         <th className="text-muted">Debit Account</th>
                         <td style={cellStyle}>{receiptValue.debit_ledger_name}</td>
 
-                        <th className="text-muted">Payment Value</th>
+                        <th className="text-muted">Receipt Value</th>
                         <td style={cellStyle} className="text-primary fw-bold">{NumberFormat(receiptValue.credit_amount)}</td>
                     </tr>
                     <tr>
-                        <th className="text-muted">Payment Invoice</th>
+                        <th className="text-muted">Receipt No</th>
                         <td style={cellStyle}>{receiptValue.receipt_invoice_no}</td>
 
                         <th className="text-muted">Credit Account</th>
                         <td style={cellStyle}>{receiptValue.credit_ledger_name}</td>
 
-                        <th className="text-muted">Pending Against Amount</th>
+                        <th className="text-muted">Against balance</th>
                         <td style={cellStyle} className="text-danger fw-bold">{NumberFormat(PendingAgainstRef)}</td>
                     </tr>
                 </tbody>
@@ -181,7 +181,7 @@ const ChooseReceiptComponent = ({
                                 <Button
                                     variant="contained"
                                     startIcon={<Search />}
-                                    onClick={() => searchPayments(
+                                    onClick={() => searchReceipts(
                                         filters.debitAccount.value,
                                         filters.creditAccount.value,
                                         filters.receiptType.value,
@@ -195,7 +195,7 @@ const ChooseReceiptComponent = ({
                     </div>
 
                     <FilterableTable
-                        title="Payments List"
+                        title="Receipts List"
                         EnableSerialNumber
                         headerFontSizePx={13}
                         bodyFontSizePx={12}
@@ -230,7 +230,7 @@ const ChooseReceiptComponent = ({
                                     <IconButton
                                         size="small"
                                         onClick={() => {
-                                            onSelectPayment(row);
+                                            onSelectReceipt(row);
                                             closeDialog();
                                             updateFilterData('receiptType', initialSelectValue);
                                             updateFilterData('debitAccount', initialSelectValue);

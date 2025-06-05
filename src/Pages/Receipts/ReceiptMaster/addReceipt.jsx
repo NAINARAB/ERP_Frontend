@@ -129,7 +129,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     e.preventDefault();
                     if (!checkIsNumber(receiptValue.debit_ledger) || !checkIsNumber(receiptValue.credit_ledger)) {
                         toast.warn('Select Debit-Acc / Credit-Acc!')
-                    } else if (receiptValue.debit_amount < 1 || !receiptValue.debit_amount) {
+                    } else if (receiptValue.credit_amount < 1 || !receiptValue.credit_amount) {
                         toast.warn('Enter valid amount!')
                     } else {
                         saveReceipt(receiptValue)

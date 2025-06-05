@@ -175,7 +175,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }, [receiptBillInfo]);
 
     const SavePayment = () => {
-        if (TotalAgainstRef > receiptValue.debit_amount) return toast.warn('Receipt amount is invalid');
+        if (TotalAgainstRef > receiptValue.credit_amount) return toast.warn('Receipt amount is invalid');
 
         fetchLink({
             address: `receipt/receiptMaster/againstRef`,
