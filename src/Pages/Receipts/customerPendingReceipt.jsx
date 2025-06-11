@@ -36,7 +36,8 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
 
     useEffect(() => {
         if (!checkIsNumber(filters.ledger.value)) return;
-        // setReportData([])
+        // setReportData([]);
+        setSelectedInvoice([]);
 
         fetchLink({
             address: `receipt/receiptMaster/pendingSalesInvoiceReceipt?Acc_Id=${filters.ledger.value}`,

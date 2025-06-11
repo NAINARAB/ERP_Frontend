@@ -63,7 +63,7 @@ const AppContent = () => {
     const loadingOff = () => setAppLoading(false);
 
     const PageRights = useMemo(() => {
-        const { Read_Rights, Edit_Rights, Delete_Rights, Add_Rights, Print_Rights } = contextObj;
+        const { Read_Rights, Edit_Rights, Delete_Rights, Add_Rights, Print_Rights, id, name } = contextObj;
         return {
             ReadRights: isEqualNumber(Read_Rights, 1), 
             EditRights: isEqualNumber(Edit_Rights, 1), 
@@ -71,7 +71,9 @@ const AppContent = () => {
             AddRights: isEqualNumber(Add_Rights, 1), 
             PrintRights: isEqualNumber(Print_Rights, 1),
             loadingOn, 
-            loadingOff
+            loadingOff,
+            pageID: id,
+            pageName: name
         }
     }, [contextObj]) 
 

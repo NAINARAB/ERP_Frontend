@@ -3,7 +3,7 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
@@ -29,7 +29,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             { value: 3, label: 'CashBox 3' }
         ],
     });
-
 
     // to filter group, account
 
@@ -139,7 +138,11 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `payment/paymentMaster`,
             method: checkIsNumber(postValues?.pay_id) ? 'PUT' : 'POST',
-            bodyData: postValues,
+            bodyData: {
+                ...postValues,
+                created_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
+                altered_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
+            },
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -150,7 +153,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     data.data[0]
                     && isValidObject(data.data[0])
                     && (
-                        isEqualNumber(data?.data[0]?.pay_bill_type, 1) 
+                        isEqualNumber(data?.data[0]?.pay_bill_type, 1)
                         || isEqualNumber(data?.data[0]?.pay_bill_type, 3)
                     )
                 ) {
@@ -297,75 +300,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 <hr className=" text-dark" />
                             </div>
 
-                            {/* debit group */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Debit Group</label>
-                                <Select
-                                    value={selectedDebitGroup}
-                                    options={[
-                                        { value: '', label: 'select' },
-                                        ...baseData.accountGroupData.map(group => ({
-                                            value: group.Group_Id,
-                                            label: group.Group_Name
-                                        }))
-                                    ]}
-                                    menuPortalTarget={document.body}
-                                    onChange={e => handleGroupSelect(e.value, e.label, 'debit')}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                />
-                            </div>
-
-                            {/* debit account */}
-                            <div className="col-lg-5 col-md-6 col-sm-6 p-2">
-                                <label>Debit Account<RequiredStar /></label>
-                                <Select
-                                    value={{
-                                        value: paymentValue.debit_ledger,
-                                        label: paymentValue.debit_ledger_name
-                                    }}
-                                    menuPortalTarget={document.body}
-                                    // onChange={e => {
-                                    //     onChangePaymentValue('debit_ledger', e.value);
-                                    //     onChangePaymentValue('debit_ledger_name', e.label);
-                                    // }}
-                                    // options={[
-                                    //     { value: '', label: 'select', isDisabled: true },
-                                    //     ...toArray(baseData.accountsList).map(
-                                    //         account => ({
-                                    //             value: account.Acc_Id,
-                                    //             label: account.Account_name
-                                    //         })
-                                    //     )
-                                    // ]}
-                                    onChange={e => {
-                                        onChangePaymentValue('debit_ledger', e.value);
-                                        onChangePaymentValue('debit_ledger_name', e.label);
-                                    }}
-                                    options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...(!checkIsNumber(selectedDebitGroup.value)
-                                            ? toArray(baseData.accountsList).map(
-                                                account => ({
-                                                    value: account.Acc_Id,
-                                                    label: account.Account_name
-                                                })
-                                            )
-                                            : filteredDebitAccounts.map(account => ({
-                                                value: account.Acc_Id,
-                                                label: account.Account_name
-                                            }))
-                                        )
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    required
-                                    placeholder={"Select Product"}
-                                />
-                            </div>
-
-                            <div className="col-12"></div>
-
                             {/* credit group */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Credit Group</label>
@@ -421,6 +355,75 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                                 })
                                             )
                                             : filteredCreditAccounts.map(account => ({
+                                                value: account.Acc_Id,
+                                                label: account.Account_name
+                                            }))
+                                        )
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    required
+                                    placeholder={"Select Product"}
+                                />
+                            </div>
+
+                            <div className="col-12"></div>
+
+                            {/* debit group */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Debit Group</label>
+                                <Select
+                                    value={selectedDebitGroup}
+                                    options={[
+                                        { value: '', label: 'select' },
+                                        ...baseData.accountGroupData.map(group => ({
+                                            value: group.Group_Id,
+                                            label: group.Group_Name
+                                        }))
+                                    ]}
+                                    menuPortalTarget={document.body}
+                                    onChange={e => handleGroupSelect(e.value, e.label, 'debit')}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                />
+                            </div>
+
+                            {/* debit account */}
+                            <div className="col-lg-5 col-md-6 col-sm-6 p-2">
+                                <label>Debit Account<RequiredStar /></label>
+                                <Select
+                                    value={{
+                                        value: paymentValue.debit_ledger,
+                                        label: paymentValue.debit_ledger_name
+                                    }}
+                                    menuPortalTarget={document.body}
+                                    // onChange={e => {
+                                    //     onChangePaymentValue('debit_ledger', e.value);
+                                    //     onChangePaymentValue('debit_ledger_name', e.label);
+                                    // }}
+                                    // options={[
+                                    //     { value: '', label: 'select', isDisabled: true },
+                                    //     ...toArray(baseData.accountsList).map(
+                                    //         account => ({
+                                    //             value: account.Acc_Id,
+                                    //             label: account.Account_name
+                                    //         })
+                                    //     )
+                                    // ]}
+                                    onChange={e => {
+                                        onChangePaymentValue('debit_ledger', e.value);
+                                        onChangePaymentValue('debit_ledger_name', e.label);
+                                    }}
+                                    options={[
+                                        { value: '', label: 'select', isDisabled: true },
+                                        ...(!checkIsNumber(selectedDebitGroup.value)
+                                            ? toArray(baseData.accountsList).map(
+                                                account => ({
+                                                    value: account.Acc_Id,
+                                                    label: account.Account_name
+                                                })
+                                            )
+                                            : filteredDebitAccounts.map(account => ({
                                                 value: account.Acc_Id,
                                                 label: account.Account_name
                                             }))

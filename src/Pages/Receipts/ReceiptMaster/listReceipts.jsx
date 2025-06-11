@@ -3,7 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionDateFilter, getSessionFilters, isEqualNumber, ISOString, isValidDate, NumberFormat, setSessionFilter, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { receiptStatus, receiptTypes } from "./variable";
@@ -22,7 +22,12 @@ const defaultFilters = {
     payment_type: ''
 };
 
-const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
+const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+    const [paymentData, setPaymentData] = useState([]);
+
+    const sessionFilter = getSessionDateFilter(pageID);
+    const { Fromdate, Todate } = sessionFilter;
+
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -41,14 +46,8 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
         payment_status: '',
         payment_type: ''
     });
-    const [reload, setReload] = useState(false)
-    const [paymentData, setPaymentData] = useState([]);
 
     const navigate = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
-    const query = useQuery();
-    // console.log(stateDetails)
 
     useEffect(() => {
         fetchLink({
@@ -67,26 +66,15 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
     }, [])
 
     useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-        };
-        setFilters(pre => ({ ...pre, Fromdate: queryFilters.Fromdate, Todate: queryFilters.Todate }));
-    }, [location.search]);
 
-    useEffect(() => {
-        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-        if (Fromdate && Todate) {
-            updateQueryString({ Fromdate, Todate });
-            setFilters(pre => ({ ...pre, Fromdate: ISOString(stateDetails.Fromdate), Todate: stateDetails.Todate }));
-            setReload(pre => !pre);
-        }
-    }, [stateDetails])
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate,
+            Todate: Todate,
+            refresh: !pre.refresh
+        }));
+
+    }, [Fromdate, Todate]);
 
     useEffect(() => {
         const From = filters.Fromdate, To = filters.Todate;
@@ -105,18 +93,14 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                 setPaymentData(data.data)
             }
         }).catch(e => console.error(e))
-    }, [reload]);
-
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
-    };
+    }, [filters.refresh]);
 
     const TotalPayment = useMemo(() => paymentData.reduce(
         (acc, orders) => Addition(acc, orders?.debit_amount), 0
     ), [paymentData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
+    const refreshData = () => setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
 
     return (
         <>
@@ -134,14 +118,24 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
 
                         {AddRights && (
                             <Button
-                                onClick={() => navigate('create')}
+                                onClick={() => navigate('create', {
+                                    state: {
+                                        Fromdate: filters.Fromdate,
+                                        Todate: filters.Todate
+                                    }
+                                })}
                                 variant="outlined"
                             >Add</Button>
                         )}
 
                         {AddRights && (
                             <Button
-                                onClick={() => navigate('addReference')}
+                                onClick={() => navigate('addReference', {
+                                    state: {
+                                        Fromdate: filters.Fromdate,
+                                        Todate: filters.Todate
+                                    }
+                                })}
                                 variant="outlined"
                                 className="me-2"
                             >Add Reference</Button>
@@ -156,7 +150,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                 columns={[
                     createCol('receipt_date', 'date', 'Date'),
                     createCol('receipt_invoice_no', 'string', 'Receipt ID'),
-                    createCol('debit_amount', 'number', 'Amount'),
+                    createCol('credit_amount', 'number', 'Amount'),
                     createCol('TotalReferencedAmount', 'number', 'Added Ref'),
                     createCol('debit_ledger_name', 'string', 'Debit-Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
@@ -165,7 +159,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                         isVisible: 1,
                         ColumnHeader: 'Bill Type',
                         isCustomCell: true,
-                        Cell: ({ row }) => receiptTypes.find(type => isEqualNumber(type.value, row.bill_type))?.label
+                        Cell: ({ row }) => receiptTypes.find(type => isEqualNumber(type.value, row.receipt_bill_type))?.label
                     },
                     {
                         isVisible: 1,
@@ -177,13 +171,25 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                                     {
                                         name: 'Edit',
                                         icon: <Edit />,
-                                        onclick: () => navigate('create', { state: row }),
+                                        onclick: () => navigate('create', {
+                                            state: {
+                                                ...row,
+                                                Fromdate: filters.Fromdate,
+                                                Todate: filters.Todate
+                                            },
+                                        }),
                                         disabled: !EditRights
                                     },
                                     {
                                         name: 'Add Reference',
                                         icon: <Timeline />,
-                                        onclick: () => navigate('addReference', { state: row }),
+                                        onclick: () => navigate('addReference', {
+                                            state: {
+                                                ...row,
+                                                Fromdate: filters.Fromdate,
+                                                Todate: filters.Todate
+                                            },
+                                        }),
                                         disabled: (
                                             !EditRights
                                             || isEqualNumber(row.bill_type, 3)
@@ -366,12 +372,10 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRight
                         <Button
                             onClick={() => {
                                 closeDialog();
-                                const updatedFilters = {
-                                    Fromdate: filters?.Fromdate,
-                                    Todate: filters?.Todate
-                                };
-                                updateQueryString(updatedFilters);
-                                setReload(pre => !pre);
+                                setSessionFilter('Fromdate', filters?.Fromdate);
+                                setSessionFilter('Todate', filters?.Todate);
+                                setSessionFilter('pageID', pageID)
+                                refreshData();
                             }}
                             startIcon={<Search />}
                             variant="contained"

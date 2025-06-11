@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { receiptGeneralInfoInitialValue } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
-import { checkIsNumber, ISOString, isValidObject } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
@@ -93,20 +93,23 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 clearValues();
                 toast.success(data?.message || 'post successfully');
 
-                // if (
-                //     data.data[0]
-                //     && isValidObject(data.data[0])
-                //     && (
-                //         isEqualNumber(data?.data[0]?.receipt_bill_type, 1)
-                //         || isEqualNumber(data?.data[0]?.receipt_bill_type, 3)
-                //     )
-                // ) {
-                //     navigate('/erp/payments/paymentList/addReference', {
-                //         state: data.data[0]
-                //     })
-                // } else {
-                //     navigate('/erp/payments/paymentList')
-                // }
+                if (
+                    data.data[0]
+                    && isValidObject(data.data[0])
+                    && (
+                        isEqualNumber(data?.data[0]?.receipt_bill_type, 1)
+                        || isEqualNumber(data?.data[0]?.receipt_bill_type, 2)
+                    )
+                ) {
+                    navigate('/erp/receipts/listReceipts/addReference', {
+                        state: {
+                            ...data.data[0],
+                            ...editValues
+                        }
+                    })
+                } else {
+                    navigate('/erp/receipts/listReceipts', { state: editValues })
+                }
 
             } else {
                 toast.error(data?.message || 'post failed')
@@ -136,7 +139,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             type="button"
                             variant="outlined"
                             className="mx-1"
-                            onClick={() => navigate('/erp/receipts/listReceipts')}
+                            onClick={() => navigate('/erp/receipts/listReceipts', { state: editValues })}
                         >back</Button>
                         <Button
                             type="submit"

@@ -96,7 +96,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
 
     useEffect(() => {
         if (
-            !checkIsNumber(receiptValue.receipt_id) 
+            !checkIsNumber(receiptValue.receipt_id)
             || !checkIsNumber(receiptValue.receipt_bill_type)
             || (
                 !isEqualNumber(receiptValue.receipt_bill_type, 1)
@@ -194,7 +194,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             if (data.success) {
                 toast.success(data.message);
                 resetAll();
-                navigate('/erp/receipts/listReceipts');
+                navigate('/erp/receipts/listReceipts', { state: editValues });
             } else {
                 toast.error(data.message);
             }
@@ -215,7 +215,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             type="button"
                             variant='contained'
                             className="mx-1"
-                            onClick={() => navigate('/erp/receipts/listReceipts')}
+                            onClick={() => navigate('/erp/receipts/listReceipts', { state: editValues })}
                         >back</Button>
                     </div>
 

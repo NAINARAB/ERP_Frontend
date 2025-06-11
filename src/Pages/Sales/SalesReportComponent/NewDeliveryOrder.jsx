@@ -1,36 +1,60 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import {
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton,
+} from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import {
-    isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData,
-    Multiplication, Division, NumberFormat, Subraction, numberToWords,
-    RoundNumber, Addition
+    isEqualNumber,
+    isGraterNumber,
+    isValidObject,
+    ISOString,
+    getUniqueData,
+    Multiplication,
+    Division,
+    NumberFormat,
+    Subraction,
+    numberToWords,
+    RoundNumber,
+    Addition,
 } from "../../../Components/functions";
 import { Add, Clear, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
-import { fetchLink } from '../../../Components/fetchComponent';
+import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable from "../../../Components/filterableTable2";
 import RequiredStar from "../../../Components/requiredStar";
 
-import { calculateGSTDetails } from '../../../Components/taxCalculator';
+import { calculateGSTDetails } from "../../../Components/taxCalculator";
 const taxCalc = (method = 1, amount = 0, percentage = 0) => {
     switch (method) {
         case 0:
             return RoundNumber(amount * (percentage / 100));
         case 1:
-            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
+            return RoundNumber(amount - amount * (100 / (100 + percentage)));
         case 2:
             return 0;
         default:
             return 0;
     }
-}
+};
 
-const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
+const findProductDetails = (arr = [], productid) =>
+    arr.find((obj) => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScreen, editOn }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
+const NewDeliveryOrder = ({
+    editValues,
+    loadingOn,
+    loadingOff,
+    reload,
+    switchScreen,
+    editOn,
+}) => {
+    const storage = JSON.parse(localStorage.getItem("user"));
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -53,40 +77,40 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const initialValue = {
         Company_Id: storage?.Company_id,
         Do_Date: ISOString(),
-        VoucherType: '',
-        Retailer_Id: '',
-        Retailer_Name: 'Select',
+        VoucherType: "",
+        Retailer_Id: "",
+        Retailer_Name: "Select",
         Delivery_Status: 1,
-        Delivery_Person_Id: '',
-        Payment_Ref_No: '',
-        Delivery_Person_Name: '',
+        Delivery_Person_Id: "",
+        Payment_Ref_No: "",
+        Delivery_Person_Name: "",
         Payment_Mode: 0,
         Payment_Status: 0,
         Branch_Id: storage?.BranchId,
-        Narration: '',
+        Narration: "",
         Created_by: storage?.UserId,
         Product_Array: [],
         So_No: editValues?.So_Id,
         GST_Inclusive: 1,
         IS_IGST: 0,
-    }
+    };
 
     const productInitialDetails = {
-        Item_Id: '',
-        ItemName: 'Search Item',
+        Item_Id: "",
+        ItemName: "Search Item",
         Bill_Qty: 0,
         Item_Rate: 0,
-        UOM: '',
-        Units: '',
+        UOM: "",
+        Units: "",
         Product: {},
-        Group: 'Search Group',
-        GroupID: '',
-        Brand: 'Search Brand',
-        BrandID: '',
-        Amount: 0
-    }
+        Group: "Search Group",
+        GroupID: "",
+        Brand: "Search Brand",
+        BrandID: "",
+        Amount: 0,
+    };
 
-    const [orderDetails, setOrderDetails] = useState(initialValue)
+    const [orderDetails, setOrderDetails] = useState(initialValue);
     const [orderProducts, setOrderProducts] = useState([]);
     const [productDetails, setProductDetails] = useState(productInitialDetails);
     const [isEdit, setIsEdit] = useState(false);
@@ -99,10 +123,6 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
     const deliveryPerson = useState(0);
     // const [deliveryPersonList, setDeliveryPersonList] = useState([]);
 
-
-
-
-
     useEffect(() => {
         const fetchLocation = async () => {
             try {
@@ -111,19 +131,18 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                 });
                 const { latitude, longitude } = position.coords;
 
-                setOrderDetails(pre => ({
+                setOrderDetails((pre) => ({
                     ...pre,
                     Delivery_Latitude: latitude,
                     Delivery_Longitude: longitude,
                 }));
             } catch (error) {
-                toast.warn('Unable to fetch location. Allow location access.');
+                toast.warn("Unable to fetch location. Allow location access.");
             }
         };
 
         if (isValidObject(editValues)) {
-
-            setOrderDetails(pre => ({
+            setOrderDetails((pre) => ({
                 ...pre,
                 Do_Id: editValues?.Do_Id,
                 Do_Date: editValues?.Do_Date ?? ISOString(),
@@ -142,73 +161,85 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                 So_No: editValues?.So_Id,
                 GST_Inclusive: editValues?.GST_Inclusive,
                 IS_IGST: editValues?.IS_IGST,
-
             }));
-            setOrderProducts(editValues?.Products_List?.map(pro => ({
-                ...pro,
-                Item_Id: pro.Item_Id ?? '',
-                ItemName: pro?.Product_Name ?? "",
-                Bill_Qty: pro?.Bill_Qty ?? 0,
-                Item_Rate: pro?.Item_Rate ?? 0,
-                UOM: pro?.Unit_Id ?? '',
-                Units: pro?.Units ?? '',
-                Product: {
+            setOrderProducts(
+                editValues?.Products_List?.map((pro) => ({
                     ...pro,
-                    Cgst_P: Number(findProductDetails(products, pro.Item_Id)?.Cgst_P) ?? 0,
-                    Sgst_P: Number(findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0,
-                    Igst_P: Number(findProductDetails(products, pro.Item_Id)?.Igst_P) ?? 0,
-                    Gst_P: Addition(findProductDetails(products, pro.Item_Id)?.Cgst_P, findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0
-                } ?? {},
-                Group: 'Search Group',
-                GroupID: '',
-                Brand: 'Search Brand',
-                BrandID: '',
-                Amount: pro?.Amount ?? 0
-            })));
-            setIsEdit(true)
+                    Item_Id: pro.Item_Id ?? "",
+                    ItemName: pro?.Product_Name ?? "",
+                    Bill_Qty: pro?.Bill_Qty ?? 0,
+                    Item_Rate: pro?.Item_Rate ?? 0,
+                    UOM: pro?.Unit_Id ?? "",
+                    Units: pro?.Units ?? "",
+                    Product:
+                        {
+                            ...pro,
+                            Cgst_P:
+                                Number(findProductDetails(products, pro.Item_Id)?.Cgst_P) ?? 0,
+                            Sgst_P:
+                                Number(findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0,
+                            Igst_P:
+                                Number(findProductDetails(products, pro.Item_Id)?.Igst_P) ?? 0,
+                            Gst_P:
+                                Addition(
+                                    findProductDetails(products, pro.Item_Id)?.Cgst_P,
+                                    findProductDetails(products, pro.Item_Id)?.Sgst_P
+                                ) ?? 0,
+                        } ?? {},
+                    Group: "Search Group",
+                    GroupID: "",
+                    Brand: "Search Brand",
+                    BrandID: "",
+                    Amount: pro?.Amount ?? 0,
+                }))
+            );
+            setIsEdit(true);
             if (!editValues?.Latitude || !editValues?.Longitude) {
                 fetchLocation();
             }
         } else {
             setOrderDetails(initialValue);
-            setOrderProducts([])
-            setIsEdit(false)
+            setOrderProducts([]);
+            setIsEdit(false);
         }
-    }, [editValues, products])
+    }, [editValues, products]);
 
     useEffect(() => {
+        fetchLink({
+            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setRetailers(data.data);
+                }
+            })
+            .catch((e) => console.error(e));
 
         fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setRetailers(data.data);
-            }
-        }).catch(e => console.error(e))
+            address: `masters/uom`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setProductUOM(data.data);
+                }
+            })
+            .catch((e) => console.error(e));
 
         fetchLink({
-            address: `masters/uom`
-        }).then(data => {
-            if (data.success) {
-                setProductUOM(data.data);
-            }
-        }).catch(e => console.error(e))
+            address: `masters/products?Company_Id=${storage?.Company_id}`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setProducts(data.data);
 
-        fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setProducts(data.data);
-
-                const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
-                setProductBrand(uniqueBrand);
-
-            } else {
-                setProducts([]);
-                setProductBrand([]);
-            }
-        }).catch(e => console.error(e))
-
+                    const uniqueBrand = getUniqueData(data.data, "Brand", ["Brand_Name"]);
+                    setProductBrand(uniqueBrand);
+                } else {
+                    setProducts([]);
+                    setProductBrand([]);
+                }
+            })
+            .catch((e) => console.error(e));
 
         // fetchLink({
         //     address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
@@ -218,35 +249,48 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         //     }
         // }).catch(e => console.error(e));
 
+        fetchLink({
+            address: `masters/company?Company_id=${storage?.Company_id}`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setCompanyInfo(data?.data[0] ? data?.data[0] : {});
+                }
+            })
+            .catch((e) => console.error(e));
 
         fetchLink({
-            address: `masters/company?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setCompanyInfo(data?.data[0] ? data?.data[0] : {})
-            }
-        }).catch(e => console.error(e))
+            address: `purchase/voucherType`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setVoucherType(data.data);
+                }
+            })
+            .catch((e) => console.error(e));
 
         fetchLink({
-            address: `purchase/voucherType`
-        }).then(data => {
-            if (data.success) {
-                setVoucherType(data.data)
-            }
-        }).catch(e => console.error(e))
+            address: `masters/branch/dropDown`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setBranch(data.data);
+                }
+            })
+            .catch((e) => console.error(e));
+    }, [storage?.Company_id]);
 
-        fetchLink({
-            address: `masters/branch/dropDown`
-        }).then(data => {
-            if (data.success) {
-                setBranch(data.data)
-            }
-        }).catch(e => console.error(e))
-
-    }, [storage?.Company_id])
-
-    const handleProductInputChange = (productId, value, rate, obj, UOM_Id, Units) => {
-        const productIndex = orderProducts.findIndex(item => isEqualNumber(item.Item_Id, productId));
+    const handleProductInputChange = (
+        productId,
+        value,
+        rate,
+        obj,
+        UOM_Id,
+        Units
+    ) => {
+        const productIndex = orderProducts.findIndex((item) =>
+            isEqualNumber(item.Item_Id, productId)
+        );
 
         if (productIndex !== -1) {
             const updatedValues = [...orderProducts];
@@ -255,23 +299,27 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
             updatedValues[productIndex].UOM = UOM_Id;
             updatedValues[productIndex].Units = Units;
             updatedValues[productIndex].Amount = Multiplication(value, rate);
-            updatedValues[productIndex] = { ...updatedValues[productIndex], Product: obj }
+            updatedValues[productIndex] = {
+                ...updatedValues[productIndex],
+                Product: obj,
+            };
 
             setOrderProducts(updatedValues);
         } else {
-            setOrderProducts(prevValues => [...prevValues, {
-                Item_Id: productId,
-                Bill_Qty: Number(value),
-                Item_Rate: Number(rate),
-                UOM: UOM_Id,
-                Units: Units,
-                Amount: Multiplication(value, rate),
-                Product: obj
-            }]);
+            setOrderProducts((prevValues) => [
+                ...prevValues,
+                {
+                    Item_Id: productId,
+                    Bill_Qty: Number(value),
+                    Item_Rate: Number(rate),
+                    UOM: UOM_Id,
+                    Units: Units,
+                    Amount: Multiplication(value, rate),
+                    Product: obj,
+                },
+            ]);
         }
     };
-
-
 
     const postSaleOrder = () => {
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
@@ -279,46 +327,55 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
 
             fetchLink({
                 address: `delivery/deliveryOrder`,
-                method: (isEdit && !editOn) ? 'PUT' : 'POST',
+                method: isEdit && !editOn ? "PUT" : "POST",
 
                 bodyData: {
                     ...orderDetails,
-                    Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0)),
-                    Delivery_Person_Id: deliveryPerson ?? Number(orderDetails?.Delivery_Person_Id) ?? 0,
-                    Payment_Status: (orderDetails?.Payment_Status) ? Number(orderDetails?.Payment_Status) : 1,
+                    Product_Array: orderProducts.filter((o) =>
+                        isGraterNumber(o?.Bill_Qty, 0)
+                    ),
+                    Delivery_Person_Id:
+                        deliveryPerson ?? Number(orderDetails?.Delivery_Person_Id) ?? 0,
+                    Payment_Status: orderDetails?.Payment_Status
+                        ? Number(orderDetails?.Payment_Status)
+                        : 1,
                     Payment_Ref_No: orderDetails?.Payment_Ref_No,
-                    Delivery_Status: (orderDetails?.Delivery_Status) ? Number(orderDetails?.Delivery_Status) : 1,
-                    Payment_Mode: (orderDetails?.Payment_Mode) ? Number(orderDetails?.Payment_Mode) : 1
-                }
+                    Delivery_Status: orderDetails?.Delivery_Status
+                        ? Number(orderDetails?.Delivery_Status)
+                        : 1,
+                    Payment_Mode: orderDetails?.Payment_Mode
+                        ? Number(orderDetails?.Payment_Mode)
+                        : 1,
+                },
+            })
+                .then((data) => {
+                    if (data.success) {
+                        toast.success(data?.message);
 
-            }).then(data => {
-
-                if (data.success) {
-                    toast.success(data?.message);
-
-                    setOrderDetails(initialValue);
-                    setOrderProducts([])
-                    reload()
-                } else {
-                    toast.error(data?.message)
-                }
-            }).catch(e => console.error(e)).finally(() => loadingOff())
-
+                        setOrderDetails(initialValue);
+                        setOrderProducts([]);
+                        reload();
+                    } else {
+                        toast.error(data?.message);
+                    }
+                })
+                .catch((e) => console.error(e))
+                .finally(() => loadingOff());
         } else {
             if (orderProducts.length <= 0) {
-                return toast.error('Enter any one product quantity')
+                return toast.error("Enter any one product quantity");
             }
             if (!orderDetails?.Retailer_Id) {
-                toast.error('Select Retailer')
-                return toast.error('Select Retailer')
+                toast.error("Select Retailer");
+                return toast.error("Select Retailer");
             }
         }
-    }
+    };
 
     const closeAddProduct = () => {
         setAddProductDialog(false);
         setProductDetails(productInitialDetails);
-    }
+    };
 
     const Total_Invoice_value = useMemo(() => {
         return orderProducts.reduce((acc, item) => {
@@ -327,54 +384,89 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
             if (isNotTaxableBill) return Addition(acc, Amount);
 
             const product = findProductDetails(baseData.products, item.Item_Id);
-            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+            const gstPercentage = isEqualNumber(IS_IGST, 1)
+                ? product.Igst_P
+                : product.Gst_P;
 
             if (isInclusive) {
-                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+                return Addition(
+                    acc,
+                    calculateGSTDetails(Amount, gstPercentage, "remove").with_tax
+                );
             } else {
-                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+                return Addition(
+                    acc,
+                    calculateGSTDetails(Amount, gstPercentage, "add").with_tax
+                );
             }
-        }, 0)
-    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+        }, 0);
+    }, [
+        orderProducts,
+        isNotTaxableBill,
+        baseData.products,
+        IS_IGST,
+        isInclusive,
+    ]);
 
     const totalValueBeforeTax = useMemo(() => {
-        return orderProducts.reduce((acc, item) => {
-            const Amount = RoundNumber(item?.Amount);
+        return orderProducts.reduce(
+            (acc, item) => {
+                const Amount = RoundNumber(item?.Amount);
 
-            if (isNotTaxableBill) return {
-                TotalValue: Addition(acc.TotalValue, Amount),
-                TotalTax: 0
+                if (isNotTaxableBill)
+                    return {
+                        TotalValue: Addition(acc.TotalValue, Amount),
+                        TotalTax: 0,
+                    };
+
+                const product = findProductDetails(baseData.products, item.Item_Id);
+                const gstPercentage = isEqualNumber(IS_IGST, 1)
+                    ? product.Igst_P
+                    : product.Gst_P;
+
+                const taxInfo = calculateGSTDetails(
+                    Amount,
+                    gstPercentage,
+                    isInclusive ? "remove" : "add"
+                );
+                const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
+                const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
+
+                return {
+                    TotalValue,
+                    TotalTax,
+                };
+            },
+            {
+                TotalValue: 0,
+                TotalTax: 0,
             }
-
-            const product = findProductDetails(baseData.products, item.Item_Id);
-            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
-
-            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
-            const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
-            const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
-
-            return {
-                TotalValue, TotalTax
-            };
-        }, {
-            TotalValue: 0,
-            TotalTax: 0
-        });
-    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+        );
+    }, [
+        orderProducts,
+        isNotTaxableBill,
+        baseData.products,
+        IS_IGST,
+        isInclusive,
+    ]);
 
     useEffect(() => {
-        setOrderProducts(pre => pre?.map(pro => ({
-            ...pro,
-            Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty)
-        })));
-    }, [orderDetails.GST_Inclusive])
+        setOrderProducts((pre) =>
+            pre?.map((pro) => ({
+                ...pro,
+                Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty),
+            }))
+        );
+    }, [orderDetails.GST_Inclusive]);
 
     useEffect(() => {
-        setOrderProducts(pre => pre?.map(pro => ({
-            ...pro,
-            Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty)
-        })));
-    }, [orderDetails.GST_Inclusive])
+        setOrderProducts((pre) =>
+            pre?.map((pro) => ({
+                ...pro,
+                Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty),
+            }))
+        );
+    }, [orderDetails.GST_Inclusive]);
 
     // const handleDeliveryPersonChange = (selectedOption) => {
 
@@ -385,7 +477,9 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
         <>
             {editOn && (
                 <>
-                    <h6 className="fa-18 m-0 p-3 py-2 d-flex align-items-center justify-content-between">Create Delivery Order</h6>
+                    <h6 className="fa-18 m-0 p-3 py-2 d-flex align-items-center justify-content-between">
+                        Create Delivery Order
+                    </h6>
                 </>
             )}
 
@@ -404,14 +498,16 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                     </tr>
                                     <tr>
                                         <td className="border-0 bg-light">Address:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
+                                        <td className="border-0 bg-light">
+                                            {companyInfo?.Company_Address}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td className="border-0 bg-light">Phone:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
+                                        <td className="border-0 bg-light">
+                                            {companyInfo?.Telephone_Number}
+                                        </td>
                                     </tr>
-
-
                                 </tbody>
                             </table>
                         </div>
@@ -423,8 +519,17 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">
                                             <input
                                                 type="date"
-                                                value={orderDetails?.Do_Date ? ISOString(orderDetails?.Do_Date) : ''}
-                                                onChange={e => setOrderDetails({ ...orderDetails, Do_Date: e.target.value })}
+                                                value={
+                                                    orderDetails?.Do_Date
+                                                        ? ISOString(orderDetails?.Do_Date)
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Do_Date: e.target.value,
+                                                    })
+                                                }
                                                 className="cus-inpt p-1"
                                             />
                                         </td>
@@ -435,7 +540,12 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        GST_Inclusive: Number(e.target.value),
+                                                    })
+                                                }
                                                 value={orderDetails.GST_Inclusive}
                                             >
                                                 <option value={1}>Inclusive Tax</option>
@@ -449,60 +559,75 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        IS_IGST: Number(e.target.value),
+                                                    })
+                                                }
                                                 value={orderDetails.IS_IGST}
                                             >
-                                                <option value='0'>GST</option>
-                                                <option value='1'>IGST</option>
+                                                <option value="0">GST</option>
+                                                <option value="1">IGST</option>
                                             </select>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Voucher Type <span style={{ color: "red" }}>*</span></td>
+                                        <td className="border-0 bg-light">
+                                            Voucher Type <span style={{ color: "red" }}>*</span>
+                                        </td>
 
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1 "
-                                                onChange={e => setOrderDetails({
-                                                    ...orderDetails,
-                                                    VoucherType: e.target.value
-                                                })}
-
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        VoucherType: e.target.value,
+                                                    })
+                                                }
                                                 value={orderDetails.VoucherType}
                                             >
-
-                                                <option value='' disabled>select voucher</option>
+                                                <option value="" disabled>
+                                                    select voucher
+                                                </option>
                                                 {voucherType.map((vou, ind) => (
-                                                    <option
-                                                        value={vou.Vocher_Type_Id}
-                                                        key={ind}
-                                                    >
+                                                    <option value={vou.Vocher_Type_Id} key={ind}>
                                                         {vou.Voucher_Type}
                                                     </option>
                                                 ))}
                                             </select>
                                         </td>
-
                                     </tr>
                                     <tr>
-                                        <td className="border-0 bg-light">Branch <span style={{ color: "red" }}>*</span></td>
+                                        <td className="border-0 bg-light">
+                                            Branch <span style={{ color: "red" }}>*</span>
+                                        </td>
 
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, Branch_Id: Number(e.target.value) })}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Branch_Id: Number(e.target.value),
+                                                    })
+                                                }
                                                 value={orderDetails.Branch_Id}
                                             >
-                                                <option value='' disabled>select Branch</option>
+                                                <option value="" disabled>
+                                                    select Branch
+                                                </option>
                                                 {branch.map((branch, ind) => (
-                                                    <option value={branch.BranchId} key={ind}>{branch.BranchName}</option>
+                                                    <option value={branch.BranchId} key={ind}>
+                                                        {branch.BranchName}
+                                                    </option>
                                                 ))}
                                             </select>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
-
                         </div>
                     </div>
                 </div>
@@ -519,11 +644,23 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">Retailer Name:</td>
                                         <td className="border-0 bg-light">
                                             <Select
-                                                value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
+                                                value={{
+                                                    value: orderDetails?.Retailer_Id,
+                                                    label: orderDetails?.Retailer_Name,
+                                                }}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Retailer_Id: e.value,
+                                                        Retailer_Name: e.label,
+                                                    })
+                                                }
                                                 options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                                    { value: "", label: "select", isDisabled: true },
+                                                    ...retailers.map((obj) => ({
+                                                        value: obj?.Retailer_Id,
+                                                        label: obj?.Retailer_Name,
+                                                    })),
                                                 ]}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
@@ -533,12 +670,10 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         </td>
                                     </tr>
 
-
                                     <tr>
                                         <td className="border-0 bg-light">Address:</td>
                                         <td className="border-0 bg-light">{storage.Name}</td>
                                     </tr>
-
 
                                     <tr>
                                         <td className="border-0 bg-light">Phone:</td>
@@ -549,8 +684,17 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, Delivery_Status: e.target.value })}
-                                                value={orderDetails.Delivery_Status ? orderDetails.Delivery_Status : 1}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Delivery_Status: e.target.value,
+                                                    })
+                                                }
+                                                value={
+                                                    orderDetails.Delivery_Status
+                                                        ? orderDetails.Delivery_Status
+                                                        : 1
+                                                }
                                             >
                                                 <option value={5}>Pending</option>
 
@@ -564,7 +708,12 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, Payment_Mode: e.target.value })}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Payment_Mode: e.target.value,
+                                                    })
+                                                }
                                                 value={orderDetails.Payment_Mode || 0}
                                             >
                                                 <option value={0}></option>
@@ -574,9 +723,6 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                             </select>
                                         </td>
                                     </tr>
-
-
-
                                 </tbody>
                             </table>
                         </div>
@@ -592,16 +738,17 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         <td className="border-0 bg-light">{20}</td>
                                     </tr>
 
-
-
-
-
                                     <tr>
                                         <td className="border-0 bg-light">Payment_Status:</td>
                                         <td className="border-0 bg-light">
                                             <select
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, Payment_Status: Number(e.target.value) })}
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Payment_Status: Number(e.target.value),
+                                                    })
+                                                }
                                                 value={orderDetails.Payment_Status}
                                             >
                                                 <option value={1}>Pending</option>
@@ -638,37 +785,39 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         </td>
                                     </tr> */}
 
-
                                     <tr>
                                         <td className="border-0 bg-light">Payment Reference No:</td>
                                         <td className="border-0 bg-light">
                                             <input
                                                 type="text"
                                                 className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, Payment_Ref_No: e.target.value })}
-                                                value={orderDetails?.Payment_Ref_No}  // Default to empty string if no value available
+                                                onChange={(e) =>
+                                                    setOrderDetails({
+                                                        ...orderDetails,
+                                                        Payment_Ref_No: e.target.value,
+                                                    })
+                                                }
+                                                value={orderDetails?.Payment_Ref_No} // Default to empty string if no value available
                                                 placeholder="Enter Payment Reference Number"
                                             />
                                         </td>
                                     </tr>
-
-
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-
                 {/* Actions */}
                 <div className="d-flex align-items-end justify-content-end flex-wrap mb-3">
-
                     <Button
                         onClick={() => setAddProductDialog(true)}
                         sx={{ ml: 1 }}
-                        variant='outlined'
+                        variant="outlined"
                         startIcon={<Add />}
-                    >Add Product</Button>
+                    >
+                        Add Product
+                    </Button>
                 </div>
 
                 <FilterableTable
@@ -677,75 +826,94 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                         {
                             isCustomCell: true,
                             Cell: ({ row }) => row?.Product?.Product_Name,
-                            ColumnHeader: 'Product',
+                            ColumnHeader: "Product",
                             isVisible: 1,
                         },
                         {
                             isCustomCell: true,
                             Cell: ({ row }) => row?.Product?.HSN_Code,
-                            ColumnHeader: 'HSN Code',
+                            ColumnHeader: "HSN Code",
                             isVisible: 1,
                         },
                         {
                             isCustomCell: true,
-                            Cell: ({ row }) => row?.Bill_Qty + (row?.Units ?? ''),
-                            ColumnHeader: 'Quantity',
+                            Cell: ({ row }) => row?.Bill_Qty + (row?.Units ?? ""),
+                            ColumnHeader: "Quantity",
                             isVisible: 1,
-                            align: 'center'
+                            align: "center",
                         },
                         {
-                            Field_Name: 'Item_Rate',
+                            Field_Name: "Item_Rate",
                             ColumnHeader: "Rate",
-                            Fied_Data: 'number',
+                            Fied_Data: "number",
                             isVisible: 1,
-                            align: 'right'
+                            align: "right",
                         },
                         {
-                            ColumnHeader: 'Taxable Amount',
+                            ColumnHeader: "Taxable Amount",
                             isCustomCell: true,
                             Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
-                                const amount = row.Amount ?? 0;
-                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
-                                return NumberFormat(
-                                    isInclusive ? (amount - tax) : amount
-                                )
-                            },
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
-                                const amount = row.Amount ?? 0;
-                                return NumberFormat(
-                                    taxCalc(orderDetails.GST_Inclusive, amount, percentage)
-                                ) + ' (' + percentage + '%)'
-                            },
-                            ColumnHeader: 'Tax',
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            ColumnHeader: 'Amount',
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST
+                                const percentage =
+                                    (IS_IGST
                                         ? row?.Product?.Igst_P
-                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)
-                                ) ?? 0;
+                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ??
+                                    0;
                                 const amount = row.Amount ?? 0;
-                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
-                                return NumberFormat(
-                                    isEqualNumber(orderDetails.GST_Inclusive, 1) ? amount : (amount + tax)
-                                )
+                                const tax = taxCalc(
+                                    orderDetails.GST_Inclusive,
+                                    amount,
+                                    percentage
+                                );
+                                return NumberFormat(isInclusive ? amount - tax : amount);
                             },
                             isVisible: 1,
-                            align: 'right'
+                            align: "right",
+                        },
+                        {
+                            isCustomCell: true,
+                            Cell: ({ row }) => {
+                                const percentage =
+                                    (IS_IGST
+                                        ? row?.Product?.Igst_P
+                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ??
+                                    0;
+                                const amount = row.Amount ?? 0;
+                                return (
+                                    NumberFormat(
+                                        taxCalc(orderDetails.GST_Inclusive, amount, percentage)
+                                    ) +
+                                    " (" +
+                                    percentage +
+                                    "%)"
+                                );
+                            },
+                            ColumnHeader: "Tax",
+                            isVisible: 1,
+                            align: "right",
+                        },
+                        {
+                            ColumnHeader: "Amount",
+                            isCustomCell: true,
+                            Cell: ({ row }) => {
+                                const percentage =
+                                    (IS_IGST
+                                        ? row?.Product?.Igst_P
+                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ??
+                                    0;
+                                const amount = row.Amount ?? 0;
+                                const tax = taxCalc(
+                                    orderDetails.GST_Inclusive,
+                                    amount,
+                                    percentage
+                                );
+                                return NumberFormat(
+                                    isEqualNumber(orderDetails.GST_Inclusive, 1)
+                                        ? amount
+                                        : amount + tax
+                                );
+                            },
+                            isVisible: 1,
+                            align: "right",
                         },
                         {
                             isCustomCell: true,
@@ -754,39 +922,54 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                     <>
                                         <IconButton
                                             onClick={() => {
+                                                const product = row.Product || {};
+
+                                                const latestUOM_Id = row.UOM || product.Unit_Id;
+                                                const latestUnitName =
+                                                    row.Unit_Name || product.Units || product.Unit_Name;
+
                                                 setProductDetails({
                                                     Item_Id: row.Item_Id,
-                                                    ItemName: row?.Product?.Product_Name,
+                                                    ItemName: product.Product_Name || row.ItemName,
                                                     Bill_Qty: row.Bill_Qty,
                                                     Item_Rate: row.Item_Rate,
-                                                    UOM: row.Product.UOM_Id,
-                                                    Product: row.Product,
-                                                    Group: row?.Product?.Pro_Group,
-                                                    GroupID: row?.Product?.Product_Group,
-                                                    Brand: row?.Product?.Brand_Name,
-                                                    BrandID: row?.Product?.Brand,
-                                                    Amount: row?.Amount
+
+                                                    UOM: latestUOM_Id,
+                                                    Units: latestUnitName,
+
+                                                    Product: product,
+                                                    Group: product.Pro_Group || row.Group || "",
+                                                    GroupID: product.Product_Group || row.GroupID || "",
+                                                    Brand: product.Brand_Name || row.Brand || "",
+                                                    BrandID: product.Brand || row.BrandID || "",
+
+                                                    Amount: row.Amount,
                                                 });
+
                                                 setAddProductDialog(true);
                                             }}
                                             size="small"
                                         >
                                             <Edit />
                                         </IconButton>
+
                                         <IconButton
                                             size="small"
                                             onClick={() => {
-                                                setOrderProducts(pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id)))
+                                                setOrderProducts((pre) =>
+                                                    pre.filter(
+                                                        (obj) => !isEqualNumber(obj.Item_Id, row.Item_Id)
+                                                    )
+                                                );
                                             }}
-                                            color='error'
+                                            color="error"
                                         >
                                             <Delete />
                                         </IconButton>
-
                                     </>
-                                )
+                                );
                             },
-                            ColumnHeader: 'Action',
+                            ColumnHeader: "Action",
                             isVisible: 1,
                         },
                     ]}
@@ -795,14 +978,17 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                     disablePagination={true}
                 />
 
-
                 {orderProducts.length > 0 && (
                     <div className="d-flex justify-content-end py-2">
                         <table className="table">
                             <tbody>
                                 <tr>
-                                    <td className="border p-2" rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}>
-                                        Total in words: {numberToWords(parseInt(Total_Invoice_value))}
+                                    <td
+                                        className="border p-2"
+                                        rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}
+                                    >
+                                        Total in words:{" "}
+                                        {numberToWords(parseInt(Total_Invoice_value))}
                                     </td>
                                     <td className="border p-2">Total Taxable Amount</td>
                                     <td className="border p-2">
@@ -843,7 +1029,9 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
 
                                     <td className="border p-2">Round Off</td>
                                     <td className="border p-2">
-                                        {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
+                                        {RoundNumber(
+                                            Math.round(Total_Invoice_value) - Total_Invoice_value
+                                        )}
                                     </td>
                                 </tr>
 
@@ -858,67 +1046,95 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                     </div>
                 )}
 
-
                 <p className="fa-15 mt-3 m-0">Narration</p>
                 <textarea
                     className="cus-inpt "
                     value={orderDetails.Narration}
-                    onChange={e => setOrderDetails(pre => ({ ...pre, Narration: e.target.value }))}
+                    onChange={(e) =>
+                        setOrderDetails((pre) => ({ ...pre, Narration: e.target.value }))
+                    }
                 />
 
                 <div className="d-flex justify-content-end">
                     <Button
-                        variant='outlined'
+                        variant="outlined"
                         startIcon={<Clear />}
                         onClick={switchScreen}
                     >
-                        {'cancel'}
+                        {"cancel"}
                     </Button>
                     <Button
                         onClick={postSaleOrder}
                         sx={{ ml: 1 }}
-                        variant='outlined'
-                        color='success'
+                        variant="outlined"
+                        color="success"
                         startIcon={<Save />}
                         disabled={orderProducts?.length === 0 || !orderDetails?.Retailer_Id}
-                    >Save</Button>
+                    >
+                        Save
+                    </Button>
                 </div>
             </div>
 
             <Dialog
                 open={addProductDialog}
                 onClose={closeAddProduct}
-                maxWidth='sm' fullWidth
+                maxWidth="sm"
+                fullWidth
             >
                 <DialogTitle className="border-bottom">
                     <span>Add Products Details</span>
                 </DialogTitle>
-                <form onSubmit={e => {
-                    e.preventDefault();
-                    if (productDetails.Item_Id && productDetails.Bill_Qty && productDetails.Item_Rate) {
-                        handleProductInputChange(
-                            productDetails.Item_Id,
-                            productDetails.Bill_Qty,
-                            productDetails.Item_Rate,
-                            productDetails.Product,
-                            productDetails.UOM,
-                            productDetails.Units,
-                        );
-                        closeAddProduct();
-                    } else {
-                        toast.warn(!productDetails.Item_Id ? 'Select Product' : !productDetails.Bill_Qty ? 'Enter Quantity' : 'Enter Rate or Amount');
-                    }
-                }}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (
+                            productDetails.Item_Id &&
+                            productDetails.Bill_Qty &&
+                            productDetails.Item_Rate
+                        ) {
+                            handleProductInputChange(
+                                productDetails.Item_Id,
+                                productDetails.Bill_Qty,
+                                productDetails.Item_Rate,
+                                productDetails.Product,
+                                productDetails.UOM,
+                                productDetails.Units
+                            );
+                            closeAddProduct();
+                        } else {
+                            toast.warn(
+                                !productDetails.Item_Id
+                                    ? "Select Product"
+                                    : !productDetails.Bill_Qty
+                                        ? "Enter Quantity"
+                                        : "Enter Rate or Amount"
+                            );
+                        }
+                    }}
+                >
                     <DialogContent>
                         <div className="row pb-5">
                             <div className="col-6 p-2">
                                 <label>Brand</label>
                                 <Select
-                                    value={{ value: productDetails.BrandID, label: productDetails.Brand }}
-                                    onChange={(e) => setProductDetails(pre => ({ ...pre, BrandID: e.value, Brand: e.label }))}
+                                    value={{
+                                        value: productDetails.BrandID,
+                                        label: productDetails.Brand,
+                                    }}
+                                    onChange={(e) =>
+                                        setProductDetails((pre) => ({
+                                            ...pre,
+                                            BrandID: e.value,
+                                            Brand: e.label,
+                                        }))
+                                    }
                                     options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...productBrand.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
+                                        { value: "", label: "select", isDisabled: true },
+                                        ...productBrand.map((obj) => ({
+                                            value: obj?.Brand,
+                                            label: obj?.Brand_Name,
+                                        })),
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
@@ -944,18 +1160,24 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                             <div className="col-6 p-2">
                                 <label>Group</label>
                                 <Select
-                                    value={{ value: productDetails.GroupID, label: productDetails.Group }}
+                                    value={{
+                                        value: productDetails.GroupID,
+                                        label: productDetails.Group,
+                                    }}
                                     onChange={(e) =>
-                                        setProductDetails((pre) => ({ ...pre, GroupID: e.value, Group: e.label }))
+                                        setProductDetails((pre) => ({
+                                            ...pre,
+                                            GroupID: e.value,
+                                            Group: e.label,
+                                        }))
                                     }
                                     options={[
-                                        { value: '', label: 'select', isDisabled: true },
+                                        { value: "", label: "select", isDisabled: true },
                                         ...products
-                                            .filter(
-                                                (pro) =>
-                                                    productDetails.BrandID
-                                                        ? isEqualNumber(pro.Brand, productDetails.BrandID)
-                                                        : true
+                                            .filter((pro) =>
+                                                productDetails.BrandID
+                                                    ? isEqualNumber(pro.Brand, productDetails.BrandID)
+                                                    : true
                                             )
                                             .reduce((acc, pro) => {
                                                 if (
@@ -976,12 +1198,19 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                 />
                             </div>
                             <div className="col-12 p-2">
-                                <label>Item Name <RequiredStar /></label>
+                                <label>
+                                    Item Name <RequiredStar />
+                                </label>
                                 <Select
-                                    value={{ value: productDetails.Item_Id, label: productDetails.ItemName }}
-                                    onChange={e => {
-                                        const productInfo = products.find(pro => isEqualNumber(pro.Product_Id, e.value))
-                                        setProductDetails(pre => ({
+                                    value={{
+                                        value: productDetails.Item_Id,
+                                        label: productDetails.ItemName,
+                                    }}
+                                    onChange={(e) => {
+                                        const productInfo = products.find((pro) =>
+                                            isEqualNumber(pro.Product_Id, e.value)
+                                        );
+                                        setProductDetails((pre) => ({
                                             ...pre,
                                             Item_Id: e.value,
                                             ItemName: e.label,
@@ -998,20 +1227,32 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                         }));
                                     }}
                                     options={[
-                                        { value: '', label: 'select', isDisabled: true },
+                                        { value: "", label: "select", isDisabled: true },
                                         ...[
                                             ...products
-                                                .filter(pro => productDetails.BrandID ? isEqualNumber(pro.Brand, productDetails.BrandID) : true)
-                                                .filter(pro => productDetails.GroupID ? isEqualNumber(pro.Product_Group, productDetails.GroupID) : true)
-                                        ].map(obj => ({
+                                                .filter((pro) =>
+                                                    productDetails.BrandID
+                                                        ? isEqualNumber(pro.Brand, productDetails.BrandID)
+                                                        : true
+                                                )
+                                                .filter((pro) =>
+                                                    productDetails.GroupID
+                                                        ? isEqualNumber(
+                                                            pro.Product_Group,
+                                                            productDetails.GroupID
+                                                        )
+                                                        : true
+                                                ),
+                                        ].map((obj) => ({
                                             value: obj?.Product_Id,
                                             label: obj?.Product_Name,
-                                            isDisabled: (
-                                                orderProducts.findIndex(ind => isEqualNumber(
-                                                    ind?.Item_Id, obj?.Product_Id
-                                                ))
-                                            ) === -1 ? false : true
-                                        }))
+                                            isDisabled:
+                                                orderProducts.findIndex((ind) =>
+                                                    isEqualNumber(ind?.Item_Id, obj?.Product_Id)
+                                                ) === -1
+                                                    ? false
+                                                    : true,
+                                        })),
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
@@ -1021,26 +1262,31 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                 />
                             </div>
                             <div className="col-lg-4 col-md-6 p-2">
-                                <label>Quantity <RequiredStar /></label>
+                                <label>
+                                    Quantity <RequiredStar />
+                                </label>
                                 <input
                                     type="input"
                                     required
-                                    value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
-                                    onChange={e => {
+                                    value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ""}
+                                    onChange={(e) => {
                                         if (productDetails.Item_Rate) {
-                                            setProductDetails(pre => ({
+                                            setProductDetails((pre) => ({
                                                 ...pre,
-                                                Amount: Multiplication(productDetails.Item_Rate, e.target.value),
+                                                Amount: Multiplication(
+                                                    productDetails.Item_Rate,
+                                                    e.target.value
+                                                ),
                                                 Bill_Qty: e.target.value,
-                                            }))
+                                            }));
                                         } else if (productDetails.Amount) {
-                                            setProductDetails(pre => ({
+                                            setProductDetails((pre) => ({
                                                 ...pre,
                                                 Item_Rate: Division(pre.Amount, e.target.value),
                                                 Bill_Qty: e.target.value,
-                                            }))
+                                            }));
                                         } else {
-                                            setProductDetails(pre => ({
+                                            setProductDetails((pre) => ({
                                                 ...pre,
                                                 Bill_Qty: e.target.value,
                                             }));
@@ -1054,12 +1300,18 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                 <label>Rate </label>
                                 <input
                                     type="float"
-                                    value={productDetails.Item_Rate ? (productDetails.Item_Rate) : ''}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Item_Rate: e.target.value,
-                                        Amount: pre.Bill_Qty ? Multiplication(e.target.value, pre.Bill_Qty) : pre.Amount
-                                    }))}
+                                    value={
+                                        productDetails.Item_Rate ? productDetails.Item_Rate : ""
+                                    }
+                                    onChange={(e) =>
+                                        setProductDetails((pre) => ({
+                                            ...pre,
+                                            Item_Rate: e.target.value,
+                                            Amount: pre.Bill_Qty
+                                                ? Multiplication(e.target.value, pre.Bill_Qty)
+                                                : pre.Amount,
+                                        }))
+                                    }
                                     min={1}
                                     className="cus-inpt"
                                 />
@@ -1068,17 +1320,25 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                 <label>UOM</label>
                                 <select
                                     value={productDetails.UOM}
-                                    onChange={e => {
+                                    onChange={(e) => {
                                         const selectedIndex = e.target.selectedIndex;
                                         const label = e.target.options[selectedIndex].text;
                                         const value = e.target.value;
-                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
+                                        setProductDetails((pre) => ({
+                                            ...pre,
+                                            UOM: value,
+                                            Units: label,
+                                        }));
                                     }}
                                     className="cus-inpt"
                                 >
-                                    <option value="" disabled>select</option>
+                                    <option value="" disabled>
+                                        select
+                                    </option>
                                     {productUOM.map((o, i) => (
-                                        <option value={o.Unit_Id} key={i} >{o.Units}</option>
+                                        <option value={o.Unit_Id} key={i}>
+                                            {o.Units}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -1086,31 +1346,43 @@ const NewDeliveryOrder = ({ editValues, loadingOn, loadingOff, reload, switchScr
                                 <label>Amount</label>
                                 <input
                                     type="input"
-                                    value={productDetails.Amount ? productDetails.Amount : ''}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Amount: e.target.value,
-                                        Item_Rate: pre.Bill_Qty ? Division(e.target.value, pre.Bill_Qty) : pre.Item_Rate
-                                    }))}
+                                    value={productDetails.Amount ? productDetails.Amount : ""}
+                                    onChange={(e) =>
+                                        setProductDetails((pre) => ({
+                                            ...pre,
+                                            Amount: e.target.value,
+                                            Item_Rate: pre.Bill_Qty
+                                                ? Division(e.target.value, pre.Bill_Qty)
+                                                : pre.Item_Rate,
+                                        }))
+                                    }
                                     className="cus-inpt"
                                     min={1}
                                 />
                             </div>
                         </div>
-
                     </DialogContent>
                     <DialogActions className="d-flex justify-content-between align-items-center">
-                        <Button onClick={() => setProductDetails(productInitialDetails)} type='button' startIcon={<ClearAll />}>Clear</Button>
+                        <Button
+                            onClick={() => setProductDetails(productInitialDetails)}
+                            type="button"
+                            startIcon={<ClearAll />}
+                        >
+                            Clear
+                        </Button>
                         <span>
-                            <Button type="button" onClick={closeAddProduct}>cancel</Button>
-                            <Button type='submit' variant="outlined">Add</Button>
+                            <Button type="button" onClick={closeAddProduct}>
+                                cancel
+                            </Button>
+                            <Button type="submit" variant="outlined">
+                                Add
+                            </Button>
                         </span>
                     </DialogActions>
                 </form>
             </Dialog>
         </>
-    )
-}
-
+    );
+};
 
 export default NewDeliveryOrder;

@@ -8,10 +8,7 @@ import {
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import {
-    ISOString,
-    isValidDate
-} from "../../Components/functions";
+import { ISOString, isValidDate } from "../../Components/functions";
 // import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Search, Refresh } from "@mui/icons-material";
 // import { convertedStatus } from "../convertedStatus";
@@ -29,20 +26,17 @@ import {
 } from "@mui/material";
 import { useContext } from "react";
 import { toast } from "react-toastify";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 const useQuery = () => new URLSearchParams(useLocation().search);
 
-const AttendanceNewScreen = ({
-    loadingOn,
-    loadingOff
-}) => {
-
+const AttendanceNewScreen = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem("user"));
     const navigate = useNavigate();
     const location = useLocation();
     const stateDetails = location.state;
 
     const [addEmployeeDialogOpen, setAddEmployeeDialogOpen] = useState(false);
+
     const getCurrentMonthYear = () => {
         const date = new Date();
         const year = date.getFullYear();
@@ -60,11 +54,11 @@ const AttendanceNewScreen = ({
 
     const defaultFilters = {
         From: getCurrentMonthYear(),
-        To: getCurrentMonthYear()
-    }
+        To: getCurrentMonthYear(),
+    };
 
     const [saleOrders, setSaleOrders] = useState([]);
-    const [viewMode, setViewMode] = useState('default');
+    const [viewMode, setViewMode] = useState("default");
     const [expandedDepartment, setExpandedDepartment] = useState([]);
 
     const [dropdownEmployees, setDropdownEmployees] = useState([]);
@@ -97,20 +91,19 @@ const AttendanceNewScreen = ({
             fetchAttendanceData(From, EmpId);
             fetchDropdownEmployees();
         }
-
     }, [debouncedFilter]);
 
     const getDaysInMonth = (monthYear) => {
         if (!monthYear) return 0;
 
-        const [year, month] = monthYear.split('-');
+        const [year, month] = monthYear.split("-");
 
         return new Date(year, month, 0).getDate();
     };
 
     const [filters, setFilters] = useState({
-        FromDate: new Date().toISOString().split('T')[0],
-        ToDate: new Date().toISOString().split('T')[0],
+        FromDate: new Date().toISOString().split("T")[0],
+        ToDate: new Date().toISOString().split("T")[0],
         Cancel_status: 0,
     });
 
@@ -130,7 +123,7 @@ const AttendanceNewScreen = ({
     useEffect(() => {
         if (loadingOn) loadingOn();
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         const fromDate = filters.FromDate || today;
         const toDate = filters.ToDate || today;
 
@@ -152,7 +145,7 @@ const AttendanceNewScreen = ({
         const getDaysInMonth = (monthYear) => {
             if (!monthYear) return 0;
 
-            const [year, month] = monthYear.split('-');
+            const [year, month] = monthYear.split("-");
 
             return new Date(year, month, 0).getDate();
         };
@@ -212,31 +205,41 @@ const AttendanceNewScreen = ({
                     };
                 };
 
-                const { days: dateRange, sundayCount, totalDays } = getWorkingDays(startDate, endDate);
+                const {
+                    days: dateRange,
+                    sundayCount,
+                    totalDays,
+                } = getWorkingDays(startDate, endDate);
 
                 let totalWorkingDaysSummary = 0;
                 let totalLeaveDaysSummary = 0;
 
-                const summaryData = overallData.map(row => {
-                    const punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
+                const summaryData = overallData.map((row) => {
+                    const punchDetails = row.AttendanceDetails
+                        ? JSON.parse(row.AttendanceDetails)
+                        : [];
                     let totalWorkingDays = 0;
                     let totalLeaveDays = 0;
 
                     dateRange.forEach((date) => {
                         if (Array.isArray(punchDetails)) {
-                            const detail = punchDetails.find(detail => detail.Date === date);
+                            const detail = punchDetails.find(
+                                (detail) => detail.Date === date
+                            );
 
                             const isSunday = new Date(date).getDay() === 0;
-
 
                             if (isSunday) {
                                 return;
                             }
 
                             if (detail) {
-                                if (detail.AttendanceStatus === 'P') {
+                                if (detail.AttendanceStatus === "P") {
                                     totalWorkingDays++;
-                                } else if (detail.AttendanceStatus === 'A') {
+                                } else if (
+                                    detail.AttendanceStatus === "A" ||
+                                    detail.AttendanceStatus === "H"
+                                ) {
                                     totalLeaveDays++;
                                 }
                             } else {
@@ -260,7 +263,7 @@ const AttendanceNewScreen = ({
                     };
                 });
 
-                const exportData = summaryData.map(item => ({
+                const exportData = summaryData.map((item) => ({
                     EmployeeName: item.EmployeeName,
                     EmployeeID: item.EmployeeID,
                     Month: item.Month,
@@ -295,30 +298,29 @@ const AttendanceNewScreen = ({
             console.error("Error downloading overall report:", error);
         }
     };
-
     const handleDownload = () => {
-        const maxPunches = 6;
+        const maxPunches = 4;
 
-        const exportData = attendanceData.map(row => {
+        const exportData = attendanceData.map((row) => {
+            const punchDetails = row.AttendanceDetails
+                ? row.AttendanceDetails.split(",").filter((p) => p.trim() !== "")
+                : [];
 
-            const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',').map(detail => detail.trim()) : [];
-            const punchColumns = {};
+            let attendanceStatus = row.AttendanceStatus;
 
-            let allPunchesEmpty = true;
-
-            for (let i = 0; i < maxPunches; i++) {
-                const punch = punchDetails[i] || '--';
-                punchColumns[`Punch ${i + 1}`] = punch;
-
-                if (punch !== '--') {
-                    allPunchesEmpty = false;
-                }
+            if (!attendanceStatus) {
+                attendanceStatus = punchDetails.length === 0 ? "A" : "P";
             }
 
-            const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
+            const punchColumns = {};
+            for (let i = 0; i < maxPunches; i++) {
+                punchColumns[`Punch${i + 1}`] = punchDetails[i]
+                    ? punchDetails[i].trim()
+                    : "--";
+            }
 
             return {
-                Employee: row.username,
+                Employee: row.username || row.Employee,
                 "Log Date": formatAttendanceDate(row.LogDate),
                 "Attendance Status": attendanceStatus,
                 ...punchColumns,
@@ -329,15 +331,19 @@ const AttendanceNewScreen = ({
             "Employee",
             "Log Date",
             "Attendance Status",
-            ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)
+            "Punch1",
+            "Punch2",
+            "Punch3",
+            "Punch4",
         ];
 
-        const reorderedData = exportData.map(row =>
+        const reorderedData = exportData.map((row) =>
             columnsOrder.reduce((acc, col) => {
-                acc[col] = row[col] || '--';
+                acc[col] = row[col] || "--";
                 return acc;
             }, {})
         );
+
         const ws = XLSX.utils.json_to_sheet(reorderedData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
@@ -347,45 +353,60 @@ const AttendanceNewScreen = ({
 
     const MAX_PUNCHES = 6;
 
+    function formatToAmPm(timeString) {
+        if (!timeString) return "--";
+        const [hourStr, minuteStr] = timeString.split(":");
+        if (!hourStr || !minuteStr) return "--";
+
+        let hour = parseInt(hourStr, 10);
+        const minute = minuteStr;
+        const ampm = hour >= 12 ? "PM" : "AM";
+
+        hour = hour % 12 || 12;
+
+        return `${hour.toString().padStart(2, "0")}:${minute} ${ampm}`;
+    }
+
     const punchColumns = Array.from({ length: MAX_PUNCHES }, (_, index) => ({
         isCustomCell: true,
         ColumnHeader: `Punch ${index + 1}`,
         isVisible: 1,
-        width: '13%',
+        width: "13%",
         CellProps: {
             sx: {
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '10px',
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px",
             },
         },
         Cell: ({ row }) => {
             const punches = row.AttendanceDetails
-                ? row.AttendanceDetails.split(',').map((p) => p.trim()).filter((p) => p !== '')
+                ? row.AttendanceDetails.split(",")
+                    .map((p) => p.trim())
+                    .filter((p) => p !== "")
                 : [];
 
-            const punch = punches[index] || '--';
-            const time = punch.split(' (')[0];
+            const punch = punches[index] || "--";
+            const rawTime = punch.split(":in(")[0];
+            const formattedTime = punch !== "--" ? formatToAmPm(rawTime) : "--";
 
-            return (
-                time !== '--' ? (
-                    <Chip
-                        label={time}
-                        variant="outlined"
-                        size="small"
-                        sx={{ color: 'green', margin: '2px' }}
-                    />
-                ) : (
-                    <div style={{ color: 'gray' }}>--</div>
-                )
+            return formattedTime !== "--" ? (
+                <Chip
+                    label={formattedTime}
+                    variant="outlined"
+                    size="small"
+                    sx={{ color: "green", margin: "2px" }}
+                />
+            ) : (
+                <div style={{ color: "gray" }}>--</div>
             );
         },
     }));
 
     const formatAttendanceDate = (logDateTime) => {
-        if (!logDateTime) return '--';
-        const [date] = logDateTime.split('T');
+        if (!logDateTime) return "--";
+        const [date] = logDateTime.split("T");
         return `${date} `;
     };
 
@@ -396,178 +417,280 @@ const AttendanceNewScreen = ({
             const startDate = `${year}-${month}-01`;
             const dayCount = getDaysInMonth(`${year}-${month}`);
             const endDate = `${year}-${month}-${dayCount}`;
-            const response = await fetchLink({
-                address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
-            });
 
-            if (response.success) {
-                const overallData = response.data;
-                const getWorkingDays = (fromDate, endDate) => {
-                    const allDays = [];
-                    const currentDate = new Date(fromDate);
-                    const endDateObj = new Date(endDate);
+            const [attendanceRes, leaveRes] = await Promise.all([
+                fetchLink({
+                    address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
+                }),
+                fetchLink({
+                    address: `masters/leave?FromDate=${startDate}&ToDate=${endDate}`,
+                }),
+            ]);
 
-                    while (currentDate <= endDateObj) {
-                        allDays.push(new Date(currentDate).toISOString().split("T")[0]);
-                        currentDate.setDate(currentDate.getDate() + 1);
+            if (!attendanceRes.success) throw new Error("Attendance data failed");
+
+            const leaveMap = {};
+            (leaveRes?.data || []).forEach((leave) => {
+                if (leave.Status?.toUpperCase() !== "APPROVED") return;
+
+                const userId = leave.User_Id;
+                if (!userId) return;
+
+                const parseDate = (dateStr) => {
+                    try {
+                        return new Date(
+                            dateStr.includes("T") ? dateStr.split("T")[0] : dateStr
+                        );
+                    } catch {
+                        return null;
                     }
-                    return {
-                        days: allDays,
-                        count: allDays.length,
-                    };
                 };
 
-                const { days: dateRange } = getWorkingDays(startDate, endDate);
+                const leaveStart = parseDate(leave.FromDate);
+                const leaveEnd = parseDate(leave.ToDate);
+                if (!leaveStart || !leaveEnd) return;
 
-                const exportData = overallData.map(row => {
-                    let punchDetails = [];
-                    try {
+                let current = new Date(leaveStart);
+                while (current <= leaveEnd) {
+                    const dateStr = current.toISOString().split("T")[0];
+                    if (!leaveMap[userId]) leaveMap[userId] = {};
+                    leaveMap[userId][dateStr] = true;
+                    current.setDate(current.getDate() + 1);
+                }
+            });
 
-                        punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
-                    } catch (error) {
-                        console.error("Error parsing AttendanceDetails for employee:", row.username, error);
-                        punchDetails = [];
+            const { days: dateRange } = getDateRange(startDate, endDate);
+            const exportData = attendanceRes.data.map((emp) => {
+                const attendanceDetails = tryParseJSON(emp.AttendanceDetails) || [];
+                const dailyStatus = {};
+                let presentCount = 0;
+
+                const attendanceLookup = {};
+                attendanceDetails.forEach((record) => {
+                    if (record?.Date) {
+                        attendanceLookup[record.Date] = {
+                            status: record.AttendanceStatus,
+                            hasPunch: record.Punch1 !== "[]",
+                        };
+                    }
+                });
+
+                dateRange.forEach((date, index) => {
+                    const dayNum = index + 1;
+                    const dayKey = `Day ${dayNum}`;
+                    const isSunday = new Date(date).getDay() === 0;
+                    const userId = emp.User_Mgt_Id;
+                    const attendanceRecord = attendanceLookup[date];
+                    const attendanceStatus = attendanceRecord?.status;
+                    const hasPunch = attendanceRecord?.hasPunch;
+
+                    if (isSunday) {
+                        dailyStatus[dayKey] = "H";
+                    } else if (userId && leaveMap[userId]?.[date]) {
+                        dailyStatus[dayKey] = "L";
+                    } else if (attendanceStatus === "L") {
+                        dailyStatus[dayKey] = "L";
+                    } else if (attendanceStatus === "P") {
+                        dailyStatus[dayKey] = hasPunch ? "P" : "A";
+                        if (hasPunch) presentCount++;
+                    } else if (attendanceStatus === "H") {
+                        dailyStatus[dayKey] = "H";
+                    } else {
+                        dailyStatus[dayKey] = "A";
+                    }
+                });
+
+                return {
+                    EmployeeName: emp.username || emp.Name,
+                    TotalPresent: presentCount,
+                    ...dailyStatus,
+                };
+            });
+
+            const headers = [
+                "EmployeeName",
+                "TotalPresent",
+                ...dateRange.map((_, i) => `Day ${i + 1}`),
+            ];
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+            XLSX.writeFile(wb, `Attendance_Report_${month}_${year}.xlsx`);
+        } catch (error) {
+            console.error("Download failed:", error);
+            toast.error("Failed to generate report");
+        }
+    };
+
+    function getDateRange(start, end) {
+        const dates = [];
+        const current = new Date(start);
+        const endDate = new Date(end);
+
+        while (current <= endDate) {
+            dates.push(current.toISOString().split("T")[0]);
+            current.setDate(current.getDate() + 1);
+        }
+
+        return { days: dates, count: dates.length };
+    }
+
+    function tryParseJSON(jsonString) {
+        try {
+            return jsonString ? JSON.parse(jsonString) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    const handleOverallWithPunch = async () => {
+        try {
+            const maxPunches = 6;
+
+            const firstLogDate = attendanceData[0]?.LogDate;
+            if (!firstLogDate) {
+                toast.error("No attendance data found");
+                return;
+            }
+
+            const dateObj = new Date(firstLogDate);
+            const year = dateObj.getFullYear();
+            const month = dateObj.getMonth() + 1;
+            const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
+            const endDate = new Date(year, month, 0).toISOString().split("T")[0];
+
+            const leaveResponse = await fetchLink({
+                address: `masters/leave?FromDate=${startDate}&ToDate=${endDate}`,
+            });
+            const leaveData = leaveResponse?.success ? leaveResponse.data : [];
+
+            const leaveMap = {};
+            leaveData.forEach((leave) => {
+                // Case-insensitive status check
+                if (leave.Status?.toLowerCase() !== "approved") return;
+
+                const userId = String(leave.User_Id);
+                if (!userId) return;
+
+                const parseDate = (dateStr) => {
+                    const parts = dateStr.split(/[-/]/);
+                    if (parts.length === 3) {
+                        if (parts[2].length === 4) {
+                            return parts[0].length === 2
+                                ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+                                : new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
+                        }
+
+                        return new Date(dateStr);
+                    }
+                    return new Date(dateStr);
+                };
+
+                const leaveStart = parseDate(leave.FromDate);
+                const leaveEnd = parseDate(leave.ToDate);
+
+                let currentDate = new Date(leaveStart);
+
+                while (currentDate <= leaveEnd) {
+                    const dateStr = currentDate.toISOString().split("T")[0];
+                    if (!leaveMap[userId]) leaveMap[userId] = {};
+
+                    if (currentDate.getDay() !== 0) {
+                        leaveMap[userId][dateStr] = "L";
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            });
+
+            const filteredAttendanceData = attendanceData.filter((row) =>
+                selectedEmployees.some(
+                    (user) =>
+                        String(user.UserId) === String(row.User_Mgt_Id) ||
+                        user.UserId === "ALL"
+                )
+            );
+
+            const groupedData = filteredAttendanceData.reduce((acc, row) => {
+                acc[row.username] = acc[row.username] || [];
+                acc[row.username].push(row);
+                return acc;
+            }, {});
+
+            if (Object.keys(groupedData).length === 0) {
+                toast.error("No attendance data found");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            Object.entries(groupedData).forEach(([username, userAttendance]) => {
+                const exportData = userAttendance.map((row) => {
+                    const logDate = new Date(row.LogDate);
+                    const dateStr = logDate.toISOString().split("T")[0];
+                    const isSunday = logDate.getDay() === 0;
+
+                    const userId = String(row.User_Mgt_Id);
+                    const hasApprovedLeave = leaveMap[userId]?.[dateStr] === "L";
+
+                    let attendanceStatus;
+                    if (isSunday) {
+                        attendanceStatus = "H";
+                    } else if (hasApprovedLeave) {
+                        attendanceStatus = "L";
+                    } else {
+                        const punches =
+                            row.AttendanceDetails?.split(",").map((d) => d.trim()) || [];
+                        attendanceStatus = punches.some((p) => p && p !== "--") ? "P" : "A";
                     }
 
-                    const dailyAttendance = {};
-
-                    let totalPresent = 0;
-
-                    dateRange.forEach((date, index) => {
-                        const isSunday = new Date(date).getDay() === 0;
-
-                        if (isSunday) {
-                            dailyAttendance[`Day ${index + 1}`] = 'H';
-                        } else {
-                            if (Array.isArray(punchDetails)) {
-                                const detail = punchDetails.find(detail => detail.Date === date);
-
-                                dailyAttendance[`Day ${index + 1}`] = detail ? detail.AttendanceStatus : 'A';
-
-                                if (detail && detail.AttendanceStatus === 'P') {
-                                    totalPresent++;
-                                }
-                            } else {
-                                dailyAttendance[`Day ${index + 1}`] = 'A';
-                            }
-                        }
-                    });
+                    const punchColumns = {};
+                    const punches =
+                        row.AttendanceDetails?.split(",").map((d) => d.trim()) || [];
+                    for (let i = 0; i < maxPunches; i++) {
+                        punchColumns[`Punch ${i + 1}`] = punches[i] || "--";
+                    }
 
                     return {
-                        EmployeeName: row.username || row.Name,
-                        TotalPresent: totalPresent,
-                        ...dailyAttendance,
+                        Employee: username,
+                        "Log Date": formatAttendanceDate(row.LogDate),
+                        "Attendance Status": attendanceStatus,
+                        ...punchColumns,
                     };
                 });
 
-                const headers = [
-                    "EmployeeName",
-                    "TotalPresent",
-                    ...dateRange.map((_, id) => `Day ${id + 1}`),
+                const columnsOrder = [
+                    "Employee",
+                    "Log Date",
+                    "Attendance Status",
+                    ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
                 ];
 
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
+                const reorderedData = exportData.map((row) =>
+                    columnsOrder.reduce((acc, col) => {
+                        acc[col] = row[col] || "--";
+                        return acc;
+                    }, {})
+                );
 
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Overall Attendance Report");
-
-                XLSX.writeFile(wb, "Overall_Attendance_Report.xlsx");
-            }
-        } catch (error) {
-            console.error("Error downloading overall report:", error);
-        }
-    };
-
-    const handleOverallWithPunch = () => {
-        const maxPunches = 6;
-
-        const filteredAttendanceData = attendanceData.filter((row) => {
-
-            const isUserSelected = selectedEmployees.some(
-                (user) => Number(user.UserId) === Number(row.User_Mgt_Id) || user.UserId === 'ALL'
-            );
-            return isUserSelected;
-        });
-
-        const groupedData = filteredAttendanceData.reduce((acc, row) => {
-            const username = row.username;
-            if (!acc[username]) {
-                acc[username] = [];
-            }
-            acc[username].push(row);
-            return acc;
-        }, {});
-
-        if (Object.keys(groupedData).length === 0) {
-            toast.error("No attendance data found")
-            return;
-        }
-
-        const wb = XLSX.utils.book_new();
-
-        const firstLogDate = filteredAttendanceData[0]?.LogDate;
-        if (!firstLogDate) {
-            console.error("No log date found in the filtered attendance data.");
-            return;
-        }
-
-        const date = new Date(firstLogDate);
-        const year = date.getFullYear();
-        const month = date.toLocaleString("default", { month: "long" });
-
-        Object.entries(groupedData).forEach(([username, userAttendance]) => {
-            const exportData = userAttendance.map((row) => {
-
-                const punchDetails = row.AttendanceDetails
-                    ? row.AttendanceDetails.split(',').map((detail) => detail.trim())
-                    : [];
-
-                const punchColumns = {};
-                let allPunchesEmpty = true;
-
-                for (let i = 0; i < maxPunches; i++) {
-                    const punch = punchDetails[i] || '--';
-                    punchColumns[`Punch ${i + 1}`] = punch;
-
-                    if (punch !== '--') {
-                        allPunchesEmpty = false;
-                    }
-                }
-
-                const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
-
-                return {
-                    Employee: row.username,
-                    "Log Date": formatAttendanceDate(row.LogDate),
-                    "Attendance Status": attendanceStatus,
-                    ...punchColumns,
-                };
+                XLSX.utils.book_append_sheet(
+                    wb,
+                    XLSX.utils.json_to_sheet(reorderedData),
+                    username.slice(0, 31)
+                );
             });
 
-            const columnsOrder = [
-                "Employee",
-                "Log Date",
-                "Attendance Status",
-                ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
-            ];
-
-            const reorderedData = exportData.map((row) =>
-                columnsOrder.reduce((acc, col) => {
-                    acc[col] = row[col] || '--';
-                    return acc;
-                }, {})
-            );
-
-            const sheetName = username.slice(0, 31);
-            const ws = XLSX.utils.json_to_sheet(reorderedData);
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
-        });
-
-        const fileName = `Attendance_Report_${month}_${year}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+            const fileName = `Attendance_Report_${new Date().toLocaleString(
+                "default",
+                { month: "long" }
+            )}_${year}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        } catch (error) {
+            console.error("Error generating report:", error);
+            toast.error("Failed to generate report");
+        }
     };
-
     const fetchDropdownEmployees = async () => {
         setLoading(true);
         try {
@@ -593,28 +716,46 @@ const AttendanceNewScreen = ({
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${companyId}`,
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
-            }
-        }).then(data => {
-            if (data.success) {
-                let filteredEmployees = [];
+                Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
+            },
+        })
+            .then((data) => {
+                if (data.success) {
+                    let filteredEmployees = [];
 
-                if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) === 1) {
-                    filteredEmployees = data.data;
-                    setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
-                    setIsDropdownDisabled(false);
-                    setDropdownPlaceholder("ALL");
-                } else {
-                    filteredEmployees = data.data.filter(employee => employee.UserId === userId);
-                    setFilter(prev => ({ ...prev, EmpId: userId, Name: storage?.Name }));
-                    setIsDropdownDisabled(true);
-                    setDropdownPlaceholder(storage?.Name);
+                    if (
+                        Number(userTypeId) === 1 ||
+                        Number(userTypeId) === 0 ||
+                        Number(Add_Rights) === 1
+                    ) {
+                        filteredEmployees = data.data;
+                        setFilter((prev) => ({ ...prev, EmpId: 0, Name: "ALL" }));
+                        setIsDropdownDisabled(false);
+                        setDropdownPlaceholder("ALL");
+                    } else {
+                        filteredEmployees = data.data.filter(
+                            (employee) => employee.UserId === userId
+                        );
+                        setFilter((prev) => ({
+                            ...prev,
+                            EmpId: userId,
+                            Name: storage?.Name,
+                        }));
+                        setIsDropdownDisabled(true);
+                        setDropdownPlaceholder(storage?.Name);
+                    }
+
+                    setEmployees(filteredEmployees);
                 }
-
-                setEmployees(filteredEmployees);
-            }
-        }).catch(e => console.error("Error fetching employees:", e));
-    }, [storage?.UserTypeId, storage?.UserId, storage?.Company_id, storage?.Name, reload]);
+            })
+            .catch((e) => console.error("Error fetching employees:", e));
+    }, [
+        storage?.UserTypeId,
+        storage?.UserId,
+        storage?.Company_id,
+        storage?.Name,
+        reload,
+    ]);
 
     const fetchAttendanceData = async (From, EmpId) => {
         try {
@@ -630,7 +771,7 @@ const AttendanceNewScreen = ({
             const response = await fetchLink({
                 address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&UserId=${EmpId}`,
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
+                    Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
                 },
             });
 
@@ -638,7 +779,6 @@ const AttendanceNewScreen = ({
                 setAttendanceData(response.data);
             }
         } catch (e) {
-
             console.error("Error fetching attendance data:", e);
         }
     };
@@ -690,17 +830,17 @@ const AttendanceNewScreen = ({
         setAddEmployeeDialogOpen(false);
     };
 
-    const data = () => setViewMode('employee');
-    const dataDepartment = () => setViewMode('department');
+    const data = () => setViewMode("employee");
+    const dataDepartment = () => setViewMode("department");
     // const dashboard=()=>setViewMode('default')
 
     const dashboard = () => {
         setFilters((prev) => ({
             ...prev,
-            FromDate: prev.FromDate || new Date().toISOString().split('T')[0],
-            ToDate: prev.ToDate || new Date().toISOString().split('T')[0],
+            FromDate: prev.FromDate || new Date().toISOString().split("T")[0],
+            ToDate: prev.ToDate || new Date().toISOString().split("T")[0],
         }));
-        setViewMode('default');
+        setViewMode("default");
     };
 
     const ExpendableComponent = ({ row }) => {
@@ -735,24 +875,6 @@ const AttendanceNewScreen = ({
                                 textAlign: "left",
                             }}
                         >
-                            TotalMaleEmployees
-                        </th>
-                        <th
-                            style={{
-                                border: "1px solid #ccc",
-                                padding: "8px",
-                                textAlign: "left",
-                            }}
-                        >
-                            TotalFemaleEmployees
-                        </th>
-                        <th
-                            style={{
-                                border: "1px solid #ccc",
-                                padding: "8px",
-                                textAlign: "left",
-                            }}
-                        >
                             Total Employees
                         </th>
                         <th
@@ -762,64 +884,58 @@ const AttendanceNewScreen = ({
                                 textAlign: "left",
                             }}
                         >
-                            TotalMalePresentToday
-                        </th>
-                        <th
-                            style={{
-                                border: "1px solid #ccc",
-                                padding: "8px",
-                                textAlign: "left",
-                            }}
-                        >
-                            TotalFemalePresentToday
-                        </th>
-                        <th
-                            style={{
-                                border: "1px solid #ccc",
-                                padding: "8px",
-                                textAlign: "left",
-                            }}
-                        >
-                            TotalPresentToday
+                            Present Today
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     {departments && departments.length > 0 ? (
                         departments.map((data, index) => (
-                            <React.Fragment key={index}>
-                                <tr
-                                    onClick={() => toggleExpand(data.Department)}
-
-                                >
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.Department || "-"}
-
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalMaleEmployees || "-"}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalFemaleEmployees || "-"}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalEmployees || "-"}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalMalePresentToday || "-"}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalFemalePresentToday || "-"}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                                        {data?.TotalPresentToday || "-"}
-                                    </td>
-                                </tr>
-                            </React.Fragment>
+                            <tr key={index} onClick={() => toggleExpand(data.Department)}>
+                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                                    {data?.Department || "-"}
+                                </td>
+                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <span
+                                            style={{
+                                                fontSize: "1.25rem",
+                                                fontWeight: "bold",
+                                                marginRight: "100px", // Increased from 15px to 100px
+                                                minWidth: "60px", // Ensures consistent spacing
+                                            }}
+                                        >
+                                            {data?.TotalEmployees || "-"}
+                                        </span>
+                                        <span style={{ fontSize: "1rem" }}>
+                                            Male / Female: {data?.TotalMaleEmployees || "0"} /{" "}
+                                            {data?.TotalFemaleEmployees || "0"}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <span
+                                            style={{
+                                                fontSize: "1.25rem",
+                                                fontWeight: "bold",
+                                                marginRight: "100px", // Increased from 15px to 100px
+                                                minWidth: "60px", // Ensures consistent spacing
+                                            }}
+                                        >
+                                            {data?.TotalPresentToday || "-"}
+                                        </span>
+                                        <span style={{ fontSize: "1rem" }}>
+                                            Male / Female: {data?.TotalMalePresentToday || "0"} /{" "}
+                                            {data?.TotalFemalePresentToday || "0"}
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="7" style={{ padding: "8px" }}>
+                            <td colSpan="3" style={{ padding: "8px" }}>
                                 No Departments Available
                             </td>
                         </tr>
@@ -839,21 +955,31 @@ const AttendanceNewScreen = ({
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${companyId}`,
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
-            }
+                Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
+            },
         })
-            .then(data => {
+            .then((data) => {
                 if (data.success) {
                     let filteredEmployees = [];
 
-                    if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) === 1) {
+                    if (
+                        Number(userTypeId) === 1 ||
+                        Number(userTypeId) === 0 ||
+                        Number(Add_Rights) === 1
+                    ) {
                         filteredEmployees = data.data;
-                        setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
+                        setFilter((prev) => ({ ...prev, EmpId: 0, Name: "ALL" }));
                         setIsDropdownDisabled(false);
                         setDropdownPlaceholder("ALL");
                     } else {
-                        filteredEmployees = data.data.filter(employee => employee.UserId === userId);
-                        setFilter(prev => ({ ...prev, EmpId: userId, Name: storage?.Name }));
+                        filteredEmployees = data.data.filter(
+                            (employee) => employee.UserId === userId
+                        );
+                        setFilter((prev) => ({
+                            ...prev,
+                            EmpId: userId,
+                            Name: storage?.Name,
+                        }));
                         setIsDropdownDisabled(true);
                         setDropdownPlaceholder(storage?.Name);
                     }
@@ -861,16 +987,16 @@ const AttendanceNewScreen = ({
                     setEmployees(filteredEmployees);
                 }
             })
-            .catch(e => console.error("Error fetching employees:", e))
+            .catch((e) => console.error("Error fetching employees:", e))
             .finally(() => {
                 if (loadingOff) loadingOff();
-                setReload(prev => !prev);
+                setReload((prev) => !prev);
             });
     };
 
     const handleRefreshData = () => {
-        window.location.reload()
-    }
+        window.location.reload();
+    };
 
     const ExpendableComponent1 = ({ row }) => {
         let departments = [];
@@ -910,7 +1036,6 @@ const AttendanceNewScreen = ({
 
         const attendanceMap = new Map();
         monthlyAttendance.forEach((item) => {
-
             const key = `${item.MonthNumber}-${item.YearNumber}`;
             attendanceMap.set(key, item.UniqueEmployeeDays ?? 0);
         });
@@ -918,7 +1043,6 @@ const AttendanceNewScreen = ({
         return (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ display: "flex", gap: "20px" }}>
-
                     <table
                         style={{
                             width: "60%",
@@ -1034,28 +1158,45 @@ const AttendanceNewScreen = ({
         fetchLink({
             address: `masters/users/employee/dropDown?Company_id=${companyId}`,
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
-            }
-        }).then(data => {
-            if (data.success) {
-                let filteredEmployees = [];
+                Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
+            },
+        })
+            .then((data) => {
+                if (data.success) {
+                    let filteredEmployees = [];
 
-                if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) === 1) {
-                    filteredEmployees = data.data;
-                    setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
-                    setIsDropdownDisabled(false);
-                    setDropdownPlaceholder("ALL");
-                } else {
-                    filteredEmployees = data.data.filter(employee => employee.UserId === userId);
-                    setFilter(prev => ({ ...prev, EmpId: userId, Name: storage?.Name }));
-                    setIsDropdownDisabled(true);
-                    setDropdownPlaceholder(storage?.Name);
+                    if (
+                        Number(userTypeId) === 1 ||
+                        Number(userTypeId) === 0 ||
+                        Number(Add_Rights) === 1
+                    ) {
+                        filteredEmployees = data.data;
+                        setFilter((prev) => ({ ...prev, EmpId: 0, Name: "ALL" }));
+                        setIsDropdownDisabled(false);
+                        setDropdownPlaceholder("ALL");
+                    } else {
+                        filteredEmployees = data.data.filter(
+                            (employee) => employee.UserId === userId
+                        );
+                        setFilter((prev) => ({
+                            ...prev,
+                            EmpId: userId,
+                            Name: storage?.Name,
+                        }));
+                        setIsDropdownDisabled(true);
+                        setDropdownPlaceholder(storage?.Name);
+                    }
+
+                    setEmployees(filteredEmployees);
                 }
-
-                setEmployees(filteredEmployees);
-            }
-        }).catch(e => console.error("Error fetching employees:", e));
-    }, [storage?.UserTypeId, storage?.UserId, storage?.Company_id, storage?.Name]);
+            })
+            .catch((e) => console.error("Error fetching employees:", e));
+    }, [
+        storage?.UserTypeId,
+        storage?.UserId,
+        storage?.Company_id,
+        storage?.Name,
+    ]);
 
     useEffect(() => {
         const companyId = storage?.Company_id;
@@ -1125,23 +1266,30 @@ const AttendanceNewScreen = ({
     }, [saleOrders]);
 
     const filteredData = React.useMemo(() => {
-        if (!departmentWiseCounts.length) return [];
+        if (!departmentWiseCounts || !departmentWiseCounts.length) return [];
 
-        const filteredDepartments = departmentWiseCounts.filter(item => {
-            return selectedDepartment ? item.Department === selectedDepartment.label : true;
+        const filteredDepartments = departmentWiseCounts.filter((item) => {
+            return selectedDepartment
+                ? item.Department === selectedDepartment.label
+                : true;
         });
 
-        return filteredDepartments.map(dept => {
+        return filteredDepartments.map((dept) => {
+            const employeeList = dept.employees || dept.Employees || [];
+
             const filteredEmployees = selectedEmployee
-                ? dept.Employees.filter(emp => {
+                ? employeeList.filter((emp) => {
                     if (!emp.Emp_Name) return false;
-                    return emp.Emp_Name.trim().toLowerCase() === selectedEmployee.label.trim().toLowerCase();
+                    return (
+                        emp.Emp_Name.trim().toLowerCase() ===
+                        selectedEmployee.label.trim().toLowerCase()
+                    );
                 })
-                : dept.Employees;
+                : employeeList;
 
             return {
                 ...dept,
-                Employees: filteredEmployees
+                Employees: filteredEmployees,
             };
         });
     }, [departmentWiseCounts, selectedDepartment, selectedEmployee]);
@@ -1149,9 +1297,8 @@ const AttendanceNewScreen = ({
     return (
         <>
             {Number(userTypeId) === 0 || Number(userTypeId) === 1 ? (
-
                 <>
-                    {viewMode === 'default' && (
+                    {viewMode === "default" && (
                         <FilterableTable
                             title={
                                 <div className="d-flex align-items-center">
@@ -1182,7 +1329,9 @@ const AttendanceNewScreen = ({
                                         <label>From Date</label>
                                         <input
                                             type="date"
-                                            onChange={e => setFilters({ ...filters, FromDate: e.target.value })}
+                                            onChange={(e) =>
+                                                setFilters({ ...filters, FromDate: e.target.value })
+                                            }
                                             value={filters?.FromDate}
                                             className="cus-inpt w-auto p-1"
                                         />
@@ -1192,7 +1341,9 @@ const AttendanceNewScreen = ({
                                         <label>To Date</label>
                                         <input
                                             type="date"
-                                            onChange={e => setFilters({ ...filters, ToDate: e.target.value })}
+                                            onChange={(e) =>
+                                                setFilters({ ...filters, ToDate: e.target.value })
+                                            }
                                             value={filters?.ToDate}
                                             className="cus-inpt w-auto p-1"
                                         />
@@ -1212,13 +1363,42 @@ const AttendanceNewScreen = ({
                             dataArray={saleOrders}
                             EnableSerialNumber
                             columns={[
-                                createCol("TotalDepartments", "string", "Department"),
-                                createCol("TotalMaleEmployees", "number", "Total Male Employees"),
-                                createCol("TotalFemaleEmployees", "number", "Total Female Employees"),
-                                createCol("TotalEmployees", "number", "Total Employees"),
-                                createCol("TotalMalePresentToday", "number", "Total Male Present Today"),
-                                createCol("TotalFemalePresentToday", "number", "Total Female Present Today"),
-                                createCol("TotalPresentToday", "number", "Total Present Today"),
+                                {
+                                    isVisible: 1,
+                                    ColumnHeader: "Tot.Emp",
+                                    isCustomCell: true,
+                                    Cell: ({ row }) => {
+                                        const total = row?.TotalEmployees ?? 0;
+                                        const male = row?.TotalMaleEmployees ?? 0;
+                                        const female = row?.TotalFemaleEmployees ?? 0;
+                                        return (
+                                            <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>
+                                                <div>{total}</div>
+                                                <div style={{ fontSize: "1rem", fontWeight: "normal" }}>
+                                                    Male / Female: {male} / {female}
+                                                </div>
+                                            </div>
+                                        );
+                                    },
+                                },
+                                {
+                                    isVisible: 1,
+                                    ColumnHeader: "Tot.Pre.Today",
+                                    isCustomCell: true,
+                                    Cell: ({ row }) => {
+                                        const total = row?.TotalPresentToday ?? 0;
+                                        const male = row?.TotalMalePresentToday ?? 0;
+                                        const female = row?.TotalFemalePresentToday ?? 0;
+                                        return (
+                                            <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>
+                                                <div>{total}</div>
+                                                <div style={{ fontSize: "1rem", fontWeight: "normal" }}>
+                                                    Male / Female: {male} / {female}
+                                                </div>
+                                            </div>
+                                        );
+                                    },
+                                },
                             ]}
                             isExpendable={true}
                             tableMaxHeight={550}
@@ -1226,35 +1406,44 @@ const AttendanceNewScreen = ({
                         />
                     )}
 
-                    {viewMode === 'employee' && (
+                    {viewMode === "employee" && (
                         <>
                             <Dialog
                                 open={addEmployeeDialogOpen}
                                 maxWidth="md"
                                 PaperProps={{
-                                    style: { width: '500px', height: '500px' },
+                                    style: { width: "500px", height: "500px" },
                                 }}
                             >
                                 <DialogTitle>Add Employee</DialogTitle>
                                 <DialogContent>
                                     <Autocomplete
                                         multiple
-                                        options={[{ UserId: 'all', Name: 'ALL' }, ...dropdownEmployees]}
+                                        options={[
+                                            { UserId: "all", Name: "ALL" },
+                                            ...dropdownEmployees,
+                                        ]}
                                         getOptionLabel={(option) => option.Name}
-                                        isOptionEqualToValue={(option, value) => option.UserId === value.UserId}
+                                        isOptionEqualToValue={(option, value) =>
+                                            option.UserId === value.UserId
+                                        }
                                         onChange={(event, value) => {
-                                            if (value.some((selected) => selected.UserId === 'all')) {
+                                            if (value.some((selected) => selected.UserId === "all")) {
                                                 setSelectedEmployees(dropdownEmployees);
                                             } else {
-                                                const uniqueValues = value.filter((val, index, self) =>
-                                                    index === self.findIndex((t) => t.UserId === val.UserId)
+                                                const uniqueValues = value.filter(
+                                                    (val, index, self) =>
+                                                        index ===
+                                                        self.findIndex((t) => t.UserId === val.UserId)
                                                 );
                                                 setSelectedEmployees(uniqueValues);
                                             }
                                         }}
-                                        value={selectedEmployees.some((user) => user.UserId === 'all')
-                                            ? [{ UserId: 'all', Name: 'ALL' }]
-                                            : selectedEmployees}
+                                        value={
+                                            selectedEmployees.some((user) => user.UserId === "all")
+                                                ? [{ UserId: "all", Name: "ALL" }]
+                                                : selectedEmployees
+                                        }
                                         renderInput={(params) => (
                                             <TextField {...params} placeholder="Employees" />
                                         )}
@@ -1275,16 +1464,29 @@ const AttendanceNewScreen = ({
                                 </DialogActions>
                             </Dialog>
                             <Card>
-                                <CardContent sx={{ minHeight: '50vh' }}>
+                                <CardContent sx={{ minHeight: "50vh" }}>
                                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
                                         <h6 className="fa-18">
-                                            <Button size="small mx-2" variant="outlined" onClick={() => dashboard()}>
+                                            <Button
+                                                size="small mx-2"
+                                                variant="outlined"
+                                                onClick={() => dashboard()}
+                                            >
                                                 Dashboard
                                             </Button>
-                                            <Button size="small mx-2" variant="outlined" disabled onClick={() => data()}>
+                                            <Button
+                                                size="small mx-2"
+                                                variant="outlined"
+                                                disabled
+                                                onClick={() => data()}
+                                            >
                                                 EMPLOYEE
                                             </Button>
-                                            <Button size="small mx-2" variant="outlined" onClick={() => dataDepartment()}>
+                                            <Button
+                                                size="small mx-2"
+                                                variant="outlined"
+                                                onClick={() => dataDepartment()}
+                                            >
                                                 Department
                                             </Button>
                                         </h6>
@@ -1306,16 +1508,12 @@ const AttendanceNewScreen = ({
                                             </Button>
                                             <Button
                                                 onClick={() => {
-                                                    setAddEmployeeDialogOpen(true)
+                                                    setAddEmployeeDialogOpen(true);
                                                 }}
                                             >
                                                 Cummulative Monthly Report
                                             </Button>
-                                            <Button
-                                                onClick={handleSummaryDownload}
-                                            >
-                                                Summary
-                                            </Button>
+                                            <Button onClick={handleSummaryDownload}>Summary</Button>
                                         </div>
                                     </div>
 
@@ -1324,8 +1522,20 @@ const AttendanceNewScreen = ({
                                             <label>Employee</label>
                                             <Select
                                                 value={{ value: filter?.EmpId, label: filter?.Name }}
-                                                onChange={(e) => setFilter({ ...filter, EmpId: e.value, Name: e.label })}
-                                                options={[{ value: 0, label: `ALL` }, ...employees.map(obj => ({ value: obj?.UserId, label: obj?.Name }))]}
+                                                onChange={(e) =>
+                                                    setFilter({
+                                                        ...filter,
+                                                        EmpId: e.value,
+                                                        Name: e.label,
+                                                    })
+                                                }
+                                                options={[
+                                                    { value: 0, label: `ALL` },
+                                                    ...employees.map((obj) => ({
+                                                        value: obj?.UserId,
+                                                        label: obj?.Name,
+                                                    })),
+                                                ]}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
                                                 placeholder={dropdownPlaceholder}
@@ -1349,7 +1559,6 @@ const AttendanceNewScreen = ({
                                             >
                                                 <Refresh fontSize="medium" />
                                             </button>
-
                                         </div>
                                     </div>
 
@@ -1359,288 +1568,29 @@ const AttendanceNewScreen = ({
                                             {
                                                 isCustomCell: true,
                                                 Cell: ({ row }) => row.username,
-                                                ColumnHeader: 'Employee',
+                                                ColumnHeader: "Employee",
                                                 isVisible: 1,
-                                                width: '20%',
+                                                width: "20%",
                                                 CellProps: {
                                                     sx: {
-                                                        padding: '10px',
-                                                        textAlign: 'left',
-                                                        fontWeight: 'bold',
+                                                        padding: "10px",
+                                                        textAlign: "left",
+                                                        fontWeight: "bold",
                                                     },
                                                 },
                                             },
                                             {
                                                 isCustomCell: true,
-                                                Cell: ({ row }) => formatAttendanceDate(row.LogDate || '--'),
-                                                ColumnHeader: 'Log Date',
+                                                Cell: ({ row }) =>
+                                                    formatAttendanceDate(row.LogDate || "--"),
+                                                ColumnHeader: "Log Date",
                                                 isVisible: 1,
-                                                width: '20%',
+                                                width: "20%",
                                                 CellProps: {
                                                     sx: {
-                                                        padding: '10px',
-                                                        textAlign: 'center',
-                                                        color: 'gray',
-                                                    },
-                                                },
-                                            },
-                                            ...punchColumns
-                                        ]}
-                                        EnableSerialNumber
-                                        CellSize="small"
-                                        disablePagination={false}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </>
-                    )}
-
-                    {viewMode === 'department' && (
-                        <>
-                            {(() => {
-                                let departmentWiseCounts = [];
-                                const countsStr = saleOrders?.[0]?.DepartmentWiseCounts;
-
-                                if (countsStr) {
-                                    try {
-                                        const parsed = JSON.parse(countsStr);
-                                        departmentWiseCounts = Array.isArray(parsed) ? parsed : [];
-                                    } catch (err) {
-                                        console.error("Failed to parse DepartmentWiseCounts JSON:", err);
-                                    }
-                                }
-
-                                return (
-                                    <>
-                                        <FilterableTable
-                                            title={
-                                                <div className="d-flex flex-column">
-                                                    <div className="d-flex align-items-center mb-3">
-                                                        <Button
-                                                            size="small mx-2"
-                                                            variant="outlined"
-                                                            onClick={() => dashboard()}
-                                                        >
-                                                            Dashboard
-                                                        </Button>
-                                                        <Button
-                                                            size="small mx-2"
-                                                            variant="outlined"
-                                                            onClick={() => data()}
-                                                        >
-                                                            Employee
-                                                        </Button>
-                                                        <Button
-                                                            size="small mx-2"
-                                                            variant="outlined"
-                                                            disabled
-                                                            onClick={() => dataDepartment()}
-                                                        >
-                                                            Department
-                                                        </Button>
-                                                    </div>
-
-                                                    <div className="row align-items-end">
-                                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                                                            <label>Department</label>
-                                                            <Select
-                                                                options={departments}
-                                                                isSearchable
-                                                                placeholder="ALL"
-                                                                value={selectedDepartment}
-                                                                styles={customSelectStyles}
-                                                                onChange={handleDepartmentChange}
-                                                            />
-                                                        </div>
-
-                                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                                                            <label>Employee</label>
-                                                            <Select
-                                                                options={employees}
-                                                                isSearchable
-                                                                placeholder="ALL"
-                                                                value={selectedEmployee}
-                                                                styles={customSelectStyles}
-                                                                onChange={setSelectedEmployee}
-                                                                isDisabled={!selectedDepartment}
-                                                            />
-                                                        </div>
-
-                                                        <div className="col-auto p-2 d-flex align-items-center">
-                                                            <button
-                                                                className="btn btn-link ms-2 p-0 mb-2"
-                                                                onClick={handleRefreshData}
-                                                                style={{ minWidth: '24px' }}
-                                                                title="Refresh Departments & Employees"
-                                                            >
-                                                                <Refresh fontSize="small" />
-                                                            </button>
-
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                            }
-                                            dataArray={filteredData}
-                                            EnableSerialNumber
-                                            columns={[
-                                                createCol("Department", "string", "Department"),
-                                                createCol("TotalMaleEmployees", "number", "Total Male Employees"),
-                                                createCol("TotalFemaleEmployees", "number", "Total Female Employees"),
-                                                createCol("TotalEmployees", "number", "Total Employees"),
-                                                createCol("TotalMalePresentToday", "number", "Total Male Present Today"),
-                                                createCol("TotalFemalePresentToday", "number", "Total Female Present Today"),
-                                                createCol("TotalPresentToday", "number", "Total Present Today"),
-                                            ]}
-                                            isExpendable={true}
-                                            tableMaxHeight={550}
-                                            expandableComp={ExpendableComponent1}
-                                        />
-                                    </>
-                                );
-                            })()}
-                        </>
-                    )}
-                </>
-            ) :
-                (
-
-                    (
-                        <>
-                            <Dialog
-                                open={addEmployeeDialogOpen}
-                                maxWidth="md"
-                                PaperProps={{
-                                    style: { width: '500px', height: '500px' },
-                                }}
-                            >
-                                <DialogTitle>Add Employee</DialogTitle>
-                                <DialogContent>
-                                    <Autocomplete
-                                        multiple
-                                        options={[{ UserId: 'all', Name: 'ALL' }, ...dropdownEmployees]}
-                                        getOptionLabel={(option) => option.Name}
-                                        isOptionEqualToValue={(option, value) => option.UserId === value.UserId}
-                                        value={
-                                            selectedEmployees.some((user) => user.UserId === 'all')
-                                                ? [{ UserId: 'all', Name: 'ALL' }]
-                                                : selectedEmployees
-                                        }
-                                        onChange={(event, value) => {
-                                            if (value.some((selected) => selected.UserId === 'all')) {
-                                                setSelectedEmployees(dropdownEmployees);
-                                            } else {
-                                                const uniqueValues = value.filter(
-                                                    (val, index, self) => index === self.findIndex((t) => t.UserId === val.UserId)
-                                                );
-                                                setSelectedEmployees(uniqueValues);
-                                            }
-                                        }}
-                                        renderInput={(params) => (
-                                            <TextField {...params} placeholder="Employees" />
-                                        )}
-                                    />
-                                </DialogContent>
-                                <DialogActions className="d-flex justify-content-between flex-wrap">
-                                    <Button variant="outlined" onClick={() => setSelectedEmployees([])}>
-                                        Clear
-                                    </Button>
-                                    <span>
-                                        <Button onClick={handleAddEmployeeClose}>Cancel</Button>
-                                        <Button onClick={handleOverallWithPunch}>Download</Button>
-                                    </span>
-                                </DialogActions>
-                            </Dialog>
-
-                            <Card>
-                                <CardContent sx={{ minHeight: '50vh' }}>
-                                    <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
-                                        <h6 className="fa-18">
-
-                                            <Button size="small" variant="outlined" className="mx-2" >
-                                                EMPLOYEE
-                                            </Button>
-
-                                        </h6>
-
-                                        {(userTypeId === 1 || userTypeId === 0) && (
-                                            <div className="d-flex align-items-center justify-content-start gap-3">
-                                                <Button
-                                                    onClick={handleDownload}
-                                                    variant="contained"
-                                                    disabled={filter?.EmpId === 0 || filter?.Name === 'ALL'}
-                                                >
-                                                    Individual Report
-                                                </Button>
-                                                <Button onClick={() => handleOverallDownload(filter?.From, filter?.To)}>
-                                                    Monthly Report
-                                                </Button>
-                                                <Button onClick={() => setAddEmployeeDialogOpen(true)}>
-                                                    Cumulative Monthly Report
-                                                </Button>
-                                                <Button onClick={handleSummaryDownload}>
-                                                    Summary
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="px-2 row mb-4">
-                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                                            <label>Employee</label>
-                                            <Select
-                                                value={{ value: filter?.EmpId, label: filter?.Name }}
-                                                onChange={(e) => setFilter({ ...filter, EmpId: e.value, Name: e.label })}
-                                                options={[
-                                                    { value: 0, label: 'ALL' },
-                                                    ...employees.map((obj) => ({ value: obj.UserId, label: obj.Name })),
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable
-                                                placeholder={dropdownPlaceholder}
-                                                isDisabled={isDropdownDisabled}
-                                            />
-                                        </div>
-
-                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-                                            <label>From</label>
-                                            <input
-                                                type="month"
-                                                className="cus-inpt"
-                                                value={filter?.From?.slice(0, 7)}
-                                                onChange={handleFromChange}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <FilterableTable
-                                        dataArray={attendanceData}
-                                        columns={[
-                                            {
-                                                isCustomCell: true,
-                                                Cell: ({ row }) => row.username,
-                                                ColumnHeader: 'Employee',
-                                                isVisible: 1,
-                                                width: '20%',
-                                                CellProps: {
-                                                    sx: {
-                                                        padding: '10px',
-                                                        textAlign: 'left',
-                                                        fontWeight: 'bold',
-                                                    },
-                                                },
-                                            },
-                                            {
-                                                isCustomCell: true,
-                                                Cell: ({ row }) => formatAttendanceDate(row.LogDate || '--'),
-                                                ColumnHeader: 'Log Date',
-                                                isVisible: 1,
-                                                width: '20%',
-                                                CellProps: {
-                                                    sx: {
-                                                        padding: '10px',
-                                                        textAlign: 'center',
-                                                        color: 'gray',
+                                                        padding: "10px",
+                                                        textAlign: "center",
+                                                        color: "gray",
                                                     },
                                                 },
                                             },
@@ -1653,777 +1603,270 @@ const AttendanceNewScreen = ({
                                 </CardContent>
                             </Card>
                         </>
-                    )
-                )
-            }
+                    )}
+
+                    {viewMode === "department" && (
+                        <FilterableTable
+                            title={
+                                <div className="d-flex flex-column">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <Button
+                                            size="small mx-2"
+                                            variant="outlined"
+                                            onClick={() => dashboard()}
+                                        >
+                                            Dashboard
+                                        </Button>
+                                        <Button
+                                            size="small mx-2"
+                                            variant="outlined"
+                                            onClick={() => data()}
+                                        >
+                                            Employee
+                                        </Button>
+                                        <Button
+                                            size="small mx-2"
+                                            variant="outlined"
+                                            disabled
+                                            onClick={() => dataDepartment()}
+                                        >
+                                            Department
+                                        </Button>
+                                    </div>
+
+                                    <div className="row align-items-end">
+                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                            <label>Department</label>
+                                            <Select
+                                                options={departments}
+                                                isSearchable
+                                                placeholder="ALL"
+                                                value={selectedDepartment}
+                                                styles={customSelectStyles}
+                                                onChange={handleDepartmentChange}
+                                            />
+                                        </div>
+
+                                        <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                            <label>Employee</label>
+                                            <Select
+                                                options={employees}
+                                                isSearchable
+                                                placeholder="ALL"
+                                                value={selectedEmployee}
+                                                styles={customSelectStyles}
+                                                onChange={setSelectedEmployee}
+                                                isDisabled={!selectedDepartment}
+                                            />
+                                        </div>
+                                        <div className="col-auto p-2 d-flex align-items-center">
+                                            <button
+                                                className="btn btn-link ms-2 p-0 mb-2"
+                                                onClick={handleRefreshData}
+                                                style={{ minWidth: "24px" }}
+                                                title="Refresh Departments & Employees"
+                                            >
+                                                <Refresh fontSize="small" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            dataArray={filteredData}
+                            EnableSerialNumber
+                            columns={[
+                                createCol("Department", "string", "Department"),
+                                createCol(
+                                    "TotalMaleEmployees",
+                                    "number",
+                                    "Total Male Employees"
+                                ),
+                                createCol(
+                                    "TotalFemaleEmployees",
+                                    "number",
+                                    "Total Female Employees"
+                                ),
+                                createCol("TotalEmployees", "number", "Total Employees"),
+                                createCol(
+                                    "TotalMalePresentToday",
+                                    "number",
+                                    "Total Male Present Today"
+                                ),
+                                createCol(
+                                    "TotalFemalePresentToday",
+                                    "number",
+                                    "Total Female Present Today"
+                                ),
+                                createCol("TotalPresentToday", "number", "Total Present Today"),
+                            ]}
+                            isExpendable={true}
+                            tableMaxHeight={550}
+                            expandableComp={ExpendableComponent1}
+                        />
+                    )}
+                </>
+            ) : (
+                <>
+                    <Dialog
+                        open={addEmployeeDialogOpen}
+                        maxWidth="md"
+                        PaperProps={{
+                            style: { width: "500px", height: "500px" },
+                        }}
+                    >
+                        <DialogTitle>Add Employee</DialogTitle>
+                        <DialogContent>
+                            <Autocomplete
+                                multiple
+                                options={[{ UserId: "all", Name: "ALL" }, ...dropdownEmployees]}
+                                getOptionLabel={(option) => option.Name}
+                                isOptionEqualToValue={(option, value) =>
+                                    option.UserId === value.UserId
+                                }
+                                value={
+                                    selectedEmployees.some((user) => user.UserId === "all")
+                                        ? [{ UserId: "all", Name: "ALL" }]
+                                        : selectedEmployees
+                                }
+                                onChange={(event, value) => {
+                                    if (value.some((selected) => selected.UserId === "all")) {
+                                        setSelectedEmployees(dropdownEmployees);
+                                    } else {
+                                        const uniqueValues = value.filter(
+                                            (val, index, self) =>
+                                                index === self.findIndex((t) => t.UserId === val.UserId)
+                                        );
+                                        setSelectedEmployees(uniqueValues);
+                                    }
+                                }}
+                                renderInput={(params) => (
+                                    <TextField {...params} placeholder="Employees" />
+                                )}
+                            />
+                        </DialogContent>
+                        <DialogActions className="d-flex justify-content-between flex-wrap">
+                            <Button
+                                variant="outlined"
+                                onClick={() => setSelectedEmployees([])}
+                            >
+                                Clear
+                            </Button>
+                            <span>
+                                <Button onClick={handleAddEmployeeClose}>Cancel</Button>
+                                <Button onClick={handleOverallWithPunch}>Download</Button>
+                            </span>
+                        </DialogActions>
+                    </Dialog>
+
+                    <Card>
+                        <CardContent sx={{ minHeight: "50vh" }}>
+                            <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
+                                <h6 className="fa-18">
+                                    <Button size="small" variant="outlined" className="mx-2">
+                                        EMPLOYEE
+                                    </Button>
+                                </h6>
+
+                                {(userTypeId === 1 || userTypeId === 0) && (
+                                    <div className="d-flex align-items-center justify-content-start gap-3">
+                                        <Button
+                                            onClick={handleDownload}
+                                            variant="contained"
+                                            disabled={filter?.EmpId === 0 || filter?.Name === "ALL"}
+                                        >
+                                            Individual Report
+                                        </Button>
+                                        <Button
+                                            onClick={() =>
+                                                handleOverallDownload(filter?.From, filter?.To)
+                                            }
+                                        >
+                                            Monthly Report
+                                        </Button>
+                                        <Button onClick={() => setAddEmployeeDialogOpen(true)}>
+                                            Cumulative Monthly Report
+                                        </Button>
+                                        <Button onClick={handleSummaryDownload}>Summary</Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="px-2 row mb-4">
+                                <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <label>Employee</label>
+                                    <Select
+                                        value={{ value: filter?.EmpId, label: filter?.Name }}
+                                        onChange={(e) =>
+                                            setFilter({ ...filter, EmpId: e.value, Name: e.label })
+                                        }
+                                        options={[
+                                            { value: 0, label: "ALL" },
+                                            ...employees.map((obj) => ({
+                                                value: obj.UserId,
+                                                label: obj.Name,
+                                            })),
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable
+                                        placeholder={dropdownPlaceholder}
+                                        isDisabled={isDropdownDisabled}
+                                    />
+                                </div>
+
+                                <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <label>From</label>
+                                    <input
+                                        type="month"
+                                        className="cus-inpt"
+                                        value={filter?.From?.slice(0, 7)}
+                                        onChange={handleFromChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <FilterableTable
+                                dataArray={attendanceData}
+                                columns={[
+                                    {
+                                        isCustomCell: true,
+                                        Cell: ({ row }) => row.username,
+                                        ColumnHeader: "Employee",
+                                        isVisible: 1,
+                                        width: "20%",
+                                        CellProps: {
+                                            sx: {
+                                                padding: "10px",
+                                                textAlign: "left",
+                                                fontWeight: "bold",
+                                            },
+                                        },
+                                    },
+                                    {
+                                        isCustomCell: true,
+                                        Cell: ({ row }) =>
+                                            formatAttendanceDate(row.LogDate || "--"),
+                                        ColumnHeader: "Log Date",
+                                        isVisible: 1,
+                                        width: "20%",
+                                        CellProps: {
+                                            sx: {
+                                                padding: "10px",
+                                                textAlign: "center",
+                                                color: "gray",
+                                            },
+                                        },
+                                    },
+                                    ...punchColumns,
+                                ]}
+                                EnableSerialNumber
+                                CellSize="small"
+                                disablePagination={false}
+                            />
+                        </CardContent>
+                    </Card>
+                </>
+            )}
         </>
-    )
-}
+    );
+};
 export default AttendanceNewScreen;
-
-
-
-// import React, { useState, useEffect } from "react";
-// import {
-//     Card, CardContent, Button, Chip, Dialog,
-//     DialogTitle,
-//     DialogContent,
-//     DialogActions,
-//     Autocomplete,
-//     TextField,
-// } from "@mui/material";
-// import Select from "react-select";
-// import { customSelectStyles } from "../../Components/tablecolumn";
-// import { fetchLink } from '../../Components/fetchComponent';
-// import FilterableTable from "../../Components/filterableTable2";
-// import * as XLSX from 'xlsx';
-// import { MyContext } from "../../Components/context/contextProvider";
-// import { useContext } from "react";
-// import { toast } from "react-toastify";
-
-// const FingerPrintAttendanceReport = (loadingOn, loadingOff) => {
-
-//     const [loading, setLoading] = useState(true);
-//     const storage = JSON.parse(localStorage.getItem('user'));
-
-//     const userTypeId = storage?.UserTypeId;
-//     const parseData = storage;
-//     const [attendanceData, setAttendanceData] = useState([]);
-//     const [dropdownEmployees, setDropdownEmployees] = useState([]);
-//     const { contextObj } = useContext(MyContext);
-//     const [selectedEmployees, setSelectedEmployees] = useState([]);
-//     const Add_Rights = contextObj?.Add_Rights;
-
-
-//     const getCurrentMonthYear = () => {
-//         const date = new Date();
-//         const year = date.getFullYear();
-//         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-//         return `${year}-${month}`;
-//     };
-
-//     const handleAddEmployeeClose = () => {
-//         setAddEmployeeDialogOpen(false);
-
-//     };
-
-//     const initialValue = {
-//         From: getCurrentMonthYear(),
-//         To: getCurrentMonthYear(),
-//         EmpId: 0,
-//         Name: '',
-//     };
-
-//     const [addEmployeeDialogOpen, setAddEmployeeDialogOpen] = useState(false);
-//     const [filter, setFilter] = useState(initialValue);
-//     const [employees, setEmployees] = useState([]);
-//     const [isDropdownDisabled, setIsDropdownDisabled] = useState(false);
-//     const [dropdownPlaceholder, setDropdownPlaceholder] = useState("ALL");
-//     const [debouncedFilter, setDebouncedFilter] = useState(filter);
-
-//     useEffect(() => {
-//         const timer = setTimeout(() => {
-//             setDebouncedFilter(filter);
-//         }, 500);
-
-//         return () => clearTimeout(timer);
-//     }, [filter]);
-
-//     useEffect(() => {
-//         const userTypeId = storage?.UserTypeId;
-//         const userId = storage?.UserId;
-//         const companyId = storage?.Company_id;
-
-//         fetchLink({
-//             address: `masters/users/employee/dropDown?Company_id=${companyId}`,
-//             headers: {
-//                 Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
-//             }
-//         }).then(data => {
-//             if (data.success) {
-//                 let filteredEmployees = [];
-
-//                 if (Number(userTypeId) === 1 || Number(userTypeId) === 0 || Number(Add_Rights) === 1) {
-//                     filteredEmployees = data.data;
-//                     setFilter(prev => ({ ...prev, EmpId: 0, Name: 'ALL' }));
-//                     setIsDropdownDisabled(false);
-//                     setDropdownPlaceholder("ALL");
-//                 } else {
-//                     filteredEmployees = data.data.filter(employee => employee.UserId === userId);
-//                     setFilter(prev => ({ ...prev, EmpId: userId, Name: storage?.Name }));
-//                     setIsDropdownDisabled(true);
-//                     setDropdownPlaceholder(storage?.Name);
-//                 }
-
-//                 setEmployees(filteredEmployees);
-//             }
-//         }).catch(e => console.error("Error fetching employees:", e));
-//     }, [storage?.UserTypeId, storage?.UserId, storage?.Company_id, storage?.Name]);
-
-//     const fetchAttendanceData = async (From, EmpId) => {
-//         try {
-//             const userTypeId = storage?.UserTypeId;
-//             const [year, month] = From.split("-");
-
-//             const startDate = `${year}-${month}-01`;
-
-//             const dayCount = getDaysInMonth(`${year}-${month}`);
-
-//             const endDate = `${year}-${month}-${dayCount}`;
-
-//             const response = await fetchLink({
-//                 address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&UserId=${EmpId}`,
-//                 headers: {
-//                     Authorization: `Bearer ${localStorage.getItem('Autheticate_Id')}`,
-//                 },
-//             });
-
-//             if (response.success) {
-//                 setAttendanceData(response.data);
-//             }
-//         } catch (e) {
-
-//             console.error("Error fetching attendance data:", e);
-//         }
-//     };
-
-//     const handleOverallDownload = async () => {
-//         try {
-//             const fromDate = filter.From;
-//             const [year, month] = fromDate.split("-");
-//             const startDate = `${year}-${month}-01`;
-//             const dayCount = getDaysInMonth(`${year}-${month}`);
-//             const endDate = `${year}-${month}-${dayCount}`;
-//             const response = await fetchLink({
-//                 address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
-//             });
-
-//             if (response.success) {
-//                 const overallData = response.data;
-//                 console.log("overalldata", overallData);
-
-//                 const getWorkingDays = (fromDate, endDate) => {
-//                     const allDays = [];
-//                     const currentDate = new Date(fromDate);
-//                     const endDateObj = new Date(endDate);
-
-//                     while (currentDate <= endDateObj) {
-//                         allDays.push(new Date(currentDate).toISOString().split("T")[0]);
-//                         currentDate.setDate(currentDate.getDate() + 1);
-//                     }
-//                     return {
-//                         days: allDays,
-//                         count: allDays.length,
-//                     };
-//                 };
-
-//                 const { days: dateRange } = getWorkingDays(startDate, endDate);
-
-//                 const exportData = overallData.map(row => {
-//                     let punchDetails = [];
-//                     try {
-
-//                         punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
-//                     } catch (error) {
-//                         console.error("Error parsing AttendanceDetails for employee:", row.username, error);
-//                         punchDetails = []; 
-//                     }
-
-//                     const dailyAttendance = {};
-
-//                     let totalPresent = 0;
-
-//                     dateRange.forEach((date, index) => {
-//                         const isSunday = new Date(date).getDay() === 0;
-
-//                         if (isSunday) {
-//                             dailyAttendance[`Day ${index + 1}`] = 'H';
-//                         } else {
-//                             if (Array.isArray(punchDetails)) {
-//                                 const detail = punchDetails.find(detail => detail.Date === date);
-
-
-//                                 dailyAttendance[`Day ${index + 1}`] = detail ? detail.AttendanceStatus : 'A';
-
-
-//                                 if (detail && detail.AttendanceStatus === 'P') {
-//                                     totalPresent++;
-//                                 }
-//                             } else {
-
-//                                 dailyAttendance[`Day ${index + 1}`] = 'A';
-//                             }
-//                         }
-//                     });
-
-//                     return {
-//                         EmployeeName: row.username || row.Name,
-//                         TotalPresent: totalPresent, 
-//                         ...dailyAttendance,
-//                     };
-//                 });
-
-
-//                 const headers = [
-//                     "EmployeeName",
-//                     "TotalPresent",
-//                     ...dateRange.map((_, id) => `Day ${id + 1}`),
-//                 ];
-
-
-//                 const ws = XLSX.utils.json_to_sheet(exportData);
-//                 XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
-
-
-//                 const wb = XLSX.utils.book_new();
-//                 XLSX.utils.book_append_sheet(wb, ws, "Overall Attendance Report");
-
-
-//                 XLSX.writeFile(wb, "Overall_Attendance_Report.xlsx");
-//             }
-//         } catch (error) {
-//             console.error("Error downloading overall report:", error);
-//         }
-//     };
-//     const getDaysInMonth = (monthYear) => {
-//         if (!monthYear) return 0;
-
-//         const [year, month] = monthYear.split('-');
-
-//         return new Date(year, month, 0).getDate();
-//     };
-
-//     useEffect(() => {
-//         const { From, EmpId } = debouncedFilter;
-//         if (From && (EmpId || EmpId === 0)) {
-//             fetchAttendanceData(From, EmpId);
-//             fetchDropdownEmployees();
-//         }
-
-//     }, [debouncedFilter]);
-
-//     const fetchDropdownEmployees = async () => {
-//         setLoading(true);
-//         try {
-//             const data = await fetchLink({
-//                 address: `masters/Employeedetails/dropDown?Company_id=${parseData.Company_id}`,
-//             });
-//             if (data.success) {
-//                 setDropdownEmployees(data.data);
-//             }
-//         } catch (e) {
-//             console.error(e);
-//             toast.error("Failed to fetch employees for dropdown");
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
-
-//     const handleFromChange = (e) => {
-//         const getDaysInMonth = (monthYear) => {
-//             if (!monthYear) return 0;
-
-//             const [year, month] = monthYear.split('-');
-
-//             return new Date(year, month, 0).getDate();
-//         };
-//         const selectedMonth = e.target.value;
-//         const [year, month] = selectedMonth.split("-");
-//         const startDate = `${year}-${month}-01`;
-//         const dayCount = getDaysInMonth(`${year}-${month}`);
-//         const endDate = `${year}-${month}-${dayCount}`;
-
-//         setFilter({
-//             From: startDate,
-//             To: endDate,
-//             EmpId: filter.EmpId || 0,
-//             Name: filter?.Name,
-//         });
-//     };
-
-//     const handleDownload = () => {
-//         const maxPunches = 6;
-
-//         const exportData = attendanceData.map(row => {
-
-//             const punchDetails = row.AttendanceDetails ? row.AttendanceDetails.split(',').map(detail => detail.trim()) : [];
-//             const punchColumns = {};
-
-
-//             let allPunchesEmpty = true;
-
-//             for (let i = 0; i < maxPunches; i++) {
-//                 const punch = punchDetails[i] || '--';
-//                 punchColumns[`Punch ${i + 1}`] = punch;
-
-//                 if (punch !== '--') {
-//                     allPunchesEmpty = false;
-//                 }
-//             }
-
-//             const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
-
-
-//             return {
-//                 Employee: row.username,
-//                 "Log Date": formatAttendanceDate(row.LogDate),
-//                 "Attendance Status": attendanceStatus,
-//                 ...punchColumns,
-//             };
-//         });
-
-
-//         const columnsOrder = [
-//             "Employee",
-//             "Log Date",
-//             "Attendance Status",
-//             ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`)
-//         ];
-
-//         const reorderedData = exportData.map(row =>
-//             columnsOrder.reduce((acc, col) => {
-//                 acc[col] = row[col] || '--';
-//                 return acc;
-//             }, {})
-//         );
-//         const ws = XLSX.utils.json_to_sheet(reorderedData);
-//         const wb = XLSX.utils.book_new();
-//         XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
-
-//         XLSX.writeFile(wb, "Attendance_Report.xlsx");
-//     };
-
-//     const formatAttendanceDate = (logDateTime) => {
-//         if (!logDateTime) return '--';
-//         const [date] = logDateTime.split('T');
-//         return `${date} `;
-//     };
-
-//     const handleOverallWithPunch = () => {
-//         const maxPunches = 6;
-
-//         const filteredAttendanceData = attendanceData.filter((row) => {
-
-//           const isUserSelected = selectedEmployees.some(
-//             (user) => Number(user.UserId) === Number(row.User_Mgt_Id) || user.UserId === 'ALL'
-//           );
-//           return isUserSelected;
-//         });
-
-//         const groupedData = filteredAttendanceData.reduce((acc, row) => {
-//           const username = row.username;
-//           if (!acc[username]) {
-//             acc[username] = [];
-//           }
-//           acc[username].push(row);
-//           return acc;
-//         }, {});
-
-//         if (Object.keys(groupedData).length === 0) {
-//             toast.error("No attendance data found")
-//           return;
-//         }
-
-//         const wb = XLSX.utils.book_new();
-
-//         const firstLogDate = filteredAttendanceData[0]?.LogDate;
-//         if (!firstLogDate) {
-//           console.error("No log date found in the filtered attendance data.");
-//           return;
-//         }
-
-//         const date = new Date(firstLogDate);
-//         const year = date.getFullYear();
-//         const month = date.toLocaleString("default", { month: "long" });
-
-//         Object.entries(groupedData).forEach(([username, userAttendance]) => {
-//           const exportData = userAttendance.map((row) => {
-
-//             const punchDetails = row.AttendanceDetails
-//               ? row.AttendanceDetails.split(',').map((detail) => detail.trim())
-//               : [];
-
-//             const punchColumns = {};
-//             let allPunchesEmpty = true;
-
-//             for (let i = 0; i < maxPunches; i++) {
-//               const punch = punchDetails[i] || '--';
-//               punchColumns[`Punch ${i + 1}`] = punch;
-
-//               if (punch !== '--') {
-//                 allPunchesEmpty = false;
-//               }
-//             }
-
-
-//             const attendanceStatus = allPunchesEmpty ? 'A' : 'P';
-
-//             return {
-//               Employee: row.username,
-//               "Log Date": formatAttendanceDate(row.LogDate),
-//               "Attendance Status": attendanceStatus,
-//               ...punchColumns,
-//             };
-//           });
-
-
-//           const columnsOrder = [
-//             "Employee",
-//             "Log Date",
-//             "Attendance Status",
-//             ...Array.from({ length: maxPunches }, (_, i) => `Punch ${i + 1}`),
-//           ];
-
-//           const reorderedData = exportData.map((row) =>
-//             columnsOrder.reduce((acc, col) => {
-//               acc[col] = row[col] || '--';
-//               return acc;
-//             }, {})
-//           );
-
-//           const sheetName = username.slice(0, 31); 
-//           const ws = XLSX.utils.json_to_sheet(reorderedData);
-//           XLSX.utils.book_append_sheet(wb, ws, sheetName);
-//         });
-
-
-//         const fileName = `Attendance_Report_${month}_${year}.xlsx`;
-//         XLSX.writeFile(wb, fileName);
-//       };
-
-//     const handleSummaryDownload = async () => {
-//         try {
-//             const fromDate = filter.From;
-//             const [year, month] = fromDate.split("-");
-//             const startDate = `${year}-${month}-01`;
-//             const dayCount = getDaysInMonth(`${year}-${month}`);
-//             const endDate = `${year}-${month}-${dayCount}`;
-
-//             const response = await fetchLink({
-//                 address: `userModule/employeActivity/employeeAttendanceModuledownload?FromDate=${startDate}&ToDate=${endDate}`,
-//             });
-
-//             if (response.success) {
-//                 const overallData = response.data;
-//                 const getWorkingDays = (fromDate, endDate) => {
-//                     const allDays = [];
-//                     const currentDate = new Date(fromDate);
-//                     const endDateObj = new Date(endDate);
-//                     let sundayCount = 0;
-
-//                     while (currentDate <= endDateObj) {
-//                         const dateStr = new Date(currentDate).toISOString().split("T")[0];
-//                         allDays.push(dateStr);
-
-//                         if (currentDate.getDay() === 0) {
-//                             sundayCount++;
-//                         }
-
-//                         currentDate.setDate(currentDate.getDate() + 1);
-//                     }
-
-//                     if (allDays.length === 0) {
-//                         allDays.push("No days in this range");
-//                     }
-
-//                     return {
-//                         days: allDays,
-//                         sundayCount,
-//                         totalDays: allDays.length,
-//                     };
-//                 };
-
-//                 const { days: dateRange, sundayCount, totalDays } = getWorkingDays(startDate, endDate);
-
-//                 let totalWorkingDaysSummary = 0;
-//                 let totalLeaveDaysSummary = 0;
-
-//                 const summaryData = overallData.map(row => {
-//                     const punchDetails = row.AttendanceDetails ? JSON.parse(row.AttendanceDetails) : [];
-//                     let totalWorkingDays = 0;
-//                     let totalLeaveDays = 0;
-
-//                     dateRange.forEach((date) => {
-//                         if (Array.isArray(punchDetails)) {
-//                             const detail = punchDetails.find(detail => detail.Date === date);
-
-//                             const isSunday = new Date(date).getDay() === 0;
-
-
-//                             if (isSunday) {
-//                                 return; 
-//                             }
-
-//                             if (detail) {
-//                                 if (detail.AttendanceStatus === 'P') {
-//                                     totalWorkingDays++;
-//                                 } else if (detail.AttendanceStatus === 'A') {
-//                                     totalLeaveDays++;
-//                                 }
-//                             } else {
-//                                 totalLeaveDays++;
-//                             }
-//                         }
-//                     });
-
-//                     totalWorkingDaysSummary += totalWorkingDays;
-//                     totalLeaveDaysSummary += totalLeaveDays;
-
-//                     return {
-//                         EmployeeName: row.Name,
-//                         EmployeeID: row.EmployeeID,
-//                         Month: `${month}-${year}`,
-//                         Branch: row.Branch,
-//                         NumberOfSundays: sundayCount,
-//                         NumberOfDaysInMonth: totalDays,
-//                         TotalWorkingDays: totalWorkingDays,
-//                         TotalLeaveDays: totalLeaveDays,
-//                     };
-//                 });
-
-//                 const exportData = summaryData.map(item => ({
-//                     EmployeeName: item.EmployeeName,
-//                     EmployeeID: item.EmployeeID,
-//                     Month: item.Month,
-//                     Branch: item.Branch,
-//                     NumberOfSundays: item.NumberOfSundays,
-//                     NumberOfDaysInMonth: item.NumberOfDaysInMonth,
-//                     TotalWorkingDays: item.TotalWorkingDays,
-//                     TotalLeaveDays: item.TotalLeaveDays,
-//                 }));
-
-//                 const ws = XLSX.utils.json_to_sheet(exportData);
-
-//                 const headers = [
-//                     "EmployeeName",
-//                     "EmployeeID",
-//                     "Month",
-//                     "Branch",
-//                     "NumberOfSundays",
-//                     "NumberOfDaysInMonth",
-//                     "TotalWorkingDays",
-//                     "TotalLeaveDays",
-//                 ];
-
-//                 XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
-
-//                 const wb = XLSX.utils.book_new();
-//                 XLSX.utils.book_append_sheet(wb, ws, "Attendance Summary Report");
-
-
-//                 XLSX.writeFile(wb, "Attendance_Summary_Report.xlsx");
-//             }
-//         } catch (error) {
-//             console.error("Error downloading overall report:", error);
-//         }
-//     };
-
-//     return (
-//         <>
-//             <Dialog
-//                 open={addEmployeeDialogOpen}
-//                 // onClose={handleAddEmployeeClose}
-//                 maxWidth="md"
-//                 PaperProps={{
-//                     style: { width: '500px', height: '500px' },
-//                 }}
-//             >
-//                 <DialogTitle>Add Employee</DialogTitle>
-//                 <DialogContent>
-//                     <Autocomplete
-//                         multiple
-//                         options={[{ UserId: 'all', Name: 'ALL' }, ...dropdownEmployees]}
-//                         getOptionLabel={(option) => option.Name}
-//                         isOptionEqualToValue={(option, value) => option.UserId === value.UserId}
-//                         onChange={(event, value) => {
-//                             if (value.some((selected) => selected.UserId === 'all')) {
-//                                 setSelectedEmployees(dropdownEmployees);
-//                             } else {
-//                                 const uniqueValues = value.filter((val, index, self) =>
-//                                     index === self.findIndex((t) => t.UserId === val.UserId)
-//                                 );
-//                                 setSelectedEmployees(uniqueValues);
-//                             }
-//                         }}
-//                         value={selectedEmployees.some((user) => user.UserId === 'all')
-//                             ? [{ UserId: 'all', Name: 'ALL' }]
-//                             : selectedEmployees}
-//                         renderInput={(params) => (
-//                             <TextField {...params} placeholder="Employees" />
-//                         )}
-//                     />
-//                 </DialogContent>
-//                 <DialogActions className="d-flex justify-content-between flex-wrap">
-//                     <Button
-//                         type="button"
-//                         variant="outlined"
-//                         onClick={() => setSelectedEmployees([])}
-//                     >
-//                         Clear
-//                     </Button>
-//                     <span>
-//                         <Button onClick={handleAddEmployeeClose}>Cancel</Button>
-//                         <Button onClick={handleOverallWithPunch}>Download</Button>
-
-//                     </span>
-//                 </DialogActions>
-//             </Dialog>
-//             <Card>
-//                 <CardContent sx={{ minHeight: '50vh' }}>
-//                     <div className="ps-3 pb-2 pt-0 d-flex align-items-center justify-content-between border-bottom mb-3">
-//                         <h6 className="fa-18">Employee Attendance</h6>
-
-//                         {Number(userTypeId === 1) || Number(userTypeId) === 0 ? (
-//                             <>
-//                                 <div className="d-flex align-items-center justify-content-start gap-3">
-//                                     <Button
-
-//                                         onClick={handleDownload}
-//                                         variant="contained"
-
-//                                         disabled={filter?.EmpId === 0 || filter?.Name === "ALL"}
-//                                     >
-
-//                                         Individual Report
-//                                     </Button>
-//                                     <Button
-//                                         onClick={() => {
-//                                             handleOverallDownload(filter?.From, filter?.To);
-
-//                                         }}
-//                                     >
-//                                         Monthly Report
-//                                     </Button>
-
-//                                     <Button
-//                                         onClick={() => {
-//                                             setAddEmployeeDialogOpen(true)
-//                                             // handleOverallWithPunch(filter?.From, filter?.To);
-
-//                                         }}
-//                                     >
-//                                         Cummulative Monthly Report
-//                                     </Button>
-
-
-//                                     <Button
-//                                         onClick={
-//                                             handleSummaryDownload
-//                                         }
-//                                     >
-//                                         Summary
-//                                     </Button>
-//                                 </div>
-//                             </>
-//                         ) : (
-//                             <div> </div>
-//                         )}
-//                     </div>
-
-//                     <div className="px-2 row mb-4">
-//                         <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-//                             <label>Employee</label>
-//                             <Select
-//                                 value={{ value: filter?.EmpId, label: filter?.Name }}
-//                                 onChange={(e) => setFilter({ ...filter, EmpId: e.value, Name: e.label })}
-//                                 options={[{ value: 0, label: `ALL` }, ...employees.map(obj => ({ value: obj?.UserId, label: obj?.Name }))]}
-//                                 styles={customSelectStyles}
-//                                 isSearchable={true}
-//                                 placeholder={dropdownPlaceholder}
-//                                 isDisabled={isDropdownDisabled}
-//                             />
-//                         </div>
-
-//                         <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 p-2">
-//                             <label>From</label>
-//                             <input
-//                                 type="month"
-//                                 className="cus-inpt"
-//                                 value={filter?.From?.slice(0, 7)}
-//                                 onChange={handleFromChange}
-//                             />
-//                         </div>
-//                     </div>
-
-//                     <FilterableTable
-//                         dataArray={attendanceData}
-//                         columns={[
-//                             {
-//                                 isCustomCell: true,
-//                                 Cell: ({ row }) => row.username,
-//                                 ColumnHeader: 'Employee',
-//                                 isVisible: 1,
-//                                 width: '20%',
-//                                 CellProps: {
-//                                     sx: {
-//                                         padding: '10px',
-//                                         textAlign: 'left',
-//                                         fontWeight: 'bold',
-//                                     },
-//                                 },
-//                             },
-//                             {
-//                                 isCustomCell: true,
-//                                 Cell: ({ row }) => formatAttendanceDate(row.LogDate || '--'),
-//                                 ColumnHeader: 'Log Date',
-//                                 isVisible: 1,
-//                                 width: '20%',
-//                                 CellProps: {
-//                                     sx: {
-//                                         padding: '10px',
-//                                         textAlign: 'center',
-//                                         color: 'gray',
-//                                     },
-//                                 },
-//                             },
-//                             {
-//                                 isCustomCell: true,
-//                                 ColumnHeader: 'Punch Details',
-//                                 isVisible: 1,
-//                                 width: '40%',
-//                                 CellProps: {
-//                                     sx: {
-//                                         display: 'flex',
-//                                         flexWrap: 'wrap',
-//                                         justifyContent: 'center',
-//                                     },
-//                                 },
-//                                 Cell: ({ row }) => (
-//                                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-//                                         {row.AttendanceDetails ? (
-//                                             row.AttendanceDetails.split(',')
-//                                                 .map((detail) => detail.trim())
-//                                                 .filter((detail) => detail !== '')
-//                                                 .map((detail, index) => {
-
-//                                                     const parts = detail.split(' (');
-//                                                     const time = parts[0];
-
-//                                                     return (
-//                                                         <Chip
-//                                                             key={index}
-//                                                             label={time}
-//                                                             variant="outlined"
-//                                                             size="small"
-//                                                             sx={{ margin: '2px', color: 'green' }}
-//                                                         />
-//                                                     );
-//                                                 })
-//                                         ) : (
-//                                             <div>No Punch Details</div>
-//                                         )}
-//                                     </div>
-//                                 ),
-//                             }
-//                         ]}
-//                         EnableSerialNumber
-//                         CellSize="small"
-//                         disablePagination={false}
-//                     />
-//                 </CardContent>
-//             </Card>
-//         </>
-//     );
-// };
-
-// export default FingerPrintAttendanceReport;

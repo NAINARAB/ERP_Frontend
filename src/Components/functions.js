@@ -1,11 +1,6 @@
 import CryptoJS from "crypto-js";
 import { encryptionKey } from "../encryptionKey";
 
-export const setSessionFilters = (obj = {}) => {
-    sessionStorage.removeItem('filterValues');
-    sessionStorage.setItem('filterValues', obj);
-}
-
 export const isValidJSON = (str) => {
     try {
         JSON.parse(str);
@@ -761,3 +756,46 @@ export const getUniqueData = (arr = [], key = '', returnObjectKeys = []) => {
 
     return uniqueArray.sort((a, b) => String(a[key]).localeCompare(b[key]));
 };
+
+export const setSessionFilters = (obj = {}) => {
+    const newSessionValue = isValidObject(obj) ? JSON.stringify(obj) : JSON.stringify({});
+    sessionStorage.removeItem('filterValues');
+    sessionStorage.setItem('filterValues', newSessionValue);
+}
+
+export const getSessionFilters = (reqKey = '') => {
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const parsedValue = isValidJSON(sessionValue) ? JSON.parse(sessionValue) : {};
+
+    if (isValidObject(parsedValue) && Object.hasOwn(reqKey)) {
+        return parsedValue.reqKey;
+    } else if (isValidObject(parsedValue)) {
+        return parsedValue
+    } else {
+        return {}
+    }
+}
+
+export const setSessionFilter = (key = '', value = '') => {
+    if (key) {
+        const sessinonValue = getSessionFilters();
+        return sessionStorage.setItem('filterValues', JSON.stringify({ ...sessinonValue, [key]: value }))
+    }
+}
+
+export const getSessionDateFilter = (pageid) => {
+    const sessionFilter = getSessionFilters();
+    const { Fromdate, Todate, pageID } = sessionFilter;
+
+    const sessionDate = {
+        Fromdate: (Fromdate && isValidDate(Fromdate)) ? Fromdate : ISOString(),
+        Todate: (Todate && isValidDate(Todate)) ? Todate : ISOString(),
+    };
+
+    return checkIsNumber(pageid) && isEqualNumber(pageid, pageID) ? sessionDate : {
+        Fromdate: ISOString(),
+        Todate: ISOString()
+    }
+}
+
+export const clearFilters = () => sessionStorage.removeItem('filterValues');

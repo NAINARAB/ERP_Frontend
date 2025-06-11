@@ -16,6 +16,8 @@ const PosMaster = lazy(() => import("./Pages/Masters/posMaster"))
 const POSProductList = lazy(() => import("./Pages/Masters/posproductListing"))
 const UomMaster = lazy(() => import("./Pages/Masters/uomMaster"))
 const RateMaster = lazy(() => import("./Pages/Masters/rateMaster"))
+const LeaveMaster = lazy(() => import("./Pages/Masters/LeaveMaster"))
+const LeaveType = lazy(() => import("./Pages/Masters/LeaveType"));
 
 
 // Authorization
@@ -159,7 +161,8 @@ const QPayReports = lazy(() => import("./Pages/Analytics/QPayReports2"))
 // const ItemBasedReport = lazy(() => import("./Pages/Analytics/ItemBased"))
 const ReportTemplateCreation = lazy(() => import("./Pages/Analytics/reportTemplateCreation"))
 const ReportTemplates = lazy(() => import("./Pages/Analytics/reportTemplates"))
-const ClosingStockReports = lazy(() => import("./Pages/UserModule/retailer/closingStockReport"));
+// const ClosingStockReports = lazy(() => import("./Pages/UserModule/retailer/closingStockReport"));
+const RetailerClosingStock = lazy(() => import('./Pages/UserModule/retailer/closingStockRetailerBasedReport'))
 
 // SubRouting
 // const ERP_MasterData = lazy(() => import('./Pages/SubMenu/ERP/masterData'))
@@ -282,7 +285,7 @@ const RoutingArray = [
     // ERP - CRM
     { component: <DisplayNavigations />, path: '/erp/crm' },
     { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED
-    { component: <ClosingStockReports />, path: '/erp/crm/closingStock' },
+    { component: <RetailerClosingStock />, path: '/erp/crm/closingStock' },
 
     { component: <DisplayNavigations />, path: '/erp/reports' },
     { component: <CostCenterReports />, path: '/erp/reports/costCenter' },
@@ -305,6 +308,9 @@ const RoutingArray = [
     { component: <TaskMaster />, path: '/taskManagement/master/tasks' },
     { component: <TaskParameter isOpened={true} disableCollapse={true} />, path: '/taskManagement/master/parameters' },
     { component: <ProjectList />, path: '/taskManagement/master/projects' },
+    { component: <LeaveType />, path: '/taskManagement/master/leaveType' },
+    { component: <LeaveMaster />, path: '/taskManagement/master/leaveMaster' },
+
     { component: <TodayTasks />, path: '/taskManagement/myTasks' },
     { component: <ActiveProjects />, path: '/taskManagement/projectActivity' },
     { component: <ProjectDetails />, path: '/taskManagement/projectActivity/projectDetails' },
