@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { receiptGeneralInfoInitialValue } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
+import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
     const editValues = location.state;
 
     const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
+    const [receiptBillDetails, setReceiptBillDetails] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
@@ -35,6 +36,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     })
                 )
             );
+        }
+
+        if (isArray(editValues?.BillsDetails) && editValues?.BillsDetails?.length > 0) {
+            setReceiptBillDetails(editValues?.BillsDetails);
         }
     }, [editValues])
 
@@ -86,7 +91,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `receipt/receiptMaster`,
             method: checkIsNumber(postValues?.receipt_id) ? 'PUT' : 'POST',
-            bodyData: postValues,
+            bodyData: {
+                ...postValues,
+                BillsDetails: receiptBillDetails
+            },
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {

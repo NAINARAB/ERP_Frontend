@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
@@ -94,6 +94,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     }, [])
 
+    const createrOrModifier = useMemo(() => toNumber(storageValue?.UserId) || '', [storageValue]);
+
     const onChangePaymentValue = (key, value) => {
         setPaymentValue(pre => ({ ...pre, [key]: value }));
     }
@@ -140,8 +142,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(postValues?.pay_id) ? 'PUT' : 'POST',
             bodyData: {
                 ...postValues,
-                created_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
-                altered_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
+                created_by: createrOrModifier,
+                altered_by: createrOrModifier,
             },
             loadingOn, loadingOff
         }).then(data => {
