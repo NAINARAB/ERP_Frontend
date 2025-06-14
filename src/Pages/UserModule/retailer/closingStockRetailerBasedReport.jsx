@@ -44,7 +44,7 @@ const RetailerClosingStock = () => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
+            address: `masters/retailers/whoHasClosingStock`
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
@@ -52,14 +52,14 @@ const RetailerClosingStock = () => {
         }).catch(e => console.error(e))
 
         fetchLink({
-            address: `masters/products/grouped?Company_Id=${storage?.Company_id}`
+            address: `masters/products/grouped`
         }).then(data => {
             if (data.success) {
                 setProducts(data.data)
             }
         }).catch(e => console.error(e))
 
-    }, [storage?.Company_id])
+    }, [])
 
     useEffect(() => {
         if (stockInputValue?.Retailer_Id) {

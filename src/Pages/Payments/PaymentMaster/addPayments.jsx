@@ -3,7 +3,7 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue, getSessionUser } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
@@ -16,6 +16,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
+    const storage = getSessionUser().user;
 
     const [paymentValue, setPaymentValue] = useState(paymentGeneralInfoInitialValue);
     const [baseData, setBaseData] = useState({
@@ -94,7 +95,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     }, [])
 
-    const createrOrModifier = useMemo(() => toNumber(storageValue?.UserId) || '', [storageValue]);
+    const createrOrModifier = useMemo(() => toNumber(storage?.UserId) || '', [storage]);
 
     const onChangePaymentValue = (key, value) => {
         setPaymentValue(pre => ({ ...pre, [key]: value }));
