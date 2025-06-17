@@ -3,14 +3,13 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionDateFilter, isEqualNumber, ISOString, isValidDate, NumberFormat, setSessionFilter, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { paymentStatus, paymentTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -22,7 +21,7 @@ const defaultFilters = {
     payment_type: ''
 };
 
-const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
+const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -44,10 +43,22 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
     const [reload, setReload] = useState(false)
     const [paymentData, setPaymentData] = useState([]);
 
+    const sessionFilter = getSessionDateFilter(pageID);
+    const { Fromdate, Todate } = sessionFilter;
+
     const navigate = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
-    const query = useQuery();
+
+    useEffect(() => {
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate,
+            Todate: Todate,
+        }));
+
+        setReload(pre => !pre);
+
+    }, [Fromdate, Todate]);
 
     useEffect(() => {
         fetchLink({
@@ -64,28 +75,6 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
             }
         })
     }, [])
-
-    useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-        };
-        setFilters(pre => ({ ...pre, Fromdate: queryFilters.Fromdate, Todate: queryFilters.Todate }));
-    }, [location.search]);
-
-    useEffect(() => {
-        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-        if (Fromdate && Todate) {
-            updateQueryString({ Fromdate, Todate });
-            setFilters(pre => ({ ...pre, Fromdate: ISOString(stateDetails.Fromdate), Todate: stateDetails.Todate }));
-            setReload(pre => !pre);
-        }
-    }, [stateDetails])
 
     useEffect(() => {
         const From = filters.Fromdate, To = filters.Todate;
@@ -106,16 +95,28 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
         }).catch(e => console.error(e))
     }, [reload]);
 
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
-    };
-
     const TotalPayment = useMemo(() => paymentData.reduce(
         (acc, orders) => Addition(acc, orders?.debit_amount), 0
     ), [paymentData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
+
+    const statusColor = {
+        NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
+        OnProcess: ' bg-warning fw-bold fa-11 px-2 py-1 rounded-3 ',
+        Completed: ' bg-success text-light fa-11 px-2 py-1 rounded-3 ',
+        Canceled: ' bg-danger text-light fw-bold fa-11 px-2 py-1 rounded-3 '
+    }
+
+    const chooseColor = (orderStatus) => {
+        switch (orderStatus) {
+            case 1: return statusColor.NewOrder;
+            case 2: return statusColor.OnProcess;
+            case 3: return statusColor.Completed;
+            case 0: return statusColor.Canceled;
+            default: return ''
+        }
+    }
 
     return (
         <>
@@ -165,6 +166,20 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                         ColumnHeader: 'Bill Type',
                         isCustomCell: true,
                         Cell: ({ row }) => paymentTypes.find(type => isEqualNumber(type.value, row.pay_bill_type))?.label
+                    },
+                    createCol('remarks', 'string', 'Narration'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Status',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const paymentStatusString = paymentStatus.find(s => isEqualNumber(s.value, row?.status))
+                            return (
+                                <span className={chooseColor(paymentStatusString.value)}>
+                                    {String(paymentStatusString.label).replace(' ', '')}
+                                </span>
+                            )
+                        }
                     },
                     {
                         isVisible: 1,
@@ -368,13 +383,11 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                         <Button onClick={closeDialog}>close</Button>
                         <Button
                             onClick={() => {
-                                closeDialog();
-                                const updatedFilters = {
-                                    Fromdate: filters?.Fromdate,
-                                    Todate: filters?.Todate
-                                };
-                                updateQueryString(updatedFilters);
+                                setSessionFilter('Fromdate', filters?.Fromdate);
+                                setSessionFilter('Todate', filters?.Todate);
+                                setSessionFilter('pageID', pageID)
                                 setReload(pre => !pre);
+                                closeDialog();
                             }}
                             startIcon={<Search />}
                             variant="contained"

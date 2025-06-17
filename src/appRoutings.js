@@ -162,7 +162,8 @@ const QPayReports = lazy(() => import("./Pages/Analytics/QPayReports2"))
 const ReportTemplateCreation = lazy(() => import("./Pages/Analytics/reportTemplateCreation"))
 const ReportTemplates = lazy(() => import("./Pages/Analytics/reportTemplates"))
 // const ClosingStockReports = lazy(() => import("./Pages/UserModule/retailer/closingStockReport"));
-const RetailerClosingStock = lazy(() => import('./Pages/UserModule/retailer/closingStockRetailerBasedReport'))
+// const RetailerClosingStock = lazy(() => import('./Pages/UserModule/retailer/closingStockRetailerBasedReport'))
+const CustomerClosingStockReport = lazy(() => import('./Pages/Reports/CRM/customerClosingStockReport'))
 
 // SubRouting
 // const ERP_MasterData = lazy(() => import('./Pages/SubMenu/ERP/masterData'))
@@ -285,7 +286,7 @@ const RoutingArray = [
     // ERP - CRM
     { component: <DisplayNavigations />, path: '/erp/crm' },
     { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED
-    { component: <RetailerClosingStock />, path: '/erp/crm/closingStock' },
+    { component: <CustomerClosingStockReport />, path: '/erp/crm/closingStock' },
 
     { component: <DisplayNavigations />, path: '/erp/reports' },
     { component: <CostCenterReports />, path: '/erp/reports/costCenter' },
@@ -307,7 +308,7 @@ const RoutingArray = [
     { component: <TaskType />, path: '/taskManagement/master/taskTypes' },
     { component: <TaskMaster />, path: '/taskManagement/master/tasks' },
     { component: <TaskParameter isOpened={true} disableCollapse={true} />, path: '/taskManagement/master/parameters' },
-    { component: <ProjectList />, path: '/taskManagement/master/projects' },
+    { component: <ProjectList />, path: '/taskManagement/master/projects' },    
     { component: <LeaveType />, path: '/taskManagement/master/leaveType' },
     { component: <LeaveMaster />, path: '/taskManagement/master/leaveMaster' },
 
