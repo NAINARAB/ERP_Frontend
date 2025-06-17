@@ -4,6 +4,7 @@ import TabPanel from '@mui/lab/TabPanel';
 import { Box, Tab } from "@mui/material";
 import { useState } from "react";
 import ClosingStockItemBasedReport from './itemWiseReport';
+import ClosingStockRetailerBasedReport from './ledgerBased';
 
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
@@ -46,7 +47,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     <ClosingStockItemBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
                 </TabPanel>
                 <TabPanel value={2} sx={{ p: 0, pt: 2 }}>
-                    <ClosingStockItemBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
+                    <ClosingStockRetailerBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
                 </TabPanel>
             </TabContext>
         </>
