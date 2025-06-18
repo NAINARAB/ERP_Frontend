@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, getDaysBetween, isEqualNumber, ISOString, LocalDate, Multiplication, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -20,14 +20,7 @@ const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff }) => {
         }).then(data => {
             if (data.success) {
                 const dataValue = toArray(data.data);
-                const withCalc = dataValue.map(row => ({
-                    ...row,
-                    deliveryDisplayDate: row?.Latest_Delivery_Date ? LocalDate(row?.Latest_Delivery_Date) : '',
-                    closingDisplayDate: row?.Latest_Closing_Date ? LocalDate(row?.Latest_Closing_Date) : '',
-                    entryDays: row?.Latest_Delivery_Date ? getDaysBetween(row?.Latest_Delivery_Date, ISOString()) : '',
-                    updateDays: row?.Latest_Closing_Date ? getDaysBetween(row?.Latest_Closing_Date, ISOString()) : ''
-                }))
-                setReportData(withCalc)
+                setReportData(dataValue)
             }
         }).catch(e => console.error(e))
     }, [])

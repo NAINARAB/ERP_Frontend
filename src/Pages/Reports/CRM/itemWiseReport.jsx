@@ -28,13 +28,15 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
     }, [])
 
     useEffect(() => {
-        // if (checkIsNumber(filters.searchItem.value)) return;
-
-        fetchLink({
-            address: `reports/customerClosingStock/itemSearch?Item_Id=${filters.searchItem.value}`
-        }).then(data => {
-            setReportData(data.data)
-        }).catch(e => console.error(e))
+        if (checkIsNumber(filters.searchItem.value)) {
+            fetchLink({
+                address: `reports/customerClosingStock/itemSearch?Item_Id=${filters.searchItem.value}`
+            }).then(data => {
+                if (data.success) {
+                    setReportData(data.data)
+                }
+            }).catch(e => console.error(e))
+        }
     }, [filters.searchItem.value])
 
     return (

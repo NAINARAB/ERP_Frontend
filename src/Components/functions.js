@@ -214,7 +214,7 @@ export const convertToTimeObject = (timeString) => {
 
 export const isValidDate = (dateString) => {
     const date = new Date(dateString);
-    return !isNaN(date) && date.toISOString().split('T')[0] === dateString;
+    return dateString && !isNaN(date) && date.toISOString().split('T')[0] === dateString;
 };
 
 export const getPreviousDate = (days) => {

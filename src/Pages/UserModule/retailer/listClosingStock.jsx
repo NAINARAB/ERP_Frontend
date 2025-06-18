@@ -1,9 +1,8 @@
-import { NumberFormat, Addition } from '../../../Components/functions';
+import { NumberFormat, Addition, LocalDate } from '../../../Components/functions';
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
 
 
 const ListClosingStock = ({ productClosingStock = [] }) => {
-
     return (
         <>
 
@@ -25,33 +24,10 @@ const ListClosingStock = ({ productClosingStock = [] }) => {
                 dataArray={productClosingStock}
                 columns={[
                     createCol('Product_Name', 'string'),
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Update Date',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         row?.lastClosingQuanity > 0 ?
-                    //             <>
-                    //                 {/* <span className="me-2 fw-bold text-primary">{NumberFormat(row?.lastClosingQuanity)}</span> */}
-                    //                 {row?.lastclosingDate ? LocalDate(row?.lastclosingDate) : ''}
-                    //             </>
-                    //             : <></>
-                    //     )
-                    // },
-                    // createCol('lastClosingQuanity', 'number', 'Closing Qty'),
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Entry Date',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         <>
-                    //             {/* <span className="me-2 fw-bold text-primary">{NumberFormat(row?.lastDeliveryQuantity)}</span> */}
-                    //             {row?.lastDeliveryDate ? LocalDate(row?.lastDeliveryDate) : ''}
-                    //         </>
-                    //     )
-                    // },
-                    // createCol('lastDeliveryQuantity', 'number', 'Delivery Qty'),
-                    createCol('lastVisitDate', 'date', 'Entry Date'),
+                    createCol('entryDate', 'string', 'Entry Date'),
+                    createCol('updateDate', 'string', 'Update Date'),
+                    createCol('entryDays', 'number', 'Entry Days'),
+                    createCol('updateDays', 'number', 'Update Days'),
                     createCol('estimatedQuantity', 'number', ' Quantity'),
                     createCol('Product_Rate', 'number', 'Rate'),
                     createCol('totalValue', 'number', 'Stock-Value'),
