@@ -11,6 +11,7 @@ export const paymentGeneralInfoInitialValue = {
 
     payment_date: ISOString(),
     pay_bill_type: 1,
+    is_new_ref: 0,
     credit_ledger: '',
     credit_ledger_name: 'Select',
     credit_amount: 0,

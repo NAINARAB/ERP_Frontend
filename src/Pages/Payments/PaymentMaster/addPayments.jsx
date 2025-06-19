@@ -288,8 +288,28 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
+                                <input
+                                    className="form-check-input shadow-none pointer mx-2"
+                                    style={{ padding: '0.7em' }}
+                                    type="checkbox"
+                                    id="isNewRef"
+                                    checked={isEqualNumber(paymentValue?.is_new_ref, 1)}
+                                    onChange={() => {
+                                        if (isEqualNumber(paymentValue?.is_new_ref, 1))
+                                            onChangePaymentValue('is_new_ref', 0)
+                                        else
+                                            onChangePaymentValue('is_new_ref', 1)
+                                    }}
+                                />
+                                <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
+                            </div>
+
+
+                            <div className="col-12"></div>
+
                             {/* Narration */}
-                            <div className="col-sm-6 p-2">
+                            <div className="col-sm-8 p-2">
                                 <label>Narration </label>
                                 <textarea
                                     className="cus-inpt p-2"
@@ -444,7 +464,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             {/* bank name */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                            <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Bank Name</label>
                                 <input
                                     value={paymentValue.bank_name}
@@ -454,7 +474,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             {/* bank date */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                            <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Bank Date</label>
                                 <input
                                     value={paymentValue.bank_date}
@@ -464,11 +484,11 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
-                            <div className="col-12"></div>
+                            {/* <div className="col-12"></div> */}
 
-                            {/* check no */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Check No</label>
+                            {/* Cheque no */}
+                            <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Cheque No</label>
                                 <input
                                     value={paymentValue.check_no}
                                     className="cus-inpt p-2"
@@ -476,9 +496,9 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
-                            {/* Check date */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Check Date</label>
+                            {/* Cheque date */}
+                            <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Cheque Date</label>
                                 <input
                                     value={paymentValue.check_date}
                                     type="date"
@@ -507,7 +527,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     </div>
 
                 </form>
-            </Card>
+            </Card >
 
         </>
     )
