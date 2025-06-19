@@ -1,60 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, getSessionDateFilter, getSessionFilters, isEqualNumber, ISOString, isValidDate, NumberFormat, setSessionFilter, toArray, toNumber } from "../../../Components/functions";
-import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { receiptStatus, receiptTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-    voucherType_Filter: { label: 'ALL', value: '' },
-    debit_accounts_Filter: { label: 'ALL', value: '' },
-    credit_accounts_Filter: { label: 'ALL', value: '' },
-    created_by_Filter: { label: 'ALL', value: '' },
-    payment_status: '',
-    payment_type: ''
-};
-
 const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
-    const [paymentData, setPaymentData] = useState([]);
+    const [receiptData, setReceiptData] = useState([]);
+    const sessionValue = sessionStorage.getItem('filterValues');
 
-    const sessionFilter = getSessionDateFilter(pageID);
-    const { Fromdate, Todate } = sessionFilter;
-
-    const [filters, setFilters] = useState({
+    const defaultFilters = {
         Fromdate: ISOString(),
         Todate: ISOString(),
-        DebitAccount: { value: '', label: 'ALL' },
-        CreditAccount: { value: '', label: 'ALL' },
-        refresh: false,
-        filterDialog: false,
-        voucherType: [],
-        debit_accounts: [],
-        credit_accounts: [],
-        created_by: [],
         voucherType_Filter: { label: 'ALL', value: '' },
         debit_accounts_Filter: { label: 'ALL', value: '' },
         credit_accounts_Filter: { label: 'ALL', value: '' },
         created_by_Filter: { label: 'ALL', value: '' },
-        payment_status: '',
-        payment_type: ''
+        receipt_status: '',
+        receipt_type: ''
+    };
+
+    const [filters, setFilters] = useState({
+        ...defaultFilters,
+        filterDialog: false,
     });
+
+    const [filterDropDown, setFilterDropDown] = useState({
+        voucherType: [],
+        debit_accounts: [],
+        credit_accounts: [],
+        created_by: [],
+    })
 
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchLink({
-            address: `payment/paymentMaster/filtersValues`
+            address: `receipt/receiptMaster/filtersValues`
         }).then(data => {
             if (data.success) {
-                setFilters(pre => ({
+                setFilterDropDown(pre => ({
                     ...pre,
                     voucherType: toArray(data?.others?.voucherType),
                     debit_accounts: toArray(data?.others?.debit_accounts),
@@ -66,41 +56,66 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
     }, [])
 
     useEffect(() => {
+        const sessionFilterValues = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
+            receipt_status = defaultFilters.receipt_status,
+            receipt_type = defaultFilters.receipt_type
+        } = sessionFilterValues;
 
         setFilters(pre => ({
             ...pre,
             Fromdate: Fromdate,
             Todate: Todate,
-            refresh: !pre.refresh
+            voucherType_Filter,
+            debit_accounts_Filter,
+            credit_accounts_Filter,
+            created_by_Filter,
+            receipt_status,
+            receipt_type,
         }));
 
-    }, [Fromdate, Todate]);
+    }, [sessionValue, pageID]);
 
     useEffect(() => {
-        const From = filters.Fromdate, To = filters.Todate;
-        const voucher = filters.voucherType_Filter.value;
-        const debit = filters.debit_accounts_Filter.value;
-        const credit = filters.credit_accounts_Filter.value;
-        const createdBy = filters.created_by_Filter.value;
-        const status = filters.payment_status;
-        const payment_type = filters.payment_type;
+        const sessionFilterValues = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter.value,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter.value,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter.value,
+            created_by_Filter = defaultFilters.created_by_Filter.value,
+            receipt_status = defaultFilters.receipt_status,
+            receipt_type = defaultFilters.receipt_type
+        } = sessionFilterValues;
 
         fetchLink({
-            address: `receipt/receiptMaster?Fromdate=${From}&Todate=${To}&voucher=${voucher}&debit=${debit}&credit=${credit}&createdBy=${createdBy}&status=${status}&payment_type=${payment_type}`,
+            address: `receipt/receiptMaster?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            voucher=${voucherType_Filter?.value}&
+            debit=${debit_accounts_Filter?.value}&
+            credit=${credit_accounts_Filter?.value}&
+            createdBy=${created_by_Filter?.value}&
+            status=${receipt_status}&
+            receipt_type=${receipt_type}`,
             loadingOff, loadingOn
         }).then(data => {
             if (data.success) {
-                setPaymentData(data.data)
+                setReceiptData(data.data)
             }
         }).catch(e => console.error(e))
-    }, [filters.refresh]);
+    }, [sessionValue, pageID]);
 
-    const TotalPayment = useMemo(() => paymentData.reduce(
+    const TotalReceipt = useMemo(() => receiptData.reduce(
         (acc, orders) => Addition(acc, orders?.debit_amount), 0
-    ), [paymentData]);
+    ), [receiptData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
-    const refreshData = () => setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
 
     return (
         <>
@@ -110,6 +125,10 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
+                        {/* <IconButton
+                            onClick={() => setRefresh(pre => !pre)}
+                            size="small" className="mx-1"
+                        ><FilterList /></IconButton> */}
 
                         <IconButton
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
@@ -142,11 +161,11 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                         )}
 
                         <span className="bg-light text-light fa-11 px-1 shadow-sm py-1 rounded-3 mx-1">
-                            {toNumber(TotalPayment) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {NumberFormat(TotalPayment)}</h6>}
+                            {toNumber(TotalReceipt) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {NumberFormat(TotalReceipt)}</h6>}
                         </span>
                     </>
                 }
-                dataArray={paymentData}
+                dataArray={receiptData}
                 columns={[
                     createCol('receipt_date', 'date', 'Date'),
                     createCol('receipt_invoice_no', 'string', 'Receipt ID'),
@@ -250,7 +269,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             onChange={(e) => setFilters({ ...filters, debit_accounts_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.debit_accounts
+                                                ...filterDropDown.debit_accounts
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -269,7 +288,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             onChange={(e) => setFilters({ ...filters, credit_accounts_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.credit_accounts
+                                                ...filterDropDown.credit_accounts
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -279,14 +298,14 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* payment type */}
+                                {/* Receipt type */}
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Payment Type </td>
+                                    <td style={{ verticalAlign: 'middle' }}>Receipt Type </td>
                                     <td>
                                         <select
                                             className="cus-inpt p-2"
-                                            value={filters.payment_type}
-                                            onChange={e => setFilters(pre => ({ ...pre, payment_type: e.target.value }))}
+                                            value={filters.receipt_type}
+                                            onChange={e => setFilters(pre => ({ ...pre, receipt_type: e.target.value }))}
                                         >
                                             <option value={''}>ALL</option>
                                             {receiptTypes.map((type, ind) => (
@@ -305,7 +324,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             onChange={(e) => setFilters({ ...filters, voucherType_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.voucherType
+                                                ...filterDropDown.voucherType
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -315,14 +334,14 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* payment status */}
+                                {/* receipt status */}
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Payment Status</td>
+                                    <td style={{ verticalAlign: 'middle' }}>Receipt Status</td>
                                     <td>
                                         <select
                                             type="date"
-                                            value={filters.payment_status}
-                                            onChange={e => setFilters({ ...filters, payment_status: e.target.value })}
+                                            value={filters.receipt_status}
+                                            onChange={e => setFilters({ ...filters, receipt_status: e.target.value })}
                                             className="cus-inpt"
                                         >
                                             <option value={''}>All</option>
@@ -342,7 +361,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             onChange={(e) => setFilters(pre => ({ ...pre, created_by_Filter: e }))}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.created_by
+                                                ...filterDropDown.created_by
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -372,10 +391,17 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                         <Button
                             onClick={() => {
                                 closeDialog();
-                                setSessionFilter('Fromdate', filters?.Fromdate);
-                                setSessionFilter('Todate', filters?.Todate);
-                                setSessionFilter('pageID', pageID)
-                                refreshData();
+                                setSessionFilters({
+                                    Fromdate: filters?.Fromdate,
+                                    Todate: filters.Todate,
+                                    pageID,
+                                    voucherType_Filter: filters.voucherType_Filter,
+                                    debit_accounts_Filter: filters.debit_accounts_Filter,
+                                    credit_accounts_Filter: filters.credit_accounts_Filter,
+                                    created_by_Filter: filters.created_by_Filter,
+                                    receipt_status: filters.receipt_status,
+                                    receipt_type: filters.receipt_type,
+                                });
                             }}
                             startIcon={<Search />}
                             variant="contained"

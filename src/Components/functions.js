@@ -13,7 +13,7 @@ export const isValidJSON = (str) => {
 export const getSessionUser = () => {
     const storage = localStorage.getItem('user');
     const user = isValidJSON(storage) ? JSON.parse(storage) : {};
-    
+
     return { storage, user }
 }
 
@@ -252,11 +252,11 @@ export const formatDateToCustom = (dateString) => {
 
     const day = String(date.getDate()).padStart(2, '0');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = monthNames[date.getMonth()];
     const year = String(date.getFullYear()).slice(-2);
 
-    return `${day}-${month}-${year}`;  
+    return `${day}-${month}-${year}`;
 }
 
 export const customTimeDifference = (startTime, endTime) => {
@@ -303,7 +303,7 @@ export const formatDateForTimeLocal = (dateInput) => {
         return `${hours}:${minutes}`;
     } catch (e) {
         console.error('Error in formatDateForTimeLocal function:', e);
-        return formatDateForTimeLocal(new Date()); 
+        return formatDateForTimeLocal(new Date());
     }
 };
 
@@ -758,8 +758,8 @@ export const getUniqueData = (arr = [], key = '', returnObjectKeys = []) => {
 };
 
 export const setSessionFilters = (obj = {}) => {
-    const newSessionValue = isValidObject(obj) ? JSON.stringify(obj) : JSON.stringify({});
-    sessionStorage.removeItem('filterValues');
+    if (!isValidObject(obj)) { return };
+    const newSessionValue = JSON.stringify(obj);
     sessionStorage.setItem('filterValues', newSessionValue);
 }
 
@@ -767,9 +767,11 @@ export const getSessionFilters = (reqKey = '') => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const parsedValue = isValidJSON(sessionValue) ? JSON.parse(sessionValue) : {};
 
-    if (isValidObject(parsedValue) && Object.hasOwn(reqKey)) {
+    const isValidObj = isValidObject(parsedValue);
+
+    if (isValidObj && Object.hasOwn(reqKey)) {
         return parsedValue.reqKey;
-    } else if (isValidObject(parsedValue)) {
+    } else if (isValidObj) {
         return parsedValue
     } else {
         return {}
@@ -792,10 +794,36 @@ export const getSessionDateFilter = (pageid) => {
         Todate: (Todate && isValidDate(Todate)) ? Todate : ISOString(),
     };
 
-    return checkIsNumber(pageid) && isEqualNumber(pageid, pageID) ? sessionDate : {
+    return (checkIsNumber(pageid) && isEqualNumber(pageid, pageID)) ? sessionDate : {
         Fromdate: ISOString(),
         Todate: ISOString()
     }
+}
+
+export const getSessionFiltersByPageId = (pageID) => {
+
+    const Fromdate = ISOString(), Todate = ISOString(), defaultValue = {
+        Fromdate, Todate
+    };
+
+    if (!checkIsNumber(pageID)) { return defaultValue };
+
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const parsedValue = isValidJSON(sessionValue) ? JSON.parse(sessionValue) : {};
+    const isValidObj = isValidObject(parsedValue);
+
+    if (!isValidObj) { return defaultValue };
+
+    const isEqualPage = isEqualNumber(parsedValue?.pageID, pageID);
+
+    if (isEqualPage) {
+        const getDefaultDateValue = getSessionDateFilter(pageID);
+        return {
+            ...parsedValue, ...getDefaultDateValue
+        }
+    } else {
+        return defaultValue
+    };
 }
 
 export const clearFilters = () => sessionStorage.removeItem('filterValues');

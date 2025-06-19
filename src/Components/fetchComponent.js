@@ -41,7 +41,7 @@ export const fetchLink = async ({
 
     try {
         if (loadingOn) loadingOn();
-        const response = await fetch(api + address, options);
+        const response = await fetch(api + address.replace(/\s+/g, ''), options);
 
         // if (!response.ok) {
         //     throw new Error(`HTTP error! status: ${response.status}`);

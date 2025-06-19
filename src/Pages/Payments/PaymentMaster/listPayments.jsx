@@ -3,69 +3,72 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, getSessionDateFilter, isEqualNumber, ISOString, isValidDate, NumberFormat, setSessionFilter, toArray, toNumber } from "../../../Components/functions";
-import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { paymentStatus, paymentTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-    voucherType_Filter: { label: 'ALL', value: '' },
-    debit_accounts_Filter: { label: 'ALL', value: '' },
-    credit_accounts_Filter: { label: 'ALL', value: '' },
-    created_by_Filter: { label: 'ALL', value: '' },
-    payment_status: '',
-    payment_type: ''
-};
-
 const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
-    const [filters, setFilters] = useState({
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const defaultFilters = {
         Fromdate: ISOString(),
         Todate: ISOString(),
-        DebitAccount: { value: '', label: 'ALL' },
-        CreditAccount: { value: '', label: 'ALL' },
-        refresh: false,
-        filterDialog: false,
-        voucherType: [],
-        debit_accounts: [],
-        credit_accounts: [],
-        created_by: [],
         voucherType_Filter: { label: 'ALL', value: '' },
         debit_accounts_Filter: { label: 'ALL', value: '' },
         credit_accounts_Filter: { label: 'ALL', value: '' },
         created_by_Filter: { label: 'ALL', value: '' },
         payment_status: '',
         payment_type: ''
+    };
+    const [filters, setFilters] = useState({
+        ...defaultFilters,
+        filterDialog: false,
     });
-    const [reload, setReload] = useState(false)
     const [paymentData, setPaymentData] = useState([]);
-
-    const sessionFilter = getSessionDateFilter(pageID);
-    const { Fromdate, Todate } = sessionFilter;
+    const [filterDropDown, setFilterDropDown] = useState({
+        voucherType: [],
+        debit_accounts: [],
+        credit_accounts: [],
+        created_by: [],
+    })
 
     const navigate = useNavigate();
 
     useEffect(() => {
 
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
+            payment_status = defaultFilters.payment_status,
+            payment_type = defaultFilters.payment_type
+        } = otherSessionFiler;
+
         setFilters(pre => ({
             ...pre,
             Fromdate: Fromdate,
             Todate: Todate,
+            voucherType_Filter: voucherType_Filter,
+            debit_accounts_Filter: debit_accounts_Filter,
+            credit_accounts_Filter: credit_accounts_Filter,
+            created_by_Filter: created_by_Filter,
+            payment_status,
+            payment_type,
         }));
 
-        setReload(pre => !pre);
-
-    }, [Fromdate, Todate]);
+    }, [sessionValue, pageID]);
 
     useEffect(() => {
         fetchLink({
             address: `payment/paymentMaster/filtersValues`
         }).then(data => {
             if (data.success) {
-                setFilters(pre => ({
+                setFilterDropDown(pre => ({
                     ...pre,
                     voucherType: toArray(data?.others?.voucherType),
                     debit_accounts: toArray(data?.others?.debit_accounts),
@@ -77,23 +80,34 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
     }, [])
 
     useEffect(() => {
-        const From = filters.Fromdate, To = filters.Todate;
-        const voucher = filters.voucherType_Filter.value;
-        const debit = filters.debit_accounts_Filter.value;
-        const credit = filters.credit_accounts_Filter.value;
-        const createdBy = filters.created_by_Filter.value;
-        const status = filters.payment_status;
-        const payment_type = filters.payment_type;
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
+            payment_status = defaultFilters.payment_status,
+            payment_type = defaultFilters.payment_type
+        } = otherSessionFiler;
 
         fetchLink({
-            address: `payment/paymentMaster?Fromdate=${From}&Todate=${To}&voucher=${voucher}&debit=${debit}&credit=${credit}&createdBy=${createdBy}&status=${status}&payment_type=${payment_type}`,
+            address: `payment/paymentMaster?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            voucher=${voucherType_Filter?.value}&
+            debit=${debit_accounts_Filter?.value}&
+            credit=${credit_accounts_Filter?.value}&
+            createdBy=${created_by_Filter?.value}&
+            status=${payment_status}&
+            payment_type=${payment_type}`,
             loadingOff, loadingOn
         }).then(data => {
             if (data.success) {
                 setPaymentData(data.data)
             }
         }).catch(e => console.error(e))
-    }, [reload]);
+    }, [sessionValue, pageID]);
 
     const TotalPayment = useMemo(() => paymentData.reduce(
         (acc, orders) => Addition(acc, orders?.debit_amount), 0
@@ -262,7 +276,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                             onChange={(e) => setFilters({ ...filters, debit_accounts_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.debit_accounts
+                                                ...filterDropDown.debit_accounts
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -281,7 +295,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                             onChange={(e) => setFilters({ ...filters, credit_accounts_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.credit_accounts
+                                                ...filterDropDown.credit_accounts
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -317,7 +331,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                             onChange={(e) => setFilters({ ...filters, voucherType_Filter: e })}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.voucherType
+                                                ...filterDropDown.voucherType
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -354,7 +368,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                             onChange={(e) => setFilters(pre => ({ ...pre, created_by_Filter: e }))}
                                             options={[
                                                 { value: '', label: 'ALL' },
-                                                ...filters.created_by
+                                                ...filterDropDown.created_by
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
@@ -383,11 +397,18 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                         <Button onClick={closeDialog}>close</Button>
                         <Button
                             onClick={() => {
-                                setSessionFilter('Fromdate', filters?.Fromdate);
-                                setSessionFilter('Todate', filters?.Todate);
-                                setSessionFilter('pageID', pageID)
-                                setReload(pre => !pre);
                                 closeDialog();
+                                setSessionFilters({
+                                    Fromdate: filters?.Fromdate,
+                                    Todate: filters.Todate,
+                                    pageID,
+                                    voucherType_Filter: filters.voucherType_Filter,
+                                    debit_accounts_Filter: filters.debit_accounts_Filter,
+                                    credit_accounts_Filter: filters.credit_accounts_Filter,
+                                    created_by_Filter: filters.created_by_Filter,
+                                    payment_status: filters.payment_status,
+                                    payment_type: filters.payment_type,
+                                });
                             }}
                             startIcon={<Search />}
                             variant="contained"
