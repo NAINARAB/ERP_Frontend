@@ -107,7 +107,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                         <input 
                             type="date"
                             value={filters.Todate}
-                            onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                            onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
                             className="cus-inpt p-2"
                         />
                         <span className="mx-1"></span>
@@ -119,7 +119,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                 </>
             }
             columns={[
-                createCol('salesPerson', 'string', 'Sales Person'),
+                createCol('salesPerson', 'string', 'Sales/Delivery Person'),
                 createCol('entries', 'number', 'Party   '),
                 createCol('entryDate', 'date', 'Entry Date'),
                 createCol('updateDate', 'date', 'Update Date'),

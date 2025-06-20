@@ -8,6 +8,7 @@ import ClosingStockRetailerBasedReport from './ledgerBased';
 // import RetailerClosingStock from '../../UserModule/retailer/closingStockRetailerBasedReport';
 import LedgerBasedClosingStock from './ledgerBasedStock';
 import SalesPersonWiseGroupedLedgerClosingStock from './salesPersonWiseGroup';
+import RetailerClosingWithLOL from './groupLol';
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
@@ -37,15 +38,20 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                             label={'Brand Wise'}
                             value={3}
                         />
-                        <Tab
+                        {/* <Tab
                             sx={tabValue === 4 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Sales-Person Based'}
+                            label={'LOL Based'}
                             value={4}
-                        />
+                        /> */}
                         <Tab
                             sx={tabValue === 5 ? { backgroundColor: '#c6d7eb' } : {}}
                             label={'Live Stock'}
                             value={5}
+                        />
+                        <Tab
+                            sx={tabValue === 6 ? { backgroundColor: '#c6d7eb' } : {}}
+                            label={'Sales Person Based'}
+                            value={6}
                         />
                     </TabList>
                 </Box>
@@ -59,11 +65,14 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                 <TabPanel value={3} sx={{ p: 0, pt: 2 }}>
                     <LedgerBasedClosingStock loadingOn={loadingOn} loadingOff={loadingOff} grouped={true} />
                 </TabPanel>
-                <TabPanel value={4} sx={{ p: 0, pt: 2 }}>
-                    <SalesPersonWiseGroupedLedgerClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel>
+                {/* <TabPanel value={4} sx={{ p: 0, pt: 2 }}>
+                    <RetailerClosingWithLOL loadingOn={loadingOn} loadingOff={loadingOff} />
+                </TabPanel> */}
                 <TabPanel value={5} sx={{ p: 0, pt: 2 }}>
                     <ClosingStockRetailerBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
+                </TabPanel>
+                <TabPanel value={6} sx={{ p: 0, pt: 2 }}>
+                    <SalesPersonWiseGroupedLedgerClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
                 </TabPanel>
             </TabContext>
         </>
