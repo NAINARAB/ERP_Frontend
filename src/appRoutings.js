@@ -175,9 +175,9 @@ const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/Sale
 const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
 
-
+const Lom=lazy(()=>import("./Pages/Masters/Lom"));
 const RoutingArray = [
-
+   {component:<Lom/>,path:'/erp/master/lom'},
 
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
