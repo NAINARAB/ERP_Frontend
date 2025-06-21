@@ -3,7 +3,7 @@ import { fetchLink } from "../../Components/fetchComponent";
 import { getSessionUser } from "../../Components/functions";
 import { Card, IconButton } from "@mui/material";
 import { Dialog, DialogActions, DialogContent, DialogTitle, Switch, Paper, Button } from "@mui/material";
-import { Settings } from "@mui/icons-material";
+import { ArrowOutward } from "@mui/icons-material";
 
 
 const Lom = ({ loadingOn, loadingOff }) => {
@@ -113,7 +113,7 @@ const Lom = ({ loadingOn, loadingOff }) => {
                                     {erpDetails[index]?.fields || "-"}{" "}
                                     <Button onClick={() => handleButtonClick(index, "ERP")}>
                                         {" "}
-                                        <Settings />
+                                        <ArrowOutward />
                                     </Button>
                                 </td>
                                 <td>{tallyData[index]?.master || "-"}</td>
@@ -121,7 +121,7 @@ const Lom = ({ loadingOn, loadingOff }) => {
                                 <td>
                                     {tallyData[index]?.fields || "-"}{" "}
                                     <Button onClick={() => handleButtonClick(index, "Tally")}>
-                                        <Settings />
+                                        <ArrowOutward />
                                     </Button>
                                 </td>
                             </tr>
