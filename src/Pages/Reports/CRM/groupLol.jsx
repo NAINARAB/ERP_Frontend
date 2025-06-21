@@ -5,7 +5,7 @@ import FilterableTable, { createCol } from "../../../Components/filterableTable2
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch } from "@mui/material";
-import { Search } from "@mui/icons-material";
+import { FilterAlt, Search } from "@mui/icons-material";
 
 
 const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
@@ -16,7 +16,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
         { displayName: 'Delivery Person', column: "deliveryPerson", isVisible: false, OrderBy: 2 },
         { displayName: 'Ledger Name', column: "Ledger_Name", isVisible: false, OrderBy: 3 },
         { displayName: 'Ledger Alias', column: "Ledger_Alias", isVisible: false, OrderBy: 4 },
-        { displayName: 'Actual Party Name with Brokers', column: "Actual_Party_Name_with_Brokers", isVisible: false, OrderBy: 5 },
+        { displayName: 'Party with Brokers', column: "Actual_Party_Name_with_Brokers", isVisible: false, OrderBy: 5 },
         { displayName: 'Party Name', column: "Party_Name", isVisible: false, OrderBy: 6 },
         { displayName: 'Party Location', column: "Party_Location", isVisible: false, OrderBy: 7 },
         { displayName: 'Party Nature', column: "Party_Nature", isVisible: false, OrderBy: 8 },
@@ -122,7 +122,11 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                             onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
                         ><Search /></IconButton>
                     </div> */}
-                    {/* <IconButton */}
+                        {/* <IconButton */}
+                        <IconButton
+                            size="small"
+                            onClick={() => setFilters(pre => ({ ...pre, settingsDialog: true }))}
+                        ><FilterAlt /></IconButton>
                     </>
                 }
                 columns={[
@@ -156,7 +160,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
             <Dialog
                 open={filters.settingsDialog}
                 onClose={closeDialog}
-                maxWidth='sm' fullWidth
+                maxWidth='md' fullWidth
             >
                 <DialogTitle>Column Settings</DialogTitle>
                 <DialogContent>
@@ -205,7 +209,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                     </div>
                     <div className="row p-2">
                         {groupingColumns.filter(
-                            col => stringCompare(col.column, filters.groupColumn)
+                            col => !stringCompare(col.column, filters.groupColumn)
                         ).map((col, colInd) => (
                             <div className="col-lg-4 col-md-6 p-2" key={colInd}>
                                 <Card
@@ -226,7 +230,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                                             }
                                         />
 
-                                        <h6 className='fa-13 mb-0 fw-bold '>{col?.column}</h6>
+                                        <h6 className='fa-13 mb-0 fw-bold '>{col?.displayName}</h6>
                                     </div>
                                     <input
                                         type='number'
