@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -61,15 +61,21 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                 updateDate: updateDate ? ISOString(updateDate) : '',
                 entryDays: entryDate ? getDaysBetween(entryDate, ISOString()) : '',
                 updateDays: updateDate ? getDaysBetween(updateDate, ISOString()) : '',
-                totalValue: groupedData.reduce((acc, item) => Addition(acc, item.finalClosingStock), 0),
+                liveStockValue: groupedData.reduce((acc, item) => Addition(acc, item.liveStockValue), 0),
                 entries: groupedData.length
             }
         })
-    }, [filters.retailer.value, reportData])
+    }, [filters.retailer.value, reportData]);
+
+    const sumValue = useMemo(() => {
+        return reportData.reduce(
+            (acc, item) => Addition(acc, item?.liveStockValue), 0
+        )
+    }, [reportData])
 
     return (
         <FilterableTable
-            title="Sales Person Based"
+            title={`Sales Person Based Total: ${NumberFormat(sumValue)}`}
             EnableSerialNumber
             headerFontSizePx={12}
             bodyFontSizePx={12}
@@ -97,14 +103,14 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                         />
                     </div> */}
                     <div className="d-flex align-items-center">
-                        <input 
+                        <input
                             type="date"
                             value={filters.Fromdate}
                             onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
                             className="cus-inpt p-2"
                         />
                         <span className="mx-1">{' to '}</span>
-                        <input 
+                        <input
                             type="date"
                             value={filters.Todate}
                             onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
@@ -115,6 +121,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                             size="small"
                             onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
                         ><Search /></IconButton>
+                        {/* <span>Total: <span className="text-primary">{NumberFormat(sumValue)}</span></span> */}
                     </div>
                 </>
             }
@@ -125,7 +132,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                 createCol('updateDate', 'date', 'Update Date'),
                 createCol('entryDays', 'number', 'Entry Days'),
                 createCol('updateDays', 'number', 'Update Days'),
-                createCol('totalValue', 'number', 'Stock Value'),
+                createCol('liveStockValue', 'number', 'Stock Value'),
             ]}
             isExpendable={true}
             expandableComp={({ row }) => (
@@ -140,7 +147,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                         createCol('closingDisplayDate', 'string', 'Update Date'),
                         createCol('entryDays', 'number', 'Entry Days'),
                         createCol('updateDays', 'number', 'Update Days'),
-                        createCol('finalClosingStock', 'number', 'Stock Value'),
+                        createCol('liveStockValue', 'number', 'Stock Value'),
                     ]}
                 />
             )}

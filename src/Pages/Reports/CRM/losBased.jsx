@@ -1,34 +1,31 @@
 import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, stringCompare, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, NumberFormat, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch } from "@mui/material";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { FilterAlt } from "@mui/icons-material";
 
 
-const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
+const LosBasedClosingReport = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
 
     const [groupingColumns, setGroupingColumns] = useState([
-        { displayName: 'Sales Person', column: "salesPerson", isVisible: false, OrderBy: 1 },
-        { displayName: 'Delivery Person', column: "deliveryPerson", isVisible: false, OrderBy: 2 },
-        { displayName: 'Ledger Name', column: "Ledger_Name", isVisible: false, OrderBy: 3 },
-        { displayName: 'Ledger Alias', column: "Ledger_Alias", isVisible: false, OrderBy: 4 },
-        { displayName: 'Party with Brokers', column: "Actual_Party_Name_with_Brokers", isVisible: false, OrderBy: 5 },
-        { displayName: 'Party Name', column: "Party_Name", isVisible: false, OrderBy: 6 },
-        { displayName: 'Party Location', column: "Party_Location", isVisible: false, OrderBy: 7 },
-        { displayName: 'Party Nature', column: "Party_Nature", isVisible: false, OrderBy: 8 },
-        { displayName: 'Party Group', column: "Party_Group", isVisible: false, OrderBy: 9 },
-        { displayName: 'Ref Brokers', column: "Ref_Brokers", isVisible: false, OrderBy: 10 },
-        { displayName: 'Ref Owners', column: "Ref_Owners", isVisible: false, OrderBy: 11 },
-        { displayName: 'Party District', column: "Party_District", isVisible: false, OrderBy: 12 },
-        { displayName: 'Party Mailing Name', column: "Party_Mailing_Name", isVisible: false, OrderBy: 13 }
+        { displayName: 'Brand', column: "Brand_Name", isVisible: false, OrderBy: 1 },
+        { displayName: 'Stock Item', column: "Stock_Item", isVisible: false, OrderBy: 2 },
+        { displayName: 'Group ST', column: "Group_ST", isVisible: false, OrderBy: 3 },
+        { displayName: 'Bag', column: "Bag", isVisible: false, OrderBy: 4 },
+        { displayName: 'Stock Group', column: "Stock_Group", isVisible: false, OrderBy: 5 },
+        { displayName: 'S Sub Group 1', column: "S_Sub_Group_1", isVisible: false, OrderBy: 6 },
+        { displayName: 'Grade Item Group', column: "Grade_Item_Group", isVisible: false, OrderBy: 7 },
+        { displayName: 'Item Name Modified', column: "Item_Name_Modified", isVisible: false, OrderBy: 8 },
+        { displayName: 'POS Group', column: "POS_Group", isVisible: false, OrderBy: 9 },
+        { displayName: 'POS Item Name', column: "POS_Item_Name", isVisible: false, OrderBy: 10 },
     ]);
 
     const [filters, setFilters] = useState({
-        retailer: { value: '', label: 'Search Retailer' },
+        product: { value: '', label: 'Search Item' },
         Fromdate: ISOString(),
         Todate: ISOString(),
         reload: false,
@@ -38,7 +35,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `reports/customerClosingStock/retailerBased/withLOL?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
+            address: `reports/customerClosingStock/withLOS`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -49,13 +46,13 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
     }, [filters.reload]);
 
     const data = useMemo(() => {
-        return checkIsNumber(filters.retailer.value)
+        return checkIsNumber(filters.product.value)
             ? reportData.filter(
-                row => isEqualNumber(row.Retailer_Id, filters.retailer.value)
+                row => isEqualNumber(row.Product_Id, filters.product.value)
             ) : reportData;
-    }, [reportData, filters.retailer.value])
+    }, [reportData, filters.product.value])
 
-    const groupedSalesPersonData = useMemo(() => {
+    const groupedArray = useMemo(() => {
 
         const groupSalesPersonWise = groupData(data, filters.groupColumn);
 
@@ -83,60 +80,47 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                 updateDate: updateDate ? ISOString(updateDate) : '',
                 entryDays: entryDate ? getDaysBetween(entryDate, ISOString()) : '',
                 updateDays: updateDate ? getDaysBetween(updateDate, ISOString()) : '',
-                totalValue: groupedData.reduce((acc, item) => Addition(acc, item.finalClosingStock), 0),
+                liveStockValue: groupedData.reduce((acc, item) => Addition(acc, item.StockValueOfItem), 0),
+                StockQuantityOfItem: groupedData.reduce((acc, item) => Addition(acc, item.StockQuantityOfItem), 0),
                 entries: groupedData.length
             }
         }).sort((a, b) => String(a[filters.groupColumn]).localeCompare(b[filters.groupColumn]))
     }, [data, filters.groupColumn]);
 
-    const closeDialog = () => setFilters(pre => ({ ...pre, settingsDialog: false }))
+    const closeDialog = () => setFilters(pre => ({ ...pre, settingsDialog: false }));
+
+    const sumValue = useMemo(() => {
+        return reportData.reduce(
+            (acc, item) => Addition(acc, item?.StockValueOfItem), 0
+        )
+    }, [reportData])
 
     return (
         <>
             <FilterableTable
-                title="LOL Based"
+                title={`LOS Based `}
                 EnableSerialNumber
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
-                dataArray={groupedSalesPersonData}
+                dataArray={groupedArray}
                 ButtonArea={
                     <>
-
-                        {/* <div className="d-flex align-items-center">
-                        <input
-                            type="date"
-                            value={filters.Fromdate}
-                            onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
-                            className="cus-inpt p-2"
-                        />
-                        <span className="mx-1">{' to '}</span>
-                        <input
-                            type="date"
-                            value={filters.Todate}
-                            onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
-                            className="cus-inpt p-2"
-                        />
-                        <span className="mx-1"></span>
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
-                        ><Search /></IconButton>
-                    </div> */}
-                        {/* <IconButton */}
                         <IconButton
                             size="small"
                             onClick={() => setFilters(pre => ({ ...pre, settingsDialog: true }))}
                         ><FilterAlt /></IconButton>
+                        <span>Total: <span className="text-primary">{NumberFormat(sumValue)}</span></span>
                     </>
                 }
                 columns={[
                     createCol(filters.groupColumn, 'string', 'Group'),
-                    createCol('entries', 'number', 'Party   '),
+                    createCol('entries', 'number', 'Items'),
                     createCol('entryDate', 'date', 'Entry Date'),
                     createCol('updateDate', 'date', 'Update Date'),
                     createCol('entryDays', 'number', 'Entry Days'),
                     createCol('updateDays', 'number', 'Update Days'),
-                    createCol('totalValue', 'number', 'Stock Value'),
+                    createCol('StockQuantityOfItem', 'number', 'Quantity'),
+                    createCol('liveStockValue', 'number', 'Stock Value'),
                 ]}
                 isExpendable={true}
                 expandableComp={({ row }) => (
@@ -146,12 +130,20 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                         dataArray={row.groupedData}
                         EnableSerialNumber
                         columns={[
-                            createCol('Retailer_Name', 'string', 'Customer'),
+                            createCol('Product_Name', 'string', 'Product'),
                             createCol('deliveryDisplayDate', 'string', 'Entry Date'),
                             createCol('closingDisplayDate', 'string', 'Update Date'),
                             createCol('entryDays', 'number', 'Entry Days'),
                             createCol('updateDays', 'number', 'Update Days'),
-                            createCol('finalClosingStock', 'number', 'Stock Value'),
+                            createCol('StockQuantityOfItem', 'number', 'Quantity'),
+                            createCol('StockValueOfItem', 'number', 'Stock Value'),
+                            ...groupingColumns.filter(
+                                col => col.isVisible
+                            ).sort(
+                                (a, b) => toNumber(a.OrderBy) - toNumber(b.OrderBy)
+                            ).map(
+                                col => createCol(col.column, 'string', col.displayName)
+                            )
                         ]}
                     />
                 )}
@@ -168,25 +160,25 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                         <table className="table">
                             <tbody>
                                 <tr>
-                                    <td>Retailer Name</td>
+                                    <td>Product Name</td>
                                     <td>
                                         <Select
-                                            value={filters.retailer}
+                                            value={filters.product}
                                             menuPortalTarget={document.body}
-                                            onChange={e => setFilters(pre => ({ ...pre, retailer: e }))}
+                                            onChange={e => setFilters(pre => ({ ...pre, product: e }))}
                                             options={[
                                                 { value: '', label: 'ALL' },
                                                 ...reportData.sort(
-                                                    (a, b) => String(a?.Retailer_Name).localeCompare(String(b?.Retailer_Name))
+                                                    (a, b) => String(a?.Product_Name).localeCompare(String(b?.Product_Name))
                                                 ).map(item => ({
-                                                    value: item.Retailer_Id,
-                                                    label: item.Retailer_Name
+                                                    value: item.Product_Id,
+                                                    label: item.Product_Name
                                                 }))
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             required
-                                            placeholder={"Select Retailer"}
+                                            placeholder={"Select Product"}
                                         />
                                     </td>
                                 </tr>
@@ -262,4 +254,4 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
     )
 }
 
-export default RetailerClosingWithLOL;
+export default LosBasedClosingReport;

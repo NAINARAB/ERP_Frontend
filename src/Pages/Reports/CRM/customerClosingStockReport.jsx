@@ -3,15 +3,43 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { Box, Tab } from "@mui/material";
 import { useState } from "react";
-import ClosingStockItemBasedReport from './itemWiseReport';
-import ClosingStockRetailerBasedReport from './ledgerBased';
+import ClosingStockItemBasedReport from './itemWise';
+import ClosingStockRetailerBasedReport from './liveStock';
 // import RetailerClosingStock from '../../UserModule/retailer/closingStockRetailerBasedReport';
-import LedgerBasedClosingStock from './ledgerBasedStock';
-import SalesPersonWiseGroupedLedgerClosingStock from './salesPersonWiseGroup';
-import RetailerClosingWithLOL from './groupLol';
+import LedgerBasedClosingStock from './ledgerWise';
+import SalesPersonWiseGroupedLedgerClosingStock from './salesPersonWise';
+import RetailerClosingWithLOL from './lolBased';
+import LosBasedClosingReport from './losBased';
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
+
+    const tabData = [
+        {
+            name: 'Item Wise',
+            component: <ClosingStockItemBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+        {
+            name: 'Ledger Wise',
+            component: <LedgerBasedClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+        {
+            name: 'LOL Based',
+            component: <RetailerClosingWithLOL loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+        {
+            name: 'LOS Based',
+            component: <LosBasedClosingReport loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+        {
+            name: 'Live Stock',
+            component: <ClosingStockRetailerBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+        {
+            name: 'Sales Person Based',
+            component: <SalesPersonWiseGroupedLedgerClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
+        },
+    ]
 
     return (
         <>
@@ -23,57 +51,25 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                         variant='scrollable'
                         scrollButtons="auto"
                     >
-                        <Tab
-                            sx={tabValue === 1 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Item Wise'}
-                            value={1}
-                        />
-                        <Tab
-                            sx={tabValue === 2 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Ledger Wise'}
-                            value={2}
-                        />
-                        <Tab
-                            sx={tabValue === 3 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Brand Wise'}
-                            value={3}
-                        />
-                        {/* <Tab
-                            sx={tabValue === 4 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'LOL Based'}
-                            value={4}
-                        /> */}
-                        <Tab
-                            sx={tabValue === 5 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Live Stock'}
-                            value={5}
-                        />
-                        <Tab
-                            sx={tabValue === 6 ? { backgroundColor: '#c6d7eb' } : {}}
-                            label={'Sales Person Based'}
-                            value={6}
-                        />
+                        {tabData.map(
+                            (tab, tabInd) => (
+                                <Tab
+                                    key={tabInd}
+                                    sx={tabValue === (tabInd + 1) ? { backgroundColor: '#c6d7eb' } : {}}
+                                    label={tab.name}
+                                    value={tabInd + 1}
+                                />
+                            )
+                        )}
                     </TabList>
                 </Box>
 
-                <TabPanel value={1} sx={{ p: 0, pt: 2 }}>
-                    <ClosingStockItemBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel>
-                <TabPanel value={2} sx={{ p: 0, pt: 2 }}>
-                    <LedgerBasedClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel>
-                <TabPanel value={3} sx={{ p: 0, pt: 2 }}>
-                    <LedgerBasedClosingStock loadingOn={loadingOn} loadingOff={loadingOff} grouped={true} />
-                </TabPanel>
-                {/* <TabPanel value={4} sx={{ p: 0, pt: 2 }}>
-                    <RetailerClosingWithLOL loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel> */}
-                <TabPanel value={5} sx={{ p: 0, pt: 2 }}>
-                    <ClosingStockRetailerBasedReport loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel>
-                <TabPanel value={6} sx={{ p: 0, pt: 2 }}>
-                    <SalesPersonWiseGroupedLedgerClosingStock loadingOn={loadingOn} loadingOff={loadingOff} />
-                </TabPanel>
+                {tabData.map((tab, tabInd) => (
+                    <TabPanel value={tabInd + 1} sx={{ p: 0, pt: 2 }} key={tabInd}>
+                        {tab.component}
+                    </TabPanel>
+                ))}
+                
             </TabContext>
         </>
     )

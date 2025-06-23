@@ -6,10 +6,9 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toArray } from '../../../Components/functions';
 import { fetchLink } from "../../../Components/fetchComponent";
 
-const LedgerBasedClosingStock = ({ loadingOn, loadingOff, grouped = false }) => {
+const LedgerBasedClosingStock = ({ loadingOn, loadingOff }) => {
     const [retailers, setRetailers] = useState([]);
     const [productClosingStock, setProductClosingStock] = useState([]);
-    const [groupedProductClosing, setGroupedProductClosing] = useState([]);
     const [filters, setFilters] = useState({
         customer: { value: '', label: 'Select Retailer' },
     });
@@ -29,15 +28,11 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, grouped = false }) => 
     useEffect(() => {
         if (filters?.customer.value) {
             fetchLink({
-                address: `masters/retailers/soldProducts?Retailer_Id=${filters?.customer.value}`,
+                address: `reports/customerClosingStock/retailerBased/detailedInfo?Retailer_Id=${filters?.customer.value}`,
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success) {
-                    const groupProcessed = toArray(data.data);
-                    setGroupedProductClosing(groupProcessed);
-
-                    const processed = toArray(data?.others?.productBased);
-                    setProductClosingStock(processed);
+                    setProductClosingStock(toArray(data?.data));
                 }
             }).catch(e => console.error(e))
         }
@@ -45,13 +40,13 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, grouped = false }) => 
 
     const productBasedColumn = [
         createCol('Product_Name', 'string'),
-        createCol('entryDate', 'string', 'Entry Date'),
-        createCol('updateDate', 'string', 'Update Date'),
+        createCol('deliveryDisplayDate', 'string', 'Entry Date'),
+        createCol('closingDisplayDate', 'string', 'Update Date'),
         createCol('entryDays', 'number', 'Entry Days'),
         createCol('updateDays', 'number', 'Update Days'),
-        createCol('estimatedQuantity', 'number', ' Quantity'),
-        createCol('Product_Rate', 'number', 'Rate'),
-        createCol('totalValue', 'number', 'Stock-Value'),
+        createCol('stockQuantityOfItem', 'number', ' Quantity'),
+        createCol('stockRateOfItem', 'number', 'Rate'),
+        createCol('stockValueOfItem', 'number', 'Stock-Value'),
     ];
 
     const productGroupedColumn = [
@@ -68,9 +63,9 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, grouped = false }) => 
         <>
 
             <FilterableTable
-                title={" Current Stock: ₹" + NumberFormat(
+                title={" Stock value: ₹" + NumberFormat(
                     productClosingStock.reduce(
-                        (sum, product) => Addition(sum, product.totalValue),
+                        (sum, product) => Addition(sum, product.stockValueOfItem),
                         0
                     )
                 )}
@@ -97,24 +92,8 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, grouped = false }) => 
                     </>
                 }
                 EnableSerialNumber
-                dataArray={grouped ? groupedProductClosing : productClosingStock}
-                columns={grouped ? productGroupedColumn : productBasedColumn}
-                isExpendable={grouped}
-                expandableComp={({ row }) => (
-                    <FilterableTable
-                        // title={" Current Stock: ₹" + NumberFormat(
-                        //     productClosingStock.reduce(
-                        //         (sum, product) => Addition(sum, product.totalValue),
-                        //         0
-                        //     )
-                        // )}
-                        headerFontSizePx={12}
-                        bodyFontSizePx={12}
-                        EnableSerialNumber
-                        dataArray={toArray(row?.GroupedProductArray)}
-                        columns={productBasedColumn}
-                    />
-                )}
+                dataArray={productClosingStock}
+                columns={productBasedColumn}
             />
 
         </>

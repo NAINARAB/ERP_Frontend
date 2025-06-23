@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, getDaysBetween, ISOString, LocalDate, Multiplication, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, getDaysBetween, ISOString, LocalDate, Multiplication, NumberFormat, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -37,11 +37,17 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
                 }
             }).catch(e => console.error(e))
         }
-    }, [filters.searchItem.value])
+    }, [filters.searchItem.value]);
+
+    const sumValue = useMemo(() => {
+        return reportData.reduce(
+            (acc, item) => Addition(acc, item?.stockValueOfItem), 0
+        )
+    }, [reportData])
 
     return (
         <FilterableTable
-            title="Item Wise"
+            title={`Item Wise ${sumValue ? '( Total: ' + NumberFormat(sumValue) + ' )'  : ''}`}
             EnableSerialNumber
             dataArray={reportData}
             ButtonArea={
@@ -114,7 +120,7 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
                     isCustomCell: true,
                     Cell: ({ row }) => (
                         <>
-                            {row?.finalQty}
+                            {row?.stockQuantityOfItem}
                         </>
                     )
                 },
@@ -124,7 +130,7 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
                     isCustomCell: true,
                     Cell: ({ row }) => (
                         <>
-                            {row?.finalRate}
+                            {row?.stockRateOfItem}
                         </>
                     )
                 },
@@ -134,7 +140,7 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
                     isCustomCell: true,
                     Cell: ({ row }) => (
                         <>
-                            {Multiplication(row?.finalQty, row?.finalRate)}
+                            {row?.stockValueOfItem}
                         </>
                     )
                 },

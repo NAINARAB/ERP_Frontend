@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, NumberFormat, toArray } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -23,11 +23,17 @@ const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff }) => {
                 setReportData(dataValue)
             }
         }).catch(e => console.error(e))
-    }, [])
+    }, []);
+
+    const sumValue = useMemo(() => {
+        return reportData.reduce(
+            (acc, item) => Addition(acc, item?.liveStockValue), 0
+        )
+    }, [reportData])
 
     return (
         <FilterableTable
-            title="Item Wise"
+            title={`Live Stock: ${NumberFormat(sumValue)}`}
             EnableSerialNumber
             dataArray={
                 checkIsNumber(filters.retailer.value)
@@ -66,7 +72,7 @@ const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff }) => {
                 createCol('closingDisplayDate', 'string', 'Update Date'),
                 createCol('entryDays', 'number', 'Entry Days'),
                 createCol('updateDays', 'number', 'Update Days'),
-                createCol('finalClosingStock', 'number', 'Stock Value'),
+                createCol('liveStockValue', 'number', 'Stock Value'),
             ]}
         />
     )

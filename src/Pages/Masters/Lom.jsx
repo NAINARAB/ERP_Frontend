@@ -111,18 +111,18 @@ const Lom = ({ loadingOn, loadingOff }) => {
                                 <td>{erpDetails[index]?.count || "-"}</td>
                                 <td>
                                     {erpDetails[index]?.fields || "-"}{" "}
-                                    <Button onClick={() => handleButtonClick(index, "ERP")}>
+                                    <IconButton size="small" onClick={() => handleButtonClick(index, "ERP")}>
                                         {" "}
-                                        <ArrowOutward />
-                                    </Button>
+                                        <ArrowOutward color="primary" />
+                                    </IconButton>
                                 </td>
                                 <td>{tallyData[index]?.master || "-"}</td>
                                 <td>{tallyData[index]?.count || "-"}</td>
                                 <td>
                                     {tallyData[index]?.fields || "-"}{" "}
-                                    <Button onClick={() => handleButtonClick(index, "Tally")}>
-                                        <ArrowOutward />
-                                    </Button>
+                                    <IconButton size="small" onClick={() => handleButtonClick(index, "Tally")}>
+                                        <ArrowOutward color="primary" />
+                                    </IconButton>
                                 </td>
                             </tr>
                         ))}
