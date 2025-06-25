@@ -74,12 +74,6 @@ const ExpencesOfSalesInvoice = ({
                 return {
                     ...item,
                     Expense_Id: selected.Id,
-                    Cgst: IS_IGST ? 0 : toNumber(selected.Cgst_p),
-                    Sgst: IS_IGST ? 0 : toNumber(selected.Sgst_p),
-                    Igst: IS_IGST ? toNumber(selected.Igst_p) : 0,
-                    Cgst_Amo: 0,
-                    Sgst_Amo: 0,
-                    Igst_Amo: 0,
                     Expence_Value: 0
                 };
             })
@@ -106,7 +100,10 @@ const ExpencesOfSalesInvoice = ({
                     <table className="table table-bordered m-0">
                         <thead className="table-light">
                             <tr>
-                                {['S.No', 'Expense', 'GST %', 'Tax', 'Expense Value', 'Action'].map(
+                                {[
+                                    'S.No', 'Expense', 
+                                    // 'GST %', 'Tax', 
+                                    'Expense Value', 'Action'].map(
                                     (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
                                 )}
                             </tr>
@@ -133,7 +130,7 @@ const ExpencesOfSalesInvoice = ({
                                             placeholder="Select Expense"
                                         />
                                     </td>
-                                    <td className="p-0 vctr">
+                                    {/* <td className="p-0 vctr">
                                         <input
                                             onInput={onlynum}
                                             className="cus-inpt p-2 border-0"
@@ -144,7 +141,7 @@ const ExpencesOfSalesInvoice = ({
                                     </td>
                                     <td className="p-0 vctr text-center" >
                                         {NumberFormat(IS_IGST ? toNumber(row?.Igst_Amo) : Addition(row?.Cgst_Amo, row?.Sgst_Amo))}
-                                    </td>
+                                    </td> */}
                                     <td className="p-0 vctr">
                                         <input
                                             onInput={onlynumAndNegative}

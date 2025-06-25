@@ -10,7 +10,8 @@ import {
     getSessionUser,
     checkIsNumber,
     toNumber,
-    toArray
+    toArray,
+    stringCompare
 } from "../../../Components/functions";
 import { Add, ArrowLeft, Clear, Delete, Download, Edit, ReceiptLong, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -93,7 +94,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `masters/expences` }),
+                    fetchLink({ address: `masters/defaultAccountMaster` }),
                     fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName` }),
                 ]);
@@ -122,8 +123,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
                     (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
                 );
-                const expencesMaster = (expenceResponse.success ? expenceResponse.data : []).sort(
-                    (a, b) => String(a?.Expence_Name).localeCompare(b?.Expence_Name)
+                const expencesMaster = (expenceResponse.success ? toArray(expenceResponse.data) : []).sort(
+                    (a, b) => String(a?.Account_Name).localeCompare(b?.Account_Name)
                 );
                 const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
                     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
@@ -143,7 +144,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffType: staffCategoryData,
                     godown: godownLocations,
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
-                    expence: expencesMaster,
+                    expence: expencesMaster.filter(
+                        exp => !stringCompare(exp.Type, 'DEFAULT')
+                    ).map(exp => ({ Id: exp.Acc_Id, Expence_Name: exp.Account_Name })),
                     stockInGodown: stockInGodowns,
                     stockItemLedgerName: stockItemLedgerName
                 }));
@@ -295,6 +298,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             if (data.success) {
                 clearValues();
                 toast.success(data.message);
+                navigate('/erp/sales/invoice')
             } else {
                 toast.warn(data.message)
             }
@@ -325,212 +329,202 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 stockInGodown={baseData.stockInGodown}
             />
 
-            {/* <form onSubmit={e => {
-                e.preventDefault();
-                saveSalesInvoice();
-            }}> */}
-                <Card>
-                    <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
-                        <span className="flex-grow-1 fa-16 fw-bold">Sales Invoice</span>
-                        <span>
-                            <Button type='button' onClick={() => {
-                                if ((Array.isArray(editValues?.orderInfo) || isValidObject(editValues?.invoiceInfo)) && window.history.length > 1) {
-                                    navigate(-1);
-                                } else {
-                                    navigate(location.pathname, { replace: true, state: null });
-                                }
-                            }}>Cancel</Button>
-                            <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
-                        </span>
-                    </div>
-                    <CardContent>
-                        <div className="row p-0">
-                            {/* staff info */}
-                            <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
-                                <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
-                                    <InvolvedStaffs
-                                        StaffArray={staffArray}
-                                        setStaffArray={setStaffArray}
-                                        costCenter={baseData.staff}
-                                        costCategory={baseData.staffType}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
-                                <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
-                                    <ManageSalesInvoiceGeneralInfo
-                                        invoiceInfo={invoiceInfo}
-                                        setInvoiceInfo={setInvoiceInfo}
-                                        retailers={baseData.retailers}
-                                        branches={baseData.branch}
-                                        voucherType={baseData.voucherType}
-                                        stockItemLedgerName={baseData.stockItemLedgerName}
-                                        onChangeRetailer={() => {
-                                            setInvoiceProduct([]);
-                                            setInvoiceExpences([]);
-                                        }}
-                                    />
-                                </div>
+            <Card>
+                <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
+                    <span className="flex-grow-1 fa-16 fw-bold">Sales Invoice</span>
+                    <span>
+                        <Button type='button' onClick={() => {
+                            if (window.history.length > 1) {
+                                navigate(-1);
+                            } else {
+                                navigate('/erp/sales/invoice');
+                            }
+                        }}>Cancel</Button>
+                        <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
+                    </span>
+                </div>
+                <CardContent>
+                    <div className="row p-0">
+                        {/* staff info */}
+                        <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                            <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                <InvolvedStaffs
+                                    StaffArray={staffArray}
+                                    setStaffArray={setStaffArray}
+                                    costCenter={baseData.staff}
+                                    costCategory={baseData.staffType}
+                                />
                             </div>
                         </div>
 
-                        <FilterableTable
-                            title="Items"
-                            headerFontSizePx={13}
-                            bodyFontSizePx={13}
-                            EnableSerialNumber
-                            disablePagination
-                            ButtonArea={
-                                <>
+                        {/* general info */}
+                        <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                            <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+                                <ManageSalesInvoiceGeneralInfo
+                                    invoiceInfo={invoiceInfo}
+                                    setInvoiceInfo={setInvoiceInfo}
+                                    retailers={baseData.retailers}
+                                    branches={baseData.branch}
+                                    voucherType={baseData.voucherType}
+                                    stockItemLedgerName={baseData.stockItemLedgerName}
+                                    onChangeRetailer={() => {
+                                        setInvoiceProduct([]);
+                                        setInvoiceExpences([]);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* product details */}
+                    <FilterableTable
+                        title="Items"
+                        headerFontSizePx={13}
+                        bodyFontSizePx={13}
+                        EnableSerialNumber
+                        disablePagination
+                        ButtonArea={
+                            <>
+                                <Button
+                                    onClick={() => {
+                                        setSelectedProductToEdit(null);
+                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                    }}
+                                    sx={{ ml: 1 }}
+                                    variant='outlined'
+                                    type="button"
+                                    startIcon={<Add />}
+                                    disabled={
+                                        !checkIsNumber(invoiceInfo.Retailer_Id)
+                                        || (invoiceProducts.length > 0
+                                            && checkIsNumber(invoiceInfo.So_No))
+                                    }
+                                >Add Product</Button>
+
+                                <AddProductsInSalesInvoice
+                                    loadingOn={loadingOn}
+                                    loadingOff={loadingOff}
+                                    open={dialog.importFromSaleOrder}
+                                    onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
+                                    retailer={invoiceInfo?.Retailer_Id}
+                                    selectedItems={invoiceProducts}
+                                    setSelectedItems={setInvoiceProduct}
+                                    products={baseData.products}
+                                    GST_Inclusive={invoiceInfo.GST_Inclusive}
+                                    IS_IGST={IS_IGST}
+                                    invoiceInfo={invoiceInfo}
+                                    setInvoiceInfo={setInvoiceInfo}
+                                    godowns={baseData.godown}
+                                    stockInGodown={baseData.stockInGodown}
+                                >
                                     <Button
-                                        onClick={() => {
-                                            setSelectedProductToEdit(null);
-                                            setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                        }}
-                                        sx={{ ml: 1 }}
-                                        variant='outlined'
-                                        type="button"
-                                        startIcon={<Add />}
+                                        onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
                                         disabled={
                                             !checkIsNumber(invoiceInfo.Retailer_Id)
-                                            || (invoiceProducts.length > 0
-                                                && checkIsNumber(invoiceInfo.So_No))
+                                            || (
+                                                invoiceProducts.length > 0
+                                                && !checkIsNumber(invoiceInfo.So_No)
+                                            )
                                         }
-                                    >Add Product</Button>
-
-                                    {/* <Button
-                                        variant="outlined"
-                                        className="me-2"
-                                        disabled={!checkIsNumber(invoiceInfo.Retailer_Id)}
+                                        sx={{ ml: 1 }}
+                                        type="button"
+                                        variant='outlined'
                                         startIcon={<ReceiptLong />}
-                                    >Choose Sale Order</Button> */}
+                                    >Choose Sale Order</Button>
+                                </AddProductsInSalesInvoice>
+                            </>
+                        }
+                        dataArray={[
+                            ...invoiceProducts,
+                            ...Array.from({
+                                length: dummyRowCount > 0 ? dummyRowCount : 0
+                            }).map(d => salesInvoiceDetailsInfo)
+                        ]}
+                        columns={[
+                            createCol('Item_Name', 'string'),
+                            createCol('HSN_Code', 'string'),
+                            createCol('Bill_Qty', 'number'),
+                            createCol('Act_Qty', 'number'),
+                            createCol('Item_Rate', 'number'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Tax',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    const { Cgst = 0, Sgst = 0, Igst = 0, Cgst_Amo = 0, Sgst_Amo = 0, Igst_Amo = 0 } = row;
+                                    const taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
+                                    const taxAmount = IS_IGST ? Igst_Amo : Addition(Cgst_Amo, Sgst_Amo);
 
-                                    <AddProductsInSalesInvoice
-                                        loadingOn={loadingOn}
-                                        loadingOff={loadingOff}
-                                        open={dialog.importFromSaleOrder}
-                                        onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
-                                        retailer={invoiceInfo?.Retailer_Id}
-                                        selectedItems={invoiceProducts}
-                                        setSelectedItems={setInvoiceProduct}
-                                        products={baseData.products}
-                                        GST_Inclusive={invoiceInfo.GST_Inclusive}
-                                        IS_IGST={IS_IGST}
-                                        invoiceInfo={invoiceInfo}
-                                        setInvoiceInfo={setInvoiceInfo}
-                                        godowns={baseData.godown}
-                                        stockInGodown={baseData.stockInGodown}
-                                    >
-                                        <Button
-                                            onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
-                                            disabled={
-                                                !checkIsNumber(invoiceInfo.Retailer_Id)
-                                                || (
-                                                    invoiceProducts.length > 0
-                                                    && !checkIsNumber(invoiceInfo.So_No)
-                                                )
-                                            }
-                                            sx={{ ml: 1 }}
-                                            type="button"
-                                            variant='outlined'
-                                            startIcon={<ReceiptLong />}
-                                        >Choose Sale Order</Button>
-                                    </AddProductsInSalesInvoice>
-                                </>
-                            }
-                            dataArray={[
-                                ...invoiceProducts,
-                                ...Array.from({
-                                    length: dummyRowCount > 0 ? dummyRowCount : 0
-                                }).map(d => salesInvoiceDetailsInfo)
-                            ]}
-                            columns={[
-                                createCol('Item_Name', 'string'),
-                                createCol('HSN_Code', 'string'),
-                                createCol('Bill_Qty', 'number'),
-                                createCol('Act_Qty', 'number'),
-                                createCol('Item_Rate', 'number'),
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Tax',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => {
-                                        const { Cgst = 0, Sgst = 0, Igst = 0, Cgst_Amo = 0, Sgst_Amo = 0, Igst_Amo = 0 } = row;
-                                        const taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
-                                        const taxAmount = IS_IGST ? Igst_Amo : Addition(Cgst_Amo, Sgst_Amo);
-
-                                        return !checkIsNumber(row?.Item_Id) ? '' : `${taxAmount} - (${taxPercentage} %)`
-                                    }
+                                    return !checkIsNumber(row?.Item_Id) ? '' : `${taxAmount} - (${taxPercentage} %)`
+                                }
+                            },
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Godown',
+                                isCustomCell: true,
+                                Cell: ({ row }) => baseData.godown.find(
+                                    godown => isEqualNumber(godown.Godown_Id, row?.GoDown_Id)
+                                )?.Godown_Name ?? ''
+                            },
+                            createCol('Amount', 'number'),
+                            {
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    return (
+                                        <>
+                                            <IconButton
+                                                onClick={() => {
+                                                    setSelectedProductToEdit(row);
+                                                    setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                                }}
+                                                size="small"
+                                                type="button"
+                                                disabled={!checkIsNumber(row?.Item_Id)}
+                                            >
+                                                <Edit />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                type="button"
+                                                onClick={() => setInvoiceProduct(
+                                                    pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id))
+                                                )}
+                                                color='error'
+                                                disabled={!checkIsNumber(row?.Item_Id)}
+                                            >
+                                                <Delete />
+                                            </IconButton>
+                                        </>
+                                    )
                                 },
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: 'Godown',
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => baseData.godown.find(
-                                        godown => isEqualNumber(godown.Godown_Id, row?.GoDown_Id)
-                                    )?.Godown_Name ?? ''
-                                },
-                                createCol('Amount', 'number'),
-                                {
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => {
-                                        return (
-                                            <>
-                                                <IconButton
-                                                    onClick={() => {
-                                                        setSelectedProductToEdit(row);
-                                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                                    }}
-                                                    size="small"
-                                                    type="button"
-                                                    disabled={!checkIsNumber(row?.Item_Id)}
-                                                >
-                                                    <Edit />
-                                                </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    type="button"
-                                                    onClick={() => setInvoiceProduct(
-                                                        pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id))
-                                                    )}
-                                                    color='error'
-                                                    disabled={!checkIsNumber(row?.Item_Id)}
-                                                >
-                                                    <Delete />
-                                                </IconButton>
-                                            </>
-                                        )
-                                    },
-                                    ColumnHeader: 'Action',
-                                    isVisible: 1,
-                                },
-                            ]}
-                        />
+                                ColumnHeader: 'Action',
+                                isVisible: 1,
+                            },
+                        ]}
+                    />
 
-                        <br />
+                    <br />
 
-                        <ExpencesOfSalesInvoice
-                            invoiceExpences={invoiceExpences}
-                            setInvoiceExpences={setInvoiceExpences}
-                            expenceMaster={baseData.expence}
-                            IS_IGST={IS_IGST}
-                            taxType={taxType}
-                        />
+                    <ExpencesOfSalesInvoice
+                        invoiceExpences={invoiceExpences}
+                        setInvoiceExpences={setInvoiceExpences}
+                        expenceMaster={baseData.expence}
+                        IS_IGST={IS_IGST}
+                        taxType={taxType}
+                    />
 
-                        <br />
+                    <br />
 
-                        <SalesInvoiceTaxDetails
-                            invoiceProducts={invoiceProducts}
-                            invoiceExpences={invoiceExpences}
-                            isNotTaxableBill={isNotTaxableBill}
-                            isInclusive={isInclusive}
-                            IS_IGST={IS_IGST}
-                            products={baseData.products}
-                        />
-                    </CardContent>
-                </Card>
-            {/* </form> */}
+                    <SalesInvoiceTaxDetails
+                        invoiceProducts={invoiceProducts}
+                        invoiceExpences={invoiceExpences}
+                        isNotTaxableBill={isNotTaxableBill}
+                        isInclusive={isInclusive}
+                        IS_IGST={IS_IGST}
+                        products={baseData.products}
+                    />
+                </CardContent>
+            </Card>
         </>
     )
 }

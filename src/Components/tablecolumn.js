@@ -50,8 +50,8 @@ export const customSelectStyles = {
         backgroundColor: state.isSelected
             ? '#2684FF'
             : state.isFocused
-            ? '#E2ECF9'
-            : 'white',
+                ? '#E2ECF9'
+                : 'white',
         color: state.isSelected ? 'white' : '#333',
         padding: '10px 12px',
     }),
@@ -147,4 +147,16 @@ export const companyDetails = [
         bankAccount: '0021 5005 0800 309',
         ifsc: 'TMBL0000002'
     },
+]
+
+export const erpModules = [
+    { name: 'PURCHASE ORDER' },
+    { name: 'PURCHASE INVOICE' },
+    { name: 'SALE ORDER' },
+    { name: 'SALE INVOICE' },
+    { name: 'JOURNAL' },
+    { name: 'STOCK JOURNAL' },
+    { name: 'PAYMENT' },
+    { name: 'RECEIPT' },
+    { name: 'CONTRA' },
 ]

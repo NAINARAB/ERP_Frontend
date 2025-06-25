@@ -18,7 +18,10 @@ const UomMaster = lazy(() => import("./Pages/Masters/uomMaster"))
 const RateMaster = lazy(() => import("./Pages/Masters/rateMaster"))
 const LeaveMaster = lazy(() => import("./Pages/Masters/LeaveMaster"))
 const LeaveType = lazy(() => import("./Pages/Masters/LeaveType"));
-
+const DefaultAccountMaster = lazy(() => import("./Pages/Masters/defaultAccountMaster/listDefaultAccountMaster"));
+const Lom = lazy(() => import("./Pages/Masters/Lom"));
+const Lollist = lazy(() => import("./Pages/Masters/lollist"));
+const Loslist = lazy(() => import("./Pages/Masters/loslist"));
 
 // Authorization
 const UserBased = lazy(() => import("./Pages/Authorization/userBased"))
@@ -175,14 +178,7 @@ const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/Sale
 const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
 
-const Lom=lazy(()=>import("./Pages/Masters/Lom"));
-const Lollist=lazy(()=>import("./Pages/Masters/lollist"));
-const Loslist=lazy(()=>import("./Pages/Masters/loslist"));
 const RoutingArray = [
-   {component:<Loslist/>,path:'/erp/master/loslist'},
-   {component:<Lollist/>,path:'/erp/master/lollist'},
-
-   {component:<Lom/>,path:'/erp/master/lom'},
 
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
@@ -224,6 +220,12 @@ const RoutingArray = [
     { component: <UomMaster />, path: '/erp/master/uomMaster' },
     { component: <PosMaster />, path: '/erp/master/posMaster' },
     { component: <POSProductList />, path: '/erp/master/POSProductList' },
+    { component: <DefaultAccountMaster />, path: '/erp/master/defaultAccountMaster' },
+    { component: <Loslist />, path: '/erp/master/loslist' },
+    { component: <Lollist />, path: '/erp/master/lollist' },
+    { component: <Lom />, path: '/erp/master/lom' },
+    
+
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
     { component: <DeliveryReports />, path: '/erp/reports/deliveryReports' },
@@ -313,7 +315,7 @@ const RoutingArray = [
     { component: <TaskType />, path: '/taskManagement/master/taskTypes' },
     { component: <TaskMaster />, path: '/taskManagement/master/tasks' },
     { component: <TaskParameter isOpened={true} disableCollapse={true} />, path: '/taskManagement/master/parameters' },
-    { component: <ProjectList />, path: '/taskManagement/master/projects' },    
+    { component: <ProjectList />, path: '/taskManagement/master/projects' },
     { component: <LeaveType />, path: '/taskManagement/master/leaveType' },
     { component: <LeaveMaster />, path: '/taskManagement/master/leaveMaster' },
 
