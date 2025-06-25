@@ -176,7 +176,12 @@ const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
 
 const Lom=lazy(()=>import("./Pages/Masters/Lom"));
+const Lollist=lazy(()=>import("./Pages/Masters/lollist"));
+const Loslist=lazy(()=>import("./Pages/Masters/loslist"));
 const RoutingArray = [
+   {component:<Loslist/>,path:'/erp/master/loslist'},
+   {component:<Lollist/>,path:'/erp/master/lollist'},
+
    {component:<Lom/>,path:'/erp/master/lom'},
 
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
