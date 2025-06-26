@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { checkIsNumber, groupData, ISOString, NumberFormat } from "../../Components/functions";
-import { ShoppingCart } from "@mui/icons-material";
+import { Addition, checkIsNumber, groupData, ISOString, NumberFormat, stringCompare, toArray } from "../../Components/functions";
+import { Assignment, AssignmentTurnedIn, AttachMoney, CompareArrows, Inventory2, MenuBook, Paid, ReceiptLong, RequestQuote, ShoppingCart } from "@mui/icons-material";
 import { LuArrowUpWideNarrow } from "react-icons/lu";
 import { HiOutlineCurrencyRupee } from "react-icons/hi";
 import { IoReceiptOutline } from "react-icons/io5";
@@ -10,69 +10,75 @@ import { FaCubesStacked } from "react-icons/fa6";
 import { fetchLink } from "../../Components/fetchComponent";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
-import LastSynedTime from "./tallyLastSyncedTime";
 
 const getIcons = (str) => {
     const iconArr = [
         {
-            str: 'SALES',
-            icon: <LuArrowUpWideNarrow style={{ fontSize: '80px' }} />,
+            str: 'PURCHASE ORDER',
+            actualName: 'PurchaseOrder',
+            icon: <AssignmentTurnedIn style={{ fontSize: '80px' }} />,
         },
         {
-            str: 'PURCHASE',
-            icon: <ShoppingCart style={{ fontSize: '80px' }} />,
+            str: 'PURCHASE INVOICE',
+            actualName: 'PurchaseInvoice',
+            icon: <RequestQuote style={{ fontSize: '80px' }} />,
         },
         {
-            str: 'RECEIPT',
-            icon: <IoReceiptOutline style={{ fontSize: '80px' }} />,
+            str: 'SALE ORDER',
+            actualName: 'SaleOrder',
+            icon: <Assignment style={{ fontSize: '80px' }} />,
+        },
+        {
+            str: 'SALES INVOICE',
+            actualName: 'SalesInvoice',
+            icon: <ReceiptLong style={{ fontSize: '80px' }} />,
         },
         {
             str: 'PAYMENT',
-            icon: <HiOutlineCurrencyRupee style={{ fontSize: '80px' }} />,
+            actualName: 'Payment',
+            icon: <Paid style={{ fontSize: '80px' }} />,
+        },
+        {
+            str: 'RECEIPT',
+            actualName: 'Receipt',
+            icon: <AttachMoney style={{ fontSize: '80px' }} />,
+        },
+        {
+            str: 'JOURNAL',
+            actualName: 'Journal',
+            icon: <MenuBook style={{ fontSize: '80px' }} />,
+        },
+        {
+            str: 'STOCK JOURNAL',
+            actualName: 'StockJournal',
+            icon: <Inventory2 style={{ fontSize: '80px' }} />,
+        },
+        {
+            str: 'CONTRA',
+            actualName: 'Contra',
+            icon: <CompareArrows style={{ fontSize: '80px' }} />,
         },
         {
             str: 'EXPENCES',
+            actualName: 'FASDF',
             icon: <PiHandCoinsFill style={{ fontSize: '80px' }} />
         },
         {
-            str: 'PURCHASE ORDER',
-            icon: <BsCartPlus style={{ fontSize: '80px' }} />,
-        },
-        {
             str: 'STOCK VALUE',
+            actualName: 'ASDFASG',
             icon: <FaCubesStacked style={{ fontSize: '70px' }} />,
         },
     ]
 
-    return iconArr.find(o => str === o.str)?.icon || <></>
-}
-
-const CardComp = ({ title, icon, firstVal, secondVal, classCount, onClick }) => {
-    return (
-        <>
-            <div className={`col-xxl-3 col-lg-4 col-md-6 col-sm-12 p-2`}>
-                <div onClick={onClick} className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
-                    <div className="flex-grow-1 p-3">
-                        <h5 >{title}</h5>
-                        <h3 className="fa-16 text-end pe-3">
-                            <span style={{ fontSize: '30px' }}>{firstVal ? firstVal : 0} </span>
-                            {secondVal && '(' + secondVal + ')'}
-                        </h3>
-                    </div>
-                    {icon}
-                </div>
-            </div>
-        </>
-    )
+    return iconArr.find(o => str === o.actualName)
 }
 
 const ManagementDashboard = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
     const UserAccess = Number(storage?.UserTypeId) === 2 || Number(storage?.UserTypeId) === 0 || Number(storage?.UserTypeId) === 1;
+    const [dayBookData, setDayBookData] = useState([]);
 
-    const [mangementReport, setMangementReport] = useState([]);
-    const [secRow, setSecRow] = useState([]);
-    const [theredRow, setTheredRow] = useState([]);
+    const cls = 'vctr text-white bg-transparent p-0';
 
     const [popUpDetails, setPopUpDetails] = useState({
         salesDetails: [],
@@ -95,56 +101,24 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         if (UserAccess && storage.Company_id) {
-            fetchLink({
-                address: `dashboard/erp/dashboardData?Fromdate=${filter?.date}&Company_Id=${storage.Company_id}`
-            })
-                .then(data => {
-                    if (data.success) {
-                        setMangementReport(data?.data[0])
-                        setSecRow(data?.data[1])
-                        setTheredRow(data?.data[2]);
-                    }
-                })
-                .catch(e => console.error(e))
-        }
-    }, [UserAccess, filter.date]);
+            if (loadingOn) loadingOn();
+            setDayBookData([]);
 
-    useEffect(() => {
-        if (UserAccess) {
             fetchLink({
-                address: `dashboard/salesInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
+                address: `dashboard/dayBook?Fromdate=${filter.date}&Todate=${filter.date}`,
                 headers: {
-                    'Db': storage?.Company_id
+                    "Db": storage.Company_id
                 }
             }).then(data => {
                 if (data.success) {
-                    setPopUpDetails(pre => ({
-                        ...pre,
-                        salesDetails: data.data ?? []
-                    }));
-                } else {
-                    setPopUpDetails(pre => ({ ...pre, salesDetails: [] }));
+                    setDayBookData(data.data);
                 }
-            }).catch(e => console.error(e))
+            }).finally(() => {
+                if (loadingOff) loadingOff();
+            }).catch(e => console.error(e));
 
-            fetchLink({
-                address: `dashboard/purchaseInfo?Fromdate=${filter?.date}&Todate=${filter?.date}`,
-                method: 'GET',
-            }).then(data => {
-                if (data.success) {
-                    const tallyInfo = data.data[0][0] || {};
-                    const erpInfo = data.data[1][0] || {};
-                    setPopUpDetails(pre => ({
-                        ...pre,
-                        erpPurchaseCount: checkIsNumber(erpInfo?.Purchase_Count) ? erpInfo?.Purchase_Count : 0,
-                        erpPurchaseAmount: checkIsNumber(erpInfo?.Purchase_Amount) ? erpInfo?.Purchase_Amount : 0,
-                        tallyPurchaseCount: checkIsNumber(tallyInfo?.Tally_Purchase_Count) ? tallyInfo?.Tally_Purchase_Count : 0,
-                        tallyPurchaseAmount: checkIsNumber(tallyInfo?.Tally_Purchase_Amount) ? tallyInfo?.Tally_Purchase_Amount : 0,
-                    }));
-                }
-            }).catch(e => console.error(e))
         }
-    }, [filter.date]);
+    }, [filter.date])
 
     const closeDialog = () => {
         setPopUpDialogs(pre => Object.fromEntries(
@@ -175,55 +149,67 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
     return (
         <>
             <div className="d-flex align-items-center flex-wrap justify-content-between">
-            <input
-                type="date"
-                className="cus-inpt w-auto m-1"
-                value={filter.date}
-                onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
-            />
-            <LastSynedTime />
+                <input
+                    type="date"
+                    className="cus-inpt w-auto m-1"
+                    value={filter.date}
+                    onChange={e => setFilter(pre => ({ ...pre, date: e.target.value }))}
+                />
             </div>
 
             <div className="p-1 row">
-                {theredRow?.map((o, i) => (
-                    <CardComp
-                        key={i}
-                        icon={getIcons('STOCK VALUE')}
-                        title={'STOCK VALUE'}
-                        classCount={16}
-                        firstVal={o?.Stock_Value ? NumberFormat(parseInt(o?.Stock_Value)) : 0}
-                    />
-                ))}
-                {mangementReport?.map((o, i) => (
-                    <CardComp
-                        key={i}
-                        title={o?.Trans_Type}
-                        onClick={() => {
-                            switch (o?.Trans_Type) {
-                                case 'SALES':
-                                    setPopUpDialogs(pre => ({ ...pre, salesDetails: true }));
-                                    break;
-                                case 'PURCHASE':
-                                    setPopUpDialogs(pre => ({ ...pre, purchaseDetails: true }));
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }}
-                        icon={o?.Trans_Type ? getIcons(o?.Trans_Type) : undefined}
-                        classCount={i + 7}
-                        firstVal={o?.Trans_Amount ? NumberFormat(parseInt(o?.Trans_Amount)) : 0}
-                        secondVal={o?.Trans_Count ? NumberFormat(o?.Trans_Count) : 0}
-                    />
-                ))}
-                {secRow?.map((o, i) => (
-                    <CardComp
-                        key={i}
-                        title={'EXPENCES'}
-                        icon={getIcons('EXPENCES')}
-                        classCount={19}
-                        firstVal={o?.Total_Cost_Vlaue ? NumberFormat(o?.Total_Cost_Vlaue) : 0}
-                    />
+                {dayBookData?.map((o, i) => (
+                    <div className={`col-xxl-3 col-lg-4 col-md-6 col-sm-12 p-2`} key={i}>
+                        <div className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + (i + 7)}>
+                            <div className="flex-grow-1 p-3 table-responsive">
+                                <h5 style={{ fontSize: '18px' }}>{o?.ModuleName ? getIcons(o?.ModuleName).str : undefined}</h5>
+
+                                <table className="table table-borderless text-white">
+                                    <tbody>
+                                        <tr>
+                                            <td className={`${cls} fa-13`}>ERP</td>
+                                            <td className={`${cls} text-end`}>
+                                                <span className="fa-19 me-1">
+                                                    {NumberFormat(toArray(o?.groupedData).filter(
+                                                        mod => stringCompare(mod.dataSource, 'ERP')
+                                                    ).reduce(
+                                                        (acc, item) => Addition(acc, item?.Amount), 0
+                                                    ))}
+                                                </span>
+                                                <span className="fa-11">
+                                                    / {NumberFormat(toArray(o?.groupedData).filter(
+                                                        mod => stringCompare(mod.dataSource, 'ERP')
+                                                    ).reduce(
+                                                        (acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0
+                                                    ))}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className={`${cls} fa-13`}>TALLY</td>
+                                            <td className={`${cls} text-end`}>
+                                                <span className="fa-19 me-1">
+                                                    {NumberFormat(toArray(o?.groupedData).filter(
+                                                        mod => stringCompare(mod.dataSource, 'TALLY')
+                                                    ).reduce(
+                                                        (acc, item) => Addition(acc, item?.Amount), 0
+                                                    ))}
+                                                </span>
+                                                <span className="fa-11">
+                                                    / {NumberFormat(toArray(o?.groupedData).filter(
+                                                        mod => stringCompare(mod.dataSource, 'TALLY')
+                                                    ).reduce(
+                                                        (acc, item) => Addition(acc, item?.VoucherBreakUpCount), 0
+                                                    ))}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            {o?.ModuleName ? getIcons(o?.ModuleName).icon : ''}
+                        </div>
+                    </div>
                 ))}
             </div>
 
@@ -344,7 +330,7 @@ const ManagementDashboard = ({ loadingOn, loadingOff }) => {
                 fullWidth maxWidth='lg'
             >
                 <DialogContent>
-                    <FilterableTable 
+                    <FilterableTable
                         dataArray={popUpDetails?.morePurchaseInfo || []}
                         title="Purchase Details"
                         columns={[

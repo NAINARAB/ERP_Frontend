@@ -1,4 +1,4 @@
-import { createCol } from "../../Components/filterableTable2"
+import { createCol } from "../../../Components/filterableTable2"
 
 export const dayBookColumn = (moduleName) => {
     const SalesLedgerName = createCol('Purticular', 'string', 'Ledger');

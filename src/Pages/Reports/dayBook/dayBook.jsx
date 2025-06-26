@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Addition, filterableText, getSessionUser, ISOString, isValidDate, NumberFormat, stringCompare, toArray } from '../../Components/functions'
-import { fetchLink } from "../../Components/fetchComponent";
+import { Addition, getSessionUser, ISOString, isValidDate, NumberFormat, stringCompare, toArray } from '../../../Components/functions'
+import { fetchLink } from "../../../Components/fetchComponent";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
 import { ArrowRight, KeyboardArrowDown, KeyboardArrowUp, OpenInNew, Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import LastSynedTime from "../Dashboard/tallyLastSyncedTime";
-import { ButtonActions } from "../../Components/filterableTable2";
+import LastSynedTime from "../../Dashboard/tallyLastSyncedTime";
+import { ButtonActions } from "../../../Components/filterableTable2";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {

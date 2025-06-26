@@ -15,6 +15,7 @@ import { fetchLink } from "../../Components/fetchComponent";
 import { ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 import { checkIsNumber, isEqualNumber, LocalDateWithTime } from "../../Components/functions";
+import LastSynedTime from "../Dashboard/tallyLastSyncedTime";
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -665,6 +666,8 @@ const MainComponent = (props) => {
                     </center>
 
                     <hr />
+
+                    <LastSynedTime />
 
                 </DialogContent>
 

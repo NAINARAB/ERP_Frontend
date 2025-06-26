@@ -57,8 +57,8 @@ const EmployeeDayAbstract = lazy(() => import("./Pages/Reports/workDocument"))
 const EmployeeAbstract = lazy(() => import("./Pages/Reports/employeeAbstract"))
 const TallyReports = lazy(() => import("./Pages/Dashboard/tallyReport"))
 const UserActivities = lazy(() => import("./Pages/Dashboard/userActivities"))
-const DayBookOfERP = lazy(() => import("./Pages/Reports/dayBook"))
-const DayBookDetails = lazy(() => import("./Pages/Reports/dayBookDetails"));
+const DayBookOfERP = lazy(() => import("./Pages/Reports/dayBook/dayBook"))
+const DayBookDetails = lazy(() => import("./Pages/Reports/dayBook/dayBookDetails"));
 const TallyLolSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLolSyncDashboard"))
 const TallyLosSyncDashboard = lazy(() => import("./Pages/Masters/TallyMasters/tallyLosSyncDashboard"))
 const TripReports = lazy(() => import("./Pages/Reports/tripReports"))
