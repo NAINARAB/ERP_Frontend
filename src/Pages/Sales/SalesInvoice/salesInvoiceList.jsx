@@ -4,11 +4,12 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from 'react-toastify'
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -155,6 +156,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
         });
     }
 
+    const syncTallyData = () => {
+        fetchLink({
+            address: `sales/salesInvoice/tallySync`,
+            loadingOn, loadingOff
+        }).then(data => {
+            toast.success(data.message);
+            setReload(pre => !pre)
+        }).catch(e => console.error(e))
+    }
+
     return (
         <>
             <FilterableTable
@@ -235,6 +246,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
                             >
                                 {'New'}
                             </Button>
+                        )}
+                        {AddRights && (
+                            <Tooltip title='Sync tally data'>
+                                <Button
+                                className="mx-1"
+                                variant="outlined"
+                                onClick={syncTallyData}
+                                startIcon={<Sync color="primary" />}
+                            >Sync Tally</Button>
+                            </Tooltip>
                         )}
                         <Tooltip title='Filters'>
                             <IconButton

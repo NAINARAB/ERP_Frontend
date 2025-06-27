@@ -8,7 +8,7 @@ import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconBu
 import { FilterAlt } from "@mui/icons-material";
 
 
-const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
+const RetailerClosingWithLOL = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [reportData, setReportData] = useState([]);
 
     const [groupingColumns, setGroupingColumns] = useState([
@@ -29,8 +29,6 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
 
     const [filters, setFilters] = useState({
         retailer: { value: '', label: 'Search Retailer' },
-        Fromdate: ISOString(),
-        Todate: ISOString(),
         reload: false,
         groupColumn: groupingColumns[0].column,
         settingsDialog: false,
@@ -38,7 +36,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `reports/customerClosingStock/retailerBased/withLOL?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
+            address: `reports/customerClosingStock/retailerBased/withLOL?Fromdate=${Fromdate}&Todate=${Todate}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -46,7 +44,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff }) => {
                 setReportData(dataValue)
             }
         }).catch(e => console.error(e))
-    }, [filters.reload]);
+    }, [Fromdate, Todate]);
 
     const data = useMemo(() => {
         return checkIsNumber(filters.retailer.value)

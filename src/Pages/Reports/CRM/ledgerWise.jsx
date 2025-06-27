@@ -6,7 +6,7 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toArray } from '../../../Components/functions';
 import { fetchLink } from "../../../Components/fetchComponent";
 
-const LedgerBasedClosingStock = ({ loadingOn, loadingOff }) => {
+const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [retailers, setRetailers] = useState([]);
     const [productClosingStock, setProductClosingStock] = useState([]);
     const [filters, setFilters] = useState({
@@ -28,7 +28,7 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (filters?.customer.value) {
             fetchLink({
-                address: `reports/customerClosingStock/retailerBased/detailedInfo?Retailer_Id=${filters?.customer.value}`,
+                address: `reports/customerClosingStock/retailerBased/detailedInfo?Retailer_Id=${filters?.customer.value}&Fromdate=${Fromdate}&Todate=${Todate}`,
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success) {
@@ -36,7 +36,7 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff }) => {
                 }
             }).catch(e => console.error(e))
         }
-    }, [filters?.customer.value]);
+    }, [filters?.customer.value, Fromdate, Todate]);
 
     const productBasedColumn = [
         createCol('Product_Name', 'string'),

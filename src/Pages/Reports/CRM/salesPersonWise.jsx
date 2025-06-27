@@ -8,18 +8,16 @@ import { IconButton } from "@mui/material";
 import { Search } from "@mui/icons-material";
 
 
-const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => {
+const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({
         retailer: { value: '', label: 'Search Retailer' },
-        Fromdate: ISOString(),
-        Todate: ISOString(),
         reload: false
     })
 
     useEffect(() => {
         fetchLink({
-            address: `reports/customerClosingStock/retailerBased/salesPersonGrouped?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
+            address: `reports/customerClosingStock/retailerBased/salesPersonGrouped?Fromdate=${Fromdate}&Todate=${Todate}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -27,7 +25,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                 setReportData(dataValue)
             }
         }).catch(e => console.error(e))
-    }, [filters.reload])
+    }, [Fromdate, Todate])
 
     const groupedSalesPersonData = useMemo(() => {
         const data = checkIsNumber(filters.retailer.value)
@@ -102,7 +100,7 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                             placeholder={"Select Retailer"}
                         />
                     </div> */}
-                    <div className="d-flex align-items-center">
+                    {/* <div className="d-flex align-items-center">
                         <input
                             type="date"
                             value={filters.Fromdate}
@@ -121,8 +119,8 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff }) => 
                             size="small"
                             onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
                         ><Search /></IconButton>
+                    </div> */}
                         {/* <span>Total: <span className="text-primary">{NumberFormat(sumValue)}</span></span> */}
-                    </div>
                 </>
             }
             columns={[

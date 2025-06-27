@@ -6,7 +6,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
 
-const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
+const ClosingStockItemBasedReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({
         searchItem: { value: '', label: 'Select Item' }
@@ -30,14 +30,14 @@ const ClosingStockItemBasedReport = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (checkIsNumber(filters.searchItem.value)) {
             fetchLink({
-                address: `reports/customerClosingStock/itemSearch?Item_Id=${filters.searchItem.value}`
+                address: `reports/customerClosingStock/itemSearch?Item_Id=${filters.searchItem.value}&Fromdate=${Fromdate}&Todate=${Todate}`
             }).then(data => {
                 if (data.success) {
                     setReportData(data.data)
                 }
             }).catch(e => console.error(e))
         }
-    }, [filters.searchItem.value]);
+    }, [filters.searchItem.value, Fromdate, Todate]);
 
     const sumValue = useMemo(() => {
         return reportData.reduce(

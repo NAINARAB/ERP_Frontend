@@ -8,7 +8,7 @@ import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconBu
 import { FilterAlt } from "@mui/icons-material";
 
 
-const LosBasedClosingReport = ({ loadingOn, loadingOff }) => {
+const LosBasedClosingReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [reportData, setReportData] = useState([]);
 
     const [groupingColumns, setGroupingColumns] = useState([
@@ -26,16 +26,13 @@ const LosBasedClosingReport = ({ loadingOn, loadingOff }) => {
 
     const [filters, setFilters] = useState({
         product: { value: '', label: 'Search Item' },
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        reload: false,
         groupColumn: groupingColumns[0].column,
         settingsDialog: false,
     });
 
     useEffect(() => {
         fetchLink({
-            address: `reports/customerClosingStock/withLOS`,
+            address: `reports/customerClosingStock/withLOS?Fromdate=${Fromdate}&Todate=${Todate}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -43,7 +40,7 @@ const LosBasedClosingReport = ({ loadingOn, loadingOff }) => {
                 setReportData(dataValue)
             }
         }).catch(e => console.error(e))
-    }, [filters.reload]);
+    }, [Fromdate, Todate]);
 
     const data = useMemo(() => {
         return checkIsNumber(filters.product.value)
