@@ -73,6 +73,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
         const fetchData = async () => {
             try {
+                if (loadingOn) loadingOn();
+
                 const [
                     branchResponse,
                     productsResponse,
@@ -96,7 +98,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `masters/defaultAccountMaster` }),
                     fetchLink({ address: `sales/stockInGodown` }),
-                    fetchLink({ address: `purchase/stockItemLedgerName` }),
+                    fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -152,6 +154,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
+            } finally {
+                if (loadingOff) loadingOff();
             }
         };
 

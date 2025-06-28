@@ -1,7 +1,7 @@
 import React from "react";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn"
-import { isEqualNumber, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 
 const ManageSalesInvoiceGeneralInfo = ({
@@ -75,6 +75,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                         required={true}
                         placeholder={"Select Voucher Type"}
                         maxMenuHeight={300}
+                        isDisabled={checkIsNumber(invoiceInfo?.Do_Id)}
                     />
                 </div>
 

@@ -66,6 +66,7 @@ const CostCenterReports = lazy(() => import("./Pages/Reports/costCenterReports")
 const ClosingStockReportsProduct = lazy(() => import("./Pages/Reports/productclosingStockReports"))
 const OutStanding = lazy(() => import("./Pages/Reports/outstanding"))
 const DeliveryReports = lazy(() => import("./Pages/Reports/deliveryReports"));
+const StockInHand = lazy(() => import("./Pages/Reports/storageClosingStock/stockInHand"));
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -229,6 +230,7 @@ const RoutingArray = [
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
     { component: <DeliveryReports />, path: '/erp/reports/deliveryReports' },
+    { component: <StockInHand />, path: '/erp/reports/stockInHand' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
