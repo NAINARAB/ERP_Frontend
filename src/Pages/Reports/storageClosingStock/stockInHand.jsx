@@ -3,16 +3,16 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { Box, IconButton, Tab } from "@mui/material";
 import { useState } from "react";
-import { getPreviousDate, ISOString } from '../../../Components/functions';
+import { ISOString } from '../../../Components/functions';
 import { Search } from '@mui/icons-material';
 import ItemWiseStockReport from './itemWise';
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
     const [dateFilter, setDateFilter] = useState({
-        Fromdate: getPreviousDate(30),
+        Fromdate: ISOString(),
         Todate: ISOString(),
-        FilterFromDate: getPreviousDate(30),
+        FilterFromDate: ISOString(),
         FilterTodate: ISOString(),
     })
 
