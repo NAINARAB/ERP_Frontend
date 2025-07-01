@@ -5,17 +5,25 @@ import FilterableTable from '../../../Components/filterableTable2';
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, Settings } from "@mui/icons-material";
 import { useMemo } from "react";
-import { storageStockColumns } from "./variable";
 
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
 
-const ItemWiseStockReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
+const ItemWiseStockReport = ({
+    loadingOn,
+    loadingOff,
+    Fromdate,
+    Todate,
+    api = 'itemWise',
+    defaultGrouping = '',
+    storageStockColumns = [],
+    groupingOption = true
+}) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
-    const [groupBy, setGroupBy] = useState('');
+    const [groupBy, setGroupBy] = useState(defaultGrouping);
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
@@ -30,7 +38,7 @@ const ItemWiseStockReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `reports/storageStock/itemWise?Fromdate=${Fromdate}&Todate=${Todate}`,
+            address: `reports/storageStock/${api}?Fromdate=${Fromdate}&Todate=${Todate}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -346,22 +354,24 @@ const ItemWiseStockReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
-                        <div className="d-flex align-items-center flex-wrap">
-                            <span>Group-By: </span>
-                            <select
-                                className="cus-inpt p-2 w-auto m-1"
-                                value={groupBy}
-                                onChange={e => setGroupBy(e.target.value)}
-                            >
-                                <option value="">select group</option>
-                                {DisplayColumn.filter(fil => (
-                                    filterableText(fil.Fied_Data) === "string"
-                                    && fil?.Field_Name !== 'Ledger_Name'
-                                )).map((col, colInd) => (
-                                    <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {groupingOption && (
+                            <div className="d-flex align-items-center flex-wrap">
+                                <span>Group-By: </span>
+                                <select
+                                    className="cus-inpt p-2 w-auto m-1"
+                                    value={groupBy}
+                                    onChange={e => setGroupBy(e.target.value)}
+                                >
+                                    <option value="">select group</option>
+                                    {DisplayColumn.filter(fil => (
+                                        filterableText(fil.Fied_Data) === "string"
+                                        && fil?.Field_Name !== 'Ledger_Name'
+                                    )).map((col, colInd) => (
+                                        <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </>
                 }
                 ExcelPrintOption
@@ -377,15 +387,15 @@ const ItemWiseStockReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
                         : DisplayColumn
                 }
                 isExpendable={groupBy ? true : false}
-            expandableComp={({ row }) => (
-                <FilterableTable
-                    EnableSerialNumber
-                    headerFontSizePx={12}
-                    bodyFontSizePx={12}
-                    dataArray={toArray(row?.groupedData)}
-                    columns={DisplayColumn.filter(clm => !stringCompare(clm.Field_Name, groupBy))}
-                />
-            )}
+                expandableComp={({ row }) => (
+                    <FilterableTable
+                        EnableSerialNumber
+                        headerFontSizePx={12}
+                        bodyFontSizePx={12}
+                        dataArray={toArray(row?.groupedData)}
+                        columns={DisplayColumn.filter(clm => !stringCompare(clm.Field_Name, groupBy))}
+                    />
+                )}
             />
 
             <Dialog

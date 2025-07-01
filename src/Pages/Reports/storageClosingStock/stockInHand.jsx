@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ISOString } from '../../../Components/functions';
 import { Search } from '@mui/icons-material';
 import ItemWiseStockReport from './itemWise';
+import { storageStockColumnsForItemWise, storageStockColumnsForGodownWise } from './variable';
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
@@ -25,6 +26,24 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
+                    api='itemWise'
+                    defaultGrouping=''
+                    storageStockColumns={storageStockColumnsForItemWise}
+                />
+            )
+        },
+        {
+            name: 'Godown Wise',
+            component: (
+                <ItemWiseStockReport
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api='godownWise'
+                    defaultGrouping='Godown_Name'
+                    storageStockColumns={storageStockColumnsForGodownWise}
+                    groupingOption={false}
                 />
             )
         },
