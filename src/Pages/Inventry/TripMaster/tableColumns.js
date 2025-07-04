@@ -92,7 +92,7 @@ export const initialArrivalValue = {
     Taxable_Value: '',
     Round_off: '',
     Total_Value: '',
-    Created_By: '',
-    CreatedAt: user.UserId,
+    Created_By: user.UserId,
+    CreatedAt: '',
     Updated_By: user.UserId,
 }
