@@ -199,10 +199,11 @@ const SyncData=(data)=>{
                         headerFontSizePx={11}
                         dataArray={filteredNotSyncedList}
                         columns={[
-                            createCol('invoiceno', 'string', 'invoiceno'),
+                            createCol('invoiceno', 'string', 'Invoice'),
                             createCol('edate', 'date', 'edate'),
-                            createCol('Retailer_Name', 'string', 'Retailer_Name'),
-                            createCol('cusid', 'string', 'Customer_Id'),
+                            createCol('Retailer_Name', 'string', 'Retailer'),
+                            createCol('Broker', 'string', 'Broker_Name'),
+                            createCol('Transporter', 'string', 'Transporter'),
                             createCol('namount', 'string', 'Net Amount'),
                                {
                             
@@ -245,10 +246,12 @@ const SyncData=(data)=>{
                                     headerFontSizePx={11}
                                     dataArray={ERPLOLList}
                                     columns={[
-                                        createCol('invoiceno', 'string', 'invoiceno'),
+                                        createCol('invoiceno', 'string', 'Invoice'),
                                         createCol('edate', 'date', 'edate'),
                                         createCol('Retailer_Name', 'string', 'Retailer_Name'),
-                                        createCol('cusid', 'string', 'Customer_Id'),
+                                          createCol('Broker', 'string', 'Broker'),
+                                           createCol('Transporter', 'string', 'Transporter'),
+                                        // createCol('cusid', 'string', 'Customer_Id'),
                                         createCol('namount', 'string', 'Net Amount'),
                                     ]}
                                     ButtonArea={
@@ -279,7 +282,9 @@ const SyncData=(data)=>{
                                         createCol('invoiceno', 'string', 'invoiceno'),
                                         createCol('edate', 'date', 'edate'),
                                         createCol('Retailer_Name', 'string', 'Retailer_Name'),
-                                        createCol('cusid', 'string', 'Customer_Id'),
+                                          createCol('Broker_Name', 'string', 'Broker'),
+                                           createCol('Transporter_Name', 'string', 'Transporter'),
+                                        // createCol('cusid', 'string', 'Customer_Id'),
                                         createCol('namount', 'string', 'Net Amount'),
                                     ]}
                                     ButtonArea={

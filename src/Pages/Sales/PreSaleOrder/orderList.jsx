@@ -6,7 +6,7 @@ import FilterableTable, {
 } from "../../../Components/filterableTable2";
 import { Card, IconButton, Button } from "@mui/material";
 import { toast } from "react-toastify";
-import { AddBox, Edit, Search } from "@mui/icons-material";
+import { AddBox, Edit } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
 
 const OrderList = ({ loadingOn, loadingOff }) => {
@@ -18,32 +18,55 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     });
     const [searchInput, setSearchInput] = useState('');
     const [data, setData] = useState([]);
-    const [tallyLOL, setTallyLOL] = useState([]);
     const [load, setLoad] = useState(false)
-    const [search, setSearch] = useState(false)
-
-    useEffect(() => {
-        if (!search) return;
-        if (loadingOn) loadingOn();
-        setLoad(true);
-        fetchLink({
-            address: `sales/presaleOrder/getList?FromDate=${filters.FromDate}&ToDate=${filters.ToDate}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setData(data.data);
-                    setTallyLOL(tallyLOL);
+    const [isLoading, setIsLoading] = useState(false);
+useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            if (loadingOn) loadingOn();
+            
+            try {
+                const response = await fetchLink({
+                    address: `sales/presaleOrder/getList?FromDate=${filters.FromDate}&ToDate=${filters.ToDate}`,
+                });
+                
+                if (response.success) {
+                    setData(response.data);
+                    // setTallyLOL(response.data);
                 }
-            })
-            .catch((e) => {
+            } catch (e) {
                 console.error(e);
-            })
-            .finally(() => {
-                setLoad(false)
-                setSearch(false); // Reset after fetch
+            } finally {
+                setIsLoading(false);
                 if (loadingOff) loadingOff();
-            });
-    }, [filters.refresh, search]);
+            }
+        };
+
+        fetchData();
+    }, [filters.FromDate, filters.ToDate, filters.refresh]);
+
+    // useEffect(() => {
+    //     if (!search) return;
+    //     if (loadingOn) loadingOn();
+    //     setLoad(true);
+    //     fetchLink({
+    //         address: `sales/presaleOrder/getList?FromDate=${filters.FromDate}&ToDate=${filters.ToDate}`,
+    //     })
+    //         .then((data) => {
+    //             if (data.success) {
+    //                 setData(data.data);
+    //                 setTallyLOL(data.data); // Changed from tallyLOL to data.data
+    //             }
+    //         })
+    //         .catch((e) => {
+    //             console.error(e);
+    //         })
+    //         .finally(() => {
+    //             setLoad(false);
+    //             setSearch(false);
+    //             if (loadingOff) loadingOff();
+    //         });
+    // }, [filters.refresh, search, filters.FromDate, filters.ToDate]);
 
     const filterableText = (text) =>
         String(text)
@@ -93,7 +116,6 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                 <th className="border p-2 bg-light">Product_Name</th>
                                 <th className="border p-2 bg-light">Bill_Qty</th>
                                 <th className="border p-2 bg-light">Item_Rate</th>
-
                                 <th className="border p-2 bg-light">Unit_Id</th>
                                 <th className="border p-2 bg-light">Unit_Name</th>
                                 <th className="border p-2 bg-light">Amount</th>
@@ -122,89 +144,82 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     };
 
 
-    const postSaleOrder = (data) => {
-        loadingOn();
+const postSaleOrder = (data) => {
+    loadingOn();
 
-        const extractWeightFromName = (name) => {
-            const match = name?.match(/(\d+)\s?kg/i);
-            return match ? parseInt(match[1]) : 1;
-        };
-
-        const validProducts = Array.isArray(data.ProductList)
-            ? data.ProductList
-                .filter(p => isGraterNumber(p?.Bill_Qty, 0))
-                .map(p => {
-                    const weight = extractWeightFromName(p?.Product_Name);
-                    return {
-                        ...p,
-                        Pre_Id: data?.Pre_Id,
-                        Bill_Qty: weight * p?.Bill_Qty,
-                        Total_Qty: p?.Bill_Qty
-                    };
-                })
-            : [];
-
-        const payload = {
-            ...data,
-            Product_Array: validProducts,
-            Retailer_Id: data?.Custome_Id
-        };
-
-        fetchLink({
-            address: `sales/presaleOrder/saleOrderCreationWithPso`,
-            method: data?.isConverted !== 0 ? 'PUT' : 'POST',
-            bodyData: payload
-        })
-            .then((response) => {
-                if (response.success) {
-                    toast.success(response?.message);
-                    setLoad(true);
-                } else {
-                    toast.error(response?.message);
-                }
-            })
-            .catch(() => {
-                toast.error("Something went wrong!");
-            })
-            .finally(() => loadingOff());
+    // Product processing remains the same
+    const extractWeightFromName = (name) => {
+        const match = name?.match(/(\d+)\s?kg/i);
+        return match ? parseInt(match[1]) : 1;
     };
 
-    // const postSaleOrder = (data) => {
-    //     loadingOn();
+    const validProducts = Array.isArray(data.ProductList)
+        ? data.ProductList
+            .filter(p => isGraterNumber(p?.Bill_Qty, 0))
+            .map(p => {
+                const weight = extractWeightFromName(p?.Product_Name);
+                return {
+                    ...p,
+                    Pre_Id: data?.Pre_Id,
+                    Bill_Qty: weight * p?.Bill_Qty,
+                    Total_Qty: p?.Bill_Qty
+                };
+            })
+        : [];
 
-    //     const validProducts = Array.isArray(data.ProductList)
-    //         ? data.ProductList.filter(p => isGraterNumber(p?.Bill_Qty, 0)).map(p => ({
-    //             ...p,
-    //             Pre_Id: data?.Pre_Id
-    //         }))
-    //         : [];
+    const transformStaffData = (orderData) => {
+        const staffs = [];
+        
+        if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+            staffs.push({
+                Id: "",
+                So_Id: "",
+                Emp_Id: orderData.Broker_Id,
+                Emp_Type_Id: orderData.Broker_Type || 0 
+            });
+        }
+        
+        if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+            staffs.push({
+                Id: "",
+                Do_Id: "",
+                Emp_Id: orderData.Transporter_Id,
+                Emp_Type_Id: orderData.TrasnportType || 0  
+            });
+        }
+        
+        return staffs.filter(staff => staff.Emp_Type_Id !== 0);  
+    };
 
-    //     const payload = {
-    //         ...data,
-    //         Product_Array: validProducts,
+    const staffsArray = transformStaffData(data);
 
-    //         Retailer_Id: data?.Custome_Id
-    //     };
+    const payload = {
+        ...data,
+        Product_Array: validProducts,
+        Retailer_Id: data?.Custome_Id,
+        Staffs_Array: staffsArray
+    };
 
 
-    //     fetchLink({
-    //         address: `sales/presaleOrder/saleOrderCreationWithPso`,
-    //         method: data?.isConverted !== 0 ? 'PUT' : 'POST',
-    //         bodyData: payload
-    //     })
-    //         .then((response) => {
-    //             if (response.success) {
-    //                 toast.success(response?.message);
-    //                 setLoad(true)
-    //             } else {
-    //                 toast.error(response?.message);
-    //             }
-    //         })
-    //         .catch((e) => {
-    //             toast.error("Something went wrong!");
-    //         })
-    //         .finally(() => loadingOff());
-    // };
+
+    fetchLink({
+        address: `sales/presaleOrder/saleOrderCreationWithPso`,
+        method: data?.isConverted !== 0 ? 'PUT' : 'POST',
+        bodyData: payload
+    })
+    .then((response) => {
+        if (response.success) {
+            toast.success(response?.message);
+            setLoad(true);
+        } else {
+            toast.error(response?.message);
+        }
+    })
+    .catch(() => {
+        toast.error("Something went wrong!");
+    })
+    .finally(() => loadingOff());
+};
 
     useEffect(() => {
         if (load) {
@@ -214,7 +229,7 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                 .then((data) => {
                     if (data.success) {
                         setData(data.data);
-                        setTallyLOL(data.data);
+                        // setTallyLOL(data.data);
                     }
                 })
                 .catch((e) => console.error(e))
@@ -250,14 +265,7 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                 className="cus-inpt"
                             />
                         </td>
-                        <IconButton
-                            size="small"
-                            onClick={() => {
-                                setSearch(true)
-                            }}
-                        >
-                            {<Search />}
-                        </IconButton>
+                        
                         <IconButton
                             size="small"
                             onClick={() => {
@@ -297,6 +305,9 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                     ),
                                 },
                                 createCol("Retailer_Name", "string", "Retailer_Name"),
+                                   createCol("Broker_Name", "string", "Broker_Name"),
+                                   createCol("Transporter_Name", "string", "Transporter_Name"),
+
                                 createCol("Total_Invoice_value", "string", "Total_Invoice_value"),
                                 {
                                     ColumnHeader: "Status",
@@ -382,6 +393,8 @@ const OrderList = ({ loadingOn, loadingOff }) => {
                                     ),
                                 },
                                 createCol("Retailer_Name", "string", "Retailer_Name"),
+                                createCol("Broker_Name", "string", "Broker_Name"),
+                                createCol("Transporter_Name", "string", "Transporter_Name"),
                                 createCol("Total_Invoice_value", "string", "Total_Invoice_value"),
                                 {
                                     ColumnHeader: "Status",
