@@ -3,10 +3,11 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { Box, IconButton, Tab } from "@mui/material";
 import { useState } from "react";
-import { getPreviousDate, ISOString } from '../../../Components/functions';
+import { getPreviousDate, ISOString } from '../../../../Components/functions';
 import { Search } from '@mui/icons-material';
 import ErpAndTallySalesComparison from './salesInvoiceComparison';
 import InvoiceBasedSalesComparison from './invoiceBasedSalesComparison';
+import ItemWiseSalesComparison from './itemWiseComparison';
 
 const SalesComparisonTabs = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
@@ -19,9 +20,9 @@ const SalesComparisonTabs = ({ loadingOn, loadingOff }) => {
 
     const tabData = [
         {
-            name: 'AlterId based',
+            name: 'Item based',
             component: (
-                <ErpAndTallySalesComparison
+                <ItemWiseSalesComparison
                     loadingOn={loadingOn}
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
@@ -33,6 +34,17 @@ const SalesComparisonTabs = ({ loadingOn, loadingOff }) => {
             name: 'InvoiceId based',
             component: (
                 <InvoiceBasedSalesComparison
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                />
+            )
+        },
+        {
+            name: 'AlterId based',
+            component: (
+                <ErpAndTallySalesComparison
                     loadingOn={loadingOn}
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}

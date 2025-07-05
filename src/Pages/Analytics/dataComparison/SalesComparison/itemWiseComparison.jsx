@@ -1,13 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, stringCompare, toArray } from "../../../Components/functions";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { comparisonColorCode, fieldMap } from "./variable";
-import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Close, Search, Visibility } from "@mui/icons-material";
+import { useEffect, useState } from "react";
+import { fetchLink } from "../../../../Components/fetchComponent";
+import { toArray } from "../../../../Components/functions";
+import FilterableTable, { createCol } from "../../../../Components/filterableTable2";
 
-
-const InvoiceBasedSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
+const ItemWiseSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [ERPData, setERPData] = useState([]);
     const [filters, setFilters] = useState({
         comparisonDialog: false,
@@ -18,7 +14,7 @@ const InvoiceBasedSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }
 
         fetchLink({
             address: `
-                reports/dataComparison/salesInvoice/invoiceBased?
+                analytics/dataComparison/salesInvoice/itemWise?
                 Fromdate=${Fromdate}&
                 Todate=${Todate}&
                 excluedeSyced=${filters.excluedeSyced}`,
@@ -41,6 +37,7 @@ const InvoiceBasedSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 EnableSerialNumber
+                ExcelPrintOption
                 ButtonArea={
                     <>
                         <select
@@ -51,22 +48,27 @@ const InvoiceBasedSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }
                             <option value="0">Show Synced</option>
                             <option value="1">Exclude Synced</option>
                         </select>
-                        <label className="me-1">Error Type:</label>
+                        {/* <label className="me-1">Error Type:</label> */}
                     </>
                 }
                 dataArray={ERPData}
                 columns={[
-                    createCol('Do_Date', 'date', 'Date'),
-                    createCol('Do_Inv_No', 'string', 'Voucher Number'),
-                    createCol('Retailer_Name', 'string', 'Ledger'),
-                    createCol('Total_Invoice_value', 'number', 'Invoice Value'),
-                    createCol('erpChildCount', 'number', 'ERP-Products'),
-                    createCol('tallyChildCount', 'number', 'Tally-Products'),
-                    createCol('RowStatus', 'string', 'Reason'),
+                    createCol('transactionDate', 'date', 'Date'),
+                    createCol('invoiceNo', 'string', 'Voucher Number'),
+                    createCol('VoucherTypeGet', 'string', 'Voucher'),
+                    createCol('LedgerName', 'string', 'Ledger'),
+                    createCol('ItemName', 'string', 'Item'),
+                    createCol('erpQty', 'number', 'E-Qty'),
+                    createCol('tallyQty', 'number', 'T-Qty'),
+                    createCol('erpRate', 'number', 'E-Rate'),
+                    createCol('tallyRate', 'number', 'T-Rate'),
+                    createCol('erpAmount', 'number', 'E-Amount'),
+                    createCol('tallyAmount', 'number', 'T-Amount'),
+                    createCol('Status', 'string', 'Reason'),
                 ]}
             />
         </>
     )
 }
 
-export default InvoiceBasedSalesComparison;
+export default ItemWiseSalesComparison;

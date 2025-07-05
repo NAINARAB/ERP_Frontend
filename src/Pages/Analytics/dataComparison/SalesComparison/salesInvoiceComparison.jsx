@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, stringCompare, toArray } from "../../../Components/functions";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { comparisonColorCode, fieldMap } from "./variable";
+import { fetchLink } from "../../../../Components/fetchComponent";
+import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, stringCompare, toArray } from "../../../../Components/functions";
+import FilterableTable, { createCol } from "../../../../Components/filterableTable2";
+import { comparisonColorCode, fieldMap } from "../variable";
 import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { Close, Search, Visibility } from "@mui/icons-material";
 
@@ -22,7 +22,7 @@ const ErpAndTallySalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate })
     useEffect(() => {
 
         fetchLink({
-            address: `reports/dataComparison/salesInvoice/alterBased?Fromdate=${Fromdate}&Todate=${Todate}`,
+            address: `analytics/dataComparison/salesInvoice/alterBased?Fromdate=${Fromdate}&Todate=${Todate}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
