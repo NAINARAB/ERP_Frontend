@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { isEqualNumber, ISOString, isValidDate, toArray } from "../../Components/functions";
+import { getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, setSessionFilters, toArray } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -10,37 +10,32 @@ import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-};
-
-const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights }) => {
+const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights, pageID }) => {
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const defaultFilters = {
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        Retailer: { value: '', label: 'ALL' },
+        VoucherType: { value: '', label: 'ALL' },
+        EmployeeType: { value: '', label: 'ALL' },
+        Employee: { value: '', label: 'ALL' },
+        filterItems: { value: '', label: 'ALL' },
+        Cancel_status: '',
+    };
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
     const navigate = useNavigate();
-    const location = useLocation();
-    const query = useQuery();
-    const stateDetails = location.state;
 
     const [baseData, setBaseData] = useState({
         Employees: [],
-        EmployeeTypes: []
+        EmployeeTypes: [],
+        products: [],
     })
 
     const [filters, setFilters] = useState({
-        Fromdate: defaultFilters.Fromdate,
-        Todate: defaultFilters.Todate,
-        fetchFrom: defaultFilters.Fromdate,
-        fetchTo: defaultFilters.Todate,
-        Retailer: { value: '', label: 'ALL' },
-        VoucherType: { value: '', label: 'ALL' },
-        EmployeeType: { value: '', label: 'ALL' },
-        Employee: { value: '', label: 'ALL' },
-        Cancel_status: '',
+        ...defaultFilters,
         reload: false
     });
 
@@ -53,21 +48,58 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
     });
 
     useEffect(() => {
-        if (loadingOn) loadingOn();
+
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Retailer = defaultFilters.Retailer,
+            VoucherType = defaultFilters.VoucherType,
+            EmployeeType = defaultFilters.EmployeeType,
+            Employee = defaultFilters.Employee,
+            Cancel_status = defaultFilters.Cancel_status,
+            filterItems = defaultFilters.filterItems
+        } = otherSessionFiler;
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate,
+            Todate: Todate,
+            Retailer, VoucherType, EmployeeType,
+            Employee, filterItems, Cancel_status
+        }));
+
+    }, [sessionValue, pageID]);
+
+    useEffect(() => {
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Retailer = defaultFilters.Retailer,
+            VoucherType = defaultFilters.VoucherType,
+            EmployeeType = defaultFilters.EmployeeType,
+            Employee = defaultFilters.Employee,
+            filterItems = defaultFilters.filterItems,
+            Cancel_status = defaultFilters.Cancel_status
+        } = otherSessionFiler;
+
         fetchLink({
-            address: `purchase/purchaseOrder?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters?.Retailer?.value}&Cancel_status=${filters?.Cancel_status}&VoucherType=${filters?.VoucherType?.value}&Cost_Center_Type_Id=${filters.EmployeeType.value}&Involved_Emp_Id=${filters.Employee.value}`
+            address: `purchase/purchaseOrder?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            Retailer_Id=${Retailer?.value || ''}&
+            VoucherType=${VoucherType?.value || ''}&
+            Cost_Center_Type_Id=${EmployeeType?.value || ''}&
+            Involved_Emp_Id=${Employee?.value || ''}&
+            filterItems=${filterItems?.value || ''}&
+            Cancel_status=${Cancel_status}`,
+            loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 setPurchaseOrder(data?.data)
             }
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff()
-        })
+        }).catch(e => console.error(e));
 
-    }, [
-        filters?.fetchFrom, filters?.fetchTo,
-        filters.reload
-    ])
+    }, [sessionValue, pageID])
 
     useEffect(() => {
 
@@ -76,6 +108,18 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/products/dropDown`
+        }).then(data => {
+            if (data.success) {
+                const product = toArray(data.data).map(pro => ({
+                    value: pro.Product_Id,
+                    label: pro.Product_Name
+                }));
+                setBaseData(pre => ({ ...pre, products: product }));
             }
         }).catch(e => console.error(e))
 
@@ -99,32 +143,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
             }
         }).catch(e => console.error(e))
 
-    }, [])
-
-    useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-        };
-        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
-    }, [location.search]);
-
-    useEffect(() => {
-        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-        if (Fromdate && Todate) {
-            updateQueryString({ Fromdate, Todate });
-        }
-    }, [stateDetails])
-
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
-    };
+    }, []);
 
     const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
         navigate(page, { state: stateToTransfer });
@@ -466,6 +485,24 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                 </tr>
 
                                 <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Product Name</td>
+                                    <td>
+                                        <Select
+                                            value={filters.filterItems}
+                                            onChange={e => setFilters({ ...filters, filterItems: e })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...baseData.products
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            isSearchable={true}
+                                            placeholder={"Cost Center Type"}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
                                     <td>
                                         <select
@@ -489,13 +526,18 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                     <Button onClick={closeDialog}>close</Button>
                     <Button
                         onClick={() => {
-                            const updatedFilters = {
-                                Fromdate: filters?.Fromdate,
-                                Todate: filters?.Todate
-                            };
-                            updateQueryString(updatedFilters);
-                            setFilters(pre => ({...pre, reload: !pre.reload}));
                             closeDialog();
+                            setSessionFilters({
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters.Todate,
+                                pageID,
+                                Retailer: filters.Retailer,
+                                VoucherType: filters.VoucherType,
+                                EmployeeType: filters.EmployeeType,
+                                Employee: filters.Employee,
+                                filterItems: filters.filterItems,
+                                Cancel_status: filters.Cancel_status,
+                            });
                         }}
                         startIcon={<Search />}
                         variant="outlined"

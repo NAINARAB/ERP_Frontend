@@ -163,6 +163,7 @@ const CostCenter = lazy(() => import("./Pages/DataEntry/costCenter"))
 const DataEntryAbstract = lazy(() => import("./Pages/Analytics/entryInfo"))
 const QPayReports = lazy(() => import("./Pages/Analytics/QPayReports2"))
 const SalesComparisonTabs = lazy(() => import("./Pages/Analytics/dataComparison/SalesComparison/salesTabs"))
+const PurchaseComparisonTabs = lazy(() => import("./Pages/Analytics/dataComparison/PurchaseComparison/purchaseTabs"))
 // const ItemBasedReport = lazy(() => import("./Pages/Analytics/ItemBased"))
 const ReportTemplateCreation = lazy(() => import("./Pages/Analytics/reportTemplateCreation"))
 const ReportTemplates = lazy(() => import("./Pages/Analytics/reportTemplates"))
@@ -198,6 +199,7 @@ const RoutingArray = [
     { component: <ReportTemplates />, path: '/analytics/templates' },
     { component: <ReportTemplateCreation />, path: '/analytics/templates/create' },
     { component: <SalesComparisonTabs />, path: '/analytics/syncStatus/salesSync' },
+    { component: <PurchaseComparisonTabs />, path: '/analytics/syncStatus/purchaseInvoiceSync' },
 
 
     // Data Entry

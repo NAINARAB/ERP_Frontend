@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../../../Components/fetchComponent";
-import { toArray } from "../../../../Components/functions";
+import { checkIsNumber, getPreviousDate, isEqualNumber, ISOString, stringCompare, toArray } from "../../../../Components/functions";
 import FilterableTable, { createCol } from "../../../../Components/filterableTable2";
+import { comparisonColorCode, fieldMap } from "../variable";
+import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Close, Search, Visibility } from "@mui/icons-material";
 
-const ItemWiseSalesComparison = ({ 
-    loadingOn, 
-    loadingOff, 
-    Fromdate, 
-    Todate,
-    module = 'Sales',
-    api = 'salesInvoice'  
-}) => {
+
+const InvoiceBasedSalesComparison = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     const [ERPData, setERPData] = useState([]);
     const [filters, setFilters] = useState({
         comparisonDialog: false,
@@ -21,7 +18,7 @@ const ItemWiseSalesComparison = ({
 
         fetchLink({
             address: `
-                analytics/dataComparison/${api}/itemWise?
+                analytics/dataComparison/purchaseInvoice/invoiceBased?
                 Fromdate=${Fromdate}&
                 Todate=${Todate}&
                 excluedeSyced=${filters.excluedeSyced}`,
@@ -40,11 +37,10 @@ const ItemWiseSalesComparison = ({
     return (
         <>
             <FilterableTable
-                title={module + " unsynced list"}
+                title="Purchase unsynced list"
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 EnableSerialNumber
-                ExcelPrintOption
                 ButtonArea={
                     <>
                         <select
@@ -60,22 +56,19 @@ const ItemWiseSalesComparison = ({
                 }
                 dataArray={ERPData}
                 columns={[
-                    createCol('transactionDate', 'date', 'Date'),
-                    createCol('invoiceNo', 'string', 'Voucher Number'),
-                    createCol('VoucherTypeGet', 'string', 'Voucher'),
-                    createCol('LedgerName', 'string', 'Ledger'),
-                    createCol('ItemName', 'string', 'Item'),
-                    createCol('erpQty', 'number', 'E-Qty'),
-                    createCol('tallyQty', 'number', 'T-Qty'),
-                    createCol('erpRate', 'number', 'E-Rate'),
-                    createCol('tallyRate', 'number', 'T-Rate'),
-                    createCol('erpAmount', 'number', 'E-Amount'),
-                    createCol('tallyAmount', 'number', 'T-Amount'),
-                    createCol('Status', 'string', 'Reason'),
+                    createCol('Po_Entry_Date', 'date', 'Date'),
+                    createCol('Po_Inv_No', 'string', 'Voucher Number'),
+                    createCol('Retailer_Name', 'string', 'Ledger'),
+                    createCol('Total_Invoice_value', 'number', 'Invoice Value'),
+                    createCol('erpChildCount', 'number', 'ERP-Products'),
+                    createCol('erpChildQuantity', 'number', 'ERP Bill Quantity'),
+                    createCol('tallyChildCount', 'number', 'Tally-Products'),
+                    createCol('tallyChildQuantity', 'number', 'Tally Bill Quantity'),
+                    createCol('RowStatus', 'string', 'Reason'),
                 ]}
             />
         </>
     )
 }
 
-export default ItemWiseSalesComparison;
+export default InvoiceBasedSalesComparison;

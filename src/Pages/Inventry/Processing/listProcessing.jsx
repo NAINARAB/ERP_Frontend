@@ -1,19 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate, Subraction } from '../../../Components/functions';
+import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, setSessionFilters, Subraction, toArray } from '../../../Components/functions';
 import FilterableTable, { formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { Edit, FilterAlt, Search } from "@mui/icons-material";
+import { Edit, FilterAlt, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from 'react-select';
 import ProcessingView from "./normalView";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-};
 
 const transformStockJournalData = (data) => {
     let transformedData = [];
@@ -67,27 +62,31 @@ const transformStockJournalData = (data) => {
     return transformedData;
 };
 
-const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const query = useQuery();
-    const [responseData, setResponseData] = useState([]);
-    const [godowns, setGodowns] = useState([]);
-    const [filters, setFilters] = useState({
-        Fromdate: defaultFilters.Fromdate,
-        Todate: defaultFilters.Todate,
-        fetchFrom: defaultFilters.Fromdate,
-        fetchTo: defaultFilters.Todate,
+const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights, pageID }) => {
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const defaultFiltes = {
+        Fromdate: ISOString(),
+        Todate: ISOString(),
         sourceGodown: "",
         destinationGodown: "",
         VoucherType: { label: 'Select', value: '' },
         Branch: { label: 'Select', value: '' },
+        filterItems: [],
+    }
+    const navigate = useNavigate();
+    const [responseData, setResponseData] = useState([]);
+    const [godowns, setGodowns] = useState([]);
+    const [productUsedInProcess, setProductUsedInProcess] = useState([]);
+    const [filters, setFilters] = useState({
+        ...defaultFiltes,
         filterDialog: false,
         refresh: false,
-        view: 'report'
+        view: 'report',
+        pagination: false,
     })
 
     useEffect(() => {
+
         fetchLink({
             address: `dataEntry/godownLocationMaster`
         }).then(data => {
@@ -95,46 +94,63 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                 (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
             );
             setGodowns(godownLocations);
-        })
+        });
+
+        fetchLink({
+            address: `inventory/stockProcessing/itemsUsed`
+        }).then(data => {
+            setProductUsedInProcess(toArray(data.data));
+        }).catch(e => console.error(e));
+
     }, [])
 
     useEffect(() => {
-        if (loadingOn) loadingOn();
 
-        fetchLink({
-            address: `inventory/stockProcessing?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&billType=PROCESSING`,
-        }).then(data => {
-            if (data.success) {
-                // const filterForEmptyArrays = Array.isArray(data.data)
-                //     ? data.data.filter(stj => !(
-                //         stj?.SourceDetails?.length === 0
-                //         && stj?.DestinationDetails?.length === 0
-                //         && stj?.StaffsDetails?.length === 0
-                //     ))
-                //     : []
-                setResponseData(data.data)
-            }
-        }).finally(() => {
-            if (loadingOff) loadingOff();
-        }).catch(e => console.error(e))
-    }, [filters?.fetchFrom, filters?.fetchTo])
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            sourceGodown = defaultFiltes.sourceGodown,
+            destinationGodown = defaultFiltes.destinationGodown,
+            VoucherType = defaultFiltes.VoucherType,
+            Branch = defaultFiltes.Branch,
+            filterItems = defaultFiltes.filterItems,
+        } = otherSessionFiler;
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate,
+            Todate: Todate,
+            sourceGodown, destinationGodown,
+            VoucherType, Branch, filterItems
+        }));
+
+    }, [sessionValue, pageID]);
 
     useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-        };
-        setFilters(pre => ({ ...pre, fetchFrom: queryFilters.Fromdate, fetchTo: queryFilters.Todate }));
-    }, [location.search]);
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            filterItems = defaultFiltes.filterItems
+        } = otherSessionFiler;
 
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
-    };
+        const itemId = toArray(filterItems).map(
+            val => val.value
+        ).filter(fil => checkIsNumber(fil))
+
+        fetchLink({
+            address: `inventory/stockProcessing/getWithFilters`,
+            method: 'POST',
+            bodyData: {
+                Fromdate, Todate, filterItems: itemId
+            },
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                setResponseData(data.data)
+            }
+        }).catch(e => console.error(e));
+
+    }, [sessionValue, pageID]);
 
     const closeDialog = () => {
         setFilters({
@@ -234,8 +250,16 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                     title="PRODUCTIONS"
                     maxHeightOption
                     ButtonArea={<ButtonArea />}
+                    MenuButtons={[{
+                        name: 'Pagination',
+                        icon: filters.pagination
+                            ? <ToggleOn fontSize="small" color='primary' />
+                            : <ToggleOff fontSize="small" />,
+                        onclick: () => setFilters(pre => ({ ...pre, pagination: !pre.pagination }))
+                    }]}
                     ExcelPrintOption
                     PDFPrintOption
+                    disablePagination={!filters.pagination}
                     columns={[...[
                         { col: 'SNo', type: 'string', title: 'Sno' },
                         { col: 'Date', type: 'date', title: 'Date' },
@@ -387,6 +411,26 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                     </td>
                                 </tr>
 
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Items</td>
+                                    <td className="py-1">
+                                        <Select
+                                            value={filters.filterItems}
+                                            onChange={(selectedOptions) =>
+                                                setFilters((prev) => ({ ...prev, filterItems: selectedOptions }))
+                                            }
+                                            isMulti={true}
+                                            menuPortalTarget={document.body}
+                                            options={productUsedInProcess}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select Items"}
+                                            maxMenuHeight={300}
+                                            closeMenuOnSelect={false}
+                                        />
+                                    </td>
+                                </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -395,12 +439,17 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                     <Button onClick={closeDialog}>close</Button>
                     <Button
                         onClick={() => {
-                            const updatedFilters = {
-                                Fromdate: filters?.Fromdate,
-                                Todate: filters?.Todate
-                            };
-                            updateQueryString(updatedFilters);
                             closeDialog();
+                            setSessionFilters({
+                                Fromdate: filters?.Fromdate,
+                                Todate: filters.Todate,
+                                pageID,
+                                sourceGodown: filters.sourceGodown,
+                                destinationGodown: filters.destinationGodown,
+                                VoucherType: filters.VoucherType,
+                                Branch: filters.Branch,
+                                filterItems: filters.filterItems,
+                            });
                         }}
                         startIcon={<Search />}
                         variant="outlined"
