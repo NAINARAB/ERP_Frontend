@@ -3,6 +3,7 @@ import './Pages/common.css'
 
 // Dashboard
 const CommonDashboard = lazy(() => import("./Pages/Dashboard/commonDashboard"));
+
 // masters
 const CompanyInfo = lazy(() => import('./Pages/Masters/CompanyInfo'))
 const Users = lazy(() => import("./Pages/Masters/newUsers"))
@@ -22,6 +23,13 @@ const DefaultAccountMaster = lazy(() => import("./Pages/Masters/defaultAccountMa
 const Lom = lazy(() => import("./Pages/Masters/Lom"));
 const Lollist = lazy(() => import("./Pages/Masters/lollist"));
 const Loslist = lazy(() => import("./Pages/Masters/loslist"));
+
+const AccountMaster = lazy(() => import("./Pages/Masters/AccountMaster"))
+const AccountingGroup = lazy(() => import("./Pages/Masters/AccountingGroup"))
+const StateMaster = lazy(() => import("./Pages/Masters/State"))
+const GodownMaster = lazy(() => import("./Pages/Masters/Godown"))
+const BrandMaster = lazy(() => import("./Pages/Masters/Brand"))
+const DistrictMaster = lazy(() => import("./Pages/Masters/DistrictMaster"))
 
 // Authorization
 const UserBased = lazy(() => import("./Pages/Authorization/userBased"))
@@ -230,7 +238,13 @@ const RoutingArray = [
     { component: <Loslist />, path: '/erp/master/loslist' },
     { component: <Lollist />, path: '/erp/master/lollist' },
     { component: <Lom />, path: '/erp/master/lom' },
-    
+    { component: <DistrictMaster />, path: '/erp/master/district' },
+    { component: <BrandMaster />, path: '/erp/master/brand' },
+    { component: <GodownMaster />, path: '/erp/master/godown' },
+    { component: <StateMaster />, path: '/erp/master/state' },
+    { component: <AccountingGroup />, path: '/erp/master/accountingGroup' },
+    { component: <AccountMaster />, path: '/erp/master/accountMaster' },
+
 
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },

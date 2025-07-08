@@ -362,7 +362,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 && isEqualNumber(o?.Item_Id, itemDetail?.ItemId)
                 && isEqualNumber(o?.DeliveryId, itemDetail?.Trip_Item_SNo)
             ));
-            console.log(prev)
             if (deleteOption) {
                 return preItems;
             } else {

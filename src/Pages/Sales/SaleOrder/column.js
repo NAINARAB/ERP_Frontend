@@ -10,6 +10,7 @@ export const saleOrderGeneralInfo = {
 
     So_Date: ISOString(),
     Retailer_Id: '',
+    Retailer_Name: '',
     Sales_Person_Id: '',
     Branch_Id: '',
     VoucherType: '',
@@ -80,4 +81,13 @@ export const saleOrderStockInfo = {
 
     // generated from server
     Created_on: '',
+}
+
+export const saleOrderStaffInfo = {
+    Id: '', 
+    So_Id: '', 
+    Involved_Emp_Id: '', 
+    EmpName: '',
+    Cost_Center_Type_Id: '',
+    EmpType: ''
 }

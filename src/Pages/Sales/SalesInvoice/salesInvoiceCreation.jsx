@@ -413,6 +413,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     retailer={invoiceInfo?.Retailer_Id}
                                     selectedItems={invoiceProducts}
                                     setSelectedItems={setInvoiceProduct}
+                                    staffArray={staffArray}
+                                    setStaffArray={setStaffArray}
                                     products={baseData.products}
                                     GST_Inclusive={invoiceInfo.GST_Inclusive}
                                     IS_IGST={IS_IGST}

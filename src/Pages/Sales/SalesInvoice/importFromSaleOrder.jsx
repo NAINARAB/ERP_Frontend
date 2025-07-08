@@ -3,7 +3,7 @@ import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber }
 import { Button, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
-import { salesInvoiceDetailsInfo } from "./variable";
+import { salesInvoiceDetailsInfo, salesInvoiceStaffInfo } from "./variable";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -35,8 +35,10 @@ const AddProductsInSalesInvoice = ({
     onClose,
     retailer,
     children,
-    selectedItems,
+    selectedItems = [],
     setSelectedItems,
+    staffArray = [],
+    setStaffArray,
     products = [],
     GST_Inclusive,
     IS_IGST,
@@ -131,7 +133,7 @@ const AddProductsInSalesInvoice = ({
                                 )?.GoDown_Id
 
                                 const newValue = (isValidGodown && isValidItem && isSameItem)
-                                    ? godownDetails.Godown_Id 
+                                    ? godownDetails.Godown_Id
                                     : checkIsNumber(oldGodown) ? oldGodown : value;
 
                                 return [key, newValue];
@@ -156,6 +158,30 @@ const AddProductsInSalesInvoice = ({
                 )
             ))
         });
+
+        const notInStaffList = [...new Map(
+            toArray(itemDetail?.Staff_Involved_List).filter(
+                staff => !staffArray.some(
+                    arrObj => isEqualNumber(arrObj.Emp_Id, staff.Involved_Emp_Id)
+                )
+            ).map(staff => [staff.Involved_Emp_Id, staff])
+        ).values()];
+
+        if (notInStaffList.length > 0) {
+            setStaffArray(prevStaffArray => [
+                ...prevStaffArray,
+                ...notInStaffList.map(staff => Object.fromEntries(
+                    Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                        switch (key) {
+                            case 'Emp_Id': return [key, staff?.Involved_Emp_Id];
+                            case 'Emp_Name': return [key, staff?.EmpName];
+                            case 'Emp_Type_Id': return [key, staff?.Cost_Center_Type_Id];
+                            default: return [key, value];
+                        }
+                    })
+                ))
+            ]);
+        }
 
         // closeDialog();
     }

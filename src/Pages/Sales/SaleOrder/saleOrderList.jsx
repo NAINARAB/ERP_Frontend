@@ -1,36 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, isEqualNumber, ISOString, isValidDate, NumberFormat, toNumber } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-};
-
-const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
-    const navigate = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
-    const query = useQuery();
-    const [saleOrders, setSaleOrders] = useState([]);
-    const [retailers, setRetailers] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [voucher, setVoucher] = useState([]);
-    const [viewOrder, setViewOrder] = useState({});
-    const [reload, setReload] = useState(false)
-
-    const [filters, setFilters] = useState({
+const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+    const sessionValue = sessionStorage.getItem('filterValues');
+    const defaultFilters = {
         Fromdate: ISOString(),
         Todate: ISOString(),
         Retailer: { value: '', label: 'ALL' },
@@ -38,7 +20,18 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
         SalesPerson: { value: '', label: 'ALL' },
         VoucherType: { value: '', label: 'ALL' },
         Cancel_status: 0
-    });
+    };
+
+    const storage = JSON.parse(localStorage.getItem('user'));
+    const navigate = useNavigate();
+    const [saleOrders, setSaleOrders] = useState([]);
+    const [retailers, setRetailers] = useState([]);
+    const [salesPerson, setSalePerson] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [voucher, setVoucher] = useState([]);
+    const [viewOrder, setViewOrder] = useState({});
+
+    const [filters, setFilters] = useState(defaultFilters);
 
     const [dialog, setDialog] = useState({
         filters: false,
@@ -46,19 +39,25 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
     });
 
     useEffect(() => {
-        if (loadingOn) loadingOn();
-        fetchLink({
-            address: `sales/saleOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer?.value}&Sales_Person_Id=${filters?.SalesPerson?.value}&Created_by=${filters?.CreatedBy?.value}&VoucherType=${filters?.VoucherType?.value}&Cancel_status=${filters?.Cancel_status}`
-        }).then(data => {
-            if (data.success) {
-                setSaleOrders(data?.data)
-            }
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff();
-        })
-    }, [
-        reload
-    ])
+
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Retailer = defaultFilters.Retailer,
+            CreatedBy = defaultFilters.CreatedBy,
+            SalesPerson = defaultFilters.SalesPerson,
+            VoucherType = defaultFilters.VoucherType,
+            Cancel_status = defaultFilters.Cancel_status
+        } = otherSessionFiler;
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate, Todate,
+            Retailer, CreatedBy, SalesPerson,
+            VoucherType, Cancel_status
+        }));
+
+    }, [sessionValue, pageID]);
 
     useEffect(() => {
 
@@ -97,31 +96,33 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
     }, [])
 
     useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-        };
-        setFilters(pre => ({ ...pre, Fromdate: queryFilters.Fromdate, Todate: queryFilters.Todate }));
-    }, [location.search]);
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Retailer = defaultFilters.Retailer,
+            CreatedBy = defaultFilters.CreatedBy,
+            SalesPerson = defaultFilters.SalesPerson,
+            VoucherType = defaultFilters.VoucherType,
+            Cancel_status = defaultFilters.Cancel_status
+        } = otherSessionFiler;
 
-    useEffect(() => {
-        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-        if (Fromdate && Todate) {
-            updateQueryString({ Fromdate, Todate });
-            setFilters(pre => ({ ...pre, Fromdate: ISOString(stateDetails.Fromdate), Todate: stateDetails.Todate }));
-            setReload(pre => !pre);
-        }
-    }, [stateDetails])
+        fetchLink({
+            address: `sales/saleOrder?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            Retailer_Id=${Retailer?.value}&
+            Sales_Person_Id=${SalesPerson?.value}&
+            Created_by=${CreatedBy?.value}&
+            VoucherType=${VoucherType?.value}&
+            Cancel_status=${Cancel_status}`,
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                setSaleOrders(data?.data)
+            }
+        }).catch(e => console.error(e));
 
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
-    };
+    }, [sessionValue, pageID]);
 
     const ExpendableComponent = ({ row }) => {
 
@@ -262,7 +263,9 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
-                        {toNumber(Total_Invoice_value) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {Total_Invoice_value}</h6>}
+                        <span className="bg-light text-light fa-11 px-1 shadow-sm py-1 rounded-3 mx-1">
+                            {toNumber(Total_Invoice_value) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {NumberFormat(Total_Invoice_value)}</h6>}
+                        </span>
                     </>
                 }
                 // EnableSerialNumber={true}
@@ -418,12 +421,16 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
                     <Button
                         onClick={() => {
                             closeDialog();
-                            const updatedFilters = {
+                            setSessionFilters({
                                 Fromdate: filters?.Fromdate,
-                                Todate: filters?.Todate
-                            };
-                            updateQueryString(updatedFilters);
-                            setReload(pre => !pre);
+                                Todate: filters.Todate,
+                                pageID,
+                                Retailer: filters.Retailer,
+                                CreatedBy: filters.CreatedBy,
+                                SalesPerson: filters.SalesPerson,
+                                VoucherType: filters.VoucherType,
+                                Cancel_status: filters.Cancel_status
+                            });
                         }}
                         startIcon={<Search />}
                         variant="outlined"
