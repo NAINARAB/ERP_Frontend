@@ -1,35 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    tableCellClasses,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    TablePagination,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Box,
-    Typography,
-    IconButton,
-    Tooltip,
-    Switch,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    Card,
-    CircularProgress,
-    InputAdornment,
-    Chip
+    Table, TableBody, TableCell, tableCellClasses, TableContainer, TableHead, TableRow,
+    Paper, TablePagination, Select, MenuItem, FormControl, InputLabel, Box, Typography, IconButton, Tooltip,
+    Switch, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Card, CircularProgress, InputAdornment, Chip
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -91,7 +66,14 @@ const PaginationContainer = styled("div")({
     borderTop: "1px solid #e0e0e0",
 });
 
-const PROTECTED_COLUMNS = ['Auto_Id', 'Stock_Tally_Id', 'Stock_Item', 'Grade_Item_Group', 'Item_Name_Modified'];
+const PROTECTED_COLUMNS = [
+    // 'Auto_Id',
+    //  'Stock_Tally_Id',
+    'Stock_Item',
+    // 'Grade_Item_Group',
+    //  'Item_Name_Modified'
+];
+
 function Loslist() {
     const [lolData, setLolData] = useState([]);
     const [columns, setColumns] = useState([]);
@@ -214,7 +196,7 @@ function Loslist() {
         }
 
         fetchData();
-    }, [data]);
+    }, [data, isApplying]);
 
     const handlePositionChange = (columnId, newPosition) => {
         const positionValue = parseInt(newPosition);
@@ -317,8 +299,6 @@ function Loslist() {
             toast.error("Failed to update row");
         }
     }
-
-
 
     const applyColumnChanges = async () => {
         setIsApplying(true);
@@ -456,8 +436,6 @@ function Loslist() {
         setSortConfig({ key, direction });
     };
 
-
-
     const filteredData = useMemo(() => {
         let filterableData = [...allData];
 
@@ -499,8 +477,6 @@ function Loslist() {
 
         return filterableData;
     }, [allData, globalSearch, appliedFilters, sortConfig]);
-
-
 
     const renderTableHeader = () => (
         <TableHead>
@@ -635,6 +611,7 @@ function Loslist() {
         setSelectedFile(null);
         setIsLoading(false)
     };
+
     const uploadExcelFile = async (file) => {
         try {
             const formData = new FormData();
@@ -643,10 +620,7 @@ function Loslist() {
             formData.append('Created_By', parseData?.UserId);
             formData.append('isRetailer', '1');
 
-            console.log('FormData contents:');
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value instanceof File ? `File: ${value.name}` : value);
-            }
+
             const response = await fetch(`${api}masters/uploadLosExcel`, {
                 method: 'POST',
                 body: formData,
@@ -675,7 +649,6 @@ function Loslist() {
         }
     };
 
-
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file.size > 5 * 1024 * 1024) {
@@ -684,6 +657,7 @@ function Loslist() {
         }
         setSelectedFile(file);
     };
+
     return (
         <Box
             sx={{
@@ -804,13 +778,19 @@ function Loslist() {
                                                     size="small"
                                                     variant="outlined"
                                                     value={column.Position ?? 0}
-                                                    onChange={(e) => handlePositionChange(column.Id, e.target.value)}
+                                                    onChange={(e) =>
+                                                        handlePositionChange(column.Id, e.target.value)
+                                                    }
                                                     sx={{ width: "70px" }}
                                                     inputProps={{
                                                         min: 1,
-                                                        readOnly: PROTECTED_COLUMNS.includes(column.ColumnName),
+                                                        readOnly: PROTECTED_COLUMNS.includes(
+                                                            column.ColumnName
+                                                        ),
                                                     }}
-                                                    disabled={PROTECTED_COLUMNS.includes(column.ColumnName)}
+                                                    disabled={PROTECTED_COLUMNS.includes(
+                                                        column.ColumnName
+                                                    )}
                                                 />
 
                                                 <TextField
@@ -818,11 +798,17 @@ function Loslist() {
                                                     variant="outlined"
                                                     value={column.Alias_Name ?? ""}
                                                     onChange={(e) =>
+                                                        !PROTECTED_COLUMNS.includes(column.ColumnName) &&
                                                         handleAliasChange(column.Id, e.target.value)
                                                     }
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            cursor: PROTECTED_COLUMNS.includes(column.ColumnName) ? 'default' : 'text',
+                                                            backgroundColor: PROTECTED_COLUMNS.includes(column.ColumnName) ? '#f5f5f5' : 'inherit'
+                                                        }
+                                                    }}
                                                     inputProps={{
-                                                        min: 1,
-                                                        readOnly: PROTECTED_COLUMNS.includes(column.ColumnName),
+                                                        readOnly: PROTECTED_COLUMNS.includes(column.ColumnName)
                                                     }}
                                                     disabled={PROTECTED_COLUMNS.includes(column.ColumnName)}
                                                 />
@@ -887,8 +873,6 @@ function Loslist() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-
 
             <Dialog
                 open={editDialogOpen}

@@ -90,11 +90,11 @@ const PaginationContainer = styled("div")({
 });
 
 const PROTECTED_COLUMNS = [
-    "Auto_Id",
-    "Ledger_Tally_Id",
+    // "Auto_Id",
+    // "Ledger_Tally_Id",
     "Ledger_Name",
     "Ledger_Alias",
-    "Actual_Party_Name_with_Brokers",
+    // "Actual_Party_Name_with_Brokers",
 ];
 
 function Lollist() {
@@ -194,7 +194,7 @@ function Lollist() {
         }
 
         fetchData();
-    }, [data]);
+    }, [data, isApplying]);
 
     const handlePositionChange = (columnId, newPosition) => {
         const positionValue = parseInt(newPosition);
@@ -411,10 +411,6 @@ function Lollist() {
             formData.append("Created_By", parseData?.UserId);
             formData.append("isRetailer", "1");
 
-            console.log("FormData contents:");
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value instanceof File ? `File: ${value.name}` : value);
-            }
             const response = await fetch(`${api}masters/uploadExcel`, {
                 method: "POST",
                 body: formData,
@@ -872,8 +868,19 @@ function Lollist() {
                                                     variant="outlined"
                                                     value={column.Alias_Name ?? ""}
                                                     onChange={(e) =>
+                                                        !PROTECTED_COLUMNS.includes(column.ColumnName) &&
                                                         handleAliasChange(column.Id, e.target.value)
                                                     }
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            cursor: PROTECTED_COLUMNS.includes(column.ColumnName) ? 'default' : 'text',
+                                                            backgroundColor: PROTECTED_COLUMNS.includes(column.ColumnName) ? '#f5f5f5' : 'inherit'
+                                                        }
+                                                    }}
+                                                    inputProps={{
+                                                        readOnly: PROTECTED_COLUMNS.includes(column.ColumnName)
+                                                    }}
+                                                    disabled={PROTECTED_COLUMNS.includes(column.ColumnName)}
                                                 />
                                             </div>
                                         </div>
