@@ -76,6 +76,7 @@ const OutStanding = lazy(() => import("./Pages/Reports/outstanding"))
 const DeliveryReports = lazy(() => import("./Pages/Reports/deliveryReports"));
 const StockInHand = lazy(() => import("./Pages/Reports/storageClosingStock/stockInHand"));
 const ItemGroupWiseStockValue = lazy(() => import("./Pages/Reports/storageClosingStock/itemGroupBasedStockValue"));
+const PurchaseBrokerageReport = lazy(() => import("./Pages/Reports/CostCenterReports/purchaseBrokerageReport"));
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -252,6 +253,7 @@ const RoutingArray = [
     { component: <DeliveryReports />, path: '/erp/reports/deliveryReports' },
     { component: <StockInHand />, path: '/erp/reports/stockInHand' },
     { component: <ItemGroupWiseStockValue />, path: '/erp/reports/itemBasedStockValue' },
+    { component: <PurchaseBrokerageReport />, path: '/erp/reports/purchaseBrokerage' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
