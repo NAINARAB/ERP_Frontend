@@ -71,7 +71,8 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
                     createCol('Po_Entry_Date', 'date', 'Date'),
                     createCol('Product_Name', 'string', 'Item'),
                     createCol('displayQuantity', 'number', 'Bag'),
-                    createCol('Bill_Qty', 'number', 'Bill Qty'),
+                    createCol('Item_Rate', 'number', 'Rate'),
+                    createCol('Act_Qty', 'number'),
                     createCol('VoucherGet', 'string', 'Voucher'),
                 ]}
                 ButtonArea={
