@@ -16,7 +16,7 @@ const InvoiceBillTemplate = (props) => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
+            address: `masters/products`
         }).then(data => {
             if (data.success) {
                 setProducts(data.data)

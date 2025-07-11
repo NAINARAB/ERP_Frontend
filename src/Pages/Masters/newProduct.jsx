@@ -11,6 +11,7 @@ import FilterableTable from "../../Components/filterableTable2";
 import './Components/productCss.css';
 import { indianCurrency } from "../../Components/functions";
 import { customSelectStyles } from "../../Components/tablecolumn";
+
 const initialInputValue = {
     Product_Id: '',
     Product_Code: '',
@@ -125,7 +126,6 @@ const ProductCard = ({ product, setProductInputValue, setDialog }) => {
 };
 
 const ProductsMaster = ({ loadingOn, loadingOff }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
     const [products, setProducts] = useState([]);
     const [reload, setReload] = useState(false);
     const [filteredData, setFilteredData] = useState([]);
@@ -142,8 +142,6 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
     const [productGroup, setProductGroup] = useState([])
     const [brand, setBrand] = useState([])
 
-
-
     const [filters, setFilters] = useState({
         Product_Id: '',
         Products: 'ALL',
@@ -156,28 +154,22 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         Brand_Id: '',
         Brand: 'ALL'
     });
+
     const [dialogFilter, setDialogFilter] = useState({
         filters: false,
         orderDetails: false,
     });
 
-
-
-
-
-
     useEffect(() => {
-        if (loadingOn) loadingOn();
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}&Products=${filters?.Product_Id}&ShortName=${filters?.ShortName_Id}&PosBrand=${filters?.PosBrand_Id}&ProductGroup=${filters?.ProductGroup_Id}&Brand=${filters?.Brand_Id}`
+            address: `masters/products/allProducts`,
+            loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 setProducts(data.data)
             }
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff();
-        })
-    }, [reload, storage?.Company_id])
+        }).catch(e => console.error(e))
+    }, [reload])
 
     useEffect(() => {
         const filteredResults = products.filter(item => {
@@ -195,20 +187,6 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         formData.append('Product_Image', productInputValue.Product_Image);
         formData.append('Product_Id', productInputValue?.Product_Id);
         if (productInputValue?.Product_Image && productInputValue?.Product_Id) {
-            // fetchLink({
-            //     address: `masters/products/productImage`,
-            //     method: 'PUT',
-            //     bodyData: formData,
-            //     autoHeaders: true,
-            // }).then(data => {
-            //     if (data.success) {
-            //         toast.success(data.message);
-            //         imageUploadDialogClose()
-            //         setReload(!reload)
-            //     } else {
-            //         toast.error(data.message)
-            //     }
-            // }).catch(e => console.error(e))
 
             fetch(`${api}masters/products/productImage`, {
                 method: 'PUT',
@@ -244,17 +222,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         })
     }
 
-
     useEffect(() => {
-        fetchLink({
-            address: `masters/products/dropDown`
-        }).then(data => {
-            if (data.success) {
-                setProductDetails(data.data);
-                setShortname(data.data)
-            }
-        }).catch(e => console.error(e))
-
         fetchLink({
             address: `masters/posbranch/dropdown`
         }).then(data => {
@@ -262,24 +230,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                 setPosBrand(data.data);
             }
         }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/products/productGroups`
-        }).then(data => {
-            if (data.success) {
-                setProductGroup(data.data);
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/brand`
-        }).then(data => {
-            if (data.success) {
-                setBrand(data.data);
-            }
-        }).catch(e => console.error(e))
     }, [])
-
 
     const closeDialog = () => {
         setDialogFilter({
@@ -288,19 +239,20 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
             orderDetails: false,
         });
     }
+
     return (
         <>
             <Card component={Paper}>
                 <div className="p-3 pb-1 d-flex align-items-center flex-wrap">
                     <h6 className="flex-grow-1 fa-18">Products</h6>
-                    <Tooltip title='Filters'>
+                    {/* <Tooltip title='Filters'>
                         <IconButton
                             size="small"
                             onClick={() => setDialogFilter({ ...dialogFilter, filters: true })}
                         >
                             <FilterAlt />
                         </IconButton>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title='Sync Tally LOS'><IconButton onClick={syncLOS}><Sync /></IconButton></Tooltip>
 
                     <ProductAddEditComp
@@ -329,7 +281,6 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                     />
 
                 </div>
-
 
                 <CardContent sx={{ p: 0 }}>
                     <FilterableTable
@@ -400,10 +351,6 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                     }}
                 />
             )}
-
-
-
-
 
             <Dialog
                 open={dialogFilter.filters}
