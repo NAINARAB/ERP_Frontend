@@ -386,6 +386,7 @@ export const displayColumns = ({
                                                         OrderId: item?.OrderId,
                                                         Location_Id: item?.LocationId,
                                                         Item_Id: item?.ItemId,
+                                                        Item_Name: item?.ItemName || 'not found',
                                                         Bill_Qty: item?.pendingInvoiceWeight,
                                                         Act_Qty: item?.Weight,
                                                         Bill_Alt_Qty: item?.Quantity,
