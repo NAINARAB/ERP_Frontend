@@ -28,7 +28,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                         godownLocationsResponse,
                         uomResponse
                     ] = await Promise.all([
-                        fetchLink({ address: `masters/products` }),
+                        fetchLink({ address: `masters/products/allProducts` }),
                         fetchLink({ address: `dataEntry/godownLocationMaster` }),
                         fetchLink({ address: `masters/uom` }),
                     ]);

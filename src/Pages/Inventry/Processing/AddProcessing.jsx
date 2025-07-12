@@ -120,7 +120,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                     staffCategory,
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
-                    fetchLink({ address: `masters/products` }),
+                    fetchLink({ address: `masters/products/allProducts` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `purchase/voucherType` }),
                     fetchLink({ address: `masters/uom` }),
