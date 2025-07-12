@@ -204,7 +204,7 @@ const NewDeliveryOrder = ({
             .catch((e) => console.error(e));
 
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`,
+            address: `masters/products`,
         })
             .then((data) => {
                 if (data.success) {

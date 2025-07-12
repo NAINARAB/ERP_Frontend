@@ -146,7 +146,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/products?Company_Id=${storage?.Company_id}`
+            address: `masters/products`
         }).then(data => {
             const productsData = (data.success ? data.data : []).sort(
                 (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
