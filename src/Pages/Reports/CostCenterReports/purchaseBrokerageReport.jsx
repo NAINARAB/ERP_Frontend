@@ -9,6 +9,10 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 
 const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
+    const [deliveryReport, setDeliveryReport] = useState([]);
+    const [reportType, setReportType] = useState('purchase');
+    const [dropDown, setDropDown] = useState({ broker: [] });
+
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -17,84 +21,138 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
     });
 
-    const [dropDown, setDropDown] = useState({
-        broker: []
-    })
-
     useEffect(() => {
+
         fetchLink({
-            address: `reports/brokerageReport/purchaseInvoice/getInvolvedBroker`
+            address: `reports/brokerageReport/getInvolvedBroker`
         }).then(data => {
             if (data.success) {
-                setDropDown(pre => ({
-                    ...pre,
+                setDropDown(prev => ({
+                    ...prev,
                     broker: toArray(data.data)
-                }))
+                }));
             }
-        }).catch(e => console.error(e))
-    }, [])
+        }).catch(console.error);
+    }, []);
 
     useEffect(() => {
-        fetchLink({
-            address: `reports/brokerageReport/purchaseInvoice?
-            Fromdate=${filters.Fromdate}&
-            Todate=${filters.Todate}&
-            broker=${filters.Broker.value}`,
-            loadingOn, loadingOff
-        }).then(data => {
-            if (data.success) {
-                setReportData(toArray(data.data))
+        const fetchData = async () => {
+            try {
+                const [purchaseRes, salesRes] = await Promise.all([
+                    fetchLink({
+                        address: `reports/brokerageReport/purchaseInvoice?
+                        Fromdate=${filters.Fromdate}&
+                        Todate=${filters.Todate}&
+                        broker=${filters.Broker.value}`,
+                        loadingOn, loadingOff
+                    }),
+                    fetchLink({
+                        address: `reports/brokerageReport/salesInvoice?
+                        Fromdate=${filters.Fromdate}&
+                        Todate=${filters.Todate}&
+                        broker=${filters.Broker.value}`,
+                        loadingOn, loadingOff
+                    })
+                ]);
+
+                if (purchaseRes.success) setReportData(toArray(purchaseRes.data));
+                if (salesRes.success) setDeliveryReport(toArray(salesRes.data));
+            } catch (err) {
+                console.error(err);
             }
-        }).catch(e => console.error(e))
+        };
+
+        fetchData();
     }, [filters.refresh]);
 
     const closeDialog = () => {
-        setFilters(pre => ({ ...pre, filterDialog: false }))
-    }
+        setFilters(prev => ({ ...prev, filterDialog: false }));
+    };
+
+    const currentData = reportType === 'purchase' ? reportData : deliveryReport;
 
     const totalBags = useMemo(() => {
-        return reportData.reduce((acc, item) => Addition(acc, item.displayQuantity), 0)
-    }, [reportData])
+        return currentData.reduce((acc, item) => Addition(acc, item.displayQuantity), 0);
+    }, [currentData]);
+
+    const showBrokerColumn = filters.Broker.value === '';
+
+    const purchaseColumns = [
+        ...(showBrokerColumn ? [createCol('CostCenterGet', 'string', 'Broker')] : []),
+        createCol('Retailer_Name', 'string', 'Party'),
+        createCol('Date', 'date', 'Date'),
+        createCol('Product_Name', 'string', 'Item'),
+        createCol('displayQuantity', 'number', 'Bag'),
+        createCol('Item_Rate', 'number', 'Rate'),
+        createCol('Act_Qty', 'number'),
+        createCol('Total_Invoice_value', 'string', 'Total_Invo_value'),
+        createCol('VoucherGet', 'string', 'Voucher'),
+    ];
+
+    const salesColumns = [
+        ...(showBrokerColumn ? [createCol('CostCenterGet', 'string', 'Broker')] : []),
+        createCol('Retailer_Name', 'string', 'Party'),
+        createCol('Date', 'date', 'Date'),
+        createCol('Product_Name', 'string', 'Item'),
+        createCol('displayQuantity', 'number', 'Bag'),
+        createCol('Item_Rate', 'number', 'Rate'),
+        createCol('Act_Qty', 'string', 'Act_Qty'),
+        createCol('Total_Invoice_value', 'string', 'Total_Invo_value'),
+        createCol('VoucherGet', 'string', 'Voucher'),
+    ];
+
+    const currentColumns = reportType === 'purchase' ? purchaseColumns : salesColumns;
+
+    const brokerLabel = filters.Broker.value === '' ? 'ALL Brokers' : filters.Broker.label;
+    const titleText = `${reportType === 'purchase' ? 'Purchase Broker' : 'Sales Broker'} : ${brokerLabel}`;
 
     return (
         <>
             <FilterableTable
-                title={`Purchase Broker : ${reportData[0]?.CostCenterGet ? String(reportData[0]?.CostCenterGet) : filters.Broker.label} `}
+                title={titleText}
                 EnableSerialNumber
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 maxHeightOption
                 ExcelPrintOption
-                dataArray={reportData}
-                columns={[
-                    createCol('Retailer_Name', 'string', 'Party'),
-                    createCol('Po_Entry_Date', 'date', 'Date'),
-                    createCol('Product_Name', 'string', 'Item'),
-                    createCol('displayQuantity', 'number', 'Bag'),
-                    createCol('Item_Rate', 'number', 'Rate'),
-                    createCol('Act_Qty', 'number'),
-                    createCol('VoucherGet', 'string', 'Voucher'),
-                ]}
+                dataArray={currentData}
+                columns={currentColumns}
                 ButtonArea={
                     <>
+
                         <IconButton
                             size="small"
-                            onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
+                            onClick={() => setFilters(prev => ({ ...prev, filterDialog: true }))}
                         >
                             <FilterAlt />
                         </IconButton>
-                        <span className="p-2">Total Bags: {NumberFormat(totalBags)}</span>
+                        <span className="p-2">
+                            Total Bags: {NumberFormat(totalBags)}
+                        </span>
+                        <div className="d-flex align-items-center mb-2">
+                            <Button
+                                variant={reportType === 'purchase' ? 'contained' : 'outlined'}
+                                onClick={() => setReportType('purchase')}
+                                size="large"
+                            >
+                                Purchase
+                            </Button>
+                            <Button
+                                variant={reportType === 'sales' ? 'contained' : 'outlined'}
+                                onClick={() => setReportType('sales')}
+                                size="large
+                    "
+                                style={{ marginLeft: '10px' }}
+                            >
+                                Sales
+                            </Button>
+                        </div>
                     </>
                 }
             />
 
-            <Dialog
-                open={filters.filterDialog}
-                onClose={closeDialog}
-                maxWidth="sm" fullWidth
-            >
+            <Dialog open={filters.filterDialog} onClose={closeDialog} maxWidth="sm" fullWidth>
                 <DialogContent>
-
                     <h5 className="d-flex justify-content-between px-2">
                         <span>Filters</span>
                         <span>
@@ -103,12 +161,9 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
                             </IconButton>
                         </span>
                     </h5>
-
                     <div className="table-responsive">
                         <table className="table m-0">
                             <tbody>
-
-                                {/* Fromdate */}
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -120,8 +175,6 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
-
-                                {/* to date */}
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
@@ -133,17 +186,13 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Broker</td>
                                     <td>
                                         <Select
-                                            value={filters?.Broker}
+                                            value={filters.Broker}
                                             onChange={(e) => setFilters({ ...filters, Broker: e })}
-                                            options={[
-                                                { value: '', label: 'ALL Brokers' },
-                                                ...dropDown.broker
-                                            ]}
+                                            options={[{ value: '', label: 'ALL Brokers' }, ...dropDown.broker]}
                                             styles={customSelectStyles}
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
@@ -151,27 +200,25 @@ const PurchaseBrokerageReport = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
-
                             </tbody>
                         </table>
                     </div>
-
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={closeDialog}>
-                        Close
-                    </Button>
+                    <Button onClick={closeDialog}>Close</Button>
                     <Button
-                        variant='outlined'
+                        variant="outlined"
                         onClick={() => {
-                            setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
+                            setFilters(prev => ({ ...prev, refresh: !prev.refresh }));
                             closeDialog();
                         }}
-                    >Search</Button>
+                    >
+                        Search
+                    </Button>
                 </DialogActions>
             </Dialog>
         </>
-    )
-}
+    );
+};
 
 export default PurchaseBrokerageReport;

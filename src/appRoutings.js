@@ -23,6 +23,7 @@ const DefaultAccountMaster = lazy(() => import("./Pages/Masters/defaultAccountMa
 const Lom = lazy(() => import("./Pages/Masters/Lom"));
 const Lollist = lazy(() => import("./Pages/Masters/lollist"));
 const Loslist = lazy(() => import("./Pages/Masters/loslist"));
+const ProductGroup = lazy(() => import("./Pages/Masters/ProductGroup"))
 
 const AccountMaster = lazy(() => import("./Pages/Masters/AccountMaster"))
 const AccountingGroup = lazy(() => import("./Pages/Masters/AccountingGroup"))
@@ -246,7 +247,7 @@ const RoutingArray = [
     { component: <StateMaster />, path: '/erp/master/state' },
     { component: <AccountingGroup />, path: '/erp/master/accountingGroup' },
     { component: <AccountMaster />, path: '/erp/master/accountMaster' },
-
+    { component: <ProductGroup />, path: '/erp/master/productGroup' },
 
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
