@@ -95,10 +95,10 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
             address: `payment/paymentMaster?
             Fromdate=${Fromdate}&
             Todate=${Todate}&
-            voucher=${voucherType_Filter?.value}&
-            debit=${debit_accounts_Filter?.value}&
-            credit=${credit_accounts_Filter?.value}&
-            createdBy=${created_by_Filter?.value}&
+            voucher=${voucherType_Filter?.value || ''}&
+            debit=${debit_accounts_Filter?.value || ''}&
+            credit=${credit_accounts_Filter?.value || ''}&
+            createdBy=${created_by_Filter?.value || ''}&
             status=${payment_status}&
             payment_type=${payment_type}`,
             loadingOff, loadingOn

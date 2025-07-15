@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { checkIsNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { receiptTypes } from "./variable";
@@ -31,7 +31,7 @@ const ReceiptGeneralInfo = ({
         visited.add(groupId);
         let result = [groupId]; // include current group
 
-        const children = groupList.filter(group => group.Parent_AC_id === groupId);
+        const children = groupList.filter(group => isEqualNumber(group.Parent_AC_id, groupId));
 
         for (const child of children) {
             result = result.concat(getAllChildGroupIds(child.Group_Id, groupList, visited));

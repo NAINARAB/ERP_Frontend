@@ -20,8 +20,8 @@ const initialState = {
     Branch_Id: "",
     Branch_Name: "",
     Type: "",
-    Voucher_Group_Id: "",
-    Group_Name: "",
+    // Voucher_Group_Id: "",
+    // Group_Name: "",
 };
 
 function VoucherMaster() {
@@ -38,8 +38,8 @@ function VoucherMaster() {
     const [selectedBranch, setSelectedBranch] = useState("");
     const [types, setTypes] = useState("");
     const [voucherCode, setVoucherCode] = useState("");
-    const [voucherGroup, setVoucherGroup] = useState([]);
-    const [selectedVoucherGroup, setSelectedVoucherGroup] = useState("");
+    // const [voucherGroup, setVoucherGroup] = useState([]);
+    // const [selectedVoucherGroup, setSelectedVoucherGroup] = useState("");
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.UserId;
 
@@ -64,15 +64,7 @@ function VoucherMaster() {
             })
             .catch((e) => console.error(e));
 
-        fetchLink({
-            address: `masters/voucherGroup`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setVoucherGroup(data.data);
-                }
-            })
-            .catch((e) => console.error(e));
+
     }, [reload]);
 
     const handleDelete = () => {
@@ -102,8 +94,7 @@ function VoucherMaster() {
             !selectedBranch ||
             !voucherType ||
             !types ||
-            !voucherCode ||
-            !selectedVoucherGroup
+            !voucherCode
         ) {
             toast.error("Please fill all fields");
             return;
@@ -116,7 +107,7 @@ function VoucherMaster() {
                 Branch_Id: Number(selectedBranch),
                 Type: types,
                 Voucher_Code: voucherCode,
-                Voucher_Group_Id: Number(selectedVoucherGroup),
+                // Voucher_Group_Id: Number(selectedVoucherGroup),
                 Created_By: userId,
             },
         })
@@ -129,7 +120,7 @@ function VoucherMaster() {
                     setSelectedBranch("");
                     setTypes("");
                     setVoucherCode("");
-                    setSelectedVoucherGroup("");
+                    // setSelectedVoucherGroup("");
                 } else {
                     toast.error(data.message);
                 }
@@ -145,10 +136,10 @@ function VoucherMaster() {
             Branch_Id: user.Branch_Id,
             Voucher_Code: user.Voucher_Code,
             Type: user.Type,
-            Voucher_Group_Id: user.Voucher_Group_Id,
+            // Voucher_Group_Id: user.Voucher_Group_Id,
         });
         setSelectedBranch(user.Branch_Id);
-        setSelectedVoucherGroup(user.Voucher_Group_Id);
+        // setSelectedVoucherGroup(user.Voucher_Group_Id);
     };
 
     const editFun = () => {
@@ -161,7 +152,7 @@ function VoucherMaster() {
                 Branch_Id: inputValue.Branch_Id,
                 Voucher_Code: inputValue.Voucher_Code,
                 Type: inputValue.Type,
-                Voucher_Group_Id: inputValue.Voucher_Group_Id,
+                // Voucher_Group_Id: inputValue.Voucher_Group_Id,
                 Alter_By: userId,
             },
         })
@@ -202,7 +193,6 @@ function VoucherMaster() {
                         createCol("Type", "string", "Type"),
                         createCol("BranchName", "string", "Branch Name"),
                         createCol("Voucher_Code", "string", "Voucher Code"),
-                        createCol("Group_Name", "string", "Voucher Group"),
                         {
                             ColumnHeader: "Actions",
                             isVisible: 1,
@@ -267,26 +257,26 @@ function VoucherMaster() {
                             </select>
                         </div>
 
-                        <div className="p-2">
-                            <label>Voucher Group</label>
-                            <select
-                                value={selectedVoucherGroup}
-                                onChange={(event) =>
-                                    setSelectedVoucherGroup(event.target.value)
-                                }
-                                className="cus-inpt"
-                            >
-                                <option value="">Select Voucher Group</option>
-                                {voucherGroup.map((vou) => (
-                                    <option
-                                        key={vou.Voucher_Group_Id}
-                                        value={vou.Voucher_Group_Id}
-                                    >
-                                        {vou.Group_Name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* <div className="p-2">
+              <label>Voucher Group</label>
+              <select
+                value={selectedVoucherGroup}
+                onChange={(event) =>
+                  setSelectedVoucherGroup(event.target.value)
+                }
+                className="cus-inpt"
+              >
+                <option value="">Select Voucher Group</option>
+                {voucherGroup.map((vou) => (
+                  <option
+                    key={vou.Voucher_Group_Id}
+                    value={vou.Voucher_Group_Id}
+                  >
+                    {vou.Group_Name}
+                  </option>
+                ))}
+              </select>
+            </div> */}
 
                         <div className="p-2">
                             <label>Voucher Code</label>
@@ -367,27 +357,27 @@ function VoucherMaster() {
                         </select>
                     </div>
 
-                    <div className="p-2">
-                        <label>Voucher Group</label>
-                        <select
-                            value={selectedVoucherGroup}
-                            onChange={(event) => {
-                                setSelectedVoucherGroup(event.target.value);
-                                setInputValue({
-                                    ...inputValue,
-                                    Voucher_Group_Id: event.target.value,
-                                });
-                            }}
-                            className="cus-inpt"
-                        >
-                            <option value="">Select Voucher Group</option>
-                            {voucherGroup.map((vou) => (
-                                <option key={vou.Voucher_Group_Id} value={vou.Voucher_Group_Id}>
-                                    {vou.Group_Name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* <div className="p-2">
+            <label>Voucher Group</label>
+            <select
+              value={selectedVoucherGroup}
+              onChange={(event) => {
+                setSelectedVoucherGroup(event.target.value);
+                setInputValue({
+                  ...inputValue,
+                  Voucher_Group_Id: event.target.value,
+                });
+              }}
+              className="cus-inpt"
+            >
+              <option value="">Select Voucher Group</option>
+              {voucherGroup.map((vou) => (
+                <option key={vou.Voucher_Group_Id} value={vou.Voucher_Group_Id}>
+                  {vou.Group_Name}
+                </option>
+              ))}
+            </select>
+          </div> */}
 
                     <div className="p-2">
                         <label>Voucher Code</label>

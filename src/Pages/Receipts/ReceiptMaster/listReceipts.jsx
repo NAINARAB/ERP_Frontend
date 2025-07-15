@@ -85,10 +85,10 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         const sessionFilterValues = getSessionFiltersByPageId(pageID);
         const {
             Fromdate, Todate,
-            voucherType_Filter = defaultFilters.voucherType_Filter.value,
-            debit_accounts_Filter = defaultFilters.debit_accounts_Filter.value,
-            credit_accounts_Filter = defaultFilters.credit_accounts_Filter.value,
-            created_by_Filter = defaultFilters.created_by_Filter.value,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
             receipt_status = defaultFilters.receipt_status,
             receipt_type = defaultFilters.receipt_type
         } = sessionFilterValues;
@@ -97,10 +97,10 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
             address: `receipt/receiptMaster?
             Fromdate=${Fromdate}&
             Todate=${Todate}&
-            voucher=${voucherType_Filter?.value}&
-            debit=${debit_accounts_Filter?.value}&
-            credit=${credit_accounts_Filter?.value}&
-            createdBy=${created_by_Filter?.value}&
+            voucher=${voucherType_Filter?.value || ''}&
+            debit=${debit_accounts_Filter?.value || ''}&
+            credit=${credit_accounts_Filter?.value || ''}&
+            createdBy=${created_by_Filter?.value || ''}&
             status=${receipt_status}&
             receipt_type=${receipt_type}`,
             loadingOff, loadingOn
