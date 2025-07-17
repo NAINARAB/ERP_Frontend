@@ -1,23 +1,17 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { Close, Delete } from "@mui/icons-material";
-import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { paymentBillInfoInitialValue } from "./variable";
 
 
 
 const PurchaseInvoicePayment = ({
     cellHeadStype = { width: '150px' },
-    cellStyle = { minWidth: '130px' },
-    initialSelectValue = { value: '', label: '' },
-    paymentGeneralInfo = {},
     paymentBillInfo = [],
     setPaymentBillInfo,
     filters,
     baseData,
-    setPaymentGeneralInfo,
     updateFilterData,
-    updateBaseData,
     closeDialog,
 }) => {
     const onClickPurchaseInvoice = (invoiceDetails, deleteOption) => {
