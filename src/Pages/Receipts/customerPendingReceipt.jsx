@@ -3,7 +3,7 @@ import { Button, Card } from '@mui/material';
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
 import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../Components/fetchComponent";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, onlynum, Subraction, toArray, toNumber } from "../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
 import { receiptGeneralInfoInitialValue } from "./ReceiptMaster/variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
@@ -57,7 +57,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.Do_Id, row.Do_Id));
+            const excludeCurrentValue = previousValue.filter(o => !stringCompare(o?.Do_Inv_No, row.Do_Inv_No));
 
             let updateBillInfo;
             if (deleteOption) {
@@ -73,8 +73,8 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice(pre => pre.map(
             bill => ({
                 ...bill,
-                newReceiptBillAmount: isEqualNumber(
-                    billId, bill.Do_Id
+                newReceiptBillAmount: stringCompare(
+                    billId, bill.Do_Inv_No
                 ) ? value : bill.newReceiptBillAmount
             })
         ))
@@ -127,7 +127,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                         <table className="table table-bordered fa-12">
                             <thead>
                                 <tr>
-                                    {['Sno', 'Sales Invoice No', 'Date', 'Inv-Value', 'Closed Value', 'Outstanding', 'Make a Receipt'].map(
+                                    {['Sno', 'Sales Invoice No', 'Source', 'Date', 'Inv-Value', 'Closed Value', 'Outstanding', 'Make a Receipt'].map(
                                         (o, i) => <th key={i} className="fa-13">{o}</th>
                                     )}
                                 </tr>
@@ -136,36 +136,36 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
 
                                 {/* total value details */}
                                 <tr>
-                                    <td colSpan={3} className="fw-bold bg-light text-center">Total</td>
+                                    <td colSpan={4} className="fw-bold bg-light text-center">Total</td>
                                     <td className="bg-light">
-                                        {reportData.reduce((acc, bill) => Addition(
+                                        {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
                                             bill.Total_Invoice_value
-                                        ), 0)}
+                                        ), 0))}
                                     </td>
                                     <td className="bg-light">
-                                        {reportData.reduce((acc, bill) => Addition(
+                                        {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
                                             bill.Paid_Amount
-                                        ), 0)}
+                                        ), 0))}
                                     </td>
                                     <td className="bg-light">
-                                        {reportData.reduce((acc, bill) => Addition(
+                                        {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
                                             Subraction(bill.Total_Invoice_value, bill.Paid_Amount)
-                                        ), 0)}
+                                        ), 0))}
                                     </td>
                                     <td className="text-primary fw-bold text-end fa-17 bg-light">
-                                        {selectedInvoice.reduce((acc, bill) => Addition(
+                                        {NumberFormat(selectedInvoice.reduce((acc, bill) => Addition(
                                             acc, bill?.newReceiptBillAmount
-                                        ), 0)}
+                                        ), 0))}
                                     </td>
                                 </tr>
 
                                 {/* pengin receipts */}
                                 {reportData.map((row, rowIndex) => {
                                     const invIndex = selectedInvoice.findIndex(
-                                        bill => isEqualNumber(bill?.Do_Id, row?.Do_Id)
+                                        bill => stringCompare(bill?.Do_Inv_No, row?.Do_Inv_No)
                                     );
                                     const amount = selectedInvoice[invIndex] ? selectedInvoice[invIndex]?.newReceiptBillAmount : 0;
                                     const isChecked = invIndex !== -1;
@@ -174,6 +174,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                                         <tr key={rowIndex}>
                                             <td>{rowIndex + 1}</td>
                                             <td>{row?.Do_Inv_No}</td>
+                                            <td>{row?.dataSource}</td>
                                             <td>{LocalDate(row?.Do_Date)}</td>
                                             <td>{NumberFormat(row?.Total_Invoice_value)}</td>
                                             <td>{NumberFormat(row?.Paid_Amount)}</td>
@@ -200,7 +201,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                                                             type="number"
                                                             max={toNumber(row?.receiptPendingAmount)}
                                                             className="cus-inpt flex-grow-1 p-2 border-0 me-1"
-                                                            onChange={e => onChangeAmount(row?.Do_Id, e.target.value)}
+                                                            onChange={e => onChangeAmount(row?.Do_Inv_No, e.target.value)}
                                                             placeholder={isChecked ? "Enter amount" : ''}
                                                         />
                                                     )}
@@ -212,7 +213,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
 
                                 {/* nave to receipt */}
                                 <tr>
-                                    <td colSpan={7} className="text-end">
+                                    <td colSpan={8} className="text-end">
                                         <Button
                                             variant="outlined"
                                             disabled={selectedInvoice.length === 0}
@@ -232,59 +233,3 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
 }
 
 export default CustomerPendingReceipt;
-
-{/* <FilterableTable
-                title="Customer Outstaing Receipts"
-                EnableSerialNumber
-                dataArray={reportData}
-                columns={[
-                    createCol('Do_Inv_No', 'string', 'Invoice No'),
-                    createCol('Do_Date', 'date', 'Date'),
-                    createCol('Total_Invoice_value', 'number', 'Invoice Value'),
-                    createCol('Paid_Amount', 'number'),
-                    createCol('receiptPendingAmount', 'number', 'Outstanding'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Make Receipt',
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-                            const isChecked = selectedInvoice.findIndex(
-                                bill => isEqualNumber(bill?.Do_Id, row?.Do_Id)
-                            ) !== -1;
-
-                            return (
-                                <div>
-                                    <input
-                                        className="form-check-input shadow-none pointer"
-                                        style={{ padding: '0.7em' }}
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={() => {
-                                            if (isChecked) onSelect(row, true)
-                                            else onSelect(row)
-                                        }}
-                                    />
-                                </div>
-                            )
-                        }
-                    }
-                ]}
-                ButtonArea={
-                    <>
-                        <div style={{ minWidth: '360px' }}>
-                            <Select
-                                value={filters?.ledger}
-                                onChange={(e) => setFilters(pre => ({ ...pre, ledger: e }))}
-                                options={[
-                                    { value: '', label: 'ALL' },
-                                    ...ledgers
-                                ]}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Select Leder Name"}
-                                menuPortalTarget={document.body}
-                            />
-                        </div>
-                    </>
-                }
-            /> */}

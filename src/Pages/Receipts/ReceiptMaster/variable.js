@@ -1,4 +1,5 @@
-import { checkIsNumber, ISOString, storageValue } from "../../../Components/functions";
+import { checkIsNumber, ISOString, getSessionUser } from "../../../Components/functions";
+const userDetails = getSessionUser().user;
 
 export const receiptGeneralInfoInitialValue = {
     receipt_id: '',
@@ -23,8 +24,8 @@ export const receiptGeneralInfoInitialValue = {
     bank_name: '',
     bank_date: '',
     
-    created_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
-    altered_by: checkIsNumber(storageValue?.UserId) ? storageValue?.UserId : '',
+    created_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
+    altered_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     created_on: '',
     alterd_on: '',
 }
