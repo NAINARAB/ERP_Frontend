@@ -111,6 +111,7 @@ const ExpenceReceipt = ({
                             case 'pur_date': return [key, invoiceDetails?.journalDate];
                             case 'JournalBillType': return [key, invoiceDetails?.BillType];
 
+                            case 'arr_id': return [key, journalProduct?.Arr_Id];
                             case 'item_id': return [key, journalProduct?.productId];
                             case 'item_name': return [key, journalProduct?.productNameGet];
                             case 'itemQuantity': return [key, journalProduct?.quantity];

@@ -31,7 +31,8 @@ const ListCostingDetails = ({
             const indexOfInvoice = selectedItem.findIndex(
                 (inv) =>
                     isEqualNumber(itemDetails.bill_id, inv.bill_id) &&
-                    isEqualNumber(itemDetails.item_id, inv.item_id)
+                    isEqualNumber(itemDetails.item_id, inv.item_id) &&
+                    isEqualNumber(itemDetails.arr_id, inv.arr_id)
             );
 
             if (indexOfInvoice !== -1) {
@@ -82,7 +83,10 @@ const ListCostingDetails = ({
 
             return prev.map((item) => {
                 if (isEqualNumber(item.bill_id, journal.bill_id)) {
-                    const updated = updatedItems.find((i) => i.item_id === item.item_id);
+                    const updated = updatedItems.find((i) => (
+                        isEqualNumber(i.item_id, item.item_id) &&
+                        isEqualNumber(i.arr_id, item.arr_id)
+                    ));
                     return updated || item;
                 }
                 return item;

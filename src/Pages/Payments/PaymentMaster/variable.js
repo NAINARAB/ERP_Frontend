@@ -70,6 +70,7 @@ export const paymentCostingInfoInitialValue = {
     // frontend 
     pay_bill_id: '',
     JournalBillType: '',
+    arr_id: '',
     item_id: '',
     item_name: '',
     expence_value: 0,
