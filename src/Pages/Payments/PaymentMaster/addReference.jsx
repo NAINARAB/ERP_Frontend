@@ -84,7 +84,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         }
 
         fetchLink({
-            address: `purchase/paymentPendingInvoices?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
+            address: `payment/paymentPendingInvoices?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
         }).then(data => {
             if (data.success) {
                 updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));

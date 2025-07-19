@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, RoundNumber, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { receiptBillInfoInitialValue } from "./variable";
@@ -25,7 +25,10 @@ const SalesInvoiceReceipt = ({
         setReceiptBillInfo(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.bill_id, invoiceDetails.Do_Id));
+            const excludeCurrentValue = previousValue.filter(o => !(
+                isEqualNumber(o?.bill_name, invoiceDetails.bill_name) &&
+                isEqualNumber(o?.bill_id, invoiceDetails?.bill_id)
+            ));
 
             let updateBillInfo;
             if (deleteOption) {
@@ -62,7 +65,10 @@ const SalesInvoiceReceipt = ({
             const selectedInvoices = [...pre];
 
             const indexOfInvoice = selectedInvoices.findIndex(
-                inv => isEqualNumber(invoice.bill_id, inv.bill_id)
+                inv => (
+                    stringCompare(invoice.bill_name, inv.bill_name) &&
+                    isEqualNumber(invoice.bill_id, inv.bill_id)
+                )
             );
 
             if (indexOfInvoice !== -1) {
@@ -130,10 +136,7 @@ const SalesInvoiceReceipt = ({
                                     <td className="p-0 vctr cntr">
                                         <IconButton
                                             size="small"
-                                            onClick={() => onClickSalesInvoice({
-                                                ...invoice,
-                                                Do_Id: invoice.bill_id
-                                            }, true)}
+                                            onClick={() => onClickSalesInvoice(invoice, true)}
                                         ><Delete className="fa-20" color="error" /></IconButton>
                                     </td>
                                 </tr>
@@ -178,7 +181,7 @@ const SalesInvoiceReceipt = ({
                                 </th>
                             </tr>
                             <tr>
-                                {['Sno', 'Sales InvoiceNo', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
+                                {['Sno', 'Sales InvoiceNo', 'Source', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
                                     (col, colInd) => <td key={colInd}>{col}</td>
                                 )}
                             </tr>
@@ -189,6 +192,7 @@ const SalesInvoiceReceipt = ({
                                     <tr key={invoiceInd}>
                                         <td>{invoiceInd + 1}</td>
                                         <td>{invoice?.Do_Inv_No}</td>
+                                        <td>{invoice?.dataSource}</td>
                                         <td>{LocalDate(invoice?.Do_Date)}</td>
                                         <td>{invoice?.Total_Invoice_value}</td>
                                         <td>{invoice?.Paid_Amount}</td>
@@ -196,7 +200,7 @@ const SalesInvoiceReceipt = ({
                                         <td>
                                             {(() => {
                                                 const isChecked = receiptBillInfo.findIndex(o =>
-                                                    isEqualNumber(o?.bill_id, invoice.Do_Id)
+                                                    stringCompare(o?.bill_name, invoice.Do_Inv_No)
                                                 ) !== -1;
 
                                                 return (
@@ -207,8 +211,16 @@ const SalesInvoiceReceipt = ({
                                                             type="checkbox"
                                                             checked={isChecked}
                                                             onChange={() => {
-                                                                if (isChecked) onClickSalesInvoice(invoice, true)
-                                                                else onClickSalesInvoice(invoice)
+                                                                if (isChecked) onClickSalesInvoice({
+                                                                    ...invoice, 
+                                                                    bill_name: invoice.Do_Inv_No,
+                                                                    bill_id: invoice.Do_Id
+                                                                }, true)
+                                                                else onClickSalesInvoice({
+                                                                    ...invoice, 
+                                                                    bill_name: invoice.Do_Inv_No,
+                                                                    bill_id: invoice.Do_Id
+                                                                })
                                                             }}
                                                         />
                                                     </div>

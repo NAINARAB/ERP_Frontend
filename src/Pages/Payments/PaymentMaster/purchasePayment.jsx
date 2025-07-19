@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, RoundNumber, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, RoundNumber, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { Close, Delete } from "@mui/icons-material";
 import { paymentBillInfoInitialValue } from "./variable";
 
@@ -14,11 +14,15 @@ const PurchaseInvoicePayment = ({
     updateFilterData,
     closeDialog,
 }) => {
+
     const onClickPurchaseInvoice = (invoiceDetails, deleteOption) => {
         setPaymentBillInfo(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !isEqualNumber(o?.pay_bill_id, invoiceDetails.PIN_Id));
+            const excludeCurrentValue = previousValue.filter(o => !(
+                stringCompare(o?.bill_name, invoiceDetails.bill_name)
+                && isEqualNumber(o?.pay_bill_id, invoiceDetails?.pay_bill_id)
+            ));
 
             let updateBillInfo;
             if (deleteOption) {
@@ -55,7 +59,10 @@ const PurchaseInvoicePayment = ({
             const selectedInvoices = [...pre];
 
             const indexOfInvoice = selectedInvoices.findIndex(
-                inv => isEqualNumber(invoice.pay_bill_id, inv.pay_bill_id)
+                inv => (
+                    stringCompare(invoice.bill_name, inv.bill_name) &&
+                    isEqualNumber(invoice.pay_bill_id, inv.pay_bill_id)
+                )
             );
 
             if (indexOfInvoice !== -1) {
@@ -123,10 +130,7 @@ const PurchaseInvoicePayment = ({
                                     <td className="p-0 vctr cntr">
                                         <IconButton
                                             size="small"
-                                            onClick={() => onClickPurchaseInvoice({
-                                                ...invoice,
-                                                PIN_Id: invoice.pay_bill_id
-                                            }, true)}
+                                            onClick={() => onClickPurchaseInvoice(invoice, true)}
                                         ><Delete className="fa-20" color="error" /></IconButton>
                                     </td>
                                 </tr>
@@ -151,7 +155,6 @@ const PurchaseInvoicePayment = ({
                 </table>
             </div>
 
-
             <Dialog
                 open={filters.selectPurchaseInvoice}
                 onClose={closeDialog} fullScreen
@@ -170,7 +173,7 @@ const PurchaseInvoicePayment = ({
                                 </th>
                             </tr>
                             <tr>
-                                {['Sno', 'Payment InvoiceNo', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
+                                {['Sno', 'Payment InvoiceNo', 'Source', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
                                     (col, colInd) => <td key={colInd}>{col}</td>
                                 )}
                             </tr>
@@ -181,6 +184,7 @@ const PurchaseInvoicePayment = ({
                                     <tr key={invoiceInd}>
                                         <td>{invoiceInd + 1}</td>
                                         <td>{invoice?.Po_Inv_No}</td>
+                                        <td>{invoice?.dataSource}</td>
                                         <td>{LocalDate(invoice?.Po_Inv_Date)}</td>
                                         <td>{invoice?.Total_Invoice_value}</td>
                                         <td>{invoice?.Paid_Amount}</td>
@@ -188,7 +192,8 @@ const PurchaseInvoicePayment = ({
                                         <td>
                                             {(() => {
                                                 const isChecked = paymentBillInfo.findIndex(o =>
-                                                    isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+                                                    stringCompare(o?.bill_name, invoice.Po_Inv_No)
+                                                    && isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
                                                 ) !== -1;
 
                                                 return (
@@ -199,8 +204,16 @@ const PurchaseInvoicePayment = ({
                                                             type="checkbox"
                                                             checked={isChecked}
                                                             onChange={() => {
-                                                                if (isChecked) onClickPurchaseInvoice(invoice, true)
-                                                                else onClickPurchaseInvoice(invoice)
+                                                                if (isChecked) onClickPurchaseInvoice({
+                                                                    ...invoice,
+                                                                    bill_name: invoice.Po_Inv_No,
+                                                                    pay_bill_id: invoice.PIN_Id
+                                                                }, true)
+                                                                else onClickPurchaseInvoice({
+                                                                    ...invoice,
+                                                                    bill_name: invoice.Po_Inv_No,
+                                                                    pay_bill_id: invoice.PIN_Id
+                                                                })
                                                             }}
                                                         />
                                                     </div>
