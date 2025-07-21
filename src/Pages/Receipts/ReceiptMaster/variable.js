@@ -18,6 +18,7 @@ export const receiptGeneralInfoInitialValue = {
     debit_amount: 0,
     remarks: '',
     status: 1,
+    is_new_ref: 0,
     
     check_no: '',
     check_date: '',

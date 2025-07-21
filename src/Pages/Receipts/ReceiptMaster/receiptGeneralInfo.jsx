@@ -19,7 +19,7 @@ const ReceiptGeneralInfo = ({
     const [filteredDebitAccounts, setFilteredDebitAccounts] = useState([]);
     const [filteredCreditAccounts, setFilteredCreditAccounts] = useState([]);
 
-    const onChangePaymentValue = (key, value) => {
+    const onChangeReceiptValue = (key, value) => {
         setReceiptValue(pre => ({ ...pre, [key]: value }));
     }
 
@@ -74,7 +74,7 @@ const ReceiptGeneralInfo = ({
                         required
                         className="cus-inpt p-2"
                         value={receiptValue.receipt_date}
-                        onChange={e => onChangePaymentValue('receipt_date', e.target.value)}
+                        onChange={e => onChangeReceiptValue('receipt_date', e.target.value)}
                     />
                 </div>
 
@@ -84,7 +84,7 @@ const ReceiptGeneralInfo = ({
                     <select
                         className="cus-inpt p-2"
                         value={receiptValue.receipt_bill_type}
-                        onChange={e => onChangePaymentValue('receipt_bill_type', toNumber(e.target.value))}
+                        onChange={e => onChangeReceiptValue('receipt_bill_type', toNumber(e.target.value))}
                         required
                         disabled={checkIsNumber(receiptValue.receipt_id)}
                     >
@@ -101,7 +101,7 @@ const ReceiptGeneralInfo = ({
                     <select
                         className="cus-inpt p-2"
                         value={receiptValue.receipt_voucher_type_id}
-                        onChange={e => onChangePaymentValue('receipt_voucher_type_id', e.target.value)}
+                        onChange={e => onChangeReceiptValue('receipt_voucher_type_id', e.target.value)}
                         required
                         disabled={checkIsNumber(receiptValue.receipt_id)}
                     >
@@ -122,7 +122,7 @@ const ReceiptGeneralInfo = ({
                     <select
                         className="cus-inpt p-2"
                         value={receiptValue.status}
-                        onChange={e => onChangePaymentValue('status', e.target.value)}
+                        onChange={e => onChangeReceiptValue('status', e.target.value)}
                     >
                         <option value="" disabled>Select</option>
                         <option value="1">New</option>
@@ -140,8 +140,25 @@ const ReceiptGeneralInfo = ({
                         required
                         className="cus-inpt p-2"
                         value={receiptValue.credit_amount || ''}
-                        onChange={e => onChangePaymentValue('credit_amount', e.target.value)}
+                        onChange={e => onChangeReceiptValue('credit_amount', e.target.value)}
                     />
+                </div>
+
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
+                    <input
+                        className="form-check-input shadow-none pointer mx-2"
+                        style={{ padding: '0.7em' }}
+                        type="checkbox"
+                        id="isNewRef"
+                        checked={isEqualNumber(receiptValue?.is_new_ref, 1)}
+                        onChange={() => {
+                            if (isEqualNumber(receiptValue?.is_new_ref, 1))
+                                onChangeReceiptValue('is_new_ref', 0)
+                            else
+                                onChangeReceiptValue('is_new_ref', 1)
+                        }}
+                    />
+                    <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
                 </div>
 
                 <div className="col-12">
@@ -181,8 +198,8 @@ const ReceiptGeneralInfo = ({
                         }}
                         menuPortalTarget={document.body}
                         onChange={e => {
-                            onChangePaymentValue('debit_ledger', e.value);
-                            onChangePaymentValue('debit_ledger_name', e.label);
+                            onChangeReceiptValue('debit_ledger', e.value);
+                            onChangeReceiptValue('debit_ledger_name', e.label);
                         }}
                         options={[
                             { value: '', label: 'select', isDisabled: true },
@@ -237,8 +254,8 @@ const ReceiptGeneralInfo = ({
                         }}
                         menuPortalTarget={document.body}
                         onChange={e => {
-                            onChangePaymentValue('credit_ledger', e.value);
-                            onChangePaymentValue('credit_ledger_name', e.label);
+                            onChangeReceiptValue('credit_ledger', e.value);
+                            onChangeReceiptValue('credit_ledger_name', e.label);
                         }}
                         options={[
                             { value: '', label: 'select', isDisabled: true },
@@ -283,7 +300,7 @@ const ReceiptGeneralInfo = ({
                             <input
                                 value={receiptValue.bank_name}
                                 className="cus-inpt p-2"
-                                onChange={e => onChangePaymentValue('bank_name', e.target.value)}
+                                onChange={e => onChangeReceiptValue('bank_name', e.target.value)}
                             />
                         </div>
 
@@ -294,7 +311,7 @@ const ReceiptGeneralInfo = ({
                                 value={receiptValue.bank_date}
                                 type="date"
                                 className="cus-inpt p-2"
-                                onChange={e => onChangePaymentValue('bank_date', e.target.value)}
+                                onChange={e => onChangeReceiptValue('bank_date', e.target.value)}
                             />
                         </div>
 
@@ -304,7 +321,7 @@ const ReceiptGeneralInfo = ({
                             <input
                                 value={receiptValue.check_no}
                                 className="cus-inpt p-2"
-                                onChange={e => onChangePaymentValue('check_no', e.target.value)}
+                                onChange={e => onChangeReceiptValue('check_no', e.target.value)}
                             />
                         </div>
 
@@ -315,7 +332,7 @@ const ReceiptGeneralInfo = ({
                                 value={receiptValue.check_date}
                                 type="date"
                                 className="cus-inpt p-2"
-                                onChange={e => onChangePaymentValue('check_date', e.target.value)}
+                                onChange={e => onChangeReceiptValue('check_date', e.target.value)}
                             />
                         </div>
 
@@ -328,7 +345,7 @@ const ReceiptGeneralInfo = ({
                     <textarea
                         className="cus-inpt p-2"
                         value={receiptValue.remarks}
-                        onChange={e => onChangePaymentValue('remarks', e.target.value)}
+                        onChange={e => onChangeReceiptValue('remarks', e.target.value)}
                         rows={5}
                     />
                 </div>

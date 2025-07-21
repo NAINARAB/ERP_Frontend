@@ -370,7 +370,13 @@ const AddItemToSaleOrderCart = ({
                                         const selectedIndex = e.target.selectedIndex;
                                         const label = e.target.options[selectedIndex].text;
                                         const value = e.target.value;
-                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label, Unit_Id: value }));
+                                        setProductDetails(pre => ({ 
+                                            ...pre, 
+                                            UOM: value, 
+                                            Unit_Id: value, 
+                                            Units: label,
+                                            Unit_Name: label, 
+                                        }));
                                     }}
                                     className="cus-inpt"
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
