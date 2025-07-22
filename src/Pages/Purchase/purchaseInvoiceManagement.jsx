@@ -890,14 +890,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             <tr>
                                                 <td className="border p-2">CGST</td>
                                                 <td className="border p-2">
-                                                    {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))} */}
                                                     {taxSplitUp.cgst}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td className="border p-2">SGST</td>
                                                 <td className="border p-2">
-                                                    {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))} */}
                                                     {taxSplitUp.sgst}
                                                 </td>
                                             </tr>
@@ -906,7 +904,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <tr>
                                             <td className="border p-2">IGST</td>
                                             <td className="border p-2">
-                                                {/* {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax))} */}
                                                 {taxSplitUp.igst}
                                             </td>
                                         </tr>
@@ -914,7 +911,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
-                                            {/* {taxSplitUp.roundOff} */}
                                             <input
                                                 value={invoiceDetails.Round_off}
                                                 defaultValue={taxSplitUp.roundOff}
@@ -923,12 +919,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 onInput={onlynumAndNegative}
                                                 onChange={e => setInvoiceDetails(pre => ({ ...pre, Round_off: e.target.value }))}
                                             />
-                                            {/* {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)} */}
-                                            {/* {console.log({
-                                                Total_Invoice_value,
-                                                TotalTax: totalValueBeforeTax.TotalTax,
-                                                TotalValue: totalValueBeforeTax.TotalValue,
-                                            })} */}
                                         </td>
                                     </tr>
                                     <tr>

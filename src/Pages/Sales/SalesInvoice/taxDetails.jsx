@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Addition, isEqualNumber, NumberFormat, numberToWords, RoundNumber, toArray } from "../../../Components/functions";
+import { Addition, isEqualNumber, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, toArray } from "../../../Components/functions";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 
 
@@ -13,6 +13,8 @@ const SalesInvoiceTaxDetails = ({
     isInclusive,
     IS_IGST,
     products = [],
+    invoiceInfo = {},
+    setInvoiceInfo
 }) => {
 
     const invExpencesTotal = useMemo(() => {
@@ -38,40 +40,48 @@ const SalesInvoiceTaxDetails = ({
         return Addition(invValue, invExpencesTotal);
     }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invExpencesTotal])
 
-    const totalValueBeforeTax = useMemo(() => {
-        const productTax = invoiceProducts.reduce((acc, item) => {
-            const Amount = RoundNumber(item?.Amount);
+    const taxSplitUp = useMemo(() => {
+        if (!invoiceProducts || invoiceProducts.length === 0) return {};
 
-            if (isNotTaxableBill) return {
-                TotalValue: Addition(acc.TotalValue, Amount),
-                TotalTax: 0
+        let totalTaxable = 0;
+        let totalTax = 0;
+
+        invoiceProducts.forEach(item => {
+            const Amount = RoundNumber(item?.Amount || 0);
+
+            if (isNotTaxableBill) {
+                totalTaxable = Addition(totalTaxable, Amount);
+                return;
             }
 
             const product = findProductDetails(products, item.Item_Id);
-            const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
             const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
-            const TotalValue = Addition(acc.TotalValue, taxInfo.without_tax);
-            const TotalTax = Addition(acc.TotalTax, taxInfo.tax_amount);
 
-            return {
-                TotalValue, TotalTax
-            };
-        }, {
-            TotalValue: 0,
-            TotalTax: 0
+            totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
+            totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
         });
 
-        const invoiceExpencesTaxTotal = toArray(invoiceExpences).reduce((acc, exp) => Addition(
-            acc, 
-            IS_IGST ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
-        ), 0);
+        const totalWithTax = Addition(totalTaxable, totalTax);
+        const roundedTotal = Math.round(totalWithTax);
+        const roundOff = RoundNumber(roundedTotal - totalWithTax);
+
+        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
 
         return {
-            TotalValue: productTax.TotalValue,
-            TotalTax: Addition(productTax.TotalTax, invoiceExpencesTaxTotal),
-        }
-    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invoiceExpences])
+            totalTaxable: RoundNumber(totalTaxable),
+            totalTax: RoundNumber(totalTax),
+            cgst,
+            sgst,
+            igst,
+            roundOff,
+            invoiceTotal: roundedTotal
+        };
+
+    }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive]);
 
     return (
         <>
@@ -83,7 +93,7 @@ const SalesInvoiceTaxDetails = ({
                         </td>
                         <td className="border p-2">Total Taxable Amount</td>
                         <td className="border p-2">
-                            {NumberFormat(totalValueBeforeTax.TotalValue)}
+                            {taxSplitUp.totalTaxable}
                         </td>
                     </tr>
                     {!IS_IGST ? (
@@ -91,13 +101,13 @@ const SalesInvoiceTaxDetails = ({
                             <tr>
                                 <td className="border p-2">CGST</td>
                                 <td className="border p-2">
-                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
+                                    {taxSplitUp.cgst}
                                 </td>
                             </tr>
                             <tr>
                                 <td className="border p-2">SGST</td>
                                 <td className="border p-2">
-                                    {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax / 2))}
+                                    {taxSplitUp.sgst}
                                 </td>
                             </tr>
                         </>
@@ -105,7 +115,7 @@ const SalesInvoiceTaxDetails = ({
                         <tr>
                             <td className="border p-2">IGST</td>
                             <td className="border p-2">
-                                {NumberFormat(RoundNumber(totalValueBeforeTax.TotalTax))}
+                                {taxSplitUp.igst}
                             </td>
                         </tr>
                     )}
@@ -117,8 +127,14 @@ const SalesInvoiceTaxDetails = ({
                     </tr>
                     <tr>
                         <td className="border p-2">Round Off</td>
-                        <td className="border p-2">
-                            {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
+                        <td className="border p-0">
+                            <input
+                                value={invoiceInfo.Round_off}
+                                defaultValue={taxSplitUp.roundOff}
+                                className="cus-inpt p-2 m-0 border-0"
+                                onInput={onlynumAndNegative}
+                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Round_off: e.target.value }))}
+                            />
                         </td>
                     </tr>
                     <tr>

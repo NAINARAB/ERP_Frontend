@@ -21,14 +21,14 @@ export const salesInvoiceGeneralInfo = {
     So_No: '',              // SALE ORDER ID (ONE TO MANY INVOICE MAPPING)
     Trans_Type: '',
 
-    CSGT_Total: '',
-    SGST_Total: '',
-    IGST_Total: '',
-    Total_Expences: '',
-    Round_off: '',
-    Total_Before_Tax: '',
-    Total_Tax: '',
-    Total_Invoice_value: '',
+    CSGT_Total: 0,
+    SGST_Total: 0,
+    IGST_Total: 0,
+    Total_Expences: 0,
+    Round_off: 0,
+    Total_Before_Tax: 0,
+    Total_Tax: 0,
+    Total_Invoice_value: 0,
     Stock_Item_Ledger_Name: '',
 
     // Delivery_Status: '',

@@ -528,6 +528,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         isInclusive={isInclusive}
                         IS_IGST={IS_IGST}
                         products={baseData.products}
+                        invoiceInfo={invoiceInfo}
+                        setInvoiceInfo={setInvoiceInfo}
                     />
                 </CardContent>
             </Card>
