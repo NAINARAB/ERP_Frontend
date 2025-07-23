@@ -18,7 +18,8 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
         refresh: false,
         filterDialog: false,
         dueDays: 0,
-        reqDate: ISOString()
+        reqDate: ISOString(),
+        source: 'TALLY'
     });
 
     useEffect(() => {
@@ -59,7 +60,8 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
             method: 'POST',
             bodyData: {
                 ledgerId: resultLedger,
-                reqDate: reqDate
+                reqDate: reqDate,
+                source: filters.source
             }
         }).then(data => {
             if (data.success) {
@@ -265,6 +267,20 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                             value={filters.dueDays ? filters.dueDays : ''}
                                             onChange={e => setFilters(pre => ({ ...pre, dueDays: toNumber(e.target.value) }))}
                                         />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td className="vctr">Source</td>
+                                    <td className="vctr">
+                                        <select
+                                            className="cus-inpt p-2"
+                                            value={filters.source}
+                                            onChange={e => setFilters(pre => ({ ...pre, source: e.target.value }))}
+                                        >
+                                            <option value="TALLY">TALLY</option>
+                                            <option value="ERP">ERP</option>
+                                        </select>
                                     </td>
                                 </tr>
 

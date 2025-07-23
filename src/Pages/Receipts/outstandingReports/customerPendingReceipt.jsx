@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button, Card } from '@mui/material';
-import FilterableTable, { createCol } from '../../Components/filterableTable2';
 import { useNavigate } from "react-router-dom";
-import { fetchLink } from "../../Components/fetchComponent";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../Components/functions";
-import { receiptGeneralInfoInitialValue } from "./ReceiptMaster/variable";
+import { fetchLink } from "../../../Components/fetchComponent";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { receiptGeneralInfoInitialValue } from "../ReceiptMaster/variable";
 import Select from "react-select";
-import { customSelectStyles } from "../../Components/tablecolumn";
+import { customSelectStyles } from "../../../Components/tablecolumn";
 
 
 const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {

@@ -78,6 +78,7 @@ const DeliveryReports = lazy(() => import("./Pages/Reports/deliveryReports"));
 const StockInHand = lazy(() => import("./Pages/Reports/storageClosingStock/stockInHand"));
 const ItemGroupWiseStockValue = lazy(() => import("./Pages/Reports/storageClosingStock/itemGroupBasedStockValue"));
 const PurchaseBrokerageReport = lazy(() => import("./Pages/Reports/CostCenterReports/purchaseBrokerageReport"));
+const NakalReports = lazy(() => import("./Pages/Reports/NakalReports/nakalReports"));
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -148,12 +149,12 @@ const ItemPaymentExpences = lazy(() => import('./Pages/Payments/PaymentReport/it
 // Receipts
 const PaymentCollectionList = lazy(() => import("./Pages/Receipts/collcetionModule/listReceipts"))
 const PaymentCollectionCreate = lazy(() => import("./Pages/Receipts/collcetionModule/createReceipts"));
-const TallyPendingReceipt = lazy(() => import("./Pages/Receipts/TallyPendingReceipt/tallyPendingReceipt"))
+const TallyPendingReceipt = lazy(() => import("./Pages/Receipts/outstandingReports/tallyPendingReceipt"))
 const ReceiptList = lazy(() => import("./Pages/Receipts/ReceiptMaster/listReceipts"));
 const ReceiptsCreate = lazy(() => import("./Pages/Receipts/ReceiptMaster/addReceipt"));
 const ReceiptReferenceCreation = lazy(() => import("./Pages/Receipts/ReceiptMaster/addReference"));
 const PaymentCollectionReport = lazy(() => import("./Pages/Reports/paymentCollectionReport"));
-const CustomerPendingReceipt = lazy(() => import("./Pages/Receipts/customerPendingReceipt"));
+const CustomerPendingReceipt = lazy(() => import("./Pages/Receipts/outstandingReports/customerPendingReceipt"));
 
 
 // Data Entry
@@ -255,6 +256,7 @@ const RoutingArray = [
     { component: <StockInHand />, path: '/erp/reports/stockInHand' },
     { component: <ItemGroupWiseStockValue />, path: '/erp/reports/itemBasedStockValue' },
     { component: <PurchaseBrokerageReport />, path: '/erp/reports/purchaseBrokerage' },
+    { component: <NakalReports />, path: '/erp/reports/nakalReports' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
