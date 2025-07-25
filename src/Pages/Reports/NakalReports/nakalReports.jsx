@@ -55,6 +55,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         Broker: { value: "", label: "ALL Brokers" },
         Ledger: { value: "", label: "All Ledger" },
         Item: { value: "", label: "All Item" },
+        VilaiVasiZero: { value: "", label: "All" }, // <-- ADD THIS
         refresh: false,
         filterDialog: false,
     });
@@ -66,6 +67,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem("user"));
     const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
     const [pdfPreviewData, setPdfPreviewData] = useState(null);
+    const [headerVilaiVasi, setHeaderVilaiVasi] = useState(""); // global VilaiVasi value
 
     useEffect(() => {
         fetchLink({
@@ -123,6 +125,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 if (filtersListing.Broker.value) url += `&broker=${filtersListing.Broker.value}`;
                 if (filtersListing.Ledger.value) url += `&ledger=${filtersListing.Ledger.value}`;
                 if (filtersListing.Item.value) url += `&item=${filtersListing.Item.value}`;
+                if (filtersListing.VilaiVasiZero.value) url += `&vilaivasiFilter=${filtersListing.VilaiVasiZero.value}`;
                 const res = await fetchLink({ address: url });
                 if (res.success) {
                     const data = toArray(res.data);
@@ -210,6 +213,11 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
 
     const calculateVilaivasiAmt = (vilaivasi, billQty) => ((parseFloat(vilaivasi) || 0) / 100) * (parseFloat(billQty) || 0);
 
+    const handleFieldChange = (idx, fieldName, value) => {
+        const updatedDeliveryReport = [...deliveryReport];
+        updatedDeliveryReport[idx][fieldName] = parseFloat(value) || 0;
+        setDeliveryReport(updatedDeliveryReport);
+    };
 
     const groupedByBroker = useMemo(() => {
         if (!dataset || dataset.length === 0) return {};
@@ -221,302 +229,352 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         }, {});
     }, [dataset]);
     const brokerNames = useMemo(() => Object.keys(groupedByBroker), [groupedByBroker]);
-    const brokerTotals = useMemo(() => {
-        const totals = {};
-        brokerNames.forEach((broker) => {
-            const brokerData = groupedByBroker[broker];
-            totals[broker] = {
-                totalKGS: brokerData.reduce((sum, item) => sum + (item.KGS || 0), 0),
-                totalBillQty: brokerData.reduce((sum, item) => sum + (item.Bill_Qty || 0), 0),
-                totalActQty: brokerData.reduce((sum, item) => sum + (item.Act_Qty || 0), 0),
-                totalVilaiVasi: brokerData.reduce((sum, item) => sum + (item.Vilai_Vasi || 0), 0),
-                totalVilaivasiRate: brokerData.reduce((sum, item) => sum + (item.Vilaivasi_Rate || 0), 0),
-            };
-        });
-        return totals;
-    }, [brokerNames, groupedByBroker]);
 
     return (
         <Box>
-            <Paper sx={{ p: 3, mb: 3 }
-            }>
-                <Grid container justifyContent="space-between" alignItems="center" mb={3} >
-                    <Typography variant="h5" component="h2" > Brokerage Nakal Report </Typography>
-                    < Box >
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Grid container justifyContent="space-between" alignItems="center" mb={3}>
+                    <Typography variant="h5" component="h2">Brokerage Nagal Report</Typography>
+                    <Box>
                         <Button
                             variant="outlined"
-                            startIcon={< FilterAlt />}
+                            startIcon={<FilterAlt />}
                             onClick={() =>
                                 activeTab === 0
                                     ? setFiltersDataEntry((prev) => ({ ...prev, filterDialog: true }))
                                     : setFiltersListing((prev) => ({ ...prev, filterDialog: true }))
                             }
                             sx={{ mr: 2 }}
-                        > Filters </Button>
-                        < Typography component="span" variant="body1" >
+                        >Filters</Button>
+                        <Typography component="span" variant="body1">
                             Total Bags: <strong>{activeTab === 0 ? totalBagsDataEntry : totalBagsListing}</strong>
                         </Typography>
                     </Box>
                 </Grid>
 
-                < Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+                <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
                     <Tab label="Data Entry" />
                     <Tab label="Listing" />
                 </Tabs>
+                {activeTab === 0 && (
+                    <Box mb={1} sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: 2
+                    }}>
+                        <Typography sx={{ fontWeight: "bold" }}>VilaiVasi (All):</Typography>
+                        <TextField
+                            type="number"
+                            size="small"
+                            value={headerVilaiVasi}
+                            inputProps={{ step: "1" }}
+                            onChange={e => {
+                                setHeaderVilaiVasi(e.target.value);
+                                setBrokerageValues(prev => {
+                                    const updated = { ...prev };
+                                    deliveryReport.forEach(item => {
+                                        const key = `${item.Do_Id}-${item.Product_Id}`;
+                                        updated[key] = e.target.value;
+                                    });
+                                    return updated;
+                                });
+                            }}
+                            placeholder="Set VilaiVasi for all"
+                            sx={{
 
-                {
-                    activeTab === 0 ? (
+                                '& .MuiInputBase-input': {
+                                    height: 40,
+                                    boxSizing: 'border-box'
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                                setHeaderVilaiVasi("");
+                                setBrokerageValues(prev => {
+                                    const updated = { ...prev };
+                                    deliveryReport.forEach(item => {
+                                        const key = `${item.Do_Id}-${item.Product_Id}`;
+                                        updated[key] = "";
+                                    });
+                                    return updated;
+                                });
+                            }}
+                        >
+                            Clear All
+                        </Button>
+
+                    </Box>
+                )}
+
+
+                {activeTab === 0 ? (
+                    <>
+                        <TableContainer component={Paper}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow sx={{ backgroundColor: "primary.main" }}>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Date</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>Do No</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>Product</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>Ledger_Name</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>Broker</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Bill_Qty</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Qty</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Rate</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Pack</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Amount</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Brok.Rate</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Brokerage</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Coolie.Rate</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Coolie.Amt</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Vilaivasi</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Narration</TableCell>
+                                        <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Vilaivasi Amt</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {deliveryReport
+                                        .slice(dataEntryPagination.page * dataEntryPagination.rowsPerPage, dataEntryPagination.page * dataEntryPagination.rowsPerPage + dataEntryPagination.rowsPerPage)
+                                        .map((row, idx) => {
+                                            const vilaivasiValue = brokerageValues[`${row.Do_Id}-${row.Product_Id}`] || "";
+                                            const vilaivasiAmt = calculateVilaivasiAmt(vilaivasiValue, row.Bill_Qty);
+                                            return (
+                                                <TableRow key={idx} hover>
+                                                    <TableCell align="left">{row.Date.split("T")[0]}</TableCell>
+                                                    <TableCell>{row.Do_No || row.Do_Inv_No}</TableCell>
+                                                    <TableCell>{row.Product_Name}</TableCell>
+                                                    <TableCell>{row.Retailer_Name}</TableCell>
+                                                    <TableCell>{row.CostCenterGet}</TableCell>
+                                                    <TableCell align="right">{row.Bill_Qty}</TableCell>
+                                                    <TableCell align="right">{row?.displayQuantity}</TableCell>
+                                                    <TableCell align="right">{row.Rate || row.Item_Rate}</TableCell>
+                                                    <TableCell align="right">{row.Pack}</TableCell>
+                                                    <TableCell align="right">{row.Amount}</TableCell>
+                                                    <TableCell align="right">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={row.Brokerage}
+                                                            onChange={(e) => handleFieldChange(idx, 'Brokerage', e.target.value)}
+                                                            sx={{ width: "80px" }}
+                                                            inputProps={{ step: "0.01" }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="right">{row.Brokerage * row.displayQuantity}</TableCell>
+                                                    <TableCell align="right">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={row.Coolie}
+                                                            onChange={(e) => handleFieldChange(idx, 'Coolie', e.target.value)}
+                                                            sx={{ width: "80px" }}
+                                                            inputProps={{ step: "0.01" }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="right">{row.Coolie * row.displayQuantity}</TableCell>
+                                                    <TableCell align="right">
+
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={vilaivasiValue}
+                                                            onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
+                                                            sx={{ width: "120px" }}
+                                                            inputProps={{ step: "0.01" }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="right">{row.Narration}</TableCell>
+                                                    <TableCell align="right">{vilaivasiAmt.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                </TableBody>
+                            </Table>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 25, 50, 100]}
+                                component="div"
+                                count={deliveryReport.length}
+                                rowsPerPage={dataEntryPagination.rowsPerPage}
+                                page={dataEntryPagination.page}
+                                onPageChange={handleDataEntryPageChange}
+                                onRowsPerPageChange={handleDataEntryRowsPerPageChange}
+                            />
+                        </TableContainer>
+
+                        <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<Save />}
+                                onClick={handleSave}
+                                disabled={saving}
+                                size="large"
+                            >{saving ? "Saving..." : "Save Brokerage"}</Button>
+                        </Box>
+                    </>)
+                    : (
                         <>
-                            <TableContainer component={Paper} >
-                                <Table size="small" >
+                            <TableContainer component={Paper}>
+                                <Table size="small">
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: "primary.main" }}>
-                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Date </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }
-                                            }> Do No </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }}> Product </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }}> Ledger_Name </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }}> Broker </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Bill_Qty </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Qty </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Rate </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Pack </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Amount </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Brok.Rate </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Brokerage </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Coolie.Rate </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Coolie.Amt </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Vilaivasi </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Narration </TableCell>
-                                            < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Vilaivasi Amt </TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }}>Broker</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total KGS</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total Bill Qty</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total_Amount</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total_Broker_Exp</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total_VilaiVasi</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Total_Bags</TableCell>
+                                            <TableCell sx={{ color: "white", fontWeight: "bold" }} align="right">Actions</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {
-                                            deliveryReport
-                                                .slice(dataEntryPagination.page * dataEntryPagination.rowsPerPage, dataEntryPagination.page * dataEntryPagination.rowsPerPage + dataEntryPagination.rowsPerPage)
-                                                .map((row, idx) => {
-                                                    const vilaivasiValue = brokerageValues[`${row.Do_Id}-${row.Product_Id}`] || "";
-                                                    const vilaivasiAmt = calculateVilaivasiAmt(vilaivasiValue, row.Bill_Qty);
+                                        {brokerNames.length > 0 ? (
+                                            brokerNames
+                                                .slice(
+                                                    listingPagination.page * listingPagination.rowsPerPage,
+                                                    listingPagination.page * listingPagination.rowsPerPage + listingPagination.rowsPerPage
+                                                )
+                                                .map((brokerName, idx) => {
+                                                    const brokerData = dataset.find(item => item.Broker_Name === brokerName);
                                                     return (
-                                                        <TableRow key={idx} hover >
-                                                            <TableCell align="left" > {row.Date.split("T")[0]} </TableCell>
-                                                            < TableCell > {row.Do_No || row.Do_Inv_No} </TableCell>
-                                                            < TableCell > {row.Product_Name} </TableCell>
-                                                            < TableCell > {row.Retailer_Name} </TableCell>
-                                                            < TableCell > {row.CostCenterGet} </TableCell>
-                                                            < TableCell align="right" > {row.Bill_Qty} </TableCell>
-                                                            < TableCell align="right" > {row?.displayQuantity} </TableCell>
-                                                            < TableCell align="right" > {row.Rate || row.Item_Rate} </TableCell>
-                                                            < TableCell align="right" > {row.Pack} </TableCell>
-                                                            < TableCell align="right" > {row.Amount} </TableCell>
-                                                            < TableCell align="right" > {row.Brokerage} </TableCell>
-                                                            < TableCell align="right" > {row.Brokerage * row.displayQuantity} </TableCell>
-                                                            < TableCell align="right" > {row.Coolie} </TableCell>
-                                                            < TableCell align="right" > {row.Coolie * row.displayQuantity} </TableCell>
-                                                            < TableCell align="right" >
-                                                                <TextField
-                                                                    size="small"
-                                                                    type="number"
-                                                                    value={vilaivasiValue}
-                                                                    onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)
-                                                                    }
-                                                                    sx={{ width: "120px" }}
-                                                                    inputProps={{ step: "0.01" }}
+                                                        <React.Fragment key={idx}>
+                                                            <TableRow hover>
+                                                                <TableCell>
+                                                                    <IconButton size="small" onClick={() => handleExpandBroker(brokerName)}>
+                                                                        {expandedBrokers[brokerName] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                                                                    </IconButton>
+                                                                    {brokerName}
+                                                                </TableCell>
+                                                                <TableCell align="right">{brokerData?.Total_Qty || "0.00"}</TableCell>
+                                                                <TableCell align="right">{brokerData?.Total_KGS || "0.00"}</TableCell>
+                                                                <TableCell align="right">{brokerData?.Total_Amount || "0.00"}</TableCell>
+                                                                <TableCell align="right">{brokerData?.Broker_Exp || "0.00"}</TableCell>
+                                                                <TableCell align="right">{brokerData?.VilaiVasi || "0.00"}</TableCell>
+                                                                <TableCell align="right">{brokerData?.Total_Bags || 0}</TableCell>
+                                                                <TableCell align="right">
+                                                                    <Tooltip title="Preview PDF">
+                                                                        <IconButton
+                                                                            color="primary"
+                                                                            onClick={() => {
+                                                                                setPdfPreviewData(brokerData);
+                                                                                setPdfPreviewOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <PictureAsPdfIcon />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                </TableCell>
+                                                                <PdfPreviewModal
+                                                                    open={pdfPreviewOpen}
+                                                                    onClose={() => setPdfPreviewOpen(false)}
+                                                                    brokerData={pdfPreviewData}
                                                                 />
-                                                            </TableCell>
-                                                            < TableCell align="right" > {row.Narration} </TableCell>
-                                                            < TableCell align="right" > {vilaivasiAmt.toFixed(2)} </TableCell>
-                                                        </TableRow>
+
+                                                            </TableRow>
+                                                            <TableRow>
+                                                                <TableCell style={{ padding: 0 }} colSpan={7}>
+                                                                    <Collapse in={expandedBrokers[brokerName]} timeout="auto" unmountOnExit>
+                                                                        <Box margin={1}>
+                                                                            <Typography variant="h6" gutterBottom component="div">
+                                                                                Details for {brokerName}
+                                                                            </Typography>
+                                                                            <Table size="small">
+                                                                                <TableHead>
+                                                                                    <TableRow>
+                                                                                        <TableCell>Date</TableCell>
+                                                                                        <TableCell>Invoice No</TableCell>
+                                                                                        <TableCell>Retailer</TableCell>
+                                                                                        <TableCell>Alias</TableCell>
+                                                                                        <TableCell>Product</TableCell>
+                                                                                        <TableCell>Short Name</TableCell>
+                                                                                        <TableCell align="right">QTY</TableCell>
+                                                                                        <TableCell align="right">KGS</TableCell>
+                                                                                        <TableCell align="right">Amount</TableCell>
+                                                                                        <TableCell align="right">Vilai Vasi</TableCell>
+                                                                                        <TableCell align="right">Vilai Amt</TableCell>
+                                                                                    </TableRow>
+                                                                                </TableHead>
+                                                                                <TableBody>
+                                                                                    {brokerData?.Items?.map((item, itemIdx) => (
+                                                                                        <TableRow key={itemIdx}>
+                                                                                            <TableCell>{item.Date}</TableCell>
+                                                                                            <TableCell>{item.Do_Inv_No}</TableCell>
+                                                                                            <TableCell>{item.Retailer_Name}</TableCell>
+                                                                                            <TableCell>{item.Ledger_Alias}</TableCell>
+                                                                                            <TableCell>{item.Product_Name}</TableCell>
+                                                                                            <TableCell>{item.Short_Name}</TableCell>
+                                                                                            <TableCell align="right">{item.QTY}</TableCell>
+                                                                                            <TableCell align="right">{item.KGS}</TableCell>
+                                                                                            <TableCell align="right">{item.Amount?.toFixed(2)}</TableCell>
+                                                                                            <TableCell align="right">{item.Vilai_Vasi}</TableCell>
+                                                                                            <TableCell align="right">{item.Vilai_Vasi}</TableCell>
+                                                                                        </TableRow>
+                                                                                    ))}
+                                                                                </TableBody>
+                                                                            </Table>
+                                                                        </Box>
+                                                                    </Collapse>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        </React.Fragment>
                                                     );
-                                                })}
+                                                })
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={7} align="center">No data found</TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
-                                < TablePagination
+                                <TablePagination
                                     rowsPerPageOptions={[10, 25, 50, 100]}
                                     component="div"
-                                    count={deliveryReport.length}
-                                    rowsPerPage={dataEntryPagination.rowsPerPage}
-                                    page={dataEntryPagination.page}
-                                    onPageChange={handleDataEntryPageChange}
-                                    onRowsPerPageChange={handleDataEntryRowsPerPageChange}
+                                    count={brokerNames.length}
+                                    rowsPerPage={listingPagination.rowsPerPage}
+                                    page={listingPagination.page}
+                                    onPageChange={handleListingPageChange}
+                                    onRowsPerPageChange={handleListingRowsPerPageChange}
                                 />
                             </TableContainer>
-
-                            < Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={< Save />}
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    size="large"
-                                > {saving ? "Saving..." : "Save Brokerage"} </Button>
-                            </Box>
                         </>)
-                        : (
-                            <>
-                                <TableContainer component={Paper} >
-                                    <Table size="small" >
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: "primary.main" }}>
-                                                <TableCell sx={{ color: "white", fontWeight: "bold" }}> Broker </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total KGS </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total Bill Qty </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total_Amount </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total_Broker_Exp </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total_VilaiVasi </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Total_Bags </TableCell>
-                                                < TableCell sx={{ color: "white", fontWeight: "bold" }} align="right" > Actions </TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {
-                                                brokerNames.length > 0 ? (
-                                                    brokerNames
-                                                        .slice(
-                                                            listingPagination.page * listingPagination.rowsPerPage,
-                                                            listingPagination.page * listingPagination.rowsPerPage + listingPagination.rowsPerPage
-                                                        )
-                                                        .map((brokerName, idx) => {
-                                                            const brokerData = dataset.find(item => item.Broker_Name === brokerName);
-                                                            return (
-                                                                <React.Fragment key={idx} >
-                                                                    <TableRow hover >
-                                                                        <TableCell>
-                                                                            <IconButton size="small" onClick={() => handleExpandBroker(brokerName)
-                                                                            }>
-                                                                                {expandedBrokers[brokerName] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                                                                            </IconButton>
-                                                                            {brokerName}
-                                                                        </TableCell>
-                                                                        < TableCell align="right" > {brokerData?.Total_Qty || "0.00"}</TableCell>
-                                                                        < TableCell align="right" > {brokerData?.Total_KGS || "0.00"}</TableCell>
-                                                                        < TableCell align="right" > {brokerData?.Total_Amount || "0.00"}</TableCell>
-                                                                        < TableCell align="right" > {brokerData?.Broker_Exp || "0.00"}</TableCell>
-                                                                        < TableCell align="right" > {brokerData?.VilaiVasi || "0.00"}</TableCell>
-                                                                        < TableCell align="right" > {brokerData?.Total_Bags || 0}</TableCell>
-                                                                        < TableCell align="right" >
-                                                                            <Tooltip title="Preview PDF" >
-                                                                                <IconButton
-                                                                                    color="primary"
-                                                                                    onClick={() => {
-                                                                                        setPdfPreviewData(brokerData);
-                                                                                        setPdfPreviewOpen(true);
-                                                                                    }}
-                                                                                >
-                                                                                    <PictureAsPdfIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                        </TableCell>
-                                                                        < PdfPreviewModal
-                                                                            open={pdfPreviewOpen}
-                                                                            onClose={() => setPdfPreviewOpen(false)}
-                                                                            brokerData={pdfPreviewData}
-                                                                        />
-
-                                                                    </TableRow>
-                                                                    < TableRow >
-                                                                        <TableCell style={{ padding: 0 }} colSpan={7} >
-                                                                            <Collapse in={expandedBrokers[brokerName]} timeout="auto" unmountOnExit >
-                                                                                <Box margin={1}>
-                                                                                    <Typography variant="h6" gutterBottom component="div" >
-                                                                                        Details for {brokerName}
-                                                                                    </Typography>
-                                                                                    < Table size="small" >
-                                                                                        <TableHead>
-                                                                                            <TableRow>
-                                                                                                <TableCell>Date </TableCell>
-                                                                                                < TableCell > Invoice No </TableCell>
-                                                                                                < TableCell > Retailer </TableCell>
-                                                                                                < TableCell > Alias </TableCell>
-                                                                                                < TableCell > Product </TableCell>
-                                                                                                < TableCell > Short Name </TableCell>
-                                                                                                < TableCell align="right" > QTY </TableCell>
-                                                                                                < TableCell align="right" > KGS </TableCell>
-                                                                                                < TableCell align="right" > Amount </TableCell>
-                                                                                                < TableCell align="right" > Vilai Vasi </TableCell>
-                                                                                                < TableCell align="right" > Vilai Amt </TableCell>
-                                                                                            </TableRow>
-                                                                                        </TableHead>
-                                                                                        <TableBody>
-                                                                                            {
-                                                                                                brokerData?.Items?.map((item, itemIdx) => (
-                                                                                                    <TableRow key={itemIdx} >
-                                                                                                        <TableCell>{item.Date} </TableCell>
-                                                                                                        < TableCell > {item.Do_Inv_No} </TableCell>
-                                                                                                        < TableCell > {item.Retailer_Name} </TableCell>
-                                                                                                        < TableCell > {item.Ledger_Alias} </TableCell>
-                                                                                                        < TableCell > {item.Product_Name} </TableCell>
-                                                                                                        < TableCell > {item.Short_Name} </TableCell>
-                                                                                                        < TableCell align="right" > {item.QTY} </TableCell>
-                                                                                                        < TableCell align="right" > {item.KGS} </TableCell>
-                                                                                                        < TableCell align="right" > {item.Amount?.toFixed(2)} </TableCell>
-                                                                                                        < TableCell align="right" > {item.Vilai_Vasi} </TableCell>
-                                                                                                        < TableCell align="right" > {item.Vilai_Vasi} </TableCell>
-                                                                                                    </TableRow>
-                                                                                                ))
-                                                                                            }
-                                                                                        </TableBody>
-                                                                                    </Table>
-                                                                                </Box>
-                                                                            </Collapse>
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                </React.Fragment>
-                                                            );
-                                                        })
-                                                ) : (
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} align="center" > No data found </TableCell>
-                                                    </TableRow>
-                                                )}
-                                        </TableBody>
-                                    </Table>
-                                    < TablePagination
-                                        rowsPerPageOptions={[10, 25, 50, 100]}
-                                        component="div"
-                                        count={brokerNames.length}
-                                        rowsPerPage={listingPagination.rowsPerPage}
-                                        page={listingPagination.page}
-                                        onPageChange={handleListingPageChange}
-                                        onRowsPerPageChange={handleListingRowsPerPageChange}
-                                    />
-                                </TableContainer>
-                            </>)
                 }
             </Paper>
 
-            < Dialog
+            <Dialog
                 open={filtersDataEntry.filterDialog && activeTab === 0}
                 onClose={closeDialogDataEntry}
                 maxWidth="sm"
                 fullWidth
             >
                 <DialogContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} >
-                        <Typography variant="h6" > Data Entry Filters </Typography>
-                        < IconButton onClick={closeDialogDataEntry} >
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6">Data Entry Filters</Typography>
+                        <IconButton onClick={closeDialogDataEntry}>
                             <FilterAltOff />
                         </IconButton>
                     </Box>
-                    < Grid container spacing={2} >
-                        <Grid item xs={12} >
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
                             <TextField
                                 fullWidth type="date" label="From Date" value={filtersDataEntry.FromDate}
                                 onChange={e => setFiltersDataEntry(prev => ({ ...prev, FromDate: e.target.value }))}
                                 InputLabelProps={{ shrink: true }} />
                         </Grid>
-                        < Grid item xs={12} >
+                        <Grid item xs={12}>
                             <TextField
                                 fullWidth type="date" label="To Date" value={filtersDataEntry.ToDate}
                                 onChange={e => setFiltersDataEntry(prev => ({ ...prev, ToDate: e.target.value }))}
                                 InputLabelProps={{ shrink: true }} />
                         </Grid>
-                        < Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                        <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
 
                         </Grid>
-                        < Grid item xs={12} >
+                        <Grid item xs={12}>
                             <Select
                                 fullWidth label="Brokers" value={filtersDataEntry.Broker}
                                 onChange={selected => setFiltersDataEntry(prev => ({ ...prev, Broker: selected }))}
@@ -531,30 +589,40 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
 
                     </Grid>
                 </DialogContent>
-                < DialogActions >
-                    <Button onClick={closeDialogDataEntry}> Cancel </Button>
-                    < Button variant="contained" onClick={() => {
+                <DialogActions>
+                    <Button onClick={closeDialogDataEntry}>Cancel</Button>
+                    <Button variant="contained" onClick={() => {
+                        setHeaderVilaiVasi("");
+
+                        setBrokerageValues(prev => {
+                            const updated = { ...prev };
+                            deliveryReport.forEach(item => {
+                                const key = `${item.Do_Id}-${item.Product_Id}`;
+                                updated[key] = "";
+                            });
+                            return updated;
+                        });
                         setFiltersDataEntry(prev => ({ ...prev, refresh: !prev.refresh, filterDialog: false }));
-                    }}> Apply Filters </Button>
+                    }}>Apply Filters</Button>
                 </DialogActions>
             </Dialog>
 
 
-            < Dialog
+            <Dialog
                 open={filtersListing.filterDialog && activeTab === 1}
                 onClose={closeDialogListing}
                 maxWidth="sm"
                 fullWidth
             >
                 <DialogContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} >
-                        <Typography variant="h6" > Listing Filters </Typography>
-                        < IconButton onClick={closeDialogListing} >
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6">Listing Filters</Typography>
+                        <IconButton onClick={closeDialogListing}>
                             <FilterAltOff />
                         </IconButton>
                     </Box>
-                    < Grid container spacing={2} >
-                        <Grid item xs={5} >
+                    <Grid container spacing={2}>
+                        <Grid item xs={5}>
                             <TextField
                                 fullWidth
                                 type="date"
@@ -564,7 +632,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
-                        < Grid item xs={5} >
+                        <Grid item xs={5}>
                             <TextField
                                 fullWidth
                                 type="date"
@@ -574,7 +642,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
-                        < Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                        <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -587,7 +655,23 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 Search
                             </Button>
                         </Grid>
-                        < Grid item xs={12} >
+                        <Grid item xs={12}>
+                            <Select
+                                fullWidth
+                                value={filtersListing.VilaiVasiZero}
+                                onChange={selected => setFiltersListing(prev => ({ ...prev, VilaiVasiZero: selected }))}
+                                options={[
+                                    { value: "", label: "All" },
+                                    { value: "zero", label: "VilaiVasi Zero" },
+                                    { value: "nonzero", label: "VilaiVasi Non-Zero" }
+                                ]}
+                                styles={customSelectStyles}
+                                menuPortalTarget={document.body}
+                                placeholder="VilaiVasi Zero/Non-Zero"
+                            />
+                        </Grid>
+
+                        <Grid item xs={12}>
                             <Select
                                 fullWidth
                                 label="Brokers"
@@ -600,7 +684,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 placeholder="Select Broker"
                             />
                         </Grid>
-                        < Grid item xs={12} >
+                        <Grid item xs={12}>
                             <Select
                                 fullWidth
                                 label="Ledger"
@@ -613,7 +697,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 placeholder="Select Ledger"
                             />
                         </Grid>
-                        < Grid item xs={12} >
+                        <Grid item xs={12}>
                             <Select
                                 fullWidth
                                 label="Item"
@@ -628,11 +712,11 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                         </Grid>
                     </Grid>
                 </DialogContent>
-                < DialogActions >
-                    <Button onClick={closeDialogListing}> Cancel </Button>
-                    < Button variant="contained" onClick={() => {
+                <DialogActions>
+                    <Button onClick={closeDialogListing}>Cancel</Button>
+                    <Button variant="contained" onClick={() => {
                         setFiltersListing(prev => ({ ...prev, refresh: !prev.refresh, filterDialog: false }));
-                    }}> Apply Filters </Button>
+                    }}>Apply Filters</Button>
                 </DialogActions>
             </Dialog>
         </Box>

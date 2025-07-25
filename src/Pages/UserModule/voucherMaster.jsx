@@ -12,6 +12,8 @@ import { Button } from "react-bootstrap";
 import { Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import { erpModules } from "../../Components/tablecolumn";
+
 
 const initialState = {
     Voucher_Type_Id: "",
@@ -89,6 +91,7 @@ function VoucherMaster() {
                 toast.error("Error deleting voucher");
             });
     };
+
     const handleCreate = () => {
         if (
             !selectedBranch ||
@@ -230,6 +233,7 @@ function VoucherMaster() {
                 <DialogTitle id="create-dialog-title">Voucher Creation</DialogTitle>
                 <DialogContent>
                     <div>
+
                         <div className="p-2">
                             <label>Voucher Name</label>
                             <input
@@ -237,6 +241,17 @@ function VoucherMaster() {
                                 onChange={(event) => setVoucherType(event.target.value)}
                                 placeholder=""
                                 value={voucherType}
+                                className="cus-inpt"
+                            />
+                        </div>
+
+                        <div className="p-2">
+                            <label>Voucher Code</label>
+                            <input
+                                type="text"
+                                onChange={(event) => setVoucherCode(event.target.value)}
+                                placeholder=""
+                                value={voucherCode}
                                 className="cus-inpt"
                             />
                         </div>
@@ -257,47 +272,19 @@ function VoucherMaster() {
                             </select>
                         </div>
 
-                        {/* <div className="p-2">
-              <label>Voucher Group</label>
-              <select
-                value={selectedVoucherGroup}
-                onChange={(event) =>
-                  setSelectedVoucherGroup(event.target.value)
-                }
-                className="cus-inpt"
-              >
-                <option value="">Select Voucher Group</option>
-                {voucherGroup.map((vou) => (
-                  <option
-                    key={vou.Voucher_Group_Id}
-                    value={vou.Voucher_Group_Id}
-                  >
-                    {vou.Group_Name}
-                  </option>
-                ))}
-              </select>
-            </div> */}
-
-                        <div className="p-2">
-                            <label>Voucher Code</label>
-                            <input
-                                type="text"
-                                onChange={(event) => setVoucherCode(event.target.value)}
-                                placeholder=""
-                                value={voucherCode}
-                                className="cus-inpt"
-                            />
-                        </div>
-
                         <div className="p-2">
                             <label>Type</label>
-                            <input
-                                type="text"
+                            <select
                                 onChange={(event) => setTypes(event.target.value)}
-                                placeholder=""
                                 value={types}
                                 className="cus-inpt"
-                            />
+                            >
+                                {erpModules.map((mod, ind) => (
+                                    <option key={ind} value={mod.name}>
+                                        {mod.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </DialogContent>
@@ -336,6 +323,22 @@ function VoucherMaster() {
                     </div>
 
                     <div className="p-2">
+                        <label>Voucher Code</label>
+                        <input
+                            type="text"
+                            onChange={(event) =>
+                                setInputValue({
+                                    ...inputValue,
+                                    Voucher_Code: event.target.value,
+                                })
+                            }
+                            placeholder={inputValue.Voucher_Code}
+                            value={inputValue.Voucher_Code}
+                            className="cus-inpt"
+                        />
+                    </div>
+
+                    <div className="p-2">
                         <label>Branch</label>
                         <select
                             value={selectedBranch}
@@ -357,58 +360,24 @@ function VoucherMaster() {
                         </select>
                     </div>
 
-                    {/* <div className="p-2">
-            <label>Voucher Group</label>
-            <select
-              value={selectedVoucherGroup}
-              onChange={(event) => {
-                setSelectedVoucherGroup(event.target.value);
-                setInputValue({
-                  ...inputValue,
-                  Voucher_Group_Id: event.target.value,
-                });
-              }}
-              className="cus-inpt"
-            >
-              <option value="">Select Voucher Group</option>
-              {voucherGroup.map((vou) => (
-                <option key={vou.Voucher_Group_Id} value={vou.Voucher_Group_Id}>
-                  {vou.Group_Name}
-                </option>
-              ))}
-            </select>
-          </div> */}
-
-                    <div className="p-2">
-                        <label>Voucher Code</label>
-                        <input
-                            type="text"
-                            onChange={(event) =>
-                                setInputValue({
-                                    ...inputValue,
-                                    Voucher_Code: event.target.value,
-                                })
-                            }
-                            placeholder={inputValue.Voucher_Code}
-                            value={inputValue.Voucher_Code}
-                            className="cus-inpt"
-                        />
-                    </div>
-
                     <div className="p-2">
                         <label>Type</label>
-                        <input
-                            type="text"
+                        <select
                             onChange={(event) =>
                                 setInputValue({
                                     ...inputValue,
                                     Type: event.target.value,
                                 })
                             }
-                            placeholder={inputValue.Type}
                             value={inputValue.Type}
                             className="cus-inpt"
-                        />
+                        >
+                            {erpModules.map((mod, ind) => (
+                                <option key={ind} value={mod.name}>
+                                    {mod.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </DialogContent>
                 <DialogActions>

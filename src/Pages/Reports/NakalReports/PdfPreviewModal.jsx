@@ -10,30 +10,38 @@ const PdfPreviewModal = ({ open, onClose, brokerData }) => {
         content: () => printRef.current,
     });
 
+    const items = brokerData?.Items || [];
+    const totalBrokerage = items.reduce((sum, item) => sum + parseFloat(item.Brok_Amt || 0), 0);
+    const totalCoolie = items.reduce((sum, item) => sum + parseFloat(item.Coolie_Amt || 0), 0);
+    const totalAmount = parseFloat(brokerData?.Total_Amount || 0);
+    const vilaivasi = parseFloat(brokerData?.VilaiVasi || 0);
+
+    const netTotalRaw = totalAmount - totalBrokerage + totalCoolie - vilaivasi;
+    const netTotalRounded = Math.round(netTotalRaw);
+    const roundOff = netTotalRounded - netTotalRaw;
 
 
-    const totalBrokerage = brokerData?.Items?.reduce((sum, item) => sum + (item.Brok_Amt || 0), 0) || 0;
-
-    const totalCoolie = brokerData?.Items?.reduce((sum, item) => sum + (item.Coolie_Amt || 0), 0) || 0;
 
     const getPackSizeSummary = () => {
-        const packQuantities = brokerData?.Items?.reduce((acc, item) => {
-            const packSize = Math.round(item.KGS / item.QTY);
+        const packQuantities = items.reduce((acc, item) => {
+            const packSize = Math.round(parseFloat(item.KGS) / parseFloat(item.QTY));
             if (!isNaN(packSize)) {
-                acc[packSize] = (acc[packSize] || 0) + item.QTY;
+                acc[packSize] = (acc[packSize] || 0) + parseFloat(item.QTY);
             }
             return acc;
         }, {});
-
         if (!packQuantities) return null;
-
         return Object.entries(packQuantities)
             .sort(([sizeA], [sizeB]) => sizeA - sizeB)
             .map(([size, qty]) => `${size}kg - ${qty}`)
             .join(' & ');
     };
-
     const packSizeSummary = getPackSizeSummary();
+
+    function formatSignedNumber(value) {
+        const n = Number(value) || 0;
+        return `${n >= 0 ? '+' : ''}${NumberFormat(n)}`;
+    }
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth='lg'>
@@ -77,15 +85,12 @@ const PdfPreviewModal = ({ open, onClose, brokerData }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {brokerData?.Items?.map((item, index) => (
+                        {items.map((item, index) => (
                             <tr key={index}>
                                 <td>{item.Retailer_Name || item.Ledger_Name}</td>
-                                <td>{item.Product_Name || item.Short_Name}</td>
-
+                                <td>{item.Short_Name}</td>
                                 <td className="text-end">{item.Item_Rate}</td>
-                                <td className="text-end">
-                                    {NumberFormat(item.Brok_Amt || 0)}
-                                </td>
+                                <td className="text-end">{NumberFormat(item.Brok_Amt || 0)}</td>
                                 <td className="text-end">{item.QTY}</td>
                                 <td className="text-end">{item.KGS}</td>
                                 <td className="text-end">{NumberFormat(item.Amount)}</td>
@@ -100,8 +105,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData }) => {
                             <td className="text-end fw-bold">{NumberFormat(brokerData?.VilaiVasi || 0)}</td>
                         </tr>
                         <tr>
-                            <td className="text-end fw-bold">{getPackSizeSummary()}</td>
-
+                            <td className="text-end fw-bold">{packSizeSummary}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -112,50 +116,25 @@ const PdfPreviewModal = ({ open, onClose, brokerData }) => {
                             <tbody>
                                 <tr>
                                     <td className="fw-bold">COOLIE</td>
-                                    <td className="text-end fw-bold">
-                                        {NumberFormat(totalCoolie)}
-                                    </td>
+                                    <td className="text-end fw-bold">{NumberFormat(totalCoolie)}</td>
                                 </tr>
                                 <tr>
                                     <td className="fw-bold">BROKERAGE</td>
-                                    <td className="text-end fw-bold">
-                                        - {NumberFormat(totalBrokerage)}
-                                    </td>
+                                    <td className="text-end fw-bold">- {NumberFormat(totalBrokerage)}</td>
                                 </tr>
                                 <tr>
                                     <td className="fw-bold">VILAIVAASI</td>
-                                    <td className="text-end fw-bold">
-                                        - {NumberFormat(brokerData?.VilaiVasi || 0)}
-                                    </td>
+                                    <td className="text-end fw-bold">- {NumberFormat(vilaivasi)}</td>
                                 </tr>
+
                                 <tr>
                                     <td className="fw-bold">ROUNDOFF</td>
-                                    <td className="text-end fw-bold">
-                                        {NumberFormat(
-                                            parseFloat(brokerData?.Total_Amount || 0) -
-                                            totalBrokerage -
-                                            totalCoolie -
-                                            parseFloat(brokerData?.VilaiVasi || 0) -
-                                            Math.round(
-                                                parseFloat(brokerData?.Total_Amount || 0) -
-                                                totalBrokerage -
-                                                totalCoolie -
-                                                parseFloat(brokerData?.VilaiVasi || 0)
-                                            ))}
-                                    </td>
+                                    <td className="text-end fw-bold">{formatSignedNumber(roundOff)}</td>
                                 </tr>
+
                                 <tr className="bg-light">
                                     <td className="fw-bold">NET TOTAL</td>
-                                    <td className="text-end fw-bold">
-                                        {NumberFormat(
-                                            Math.round(
-                                                parseFloat(brokerData?.Total_Amount || 0) -
-                                                totalBrokerage -
-                                                totalCoolie -
-                                                parseFloat(brokerData?.VilaiVasi || 0)
-                                            )
-                                        )}
-                                    </td>
+                                    <td className="text-end fw-bold">{NumberFormat(netTotalRounded)}</td>
                                 </tr>
                             </tbody>
                         </table>
