@@ -29,6 +29,8 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     api='itemWise'
                     defaultGrouping=''
                     storageStockColumns={storageStockColumnsForItemWise}
+                    reportName='stockInHand_itemWise'
+                    url='/erp/reports/stockInHand'
                 />
             )
         },
@@ -44,6 +46,8 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     defaultGrouping='Godown_Name'
                     storageStockColumns={storageStockColumnsForGodownWise}
                     groupingOption={false}
+                    reportName='stockInHand_GodownWise'
+                    url='/erp/reports/stockInHand'
                 />
             )
         },

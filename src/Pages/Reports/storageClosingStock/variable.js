@@ -24,11 +24,12 @@ export const storageStockColumnsForGodownWise = [
     // { Column_Name: 'Trans_Date', Data_Type: 'date' },
     { Column_Name: 'Godown_Name', Data_Type: 'string' },
     { Column_Name: 'stock_item_name', Data_Type: 'string' },
+    { Column_Name: 'Bal_Qty', Data_Type: 'number' },
+    { Column_Name: 'CL_Value', Data_Type: 'number' },
     { Column_Name: 'OB_Bal_Qty', Data_Type: 'number' },
     { Column_Name: 'OB_Act_Qty', Data_Type: 'number' },
     { Column_Name: 'Pur_Qty', Data_Type: 'number' },
     { Column_Name: 'Sal_Qty', Data_Type: 'number' },
-    { Column_Name: 'Bal_Qty', Data_Type: 'number' },
     { Column_Name: 'Act_Bal_Qty', Data_Type: 'number' },
     { Column_Name: 'Pur_Act_Qty', Data_Type: 'number' },
     { Column_Name: 'Sal_Act_Qty', Data_Type: 'number' },
@@ -40,6 +41,7 @@ export const storageStockColumnsForGodownWise = [
     { Column_Name: 'S_Sub_Group_1', Data_Type: 'string' },
     { Column_Name: 'Grade_Item_Group', Data_Type: 'string' },
     { Column_Name: 'Item_Name_Modified', Data_Type: 'string' },
+    { Column_Name: 'CL_Rate', Data_Type: 'number' },
 ]
 
 export const itemGroupWiseStockValue = [
