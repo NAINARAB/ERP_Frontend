@@ -250,6 +250,9 @@ const RoutingArray = [
     { component: <AccountMaster />, path: '/erp/master/accountMaster' },
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
 
+    //ERP - BATCH MANAGEMENT
+    { component: <DisplayNavigations />, path: '/erp/batchManagement' },
+
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
     { component: <DeliveryReports />, path: '/erp/reports/deliveryReports' },

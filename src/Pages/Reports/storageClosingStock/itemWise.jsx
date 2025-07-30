@@ -1,17 +1,39 @@
+
+
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import {
-    Addition, checkIsNumber, filterableText,
-    groupData, isEqualNumber, stringCompare, toArray, toNumber,
+    Addition,
+    checkIsNumber,
+    filterableText,
+    groupData,
+    isEqualNumber,
+    stringCompare,
+    toArray,
+    toNumber,
 } from "../../../Components/functions";
 import FilterableTable from "../../../Components/filterableTable2";
 import {
-    Autocomplete, Button, Card, Checkbox, Dialog,
-    DialogActions, DialogContent, DialogTitle, IconButton,
-    Paper, Switch, TextField, Tooltip,
+    Autocomplete,
+    Button,
+    Card,
+    Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    Paper,
+    Switch,
+    TextField,
+    Tooltip,
 } from "@mui/material";
 import {
-    CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, Settings,
+    CheckBox,
+    CheckBoxOutlineBlank,
+    FilterAlt,
+    FilterAltOff,
+    Settings,
 } from "@mui/icons-material";
 import { useMemo } from "react";
 import { toast } from "react-toastify";
@@ -28,10 +50,9 @@ const ItemWiseStockReport = ({
     defaultGrouping = "",
     storageStockColumns = [],
     groupingOption = true,
-    reportName = '',
-    url = ''
+    reportName = "",
+    url = "",
 }) => {
-
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
     const [groupBy, setGroupBy] = useState(defaultGrouping);
@@ -42,94 +63,124 @@ const ItemWiseStockReport = ({
     const [reportVisiblity, setReportVisiblity] = useState([]);
 
     const propsColumns = storageStockColumns.map((col, colInd) => {
-        const columnState = reportVisiblity.find(
-            repState => stringCompare(repState.columnName, col?.Column_Name)
-        ) || {};
+        const columnState =
+            reportVisiblity.find((repState) =>
+                stringCompare(repState.columnName, col?.Column_Name)
+            ) || {};
 
         return {
-            isVisible: columnState?.columnName ? 1 : 0,
+            isVisible: 1, // Force visible for all columns
             Field_Name: col?.Column_Name,
             Fied_Data: col?.Data_Type,
             OrderBy: columnState?.orderNum || colInd + 1,
-            isEnabled: true,
-        }
+            isEnabled: true, // Default all columns to enabled
+        };
     });
 
     const [columns, setColumns] = useState(propsColumns);
-
-    useEffect(() => {
-        fetchLink({
-            address: `reports/storageStock/${api}?Fromdate=${Fromdate}&Todate=${Todate}`,
-            loadingOn, loadingOff
-        }).then((data) => {
-            if (data.success) setReportData(toArray(data.data));
-            else setReportData([]);
-        }).catch(e => console.error(e))
-    }, [Fromdate, Todate, api]);
+    const parseData = JSON.parse(localStorage.getItem("user"));
+    const companyId = parseData?.Company_id;
 
     useEffect(() => {
         const parseData = JSON.parse(localStorage.getItem("user"));
         const companyId = parseData?.Company_id;
 
         fetchLink({
-            address: `reports/reportState/columnVisiblity?reportName=${reportName}&reportUrl=${url}`
-        }).then(data => {
-            if (data.success) setReportVisiblity(toArray(data.data));
-            else setReportVisiblity([])
-        }).catch(e => console.error(e))
+            address: `reports/reportState/columnVisiblity?reportName=${reportName}&reportUrl=${url}`,
+        })
+            .then((data) => {
+                if (data.success) {
+                    setReportVisiblity(toArray(data.data));
+                } else setReportVisiblity([]);
+            })
+            .catch((e) => console.error(e));
 
         fetchLink({
             address: `masters/displayLosColumn?company_id=${companyId}`,
-        }).then((data) => {
-            if (data.success) {
-                const settings = toArray(data.data);
-                setColumnSettings(settings);
-            }
-        }).catch(e => console.error(e));
+        })
+            .then((data) => {
+                if (data.success) {
+                    const settings = toArray(data.data);
 
+                    setColumnSettings(settings);
+                }
+            })
+            .catch((e) => console.error(e));
     }, [reportName, url]);
 
     useEffect(() => {
-        setColumns((prevColumns) =>
-            prevColumns.map((col) => {
-                // console.log({ prevColumns, reportVisiblity })
+        loadingOn();
 
-                const setting = columnSettings.find(
-                    (s) => (
-                        stringCompare(s?.Column_Name, col?.Field_Name)
-                        || stringCompare(s?.ColumnName, col?.Field_Name)
-                    )
-                );
+        Promise.all([
+            fetchLink({
+                address: `reports/storageStock/${api}?Fromdate=${Fromdate}&Todate=${Todate}`,
+            }),
+            fetchLink({
+                address: `reports/reportState/columnVisiblity?reportName=${reportName}&reportUrl=${url}`,
+            }),
+            fetchLink({
+                address: `masters/displayLosColumn?company_id=${companyId}`,
+            }),
+        ])
+            .then(([reportData, visibilityData, columnData]) => {
+                if (reportData.success) {
+                    setReportData(toArray(reportData.data));
+                }
 
-                const reportColumnVisibliety = reportVisiblity.find(
-                    (s) => stringCompare(s?.columnName, col?.Field_Name)
-                );
+                const visibilitySettings = visibilityData.success
+                    ? toArray(visibilityData.data)
+                    : [];
+                setReportVisiblity(visibilitySettings);
 
-                const status = isEqualNumber(setting?.status, 1);
+                const columnSettings = columnData.success
+                    ? toArray(columnData.data)
+                    : [];
+                setColumnSettings(columnSettings);
 
-                return {
-                    ...col,
-                    isEnabled: status,
-                    isVisible: reportColumnVisibliety?.columnName ? 1 : 0,
-                    OrderBy: reportColumnVisibliety?.orderNum ? toNumber(reportColumnVisibliety?.orderNum) : col?.OrderBy,
-                };
+
+                const initialColumns = storageStockColumns.map((col, colInd) => {
+
+                    const visibilitySetting = visibilitySettings.find((v) =>
+                        stringCompare(v.columnName, col?.Column_Name)
+                    );
+
+
+                    const columnSetting = columnSettings.find((cs) =>
+                        stringCompare(cs.Column_Name, col?.Column_Name)
+                    );
+
+                    return {
+                        Field_Name: col?.Column_Name,
+                        Fied_Data: col?.Data_Type,
+                        OrderBy: visibilitySetting?.orderNum || colInd + 1,
+                        isEnabled: true,
+                        isVisible: visibilitySetting ? 1 : 0,
+                        Alias_Name: columnSetting?.Alias_Name || col?.Alias_Name,
+                    };
+                });
+
+                setColumns(initialColumns);
             })
-        );
-    }, [columnSettings, reportVisiblity]);
+            .catch((error) => console.error("Fetch error:", error))
+            .finally(() => loadingOff());
+    }, [
+        Fromdate,
+        Todate,
+        companyId,
+        api,
+        reportName,
+        url,
+        loadingOn,
+        loadingOff,
+    ]);
 
     const sortedColumns = useMemo(() => {
-        return [...columns].sort((a, b) =>
-            a?.OrderBy && b?.OrderBy
-                ? a?.OrderBy - b?.OrderBy
-                : b?.OrderBy - a?.OrderBy
-        );
+        return [...columns].sort((a, b) => a?.OrderBy - b?.OrderBy);
     }, [columns]);
 
     const DisplayColumn = useMemo(() => {
         return sortedColumns.filter(
-            (col) => (
-                isEqualNumber(col?.isVisible, 1) || isEqualNumber(col?.Defult_Display, 1)
-            )
+            (col) => isEqualNumber(col.isVisible, 1) && col.isEnabled
         );
     }, [sortedColumns]);
 
@@ -349,32 +400,57 @@ const ItemWiseStockReport = ({
     };
 
     const resetColumns = () => {
-        setColumns(propsColumns);
+
+        const resetCols = propsColumns.map((col) => {
+            const visibilitySetting = reportVisiblity.find((v) =>
+                stringCompare(v.columnName, col.Field_Name)
+            );
+
+            return {
+                ...col,
+                isVisible: visibilitySetting ? 1 : 0,
+                OrderBy: visibilitySetting?.orderNum || col.OrderBy,
+            };
+        });
+
+        setColumns(resetCols);
     };
 
     const saveColumnState = () => {
+
+        const visibleColumns = columns.filter((col) =>
+            isEqualNumber(col.isVisible, 1)
+        );
+
         fetchLink({
             address: `reports/reportState/columnVisiblity`,
             method: "POST",
             bodyData: {
-                visibleColumns: columns.filter(
-                    col => isEqualNumber(col.isVisible, 1)
-                ).map(col => ({
+                visibleColumns: visibleColumns.map((col) => ({
                     ColumnName: col.Field_Name,
                     ColumnOrder: col.OrderBy,
                 })),
                 reportName,
                 reportUrl: url,
-            }
-        }).then(data => {
-            if (data.success) {
-                toast.success(data.message);
-            } else {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e))
-    }
+            },
+        })
+            .then((data) => {
+                if (data.success) {
+                    toast.success(data.message);
 
+                    setReportVisiblity(
+                        visibleColumns.map((col) => ({
+                            columnName: col.Field_Name,
+                            orderNum: col.OrderBy,
+                        }))
+                    );
+                } else {
+                    toast.error(data.message);
+                }
+            })
+            .catch((e) => console.error(e));
+    };
+    
     return (
         <>
             <FilterableTable
@@ -428,11 +504,16 @@ const ItemWiseStockReport = ({
                 dataArray={showData}
                 columns={
                     groupBy
-                        ? DisplayColumn.map((col) => ({
+                        ? DisplayColumn.filter(
+                            (fil) =>
+                                showData.length > 0 &&
+                                Object.keys(showData[0]).includes(fil.Field_Name) &&
+                                fil.isEnabled
+                        ).map((col) => ({
                             ...col,
                             ColumnHeader: getDisplayName(col.Field_Name),
                         }))
-                        : DisplayColumn.map((col) => ({
+                        : DisplayColumn.filter((col) => col.isEnabled).map((col) => ({
                             ...col,
                             ColumnHeader: getDisplayName(col.Field_Name),
                         }))
@@ -445,7 +526,7 @@ const ItemWiseStockReport = ({
                         bodyFontSizePx={12}
                         dataArray={toArray(row?.groupedData)}
                         columns={DisplayColumn.filter(
-                            (clm) => !stringCompare(clm.Field_Name, groupBy)
+                            (clm) => !stringCompare(clm.Field_Name, groupBy) && clm.isEnabled
                         ).map((col) => ({
                             ...col,
                             ColumnHeader: getDisplayName(col.Field_Name),
@@ -509,18 +590,17 @@ const ItemWiseStockReport = ({
                                 >
                                     <div className="d-flex justify-content-between align-items-center flex-wrap">
                                         <Switch
-                                            checked={Boolean(o?.isVisible)}
-                                            onChange={(e) => {
-                                                if (o.isEnabled) {
-                                                    setColumns((prevColumns) =>
-                                                        prevColumns.map((oo) =>
-                                                            oo.Field_Name === o?.Field_Name
-                                                                ? { ...oo, isVisible: e.target.checked ? 1 : 0 }
-                                                                : oo
-                                                        )
+                                            checked={Boolean(o?.isVisible) && o.isEnabled}
+                                            onChange={(e) =>
+                                                o.isEnabled &&
+                                                setColumns((prevColumns) =>
+                                                    prevColumns.map((oo) =>
+                                                        oo.Field_Name === o?.Field_Name
+                                                            ? { ...oo, isVisible: e.target.checked ? 1 : 0 }
+                                                            : oo
                                                     )
-                                                }
-                                            }}
+                                                )
+                                            }
                                         // disabled={!o.isEnabled}
                                         />
                                         <h6 className="fa-13 mb-0 fw-bold">

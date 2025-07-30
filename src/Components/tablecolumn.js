@@ -150,12 +150,12 @@ export const companyDetails = [
 ]
 
 export const erpModules = [
-    { name: 'PURCHASE ORDER' },
-    { name: 'PURCHASE INVOICE' },
-    { name: 'SALE ORDER' },
-    { name: 'SALE INVOICE' },
+    { name: 'PURCHASE_ORDER' },
+    { name: 'PURCHASE_INVOICE' },
+    { name: 'SALE_ORDER' },
+    { name: 'SALE_INVOICE' },
     { name: 'JOURNAL' },
-    { name: 'STOCK JOURNAL' },
+    { name: 'STOCK_JOURNAL' },
     { name: 'PAYMENT' },
     { name: 'RECEIPT' },
     { name: 'CONTRA' },

@@ -19,12 +19,14 @@ export const receiptGeneralInfoInitialValue = {
     remarks: '',
     status: 1,
     is_new_ref: 0,
-    
+    is_journal_type: 0,
+    transaction_type: '',
+
     check_no: '',
     check_date: '',
     bank_name: '',
     bank_date: '',
-    
+
     created_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     altered_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     created_on: '',
@@ -40,7 +42,7 @@ export const receiptBillInfoInitialValue = {
     receipt_date: '',
     receipt_bill_type: '',
     DR_CR_Acc_Id: '',
-    
+
     // form values
     bill_id: '',
     JournalBillType: '',
@@ -125,5 +127,32 @@ export const receiptStatus = [
     {
         label: 'Canceled',
         value: 0
+    },
+];
+
+export const transactionTypes = [
+    {
+        label: 'Cash',
+        value: 'Cash'
+    },
+    {
+        label: 'UPI',
+        value: 'UPI'
+    },
+    {
+        label: 'Card',
+        value: 'Card'
+    },
+    {
+        label: 'Cheque / DD',
+        value: 'Cheque / DD'
+    },
+    {
+        label: 'E-Fund transfer',
+        value: 'E-Fund transfer'
+    },
+    {
+        label: 'Others',
+        value: 'Others'
     },
 ]

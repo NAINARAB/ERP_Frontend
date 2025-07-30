@@ -38,7 +38,10 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PdfPreviewModal from "./PdfPreviewModal";
 import XlPreviewModal from "./XlPreviewModal";
+
 const NakalReports = ({ loadingOn, loadingOff }) => {
+    const [transactionType, setTransactionType] = useState("sales");
+
     const [dataEntryPagination, setDataEntryPagination] = useState({
         page: 0,
         rowsPerPage: 10,
@@ -49,20 +52,33 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
     });
 
     const [activeTab, setActiveTab] = useState(0);
-
     const [dropDown, setDropDown] = useState({ broker: [] });
 
-    const [filtersDataEntry, setFiltersDataEntry] = useState({
-        FromDate: new Date().toISOString().split("T")[0],
-        ToDate: new Date().toISOString().split("T")[0],
-        Broker: { value: "", label: "ALL Brokers" },
-        Ledger: { value: "", label: "All Ledger" },
-        Item: { value: "", label: "All Item" },
-        refresh: false,
-        filterDialog: false,
+    const [salesData, setSalesData] = useState({
+        deliveryReport: [],
+        brokerageValues: {},
+        filters: {
+            FromDate: new Date().toISOString().split("T")[0],
+            ToDate: new Date().toISOString().split("T")[0],
+            Broker: { value: "", label: "ALL Brokers" },
+            refresh: false,
+            filterDialog: false,
+        },
+        headerVilaiVasi: "",
     });
-    const [deliveryReport, setDeliveryReport] = useState([]);
-    const [brokerageValues, setBrokerageValues] = useState({});
+
+    const [purchaseData, setPurchaseData] = useState({
+        deliveryReport: [],
+        brokerageValues: {},
+        filters: {
+            FromDate: new Date().toISOString().split("T")[0],
+            ToDate: new Date().toISOString().split("T")[0],
+            Broker: { value: "", label: "ALL Brokers" },
+            refresh: false,
+            filterDialog: false,
+        },
+        headerBrokerage: "",
+    });
 
     const [filtersListing, setFiltersListing] = useState({
         FromDate: new Date().toISOString().split("T")[0],
@@ -80,14 +96,16 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         items: [],
     });
     const [expandedBrokers, setExpandedBrokers] = useState({});
-
     const [saving, setSaving] = useState(false);
     const storage = JSON.parse(localStorage.getItem("user"));
     const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
     const [xlPreviewOpen, setXlPreViewOpen] = useState(false);
     const [pdfPreviewData, setPdfPreviewData] = useState(null);
     const [xlPreviewData, setXlPreviewData] = useState(null);
-    const [headerVilaiVasi, setHeaderVilaiVasi] = useState("");
+
+    const currentData = transactionType === "sales" ? salesData : purchaseData;
+    const setCurrentData =
+        transactionType === "sales" ? setSalesData : setPurchaseData;
 
     useEffect(() => {
         fetchLink({
@@ -108,50 +126,288 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         const fetchData = async () => {
             try {
                 loadingOn();
+                const endpoint =
+                    transactionType === "sales"
+                        ? "brokerageNakalReport/sales"
+                        : "brokerageNakalReport/purchase";
+
                 const res = await fetchLink({
-                    address: `reports/brokerageNakalReport/sales?FromDate=${filtersDataEntry.FromDate}&ToDate=${filtersDataEntry.ToDate}&broker=${filtersDataEntry.Broker.value}`,
+                    address: `reports/${endpoint}?FromDate=${currentData.filters.FromDate}&ToDate=${currentData.filters.ToDate}&broker=${currentData.filters.Broker.value}`,
                 });
+
                 if (res.success) {
                     const data = toArray(res.data);
-                    setDeliveryReport(data);
                     const initialBrokerage = {};
                     data.forEach((item) => {
                         const key = `${item.Do_Id}-${item.Product_Id}`;
                         initialBrokerage[key] = item.brokerage || "";
                     });
-                    setBrokerageValues(initialBrokerage);
+
+                    setCurrentData((prev) => ({
+                        ...prev,
+                        deliveryReport: data,
+                        brokerageValues: initialBrokerage,
+                    }));
                 } else {
-                    setDeliveryReport([]);
-                    setBrokerageValues({});
+                    setCurrentData((prev) => ({
+                        ...prev,
+                        deliveryReport: [],
+                        brokerageValues: {},
+                    }));
                 }
             } catch (err) {
-                setDeliveryReport([]);
-                setBrokerageValues({});
+                console.error(err);
+                setCurrentData((prev) => ({
+                    ...prev,
+                    deliveryReport: [],
+                    brokerageValues: {},
+                }));
             } finally {
                 loadingOff();
             }
         };
         fetchData();
-    }, [filtersDataEntry.refresh]);
+    }, [transactionType, currentData.filters.refresh]);
+
+    const tableConfigs = {
+        sales: {
+            dataEntryColumns: [
+                {
+                    label: "Date",
+                    key: "Date",
+                    align: "left",
+                    render: (row) => row.Date?.split("T")[0] || "N/A",
+                },
+                { label: "Do No", key: "Do_No" },
+                { label: "Product", key: "Product_Name" },
+                { label: "Ledger_Name", key: "Retailer_Name" },
+                { label: "Broker", key: "CostCenterGet" },
+                { label: "Bill_Qty", key: "Bill_Qty", align: "right" },
+                { label: "Qty", key: "displayQuantity", align: "right" },
+                {
+                    label: "Rate",
+                    key: "Rate",
+                    align: "right",
+                    render: (row) => row.Rate || row.Item_Rate,
+                },
+                { label: "Pack", key: "Pack", align: "right" },
+                { label: "Amount", key: "Amount", align: "right" },
+                {
+                    label: "Brok.Rate",
+                    key: "Brokerage",
+                    align: "right",
+                    render: (row, idx, handleChange) => (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={row.Brokerage}
+                            onChange={(e) => handleChange(idx, "Brokerage", e.target.value)}
+                            sx={{ width: "80px" }}
+                            inputProps={{ step: "0.01" }}
+                        />
+                    ),
+                },
+                {
+                    label: "Brokerage",
+                    key: "BrokerageAmount",
+                    align: "right",
+                    render: (row) => (row.Brokerage * row.displayQuantity).toFixed(2),
+                },
+                {
+                    label: "Coolie.Rate",
+                    key: "Coolie",
+                    align: "right",
+                    render: (row, idx, handleChange) => (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={row.Coolie}
+                            onChange={(e) => handleChange(idx, "Coolie", e.target.value)}
+                            sx={{ width: "80px" }}
+                            inputProps={{ step: "0.01" }}
+                        />
+                    ),
+                },
+                {
+                    label: "Coolie.Amt",
+                    key: "CoolieAmount",
+                    align: "right",
+                    render: (row) => (row.Coolie * row.displayQuantity).toFixed(2),
+                },
+                {
+                    label: "VilaiVasi",
+                    key: "VilaiVasi",
+                    align: "right",
+                    render: (
+                        row,
+                        idx,
+                        handleChange,
+                        vilaivasiValue,
+                        handleVilaiChange
+                    ) => (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={vilaivasiValue}
+                            onChange={handleVilaiChange(row.Do_Id, row.Product_Id)}
+                            sx={{ width: "120px" }}
+                            inputProps={{ step: "0.01" }}
+                        />
+                    ),
+                },
+                { label: "Narration", key: "Narration", align: "right" },
+                {
+                    label: "Vilai Amt",
+                    key: "VilaiAmt",
+                    align: "right",
+                    render: (row, idx, _, vilaivasiValue, __, calcVilaiAmt) =>
+                        (+calcVilaiAmt(vilaivasiValue, row.Bill_Qty)).toFixed(2),
+                },
+            ],
+            listingColumns: [
+                { label: "Broker", key: "Broker_Name" },
+                { label: "Total KGS", key: "Total_KGS", align: "right" },
+                { label: "Total Bill Qty", key: "Total_Qty", align: "right" },
+                { label: "Total_Amount", key: "Total_Amount", align: "right" },
+                { label: "Total_Broker_Exp", key: "Broker_Exp", align: "right" },
+                { label: "Total_VilaiVasi", key: "VilaiVasi", align: "right" },
+                { label: "Total_Bags", key: "Total_Bags", align: "right" },
+            ],
+        },
+        purchase: {
+            dataEntryColumns: [
+                {
+                    label: "Date",
+                    key: "Date",
+                    align: "left",
+                    render: (row) => row.Po_Entry_Date?.split("T")[0] || "N/A",
+                },
+                { label: "Invoice No", key: "Invoice" },
+                { label: "Retailer", key: "Retailer_Name" },
+                { label: "Product", key: "Product_Name" },
+                { label: "Bill_Qty", key: "Bill_Qty", align: "right" },
+                { label: "Pack", key: "Pack", align: "right" },
+                {
+                    label: "Qty",
+                    key: "displayQuantity",
+                    align: "right",
+                    render: (row) => Number(row.displayQuantity).toFixed(2),
+                },
+                { label: "Rate", key: "Item_Rate", align: "right" },
+                { label: "Amount", key: "Total_Invoice_value", align: "right" },
+                {
+                    label: "Brokerage",
+                    key: "Brokerage",
+                    align: "right",
+                    render: (
+                        row,
+                        idx,
+                        handleChange,
+                        vilaivasiValue,
+                        handleVilaiChange
+                    ) => (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={vilaivasiValue}
+                            onChange={handleVilaiChange(row.Do_Id, row.Product_Id)}
+                            sx={{ width: "120px" }}
+                            inputProps={{ step: "0.01" }}
+                        />
+                    ),
+                },
+            ],
+            listingColumns: [
+                { label: "Supplier", key: "Supplier_Name" },
+                { label: "Total KGS", key: "Total_KGS", align: "right" },
+                { label: "Total Bill Qty", key: "Total_Qty", align: "right" },
+                { label: "Total_Amount", key: "Total_Amount", align: "right" },
+                { label: "Total_Broker_Exp", key: "Broker_Exp", align: "right" },
+                { label: "Total_Bags", key: "Total_Bags", align: "right" },
+            ],
+        },
+    };
+
+    // useEffect(() => {
+    //     const fetchDatasetAndDropdowns = async () => {
+    //         try {
+    //             loadingOn();
+    //             let url = `reports/brokerageNagal/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
+    //             if (filtersListing.Broker.value)
+    //                 url += `&broker=${filtersListing.Broker.value}`;
+    //             if (filtersListing.Ledger.value)
+    //                 url += `&ledger=${filtersListing.Ledger.value}`;
+    //             if (filtersListing.Item.value)
+    //                 url += `&item=${filtersListing.Item.value}`;
+    //             if (filtersListing.VilaiVasiZero.value)
+    //                 url += `&vilaivasiFilter=${filtersListing.VilaiVasiZero.value}`;
+
+    //             const res = await fetchLink({ address: url });
+    //             if (res.success) {
+    //                 const data = toArray(res.data);
+    //                 setDataset(data);
+    //                 const allItems = data.flatMap((item) => item.Items || []);
+    //                 const uniqueLedgers = Array.from(
+    //                     new Map(
+    //                         allItems.map((item) => [
+    //                             item.Ledger_Tally_Id,
+    //                             { value: item.Ledger_Tally_Id, label: item.Ledger_Name },
+    //                         ])
+    //                     ).values()
+    //                 );
+    //                 const uniqueItems = Array.from(
+    //                     new Map(
+    //                         allItems.map((item) => [
+    //                             item.Product_Id,
+    //                             { value: item.Product_Id, label: item.Product_Name },
+    //                         ])
+    //                     ).values()
+    //                 );
+    //                 setDropdownOptionsListing({
+    //                     ledgers: uniqueLedgers,
+    //                     items: uniqueItems,
+    //                 });
+    //             }
+    //         } catch (e) {
+    //             console.error(e);
+    //         } finally {
+    //             loadingOff();
+    //         }
+    //     };
+    //     fetchDatasetAndDropdowns();
+    // }, [filtersListing.refresh]);
+
+    // Event handlers
 
     useEffect(() => {
         const fetchDatasetAndDropdowns = async () => {
             try {
                 loadingOn();
-                let url = `reports/brokerageNagal/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
+
+                let baseUrl = "";
+                if (transactionType === "sales") {
+                    baseUrl = `reports/brokerageNagal/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
+                } else if (transactionType === "purchase") {
+                    baseUrl = `reports/brokerageNagalDelivery/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
+                }
+
                 if (filtersListing.Broker.value)
-                    url += `&broker=${filtersListing.Broker.value}`;
+                    baseUrl += `&broker=${filtersListing.Broker.value}`;
                 if (filtersListing.Ledger.value)
-                    url += `&ledger=${filtersListing.Ledger.value}`;
+                    baseUrl += `&ledger=${filtersListing.Ledger.value}`;
                 if (filtersListing.Item.value)
-                    url += `&item=${filtersListing.Item.value}`;
+                    baseUrl += `&item=${filtersListing.Item.value}`;
                 if (filtersListing.VilaiVasiZero.value)
-                    url += `&vilaivasiFilter=${filtersListing.VilaiVasiZero.value}`;
-                const res = await fetchLink({ address: url });
+                    baseUrl += `&vilaivasiFilter=${filtersListing.VilaiVasiZero.value}`;
+
+                const res = await fetchLink({ address: baseUrl });
+
                 if (res.success) {
                     const data = toArray(res.data);
                     setDataset(data);
+
                     const allItems = data.flatMap((item) => item.Items || []);
+
                     const uniqueLedgers = Array.from(
                         new Map(
                             allItems.map((item) => [
@@ -160,6 +416,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                             ])
                         ).values()
                     );
+
                     const uniqueItems = Array.from(
                         new Map(
                             allItems.map((item) => [
@@ -168,18 +425,21 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                             ])
                         ).values()
                     );
+
                     setDropdownOptionsListing({
                         ledgers: uniqueLedgers,
                         items: uniqueItems,
                     });
                 }
             } catch (e) {
+                console.error(e);
             } finally {
                 loadingOff();
             }
         };
+
         fetchDatasetAndDropdowns();
-    }, [filtersListing.refresh]);
+    }, [filtersListing.refresh, transactionType]);
 
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
     const handleDataEntryPageChange = (event, newPage) =>
@@ -196,18 +456,28 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             page: 0,
             rowsPerPage: parseInt(event.target.value, 10),
         });
+
     const handleBrokerageChange = (doId, productId) => (e) => {
         const value = e.target.value;
         const key = `${doId}-${productId}`;
-        setBrokerageValues((prev) => ({ ...prev, [key]: value }));
+        setCurrentData((prev) => ({
+            ...prev,
+            brokerageValues: { ...prev.brokerageValues, [key]: value },
+        }));
     };
+
     const handleExpandBroker = (brokerName) =>
         setExpandedBrokers((prev) => ({
             ...prev,
             [brokerName]: !prev[brokerName],
         }));
+
     const closeDialogDataEntry = () =>
-        setFiltersDataEntry((prev) => ({ ...prev, filterDialog: false }));
+        setCurrentData((prev) => ({
+            ...prev,
+            filters: { ...prev.filters, filterDialog: false },
+        }));
+
     const closeDialogListing = () =>
         setFiltersListing((prev) => ({ ...prev, filterDialog: false }));
 
@@ -215,9 +485,10 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         loadingOn();
         try {
             setSaving(true);
-            const recordsToSave = deliveryReport.map((item) => {
+
+            const recordsToSave = currentData.deliveryReport.map((item) => {
                 const brokerageValue =
-                    brokerageValues[`${item.Do_Id}-${item.Product_Id}`];
+                    currentData.brokerageValues[`${item.Do_Id}-${item.Product_Id}`] || 0;
                 return {
                     ...item,
                     brokerage: parseFloat(brokerageValue) || 0,
@@ -225,41 +496,132 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     Vilaivasi_Rate:
                         ((parseFloat(brokerageValue) || 0) / 100) *
                         (parseFloat(item.Bill_Qty) || 0),
-                    Brok_Rate: item?.Brokerage,
-                    Brok_Amt: item?.Brokerage * item?.displayQuantity,
-                    Coolie_Rate: item?.Coolie,
-                    Coolie_Amt: item?.Coolie * item?.displayQuantity,
-                    Amount: item?.Amount,
+                    Brok_Rate: item?.Brokerage || 0,
+                    Brok_Amt: (item?.Brokerage || 0) * (item?.displayQuantity || 0),
+                    Coolie_Rate: item?.Coolie || 0,
+                    Coolie_Amt: (item?.Coolie || 0) * (item?.displayQuantity || 0),
+                    Amount: item?.Amount || 0,
                     Created_By: storage?.UserId,
+                    Transaction_Type: transactionType.toUpperCase(),
                 };
             });
+
+            const apiAddress =
+                transactionType === "sales"
+                    ? "reports/brokerageNagal/create"
+                    : "reports/brokerageNakal/deliveryCreate";
+
             const response = await fetchLink({
-                address: "reports/brokerageNagal/create",
+                address: apiAddress,
                 method: "POST",
                 bodyData: recordsToSave,
                 headers: { "Content-Type": "application/json" },
             });
+
             if (response.success) {
-                toast.success("Nakal Created successfully!");
-                setFiltersDataEntry((prev) => ({ ...prev, refresh: !prev.refresh }));
+                toast.success(
+                    `${transactionType === "sales" ? "Sales" : "Purchase"
+                    } Nakal Created successfully!`
+                );
+                setCurrentData((prev) => ({
+                    ...prev,
+                    filters: { ...prev.filters, refresh: !prev.filters.refresh },
+                }));
             } else {
-                toast.error(response.message);
+                toast.error(response.message || "Save operation failed");
             }
         } catch (error) {
-            toast.error("Save failed");
+            console.error("Save error:", error);
+            toast.error("Save failed due to an error");
         } finally {
             setSaving(false);
             loadingOff();
         }
     };
 
+    const handleFieldChange = (idx, fieldName, value) => {
+        const updatedDeliveryReport = [...currentData.deliveryReport];
+        updatedDeliveryReport[idx][fieldName] = parseFloat(value) || 0;
+        setCurrentData((prev) => ({
+            ...prev,
+            deliveryReport: updatedDeliveryReport,
+        }));
+    };
+
+    const handleTransactionTypeChange = (type) => {
+        setTransactionType(type);
+        setDataEntryPagination({ page: 0, rowsPerPage: 10 });
+    };
+
+    const handleHeaderVilaiVasiChange = (e) => {
+        const value = e.target.value;
+        setCurrentData((prev) => {
+            const updatedBrokerageValues = { ...prev.brokerageValues };
+            prev.deliveryReport.forEach((item) => {
+                const key = `${item.Do_Id}-${item.Product_Id}`;
+                updatedBrokerageValues[key] = value;
+            });
+            return {
+                ...prev,
+                headerVilaiVasi: value,
+                brokerageValues: updatedBrokerageValues,
+            };
+        });
+    };
+
+    const handleClearAllVilaiVasi = () => {
+        setCurrentData((prev) => {
+            const updatedBrokerageValues = { ...prev.brokerageValues };
+            prev.deliveryReport.forEach((item) => {
+                const key = `${item.Do_Id}-${item.Product_Id}`;
+                updatedBrokerageValues[key] = "";
+            });
+            return {
+                ...prev,
+                headerVilaiVasi: "",
+                brokerageValues: updatedBrokerageValues,
+            };
+        });
+    };
+
+    // const handleBrokergeChangePurchase = (e) => {
+    //     const value = e.target.value;
+    //     setCurrentData(prev => {
+    //         const updatedBrokerageValue = { ...prev.brokerageValues };
+    //         prev.deliveryReport.forEach((item) => {
+    //             const key = `${item.Do_Id}-${item.Product_Id}`;
+    //             updatedBrokerageValue[key] = value;
+    //         });
+    //         return {
+    //             ...prev,
+    //             headerBrokerage: value,
+    //             brokerageValues: updatedBrokerageValue
+    //         };
+    //     });
+    // };
+
+    //     const hanldeClearAllBrokerage = () => {
+    //     setCurrentData(prev => {
+    //         const updatedBrokerageValues = { ...prev.brokerageValues };
+    //         prev.deliveryReport.forEach((item) => {
+    //             const key = `${item.PIN_Id}-${item.Product_Id}`;
+    //             updatedBrokerageValues[key] = "";
+    //         });
+    //         return {
+    //             ...prev,
+    //             headerBrokerage: "",
+    //             brokerageValues: updatedBrokerageValues
+    //         };
+    //     });
+    // };
+
     const totalBagsDataEntry = useMemo(
         () =>
-            deliveryReport.reduce(
+            currentData.deliveryReport.reduce(
                 (acc, item) => Addition(acc, item.displayQuantity || item.Qty || 0),
                 0
             ),
-        [deliveryReport]
+        [currentData.deliveryReport]
     );
 
     const totalBagsListing = useMemo(
@@ -270,21 +632,16 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
     const calculateVilaivasiAmt = (vilaivasi, billQty) =>
         ((parseFloat(vilaivasi) || 0) / 100) * (parseFloat(billQty) || 0);
 
-    const handleFieldChange = (idx, fieldName, value) => {
-        const updatedDeliveryReport = [...deliveryReport];
-        updatedDeliveryReport[idx][fieldName] = parseFloat(value) || 0;
-        setDeliveryReport(updatedDeliveryReport);
-    };
-
     const groupedByBroker = useMemo(() => {
         if (!dataset || dataset.length === 0) return {};
         return dataset.reduce((acc, item) => {
-            const broker = item.Broker_Name || "Unknown Broker";
+            const broker = item.Broker_Name || item.Supplier_Name || "Unknown";
             if (!acc[broker]) acc[broker] = [];
             acc[broker].push(item);
             return acc;
         }, {});
     }, [dataset]);
+
     const brokerNames = useMemo(
         () => Object.keys(groupedByBroker),
         [groupedByBroker]
@@ -302,22 +659,39 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     <Typography variant="h5" component="h2">
                         Brokerage Nagal Report
                     </Typography>
-                    <Box>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Box display="flex" gap={1}>
+                            <Button
+                                variant={transactionType === "sales" ? "contained" : "outlined"}
+                                onClick={() => handleTransactionTypeChange("sales")}
+                            >
+                                Sales
+                            </Button>
+                            <Button
+                                variant={
+                                    transactionType === "purchase" ? "contained" : "outlined"
+                                }
+                                onClick={() => handleTransactionTypeChange("purchase")}
+                            >
+                                Purchase
+                            </Button>
+                        </Box>
                         <Button
                             variant="outlined"
                             startIcon={<FilterAlt />}
-                            onClick={() =>
-                                activeTab === 0
-                                    ? setFiltersDataEntry((prev) => ({
+                            onClick={() => {
+                                if (activeTab === 0) {
+                                    setCurrentData((prev) => ({
+                                        ...prev,
+                                        filters: { ...prev.filters, filterDialog: true },
+                                    }));
+                                } else {
+                                    setFiltersListing((prev) => ({
                                         ...prev,
                                         filterDialog: true,
-                                    }))
-                                    : setFiltersListing((prev) => ({
-                                        ...prev,
-                                        filterDialog: true,
-                                    }))
-                            }
-                            sx={{ mr: 2 }}
+                                    }));
+                                }
+                            }}
                         >
                             Filters
                         </Button>
@@ -334,255 +708,125 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     <Tab label="Data Entry" />
                     <Tab label="Listing" />
                 </Tabs>
+
                 {activeTab === 0 && (
-                    <Box
-                        mb={1}
-                        sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                            gap: 2,
-                        }}
-                    >
-                        <Typography sx={{ fontWeight: "bold" }}>
-                            VilaiVasi (All):
-                        </Typography>
-                        <TextField
-                            type="number"
-                            size="small"
-                            value={headerVilaiVasi}
-                            inputProps={{ step: "1" }}
-                            onChange={(e) => {
-                                setHeaderVilaiVasi(e.target.value);
-                                setBrokerageValues((prev) => {
-                                    const updated = { ...prev };
-                                    deliveryReport.forEach((item) => {
-                                        const key = `${item.Do_Id}-${item.Product_Id}`;
-                                        updated[key] = e.target.value;
-                                    });
-                                    return updated;
-                                });
-                            }}
-                            placeholder="Set VilaiVasi for all"
+                    <>
+                        <Box
+                            mb={1}
                             sx={{
-                                "& .MuiInputBase-input": {
-                                    height: 40,
-                                    boxSizing: "border-box",
-                                },
-                            }}
-                        />
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => {
-                                setHeaderVilaiVasi("");
-                                setBrokerageValues((prev) => {
-                                    const updated = { ...prev };
-                                    deliveryReport.forEach((item) => {
-                                        const key = `${item.Do_Id}-${item.Product_Id}`;
-                                        updated[key] = "";
-                                    });
-                                    return updated;
-                                });
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                                gap: 2,
                             }}
                         >
-                            Clear All
-                        </Button>
-                    </Box>
-                )}
+                            <Typography sx={{ fontWeight: "bold" }}>
+                                {transactionType === "sales"
+                                    ? "VilaiVasi (All):"
+                                    : "Brokerage (All):"}
+                            </Typography>
+                            <TextField
+                                type="number"
+                                size="small"
+                                value={currentData.headerVilaiVasi}
+                                inputProps={{ step: "1" }}
+                                onChange={handleHeaderVilaiVasiChange}
+                                placeholder={`Set ${transactionType === "sales" ? "VilaiVasi" : "Brokerage"
+                                    } for all`}
+                                sx={{
+                                    "& .MuiInputBase-input": {
+                                        height: 40,
+                                        boxSizing: "border-box",
+                                    },
+                                }}
+                            />
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={handleClearAllVilaiVasi}
+                            >
+                                Clear All
+                            </Button>
+                        </Box>
 
-                {activeTab === 0 ? (
-                    <>
                         <TableContainer component={Paper}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: "primary.main" }}>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Date
-                                        </TableCell>
-                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>
-                                            Do No
-                                        </TableCell>
-                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>
-                                            Product
-                                        </TableCell>
-                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>
-                                            Ledger_Name
-                                        </TableCell>
-                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>
-                                            Broker
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Bill_Qty
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Qty
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Rate
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Pack
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Amount
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Brok.Rate
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Brokerage
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Coolie.Rate
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Coolie.Amt
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Vilaivasi
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Narration
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Vilaivasi Amt
-                                        </TableCell>
+                                        {tableConfigs[transactionType].dataEntryColumns.map(
+                                            (column) => (
+                                                <TableCell
+                                                    key={column.key}
+                                                    sx={{ color: "white", fontWeight: "bold" }}
+                                                    align={column.align || "left"}
+                                                >
+                                                    {column.label}
+                                                </TableCell>
+                                            )
+                                        )}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {deliveryReport
-                                        .slice(
-                                            dataEntryPagination.page *
-                                            dataEntryPagination.rowsPerPage,
-                                            dataEntryPagination.page *
-                                            dataEntryPagination.rowsPerPage +
-                                            dataEntryPagination.rowsPerPage
-                                        )
-                                        .map((row, idx) => {
-                                            const vilaivasiValue =
-                                                brokerageValues[`${row.Do_Id}-${row.Product_Id}`] || "";
-                                            const vilaivasiAmt = calculateVilaivasiAmt(
-                                                vilaivasiValue,
-                                                row.Bill_Qty
-                                            );
-                                            return (
-                                                <TableRow key={idx} hover>
-                                                    <TableCell align="left">
-                                                        {row.Date.split("T")[0]}
-                                                    </TableCell>
-                                                    <TableCell>{row.Do_No || row.Do_Inv_No}</TableCell>
-                                                    <TableCell>{row.Product_Name}</TableCell>
-                                                    <TableCell>{row.Retailer_Name}</TableCell>
-                                                    <TableCell>{row.CostCenterGet}</TableCell>
-                                                    <TableCell align="right">{row.Bill_Qty}</TableCell>
-                                                    <TableCell align="right">
-                                                        {row?.displayQuantity}
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        {row.Rate || row.Item_Rate}
-                                                    </TableCell>
-                                                    <TableCell align="right">{row.Pack}</TableCell>
-                                                    <TableCell align="right">{row.Amount}</TableCell>
-                                                    <TableCell align="right">
-                                                        <TextField
-                                                            size="small"
-                                                            type="number"
-                                                            value={row.Brokerage}
-                                                            onChange={(e) =>
-                                                                handleFieldChange(
-                                                                    idx,
-                                                                    "Brokerage",
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                            sx={{ width: "80px" }}
-                                                            inputProps={{ step: "0.01" }}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        {row.Brokerage * row.displayQuantity}
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <TextField
-                                                            size="small"
-                                                            type="number"
-                                                            value={row.Coolie}
-                                                            onChange={(e) =>
-                                                                handleFieldChange(idx, "Coolie", e.target.value)
-                                                            }
-                                                            sx={{ width: "80px" }}
-                                                            inputProps={{ step: "0.01" }}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        {row.Coolie * row.displayQuantity}
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <TextField
-                                                            size="small"
-                                                            type="number"
-                                                            value={vilaivasiValue}
-                                                            onChange={handleBrokerageChange(
-                                                                row.Do_Id,
-                                                                row.Product_Id
-                                                            )}
-                                                            sx={{ width: "120px" }}
-                                                            inputProps={{ step: "0.01" }}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell align="right">{row.Narration}</TableCell>
-                                                    <TableCell align="right">
-                                                        {vilaivasiAmt.toFixed(2)}
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
+                                    {currentData.deliveryReport.length > 0 ? (
+                                        currentData.deliveryReport
+                                            .slice(
+                                                dataEntryPagination.page *
+                                                dataEntryPagination.rowsPerPage,
+                                                dataEntryPagination.page *
+                                                dataEntryPagination.rowsPerPage +
+                                                dataEntryPagination.rowsPerPage
+                                            )
+                                            .map((row, idx) => {
+                                                const vilaivasiValue =
+                                                    currentData.brokerageValues[
+                                                    `${row.Do_Id}-${row.Product_Id}`
+                                                    ] || "";
+                                                // const vilaivasiAmt = calculateVilaivasiAmt(
+                                                //   vilaivasiValue,
+                                                //   row.Bill_Qty
+                                                // );
+                                                return (
+                                                    <TableRow key={idx} hover>
+                                                        {tableConfigs[transactionType].dataEntryColumns.map(
+                                                            (column) => (
+                                                                <TableCell
+                                                                    key={column.key}
+                                                                    align={column.align || "left"}
+                                                                >
+                                                                    {column.render
+                                                                        ? column.render(
+                                                                            row,
+                                                                            idx,
+                                                                            handleFieldChange,
+                                                                            vilaivasiValue,
+                                                                            handleBrokerageChange,
+                                                                            calculateVilaivasiAmt
+                                                                        )
+                                                                        : row[column.key]}
+                                                                </TableCell>
+                                                            )
+                                                        )}
+                                                    </TableRow>
+                                                );
+                                            })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={
+                                                    tableConfigs[transactionType].dataEntryColumns.length
+                                                }
+                                                align="center"
+                                            >
+                                                No data found
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                             <TablePagination
                                 rowsPerPageOptions={[10, 25, 50, 100]}
                                 component="div"
-                                count={deliveryReport.length}
+                                count={currentData.deliveryReport.length}
                                 rowsPerPage={dataEntryPagination.rowsPerPage}
                                 page={dataEntryPagination.page}
                                 onPageChange={handleDataEntryPageChange}
@@ -599,55 +843,32 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 disabled={saving}
                                 size="large"
                             >
-                                {saving ? "Saving..." : "Save Brokerage"}
+                                {saving
+                                    ? "Saving..."
+                                    : `Save ${transactionType === "sales" ? "Sales" : "Purchase"
+                                    } Brokerage`}
                             </Button>
                         </Box>
                     </>
-                ) : (
+                )}
+
+                {activeTab === 1 && (
                     <>
                         <TableContainer component={Paper}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: "primary.main" }}>
-                                        <TableCell sx={{ color: "white", fontWeight: "bold" }}>
-                                            Broker
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total KGS
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total Bill Qty
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total_Amount
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total_Broker_Exp
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total_VilaiVasi
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{ color: "white", fontWeight: "bold" }}
-                                            align="right"
-                                        >
-                                            Total_Bags
-                                        </TableCell>
+                                        {tableConfigs[transactionType].listingColumns.map(
+                                            (column) => (
+                                                <TableCell
+                                                    key={column.key}
+                                                    sx={{ color: "white", fontWeight: "bold" }}
+                                                    align={column.align || "left"}
+                                                >
+                                                    {column.label}
+                                                </TableCell>
+                                            )
+                                        )}
                                         <TableCell
                                             sx={{ color: "white", fontWeight: "bold" }}
                                             align="right"
@@ -665,9 +886,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                 listingPagination.rowsPerPage
                                             )
                                             .map((brokerName, idx) => {
-                                                const brokerData = dataset.find(
-                                                    (item) => item.Broker_Name === brokerName
-                                                );
+                                                const brokerData = groupedByBroker[brokerName][0];
                                                 return (
                                                     <React.Fragment key={idx}>
                                                         <TableRow hover>
@@ -684,24 +903,16 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                 </IconButton>
                                                                 {brokerName}
                                                             </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.Total_Qty || "0.00"}
-                                                            </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.Total_KGS || "0.00"}
-                                                            </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.Total_Amount || "0.00"}
-                                                            </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.Broker_Exp || "0.00"}
-                                                            </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.VilaiVasi || "0.00"}
-                                                            </TableCell>
-                                                            <TableCell align="right">
-                                                                {brokerData?.Total_Bags || 0}
-                                                            </TableCell>
+                                                            {tableConfigs[transactionType].listingColumns
+                                                                .slice(1)
+                                                                .map((column) => (
+                                                                    <TableCell
+                                                                        key={column.key}
+                                                                        align={column.align || "left"}
+                                                                    >
+                                                                        {brokerData[column.key] || "0.00"}
+                                                                    </TableCell>
+                                                                ))}
                                                             <TableCell align="right">
                                                                 <Tooltip title="Preview PDF">
                                                                     <IconButton
@@ -727,20 +938,15 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                     </IconButton>
                                                                 </Tooltip>
                                                             </TableCell>
-
-                                                            <PdfPreviewModal
-                                                                open={pdfPreviewOpen}
-                                                                onClose={() => setPdfPreviewOpen(false)}
-                                                                brokerData={pdfPreviewData}
-                                                            />
-                                                            <XlPreviewModal
-                                                                open={xlPreviewOpen}
-                                                                onClose={() => setXlPreViewOpen(false)}
-                                                                brokerData={xlPreviewData}
-                                                            />
                                                         </TableRow>
                                                         <TableRow>
-                                                            <TableCell style={{ padding: 0 }} colSpan={7}>
+                                                            <TableCell
+                                                                style={{ padding: 0 }}
+                                                                colSpan={
+                                                                    tableConfigs[transactionType].listingColumns
+                                                                        .length + 1
+                                                                }
+                                                            >
                                                                 <Collapse
                                                                     in={expandedBrokers[brokerName]}
                                                                     timeout="auto"
@@ -758,9 +964,13 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                             <TableHead>
                                                                                 <TableRow>
                                                                                     <TableCell>Date</TableCell>
-                                                                                    <TableCell>Invoice No</TableCell>
-                                                                                    <TableCell>Retailer</TableCell>
-                                                                                    <TableCell>Alias</TableCell>
+                                                                                    <TableCell>Do_Inv_No </TableCell>
+                                                                                    <TableCell>
+                                                                                        {transactionType === "sales"
+                                                                                            ? "Retailer"
+                                                                                            : "Supplier"}
+                                                                                    </TableCell>
+
                                                                                     <TableCell>Product</TableCell>
                                                                                     <TableCell>Short Name</TableCell>
                                                                                     <TableCell align="right">
@@ -773,50 +983,80 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                                         Amount
                                                                                     </TableCell>
                                                                                     <TableCell align="right">
-                                                                                        Vilai Vasi
+                                                                                        Bill_Qty
                                                                                     </TableCell>
                                                                                     <TableCell align="right">
-                                                                                        Vilai Amt
+                                                                                        Brokerage
                                                                                     </TableCell>
                                                                                 </TableRow>
                                                                             </TableHead>
                                                                             <TableBody>
-                                                                                {brokerData?.Items?.map(
-                                                                                    (item, itemIdx) => (
-                                                                                        <TableRow key={itemIdx}>
-                                                                                            <TableCell>{item.Date}</TableCell>
-                                                                                            <TableCell>
-                                                                                                {item.Do_Inv_No}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                {item.Retailer_Name}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                {item.Ledger_Alias}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                {item.Product_Name}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                {item.Short_Name}
-                                                                                            </TableCell>
-                                                                                            <TableCell align="right">
-                                                                                                {item.QTY}
-                                                                                            </TableCell>
-                                                                                            <TableCell align="right">
-                                                                                                {item.KGS}
-                                                                                            </TableCell>
-                                                                                            <TableCell align="right">
-                                                                                                {item.Amount?.toFixed(2)}
-                                                                                            </TableCell>
-                                                                                            <TableCell align="right">
-                                                                                                {item.Vilai_Vasi}
-                                                                                            </TableCell>
-                                                                                            <TableCell align="right">
-                                                                                                {item.Vilai_Vasi}
-                                                                                            </TableCell>
-                                                                                        </TableRow>
-                                                                                    )
+                                                                                {groupedByBroker[brokerName].flatMap(
+                                                                                    (broker) =>
+                                                                                        broker.Items?.map(
+                                                                                            (item, itemIdx) => (
+                                                                                                <TableRow key={itemIdx}>
+                                                                                                    <TableCell>
+                                                                                                        {item.Date}
+                                                                                                    </TableCell>
+                                                                                                    {transactionType ===
+                                                                                                        "sales" ? (
+                                                                                                        <td>{item.Do_Inv_No}</td>
+                                                                                                    ) : (
+                                                                                                        <td>{item.Do_Inv_No}</td>
+                                                                                                    )}
+
+                                                                                                    <TableCell>
+                                                                                                        {item.Retailer_Name ||
+                                                                                                            item.Supplier_Name}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell>
+                                                                                                        {item.Product_Name}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell>
+                                                                                                        {item.Short_Name}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell align="right">
+                                                                                                        {item.QTY}
+                                                                                                    </TableCell>
+
+                                                                                                    <TableCell align="right">
+                                                                                                        {item.KGS}
+                                                                                                    </TableCell>
+                                                                                                    {transactionType ===
+                                                                                                        "sales" ? (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.Amount}
+                                                                                                        </TableCell>
+                                                                                                    ) : (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.Total_Invoice_value}
+                                                                                                        </TableCell>
+                                                                                                    )}
+                                                                                                    {transactionType ===
+                                                                                                        "sales" ? (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.QTY}
+                                                                                                        </TableCell>
+                                                                                                    ) : (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.Bill_Qty}
+                                                                                                        </TableCell>
+                                                                                                    )}
+
+                                                                                                    {transactionType ===
+                                                                                                        "sales" ? (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.Brok_Amt}
+                                                                                                        </TableCell>
+                                                                                                    ) : (
+                                                                                                        <TableCell align="right">
+                                                                                                            {item.Brokerage}
+                                                                                                        </TableCell>
+                                                                                                    )}
+                                                                                                </TableRow>
+                                                                                            )
+                                                                                        ) || []
                                                                                 )}
                                                                             </TableBody>
                                                                         </Table>
@@ -829,7 +1069,13 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                             })
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={7} align="center">
+                                            <TableCell
+                                                colSpan={
+                                                    tableConfigs[transactionType].listingColumns.length +
+                                                    1
+                                                }
+                                                align="center"
+                                            >
                                                 No data found
                                             </TableCell>
                                         </TableRow>
@@ -848,10 +1094,27 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                         </TableContainer>
                     </>
                 )}
+
+                <PdfPreviewModal
+                    open={pdfPreviewOpen}
+                    onClose={() => setPdfPreviewOpen(false)}
+                    brokerData={pdfPreviewData}
+                    transactionType={transactionType}
+                    fromDate={filtersListing.FromDate}
+                    toDate={filtersListing.ToDate}
+                />
+                <XlPreviewModal
+                    open={xlPreviewOpen}
+                    onClose={() => setXlPreViewOpen(false)}
+                    brokerData={xlPreviewData}
+                    transactionType={transactionType}
+                    fromDate={filtersListing.FromDate}
+                    toDate={filtersListing.ToDate}
+                />
             </Paper>
 
             <Dialog
-                open={filtersDataEntry.filterDialog && activeTab === 0}
+                open={currentData.filters.filterDialog && activeTab === 0}
                 onClose={closeDialogDataEntry}
                 maxWidth="sm"
                 fullWidth
@@ -863,7 +1126,10 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                         alignItems="center"
                         mb={2}
                     >
-                        <Typography variant="h6">Data Entry Filters</Typography>
+                        <Typography variant="h6">
+                            {transactionType === "sales" ? "Sales" : "Purchase"} Data Entry
+                            Filters
+                        </Typography>
                         <IconButton onClick={closeDialogDataEntry}>
                             <FilterAltOff />
                         </IconButton>
@@ -874,11 +1140,11 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 fullWidth
                                 type="date"
                                 label="From Date"
-                                value={filtersDataEntry.FromDate}
+                                value={currentData.filters.FromDate}
                                 onChange={(e) =>
-                                    setFiltersDataEntry((prev) => ({
+                                    setCurrentData((prev) => ({
                                         ...prev,
-                                        FromDate: e.target.value,
+                                        filters: { ...prev.filters, FromDate: e.target.value },
                                     }))
                                 }
                                 InputLabelProps={{ shrink: true }}
@@ -889,28 +1155,26 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 fullWidth
                                 type="date"
                                 label="To Date"
-                                value={filtersDataEntry.ToDate}
+                                value={currentData.filters.ToDate}
                                 onChange={(e) =>
-                                    setFiltersDataEntry((prev) => ({
+                                    setCurrentData((prev) => ({
                                         ...prev,
-                                        ToDate: e.target.value,
+                                        filters: { ...prev.filters, ToDate: e.target.value },
                                     }))
                                 }
                                 InputLabelProps={{ shrink: true }}
                             />
                         </Grid>
-                        <Grid
-                            item
-                            xs={2}
-                            style={{ display: "flex", alignItems: "flex-end" }}
-                        ></Grid>
                         <Grid item xs={12}>
                             <Select
                                 fullWidth
                                 label="Brokers"
-                                value={filtersDataEntry.Broker}
+                                value={currentData.filters.Broker}
                                 onChange={(selected) =>
-                                    setFiltersDataEntry((prev) => ({ ...prev, Broker: selected }))
+                                    setCurrentData((prev) => ({
+                                        ...prev,
+                                        filters: { ...prev.filters, Broker: selected },
+                                    }))
                                 }
                                 options={[
                                     { value: "", label: "ALL Brokers" },
@@ -929,20 +1193,15 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     <Button
                         variant="contained"
                         onClick={() => {
-                            setHeaderVilaiVasi("");
-
-                            setBrokerageValues((prev) => {
-                                const updated = { ...prev };
-                                deliveryReport.forEach((item) => {
-                                    const key = `${item.Do_Id}-${item.Product_Id}`;
-                                    updated[key] = "";
-                                });
-                                return updated;
-                            });
-                            setFiltersDataEntry((prev) => ({
+                            setCurrentData((prev) => ({
                                 ...prev,
-                                refresh: !prev.refresh,
-                                filterDialog: false,
+                                headerVilaiVasi: "",
+                                brokerageValues: {},
+                                filters: {
+                                    ...prev.filters,
+                                    refresh: !prev.filters.refresh,
+                                    filterDialog: false,
+                                },
                             }));
                         }}
                     >
@@ -951,6 +1210,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+            {/* Listing Filter Dialog */}
             <Dialog
                 open={filtersListing.filterDialog && activeTab === 1}
                 onClose={closeDialogListing}
@@ -1019,26 +1279,36 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 Search
                             </Button>
                         </Grid>
-                        <Grid item xs={12}>
-                            <Select
-                                fullWidth
-                                value={filtersListing.VilaiVasiZero}
-                                onChange={(selected) =>
-                                    setFiltersListing((prev) => ({
-                                        ...prev,
-                                        VilaiVasiZero: selected,
-                                    }))
-                                }
-                                options={[
-                                    { value: "", label: "All" },
-                                    { value: "zero", label: "VilaiVasi Zero" },
-                                    { value: "nonzero", label: "VilaiVasi Non-Zero" },
-                                ]}
-                                styles={customSelectStyles}
-                                menuPortalTarget={document.body}
-                                placeholder="VilaiVasi Zero/Non-Zero"
-                            />
-                        </Grid>
+                        {
+                            transactionType === 'sales' ? (
+                                <>
+                                    <Grid item xs={12}>
+                                        <Select
+                                            fullWidth
+                                            value={filtersListing.VilaiVasiZero}
+                                            onChange={(selected) =>
+                                                setFiltersListing((prev) => ({
+                                                    ...prev,
+                                                    VilaiVasiZero: selected,
+                                                }))
+                                            }
+                                            options={[
+                                                { value: "", label: "All" },
+                                                { value: "zero", label: "VilaiVasi Zero" },
+                                                { value: "nonzero", label: "VilaiVasi Non-Zero" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            placeholder="VilaiVasi Zero/Non-Zero"
+                                        />
+                                    </Grid>
+
+                                </>
+                            ) : (
+                                <>
+
+                                </>
+                            )}
 
                         <Grid item xs={12}>
                             <Select

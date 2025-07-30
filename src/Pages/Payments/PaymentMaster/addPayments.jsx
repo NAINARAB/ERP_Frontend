@@ -24,6 +24,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         accountGroupData: [],
         voucherType: [],
         debit_ledger: [],
+        defaultBankMaster: [],
         creditLedgers: [
             { value: 1, label: 'CashBox 1' },
             { value: 2, label: 'CashBox 2' },
@@ -63,10 +64,12 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     accountsResponse,
                     accountsGroupResponse,
                     voucherTypeResponse,
+                    defaultBankMaster,
                 ] = await Promise.all([
                     fetchLink({ address: `payment/accounts` }),
                     fetchLink({ address: `payment/accountGroup` }),
                     fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/getdefaultBanks` }),
                 ]);
 
                 const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
@@ -78,12 +81,14 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 const voucherType = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
                     (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
                 );
+                const bankDetails = (defaultBankMaster.success ? defaultBankMaster.data : []);
 
                 setBaseData((pre) => ({
                     ...pre,
                     accountsList: accountsList,
                     accountGroupData: accountGroupData,
                     voucherType: voucherType,
+                    defaultBankMaster: bankDetails,
                 }));
 
             } catch (e) {
@@ -466,10 +471,19 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             {/* bank name */}
                             <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                                 <label>Bank Name</label>
-                                <input
-                                    value={paymentValue.bank_name}
-                                    className="cus-inpt p-2"
-                                    onChange={e => onChangePaymentValue('bank_name', e.target.value)}
+                                <Select
+                                    value={{ value: paymentValue.bank_name, label: paymentValue.bank_name }}
+                                    menuPortalTarget={document.body}
+                                    onChange={e => onChangePaymentValue('bank_name', e.value)}
+                                    options={[
+                                        { value: '', label: 'Select' },
+                                        ...toArray(baseData.defaultBankMaster).map(bank => ({
+                                            value: bank.label,
+                                            label: bank.label
+                                        }))
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
                                 />
                             </div>
 

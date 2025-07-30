@@ -2,7 +2,7 @@ import { useState } from "react";
 import { checkIsNumber, isEqualNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { receiptTypes } from "./variable";
+import { receiptTypes, transactionTypes } from "./variable";
 import Select from "react-select";
 
 const ReceiptGeneralInfo = ({
@@ -11,7 +11,8 @@ const ReceiptGeneralInfo = ({
     initialSelectValue = { value: '', label: '' },
     accountGroupData = [],
     accountsList = [],
-    voucherType = []
+    voucherType = [],
+    defaultBankMaster = []
 }) => {
 
     const [selectedDebitGroup, setSelectedDebitGroup] = useState(initialSelectValue);
@@ -144,21 +145,54 @@ const ReceiptGeneralInfo = ({
                     />
                 </div>
 
-                <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
-                    <input
-                        className="form-check-input shadow-none pointer mx-2"
-                        style={{ padding: '0.7em' }}
-                        type="checkbox"
-                        id="isNewRef"
-                        checked={isEqualNumber(receiptValue?.is_new_ref, 1)}
-                        onChange={() => {
-                            if (isEqualNumber(receiptValue?.is_new_ref, 1))
-                                onChangeReceiptValue('is_new_ref', 0)
-                            else
-                                onChangeReceiptValue('is_new_ref', 1)
-                        }}
-                    />
-                    <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
+                {/* transaction type */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Transaction Type<RequiredStar /></label>
+                    <select
+                        value={receiptValue.transaction_type || ''}
+                        onChange={e => onChangeReceiptValue('transaction_type', e.target.value)}
+                        className="cus-inpt p-2"
+                        required
+                    >
+                        {transactionTypes.map((type, ind) => (
+                            <option value={type.value} key={ind}>{type.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex flex-column justify-content-end">
+                    <div>
+                        <input
+                            className="form-check-input shadow-none pointer mx-2"
+                            style={{ padding: '0.7em' }}
+                            type="checkbox"
+                            id="isNewRef"
+                            checked={isEqualNumber(receiptValue?.is_new_ref, 1)}
+                            onChange={() => {
+                                if (isEqualNumber(receiptValue?.is_new_ref, 1))
+                                    onChangeReceiptValue('is_new_ref', 0)
+                                else
+                                    onChangeReceiptValue('is_new_ref', 1)
+                            }}
+                        />
+                        <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
+                    </div>
+                    <div>
+                        <input
+                            className="form-check-input shadow-none pointer mx-2"
+                            style={{ padding: '0.7em' }}
+                            type="checkbox"
+                            id="isJournalType"
+                            checked={isEqualNumber(receiptValue?.is_journal_type, 1)}
+                            onChange={() => {
+                                if (isEqualNumber(receiptValue?.is_journal_type, 1))
+                                    onChangeReceiptValue('is_journal_type', 0)
+                                else
+                                    onChangeReceiptValue('is_journal_type', 1)
+                            }}
+                        />
+                        <label htmlFor="isJournalType" className="fw-bold">is Journal Type?</label>
+                    </div>
                 </div>
 
                 <div className="col-12">
@@ -297,10 +331,19 @@ const ReceiptGeneralInfo = ({
                         {/* bank name */}
                         <div className="col-sm-6 p-2">
                             <label>Bank Name</label>
-                            <input
-                                value={receiptValue.bank_name}
-                                className="cus-inpt p-2"
-                                onChange={e => onChangeReceiptValue('bank_name', e.target.value)}
+                            <Select
+                                value={{ value: receiptValue.bank_name, label: receiptValue.bank_name }}
+                                menuPortalTarget={document.body}
+                                onChange={e => onChangeReceiptValue('bank_name', e.value)}
+                                options={[
+                                    { value: '', label: 'Select' },
+                                    ...toArray(defaultBankMaster).map(bank => ({
+                                        value: bank.label,
+                                        label: bank.label
+                                    }))
+                                ]}
+                                styles={customSelectStyles}
+                                isSearchable={true}
                             />
                         </div>
 

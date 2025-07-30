@@ -4,7 +4,7 @@ import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButt
 import Select from 'react-select';
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Add, Delete } from "@mui/icons-material";
-import { Addition, checkIsNumber, Division, filterableText, getUniqueData, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber } from "../../Components/functions";
+import { Addition, checkIsNumber, Division, filterableText, getUniqueData, isEqualNumber, ISOString, isValidJSON, isValidObject, Multiplication, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, stringCompare } from "../../Components/functions";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import RequiredStar from "../../Components/requiredStar";
 import { toast } from "react-toastify";
@@ -136,7 +136,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `purchase/voucherType` }),
-                    fetchLink({ address: `purchase/stockItemLedgerName?type=PURCHASE` }),
+                    fetchLink({ address: `purchase/stockItemLedgerName?type=PURCHASE_INVOICE` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
@@ -346,10 +346,10 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         setDialog(dialogs);
     }
 
-    const changeSelectedObjects = (row, key, value) => {
+    const changeSelectedObjects = (indexValue, key, value) => {
         setSelectedItems((prev) => {
-            return prev.map(item => {
-                if (item.DeliveryId === row.DeliveryId) {
+            return prev.map((item, sIndex) => {
+                if (isEqualNumber(sIndex, indexValue)) {
                     switch (key) {
                         case 'Bill_Qty': {
                             const updatedValue = parseFloat(value || 0);
@@ -614,7 +614,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
                                         <div className="col-sm-4 p-2">
                                             <label className='fa-13'>Voucher Type</label>
-                                            <Select
+                                            {/* <Select
                                                 value={{
                                                     value: invoiceDetails.Voucher_Type,
                                                     label: baseData.voucherType.find(v => isEqualNumber(v.Vocher_Type_Id, invoiceDetails.Voucher_Type))?.Voucher_Type
@@ -623,7 +623,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 options={[
                                                     { value: '', label: 'Search', isDisabled: true },
                                                     ...baseData.voucherType.filter(
-                                                        fil => filterableText(fil.Type) === filterableText('PURCHASE')
+                                                        fil => stringCompare(fil.Type, 'PURCHASE_INVOICE')
                                                     ).map(obj => ({
                                                         value: obj?.Vocher_Type_Id,
                                                         label: obj?.Voucher_Type
@@ -634,7 +634,23 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 required={true}
                                                 placeholder={"Select Voucher Type"}
                                                 maxMenuHeight={300}
-                                            />
+                                            /> */}
+                                            <select
+                                                value={invoiceDetails.Voucher_Type}
+                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.target.value }))}
+                                                className={inputStyle}
+                                                required
+                                            >
+                                                <option value="">Select</option>
+                                                {baseData.voucherType.filter(
+                                                    fil => stringCompare(fil.Type, 'PURCHASE_INVOICE')
+                                                ).map((vou, vind) => 
+                                                    <option 
+                                                        value={vou.Vocher_Type_Id} 
+                                                        key={vind}
+                                                    >{vou.Voucher_Type}</option>
+                                                )}
+                                            </select>
                                         </div>
 
                                         <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -749,7 +765,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             <div className="d-flex p-2 justify-content-end">
 
                                 <Button type="button" onClick={() => setSelectedItems([])}>clear selected</Button>
-                                
+
                                 {manualInvoice ? (
                                     <Button
                                         onClick={() => {
@@ -786,6 +802,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                         <td className={tdStyle}>Amount</td>
                                         <td className={tdStyle}>Godown Location</td>
                                         <td className={tdStyle}>Batch</td>
+                                        <td className={tdStyle}>#</td>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -799,7 +816,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     value={row?.Item_Rate ? row?.Item_Rate : ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Item_Rate', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
                                                     required
                                                 />
                                             </td>
@@ -808,7 +825,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     value={row?.Bill_Qty ? row?.Bill_Qty : ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Bill_Qty', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Bill_Qty', e.target.value)}
                                                     required
                                                 />
                                             </td>
@@ -817,7 +834,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     value={row?.Act_Qty ?? ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Act_Qty', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
                                                     required
                                                 />
                                             </td>
@@ -829,8 +846,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                         const selectedIndex = e.target.selectedIndex;
                                                         const label = e.target.options[selectedIndex].text;
                                                         const value = e.target.value;
-                                                        changeSelectedObjects(row, 'Unit_Id', value);
-                                                        changeSelectedObjects(row, 'Unit_Name', label);
+                                                        changeSelectedObjects(i, 'Unit_Id', value);
+                                                        changeSelectedObjects(i, 'Unit_Name', label);
                                                     }}
                                                     required
                                                 >
@@ -845,7 +862,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     value={row?.Amount ? row?.Amount : ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Amount', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Amount', e.target.value)}
                                                     required
                                                 />
                                             </td>
@@ -853,7 +870,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 <select
                                                     value={row?.Location_Id}
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Location_Id', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Location_Id', e.target.value)}
                                                 >
                                                     <option value="">select</option>
                                                     {baseData.godown.map((o, i) => (
@@ -865,9 +882,22 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 <input
                                                     value={row?.Batch_No}
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(row, 'Batch_No', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Batch_No', e.target.value)}
                                                 />
                                             </td>
+                                            <td className={tdStyle}>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedItems(prev => {
+                                                            return prev.filter((_, filIndex) => i !== filIndex);
+                                                        });
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Delete color='error' />
+                                                </IconButton>
+                                            </td>
+
                                         </tr>
                                     ))}
                                 </tbody>

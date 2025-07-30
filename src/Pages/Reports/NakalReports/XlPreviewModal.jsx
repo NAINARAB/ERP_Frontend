@@ -2,9 +2,17 @@ import { useEffect } from 'react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-const XlPreviewModal = ({ open, onClose, brokerData }) => {
+const XlPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate, toDate }) => {
     const items = brokerData?.Items || [];
-    const totalBrokerage = items.reduce((sum, item) => sum + parseFloat(item.Brok_Amt || 0), 0);
+
+    let totalBrokerage;
+    if (transactionType === 'sales') {
+        totalBrokerage = items.reduce((sum, item) => sum + parseFloat(item.Brok_Amt || 0), 0);
+    }
+    else {
+        totalBrokerage = items.reduce((bro, item) => bro + parseInt(item.Brokerage || 0), 0);
+    }
+
     const totalCoolie = items.reduce((sum, item) => sum + parseFloat(item.Coolie_Amt || 0), 0);
     const totalAmount = parseFloat(brokerData?.Total_Amount || 0);
     const vilaivasi = parseFloat(brokerData?.VilaiVasi || 0);
@@ -50,7 +58,7 @@ const XlPreviewModal = ({ open, onClose, brokerData }) => {
         };
 
         const titleRow = worksheet.addRow([
-            `Broker Report: ${brokerData?.Broker_Name || ''} - Date: ${new Date().toLocaleDateString('en-IN')}`
+            `Broker Report: ${brokerData?.Broker_Name || ''} - Date: ${brokerData?.Items?.[0]?.Date}`
         ]);
         worksheet.mergeCells(`A${titleRow.number}:H${titleRow.number}`);
         titleRow.eachCell((cell) => {
@@ -174,21 +182,145 @@ const XlPreviewModal = ({ open, onClose, brokerData }) => {
         worksheet.addRow([]);
 
         const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), `Broker_Report_${brokerData?.Broker_Name || 'Export'}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        saveAs(new Blob([buffer]), `Broker_Report_${brokerData?.Broker_Name || 'Export'}_${brokerData?.Items?.[0]?.Date}.xlsx`);
+    };
+
+
+    const handleExportPurchase = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Brokerage Report');
+
+            workbook.created = new Date();
+            workbook.modified = new Date();
+
+            const titleRow = worksheet.addRow([brokerData?.Broker_Name || '']);
+            titleRow.font = { bold: true, size: 14 };
+            titleRow.alignment = { horizontal: 'center' };
+            worksheet.mergeCells('A1:F1');
+
+            const dateRangeRow = worksheet.addRow([
+                brokerData?.Items?.length > 0 ? `${fromDate} TO ${toDate}` : 'No date range available'
+            ]);
+            dateRangeRow.font = { bold: true };
+            dateRangeRow.alignment = { horizontal: 'center' };
+            worksheet.mergeCells('A2:F2');
+
+
+            worksheet.addRow([]);
+
+
+            const headers = [
+                { header: 'NAME', width: 50 },
+                { header: 'DATE', width: 10 },
+                { header: 'ALIAS NAME', width: 40 },
+                { header: 'BAGS', width: 10 },
+                { header: 'QTY', width: 10 },
+                { header: 'BROKERAGE EXP', width: 15 }
+            ];
+
+
+            const headerRow = worksheet.addRow(headers.map(h => h.header));
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            });
+
+
+            headers.forEach((header, index) => {
+                worksheet.getColumn(index + 1).width = header.width;
+            });
+
+            items.forEach((item) => {
+                const row = worksheet.addRow([
+                    item.Retailer_Name || item.Ledger_Name,
+                    item.Date?.split('T')[0] || '',
+                    item.Short_Name,
+                    item.QTY,
+                    item.KGS,
+                    Number(item.Brokerage || 0)
+                ]);
+
+
+                row.eachCell((cell) => {
+                    cell.font = { bold: true };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FF000000' } },
+                        left: { style: 'thin', color: { argb: 'FF000000' } },
+                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        right: { style: 'thin', color: { argb: 'FF000000' } }
+                    };
+                });
+
+
+                row.getCell(4).alignment = { horizontal: 'right' };
+                row.getCell(5).alignment = { horizontal: 'right' };
+                row.getCell(6).alignment = { horizontal: 'right' };
+            });
+
+
+            const totalRow = worksheet.addRow([
+                '', '', 'TOTAL',
+                Number(brokerData?.Total_Qty) || 0,
+                Number(brokerData?.Total_KGS) || 0,
+                totalBrokerage
+            ]);
+
+
+            totalRow.eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.border = {
+                    top: { style: 'medium', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            });
+
+
+            totalRow.getCell(4).alignment = { horizontal: 'right' };
+            totalRow.getCell(5).alignment = { horizontal: 'right' };
+            totalRow.getCell(6).alignment = { horizontal: 'right' };
+
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${brokerData?.Broker_Name}_${fromDate}_to_${toDate}.xlsx`;
+            link.click();
+
+
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 100);
+
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+
+        }
     };
 
     useEffect(() => {
         if (open) {
-            handleExportExcel().then(() => {
-                if (typeof onClose === 'function') {
-                    onClose();
-                }
-            });
+            if (transactionType === 'sales') {
+                handleExportExcel().then(() => {
+                    if (typeof onClose === 'function') onClose();
+                });
+            } else if (transactionType === 'purchase') {
+                handleExportPurchase().then(() => {
+                    if (typeof onClose === 'function') onClose();
+                });
+            }
         }
-
-    }, [open]);
+    }, [open, transactionType]);
 
     return null;
 };
-
 export default XlPreviewModal;

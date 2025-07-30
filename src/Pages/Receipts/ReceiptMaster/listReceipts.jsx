@@ -112,7 +112,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
     }, [sessionValue, pageID]);
 
     const TotalReceipt = useMemo(() => receiptData.reduce(
-        (acc, orders) => Addition(acc, orders?.debit_amount), 0
+        (acc, orders) => Addition(acc, orders?.credit_amount), 0
     ), [receiptData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
