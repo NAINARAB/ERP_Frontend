@@ -154,7 +154,10 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                             </div>
                         </>
                     ) : (
+
                         <>
+
+
                             <div style={{ fontFamily: 'Arial' }}>
                                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                                     <h3 style={{ marginBottom: '5px' }}>{brokerData?.Broker_Name}</h3>
@@ -176,7 +179,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                             <th style={{ textAlign: 'left', padding: '5px', width: '20%' }}>ALIAS NAME</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BAGS</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>QTY</th>
-                                            <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BROKERAGE EXP</th>
+                                            <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BROKERAGE</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -194,7 +197,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                             <td colSpan="3" style={{ padding: '5px', textAlign: 'right' }}>TOTAL</td>
                                             <td style={{ padding: '5px', textAlign: 'right' }}>{brokerData?.Total_Qty || 0}</td>
                                             <td style={{ padding: '5px', textAlign: 'right' }}>{brokerData?.Total_KGS || 0}</td>
-                                            <td style={{ padding: '5px', textAlign: 'right' }}>{NumberFormat(totalBrokerage)}</td>
+                                            <td style={{ padding: '5px', textAlign: 'right' }}>{Math.round(totalBrokerage)}</td>
                                         </tr>
                                     </tbody>
                                 </table>

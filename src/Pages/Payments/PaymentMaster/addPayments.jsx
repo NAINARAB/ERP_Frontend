@@ -69,7 +69,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `payment/accounts` }),
                     fetchLink({ address: `payment/accountGroup` }),
                     fetchLink({ address: `purchase/voucherType` }),
-                    fetchLink({ address: `masters/getdefaultBanks` }),
+                    fetchLink({ address: `masters/defaultBanks` }),
                 ]);
 
                 const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
@@ -255,6 +255,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     disabled={checkIsNumber(paymentValue.pay_id)}
                                 >
                                     <option value="" disabled>Select</option>
+                                    {console.log(toArray(baseData.voucherType))}
                                     {toArray(baseData.voucherType).filter(
                                         fil => stringCompare(fil.Type, 'PAYMENT')
                                     ).map(

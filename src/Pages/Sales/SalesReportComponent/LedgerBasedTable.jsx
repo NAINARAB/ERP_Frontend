@@ -46,12 +46,14 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
+
     const propsColumns = colTypes.map((col, colInd) => ({
         isVisible: colInd < 10 ? 1 : 0,
         Field_Name: col?.Column_Name,
         Fied_Data: col?.Data_Type,
         OrderBy: colInd + 1
     }));
+    
     const [columns, setColumns] = useState(propsColumns);
 
     const sortedCoulumns = useMemo(() => {

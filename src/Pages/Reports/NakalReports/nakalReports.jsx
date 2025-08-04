@@ -178,11 +178,11 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     align: "left",
                     render: (row) => row.Date?.split("T")[0] || "N/A",
                 },
-                { label: "Do No", key: "Do_No" },
+                { label: "Do No", key: "Do_Inv_No" },
                 { label: "Product", key: "Product_Name" },
                 { label: "Ledger_Name", key: "Retailer_Name" },
                 { label: "Broker", key: "CostCenterGet" },
-                { label: "Bill_Qty", key: "Bill_Qty", align: "right" },
+                { label: "Act_Qty", key: "Act_Qty", align: "right" },
                 { label: "Qty", key: "displayQuantity", align: "right" },
                 {
                     label: "Rate",
@@ -261,7 +261,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     key: "VilaiAmt",
                     align: "right",
                     render: (row, idx, _, vilaivasiValue, __, calcVilaiAmt) =>
-                        (+calcVilaiAmt(vilaivasiValue, row.Bill_Qty)).toFixed(2),
+                        (+calcVilaiAmt(vilaivasiValue, row.Act_Qty)).toFixed(2),
                 },
             ],
             listingColumns: [
@@ -282,10 +282,11 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     align: "left",
                     render: (row) => row.Po_Entry_Date?.split("T")[0] || "N/A",
                 },
-                { label: "Invoice No", key: "Invoice" },
+                { label: "Invoice No", key: "Po_Inv_No" },
                 { label: "Retailer", key: "Retailer_Name" },
+                { label: "Broker", key: "CostCenterGet", align: "right" },
                 { label: "Product", key: "Product_Name" },
-                { label: "Bill_Qty", key: "Bill_Qty", align: "right" },
+                { label: "Act_Qty", key: "Act_Qty", align: "right" },
                 { label: "Pack", key: "Pack", align: "right" },
                 {
                     label: "Qty",
@@ -299,22 +300,23 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                     label: "Brokerage",
                     key: "Brokerage",
                     align: "right",
-                    render: (
-                        row,
-                        idx,
-                        handleChange,
-                        vilaivasiValue,
-                        handleVilaiChange
-                    ) => (
+                    render: (row, idx, handleChange, brokerageValue, handleBrokerageChange) => (
                         <TextField
                             size="small"
                             type="number"
-                            value={vilaivasiValue}
-                            onChange={handleVilaiChange(row.Do_Id, row.Product_Id)}
+                            value={brokerageValue}
+                            onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
                             sx={{ width: "120px" }}
                             inputProps={{ step: "0.01" }}
                         />
                     ),
+                },
+                {
+                    label: "Brokerage Amt",
+                    key: "BrokerageAmount",
+                    align: "right",
+                    render: (row, idx, _, brokerageValue) =>
+                        ((parseFloat(brokerageValue) || 0) * (parseFloat(row.Act_Qty) || 0) / 100).toFixed(2),
                 },
             ],
             listingColumns: [
@@ -489,21 +491,37 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             const recordsToSave = currentData.deliveryReport.map((item) => {
                 const brokerageValue =
                     currentData.brokerageValues[`${item.Do_Id}-${item.Product_Id}`] || 0;
-                return {
+
+                const baseRecord = {
                     ...item,
-                    brokerage: parseFloat(brokerageValue) || 0,
-                    Vilai_Vasi: parseFloat(brokerageValue) || 0,
-                    Vilaivasi_Rate:
-                        ((parseFloat(brokerageValue) || 0) / 100) *
-                        (parseFloat(item.Bill_Qty) || 0),
-                    Brok_Rate: item?.Brokerage || 0,
-                    Brok_Amt: (item?.Brokerage || 0) * (item?.displayQuantity || 0),
-                    Coolie_Rate: item?.Coolie || 0,
-                    Coolie_Amt: (item?.Coolie || 0) * (item?.displayQuantity || 0),
-                    Amount: item?.Amount || 0,
                     Created_By: storage?.UserId,
                     Transaction_Type: transactionType.toUpperCase(),
                 };
+                if (transactionType === "sales") {
+                    return {
+                        ...item,
+                        brokerage: parseFloat(brokerageValue) || 0,
+                        Vilai_Vasi: parseFloat(brokerageValue) || 0,
+                        Vilaivasi_Rate:
+                            ((parseFloat(brokerageValue) || 0) / 100) *
+                            (parseFloat(item.Act_Qty) || 0),
+                        Brok_Rate: item?.Brokerage || 0,
+                        Brok_Amt: (item?.Brokerage || 0) * (item?.displayQuantity || 0),
+                        Coolie_Rate: item?.Coolie || 0,
+                        Coolie_Amt: (item?.Coolie || 0) * (item?.displayQuantity || 0),
+                        Amount: item?.Amount || 0,
+                        Created_By: storage?.UserId,
+                        Transaction_Type: transactionType.toUpperCase(),
+                    };
+                } else {
+                    return {
+                        ...baseRecord,
+                        brokerage: (parseFloat(brokerageValue) || 0) *
+                            (parseFloat(item.Act_Qty) || 0) / 100,
+                    };
+                }
+
+
             });
 
             const apiAddress =
@@ -783,7 +801,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                     ] || "";
                                                 // const vilaivasiAmt = calculateVilaivasiAmt(
                                                 //   vilaivasiValue,
-                                                //   row.Bill_Qty
+                                                //   row.Act_Qty
                                                 // );
                                                 return (
                                                     <TableRow key={idx} hover>
@@ -983,7 +1001,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                                         Amount
                                                                                     </TableCell>
                                                                                     <TableCell align="right">
-                                                                                        Bill_Qty
+                                                                                        Act_Qty
                                                                                     </TableCell>
                                                                                     <TableCell align="right">
                                                                                         Brokerage
@@ -1040,7 +1058,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                                                         </TableCell>
                                                                                                     ) : (
                                                                                                         <TableCell align="right">
-                                                                                                            {item.Bill_Qty}
+                                                                                                            {item.Act_Qty}
                                                                                                         </TableCell>
                                                                                                     )}
 

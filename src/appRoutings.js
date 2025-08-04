@@ -121,6 +121,9 @@ const StockMangement = lazy(() => import('./Pages/Inventry/Processing/listProces
 const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/AddProcessing'));
 const ArrivalList = lazy(() => import("./Pages/Inventry/TripMaster/arivalList"));
 const ArrivalMaster = lazy(() => import("./Pages/Inventry/TripMaster/arrivalMaster"));
+const BatchAssign = lazy(() => import("./Pages/Inventry/BatchManagement/batchAssign"));
+const BatchListing = lazy(() => import("./Pages/Inventry/BatchManagement/batchList"));
+
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
 const DeliveryTripSheetAdd = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheetAdd"))
@@ -249,9 +252,11 @@ const RoutingArray = [
     { component: <AccountingGroup />, path: '/erp/master/accountingGroup' },
     { component: <AccountMaster />, path: '/erp/master/accountMaster' },
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
-
+    
     //ERP - BATCH MANAGEMENT
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
+    { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
+    { component: <BatchAssign />, path: '/erp/batchManagement/batchCreation' },
 
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },

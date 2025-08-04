@@ -614,27 +614,6 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
 
                                         <div className="col-sm-4 p-2">
                                             <label className='fa-13'>Voucher Type</label>
-                                            {/* <Select
-                                                value={{
-                                                    value: invoiceDetails.Voucher_Type,
-                                                    label: baseData.voucherType.find(v => isEqualNumber(v.Vocher_Type_Id, invoiceDetails.Voucher_Type))?.Voucher_Type
-                                                }}
-                                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.value }))}
-                                                options={[
-                                                    { value: '', label: 'Search', isDisabled: true },
-                                                    ...baseData.voucherType.filter(
-                                                        fil => stringCompare(fil.Type, 'PURCHASE_INVOICE')
-                                                    ).map(obj => ({
-                                                        value: obj?.Vocher_Type_Id,
-                                                        label: obj?.Voucher_Type
-                                                    }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                required={true}
-                                                placeholder={"Select Voucher Type"}
-                                                maxMenuHeight={300}
-                                            /> */}
                                             <select
                                                 value={invoiceDetails.Voucher_Type}
                                                 onChange={e => setInvoiceDetails(pre => ({ ...pre, Voucher_Type: e.target.value }))}
