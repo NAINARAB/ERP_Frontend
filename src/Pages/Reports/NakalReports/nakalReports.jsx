@@ -296,16 +296,37 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 },
                 { label: "Rate", key: "Item_Rate", align: "right" },
                 { label: "Amount", key: "Total_Invoice_value", align: "right" },
+                //               {
+                //   label: "Brokerage",
+                //   key: "Brokerage",
+                //   align: "right",
+                //   render: (row, idx, handleChange, brokerageValue, handleBrokerageChange) => (
+                //     <TextField
+                //       size="small"
+                //       type="number"
+                //       value={brokerageValue}
+                //       onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
+                //       sx={{ width: "120px" }}
+                //       inputProps={{ step: "0.01" }}
+                //     />
+                //   ),
+                // },
                 {
                     label: "Brokerage",
                     key: "Brokerage",
                     align: "right",
-                    render: (row, idx, handleChange, brokerageValue, handleBrokerageChange) => (
+                    render: (
+                        row,
+                        idx,
+                        handleChange,
+                        vilaivasiValue,
+                        handleVilaiChange
+                    ) => (
                         <TextField
                             size="small"
                             type="number"
-                            value={brokerageValue}
-                            onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
+                            value={vilaivasiValue}
+                            onChange={handleVilaiChange(row.Do_Id, row.Product_Id, row.PIN_Id)}
                             sx={{ width: "120px" }}
                             inputProps={{ step: "0.01" }}
                         />
@@ -459,14 +480,27 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             rowsPerPage: parseInt(event.target.value, 10),
         });
 
-    const handleBrokerageChange = (doId, productId) => (e) => {
+    // const handleBrokerageChange = (doId, productId) => (e) => {
+    //     const value = e.target.value;
+    //     const key = `${doId}-${productId}`;
+    //     setCurrentData((prev) => ({
+    //         ...prev,
+    //         brokerageValues: { ...prev.brokerageValues, [key]: value },
+    //     }));
+    // };
+
+    const handleBrokerageChange = (doId, productId, pinId) => (e) => {
         const value = e.target.value;
-        const key = `${doId}-${productId}`;
+        const key = transactionType === "sales"
+            ? `${doId}-${productId}`
+            : `${pinId}-${productId}`;
         setCurrentData((prev) => ({
             ...prev,
             brokerageValues: { ...prev.brokerageValues, [key]: value },
         }));
     };
+
+
 
     const handleExpandBroker = (brokerName) =>
         setExpandedBrokers((prev) => ({
@@ -490,7 +524,10 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
 
             const recordsToSave = currentData.deliveryReport.map((item) => {
                 const brokerageValue =
-                    currentData.brokerageValues[`${item.Do_Id}-${item.Product_Id}`] || 0;
+                    transactionType === "sales"
+                        ? (currentData.brokerageValues[`${item.Do_Id}-${item.Product_Id}`] ?? item.Brokerage ?? 0)
+                        : (currentData.brokerageValues[`${item.PIN_Id}-${item.Product_Id}`] ?? item.Brokerage ?? 0);
+
 
                 const baseRecord = {
                     ...item,
@@ -571,12 +608,47 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         setDataEntryPagination({ page: 0, rowsPerPage: 10 });
     };
 
+    // const handleHeaderVilaiVasiChange = (e) => {
+    //     const value = e.target.value;
+    //     setCurrentData((prev) => {
+    //         const updatedBrokerageValues = { ...prev.brokerageValues };
+    //         prev.deliveryReport.forEach((item) => {
+    //             const key = `${item.Do_Id}-${item.Product_Id}`;
+    //             updatedBrokerageValues[key] = value;
+    //         });
+    //         return {
+    //             ...prev,
+    //             headerVilaiVasi: value,
+    //             brokerageValues: updatedBrokerageValues,
+    //         };
+    //     });
+    // };
+
+    // const handleClearAllVilaiVasi = () => {
+    //     setCurrentData((prev) => {
+    //         const updatedBrokerageValues = { ...prev.brokerageValues };
+    //         prev.deliveryReport.forEach((item) => {
+    //             const key = `${item.Do_Id}-${item.Product_Id}`;
+    //             updatedBrokerageValues[key] = "";
+    //         });
+    //         return {
+    //             ...prev,
+    //             headerVilaiVasi: "",
+    //             brokerageValues: updatedBrokerageValues,
+    //         };
+    //     });
+    // };
+
+
+
     const handleHeaderVilaiVasiChange = (e) => {
         const value = e.target.value;
         setCurrentData((prev) => {
             const updatedBrokerageValues = { ...prev.brokerageValues };
             prev.deliveryReport.forEach((item) => {
-                const key = `${item.Do_Id}-${item.Product_Id}`;
+                const key = transactionType === "sales"
+                    ? `${item.Do_Id}-${item.Product_Id}`
+                    : `${item.PIN_Id}-${item.Product_Id}`;
                 updatedBrokerageValues[key] = value;
             });
             return {
@@ -586,12 +658,13 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             };
         });
     };
-
     const handleClearAllVilaiVasi = () => {
         setCurrentData((prev) => {
             const updatedBrokerageValues = { ...prev.brokerageValues };
             prev.deliveryReport.forEach((item) => {
-                const key = `${item.Do_Id}-${item.Product_Id}`;
+                const key = transactionType === "sales"
+                    ? `${item.Do_Id}-${item.Product_Id}`
+                    : `${item.PIN_Id}-${item.Product_Id}`;
                 updatedBrokerageValues[key] = "";
             });
             return {
@@ -797,7 +870,9 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                             .map((row, idx) => {
                                                 const vilaivasiValue =
                                                     currentData.brokerageValues[
-                                                    `${row.Do_Id}-${row.Product_Id}`
+                                                    transactionType === "sales"
+                                                        ? `${row.Do_Id}-${row.Product_Id}`
+                                                        : `${row.PIN_Id}-${row.Product_Id}`
                                                     ] || "";
                                                 // const vilaivasiAmt = calculateVilaivasiAmt(
                                                 //   vilaivasiValue,

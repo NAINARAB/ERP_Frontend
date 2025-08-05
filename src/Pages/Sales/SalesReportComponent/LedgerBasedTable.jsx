@@ -221,45 +221,6 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
 
     return (
         <Fragment>
-            {/* <div className="row">
-                <div className="col-xxl-10 col-lg-9 col-md-8">
-                    
-                </div>
-
-                <div className="col-xxl-2 col-lg-3 col-md-4 d-none d-md-block">
-                    <h5 className="d-flex justify-content-between px-2">
-                        <span>Filters</span>
-                        <span>
-                            <Tooltip title='Column Visiblity'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setDialog(true)}
-                                >
-                                    <Settings />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title='Clear Filters'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setFilters({})}
-                                >
-                                    <FilterAltOff />
-                                </IconButton>
-                            </Tooltip>
-                        </span>
-                    </h5>
-                    <div className="border rounded-3 " style={{ maxHeight: '58vh', overflow: 'auto' }}>
-                        {DisplayColumn.map((column, ke) => (
-                            <div key={ke} className="py-3 px-3 hov-bg border-bottom">
-                                <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
-                                {renderFilter(column)}
-                            </div>
-                        ))}
-                        <br />
-                    </div>
-                </div>
-
-            </div> */}
 
             <FilterableTable
                 title="LOL - Sales Reports"

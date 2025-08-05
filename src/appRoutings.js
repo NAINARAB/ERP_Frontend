@@ -79,6 +79,7 @@ const StockInHand = lazy(() => import("./Pages/Reports/storageClosingStock/stock
 const ItemGroupWiseStockValue = lazy(() => import("./Pages/Reports/storageClosingStock/itemGroupBasedStockValue"));
 const PurchaseBrokerageReport = lazy(() => import("./Pages/Reports/CostCenterReports/purchaseBrokerageReport"));
 const NakalReports = lazy(() => import("./Pages/Reports/NakalReports/nakalReports"));
+const PendingDetails = lazy(() => import('./Pages/Reports/PendingDetails'));
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -252,7 +253,7 @@ const RoutingArray = [
     { component: <AccountingGroup />, path: '/erp/master/accountingGroup' },
     { component: <AccountMaster />, path: '/erp/master/accountMaster' },
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
-    
+
     //ERP - BATCH MANAGEMENT
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
     { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
@@ -265,6 +266,7 @@ const RoutingArray = [
     { component: <ItemGroupWiseStockValue />, path: '/erp/reports/itemBasedStockValue' },
     { component: <PurchaseBrokerageReport />, path: '/erp/reports/purchaseBrokerage' },
     { component: <NakalReports />, path: '/erp/reports/nakalReports' },
+    { component: <PendingDetails />, path: '/erp/reports/PendingDetails' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
