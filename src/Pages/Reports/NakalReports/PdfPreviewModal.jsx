@@ -13,7 +13,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
 
     const items = brokerData?.Items || [];
     let totalBrokerage = 0;
-    if (transactionType === 'sales') {
+    if (transactionType === 'salesNagal') {
         totalBrokerage = items.reduce((sum, item) => sum + parseFloat(item.Brok_Amt || 0), 0)
     } else {
 
@@ -58,7 +58,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
 
             <Dialog open={open} onClose={onClose} fullWidth maxWidth='lg'>
                 <DialogTitle>
-                    {transactionType === 'sales' ? 'Sales Nakal Report' : 'Delivery Nakal Report'} : {brokerData?.Broker_Name}
+                    {transactionType === 'salesNagal' ? 'Sales Nakal Report' : 'Delivery Nakal Report'} : {brokerData?.Broker_Name}
                     <IconButton
                         aria-label="close"
                         onClick={onClose}
@@ -74,7 +74,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                 </DialogTitle>
 
                 <DialogContent ref={printRef}>
-                    {transactionType === 'sales' ? (
+                    {transactionType === 'salesNagal' ? (
                         <>
                             <div className="text-center mb-3">
                                 <h4>Broker Report Page</h4>
@@ -154,10 +154,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                             </div>
                         </>
                     ) : (
-
                         <>
-
-
                             <div style={{ fontFamily: 'Arial' }}>
                                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                                     <h3 style={{ marginBottom: '5px' }}>{brokerData?.Broker_Name}</h3>
@@ -179,7 +176,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                             <th style={{ textAlign: 'left', padding: '5px', width: '20%' }}>ALIAS NAME</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BAGS</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>QTY</th>
-                                            <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BROKERAGE</th>
+                                            <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BROKERAGE EXP</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -197,7 +194,7 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                             <td colSpan="3" style={{ padding: '5px', textAlign: 'right' }}>TOTAL</td>
                                             <td style={{ padding: '5px', textAlign: 'right' }}>{brokerData?.Total_Qty || 0}</td>
                                             <td style={{ padding: '5px', textAlign: 'right' }}>{brokerData?.Total_KGS || 0}</td>
-                                            <td style={{ padding: '5px', textAlign: 'right' }}>{Math.round(totalBrokerage)}</td>
+                                            <td style={{ padding: '5px', textAlign: 'right' }}>{NumberFormat(totalBrokerage)}</td>
                                         </tr>
                                     </tbody>
                                 </table>

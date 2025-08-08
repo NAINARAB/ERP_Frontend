@@ -6,7 +6,6 @@ import {
     Button,
     Dialog,
     DialogActions,
-    DialogContent,
     IconButton,
     Paper,
     Table,
@@ -16,6 +15,9 @@ import {
     TableHead,
     TableRow,
     Typography,
+    DialogContentText,
+    DialogContent,
+    DialogTitle,
     Box,
     Grid,
     TablePagination,
@@ -30,6 +32,8 @@ import {
     Save,
     KeyboardArrowDown,
     KeyboardArrowUp,
+    Cancel,
+    Edit,
 } from "@mui/icons-material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -38,10 +42,10 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PdfPreviewModal from "./PdfPreviewModal";
 import XlPreviewModal from "./XlPreviewModal";
+import { Delete } from "@mui/icons-material";
 
 const NakalReports = ({ loadingOn, loadingOff }) => {
-    const [transactionType, setTransactionType] = useState("sales");
-
+    const [transactionType, setTransactionType] = useState("salesNagal");
     const [dataEntryPagination, setDataEntryPagination] = useState({
         page: 0,
         rowsPerPage: 10,
@@ -50,10 +54,8 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         page: 0,
         rowsPerPage: 10,
     });
-
     const [activeTab, setActiveTab] = useState(0);
     const [dropDown, setDropDown] = useState({ broker: [] });
-
     const [salesData, setSalesData] = useState({
         deliveryReport: [],
         brokerageValues: {},
@@ -66,7 +68,18 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         },
         headerVilaiVasi: "",
     });
-
+    const [salesNewData, setSalesNewData] = useState({
+        deliveryReport: [],
+        brokerageValues: {},
+        filters: {
+            FromDate: new Date().toISOString().split("T")[0],
+            ToDate: new Date().toISOString().split("T")[0],
+            Broker: { value: "", label: "ALL Brokers" },
+            refresh: false,
+            filterDialog: false,
+        },
+        headerVilaiVasi: "",
+    });
     const [purchaseData, setPurchaseData] = useState({
         deliveryReport: [],
         brokerageValues: {},
@@ -79,7 +92,6 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         },
         headerBrokerage: "",
     });
-
     const [filtersListing, setFiltersListing] = useState({
         FromDate: new Date().toISOString().split("T")[0],
         ToDate: new Date().toISOString().split("T")[0],
@@ -102,10 +114,23 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
     const [xlPreviewOpen, setXlPreViewOpen] = useState(false);
     const [pdfPreviewData, setPdfPreviewData] = useState(null);
     const [xlPreviewData, setXlPreviewData] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
 
-    const currentData = transactionType === "sales" ? salesData : purchaseData;
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteItemDialogOpen, setDeleteItemDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [brokerToDelete, setBrokerToDelete] = useState(null);
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
+    const currentData =
+        transactionType === "salesNagal" ? salesData :
+            transactionType === "sales" ? salesNewData :
+                purchaseData;
+
     const setCurrentData =
-        transactionType === "sales" ? setSalesData : setPurchaseData;
+        transactionType === "salesNagal" ? setSalesData :
+            transactionType === "sales" ? setSalesNewData :
+                setPurchaseData;
 
     useEffect(() => {
         fetchLink({
@@ -127,9 +152,9 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             try {
                 loadingOn();
                 const endpoint =
-                    transactionType === "sales"
+                    transactionType === "salesNagal"
                         ? "brokerageNakalReport/sales"
-                        : "brokerageNakalReport/purchase";
+                        : transactionType === "sales" ? "brokerageNakalReport/salesEntry" : "brokerageNakalReport/purchase";
 
                 const res = await fetchLink({
                     address: `reports/${endpoint}?FromDate=${currentData.filters.FromDate}&ToDate=${currentData.filters.ToDate}&broker=${currentData.filters.Broker.value}`,
@@ -170,7 +195,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
     }, [transactionType, currentData.filters.refresh]);
 
     const tableConfigs = {
-        sales: {
+        salesNagal: {
             dataEntryColumns: [
                 {
                     label: "Date",
@@ -274,6 +299,60 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 { label: "Total_Bags", key: "Total_Bags", align: "right" },
             ],
         },
+        sales: {
+            dataEntryColumns: [
+                {
+                    label: "Date",
+                    key: "Date",
+                    align: "left",
+                    render: (row) => row.Date?.split("T")[0] || "N/A",
+                },
+                { label: "Do No", key: "Do_Inv_No" },
+                { label: "Product", key: "Product_Name" },
+                { label: "Ledger_Name", key: "Retailer_Name" },
+                { label: "Broker", key: "CostCenterGet" },
+                { label: "Act_Qty", key: "Act_Qty", align: "right" },
+                { label: "Qty", key: "displayQuantity", align: "right" },
+                {
+                    label: "Rate",
+                    key: "Rate",
+                    align: "right",
+                    render: (row) => row.Rate || row.Item_Rate,
+                },
+                { label: "Pack", key: "Pack", align: "right" },
+                { label: "Amount", key: "Amount", align: "right" },
+                {
+                    label: "Brokerage",
+                    key: "Brokerage",
+                    align: "right",
+                    render: (row, idx, handleChange, brokerageValue, handleBrokerageChange) => (
+                        <TextField
+                            size="small"
+                            type="number"
+                            value={brokerageValue}
+                            onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
+                            sx={{ width: "120px" }}
+                            inputProps={{ step: "0.01" }}
+                        />
+                    ),
+                },
+                {
+                    label: "Brokerage Amt",
+                    key: "BrokerageAmount",
+                    align: "right",
+                    render: (row, idx, _, brokerageValue) =>
+                        ((parseFloat(brokerageValue) || 0) * (parseFloat(row.Act_Qty) || 0) / 100).toFixed(2),
+                }
+            ],
+            listingColumns: [
+                { label: "Broker", key: "Broker_Name" },
+                { label: "Total KGS", key: "Total_KGS", align: "right" },
+                { label: "Total Bill Qty", key: "Total_Qty", align: "right" },
+                { label: "Total_Amount", key: "Total_Amount", align: "right" },
+                { label: "Total_Broker_Exp", key: "Broker_Exp", align: "right" },
+                { label: "Total_Bags", key: "Total_Bags", align: "right" },
+            ]
+        },
         purchase: {
             dataEntryColumns: [
                 {
@@ -296,21 +375,6 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 },
                 { label: "Rate", key: "Item_Rate", align: "right" },
                 { label: "Amount", key: "Total_Invoice_value", align: "right" },
-                //               {
-                //   label: "Brokerage",
-                //   key: "Brokerage",
-                //   align: "right",
-                //   render: (row, idx, handleChange, brokerageValue, handleBrokerageChange) => (
-                //     <TextField
-                //       size="small"
-                //       type="number"
-                //       value={brokerageValue}
-                //       onChange={handleBrokerageChange(row.Do_Id, row.Product_Id)}
-                //       sx={{ width: "120px" }}
-                //       inputProps={{ step: "0.01" }}
-                //     />
-                //   ),
-                // },
                 {
                     label: "Brokerage",
                     key: "Brokerage",
@@ -351,67 +415,19 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         },
     };
 
-    // useEffect(() => {
-    //     const fetchDatasetAndDropdowns = async () => {
-    //         try {
-    //             loadingOn();
-    //             let url = `reports/brokerageNagal/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
-    //             if (filtersListing.Broker.value)
-    //                 url += `&broker=${filtersListing.Broker.value}`;
-    //             if (filtersListing.Ledger.value)
-    //                 url += `&ledger=${filtersListing.Ledger.value}`;
-    //             if (filtersListing.Item.value)
-    //                 url += `&item=${filtersListing.Item.value}`;
-    //             if (filtersListing.VilaiVasiZero.value)
-    //                 url += `&vilaivasiFilter=${filtersListing.VilaiVasiZero.value}`;
-
-    //             const res = await fetchLink({ address: url });
-    //             if (res.success) {
-    //                 const data = toArray(res.data);
-    //                 setDataset(data);
-    //                 const allItems = data.flatMap((item) => item.Items || []);
-    //                 const uniqueLedgers = Array.from(
-    //                     new Map(
-    //                         allItems.map((item) => [
-    //                             item.Ledger_Tally_Id,
-    //                             { value: item.Ledger_Tally_Id, label: item.Ledger_Name },
-    //                         ])
-    //                     ).values()
-    //                 );
-    //                 const uniqueItems = Array.from(
-    //                     new Map(
-    //                         allItems.map((item) => [
-    //                             item.Product_Id,
-    //                             { value: item.Product_Id, label: item.Product_Name },
-    //                         ])
-    //                     ).values()
-    //                 );
-    //                 setDropdownOptionsListing({
-    //                     ledgers: uniqueLedgers,
-    //                     items: uniqueItems,
-    //                 });
-    //             }
-    //         } catch (e) {
-    //             console.error(e);
-    //         } finally {
-    //             loadingOff();
-    //         }
-    //     };
-    //     fetchDatasetAndDropdowns();
-    // }, [filtersListing.refresh]);
-
-    // Event handlers
-
     useEffect(() => {
         const fetchDatasetAndDropdowns = async () => {
             try {
                 loadingOn();
 
                 let baseUrl = "";
-                if (transactionType === "sales") {
+                if (transactionType === "salesNagal") {
                     baseUrl = `reports/brokerageNagal/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
                 } else if (transactionType === "purchase") {
                     baseUrl = `reports/brokerageNagalDelivery/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
+                }
+                else if (transactionType === "sales") {
+                    baseUrl = `reports//brokerageNagalSales/list?FromDate=${filtersListing.FromDate}&ToDate=${filtersListing.ToDate}`;
                 }
 
                 if (filtersListing.Broker.value)
@@ -464,6 +480,162 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         fetchDatasetAndDropdowns();
     }, [filtersListing.refresh, transactionType]);
 
+    const handleDelete = async () => {
+        try {
+            loadingOn();
+
+            const response = await fetchLink({
+                address: `reports/brokerageNagalPurchase/list`,
+                method: "DELETE",
+                bodyData: {
+                    TransactionType: transactionType,
+                    Broker: brokerToDelete.Broker_Id || brokerToDelete.Supplier_Id,
+                    FromDate: filtersListing.FromDate,
+                    ToDate: filtersListing.ToDate
+                },
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (response.success) {
+                toast.success(response.message || "Deleted successfully!");
+                setFiltersListing(prev => ({ ...prev, refresh: !prev.refresh }));
+            }
+        } catch (error) {
+            toast.error("Delete failed due to an error");
+        } finally {
+            loadingOff();
+            setDeleteDialogOpen(false);
+        }
+    };
+
+    const handleDeleteItem = async () => {
+        try {
+            loadingOn();
+
+            const response = await fetchLink({
+                address: `reports/brokerageNagalPurchase/list`,
+                method: "DELETE",
+                bodyData: {
+                    Id: itemToDelete.Id,
+                    Do_Id: itemToDelete.Do_Id,
+                    Product_Id: itemToDelete.Product_Id,
+                    PIN_Id: itemToDelete.PIN_Id,
+                    FromDate: filtersListing.FromDate,
+                    ToDate: filtersListing.ToDate,
+                    TransactionType: transactionType
+                },
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (response.success) {
+                toast.success(response.message || "Item deleted successfully!");
+                setFiltersListing(prev => ({ ...prev, refresh: !prev.refresh }));
+            }
+        } catch (error) {
+
+            toast.error("Item delete failed due to an error");
+        } finally {
+            loadingOff();
+            setDeleteItemDialogOpen(false);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        try {
+            loadingOn();
+            const response = await fetchLink({
+                address: `reports/brokerageNagalPurchase/list`,
+                method: 'DELETE',
+                bodyData: {
+                    FromDate: filtersListing.FromDate,
+                    ToDate: filtersListing.ToDate,
+                    Broker: filtersListing.Broker.value,
+                    Ledger: filtersListing.Ledger.value,
+                    Item: filtersListing.Item.value,
+                    TransactionType: transactionType
+                },
+            });
+
+            if (response.success) {
+                toast.success(response.message || "All records deleted successfully!");
+                setFiltersListing(prev => ({ ...prev, refresh: !prev.refresh }));
+            }
+        } catch (error) {
+            toast.error("Bulk delete failed due to an error");
+        } finally {
+            loadingOff();
+            setBulkDeleteDialogOpen(false);
+        }
+    };
+
+    const handleEditItem = (item) => {
+        const commonFields = {
+            ...item,
+            Created_By: storage?.UserId,
+            Updated_By: storage?.UserId
+        };
+
+        if (transactionType === "salesNagal") {
+            setEditingItem({
+                ...item,
+                Brok_Rate: item.Brok_Rate ?? item.Brokerage_Rate ?? item.Brokerage ?? "",
+                Brok_Amt: item.Brok_Amt ?? ((item.Brok_Rate ?? 0) * (item.QTY ?? 0)).toFixed(2),
+                Coolie_Rate: item.Coolie_Rate ?? item.Coolie ?? "",
+                Coolie_Amt: item.Coolie_Amt ?? ((item.Coolie_Rate ?? 0) * (item.QTY ?? 0)).toFixed(2),
+                Vilai_Vasi: item.Vilai_Vasi ?? "",
+                Vilaivasi_Rate: item.Vilaivasi_Rate ?? ((item.Vilai_Vasi ?? 0) * (item.Act_Qty ?? 0) / 100).toFixed(2),
+                Id: item.Id
+            });
+        } else if (transactionType === "sales" || transactionType === "purchase") {
+            setEditingItem(item);
+
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        try {
+            loadingOn();
+            const payload = {
+                ...editingItem,
+                TransactionType: transactionType,
+                Updated_By: storage?.UserId
+            };
+            console.log("w", editingItem)
+
+            if (transactionType === "salesNagal") {
+                payload.Brok_Amt = (parseFloat(editingItem.Brok_Rate) || 0) * (parseFloat(editingItem.QTY) || 0);
+                payload.Coolie_Amt = (parseFloat(editingItem.Coolie_Rate) || 0) * (parseFloat(editingItem.QTY) || 0);
+                payload.Vilai_Vasi = parseFloat(editingItem.Vilai_Vasi) || 0;
+                payload.Vilaivasi_Rate = ((parseFloat(editingItem.Vilai_Vasi) || 0) * (parseFloat(editingItem.QTY) || 0) / 100);
+
+            }
+            else if (transactionType === "sales" || transactionType === "purchase") {
+                payload.Brokerage_Amt = ((parseFloat(editingItem.Brokerage) || 0) * (parseFloat(editingItem.Act_Qty) || 0) / 100);
+                payload.Brokerage = ((parseFloat(editingItem?.Act_Qty) / 100) * editingItem.Brokerage_Amt)
+
+            }
+
+            const response = await fetchLink({
+                address: `reports/brokerageNagalPurchase/list`,
+                method: "PUT",
+                bodyData: payload,
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (response.success) {
+                toast.success("Item updated successfully!");
+                setFiltersListing(prev => ({ ...prev, refresh: !prev.refresh }));
+                setEditingItem(null);
+            } else {
+                toast.error(response.message || "Update failed");
+            }
+        } catch (error) {
+            toast.error("Update failed due to an error");
+        } finally {
+            loadingOff();
+        }
+    };
+
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
     const handleDataEntryPageChange = (event, newPage) =>
         setDataEntryPagination({ ...dataEntryPagination, page: newPage });
@@ -480,18 +652,9 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             rowsPerPage: parseInt(event.target.value, 10),
         });
 
-    // const handleBrokerageChange = (doId, productId) => (e) => {
-    //     const value = e.target.value;
-    //     const key = `${doId}-${productId}`;
-    //     setCurrentData((prev) => ({
-    //         ...prev,
-    //         brokerageValues: { ...prev.brokerageValues, [key]: value },
-    //     }));
-    // };
-
     const handleBrokerageChange = (doId, productId, pinId) => (e) => {
         const value = e.target.value;
-        const key = transactionType === "sales"
+        const key = transactionType === "salesNagal" || transactionType === "sales"
             ? `${doId}-${productId}`
             : `${pinId}-${productId}`;
         setCurrentData((prev) => ({
@@ -499,8 +662,6 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             brokerageValues: { ...prev.brokerageValues, [key]: value },
         }));
     };
-
-
 
     const handleExpandBroker = (brokerName) =>
         setExpandedBrokers((prev) => ({
@@ -523,48 +684,50 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             setSaving(true);
 
             const recordsToSave = currentData.deliveryReport.map((item) => {
-                const brokerageValue =
-                    transactionType === "sales"
-                        ? (currentData.brokerageValues[`${item.Do_Id}-${item.Product_Id}`] ?? item.Brokerage ?? 0)
-                        : (currentData.brokerageValues[`${item.PIN_Id}-${item.Product_Id}`] ?? item.Brokerage ?? 0);
+                const key = transactionType === "salesNagal" || transactionType === "sales"
+                    ? `${item.Do_Id}-${item.Product_Id}`
+                    : `${item.PIN_Id}-${item.Product_Id}`;
 
+                const brokerageValue = currentData.brokerageValues[key] || item.Brokerage || 0;
 
-                const baseRecord = {
-                    ...item,
-                    Created_By: storage?.UserId,
-                    Transaction_Type: transactionType.toUpperCase(),
-                };
-                if (transactionType === "sales") {
+                if (transactionType === "salesNagal") {
                     return {
                         ...item,
                         brokerage: parseFloat(brokerageValue) || 0,
                         Vilai_Vasi: parseFloat(brokerageValue) || 0,
-                        Vilaivasi_Rate:
-                            ((parseFloat(brokerageValue) || 0) / 100) *
-                            (parseFloat(item.Act_Qty) || 0),
+                        Vilaivasi_Rate: ((parseFloat(brokerageValue) || 0) / 100) * (parseFloat(item.Act_Qty) || 0),
                         Brok_Rate: item?.Brokerage || 0,
                         Brok_Amt: (item?.Brokerage || 0) * (item?.displayQuantity || 0),
                         Coolie_Rate: item?.Coolie || 0,
                         Coolie_Amt: (item?.Coolie || 0) * (item?.displayQuantity || 0),
                         Amount: item?.Amount || 0,
                         Created_By: storage?.UserId,
-                        Transaction_Type: transactionType.toUpperCase(),
+                    };
+                } else if (transactionType === "sales") {
+                    return {
+                        ...item,
+                        brokerage: (parseFloat(brokerageValue) || 0) *
+                            (parseFloat(item.Act_Qty) || 0) / 100,
+                        Created_By: storage?.UserId,
                     };
                 } else {
                     return {
-                        ...baseRecord,
+                        ...item,
                         brokerage: (parseFloat(brokerageValue) || 0) *
                             (parseFloat(item.Act_Qty) || 0) / 100,
+                        Created_By: storage?.UserId,
                     };
                 }
-
-
             });
 
-            const apiAddress =
-                transactionType === "sales"
-                    ? "reports/brokerageNagal/create"
-                    : "reports/brokerageNakal/deliveryCreate";
+            let apiAddress;
+            if (transactionType === "salesNagal") {
+                apiAddress = "reports/brokerageNagal/create";
+            } else if (transactionType === "sales") {
+                apiAddress = "reports/brokerageNagal/createSales";
+            } else {
+                apiAddress = "reports/brokerageNakal/deliveryCreate";
+            }
 
             const response = await fetchLink({
                 address: apiAddress,
@@ -574,10 +737,15 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             });
 
             if (response.success) {
-                toast.success(
-                    `${transactionType === "sales" ? "Sales" : "Purchase"
-                    } Nakal Created successfully!`
-                );
+                let successMessage;
+                if (transactionType === "salesNagal") {
+                    successMessage = "Sales Nagal created successfully!";
+                } else if (transactionType === "sales") {
+                    successMessage = "Sales brokerage created successfully!";
+                } else {
+                    successMessage = "Purchase nakal created successfully!";
+                }
+                toast.success(successMessage);
                 setCurrentData((prev) => ({
                     ...prev,
                     filters: { ...prev.filters, refresh: !prev.filters.refresh },
@@ -608,45 +776,12 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         setDataEntryPagination({ page: 0, rowsPerPage: 10 });
     };
 
-    // const handleHeaderVilaiVasiChange = (e) => {
-    //     const value = e.target.value;
-    //     setCurrentData((prev) => {
-    //         const updatedBrokerageValues = { ...prev.brokerageValues };
-    //         prev.deliveryReport.forEach((item) => {
-    //             const key = `${item.Do_Id}-${item.Product_Id}`;
-    //             updatedBrokerageValues[key] = value;
-    //         });
-    //         return {
-    //             ...prev,
-    //             headerVilaiVasi: value,
-    //             brokerageValues: updatedBrokerageValues,
-    //         };
-    //     });
-    // };
-
-    // const handleClearAllVilaiVasi = () => {
-    //     setCurrentData((prev) => {
-    //         const updatedBrokerageValues = { ...prev.brokerageValues };
-    //         prev.deliveryReport.forEach((item) => {
-    //             const key = `${item.Do_Id}-${item.Product_Id}`;
-    //             updatedBrokerageValues[key] = "";
-    //         });
-    //         return {
-    //             ...prev,
-    //             headerVilaiVasi: "",
-    //             brokerageValues: updatedBrokerageValues,
-    //         };
-    //     });
-    // };
-
-
-
     const handleHeaderVilaiVasiChange = (e) => {
         const value = e.target.value;
         setCurrentData((prev) => {
             const updatedBrokerageValues = { ...prev.brokerageValues };
             prev.deliveryReport.forEach((item) => {
-                const key = transactionType === "sales"
+                const key = transactionType === "salesNagal" || transactionType === "sales"
                     ? `${item.Do_Id}-${item.Product_Id}`
                     : `${item.PIN_Id}-${item.Product_Id}`;
                 updatedBrokerageValues[key] = value;
@@ -658,13 +793,14 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             };
         });
     };
+
     const handleClearAllVilaiVasi = () => {
         setCurrentData((prev) => {
             const updatedBrokerageValues = { ...prev.brokerageValues };
             prev.deliveryReport.forEach((item) => {
-                const key = transactionType === "sales"
+                const key = transactionType === "salesNagal"
                     ? `${item.Do_Id}-${item.Product_Id}`
-                    : `${item.PIN_Id}-${item.Product_Id}`;
+                    : transactionType === "sales" ? `${item.Do_Id}-${item.Product_Id}` : `${item.PIN_Id}-${item.Product_Id}`;
                 updatedBrokerageValues[key] = "";
             });
             return {
@@ -674,37 +810,6 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
             };
         });
     };
-
-    // const handleBrokergeChangePurchase = (e) => {
-    //     const value = e.target.value;
-    //     setCurrentData(prev => {
-    //         const updatedBrokerageValue = { ...prev.brokerageValues };
-    //         prev.deliveryReport.forEach((item) => {
-    //             const key = `${item.Do_Id}-${item.Product_Id}`;
-    //             updatedBrokerageValue[key] = value;
-    //         });
-    //         return {
-    //             ...prev,
-    //             headerBrokerage: value,
-    //             brokerageValues: updatedBrokerageValue
-    //         };
-    //     });
-    // };
-
-    //     const hanldeClearAllBrokerage = () => {
-    //     setCurrentData(prev => {
-    //         const updatedBrokerageValues = { ...prev.brokerageValues };
-    //         prev.deliveryReport.forEach((item) => {
-    //             const key = `${item.PIN_Id}-${item.Product_Id}`;
-    //             updatedBrokerageValues[key] = "";
-    //         });
-    //         return {
-    //             ...prev,
-    //             headerBrokerage: "",
-    //             brokerageValues: updatedBrokerageValues
-    //         };
-    //     });
-    // };
 
     const totalBagsDataEntry = useMemo(
         () =>
@@ -738,33 +843,43 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
         [groupedByBroker]
     );
 
+    const isEditingRow = (editingItem, item) => {
+        if (!editingItem) return false;
+        return (
+            editingItem.Product_Id === item.Product_Id &&
+            editingItem.Do_Inv_No === item.Do_Inv_No &&
+            (editingItem.Ledger_Tally_Id
+                ? editingItem.Ledger_Tally_Id === item.Ledger_Tally_Id
+                : editingItem.Ledger_Name === item.Ledger_Name)
+        );
+    };
+
     return (
         <Box>
             <Paper sx={{ p: 3, mb: 3 }}>
-                <Grid
-                    container
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={3}
-                >
+                <Grid container justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h5" component="h2">
                         Brokerage Nagal Report
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2}>
                         <Box display="flex" gap={1}>
                             <Button
+                                variant={transactionType === "salesNagal" ? "contained" : "outlined"}
+                                onClick={() => handleTransactionTypeChange("salesNagal")}
+                            >
+                                SalesNagal
+                            </Button>
+                            <Button
+                                variant={transactionType === "purchase" ? "contained" : "outlined"}
+                                onClick={() => handleTransactionTypeChange("purchase")}
+                            >
+                                Purchase
+                            </Button>
+                            <Button
                                 variant={transactionType === "sales" ? "contained" : "outlined"}
                                 onClick={() => handleTransactionTypeChange("sales")}
                             >
                                 Sales
-                            </Button>
-                            <Button
-                                variant={
-                                    transactionType === "purchase" ? "contained" : "outlined"
-                                }
-                                onClick={() => handleTransactionTypeChange("purchase")}
-                            >
-                                Purchase
                             </Button>
                         </Box>
                         <Button
@@ -812,7 +927,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                             }}
                         >
                             <Typography sx={{ fontWeight: "bold" }}>
-                                {transactionType === "sales"
+                                {transactionType === "salesNagal"
                                     ? "VilaiVasi (All):"
                                     : "Brokerage (All):"}
                             </Typography>
@@ -822,7 +937,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                 value={currentData.headerVilaiVasi}
                                 inputProps={{ step: "1" }}
                                 onChange={handleHeaderVilaiVasiChange}
-                                placeholder={`Set ${transactionType === "sales" ? "VilaiVasi" : "Brokerage"
+                                placeholder={`Set ${transactionType === "salesNagal" ? "VilaiVasi" : "Brokerage"
                                     } for all`}
                                 sx={{
                                     "& .MuiInputBase-input": {
@@ -870,14 +985,12 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                             .map((row, idx) => {
                                                 const vilaivasiValue =
                                                     currentData.brokerageValues[
-                                                    transactionType === "sales"
+                                                    transactionType === "salesNagal"
                                                         ? `${row.Do_Id}-${row.Product_Id}`
-                                                        : `${row.PIN_Id}-${row.Product_Id}`
+                                                        :
+                                                        transactionType === "sales" ? `${row.Do_Id}-${row.Product_Id}` :
+                                                            `${row.PIN_Id}-${row.Product_Id}`
                                                     ] || "";
-                                                // const vilaivasiAmt = calculateVilaivasiAmt(
-                                                //   vilaivasiValue,
-                                                //   row.Act_Qty
-                                                // );
                                                 return (
                                                     <TableRow key={idx} hover>
                                                         {tableConfigs[transactionType].dataEntryColumns.map(
@@ -938,7 +1051,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                             >
                                 {saving
                                     ? "Saving..."
-                                    : `Save ${transactionType === "sales" ? "Sales" : "Purchase"
+                                    : `Save ${transactionType === "salesNagal" ? transactionType === "sales" ? "Sales" : "Purchase" : "Sales Nagal"
                                     } Brokerage`}
                             </Button>
                         </Box>
@@ -947,6 +1060,17 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
 
                 {activeTab === 1 && (
                     <>
+                        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<Delete />}
+                                onClick={() => setBulkDeleteDialogOpen(true)}
+                                disabled={dataset.length === 0}
+                            >
+                                Delete All
+                            </Button>
+                        </Box>
                         <TableContainer component={Paper}>
                             <Table size="small">
                                 <TableHead>
@@ -1007,29 +1131,44 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                     </TableCell>
                                                                 ))}
                                                             <TableCell align="right">
-                                                                <Tooltip title="Preview PDF">
-                                                                    <IconButton
-                                                                        color="primary"
-                                                                        onClick={() => {
-                                                                            setPdfPreviewData(brokerData);
-                                                                            setPdfPreviewOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <PictureAsPdfIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
+                                                                <Box display="flex" gap={1} justifyContent="flex-end">
+                                                                    <Tooltip title="Preview PDF">
+                                                                        <IconButton
+                                                                            color="primary"
+                                                                            onClick={() => {
+                                                                                setPdfPreviewData(brokerData);
+                                                                                setPdfPreviewOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <PictureAsPdfIcon />
+                                                                        </IconButton>
+                                                                    </Tooltip>
 
-                                                                <Tooltip title="Preview Excel">
-                                                                    <IconButton
-                                                                        color="primary"
-                                                                        onClick={() => {
-                                                                            setXlPreviewData(brokerData);
-                                                                            setXlPreViewOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <FileDownloadIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
+                                                                    <Tooltip title="Preview Excel">
+                                                                        <IconButton
+                                                                            color="primary"
+                                                                            onClick={() => {
+                                                                                setXlPreviewData(brokerData);
+                                                                                setXlPreViewOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <FileDownloadIcon />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip title="Delete">
+                                                                        <IconButton
+                                                                            color="error"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setBrokerToDelete(brokerData);
+                                                                                setDeleteDialogOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <Delete />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                </Box>
                                                             </TableCell>
                                                         </TableRow>
                                                         <TableRow>
@@ -1057,99 +1196,274 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                             <TableHead>
                                                                                 <TableRow>
                                                                                     <TableCell>Date</TableCell>
-                                                                                    <TableCell>Do_Inv_No </TableCell>
+                                                                                    <TableCell>Do/Inv No</TableCell>
                                                                                     <TableCell>
-                                                                                        {transactionType === "sales"
+                                                                                        {transactionType === "salesNagal" || transactionType === "sales"
                                                                                             ? "Retailer"
                                                                                             : "Supplier"}
                                                                                     </TableCell>
-
                                                                                     <TableCell>Product</TableCell>
                                                                                     <TableCell>Short Name</TableCell>
+                                                                                    <TableCell align="right">QTY</TableCell>
+                                                                                    <TableCell align="right">KGS</TableCell>
+                                                                                    <TableCell align="right">Amount</TableCell>
+                                                                                    <TableCell align="right">Act Qty</TableCell>
                                                                                     <TableCell align="right">
-                                                                                        QTY
+                                                                                        {transactionType === "salesNagal" ? "Broker Amt" : "Brok.Amt"}
                                                                                     </TableCell>
-                                                                                    <TableCell align="right">
-                                                                                        KGS
-                                                                                    </TableCell>
-                                                                                    <TableCell align="right">
-                                                                                        Amount
-                                                                                    </TableCell>
-                                                                                    <TableCell align="right">
-                                                                                        Act_Qty
-                                                                                    </TableCell>
-                                                                                    <TableCell align="right">
-                                                                                        Brokerage
-                                                                                    </TableCell>
+                                                                                    {transactionType === "salesNagal" && (
+                                                                                        <>
+                                                                                            <TableCell align="right">Brok.Rate</TableCell>
+                                                                                            <TableCell align="right">Coolie.Amt</TableCell>
+                                                                                            <TableCell align="right">Coolie.Rate</TableCell>
+                                                                                            <TableCell align="right">Vilai_Vasi</TableCell>
+                                                                                            <TableCell align="right">Vilaiva.Rat</TableCell>
+                                                                                        </>
+                                                                                    )}
+
+                                                                                    {
+                                                                                        editingItem && (transactionType === "sales" || transactionType === "purchase") && (
+                                                                                            <TableCell align="right">Brokerage</TableCell>
+                                                                                        )
+                                                                                    }
+
+                                                                                    <TableCell align="right">Actions</TableCell>
                                                                                 </TableRow>
                                                                             </TableHead>
                                                                             <TableBody>
-                                                                                {groupedByBroker[brokerName].flatMap(
-                                                                                    (broker) =>
-                                                                                        broker.Items?.map(
-                                                                                            (item, itemIdx) => (
-                                                                                                <TableRow key={itemIdx}>
-                                                                                                    <TableCell>
-                                                                                                        {item.Date}
-                                                                                                    </TableCell>
-                                                                                                    {transactionType ===
-                                                                                                        "sales" ? (
-                                                                                                        <td>{item.Do_Inv_No}</td>
+                                                                                {groupedByBroker[brokerName].flatMap((broker) =>
+                                                                                    broker.Items?.map((item, itemIdx) => (
+                                                                                        <TableRow key={itemIdx}>
+                                                                                            {/* Common fields for all transaction types */}
+                                                                                            <TableCell>{item.Date}</TableCell>
+                                                                                            <TableCell>{item.Do_Inv_No || item.Po_Inv_No}</TableCell>
+                                                                                            <TableCell>{item.Retailer_Name || item.Supplier_Name}</TableCell>
+                                                                                            <TableCell>{item.Product_Name}</TableCell>
+                                                                                            <TableCell>{item.Short_Name}</TableCell>
+                                                                                            <TableCell align="right">{item.QTY}</TableCell>
+                                                                                            <TableCell align="right">{item.KGS}</TableCell>
+                                                                                            <TableCell align="right">
+                                                                                                {transactionType === "salesNagal" || transactionType === "sales"
+                                                                                                    ? item.Amount
+                                                                                                    : item.Total_Invoice_value}
+                                                                                            </TableCell>
+                                                                                            <TableCell align="right">
+                                                                                                {transactionType === "salesNagal"
+                                                                                                    ? item.QTY
+                                                                                                    : item.Act_Qty}
+                                                                                            </TableCell>
+
+                                                                                            {isEditingRow(editingItem, item) ? (
+                                                                                                <>
+                                                                                                    {transactionType === "salesNagal" ? (
+
+                                                                                                        <>
+                                                                                                            <TableCell align="right">
+                                                                                                                {((editingItem.Brok_Rate || 0) * (editingItem.QTY || 0)).toFixed(2)}
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right" sx={{ minWidth: 120 }}>
+                                                                                                                <TextField
+                                                                                                                    size="small"
+                                                                                                                    type="number"
+                                                                                                                    value={editingItem.Brok_Rate || ''}
+                                                                                                                    onChange={(e) => {
+                                                                                                                        const rate = parseFloat(e.target.value) || 0;
+                                                                                                                        setEditingItem({
+                                                                                                                            ...editingItem,
+                                                                                                                            Brok_Rate: rate,
+                                                                                                                            Brok_Amt: (rate * (editingItem.QTY || 0)).toFixed(2)
+                                                                                                                        });
+                                                                                                                    }}
+                                                                                                                    inputProps={{ step: "0.01", style: { textAlign: 'right' } }}
+                                                                                                                />
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right">
+                                                                                                                {((editingItem.Coolie_Rate || 0) * (editingItem.QTY || 0)).toFixed(2)}
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right" sx={{ minWidth: 120 }}>
+                                                                                                                <TextField
+                                                                                                                    size="small"
+                                                                                                                    type="number"
+                                                                                                                    value={editingItem.Coolie_Rate || ''}
+                                                                                                                    onChange={(e) => {
+                                                                                                                        const rate = parseFloat(e.target.value) || 0;
+                                                                                                                        setEditingItem({
+                                                                                                                            ...editingItem,
+                                                                                                                            Coolie_Rate: rate,
+                                                                                                                            Coolie_Amt: (rate * (editingItem.QTY || 0)).toFixed(2)
+                                                                                                                        });
+                                                                                                                    }}
+                                                                                                                    inputProps={{ step: "0.01", style: { textAlign: 'right' } }}
+                                                                                                                />
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right" sx={{ minWidth: 120 }}>
+                                                                                                                <TextField
+                                                                                                                    size="small"
+                                                                                                                    type="number"
+                                                                                                                    value={editingItem.Vilai_Vasi || ''}
+                                                                                                                    onChange={(e) => {
+                                                                                                                        const vv = parseFloat(e.target.value) || 0;
+                                                                                                                        setEditingItem({
+                                                                                                                            ...editingItem,
+                                                                                                                            Vilai_Vasi: vv,
+                                                                                                                            Vilaivasi_Rate: ((vv / 100) * (editingItem.QTY || 0)).toFixed(2)
+                                                                                                                        });
+                                                                                                                    }}
+                                                                                                                    inputProps={{ step: "1", style: { textAlign: 'right' } }}
+                                                                                                                />
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right">
+                                                                                                                {((editingItem.Vilai_Vasi || 0) * (editingItem.QTY || 0) / 100).toFixed(2)}
+                                                                                                            </TableCell>
+                                                                                                        </>
+                                                                                                    ) : transactionType === "sales" ? (
+                                                                                                        <>
+                                                                                                            <TableCell align="right">
+                                                                                                                {editingItem.Brokerage_Amt && editingItem.Act_Qty
+                                                                                                                    ? (((editingItem.Brokerage_Amt) * editingItem.Act_Qty) / 100).toFixed(2)
+                                                                                                                    : '0.00'
+                                                                                                                }
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right" sx={{ minWidth: 120 }}>
+
+                                                                                                                <TextField
+                                                                                                                    size="small"
+                                                                                                                    type="number"
+                                                                                                                    value={editingItem.Brokerage_Amt || ''}
+                                                                                                                    onChange={(e) => {
+                                                                                                                        const amount = parseFloat(e.target.value) || 0;
+                                                                                                                        const rate = editingItem.Act_Qty
+                                                                                                                            ? (amount * 100) / editingItem.Act_Qty
+                                                                                                                            : 0;
+
+                                                                                                                        setEditingItem({
+                                                                                                                            ...editingItem,
+                                                                                                                            Brokerage_Amt: amount,
+                                                                                                                            Brokerage: rate.toFixed(2)
+                                                                                                                        });
+                                                                                                                    }}
+                                                                                                                    inputProps={{
+                                                                                                                        step: "0.01",
+                                                                                                                        style: { textAlign: 'right' }
+                                                                                                                    }}
+
+                                                                                                                />
+
+                                                                                                            </TableCell>
+
+
+                                                                                                        </>
                                                                                                     ) : (
-                                                                                                        <td>{item.Do_Inv_No}</td>
+                                                                                                        <>
+                                                                                                            <TableCell align="right">
+                                                                                                                {editingItem.Brokerage_Amt && editingItem.Act_Qty
+                                                                                                                    ? (((editingItem.Brokerage_Amt) * editingItem.Act_Qty) / 100).toFixed(2)
+                                                                                                                    : '0.00'
+                                                                                                                }
+                                                                                                            </TableCell>
+
+                                                                                                            <TableCell align="right" sx={{ minWidth: 120 }}>
+
+                                                                                                                <TextField
+                                                                                                                    size="small"
+                                                                                                                    type="number"
+                                                                                                                    value={editingItem.Brokerage_Amt || ''}
+                                                                                                                    onChange={(e) => {
+                                                                                                                        const amount = parseFloat(e.target.value) || 0;
+                                                                                                                        const rate = editingItem.Act_Qty
+                                                                                                                            ? (amount * 100) / editingItem.Act_Qty
+                                                                                                                            : 0;
+
+                                                                                                                        setEditingItem({
+                                                                                                                            ...editingItem,
+                                                                                                                            Brokerage_Amt: amount,
+                                                                                                                            Brokerage: rate.toFixed(2)
+                                                                                                                        });
+                                                                                                                    }}
+                                                                                                                    inputProps={{
+                                                                                                                        step: "0.01",
+                                                                                                                        style: { textAlign: 'right' }
+                                                                                                                    }}
+
+                                                                                                                />
+
+                                                                                                            </TableCell>
+
+
+                                                                                                        </>
                                                                                                     )}
 
-                                                                                                    <TableCell>
-                                                                                                        {item.Retailer_Name ||
-                                                                                                            item.Supplier_Name}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell>
-                                                                                                        {item.Product_Name}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell>
-                                                                                                        {item.Short_Name}
-                                                                                                    </TableCell>
                                                                                                     <TableCell align="right">
-                                                                                                        {item.QTY}
+                                                                                                        <Box display="flex" gap={1} justifyContent="flex-end">
+                                                                                                            <Tooltip title="Save changes">
+                                                                                                                <IconButton color="primary" size="small" onClick={handleSaveEdit}>
+                                                                                                                    <Save fontSize="small" />
+                                                                                                                </IconButton>
+                                                                                                            </Tooltip>
+                                                                                                            <Tooltip title="Cancel editing">
+                                                                                                                <IconButton color="secondary" size="small" onClick={() => setEditingItem(null)}>
+                                                                                                                    <Cancel fontSize="small" />
+                                                                                                                </IconButton>
+                                                                                                            </Tooltip>
+                                                                                                        </Box>
                                                                                                     </TableCell>
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    {transactionType === "salesNagal" ? (
+                                                                                                        <>
+                                                                                                            <TableCell align="right">{item.Brok_Amt || '0.00'}</TableCell>
+                                                                                                            <TableCell align="right">{item.Brok_Rate || '0.00'}</TableCell>
+                                                                                                            <TableCell align="right">{item.Coolie_Amt || '0.00'}</TableCell>
+                                                                                                            <TableCell align="right">{item.Coolie_Rate || '0.00'}</TableCell>
+                                                                                                            <TableCell align="right">{item.Vilai_Vasi || '0.00'}</TableCell>
+                                                                                                            <TableCell align="right">{item.Vilaivasi_Rate || '0.00'}</TableCell>
+                                                                                                        </>
+                                                                                                    ) : (
+                                                                                                        <>
+                                                                                                            <TableCell align="right">{item.Brokerage || '0.00'}</TableCell>
+                                                                                                            {/* <TableCell align="right">
+                {((parseFloat(item.Act_Qty) / 100 ) / (parseFloat(item.Brokerage)) * 100 || 0).toFixed(2)}
+              </TableCell> */}
 
+                                                                                                        </>
+                                                                                                    )}
                                                                                                     <TableCell align="right">
-                                                                                                        {item.KGS}
+                                                                                                        <Box display="flex" gap={1} justifyContent="flex-end">
+                                                                                                            <Tooltip title="Delete this item">
+                                                                                                                <IconButton
+                                                                                                                    color="error"
+                                                                                                                    size="small"
+                                                                                                                    onClick={(e) => {
+                                                                                                                        e.stopPropagation();
+                                                                                                                        setItemToDelete(item);
+                                                                                                                        setDeleteItemDialogOpen(true);
+                                                                                                                    }}
+                                                                                                                >
+                                                                                                                    <Delete fontSize="small" />
+                                                                                                                </IconButton>
+                                                                                                            </Tooltip>
+                                                                                                            <Tooltip title="Edit this item">
+                                                                                                                <IconButton
+                                                                                                                    color="primary"
+                                                                                                                    size="small"
+                                                                                                                    onClick={() => handleEditItem(item)}
+                                                                                                                >
+                                                                                                                    <Edit fontSize="small" />
+                                                                                                                </IconButton>
+                                                                                                            </Tooltip>
+                                                                                                        </Box>
                                                                                                     </TableCell>
-                                                                                                    {transactionType ===
-                                                                                                        "sales" ? (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.Amount}
-                                                                                                        </TableCell>
-                                                                                                    ) : (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.Total_Invoice_value}
-                                                                                                        </TableCell>
-                                                                                                    )}
-                                                                                                    {transactionType ===
-                                                                                                        "sales" ? (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.QTY}
-                                                                                                        </TableCell>
-                                                                                                    ) : (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.Act_Qty}
-                                                                                                        </TableCell>
-                                                                                                    )}
-
-                                                                                                    {transactionType ===
-                                                                                                        "sales" ? (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.Brok_Amt}
-                                                                                                        </TableCell>
-                                                                                                    ) : (
-                                                                                                        <TableCell align="right">
-                                                                                                            {item.Brokerage}
-                                                                                                        </TableCell>
-                                                                                                    )}
-                                                                                                </TableRow>
-                                                                                            )
-                                                                                        ) || []
+                                                                                                </>
+                                                                                            )}
+                                                                                        </TableRow>
+                                                                                    ))
                                                                                 )}
                                                                             </TableBody>
                                                                         </Table>
@@ -1164,8 +1478,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                         <TableRow>
                                             <TableCell
                                                 colSpan={
-                                                    tableConfigs[transactionType].listingColumns.length +
-                                                    1
+                                                    tableConfigs[transactionType].listingColumns.length + 1
                                                 }
                                                 align="center"
                                             >
@@ -1206,6 +1519,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 />
             </Paper>
 
+            {/* Filter dialogs and other components remain the same */}
             <Dialog
                 open={currentData.filters.filterDialog && activeTab === 0}
                 onClose={closeDialogDataEntry}
@@ -1220,7 +1534,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                         mb={2}
                     >
                         <Typography variant="h6">
-                            {transactionType === "sales" ? "Sales" : "Purchase"} Data Entry
+                            {transactionType === "sales" ? "Sales" : transactionType === "salesNagal" ? "SalesNagal" : "Purchase"} Data Entry
                             Filters
                         </Typography>
                         <IconButton onClick={closeDialogDataEntry}>
@@ -1303,7 +1617,6 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
-            {/* Listing Filter Dialog */}
             <Dialog
                 open={filtersListing.filterDialog && activeTab === 1}
                 onClose={closeDialogListing}
@@ -1373,7 +1686,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                             </Button>
                         </Grid>
                         {
-                            transactionType === 'sales' ? (
+                            transactionType === 'salesNagal' ? (
                                 <>
                                     <Grid item xs={12}>
                                         <Select
@@ -1472,6 +1785,72 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                         }}
                     >
                         Apply Filters
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    Confirm Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContent id="alert-dialog-description">
+                        Are you sure you want to delete {brokerToDelete?.Broker_Name || brokerToDelete?.Supplier_Name}'s records?
+                    </DialogContent>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleDelete} color="error" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={deleteItemDialogOpen}
+                onClose={() => setDeleteItemDialogOpen(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    Confirm Item Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to delete this {itemToDelete?.Product_Name} item?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteItemDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleDeleteItem} color="error" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={bulkDeleteDialogOpen}
+                onClose={() => setBulkDeleteDialogOpen(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    Confirm Bulk Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to delete ALL filtered records? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setBulkDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleBulkDelete} color="error" autoFocus>
+                        Delete All
                     </Button>
                 </DialogActions>
             </Dialog>

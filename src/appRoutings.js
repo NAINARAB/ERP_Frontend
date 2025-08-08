@@ -120,7 +120,6 @@ const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'))
 // const StockProcess = lazy(() => import('./Pages/Inventry/stockProcess'));
 const StockMangement = lazy(() => import('./Pages/Inventry/Processing/listProcessing'));
 const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/AddProcessing'));
-const ArrivalList = lazy(() => import("./Pages/Inventry/TripMaster/arivalList"));
 const ArrivalMaster = lazy(() => import("./Pages/Inventry/TripMaster/arrivalMaster"));
 const BatchAssign = lazy(() => import("./Pages/Inventry/BatchManagement/batchAssign"));
 const BatchListing = lazy(() => import("./Pages/Inventry/BatchManagement/batchList"));
@@ -299,7 +298,6 @@ const RoutingArray = [
     { component: <StockInwards />, path: '/erp/inventory/stockInward' },
     { component: <StockMangement />, path: '/erp/inventory/stockProcessing' },
     { component: <StockManagementCreate />, path: '/erp/inventory/stockProcessing/create' },
-    { component: <ArrivalList />, path: '/erp/inventory/arrivalList' },
     { component: <ArrivalMaster />, path: '/erp/inventory/arrivalEntry' },
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },

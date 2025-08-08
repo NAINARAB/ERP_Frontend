@@ -32,6 +32,20 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
             )
         },
         {
+            name: 'Consumption',
+            component: (
+                <ChooseBatch
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api={`inventory/batchMaster/consumption?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    postApi='inventory/batchMaster/consumption'
+                    compareGodown={'godownId'}
+                />
+            )
+        },
+        {
             name: 'Production',
             component: (
                 <UnAssignedJournals
@@ -54,6 +68,34 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     Todate={dateFilter.Todate}
                     api={`inventory/batchMaster/godownTransfer?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
                     postApi='inventory/batchMaster/godownTransfer'
+                    compareGodown={'fromGodownId'}
+                />
+            )
+        },
+        {
+            name: 'Sales Invoice',
+            component: (
+                <ChooseBatch
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api={`inventory/batchMaster/sales?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    postApi='inventory/batchMaster/sales'
+                    compareGodown={'godownId'}
+                />
+            )
+        },
+        {
+            name: 'Purchase Invoice',
+            component: (
+                <UnAssignedJournals
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api={`inventory/batchMaster/purchase?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    postApi='inventory/batchMaster/purchase'
                 />
             )
         },

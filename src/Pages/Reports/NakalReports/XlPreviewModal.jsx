@@ -6,7 +6,7 @@ const XlPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate, 
     const items = brokerData?.Items || [];
 
     let totalBrokerage;
-    if (transactionType === 'sales') {
+    if (transactionType === 'salesNagal') {
         totalBrokerage = items.reduce((sum, item) => sum + parseFloat(item.Brok_Amt || 0), 0);
     }
     else {
@@ -309,11 +309,16 @@ const XlPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate, 
 
     useEffect(() => {
         if (open) {
-            if (transactionType === 'sales') {
+            if (transactionType === 'salesNagal') {
                 handleExportExcel().then(() => {
                     if (typeof onClose === 'function') onClose();
                 });
             } else if (transactionType === 'purchase') {
+                handleExportPurchase().then(() => {
+                    if (typeof onClose === 'function') onClose();
+                });
+            }
+            else if (transactionType === 'sales') {
                 handleExportPurchase().then(() => {
                     if (typeof onClose === 'function') onClose();
                 });

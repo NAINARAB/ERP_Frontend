@@ -65,6 +65,7 @@ const ItemWiseSalesComparison = ({
                     createCol('VoucherTypeGet', 'string', 'Voucher'),
                     createCol('LedgerName', 'string', 'Ledger'),
                     createCol('ItemName', 'string', 'Item'),
+                    createCol('GodownName', 'string', 'Godown'),
                     createCol('erpQty', 'number', 'E-Qty'),
                     createCol('tallyQty', 'number', 'T-Qty'),
                     createCol('erpRate', 'number', 'E-Rate'),

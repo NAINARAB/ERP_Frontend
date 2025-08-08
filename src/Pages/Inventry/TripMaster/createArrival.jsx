@@ -16,7 +16,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
     const [godown, setGodown] = useState([]);
     const [products, setProducts] = useState([]);
     const [uom, setUom] = useState([]);
-    const [productInput, setProductInput] = useState({ ...initialArrivalValue });
+    const [productInput, setProductInput] = useState(initialArrivalValue);
 
     useEffect(() => {
         if (open) {
@@ -32,7 +32,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                         fetchLink({ address: `dataEntry/godownLocationMaster` }),
                         fetchLink({ address: `masters/uom` }),
                     ]);
-    
+
                     const productsData = (productsResponse.success ? productsResponse.data : []).sort(
                         (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
                     );
@@ -42,18 +42,18 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                     const uomOrdered = (uomResponse.success ? uomResponse.data : []).sort(
                         (a, b) => String(a?.Units).localeCompare(b?.Units)
                     );
-    
+
                     setProducts(productsData);
                     setGodown(godownLocations);
                     setUom(uomOrdered);
-    
+
                 } catch (e) {
                     console.error("Error fetching data:", e);
                 } finally {
                     if (loadingOff) loadingOff();
                 }
             };
-    
+
             fetchData();
         }
     }, [open])
@@ -71,6 +71,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
 
     const closeDialog = () => {
         if (close) close();
+        setProductInput(initialArrivalValue)
     }
 
     const saveArrival = () => {

@@ -16,6 +16,7 @@ const ChooseBatch = ({
     loadingOff,
     api,
     postApi,
+    compareGodown
 }) => {
 
     const [journalData, setJournalData] = useState([]);
@@ -137,7 +138,7 @@ const ChooseBatch = ({
                         <thead>
                             <tr>
                                 {[
-                                    'Sno', 'Date', 'Product', 'voucher', 'type',
+                                    'Sno', 'Date', 'Product', 'voucher',
                                     'From', 'To', 'Qty',
                                     'Rate', 'Amount', 'Batch',
                                 ].map(
@@ -153,7 +154,7 @@ const ChooseBatch = ({
                                     <td className="vctr fa-12">{iInd + 1}</td>
                                     <td className="vctr fa-12">{LocalDate(item.eventDate)}</td>
                                     {[
-                                        'productNameGet', 'voucherNumber', 'moduleName',
+                                        'productNameGet', 'voucherNumber', 
                                         'fromGodownGet', 'toGodownGet', 'quantity',
                                         'rate', 'amount'
                                     ].map(
@@ -172,7 +173,7 @@ const ChooseBatch = ({
                                                 ...batchData.filter(
                                                     batch => (
                                                         isEqualNumber(batch.item_id, item.productId)
-                                                        && isEqualNumber(batch.godown_id, item.fromGodownId)
+                                                        && isEqualNumber(batch.godown_id, item[compareGodown])
                                                         && (toNumber(batch.pendingQuantity) >= toNumber(item.quantity))
                                                     )
                                                 ).map(batch => ({
