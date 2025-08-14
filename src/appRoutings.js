@@ -82,6 +82,7 @@ const ItemGroupWiseStockValue = lazy(() => import("./Pages/Reports/storageClosin
 const PurchaseBrokerageReport = lazy(() => import("./Pages/Reports/CostCenterReports/purchaseBrokerageReport"));
 const NakalReports = lazy(() => import("./Pages/Reports/NakalReports/nakalReports"));
 const PendingDetails = lazy(() => import('./Pages/Reports/PendingDetails'));
+const OutstandingNew = lazy(() => import("./Pages/Reports/outStandingNew"))
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -125,6 +126,8 @@ const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/Add
 const ArrivalMaster = lazy(() => import("./Pages/Inventry/TripMaster/arrivalMaster"));
 const BatchAssign = lazy(() => import("./Pages/Inventry/BatchManagement/batchAssign"));
 const BatchListing = lazy(() => import("./Pages/Inventry/BatchManagement/batchList"));
+const JournalListing = lazy(() => import("./Pages/Journal/JournalMaster/journalList"));
+const JournalCreate = lazy(() => import("./Pages/Journal/JournalMaster/journalCreate"));
 
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
@@ -256,11 +259,16 @@ const RoutingArray = [
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
     { component: <ExpenseReport />, path: '/erp/master/ExpenseReport' },
     { component: <CostCenterMap />, path: '/erp/master/CostCenterMap' },
-    
+
     //ERP - BATCH MANAGEMENT
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
     { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
     { component: <BatchAssign />, path: '/erp/batchManagement/batchCreation' },
+
+    //ERP - BATCH MANAGEMENT
+    { component: <DisplayNavigations />, path: '/erp/journal' },
+    { component: <JournalListing />, path: '/erp/journal/journalList' },
+    { component: <JournalCreate />, path: '/erp/journal/journalList/create' },
 
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },
@@ -270,6 +278,7 @@ const RoutingArray = [
     { component: <PurchaseBrokerageReport />, path: '/erp/reports/purchaseBrokerage' },
     { component: <NakalReports />, path: '/erp/reports/nakalReports' },
     { component: <PendingDetails />, path: '/erp/reports/PendingDetails' },
+    { component: <OutstandingNew />, path: '/erp/reports/OutstandingNew' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },

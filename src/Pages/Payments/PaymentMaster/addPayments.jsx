@@ -8,6 +8,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
+import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -292,6 +293,21 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     value={paymentValue.debit_amount || ''}
                                     onChange={e => onChangePaymentValue('debit_amount', e.target.value)}
                                 />
+                            </div>
+
+                            {/* transaction type */}
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label>Transaction Type</label>
+                                <select
+                                    value={paymentValue.transaction_type || ''}
+                                    onChange={e => onChangePaymentValue('transaction_type', e.target.value)}
+                                    className="cus-inpt p-2"
+                                    required
+                                >
+                                    {transactionTypes.map((type, ind) => (
+                                        <option value={type.value} key={ind}>{type.label}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">

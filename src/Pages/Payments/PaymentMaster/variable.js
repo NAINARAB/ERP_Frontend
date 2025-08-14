@@ -20,6 +20,7 @@ export const paymentGeneralInfoInitialValue = {
     debit_amount: 0,
     remarks: '',
     status: 1,
+    transaction_type: '',
     
     check_no: '',
     check_date: '',

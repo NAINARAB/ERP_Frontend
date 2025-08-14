@@ -132,24 +132,44 @@ export const receiptStatus = [
 
 export const transactionTypes = [
     {
-        label: 'Cash',
-        value: 'Cash'
+        label: 'Select',
+        value: ''
     },
     {
-        label: 'UPI',
-        value: 'UPI'
+        label: 'ATM',
+        value: 'ATM'
     },
     {
         label: 'Card',
         value: 'Card'
     },
     {
-        label: 'Cheque / DD',
-        value: 'Cheque / DD'
+        label: 'Cash',
+        value: 'Cash'
     },
     {
-        label: 'E-Fund transfer',
-        value: 'E-Fund transfer'
+        label: 'Cheque/DD',
+        value: 'Cheque/DD'
+    },
+    {
+        label: 'ECS',
+        value: 'ECS'
+    },
+    {
+        label: 'e-Fund Transfer',
+        value: 'e-Fund Transfer'
+    },
+    {
+        label: 'Electronic Cheque',
+        value: 'Electronic Cheque'
+    },
+    {
+        label: 'Electronic DD/PO',
+        value: 'Electronic DD/PO'
+    },
+    {
+        label: 'UPI',
+        value: 'UPI'
     },
     {
         label: 'Others',

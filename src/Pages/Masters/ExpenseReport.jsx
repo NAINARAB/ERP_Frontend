@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-    Paper, Typography, Box, Collapse, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-    CircularProgress, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Autocomplete
+    Paper, Typography, Box, Collapse, IconButton, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, CircularProgress, TextField, Button,
+    Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Autocomplete
 } from "@mui/material";
 import {
-    ExpandMore, ExpandLess, AccountTree, AccountBalance, AttachMoney, FilterList, ClearAll
+    ExpandMore, ExpandLess, AccountTreeOutlined, AccountBalanceOutlined,
+    AttachMoneyOutlined, FilterListOutlined, ClearAllOutlined, Add, Remove
 } from "@mui/icons-material";
+import { NumberFormat } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
+import { toast } from "react-toastify";
 
 const calculateTotals = (node) => {
     let debit = 0;
@@ -28,32 +32,160 @@ const calculateTotals = (node) => {
     return { debit, credit, balance: debit - credit };
 };
 
-const ExpenseNode = ({ node, depth = 0 }) => {
+const ExpenseNode = ({ node, depth = 0, filters }) => {
     const [expanded, setExpanded] = useState(depth === 0);
+    const [childData, setChildData] = useState([]);
+    const [loadingChildren, setLoadingChildren] = useState(false);
+
+    const [accountDetails, setAccountDetails] = useState([]);
+    const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
+    const [expandedAccountId, setExpandedAccountId] = useState(null);
+
     const totals = calculateTotals(node);
     const hasChildren = node.children?.length > 0;
     const hasAccounts = node.accounts?.length > 0;
+    const isAccountLeaf = !hasChildren && node.Acc_Id;
+    const canFetchMore = (!hasChildren && !hasAccounts && node.group_id) || isAccountLeaf;
+
+    const fetchChildData = useCallback(async () => {
+        try {
+            setLoadingChildren(true);
+            const response = await fetchLink({
+                address: '/reports/expenseByAccId',
+                params: {
+                    group_id: node.group_id,
+                    fromDate: filters.fromDate,
+                    toDate: filters.toDate
+                }
+            });
+            setChildData(response.data || []);
+        } catch (err) {
+            console.error("Error fetching child data:", err);
+            setChildData([]);
+        } finally {
+            setLoadingChildren(false);
+        }
+    }, [node.group_id, filters.fromDate, filters.toDate]);
+
+
+
+    const fetchAccountDetails = useCallback((accId) => {
+        setLoadingAccountDetails(true);
+        fetchLink({
+            address: 'reports/expenseByAccId',
+            method: 'POST',
+            bodyData: {
+                acc_id: accId,
+                fromDate: filters.fromDate,
+                toDate: filters.toDate
+            },
+            headers: { "Content-Type": "application/json" }
+        })
+            .then((response) => {
+                if (response.success) {
+                    setAccountDetails((prev) => {
+
+                        const filtered = prev.filter((d) => !d.Acc_Id?.includes(accId.toString()));
+
+                        return [...filtered, ...(response.data || [])];
+                    });
+                } else {
+                    toast.error(response?.message || "Failed to load account details");
+                }
+            })
+            .catch((err) => {
+                console.error("Error fetching account details:", err);
+                toast.error("Something went wrong while fetching account details");
+            })
+            .finally(() => {
+                setLoadingAccountDetails(false);
+            });
+    }, [filters.fromDate, filters.toDate]);
+
+    const handleExpandClick = () => {
+        if (canFetchMore && !expanded && !childData.length) {
+            fetchChildData();
+        }
+        setExpanded(!expanded);
+    };
+
+
+
+    const handleAccountExpand = (e, accId) => {
+        e.stopPropagation();
+        if (expandedAccountId === accId) {
+            setExpandedAccountId(null);
+        } else {
+
+            setExpandedAccountId(accId);
+            if (!accountDetails.some(detail => detail.Acc_Id?.includes(accId.toString()))) {
+                fetchAccountDetails(accId);
+            }
+        }
+    };
+
 
     return (
         <Box sx={{ ml: depth * 2 }}>
-            <Paper sx={{ mb: 1, p: 1, backgroundColor: depth === 0 ? "#f5f5f5" : "white" }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between"
-                    sx={{ cursor: (hasChildren || hasAccounts) ? "pointer" : "default" }}
-                    onClick={() => (hasChildren || hasAccounts) && setExpanded(!expanded)}>
-                    <Box display="flex" alignItems="center">
-                        {(hasChildren || hasAccounts) && (
+            <Paper sx={{
+                mb: 1,
+                p: 1,
+                backgroundColor: depth === 0 ? "#f5f5f5" : "white",
+                overflow: 'hidden'
+            }}>
+                <Box
+                    display="flex"
+                    alignItems="center"
+                    sx={{
+                        cursor: (hasChildren || hasAccounts || canFetchMore) ? "pointer" : "default",
+                        minHeight: '48px'
+                    }}
+                    onClick={handleExpandClick}
+                >
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flex: '1 1 50%',
+                        minWidth: 0
+                    }}>
+                        {(hasChildren || hasAccounts || canFetchMore) && (
                             <IconButton size="small" sx={{ mr: 1 }}>
                                 {expanded ? <ExpandLess /> : <ExpandMore />}
                             </IconButton>
                         )}
-                        {hasChildren ? <AccountTree color="primary" sx={{ mr: 1 }} /> : <AccountBalance color="secondary" sx={{ mr: 1 }} />}
-                        <Typography fontWeight="medium">{node.group_name}</Typography>
+                        {hasChildren
+                            ? <AccountTreeOutlined color="primary" sx={{ mr: 1 }} />
+                            : <AccountBalanceOutlined color="secondary" sx={{ mr: 1 }} />
+                        }
+                        <Typography fontWeight="medium" noWrap sx={{ flex: 1 }}>
+                            {node.group_name || node.Account_Name || 'Expense'}
+                        </Typography>
                     </Box>
-                    <Box display="flex" gap={3} sx={{ mr: 2 }}>
-                        <Typography variant="body2">Debit: {totals.debit.toFixed(2)}</Typography>
-                        <Typography variant="body2">Credit: {totals.credit.toFixed(2)}</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: "bold", color: totals.balance >= 0 ? "green" : "red" }}>
-                            Balance: {totals.balance.toFixed(2)}
+
+                    <Box sx={{
+                        display: 'flex',
+                        flex: '1 1 50%',
+                        justifyContent: 'flex-end',
+                        gap: 3,
+                        pr: 2
+                    }}>
+                        <Typography variant="body2" sx={{ minWidth: 120, textAlign: 'right' }}>
+                            Debit: ₹{NumberFormat(Number(totals.debit.toFixed(2)))}
+                        </Typography>
+                        <Typography variant="body2" sx={{ minWidth: 120, textAlign: 'right' }}>
+                            Credit: ₹{NumberFormat(Number(totals.credit.toFixed(2)))}
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                minWidth: 140,
+                                textAlign: 'right',
+                                fontWeight: "bold",
+                                color: totals.balance >= 0 ? "green" : "red"
+                            }}
+                        >
+                            Balance: ₹{NumberFormat(Math.abs(totals.balance).toFixed(2))}
+                            {totals.balance >= 0 ? 'Dr' : 'Cr'}
                         </Typography>
                     </Box>
                 </Box>
@@ -61,7 +193,13 @@ const ExpenseNode = ({ node, depth = 0 }) => {
                 <Collapse in={expanded}>
                     {hasAccounts && (
                         <TableContainer sx={{ mt: 1, mb: 1 }}>
-                            <Table size="small">
+                            <Table size="small" sx={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '50%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '10%' }} />
+                                </colgroup>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: "#eeeeee" }}>
                                         <TableCell>Account</TableCell>
@@ -71,31 +209,129 @@ const ExpenseNode = ({ node, depth = 0 }) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {node.accounts.map(acc => (
-                                        <TableRow key={acc.Acc_Id}>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center">
-                                                    <AttachMoney fontSize="small" sx={{ mr: 1 }} />
-                                                    {acc.Account_Name}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell align="right">{acc.Debit_Amount?.toFixed(2) || '0.00'}</TableCell>
-                                            <TableCell align="right">{acc.Credit_Amount?.toFixed(2) || '0.00'}</TableCell>
-                                            <TableCell align="right">
-                                                {((acc.Debit_Amount || 0) - (acc.Credit_Amount || 0)).toFixed(2)}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {node.accounts.map(acc => {
+                                        const isLeafAccount = !acc.children?.length;
+                                        return (
+                                            <React.Fragment key={acc.Acc_Id}>
+                                                <TableRow hover>
+                                                    <TableCell sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        <Box display="flex" alignItems="center">
+                                                            <AttachMoneyOutlined fontSize="small" sx={{ mr: 1 }} />
+                                                            {acc.Account_Name}
+                                                            {isLeafAccount && (
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => handleAccountExpand(e, acc.Acc_Id)}
+                                                                    sx={{ ml: 1 }}
+                                                                >
+                                                                    {expandedAccountId === acc.Acc_Id
+                                                                        ? <Remove fontSize="small" />
+                                                                        : <Add fontSize="small" />}
+                                                                </IconButton>
+                                                            )}
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell align="right">₹{NumberFormat(Number(acc.Debit_Amount || 0).toFixed(2))}</TableCell>
+                                                    <TableCell align="right">₹{NumberFormat(Number(acc.Credit_Amount || 0).toFixed(2))}</TableCell>
+                                                    <TableCell align="right">₹{NumberFormat(Number(acc.Debit_Amount || 0 - acc.Credit_Amount || 0).toFixed(2))}</TableCell>
+                                                </TableRow>
+
+                                                {expandedAccountId === acc.Acc_Id && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} sx={{ p: 0, backgroundColor: "#fafafa" }}>
+                                                            {loadingAccountDetails ? (
+                                                                <Box display="flex" justifyContent="center" p={2}>
+                                                                    <CircularProgress size={24} />
+                                                                </Box>
+                                                            ) : accountDetails.some(detail => detail.Acc_Id?.includes(acc.Acc_Id.toString())) ? (
+                                                                <Table size="small" sx={{ tableLayout: "fixed" }}>
+                                                                    <colgroup>
+                                                                        <col style={{ width: "10%" }} />
+                                                                        <col style={{ width: "10%" }} />
+                                                                        <col style={{ width: "20%" }} />
+                                                                        <col style={{ width: "18%" }} />
+                                                                        <col style={{ width: "10%" }} />
+                                                                        <col style={{ width: "10%" }} />
+                                                                    </colgroup>
+                                                                    <TableHead>
+                                                                        <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
+                                                                            <TableCell>Date</TableCell>
+                                                                            <TableCell>Invoice No</TableCell>
+                                                                            <TableCell align="left">Particular</TableCell>
+                                                                            <TableCell align="right">Debit</TableCell>
+                                                                            <TableCell align="right">Credit</TableCell>
+                                                                            <TableCell align="right">Balance</TableCell>
+                                                                        </TableRow>
+                                                                    </TableHead>
+                                                                    <TableBody>
+                                                                        {accountDetails
+                                                                            .filter(detail => detail.Acc_Id?.includes(acc.Acc_Id.toString()))
+                                                                            .map((detail, idx) => (
+                                                                                <TableRow key={`detail-${idx}`}>
+                                                                                    <TableCell>
+                                                                                        {new Date(detail.Ledger_Date).toLocaleDateString('en-GB', {
+                                                                                            day: '2-digit',
+                                                                                            month: '2-digit',
+                                                                                            year: 'numeric'
+                                                                                        }).replace(/\//g, '-')}
+                                                                                    </TableCell>
+                                                                                    <TableCell>{detail.invoice_no}</TableCell>
+                                                                                    <TableCell>{detail.Particulars}</TableCell>
+                                                                                    <TableCell align="right">₹{NumberFormat(Number(detail.Debit_Amt || 0).toFixed(2))}</TableCell>
+                                                                                    <TableCell align="right">₹{NumberFormat(Number(detail.Credit_Amt || 0).toFixed(2))}</TableCell>
+                                                                                    <TableCell align="right">₹{NumberFormat((Number(detail.Debit_Amt || 0) - Number(detail.Credit_Amt || 0)).toFixed(2))}</TableCell>    </TableRow>
+                                                                            ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            ) : (
+                                                                <Typography sx={{ p: 2, color: "text.secondary" }}>
+                                                                    No transactions available
+                                                                </Typography>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         </TableContainer>
                     )}
 
                     {hasChildren && (
-                        <Box>
+                        <Box sx={{ mt: 1 }}>
                             {node.children.map(child => (
-                                <ExpenseNode key={child.group_id} node={child} depth={depth + 1} />
+                                <ExpenseNode
+                                    key={child.group_id}
+                                    node={child}
+                                    depth={depth + 1}
+                                    filters={filters}
+                                />
                             ))}
+                        </Box>
+                    )}
+
+                    {canFetchMore && expanded && (
+                        <Box sx={{ mt: 1 }}>
+                            {loadingChildren ? (
+                                <Box display="flex" justifyContent="center" p={2}>
+                                    <CircularProgress size={24} />
+                                </Box>
+                            ) : childData.length > 0 ? (
+                                childData.map((item) => (
+                                    <ExpenseNode
+                                        key={item.group_id || item.Acc_Id}
+                                        node={item}
+                                        depth={depth + 1}
+                                        filters={filters}
+                                    />
+                                ))
+                            ) : (
+                                <Typography variant="body2" sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                                    No additional data available
+                                </Typography>
+                            )}
                         </Box>
                     )}
                 </Collapse>
@@ -106,141 +342,105 @@ const ExpenseNode = ({ node, depth = 0 }) => {
 
 const ExpenseHierarchy = () => {
     const today = new Date().toISOString().split("T")[0];
-
     const [hierarchy, setHierarchy] = useState([]);
     const [fullHierarchy, setFullHierarchy] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-    const [filterOptions, setFilterOptions] = useState({
-
-        accountNames: [],
-
-    });
+    const [filterOptions, setFilterOptions] = useState({ accountNames: [] });
     const [filters, setFilters] = useState({
         fromDate: today,
         toDate: today,
         accountName: null,
-
     });
+
+    const extractAccountNames = useCallback((nodes, accountNames = new Set()) => {
+        nodes.forEach(node => {
+            if (node.accounts?.length) {
+                node.accounts.forEach(acc => {
+                    if (acc.Account_Name) accountNames.add(acc.Account_Name);
+                });
+            }
+            if (node.children?.length) {
+                extractAccountNames(node.children, accountNames);
+            }
+        });
+        return accountNames;
+    }, []);
 
     useEffect(() => {
         if (fullHierarchy.length > 0) {
-            const groupNames = new Set();
-            const accountNames = new Set();
-            const ledgerNames = new Set();
-
-            const extractData = (nodes) => {
-                nodes.forEach(node => {
-                    if (node.group_name) groupNames.add(node.group_name);
-
-                    if (node.accounts?.length) {
-                        node.accounts.forEach(acc => {
-                            if (acc.Account_Name) accountNames.add(acc.Account_Name);
-
-                        });
-                    }
-
-                    if (node.children?.length) {
-                        extractData(node.children);
-                    }
-                });
-            };
-
-            extractData(fullHierarchy);
-
-            setFilterOptions({
-                accountNames: Array.from(accountNames),
-            });
+            const accountNames = extractAccountNames(fullHierarchy);
+            setFilterOptions(prev => ({
+                ...prev,
+                accountNames: Array.from(accountNames).sort(),
+            }));
         }
-    }, [fullHierarchy]);
+    }, [fullHierarchy, extractAccountNames]);
 
-    const filterHierarchy = (nodes) => {
+    const filterHierarchy = useCallback((nodes) => {
         if (!nodes) return [];
-
         return nodes.reduce((acc, node) => {
-
             const newNode = { ...node };
-
             if (newNode.accounts?.length) {
                 newNode.accounts = newNode.accounts.filter(acc => {
-
                     if (filters.accountName && !acc.Account_Name?.toLowerCase().includes(filters.accountName.toLowerCase())) {
-                        return false;
-                    }
-                    if (filters.ledgerName &&
-                        !acc.Debit_Ledger_Name?.toLowerCase().includes(filters.ledgerName.toLowerCase()) &&
-                        !acc.Credit_Ledger_Name?.toLowerCase().includes(filters.ledgerName.toLowerCase())) {
                         return false;
                     }
                     return true;
                 });
             }
-
             if (newNode.children?.length) {
                 newNode.children = filterHierarchy(newNode.children);
             }
-
-            const groupNameMatch = !filters.groupName ||
-                newNode.group_name?.toLowerCase().includes(filters.groupName.toLowerCase());
-
             const hasMatchingAccounts = newNode.accounts?.length > 0;
             const hasMatchingChildren = newNode.children?.length > 0;
-            const hasMatchingData = hasMatchingAccounts || hasMatchingChildren;
-
-
-            if (groupNameMatch && hasMatchingData) {
+            if (hasMatchingAccounts || hasMatchingChildren) {
                 acc.push(newNode);
             }
-
             return acc;
         }, []);
-    };
+    }, [filters.accountName]);
 
-    const fetchExpenseHierarchy = async () => {
+    const fetchExpenseHierarchy = useCallback(async () => {
         try {
             setLoading(true);
             const query = new URLSearchParams({
                 fromDate: filters.fromDate,
                 toDate: filters.toDate
             }).toString();
-
             const response = await fetchLink({ address: `/reports/expenseReport?${query}` });
             const data = response.data || [];
-
             setFullHierarchy(data);
             setHierarchy(data);
-            setFilterDialogOpen(false);
         } catch (err) {
             console.error("Error fetching expenses:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters.fromDate, filters.toDate]);
 
-    const applyFilters = () => {
-        if (!filters.groupName && !filters.accountName && !filters.ledgerName) {
+    const applyFilters = useCallback(() => {
+        if (!filters.accountName) {
             setHierarchy(fullHierarchy);
         } else {
             const filteredData = filterHierarchy(JSON.parse(JSON.stringify(fullHierarchy)));
             setHierarchy(filteredData);
         }
         setFilterDialogOpen(false);
-    };
+    }, [filters.accountName, fullHierarchy, filterHierarchy]);
 
-    const resetFilters = () => {
+    const resetFilters = useCallback(() => {
         setFilters({
             fromDate: today,
             toDate: today,
-            groupName: null,
             accountName: null,
-            ledgerName: null
         });
         setHierarchy(fullHierarchy);
-    };
+    }, [fullHierarchy, today]);
 
     useEffect(() => {
         fetchExpenseHierarchy();
-    }, [filters.fromDate, filters.toDate]);
+    }, [fetchExpenseHierarchy]);
 
     return (
         <Box sx={{ p: 3 }}>
@@ -249,7 +449,7 @@ const ExpenseHierarchy = () => {
                 <Box>
                     <Tooltip title="Reset filters">
                         <IconButton onClick={resetFilters} sx={{ mr: 1 }}>
-                            <ClearAll />
+                            <ClearAllOutlined />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Filter options">
@@ -258,7 +458,7 @@ const ExpenseHierarchy = () => {
                             onClick={() => setFilterDialogOpen(true)}
                             sx={{ backgroundColor: 'rgba(25, 118, 210, 0.04)' }}
                         >
-                            <FilterList />
+                            <FilterListOutlined />
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -284,8 +484,6 @@ const ExpenseHierarchy = () => {
                             InputLabelProps={{ shrink: true }}
                             fullWidth
                         />
-
-
                         <Autocomplete
                             options={filterOptions.accountNames}
                             value={filters.accountName}
@@ -295,8 +493,6 @@ const ExpenseHierarchy = () => {
                             )}
                             freeSolo
                         />
-
-
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -319,7 +515,11 @@ const ExpenseHierarchy = () => {
                 </Paper>
             ) : (
                 hierarchy.map(group => (
-                    <ExpenseNode key={group.group_id} node={group} />
+                    <ExpenseNode
+                        key={group.group_id}
+                        node={group}
+                        filters={filters}
+                    />
                 ))
             )}
         </Box>

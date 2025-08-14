@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { checkIsNumber, isEqualNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
-import { customSelectStyles } from "../../../Components/tablecolumn";
 import { receiptTypes, transactionTypes } from "./variable";
+import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
 
 const ReceiptGeneralInfo = ({
@@ -147,7 +147,7 @@ const ReceiptGeneralInfo = ({
 
                 {/* transaction type */}
                 <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                    <label>Transaction Type<RequiredStar /></label>
+                    <label>Transaction Type</label>
                     <select
                         value={receiptValue.transaction_type || ''}
                         onChange={e => onChangeReceiptValue('transaction_type', e.target.value)}
