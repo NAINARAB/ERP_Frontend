@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@mui/material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
-import { toast } from "react-toastify";
 
 function OutStandingNew({ loadingOn, loadingOff }) {
     const getTodayDate = () => {
@@ -10,65 +9,79 @@ function OutStandingNew({ loadingOn, loadingOff }) {
         return today.toISOString().split("T")[0];
     };
 
-    const [salesReceipts, setSalesReceipts] = useState([]);
     const [filters, setFilters] = useState({ Fromdate: getTodayDate() });
+
+    const [tillBillingData, setTillBillingData] = useState([]);
+    const [noBillingData, setNoBillingData] = useState([]);
+
+    const [salesReceipts, setSalesReceipts] = useState([]);
     const [Total_Invoice_value, setTotal_Invoice_value] = useState(0);
     const [activeButton, setActiveButton] = useState("tillBilling");
 
-    const handleApiResponse = (data) => {
-        const arr = Array.isArray(data) ? data : data?.data || [];
-        setSalesReceipts(arr);
-        setTotal_Invoice_value(
-            arr.reduce((sum, item) => sum + Number(item.Total_Invoice_value || 0), 0)
-        );
-    };
+    const calculateTotal = (arr) =>
+        arr.reduce((sum, item) => sum + Number(item.Total_Invoice_value || 0), 0);
 
-    const fetchTillBilling = async () => {
-        if (!filters.Fromdate) {
-            alert("Please select a date first");
-            return;
-        }
-        try {
-            setActiveButton("tillBilling");
-            const formattedDate = encodeURIComponent(filters.Fromdate);
-            const data = await fetchLink({
-                address: `receipt/outStandingAbove?reqDate=${formattedDate}`,
-                loadingOn, loadingOff
-            });
-            handleApiResponse(data);
-        } catch (e) {
-            setSalesReceipts([]);
-        }
-    };
-
-    const fetchOutstandingNoBilling = async () => {
-        if (!filters.Fromdate) {
-
-            toast.error('Please select a date first')
-            return;
-        }
-        try {
-            setActiveButton("noBilling");
-            const formattedDate = encodeURIComponent(filters.Fromdate);
-            const data = await fetchLink({
-                address: `receipt/outstandingOver?reqDate=${formattedDate}`,
-                loadingOn, loadingOff
-            });
-            handleApiResponse(data);
-        } catch (error) {
-            setSalesReceipts([]);
-        }
-    };
-
+    // Initial load: fetch both APIs with loading spinner
     useEffect(() => {
-        fetchTillBilling();
-    }, []);
+        const fetchData = async () => {
+            try {
+                if (loadingOn) loadingOn();
+                const formattedDate = encodeURIComponent(filters.Fromdate);
+
+                const [tillRes, noBillRes] = await Promise.all([
+                    fetchLink({
+                        address: `receipt/outStandingAbove?reqDate=${formattedDate}`,
+                    }),
+                    fetchLink({
+                        address: `receipt/outstandingOver?reqDate=${formattedDate}`,
+                    }),
+                ]);
+
+                const tillArr = Array.isArray(tillRes) ? tillRes : tillRes?.data || [];
+                const noBillArr = Array.isArray(noBillRes)
+                    ? noBillRes
+                    : noBillRes?.data || [];
+
+                setTillBillingData(tillArr);
+                setNoBillingData(noBillArr);
+
+                // Default view → Till Billing
+                setSalesReceipts(tillArr);
+                setTotal_Invoice_value(calculateTotal(tillArr));
+            } catch (error) {
+                console.error("Error fetching outstanding data:", error);
+                setTillBillingData([]);
+                setNoBillingData([]);
+            } finally {
+                if (loadingOff) loadingOff();
+            }
+        };
+
+        fetchData();
+    }, []); // run only once at mount
+
+    const switchToTillBilling = () => {
+        setActiveButton("tillBilling");
+        setSalesReceipts(tillBillingData);
+        setTotal_Invoice_value(calculateTotal(tillBillingData));
+    };
+
+    const switchToNoBilling = () => {
+        setActiveButton("noBilling");
+        setSalesReceipts(noBillingData);
+        setTotal_Invoice_value(calculateTotal(noBillingData));
+    };
 
     return (
         <div>
-
             <FilterableTable
-                title={activeButton === 'tillBilling' ? "Till Billing" : "OutStanding No Bill"}
+                title={
+                    activeButton === "tillBilling"
+                        ? "Till Billing"
+                        : activeButton === "noBilling"
+                            ? "OutStanding No Bill"
+                            : "Outstanding"
+                }
                 ButtonArea={
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <input
@@ -84,7 +97,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                         <Button
                             variant={activeButton === "tillBilling" ? "contained" : "outlined"}
                             color="primary"
-                            onClick={fetchTillBilling}
+                            onClick={switchToTillBilling}
                             sx={{ minWidth: 150, height: 40 }}
                         >
                             Till Billing
@@ -93,7 +106,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                         <Button
                             variant={activeButton === "noBilling" ? "contained" : "outlined"}
                             color="primary"
-                            onClick={fetchOutstandingNoBilling}
+                            onClick={switchToNoBilling}
                             sx={{ minWidth: 150, height: 40 }}
                         >
                             No Billing
@@ -101,7 +114,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
 
                         {Number(Total_Invoice_value) > 0 && (
                             <h6 className="m-0 text-end text-muted px-3">
-                                Total: {Total_Invoice_value}
+                                Total: {Math.abs(Total_Invoice_value)}
                             </h6>
                         )}
                     </div>
@@ -111,12 +124,15 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                 headerFontSizePx={14}
                 bodyFontSizePx={13}
                 columns={[
-                    createCol("Retailer_Name", "string", "Retailer_Name"),
+                    createCol("Retailer_Name", "string", "Retailer Name"),
                     createCol("Above 30 Pending Amt", "number", "Above 30 Pending Amt"),
                     createCol("Sum of Nos", "number", "Sum of Nos"),
                     createCol("Max of Overdue", "number", "Max of Overdue"),
-                    createCol("Overall Outstanding Amt", "number", "Overall Outstanding Amt"),
-
+                    createCol(
+                        "Overall Outstanding Amt",
+                        "number",
+                        "Overall Outstanding Amt"
+                    ),
                 ]}
                 isExpendable={false}
                 expandableComp={({ row }) => (

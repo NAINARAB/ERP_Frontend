@@ -102,7 +102,6 @@ const ExpencesOfSalesInvoice = ({
                             <tr>
                                 {[
                                     'S.No', 'Expense', 
-                                    // 'GST %', 'Tax', 
                                     'Expense Value', 'Action'].map(
                                     (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
                                 )}
@@ -130,25 +129,16 @@ const ExpencesOfSalesInvoice = ({
                                             placeholder="Select Expense"
                                         />
                                     </td>
-                                    {/* <td className="p-0 vctr">
-                                        <input
-                                            onInput={onlynum}
-                                            className="cus-inpt p-2 border-0"
-                                            value={(IS_IGST ? toNumber(row.Igst) : Addition(row?.Cgst, row?.Sgst)) || ''}
-                                            disabled={!checkIsNumber(row.Expense_Id)}
-                                            onChange={e => handleInputChange(index, 'Igst', e.target.value)}
-                                        />
-                                    </td>
-                                    <td className="p-0 vctr text-center" >
-                                        {NumberFormat(IS_IGST ? toNumber(row?.Igst_Amo) : Addition(row?.Cgst_Amo, row?.Sgst_Amo))}
-                                    </td> */}
                                     <td className="p-0 vctr">
                                         <input
                                             onInput={onlynumAndNegative}
                                             className="cus-inpt p-2 border-0"
-                                            value={toNumber(row.Expence_Value) || ''}
+                                            value={row.Expence_Value || ''}
                                             disabled={!checkIsNumber(row.Expense_Id)}
-                                            onChange={e => handleInputChange(index, 'Expence_Value', e.target.value)}
+                                            onChange={e => {
+                                                console.log(e.target.value)
+                                                handleInputChange(index, 'Expence_Value', e.target.value)
+                                            }}
                                         />
                                     </td>
                                     <td className="p-0 vctr  text-center ">

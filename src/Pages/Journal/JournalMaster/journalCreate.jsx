@@ -146,7 +146,10 @@ const JournalCreate = ({ loadingOn, loadingOff }) => {
 
         fetchLink({
             address: `journal/journalMaster`,
-            method: 'POST',
+            method: (
+                journalGeneralInfo?.JournalAutoId
+                && checkIsNumber(journalGeneralInfo?.JournalId)
+            ) ? 'PUT' : 'POST',
             bodyData: {
                 ...journalGeneralInfo,
                 Entries: journalEntriesInfo,

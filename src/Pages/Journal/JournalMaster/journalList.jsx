@@ -218,9 +218,10 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                         return (row?.journalObject && EditRights) && (
                             <>
                                 <IconButton size="small" onClick={() => {
+                                    // console.log(row)
                                     nav('create', {
                                         state: {
-                                            ...row.processObjecet,
+                                            ...row.journalObject,
                                         }
                                     })
                                 }}>

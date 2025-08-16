@@ -360,33 +360,6 @@ export const onlynum = (e) => {
     e.target.value = value;
 };
 
-// export const onlynumAndNegative = (e) => {
-//     let value = e.target.value;
-
-//     // Remove everything except digits, dot, and minus
-//     value = value.replace(/[^0-9.-]/g, '');
-
-//     // Handle multiple dots
-//     const parts = value.split('.');
-//     if (parts.length > 2) {
-//         // Rebuild by keeping only the first dot
-//         value = parts.shift() + '.' + parts.join('');
-//     }
-
-//     // Handle minus sign
-//     const minusCount = (value.match(/-/g) || []).length;
-//     if (minusCount > 1) {
-//         value = value.replace(/-+/g, '-'); // reduce multiple minuses to one
-//     }
-//     if (value.includes('-') && !value.startsWith('-')) {
-//         // Move minus to the front if misplaced
-//         value = value.replace(/-/g, '');
-//         value = '-' + value;
-//     }
-
-//     e.target.value = value;
-// };
-
 export const onlynumAndNegative = (e) => {
     let value = e.target.value;
 
@@ -414,15 +387,6 @@ export const onlynumAndNegative = (e) => {
 
     e.target.value = value;
 };
-
-
-
-
-// export const onlynum = (e) => {
-//     const value = e.target.value;
-//     const newValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
-//     return e.target.value = newValue;
-// }
 
 export const isEqualNumber = (a, b) => {
     return Number(a) === Number(b)

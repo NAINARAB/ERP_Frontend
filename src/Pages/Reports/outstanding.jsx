@@ -10,23 +10,23 @@ import {
 import {
     ISOString,
     isValidDate,
-    Subraction,
+    NumberFormat,
     toArray,
-    toNumber,
-    Addition
+    Addition,
 } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import Select from "react-select";
-import { useEffect, useState } from "react";
-import { FilterAlt, Search } from "@mui/icons-material";
+import { useEffect, useState, useMemo } from "react";
+import { FilterAlt, Search, FilterAltOff } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { useMemo } from "react";
+
 const useQuery = () => new URLSearchParams(useLocation().search);
+
 const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
+    fromDate: ISOString(),
+    toDate: ISOString(),
 };
 
 const defaultFilterDropDown = {
@@ -42,32 +42,28 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     const query = useQuery();
     const storage = JSON.parse(localStorage.getItem("user"));
-    const [salesReceipts, setSalesReceipts] = useState([]);
-    const [drowDownValues, setDropDownValues] = useState(defaultFilterDropDown);
+
+    const [allAccounts, setAllAccounts] = useState([]);
+    const [viewType, setViewType] = useState("debtors");
+
+    const [accountOptions, setAccountOptions] = useState([]);
+    const [groupOptions, setGroupOptions] = useState([]);
+
     const [filters, setFilters] = useState({
-        Fromdate: defaultFilters.Fromdate,
-        Todate: defaultFilters.Todate,
-        fetchFrom: defaultFilters.Fromdate,
-        fetchTo: defaultFilters.Todate,
-        Retailer_Id: "",
-        Retailer_Name: "ALL",
-        Area_Id: "",
-        Area_Name: "ALL",
-        Route_Id: "",
-        RoutesGet: "ALL",
-        // verify_status: { value: "", label: "Search by verify status" },
-        // payment_status: { value: "", label: "Search by payment status" },
-        // collected_by: { value: "", label: "Search by collection person" },
+        fromDate: defaultFilters.fromDate,
+        toDate: defaultFilters.toDate,
+        fetchFrom: defaultFilters.fromDate,
+        fetchTo: defaultFilters.toDate,
+        Account_Id: "",
+        Group_Name: "",
         filterDialog: false,
         refresh: false,
     });
-    const [retailers, setRetailers] = useState([]);
-    const [area, setArea] = useState([]);
-    const [routes, setRoutes] = useState([]);
+
+    const [drowDownValues, setDropDownValues] = useState(defaultFilterDropDown);
+
     useEffect(() => {
-        fetchLink({
-            address: `receipt/filterValues`,
-        })
+        fetchLink({ address: `receipt/filterValues` })
             .then((data) => {
                 if (data.success) {
                     setDropDownValues({
@@ -75,79 +71,101 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                     });
                 }
             })
-            .catch((e) => console.error(e));
-    }, []);
-    useEffect(() => {
-        fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setRetailers(data.data);
-                }
-            })
-            .catch((e) => console.error(e));
+            .catch(console.error);
 
-        fetchLink({
-            address: `masters/areas/dropdown?Company_Id=${storage?.Company_id}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setArea(data.data);
-                }
-            })
-            .catch((e) => console.error(e));
-
-        fetchLink({
-            address: `masters/routes/dropdown?Company_id=${storage?.Company_id}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setRoutes(data.data);
-                }
-            })
-            .catch((e) => console.error(e));
-
-
-
+        fetchAllAccounts();
     }, [storage?.Company_id]);
+    const resetFilters = () => {
+        setFilters({
+            ...defaultFilters,
+            fetchFrom: defaultFilters.fromDate,
+            fetchTo: defaultFilters.toDate,
+            Account_Id: "",
+            Group_Name: "",
+            filterDialog: false,
+            refresh: false,
+        });
 
+        updateQueryString({
+            fromDate: defaultFilters.fromDate,
+            toDate: defaultFilters.toDate,
+            Account_Id: "",
+            Group_Name: "",
+        });
 
-
-
-
-    useEffect(() => {
+        fetchAllAccounts();
+    };
+    const fetchAllAccounts = () => {
         if (loadingOn) loadingOn();
-
         fetchLink({
-            address: `receipt/outstanding?Fromdate=${filters?.fetchFrom}&Todate=${filters?.fetchTo}&Retailer_Id=${filters.Retailer_Id}&Area_Id=${filters.Area_Id}&Route_Id=${filters.Route_Id}`,
+            address: `payment/debtorsCreditors?fromDate=${filters?.fromDate}&toDate=${filters?.toDate}`,
+            method: "post",
         })
             .then((data) => {
-                if (data.success) {
-                    setSalesReceipts(data.data);
-                }
+                if (data.success) setAllAccounts(data.data);
             })
-            .finally(() => {
-                if (loadingOff) loadingOff();
-            })
-            .catch((e) => console.error(e));
-    }, [filters?.fetchFrom, filters?.fetchTo, filters?.refresh]);
+            .finally(() => loadingOff && loadingOff())
+            .catch(console.error);
+    };
+
+    useEffect(() => {
+        if (Array.isArray(allAccounts)) {
+            const accOpts = allAccounts.map((a) => ({
+                value: a.Acc_Id,
+                label: a.Account_name,
+            }));
+
+            const grpOpts = [
+                ...new Map(
+                    allAccounts.map((a) => [
+                        a.Group_Name,
+                        { value: a.Group_Name, label: a.Group_Name },
+                    ])
+                ).values(),
+            ];
+
+            setAccountOptions([{ value: "", label: "ALL" }, ...accOpts]);
+            setGroupOptions([{ value: "", label: "ALL" }, ...grpOpts]);
+        }
+    }, [allAccounts]);
+
+    const tableData = useMemo(() => {
+        if (!Array.isArray(allAccounts)) return [];
+
+        return allAccounts.filter((item) => {
+            const balance = parseFloat(item?.Bal_Amount || 0);
+
+            if (viewType === "debtors" && balance <= 0) return false;
+            if (viewType === "creditors" && balance >= 0) return false;
+
+            if (filters.Account_Id && item.Acc_Id !== filters.Account_Id)
+                return false;
+            if (filters.Group_Name && item.Group_Name !== filters.Group_Name)
+                return false;
+
+            return true;
+        });
+    }, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
+
+    const Total_Invoice_value = useMemo(() => {
+        return tableData.reduce((acc, item) => Addition(acc, item?.Bal_Amount), 0);
+    }, [tableData]);
 
     useEffect(() => {
         const queryFilters = {
-            Fromdate:
-                query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                    ? query.get("Fromdate")
-                    : defaultFilters.Fromdate,
-            Todate:
-                query.get("Todate") && isValidDate(query.get("Todate"))
-                    ? query.get("Todate")
-                    : defaultFilters.Todate,
+            fromDate:
+                query.get("fromDate") && isValidDate(query.get("fromDate"))
+                    ? query.get("fromDate")
+                    : defaultFilters.fromDate,
+            toDate:
+                query.get("toDate") && isValidDate(query.get("toDate"))
+                    ? query.get("toDate")
+                    : defaultFilters.toDate,
         };
         setFilters((pre) => ({
             ...pre,
-            fetchFrom: queryFilters.Fromdate,
-            fetchTo: queryFilters.Todate,
+            fetchFrom: queryFilters.fromDate,
+            fetchTo: queryFilters.toDate,
         }));
     }, [location.search]);
 
@@ -159,23 +177,33 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
     const closeDialog = () => {
         setFilters((pre) => ({ ...pre, filterDialog: false }));
     };
-    const Total_Invoice_value = useMemo(() => salesReceipts.reduce(
-        (acc, orders) => Addition(acc, orders?.Closing_Balance), 0
-    ), [salesReceipts])
+
     return (
         <>
             <FilterableTable
-                title="Receipts"
+                title={
+                    viewType === "debtors"
+                        ? "Debtors Outstanding"
+                        : "Creditors Outstanding"
+                }
                 ButtonArea={
                     <>
-                        {/* <Button
-                              variant="outlined"
-                              className="ms-2"
-                              onClick={() => navigate('create')}>
-                              Create Receipt
-                          </Button> */}
-                        <Tooltip title="Filters">
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <Button
+                                variant={viewType === "debtors" ? "contained" : "outlined"}
+                                onClick={() => setViewType("debtors")}
+                            >
+                                Debtors
+                            </Button>
+                            <Button
+                                variant={viewType === "creditors" ? "contained" : "outlined"}
+                                onClick={() => setViewType("creditors")}
+                            >
+                                Creditors
+                            </Button>
+                        </div>
 
+                        <Tooltip title="Filters">
                             <IconButton
                                 size="small"
                                 onClick={() => setFilters({ ...filters, filterDialog: true })}
@@ -183,60 +211,47 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
-                        {toNumber(Total_Invoice_value) > 0 && <h6 className="m-0 text-end text-muted px-3">Total: {Total_Invoice_value}</h6>}
+                        <Tooltip title="Reset Filters">
+                            <IconButton size="small" onClick={resetFilters}>
+                                <FilterAltOff />
+                            </IconButton>
+                        </Tooltip>
+                        {NumberFormat(Total_Invoice_value) !== 0 && (
+                            <h6 className="m-0 text-end text-muted px-3">
+                                Total: {NumberFormat(Math.abs(Total_Invoice_value))}
+                            </h6>
+                        )}
                     </>
                 }
                 EnableSerialNumber
-                dataArray={salesReceipts}
+                dataArray={tableData}
                 headerFontSizePx={14}
                 bodyFontSizePx={13}
                 columns={[
-                    createCol("Retailer_Name", "string", "Retailer_Name"),
-                    createCol("Opening_Pending_Amount", "string", "Opening_Pending_Amount"),
-                    createCol("Current_Invoice_Value", "string", "Current_Invoice_Value"),
-                    createCol(
-                        "Current_Collected_Amount",
-                        "string",
-                        "Current_Collected_Amount"
-                    ),
-                    createCol("Closing_Balance", "number", "Closing_Balance"),
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Action',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => (
-                    //         <span className="">{isEqualNumber(row?.verify_status) ? 'Verified' : 'Pending'}</span>
-                    //     )
-                    // },
+                    createCol("Acc_Id", "string", "Account ID"),
+                    createCol("Account_name", "string", "Account Name"),
+                    createCol("Group_Name", "string", "Group"),
+                    createCol("OB_Amount", "number", "Opening Balance"),
+                    createCol("Debit_Amt", "number", "Debit Amount"),
+                    createCol("Credit_Amt", "number", "Credit Amount"),
+                    {
+                        Field_Name: "Bal_Amount",
+                        isVisible: 1,
+                        Fied_Data: "number",
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <div className="d-flex align-items-center flex-wrap p-2 pb-0">
+                                {row?.CR_DR === "DR"
+                                    ? `${NumberFormat(row?.Dr_Amount)} `
+                                    : `${NumberFormat(row?.Cr_Amount)} `}
+                            </div>
+                        ),
+                    },
+                    createCol("CR_DR", "string", "Type"),
                 ]}
-                isExpendable={false}
-                expandableComp={({ row }) => (
-                    <div className="py-2">
-                        <FilterableTable
-                            // title="Receipts"
-                            disablePagination
-                            headerFontSizePx={13}
-                            bodyFontSizePx={12}
-                            dataArray={Array.isArray(row?.Receipts) ? row?.Receipts : []}
-                            columns={[
-                                createCol("Do_Inv_No", "string", "Delivery Invoice Number"),
-                                createCol("Do_Date", "date", "Delivery Date"),
-                                createCol("collected_amount", "number", "Receipt Amount"),
-                                createCol("total_receipt_amount", "number", "Total Receipt"),
-                                createCol("Total_Invoice_value", "number", "Invoice Value"),
-                                {
-                                    isVisible: 1,
-                                    ColumnHeader: "Pending Amount",
-                                    isCustomCell: true,
-                                    Cell: ({ row }) =>
-                                        Subraction(row?.bill_amount, row?.total_receipt_amount),
-                                },
-                            ]}
-                        />
-                    </div>
-                )}
             />
 
+            {/* Filter Dialog */}
             <Dialog
                 open={filters.filterDialog}
                 onClose={closeDialog}
@@ -245,164 +260,105 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
             >
                 <DialogTitle>Filters</DialogTitle>
                 <DialogContent>
-                    <div className="table-responsive pb-4">
-                        <table className="table">
-                            <tbody>
-                                <tr>
-                                    <td style={{ verticalAlign: "middle" }}>From</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Fromdate}
-                                            onChange={(e) =>
-                                                setFilters({ ...filters, Fromdate: e.target.value })
-                                            }
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                    <td style={{ verticalAlign: "middle" }}>To</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Todate}
-                                            onChange={(e) =>
-                                                setFilters({ ...filters, Todate: e.target.value })
-                                            }
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
+                    <table className="table table-borderless w-100">
+                        <tbody>
+                            <tr>
+                                <td style={{ verticalAlign: "middle", width: "150px" }}>
+                                    From
+                                </td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        value={filters.fromDate || ""}
+                                        onChange={(e) =>
+                                            setFilters({ ...filters, fromDate: e.target.value })
+                                        }
+                                        className="cus-inpt"
+                                    />
+                                </td>
+                            </tr>
 
-                                {/* <tr>
-                                      <td style={{ verticalAlign: 'middle' }}>Voucher</td>
-                                      <td colSpan={3}>
-                                          <Select
-                                              value={filters.voucher_id}
-                                              onChange={selectedOptions =>
-                                                  setFilters(prev => ({ ...prev, voucher_id: selectedOptions }))
-                                              }
-                                              menuPortalTarget={document.body}
-                                              options={drowDownValues.voucherType}
-                                              styles={customSelectStyles}
-                                              isSearchable={true}
-                                              placeholder={"Select Voucher"}
-                                              maxMenuHeight={300}
-                                          />
-                                      </td>
-                                  </tr> */}
-                                <tr>
-                                    <td style={{ verticalAlign: "middle" }}>Retailer</td>
-                                    <td colSpan={3}>
-                                        <Select
-                                            value={
-                                                {
-                                                    value: filters.Retailer_Id,
-                                                    label: filters.Retailer_Name,
-                                                }
+                            <tr>
+                                <td style={{ verticalAlign: "middle" }}>To</td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        value={filters.toDate || ""}
+                                        onChange={(e) =>
+                                            setFilters({ ...filters, toDate: e.target.value })
+                                        }
+                                        className="cus-inpt"
+                                    />
+                                </td>
+                            </tr>
 
-                                            }
-                                            onChange={(e) =>
-                                                setFilters((prev) => ({
-                                                    ...prev,
-                                                    Retailer_Id: e?.value || "",
-                                                    Retailer_Name: e?.label || "",
-                                                }))
-                                            }
-                                            options={[
-                                                { value: "", label: "ALL" },
-                                                ...retailers.map((obj) => ({
-                                                    value: obj?.Retailer_Id,
-                                                    label: obj?.Retailer_Name,
-                                                })),
-                                            ]}
-                                            menuPortalTarget={document.body}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder="Select Retailer"
-                                            maxMenuHeight={300}
-                                        />
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td style={{ verticalAlign: "middle" }}>Account Name</td>
+                                <td>
+                                    <Select
+                                        styles={customSelectStyles}
+                                        value={
+                                            accountOptions.find(
+                                                (a) => a.value === filters.Account_Id
+                                            ) || { value: "", label: "ALL" }
+                                        }
+                                        options={accountOptions}
+                                        onChange={(selected) =>
+                                            setFilters({
+                                                ...filters,
+                                                Account_Id: selected?.value || "",
+                                            })
+                                        }
+                                    />
+                                </td>
+                            </tr>
 
-                                <tr>
-                                    <td style={{ verticalAlign: "middle" }}>Area</td>
-                                    <td colSpan={3}>
-                                        <Select
-                                            value={
-                                                {
-                                                    value: filters.Area_Id,
-                                                    label: filters.Area_Name,
-                                                }
-
-                                            }
-                                            onChange={(e) =>
-                                                setFilters((prev) => ({
-                                                    ...prev,
-                                                    Area_Id: e?.value || "",
-                                                    Area_Name: e?.label || "",
-                                                }))
-                                            }
-                                            options={[
-                                                { value: "", label: "ALL" },
-                                                ...area.map((obj) => ({
-                                                    value: obj?.Area_Id,
-                                                    label: obj?.Area_Name,
-                                                })),
-                                            ]}
-                                            menuPortalTarget={document.body}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder="Select Area"
-                                            maxMenuHeight={300}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: "middle" }}>Routes</td>
-                                    <td colSpan={3}>
-
-                                        <Select
-                                            value={{
-                                                value: filters?.Route_Id,
-                                                label: filters?.RoutesGet,
-                                            }}
-                                            onChange={(e) =>
-                                                setFilters({
-                                                    ...filters,
-                                                    Route_Id: e.value,
-                                                    RoutesGet: e.label,
-                                                })
-                                            }
-                                            options={[
-                                                { value: "", label: "ALL" },
-                                                ...routes.map((obj) => ({
-                                                    value: obj?.Route_Id,
-                                                    label: obj?.Route_Name,
-                                                })),
-                                            ]}
-                                            menuPortalTarget={document.body}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder="Route"
-                                            maxMenuHeight={300}
-                                        />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                            <tr>
+                                <td style={{ verticalAlign: "middle" }}>Group Name</td>
+                                <td>
+                                    <Select
+                                        styles={customSelectStyles}
+                                        value={
+                                            groupOptions.find(
+                                                (g) => g.value === filters.Group_Name
+                                            ) || { value: "", label: "ALL" }
+                                        }
+                                        options={groupOptions}
+                                        onChange={(selected) =>
+                                            setFilters({
+                                                ...filters,
+                                                Group_Name: selected?.value || "",
+                                            })
+                                        }
+                                    />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </DialogContent>
+
                 <DialogActions>
-                    <Button onClick={closeDialog}>close</Button>
+                    <Button onClick={closeDialog}>Close</Button>
                     <Button
                         onClick={() => {
                             const updatedFilters = {
-                                Fromdate: filters?.Fromdate,
-                                Todate: filters?.Todate,
+                                fromDate: filters?.fromDate,
+                                toDate: filters?.toDate,
+                                Retailer_Id: filters?.Retailer_Id,
+                                Area_Id: filters?.Area_Id,
+                                Route_Id: filters?.Route_Id,
+                                Account_Id: filters?.Account_Id,
+                                Group_Name: filters?.Group_Name,
                             };
+
+                            setFilters((prev) => ({
+                                ...prev,
+                                fetchFrom: filters.fromDate,
+                                fetchTo: filters.toDate,
+                            }));
+
                             updateQueryString(updatedFilters);
-                            setFilters((pre) => ({ ...pre, refresh: !pre.refresh }));
+                            fetchAllAccounts();
                             closeDialog();
                         }}
                         startIcon={<Search />}
