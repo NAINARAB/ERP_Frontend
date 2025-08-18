@@ -1,15 +1,12 @@
-import { Button, Card, CardContent, IconButton } from "@mui/material";
+import { Button, Card, CardContent, IconButton, Tooltip } from "@mui/material";
 import Select from "react-select";
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { journalEntriesInfoIV } from "./variable";
-import { Addition, isEqualNumber, NumberFormat } from "../../../Components/functions";
-import { Delete } from "@mui/icons-material";
-
-const rid = () =>
-    (typeof crypto !== "undefined" && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `r${Math.random().toString(36).slice(2)}${Date.now()}`;
+import { Addition, isEqualNumber, NumberFormat, toArray, toNumber, rid, checkIsNumber } from "../../../Components/functions";
+import { Delete, PlaylistAdd } from "@mui/icons-material";
+import JournalBillReference from "./journalBillReference";
+import AddJournalBillReference from "./addBillReference";
 
 const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 const money = (v) => {
@@ -20,6 +17,8 @@ const money = (v) => {
 const JournalEntriesInfo = ({
     journalEntriesInfo = [],
     setJournalEntriesInfo,
+    journalBillReference = [],
+    setJournalBillReference,
     accountsList = [],
 }) => {
 
@@ -38,11 +37,26 @@ const JournalEntriesInfo = ({
     );
 
     const debitLines = useMemo(
-        () => journalEntriesInfo.filter((e) => e.DrCr === "Dr"),
+        () => journalEntriesInfo.filter((e) => e.DrCr === "Dr").map(debit => ({
+            ...debit,
+            Entries: journalBillReference.filter(bill => (
+                bill.LineId === debit.LineId,
+                isEqualNumber(bill.Acc_Id, debit.Acc_Id),
+                bill.DrCr === 'Dr'
+            ))
+        })),
         [journalEntriesInfo]
     );
+
     const creditLines = useMemo(
-        () => journalEntriesInfo.filter((e) => e.DrCr === "Cr"),
+        () => journalEntriesInfo.filter((e) => e.DrCr === "Cr").map(credit => ({
+            ...credit,
+            Entries: journalBillReference.filter(bill => (
+                bill.LineId === credit.LineId,
+                isEqualNumber(bill.Acc_Id, credit.Acc_Id),
+                bill.DrCr === 'Cr'
+            ))
+        })),
         [journalEntriesInfo]
     );
 
@@ -50,6 +64,7 @@ const JournalEntriesInfo = ({
         () => new Set(debitLines.filter((r) => r.Acc_Id != null).map((r) => Number(r.Acc_Id))),
         [debitLines]
     );
+    
     const usedCr = useMemo(
         () => new Set(creditLines.filter((r) => r.Acc_Id != null).map((r) => Number(r.Acc_Id))),
         [creditLines]
@@ -91,21 +106,128 @@ const JournalEntriesInfo = ({
         return sumOfDebit - sumOfCredit;
     }, [sumOfDebit, sumOfCredit]);
 
+    const CardComponent = ({
+        entry,
+        usedDrCr,
+        DrCr,
+    }) => {
+        const selected =
+            entry?.Acc_Id != null
+                ? accountOptions.find((o) => isEqualNumber(o.value, entry.Acc_Id)) || null
+                : null;
+
+        const [addRefDialog, setAddRefDialog] = useState(false);
+
+        return (
+            <div className="border rounded-3 p-3 mb-2">
+                <div className="row p-0 m-0">
+
+                    <div className="col-sm-8 p-0 m-0">
+                        <label>Account</label>
+                        <Select
+                            placeholder="Select account"
+                            value={selected}
+                            options={accountOptions}
+                            isOptionDisabled={(opt) =>
+                                usedDrCr.has(opt.value) && Number(entry.Acc_Id) !== opt.value
+                            }
+                            onChange={(opt) =>
+                                updateById(entry.LineId, {
+                                    Acc_Id: !opt ? null : toNum(opt.value),
+                                    AccountGet: !opt ? "" : opt.label,
+                                })
+                            }
+                            isClearable
+                            isSearchable
+                            menuPortalTarget={document.body}
+                            styles={{
+                                ...customSelectStyles,
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                        />
+                    </div>
+
+                    <div className="col-sm-4 p-0 ps-2 m-0">
+                        <label>Amount</label>
+                        <input
+                            type="number"
+                            value={entry?.Amount || ""}
+                            className="cus-inpt p-2"
+                            onChange={(e) => updateById(entry.LineId, { Amount: money(e.target.value) })}
+                        />
+                    </div>
+
+                    <div className="col-8 p-0 m-0 mt-2">
+                        <label style={{ minWidth: '100%' }}>Remarks</label>
+                        <input
+                            type="text"
+                            value={entry?.Remarks ?? ""}
+                            className="cus-inpt p-2"
+                            onChange={(e) => updateById(entry.LineId, { Remarks: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="col-sm-4 p-0 m-0 d-flex align-items-end justify-content-end">
+
+                        <Tooltip title='Add Ref'>
+                            <AddJournalBillReference
+                                open={addRefDialog}
+                                onClose={() => {
+                                    setAddRefDialog(false);
+                                }}
+                                {...entry}
+                                journalBillReference={journalBillReference}
+                                setJournalBillReference={setJournalBillReference}
+                            >
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setAddRefDialog(true)}
+                                    disabled={!checkIsNumber(entry.Acc_Id)}
+                                ><PlaylistAdd className="fa-20" /></IconButton>
+                            </AddJournalBillReference>
+                        </Tooltip>
+
+                        <Tooltip title='Delete'>
+                            <IconButton
+                                size="small"
+                                onClick={() => removeLine(entry.LineId)}
+                            ><Delete color="error" className="fa-20" /></IconButton>
+                        </Tooltip>
+
+                    </div>
+
+                    {toNumber(entry?.Entries?.length) > 0 && (
+                        <div className="col-12 p-0 m-0 mt-2">
+                            <JournalBillReference
+                                {...entry}
+                                billRef={toArray(entry?.Entries)}
+                                journalBillReference={journalBillReference}
+                                setJournalBillReference={setJournalBillReference}
+
+                            />
+                        </div>
+                    )}
+
+                </div>
+            </div>
+        )
+    }
+
     return (
         <Card>
             <div className="p-3 d-flex align-items-center">
                 <h5 className="flex-grow-1 m-0">Entries</h5>
                 <span>
-                    <Button 
-                        variant="outlined" 
-                        className="me-2" 
+                    <Button
+                        variant="outlined"
+                        className="me-2"
                         onClick={() => addLine("Dr")}
                     >
                         Add Debit
                     </Button>
-                    <Button 
-                        variant="outlined" 
-                        className="me-2" 
+                    <Button
+                        variant="outlined"
+                        className="me-2"
                         onClick={() => addLine("Cr")}
                     >
                         Add Credit
@@ -118,147 +240,22 @@ const JournalEntriesInfo = ({
                     {/* Debit */}
                     <div className="col-md-6 p-2">
                         <h6 className="mb-2 text-center">
-                            Debit 
-                            {/* {NumberFormat(sumOfDebit)} */}
+                            Debit
                         </h6>
-                        {debitLines.map((entry, idx) => {
-                            const selected =
-                                entry?.Acc_Id != null
-                                    ? accountOptions.find((o) => isEqualNumber(o.value, entry.Acc_Id)) || null
-                                    : null;
+                        {debitLines.map((entry, idx) => (
+                            <CardComponent entry={entry} DrCr={'Dr'} key={`Dr-${idx}`} usedDrCr={usedDr} />
+                        ))}
 
-                            return (
-                                <div className="border rounded-3 p-3 mb-2" key={`Dr-${idx}`}>
-                                    <div className="row p-0 m-0">
-                                        <div className="col-sm-8 p-0 m-0">
-                                            <label>Account</label>
-                                            <Select
-                                                placeholder="Select account"
-                                                value={selected}
-                                                options={accountOptions}
-                                                isOptionDisabled={(opt) =>
-                                                    usedDr.has(opt.value) && Number(entry.Acc_Id) !== opt.value
-                                                }
-                                                onChange={(opt) =>
-                                                    updateById(entry.LineId, {
-                                                        Acc_Id: !opt ? null : toNum(opt.value),
-                                                        AccountGet: !opt ? "" : opt.label,
-                                                    })
-                                                }
-                                                isClearable
-                                                isSearchable
-                                                menuPortalTarget={document.body}
-                                                styles={{
-                                                    ...customSelectStyles,
-                                                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                                                }}
-                                            />
-                                        </div>
-
-                                        <div className="col-sm-3 p-0 ps-2 m-0">
-                                            <label>Amount</label>
-                                            <input
-                                                type="number"
-                                                value={entry?.Amount || ""}
-                                                className="cus-inpt p-2"
-                                                onChange={(e) => updateById(entry.LineId, { Amount: money(e.target.value) })}
-                                            />
-                                        </div>
-
-                                        <div className="col-sm-1 p-0 m-0 d-flex align-items-end justify-content-center">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => removeLine(entry.LineId)}
-                                            ><Delete color="error" className="fa-20" /></IconButton>
-                                        </div>
-
-                                        <div className="col-12 p-0 m-0 mt-2">
-                                            <label style={{ minWidth: '100%' }}>Remarks</label>
-                                            <input
-                                                type="text"
-                                                value={entry?.Remarks ?? ""}
-                                                className="cus-inpt p-2"
-                                                style={{ maxWidth: '400px' }}
-                                                onChange={(e) => updateById(entry.LineId, { Remarks: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
                     </div>
 
                     {/* Credit */}
                     <div className="col-md-6 p-2">
                         <h6 className="mb-2 text-center">
-                            Credit 
-                            {/* {NumberFormat(sumOfCredit)} */}
+                            Credit
                         </h6>
-                        {creditLines.map((entry, idx) => {
-                            const selected =
-                                entry?.Acc_Id != null
-                                    ? accountOptions.find((o) => isEqualNumber(o.value, entry.Acc_Id)) || null
-                                    : null;
-
-                            return (
-                                <div className="border rounded-3 p-3 mb-2" key={`Cr-${idx}`}>
-                                    <div className="row p-0 m-0">
-                                        <div className="col-sm-8 p-0 m-0">
-                                            <label>Account</label>
-                                            <Select
-                                                placeholder="Select account"
-                                                value={selected}
-                                                options={accountOptions}
-                                                isOptionDisabled={(opt) =>
-                                                    usedCr.has(opt.value) && Number(entry.Acc_Id) !== opt.value
-                                                }
-                                                onChange={(opt) =>
-                                                    updateById(entry.LineId, {
-                                                        Acc_Id: !opt ? null : toNum(opt.value),
-                                                        AccountGet: !opt ? "" : opt.label,
-                                                    })
-                                                }
-                                                isClearable
-                                                isSearchable
-                                                menuPortalTarget={document.body}
-                                                styles={{
-                                                    ...customSelectStyles,
-                                                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                                                }}
-                                            />
-                                        </div>
-
-                                        <div className="col-sm-3 p-0 ps-2 m-0">
-                                            <label>Amount</label>
-                                            <input
-                                                type="number"
-                                                value={entry?.Amount || ""}
-                                                className="cus-inpt p-2"
-                                                onChange={(e) => updateById(entry.LineId, { Amount: money(e.target.value) })}
-                                            />
-                                        </div>
-
-                                        <div className="col-sm-1 p-0 ps-2 m-0 d-flex align-items-end">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => removeLine(entry.LineId)}
-                                            ><Delete color="error" className="fa-20" /></IconButton>
-                                        </div>
-
-                                        <div className="col-12 p-0 m-0 mt-2">
-                                            <label style={{ minWidth: '100%' }}>Remarks</label>
-                                            <input
-                                                type="text"
-                                                value={entry?.Remarks ?? ""}
-                                                className="cus-inpt p-2"
-                                                style={{ maxWidth: '400px' }}
-                                                onChange={(e) => updateById(entry.LineId, { Remarks: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                        {creditLines.map((entry, idx) => (
+                            <CardComponent entry={entry} DrCr={'Dr'} key={`Cr-${idx}`} usedDrCr={usedCr} />
+                        ))}
                     </div>
                 </div>
             </CardContent>
@@ -292,24 +289,7 @@ const JournalEntriesInfo = ({
                         </div> */}
                     </div>
 
-                    {/* Keyboard hints */}
-                    {/* <div className="w-100 d-flex align-items-center gap-4 small text-secondary pt-1">
-                        <span>
-                            <kbd className="px-1 py-0 rounded border">Shift</kbd> +{" "}
-                            <kbd className="px-1 py-0 rounded border">Enter</kbd> Save
-                        </span>
-                        <span>
-                            <kbd className="px-1 py-0 rounded border">Esc</kbd> Cancel line
-                        </span>
-                        <span>
-                            <kbd className="px-1 py-0 rounded border">Alt</kbd> +{" "}
-                            <kbd className="px-1 py-0 rounded border">D</kbd> Add Debit
-                        </span>
-                        <span>
-                            <kbd className="px-1 py-0 rounded border">Alt</kbd> +{" "}
-                            <kbd className="px-1 py-0 rounded border">C</kbd> Add Credit
-                        </span>
-                    </div> */}
+
                 </div>
             </div>
 

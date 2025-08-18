@@ -41,6 +41,8 @@ export const journalBillReferenceIV = {
     JournalId: '',
     JournalVoucherNo: '',
     JournalDate: '',
+    Acc_Id: '',
+    DrCr: '',
     RefId: '',
     RefNo: '',
     RefType: '',
