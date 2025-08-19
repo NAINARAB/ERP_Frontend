@@ -1,203 +1,155 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"
-import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV } from "./variable";
-import { Button } from "@mui/material"
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Button, Card, CardContent } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
+import { ISOString, checkIsNumber, isEqualNumber, rid, Addition } from "../../../Components/functions";
+import { journalGeneralInfoIV, journalEntriesInfoIV } from "./variable";
+
 import JournalGeneralInfo from "./journalGeneralInfo";
-import JournalEntriesInfo from "./JournalEntries";
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
-import { toast } from 'react-toastify';
+import JournalEntriesPanel from "./JournalEntries";
+import BillRefDialog from "./addBillReference";
 
-const JournalCreate = ({ loadingOn, loadingOff }) => {
-    const nav = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
+// const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
+const money = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 
-    const [journalGeneralInfo, setJournalGeneralInfo] = useState(journalGeneralInfoIV);
+const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
+    const [journalGeneralInfo, setJournalGeneralInfo] = useState({
+        ...journalGeneralInfoIV,
+        JournalDate: ISOString(),
+    });
+
     const [journalEntriesInfo, setJournalEntriesInfo] = useState([
-        { ...journalEntriesInfoIV, DrCr: 'Dr' },
-        { ...journalEntriesInfoIV, DrCr: 'Cr' }
+        { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Dr" },
+        { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Cr" },
     ]);
+
     const [journalBillReference, setJournalBillReference] = useState([]);
+
     const [baseData, setBaseData] = useState({
         accountsList: [],
-        accountGroupData: [],
         voucherType: [],
-        defaultBankMaster: [],
-        branch: []
-    })
+        branch: [],
+    });
+
+    const [refModal, setRefModal] = useState({ open: false, line: null });
+    const openRef = useCallback((line) => setRefModal({ open: true, line }), []);
+    const closeRef = useCallback(() => setRefModal((s) => ({ ...s, open: false })), []);
 
     useEffect(() => {
-
-        const fetchData = async () => {
+        (async () => {
             try {
-                const [
-                    accountsResponse,
-                    accountsGroupResponse,
-                    voucherTypeResponse,
-                    defaultBankMaster,
-                    branchResponse
-                ] = await Promise.all([
+                const [accountsRes, voucherRes, branchRes] = await Promise.all([
                     fetchLink({ address: `payment/accounts` }),
-                    fetchLink({ address: `payment/accountGroup` }),
                     fetchLink({ address: `masters/voucher?module=JOURNAL` }),
-                    fetchLink({ address: `masters/defaultBanks` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
                 ]);
 
-                const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
-                    (a, b) => String(a?.Account_name).localeCompare(b?.Account_name)
-                );
-                const accountGroupData = (accountsGroupResponse.success ? accountsGroupResponse.data : []).sort(
-                    (a, b) => String(a?.Group_Name).localeCompare(b?.Group_Name)
-                );
-                const voucherType = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
-                    (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
-                );
-                const bankDetails = (defaultBankMaster.success ? defaultBankMaster.data : []);
-                const branchData = (branchResponse.success ? branchResponse.data : []).sort(
-                    (a, b) => String(a?.BranchName).localeCompare(b?.BranchName)
-                );
+                const accountsList = (accountsRes.success ? accountsRes.data : [])
+                    .sort((a, b) => String(a?.Account_name).localeCompare(b?.Account_name));
+                const voucherType = (voucherRes.success ? voucherRes.data : [])
+                    .sort((a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type));
+                const branch = (branchRes.success ? branchRes.data : [])
+                    .sort((a, b) => String(a?.BranchName).localeCompare(b?.BranchName));
 
-                setBaseData((pre) => ({
-                    ...pre,
-                    accountsList: accountsList,
-                    accountGroupData: accountGroupData,
-                    voucherType: voucherType,
-                    defaultBankMaster: bankDetails,
-                    branch: branchData
-                }));
-
+                setBaseData({ accountsList, voucherType, branch });
             } catch (e) {
-                console.error("Error fetching data:", e);
+                console.error("Base data fetch error", e);
             }
-        };
-
-        fetchData();
-
+        })();
     }, []);
 
-    console.log(stateDetails)
-
-    useEffect(() => {
-        const Entries = stateDetails?.Entries;
-        if (
-            isValidObject(stateDetails)
-            && Array.isArray(Entries)
-        ) {
-
-            setJournalGeneralInfo(
-                Object.fromEntries(
-                    Object.entries(journalGeneralInfoIV).map(([key, value]) => {
-                        if (key === 'JournalDate') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
-                         return [key, stateDetails[key] ?? value]
-                    })
-                )
-            );
-
-            setJournalEntriesInfo(
-                Entries.map(journalEntries => Object.fromEntries(
-                    Object.entries(journalEntriesInfoIV).map(([key, value]) => {
-                        return [key, journalEntries[key] ?? value]
-                    })
-                ))
-            )
-        }
-    }, [stateDetails])
+    const sumOfDebit = useMemo(
+        () => journalEntriesInfo.filter(r => r.DrCr === "Dr").reduce((acc, r) => Addition(acc, money(r.Amount)), 0),
+        [journalEntriesInfo]
+    );
+    const sumOfCredit = useMemo(
+        () => journalEntriesInfo.filter(r => r.DrCr === "Cr").reduce((acc, r) => Addition(acc, money(r.Amount)), 0),
+        [journalEntriesInfo]
+    );
+    const diff = useMemo(() => sumOfDebit - sumOfCredit, [sumOfDebit, sumOfCredit]);
 
     const saveStatus = useMemo(() => {
-        const checkIfDebitExist = journalEntriesInfo.some(entry => (
-            entry.DrCr === 'Dr'
-            && entry.Amount > 0
-            && checkIsNumber(entry.Acc_Id)
-            && !isEqualNumber(entry.Acc_Id, 0)
-        ));
+        const hasDr = journalEntriesInfo.some(e => e.DrCr === "Dr" && e.Amount > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0));
+        const hasCr = journalEntriesInfo.some(e => e.DrCr === "Cr" && e.Amount > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0));
+        return hasDr && hasCr && isEqualNumber(sumOfDebit, sumOfCredit);
+    }, [journalEntriesInfo, sumOfDebit, sumOfCredit]);
 
-        const checkIfCreditExist = journalEntriesInfo.some(entry => (
-            entry.DrCr === 'Cr'
-            && entry.Amount > 0
-            && checkIsNumber(entry.Acc_Id)
-            && !isEqualNumber(entry.Acc_Id, 0)
-        ));
-
-        const debitAmount = journalEntriesInfo.reduce((acc, entry) => {
-            return entry.DrCr === 'Dr' ? Addition(acc, entry.Amount) : acc;
-        }, 0);
-
-        const creditAmount = journalEntriesInfo.reduce((acc, entry) => {
-            return entry.DrCr === 'Cr' ? Addition(acc, entry.Amount) : acc;
-        }, 0);
-
-        return checkIfDebitExist && checkIfCreditExist && isEqualNumber(debitAmount, creditAmount);
-
-    }, [journalEntriesInfo]);
-
-    const clearValues = () => {
-        setJournalGeneralInfo(journalGeneralInfoIV);
-        setJournalEntriesInfo([
-            { ...journalEntriesInfoIV, DrCr: 'Dr' },
-            { ...journalEntriesInfoIV, DrCr: 'Cr' }
-        ]);
-        setJournalBillReference([]);
-    }
-
-    const saveJournal = () => {
+    const saveJournal = useCallback(async () => {
         if (!saveStatus) return;
-
-        fetchLink({
-            address: `journal/journalMaster`,
-            method: (
-                journalGeneralInfo?.JournalAutoId
-                && checkIsNumber(journalGeneralInfo?.JournalId)
-            ) ? 'PUT' : 'POST',
-            bodyData: {
+        try {
+            const method =
+                journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
+            const bodyData = {
                 ...journalGeneralInfo,
                 Entries: journalEntriesInfo,
-                // BillReference: journalBillReference,
-            },
-            loadingOn, loadingOff
-        }).then(data => {
-            if (data.success) {
-                toast.success(data.message);
-                clearValues();
-            } else {
-                toast.error(data.message);
-            }
-        }).catch(e => console.error(e))
-    }
+            };
+
+            await fetchLink({ address: `journal/journalMaster`, method, bodyData, loadingOn, loadingOff });
+
+            setJournalGeneralInfo({ ...journalGeneralInfoIV, JournalDate: ISOString() });
+            setJournalEntriesInfo([
+                { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Dr" },
+                { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Cr" },
+            ]);
+            setJournalBillReference([]);
+        } catch (e) {
+            console.error("Save journal error", e);
+        }
+    }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, loadingOn, loadingOff]);
 
     return (
-        <>
-            <JournalGeneralInfo
-                {...baseData}
-                journalGeneralInfo={journalGeneralInfo}
-                setJournalGeneralInfo={setJournalGeneralInfo}
-                journalEntriesInfo={journalEntriesInfo}
-                setJournalEntriesInfo={setJournalEntriesInfo}
-                journalBillReference={journalBillReference}
-                setJournalBillReference={setJournalBillReference}
-                saveStatus={saveStatus}
-                saveFun={saveJournal}
-            />
+        <Card>
 
-            <p className="my-2" />
+            <h5 className="p-3 m-0 d-flex align-items-center">
+                <span className="flex-grow-1">
+                    Journal Voucher
+                    {journalGeneralInfo.JournalVoucherNo ? `- ${journalGeneralInfo.JournalVoucherNo}` : ''}
+                </span>
+                <span>
+                    <Button
+                        disabled={!saveStatus}
+                        variant="outlined"
+                        // color="success"
+                        onClick={saveStatus ? saveJournal : undefined}
+                    >Save</Button>
+                </span>
+            </h5>
 
-            <JournalEntriesInfo
-                {...baseData}
-                journalGeneralInfo={journalGeneralInfo}
-                setJournalGeneralInfo={setJournalGeneralInfo}
-                journalEntriesInfo={journalEntriesInfo}
-                setJournalEntriesInfo={setJournalEntriesInfo}
-                journalBillReference={journalBillReference}
-                setJournalBillReference={setJournalBillReference}
-                saveFun={saveJournal}
-                saveStatus={saveStatus}
-            />
+            <CardContent>
 
+                <JournalGeneralInfo
+                    {...baseData}
+                    journalGeneralInfo={journalGeneralInfo}
+                    setJournalGeneralInfo={setJournalGeneralInfo}
+                    journalEntriesInfo={journalEntriesInfo}
+                    setJournalEntriesInfo={setJournalEntriesInfo}
+                    journalBillReference={journalBillReference}
+                    setJournalBillReference={setJournalBillReference}
+                    saveStatus={saveStatus}
+                    saveFun={saveJournal}
+                />
 
-        </>
-    )
-}
+                <div className="my-2" />
 
+                <JournalEntriesPanel
+                    {...baseData}
+                    journalEntriesInfo={journalEntriesInfo}
+                    setJournalEntriesInfo={setJournalEntriesInfo}
+                    journalBillReference={journalBillReference}
+                    setJournalBillReference={setJournalBillReference}
+                    onOpenRef={openRef}
+                    totals={{ sumOfDebit, sumOfCredit, diff }}
+                />
 
-export default JournalCreate;
+                <BillRefDialog
+                    open={refModal.open}
+                    onClose={closeRef}
+                    line={refModal.line}
+                    journalBillReference={journalBillReference}
+                    setJournalBillReference={setJournalBillReference}
+                />
+            </CardContent>
+        </Card>
+    );
+};
+
+export default JournalCreateContainer;

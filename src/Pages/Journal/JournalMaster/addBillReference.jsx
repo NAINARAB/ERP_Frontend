@@ -1,142 +1,123 @@
-import { Dialog, DialogContent, DialogTitle } from "@mui/material"
-import { useEffect } from "react";
-import { useState } from "react"
-import { Addition, checkIsNumber, isEqualNumber, rid, stringCompare, Subraction, toArray } from "../../../Components/functions";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
+import { Addition, Subraction, isEqualNumber, checkIsNumber, rid, LocalDate } from "../../../Components/functions";
+import { journalBillReferenceIV } from "./variable";
 
-
-const AddJournalBillReference = ({
-    children,
-    open = false,
-    onClose = undefined,
-    LineId,
-    LineNum,
-    Acc_Id,
-    DrCr,
-    Amount,
-    billRef = [],
-    journalBillReference = [],
-    setJournalBillReference,
-}) => {
+const BillRefDialog = ({ open, onClose, line, journalBillReference, setJournalBillReference }) => {
+    const LineId = line?.LineId;
+    const Acc_Id = line?.Acc_Id;
+    const DrCr = line?.DrCr;
 
     const [pendingRefDetails, setPendingRefDetails] = useState([]);
 
     useEffect(() => {
-        if (checkIsNumber(Acc_Id)) {
-            fetchLink({
-                address: `journal/accountPendingReference?Acc_Id=${Acc_Id}`
-            }).then(data => {
-                if (data.success) setPendingRefDetails(data.data);
-                else setPendingRefDetails([]);
-            }).catch(e => console.error(e));
-        }
-    }, [Acc_Id]);
+        if (!open || !checkIsNumber(Acc_Id)) return;
+        setPendingRefDetails([]);
+        
+        fetchLink({ 
+            address: `journal/accountPendingReference?Acc_Id=${Acc_Id}` 
+        }).then(
+            (data) => setPendingRefDetails(data?.success ? data.data : [])
+        ).catch(() => setPendingRefDetails([]));
+    }, [open, Acc_Id]);
 
-    const onSelect = (row, deleteOption = false) => {
-        setJournalBillReference(pre => {
-            const previousValue = toArray(pre);
+    const toggleRef = (row, deleteOption = false) => {
+        setJournalBillReference((prev) => {
+            const keep = prev.filter(
+                (b) =>
+                    !(
+                        b.LineId === LineId &&
+                        isEqualNumber(b.Acc_Id, Acc_Id) &&
+                        b.DrCr === DrCr &&
+                        b.RefNo === row.voucherNumber
+                    )
+            );
+            if (deleteOption) return keep;
 
-            const excludeCurrentValue = previousValue.filter(bill => !(
-                isEqualNumber(Acc_Id, bill.Acc_Id) &&
-                stringCompare(DrCr, bill.DrCr) &&
-                stringCompare(bill.RefNo, row.voucherNumber)
-            ));
-
-            let updateBillInfo;
-            if (deleteOption) {
-                updateBillInfo = excludeCurrentValue;
-            } else {
-                updateBillInfo = [...excludeCurrentValue, {
+            return [
+                ...keep,
+                {
+                    ...journalBillReferenceIV,
                     autoGenId: rid(),
-                    LineId: LineId,
-                    LineNum: '',
-                    JournalAutoId: '',
-                    JournalId: '',
-                    JournalVoucherNo: '',
-                    JournalDate: '',
-                    Acc_Id: Acc_Id,
-                    DrCr: DrCr,
-                    RefId: row?.voucherId,
-                    RefNo: row?.voucherNumber,
-                    RefType: row?.actualSource,
+                    LineId,
+                    Acc_Id,
+                    DrCr,
+                    RefId: row.voucherId,
+                    RefNo: row.voucherNumber,
+                    RefType: row.actualSource,
                     Amount: 0,
-                }];
-            }
-            return updateBillInfo;
-        })
-    }
+                },
+            ];
+        });
+    };
 
     return (
-        <>
-            {children}
-
-            <Dialog
-                open={open}
-                onClose={onClose}
-                fullScreen
-            >
-                <DialogTitle>Add Bill-Reference</DialogTitle>
-                <DialogContent>
-                    <div className="table-responsive table-bordered">
-                        <table className="table m-0">
+        <Dialog open={open} onClose={onClose} fullScreen keepMounted>
+            <DialogTitle>Add Bill-Reference</DialogTitle>
+            <DialogContent>
+                {!line ? (
+                    <div className="text-muted">Select a line…</div>
+                ) : (
+                    <div className="table-responsive">
+                        <table className="table table-bordered m-0">
                             <thead>
                                 <tr>
                                     {[
-                                        'Sno', 'Voucher-Number', 'Date', 'Source',
-                                        'Dr/Cr', 'Total', 'Pending', 'Journal',
-                                        'Pay/Rec', 'Total Ref', '#'
-                                    ].map(col => (
-                                        <th className="fa-13" key={col}>{col}</th>
+                                        "Sno", "Voucher-Number", "Date", 
+                                        "Source", "Dr/Cr", "Total", "Pending", 
+                                        "Journal", "Pay/Rec", "Total Ref", "#"
+                                    ].map((c) => (
+                                        <th key={c} className="fa-13">{c}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-
-                                {pendingRefDetails.map((pendingRef, billInd) => {
-
-                                    const totalRef = Addition(pendingRef?.againstAmount, pendingRef?.journalAdjustment);
-                                    const pending = Subraction(pendingRef?.totalValue, totalRef);
-                                    const isChecked = journalBillReference.find(bill => (
-                                        isEqualNumber(Acc_Id, bill.Acc_Id) &&
-                                        isEqualNumber(Acc_Id, pendingRef.Acc_Id) &&
-                                        stringCompare(DrCr, bill.DrCr) &&
-                                        stringCompare(bill.RefNo, pendingRef.voucherNumber)
-                                    ))
-
+                                {pendingRefDetails.map((row, i) => {
+                                    const totalRef = Addition(row?.againstAmount, row?.journalAdjustment);
+                                    const pending = Subraction(row?.totalValue, totalRef);
+                                    const checked = journalBillReference.some(
+                                        (b) => b.LineId === LineId && isEqualNumber(b.Acc_Id, Acc_Id) && b.DrCr === DrCr && b.RefNo === row.voucherNumber
+                                    );
                                     return (
-                                        <tr key={`bill-ref-${billInd}`}>
-                                            <td className="fa-12">{billInd + 1}</td>
-                                            <td className="fa-12">{pendingRef?.voucherNumber}</td>
-                                            <td className="fa-12">{pendingRef?.eventDate}</td>
-                                            <td className="fa-12">{pendingRef?.actualSource}</td>
-                                            <td className="fa-12">{pendingRef?.accountSide}</td>
-                                            <td className="fa-12">{pendingRef?.totalValue}</td>
+                                        <tr key={row.voucherNumber + "-" + i}>
+                                            <td className="fa-12">{i + 1}</td>
+                                            <td className="fa-12">{row?.voucherNumber}</td>
+                                            <td className="fa-12">{row?.eventDate ? LocalDate(row?.eventDate) : '-'}</td>
+                                            <td className="fa-12">{row?.actualSource}</td>
+                                            <td className="fa-12">{row?.accountSide}</td>
+                                            <td className="fa-12">{row?.totalValue}</td>
                                             <td className="fa-12">{pending}</td>
-                                            <td className="fa-12">{pendingRef?.journalAdjustment}</td>
-                                            <td className="fa-12">{pendingRef?.againstAmount}</td>
+                                            <td className="fa-12">{row?.journalAdjustment}</td>
+                                            <td className="fa-12">{row?.againstAmount}</td>
                                             <td className="fa-12">{totalRef}</td>
                                             <td>
                                                 <input
                                                     className="form-check-input shadow-none pointer mx-2"
-                                                    style={{ padding: '0.7em' }}
+                                                    style={{ padding: "0.7em" }}
                                                     type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() => {
-                                                        if (isChecked) onSelect(pendingRef, true)
-                                                        else onSelect(pendingRef)
-                                                    }}
+                                                    checked={checked}
+                                                    onChange={() => toggleRef(row, checked)}
                                                 />
                                             </td>
                                         </tr>
-                                    )
+                                    );
                                 })}
+                                {pendingRefDetails.length === 0 && (
+                                    <tr>
+                                        <td colSpan={11} className="text-center text-muted">No pending references.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
-                </DialogContent>
-            </Dialog>
-        </>
-    )
-}
+                )}
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>close</Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
 
-export default AddJournalBillReference;
+export default BillRefDialog;

@@ -176,6 +176,16 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                             <th style={{ textAlign: 'left', padding: '5px', width: '20%' }}>ALIAS NAME</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BAGS</th>
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>QTY</th>
+                                            {
+                                                transactionType === 'sales' ? <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>AMOUNT</th> : ''
+
+
+                                            }
+                                            {
+                                                transactionType === 'sales' ? <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>ITEM.RATE</th> : ''
+
+
+                                            }
                                             <th style={{ textAlign: 'right', padding: '5px', width: '10%' }}>BROKERAGE EXP</th>
                                         </tr>
                                     </thead>
@@ -187,6 +197,12 @@ const PdfPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate,
                                                 <td style={{ padding: '5px' }}>{item.Short_Name}</td>
                                                 <td style={{ padding: '5px', textAlign: 'right' }}>{item.QTY}</td>
                                                 <td style={{ padding: '5px', textAlign: 'right' }}>{item.KGS}</td>
+                                                {
+                                                    transactionType === 'sales' ? <td style={{ padding: '5px', textAlign: 'right' }}>{item.TotaL_Invoice_value}</td> : ''
+                                                }
+                                                {
+                                                    transactionType === 'sales' ? <td style={{ padding: '5px', textAlign: 'right' }}>{item.Item_Rate}</td> : ''
+                                                }
                                                 <td style={{ padding: '5px', textAlign: 'right' }}>{NumberFormat(item.Brokerage || 0)}</td>
                                             </tr>
                                         ))}

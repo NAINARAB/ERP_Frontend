@@ -321,6 +321,7 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                 },
                 { label: "Pack", key: "Pack", align: "right" },
                 { label: "Amount", key: "Amount", align: "right" },
+
                 {
                     label: "Brokerage",
                     key: "Brokerage",
@@ -1209,6 +1210,9 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                                     <TableCell align="right">Amount</TableCell>
                                                                                     <TableCell align="right">Act Qty</TableCell>
                                                                                     <TableCell align="right">
+                                                                                        {transactionType === "sales" ? "Item_Rate" : ""}
+                                                                                    </TableCell>
+                                                                                    <TableCell align="right">
                                                                                         {transactionType === "salesNagal" ? "Broker Amt" : "Brok.Amt"}
                                                                                     </TableCell>
                                                                                     {transactionType === "salesNagal" && (
@@ -1247,10 +1251,17 @@ const NakalReports = ({ loadingOn, loadingOff }) => {
                                                                                                     ? item.Amount
                                                                                                     : item.Total_Invoice_value}
                                                                                             </TableCell>
+
                                                                                             <TableCell align="right">
                                                                                                 {transactionType === "salesNagal"
                                                                                                     ? item.QTY
                                                                                                     : item.Act_Qty}
+                                                                                            </TableCell>
+
+                                                                                            <TableCell align="right">
+                                                                                                {transactionType === "sales"
+                                                                                                    ? item.Item_Rate
+                                                                                                    : ''}
                                                                                             </TableCell>
 
                                                                                             {isEditingRow(editingItem, item) ? (
