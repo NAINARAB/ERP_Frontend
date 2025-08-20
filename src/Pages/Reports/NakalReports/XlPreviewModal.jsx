@@ -216,7 +216,10 @@ const XlPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate, 
                 { header: 'ALIAS NAME', width: 40 },
                 { header: 'BAGS', width: 10 },
                 { header: 'QTY', width: 10 },
-                { header: 'BROKERAGE EXP', width: 15 }
+                ...(transactionType === 'sales'
+                    ? [{ header: 'Item_Rate', width: 10 }]
+                    : []),
+                { header: 'BROKERAGE EXP', width: 15 },
             ];
 
 
@@ -243,6 +246,7 @@ const XlPreviewModal = ({ open, onClose, brokerData, transactionType, fromDate, 
                     item.Short_Name,
                     item.QTY,
                     item.KGS,
+                    ...(transactionType === 'sales' ? [item.Item_Rate] : []),
                     Number(item.Brokerage || 0)
                 ]);
 

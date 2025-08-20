@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "@mui/material";
+import { Button, IconButton, Tooltip } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 
@@ -10,10 +11,8 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     };
 
     const [filters, setFilters] = useState({ Fromdate: getTodayDate() });
-
     const [tillBillingData, setTillBillingData] = useState([]);
     const [noBillingData, setNoBillingData] = useState([]);
-
     const [salesReceipts, setSalesReceipts] = useState([]);
     const [Total_Invoice_value, setTotal_Invoice_value] = useState(0);
     const [activeButton, setActiveButton] = useState("tillBilling");
@@ -21,44 +20,45 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     const calculateTotal = (arr) =>
         arr.reduce((sum, item) => sum + Number(item.Total_Invoice_value || 0), 0);
 
-    // Initial load: fetch both APIs with loading spinner
+    // FetchData function, also used for initial load
+    const fetchData = async () => {
+        try {
+            if (loadingOn) loadingOn();
+            const formattedDate = encodeURIComponent(filters.Fromdate);
+
+            const [tillRes, noBillRes] = await Promise.all([
+                fetchLink({ address: `receipt/outStandingAbove?reqDate=${formattedDate}` }),
+                fetchLink({ address: `receipt/outstandingOver?reqDate=${formattedDate}` }),
+            ]);
+
+            const tillArr = Array.isArray(tillRes) ? tillRes : tillRes?.data || [];
+            const noBillArr = Array.isArray(noBillRes)
+                ? noBillRes
+                : noBillRes?.data || [];
+
+            setTillBillingData(tillArr);
+            setNoBillingData(noBillArr);
+
+            // Show Till Billing by default after fetch
+            setActiveButton("tillBilling");
+            setSalesReceipts(tillArr);
+            setTotal_Invoice_value(calculateTotal(tillArr));
+        } catch (error) {
+            console.error("Error fetching outstanding data:", error);
+            setTillBillingData([]);
+            setNoBillingData([]);
+            setSalesReceipts([]);
+            setTotal_Invoice_value(0);
+        } finally {
+            if (loadingOff) loadingOff();
+        }
+    };
+
+    // Initial data load for today
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                if (loadingOn) loadingOn();
-                const formattedDate = encodeURIComponent(filters.Fromdate);
-
-                const [tillRes, noBillRes] = await Promise.all([
-                    fetchLink({
-                        address: `receipt/outStandingAbove?reqDate=${formattedDate}`,
-                    }),
-                    fetchLink({
-                        address: `receipt/outstandingOver?reqDate=${formattedDate}`,
-                    }),
-                ]);
-
-                const tillArr = Array.isArray(tillRes) ? tillRes : tillRes?.data || [];
-                const noBillArr = Array.isArray(noBillRes)
-                    ? noBillRes
-                    : noBillRes?.data || [];
-
-                setTillBillingData(tillArr);
-                setNoBillingData(noBillArr);
-
-                // Default view → Till Billing
-                setSalesReceipts(tillArr);
-                setTotal_Invoice_value(calculateTotal(tillArr));
-            } catch (error) {
-                console.error("Error fetching outstanding data:", error);
-                setTillBillingData([]);
-                setNoBillingData([]);
-            } finally {
-                if (loadingOff) loadingOff();
-            }
-        };
-
         fetchData();
-    }, []); // run only once at mount
+        // eslint-disable-next-line
+    }, []);
 
     const switchToTillBilling = () => {
         setActiveButton("tillBilling");
@@ -94,6 +94,17 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                             style={{ padding: "4px" }}
                         />
 
+                        <Tooltip title="Search">
+                            <IconButton
+                                color="primary"
+                                size="medium"
+                                onClick={fetchData}
+                                sx={{ height: 40 }}
+                            >
+                                <SearchIcon />
+                            </IconButton>
+                        </Tooltip>
+
                         <Button
                             variant={activeButton === "tillBilling" ? "contained" : "outlined"}
                             color="primary"
@@ -123,6 +134,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                 dataArray={Array.isArray(salesReceipts) ? salesReceipts : []}
                 headerFontSizePx={14}
                 bodyFontSizePx={13}
+                ExcelPrintOption={true}
                 columns={[
                     createCol("Retailer_Name", "string", "Retailer Name"),
                     createCol("Above 30 Pending Amt", "number", "Above 30 Pending Amt"),

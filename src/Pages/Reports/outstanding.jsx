@@ -224,6 +224,7 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                     </>
                 }
                 EnableSerialNumber
+                ExcelPrintOption={true}
                 dataArray={tableData}
                 headerFontSizePx={14}
                 bodyFontSizePx={13}
