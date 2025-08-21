@@ -15,7 +15,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
     // const [dataArray, setDataArray] = useState([]);
     const [generalInfo, setGeneralInfo] = useState([]);
     const [entriesInfo, setEntriesInfo] = useState([]);
-    const [billReference, setBillReference] = useState([]);
+    const [billReferenceInfo, setBillReferenceInfo] = useState([]);
 
     const sessionValue = sessionStorage.getItem('filterValues');
 
@@ -88,9 +88,9 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
             loadingOff, loadingOn
         }).then(data => {
             if (data.success) {
-                // setDataArray(toArray(data.data));
                 setGeneralInfo(toArray(data.others?.generalInfo));
                 setEntriesInfo(toArray(data.others?.entriesInfo));
+                setBillReferenceInfo(toArray(data.others?.billReferencesInfo));
             }
         }).catch(e => console.error(e))
     }, [sessionValue, pageID]);
@@ -115,8 +115,31 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
         let transformedData = [];
 
         generalInfo.forEach((journal, jourInd) => {
-            const debitSide = entriesInfo.filter(item => item.JournalAutoId === journal.JournalAutoId && item.DrCr === 'Dr');
-            const creditSide = entriesInfo.filter(item => item.JournalAutoId === journal.JournalAutoId && item.DrCr === 'Cr');
+            const billRefData = billReferenceInfo.filter(item => item.JournalAutoId === journal.JournalAutoId);
+
+            const debitSide = entriesInfo.filter(item => (
+                item.JournalAutoId === journal.JournalAutoId 
+                && item.DrCr === 'Dr'
+            )).map(entry => ({
+                ...entry,
+                Entries: billRefData.filter(bill => (
+                    bill.LineId === entry.LineId
+                    && bill.DrCr === 'Dr'
+                    && isEqualNumber(bill.Acc_Id, entry.Acc_Id)
+                ))
+            }));
+
+            const creditSide = entriesInfo.filter(item => (
+                item.JournalAutoId === journal.JournalAutoId 
+                && item.DrCr === 'Cr'
+            )).map(entry => ({
+                ...entry,
+                Entries: billRefData.filter(bill => (
+                    bill.LineId === entry.LineId
+                    && bill.DrCr === 'Cr'
+                    && isEqualNumber(bill.Acc_Id, entry.Acc_Id)
+                ))
+            }));
 
             const maxRows = Math.max(debitSide.length, creditSide.length);
             const sNo = ++jourInd;
@@ -134,7 +157,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 status: statusGet,
                 branch: journal.BranchGet,
                 createdBy: journal.CreatedByGet,
-                journalObject: { ...journal, Entries: [...debitSide, ...creditSide] }
+                journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData }
             });
 
             for (let i = 0; i < maxRows; i++) {
@@ -146,6 +169,8 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                     creditAcc: creditSide[i]?.AccountNameGet || '',
                     debitAmount: checkIsNumber(debitSide[i]?.Amount) ? NumberFormat(debitSide[i]?.Amount) : '',
                     creditAmount: checkIsNumber(creditSide[i]?.Amount) ? NumberFormat(creditSide[i]?.Amount) : '',
+                    debitBillReference: toArray(debitSide[i]?.Entries),
+                    creditBillReference: toArray(creditSide[i]?.Entries),
                     voucherType: '',
                     status: '',
                     branch: '',

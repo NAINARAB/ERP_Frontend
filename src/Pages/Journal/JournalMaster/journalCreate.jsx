@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button, Card, CardContent } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { ISOString, checkIsNumber, isEqualNumber, rid, Addition } from "../../../Components/functions";
-import { journalGeneralInfoIV, journalEntriesInfoIV } from "./variable";
+import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject } from "../../../Components/functions";
+import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV } from "./variable";
 
 import JournalGeneralInfo from "./journalGeneralInfo";
 import JournalEntriesPanel from "./JournalEntries";
 import BillRefDialog from "./addBillReference";
+import { useLocation } from "react-router-dom";
 
 // const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 const money = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 
 const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
+
+    const location = useLocation();
+    const stateDetails = location.state;
+
     const [journalGeneralInfo, setJournalGeneralInfo] = useState({
         ...journalGeneralInfoIV,
         JournalDate: ISOString(),
@@ -56,6 +61,41 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        const Entries = stateDetails?.Entries;
+        const billReferenceInfoData = stateDetails?.billReferenceInfo;
+        if (
+            isValidObject(stateDetails)
+            && Array.isArray(Entries)
+        ) {
+
+            setJournalGeneralInfo(
+                Object.fromEntries(
+                    Object.entries(journalGeneralInfoIV).map(([key, value]) => {
+                        if (key === 'JournalDate') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
+                        return [key, stateDetails[key] ?? value]
+                    })
+                )
+            );
+
+            setJournalEntriesInfo(
+                Entries.map(journalEntries => Object.fromEntries(
+                    Object.entries(journalEntriesInfoIV).map(([key, value]) => {
+                        return [key, journalEntries[key] ?? value]
+                    })
+                ))
+            );
+
+            setJournalBillReference(
+                billReferenceInfoData.map(journalBillRef => Object.fromEntries(
+                    Object.entries(journalBillReferenceIV).map(([key, value]) => {
+                        return [key, journalBillRef[key] ?? value]
+                    })
+                ))
+            );
+        }
+    }, [stateDetails])
 
     const sumOfDebit = useMemo(
         () => journalEntriesInfo.filter(r => r.DrCr === "Dr").reduce((acc, r) => Addition(acc, money(r.Amount)), 0),
@@ -114,7 +154,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         }, {});
 
         const allRefdLinesBalanced = journalEntriesInfo
-            .filter((e) => refsByLine[e.LineId] != null)  
+            .filter((e) => refsByLine[e.LineId] != null)
             .every((e) => nearlyEqual(refsByLine[e.LineId], e.Amount));
 
         return allRefdLinesBalanced;
