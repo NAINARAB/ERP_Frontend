@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
-import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division } from '../../../Components/functions'
+import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division, toArray } from '../../../Components/functions'
 import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
-import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt } from '@mui/icons-material'
+import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt, ToggleOn, ToggleOff } from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -40,12 +40,95 @@ const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
     )
 }
 
+const GroupSalesDetails = ({ row, Fromdate, Todate, DB }) => {
+    const [salesData, setSalesData] = useState([]);
+    const [dataTypes, setDataTypes] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const ledgerIds = useMemo(() => {
+        const ids = toArray(row?.groupedData).map(it => it?.Ledger_Tally_Id);
+        return ids.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b))).join(',');
+    }, [row?.groupedData]);
+
+    useEffect(() => {
+        if (!ledgerIds) { setSalesData([]); return; }
+
+        let cancelled = false;
+        setLoading(true);
+
+        fetchLink({
+            address: `reports/salesReport/ledger/groupSales?Fromdate=${Fromdate}&Todate=${Todate}&Ledger_Id=${ledgerIds}`,
+            headers: { Db: DB }
+        })
+            .then(({ success, data, others }) => {
+                if (cancelled) return;
+                if (success) {
+                    const { dataTypeInfo } = others || {};
+                    setSalesData(data || []);
+                    setDataTypes(prev => ({ ...prev, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }));
+                } else {
+                    setSalesData([]);
+                }
+            })
+            .catch(console.error)
+            .finally(() => { if (!cancelled) setLoading(false); });
+
+        return () => { cancelled = true; };
+    }, [ledgerIds, Fromdate, Todate, DB]); 
+
+    return (
+        loading
+            ? <h5 className="text-center text-primary ">Loading...</h5>
+            : <DisplayArrayData dataArray={salesData} columns={dataTypes.salesInfo} />
+    )
+}
+
+const GroupedExpandDetails = ({ row, groupBy, DB, Fromdate, Todate, DisplayColumn, showGroupSalesDetails }) => {
+
+    console.log({ row, showGroupSalesDetails, groupBy });
+
+    return groupBy ? (
+        showGroupSalesDetails ? (
+            <GroupSalesDetails
+                row={row}
+                DB={DB}
+                Fromdate={Fromdate}
+                Todate={Todate}
+            />
+        ) : (
+            <FilterableTable
+                title={row[groupBy] + ' - Ledgers'}
+                dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
+                columns={DisplayColumn}
+                ExcelPrintOption
+                isExpendable={true}
+                expandableComp={({ row }) => (
+                    <LedgerDetails
+                        row={row}
+                        DB={DB}
+                        Fromdate={Fromdate}
+                        Todate={Todate}
+                    />
+                )}
+            />
+        )
+    ) : (
+        <LedgerDetails
+            row={row}
+            DB={DB}
+            Fromdate={Fromdate}
+            Todate={Todate}
+        />
+    )
+}
+
 const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) => {
     const [filters, setFilters] = useState({});
     const [groupBy, setGroupBy] = useState('');
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
+    const [showGroupSalesDetails, setShowGroupSalesDetails] = useState(false);
 
     const propsColumns = colTypes.map((col, colInd) => ({
         isVisible: colInd < 10 ? 1 : 0,
@@ -53,7 +136,7 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
         Fied_Data: col?.Data_Type,
         OrderBy: colInd + 1
     }));
-    
+
     const [columns, setColumns] = useState(propsColumns);
 
     const sortedCoulumns = useMemo(() => {
@@ -268,6 +351,13 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                         </select>
                     </>
                 }
+                MenuButtons={[
+                    {
+                        name: 'Show Grouped Sales',
+                        icon: showGroupSalesDetails ? <ToggleOn color="primary" /> : <ToggleOff />,
+                        onclick: () => setShowGroupSalesDetails(pre => !pre)
+                    }
+                ]}
                 ExcelPrintOption
                 columns={
                     groupBy
@@ -282,30 +372,15 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                 dataArray={showData}
                 isExpendable={true}
                 expandableComp={({ row }) => (
-                    groupBy ? (
-                        <FilterableTable
-                            title={row[groupBy] + ' - Ledgers'}
-                            dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
-                            columns={DisplayColumn}
-                            ExcelPrintOption
-                            isExpendable={true}
-                            expandableComp={({ row }) => (
-                                <LedgerDetails
-                                    row={row}
-                                    DB={DB}
-                                    Fromdate={Fromdate}
-                                    Todate={Todate}
-                                />
-                            )}
-                        />
-                    ) : (
-                        <LedgerDetails
-                            row={row}
-                            DB={DB}
-                            Fromdate={Fromdate}
-                            Todate={Todate}
-                        />
-                    )
+                    <GroupedExpandDetails
+                        row={row}
+                        DB={DB}
+                        Fromdate={Fromdate}
+                        Todate={Todate}
+                        groupBy={groupBy}
+                        DisplayColumn={DisplayColumn}
+                        showGroupSalesDetails={showGroupSalesDetails}
+                    />
                 )}
                 maxHeightOption
             />

@@ -67,11 +67,59 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     );
     const diff = useMemo(() => sumOfDebit - sumOfCredit, [sumOfDebit, sumOfCredit]);
 
+    // const saveStatus = useMemo(() => {
+    //     const hasDr = journalEntriesInfo.some(e => (
+    //         e.DrCr === "Dr"
+    //         && e.Amount > 0
+    //         && checkIsNumber(e.Acc_Id)
+    //         && !isEqualNumber(e.Acc_Id, 0)
+    //     ));
+
+    //     const hasCr = journalEntriesInfo.some(e => (
+    //         e.DrCr === "Cr"
+    //         && e.Amount > 0
+    //         && checkIsNumber(e.Acc_Id)
+    //         && !isEqualNumber(e.Acc_Id, 0)
+    //     ));
+
+    //     const journalEntriesInfoBalance = journalEntriesInfo.filter(
+    //         bill => bill?.Entries?.length > 0
+    //     ).every(entry => isEqualNumber(
+    //         entry?.Entries?.reduce(
+    //             (acc, bill) => Addition(bill.Amount, acc), 0
+    //         ), 
+    //         entry.Amount
+    //     ))
+
+    //     return hasDr && hasCr && isEqualNumber(sumOfDebit, sumOfCredit) && journalEntriesInfoBalance;
+    // }, [journalEntriesInfo, sumOfDebit, sumOfCredit, journalBillReference]);
+
     const saveStatus = useMemo(() => {
-        const hasDr = journalEntriesInfo.some(e => e.DrCr === "Dr" && e.Amount > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0));
-        const hasCr = journalEntriesInfo.some(e => e.DrCr === "Cr" && e.Amount > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0));
-        return hasDr && hasCr && isEqualNumber(sumOfDebit, sumOfCredit);
-    }, [journalEntriesInfo, sumOfDebit, sumOfCredit]);
+        const num = (v) => (v == null || v === "" ? 0 : Number(v) || 0);
+        const nearlyEqual = (a, b, eps = 0.005) => Math.abs(num(a) - num(b)) < eps;
+
+        const hasDr = journalEntriesInfo.some(
+            (e) => e.DrCr === "Dr" && num(e.Amount) > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0)
+        );
+        const hasCr = journalEntriesInfo.some(
+            (e) => e.DrCr === "Cr" && num(e.Amount) > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0)
+        );
+
+        if (!(hasDr && hasCr && nearlyEqual(sumOfDebit, sumOfCredit))) return false;
+
+        const refsByLine = journalBillReference.reduce((m, r) => {
+            if (!r?.LineId) return m;
+            m[r.LineId] = (m[r.LineId] || 0) + num(r.Amount);
+            return m;
+        }, {});
+
+        const allRefdLinesBalanced = journalEntriesInfo
+            .filter((e) => refsByLine[e.LineId] != null)  
+            .every((e) => nearlyEqual(refsByLine[e.LineId], e.Amount));
+
+        return allRefdLinesBalanced;
+    }, [journalEntriesInfo, journalBillReference, sumOfDebit, sumOfCredit]);
+
 
     const saveJournal = useCallback(async () => {
         if (!saveStatus) return;
@@ -81,6 +129,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             const bodyData = {
                 ...journalGeneralInfo,
                 Entries: journalEntriesInfo,
+                BillReferences: journalBillReference
             };
 
             await fetchLink({ address: `journal/journalMaster`, method, bodyData, loadingOn, loadingOff });
