@@ -778,17 +778,33 @@ const AttendanceNewScreen = ({ loadingOn, loadingOff }) => {
     const fetchAttendanceData = async (From, EmpId) => {
         try {
             const userTypeId = storage?.UserTypeId;
+            const Add_Rights = storage?.Add_Rights; // Get Add_Rights from storage
+
             const [year, month] = From.split("-");
-
             const startDate = `${year}-${month}-01`;
-
             const dayCount = getDaysInMonth(`${year}-${month}`);
-
             const endDate = `${year}-${month}-${dayCount}`;
 
-            // Use fingerPrintEmpId in the API call
+            // Build base URL
+            let apiUrl = `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}`;
+
+            console.log("data", userTypeId)
+            // Add appropriate parameter bas
+            // ed on conditions
+            if (
+                Number(userTypeId) === 1 ||
+                Number(userTypeId) === 0
+            ) {
+                // Use EmpId parameter for these conditions
+
+                apiUrl += `&FingerPrintId=${EmpId}`;
+            } else if (userTypeId !== 1 || userTypeId !== 0) {
+                // Use FingerPrintId parameter for all other cases
+                apiUrl += `&EmpId=${EmpId}`;
+            }
+
             const response = await fetchLink({
-                address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&FingerPrintId=${EmpId}`,
+                address: apiUrl,
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
                 },
