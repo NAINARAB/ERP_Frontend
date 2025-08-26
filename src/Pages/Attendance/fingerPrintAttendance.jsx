@@ -775,33 +775,55 @@ const AttendanceNewScreen = ({ loadingOn, loadingOff }) => {
         reload,
     ]);
 
+    // const fetchAttendanceData = async (From, EmpId) => {
+    //   try {
+    //     const userTypeId = storage?.UserTypeId;
+    //     const [year, month] = From.split("-");
+
+    //     const startDate = `${year}-${month}-01`;
+
+    //     const dayCount = getDaysInMonth(`${year}-${month}`);
+
+    //     const endDate = `${year}-${month}-${dayCount}`;
+
+    //     // Use fingerPrintEmpId in the API call
+    //     const response = await fetchLink({
+    //       address: `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}&FingerPrintId=${EmpId}`, 
+    //       headers: {
+    //         Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
+    //       },
+    //     });
+
+    //     if (response.success) {
+    //       setAttendanceData(response.data);
+    //     }
+    //   } catch (e) {
+    //     console.error("Error fetching attendance data:", e);
+    //   }
+    // };
+
+
     const fetchAttendanceData = async (From, EmpId) => {
         try {
             const userTypeId = storage?.UserTypeId;
-            const Add_Rights = storage?.Add_Rights; // Get Add_Rights from storage
-
             const [year, month] = From.split("-");
+            console.log("EmpId", EmpId)
             const startDate = `${year}-${month}-01`;
             const dayCount = getDaysInMonth(`${year}-${month}`);
             const endDate = `${year}-${month}-${dayCount}`;
 
-            // Build base URL
             let apiUrl = `userModule/employeActivity/trackActivitylogAttendance?FromDate=${startDate}&ToDate=${endDate}&UserTypeId=${userTypeId}`;
 
-            console.log("data", userTypeId)
-            // Add appropriate parameter bas
-            // ed on conditions
-            if (
-                Number(userTypeId) === 1 ||
-                Number(userTypeId) === 0
-            ) {
-                // Use EmpId parameter for these conditions
-
+            if (EmpId && EmpId !== 0 && EmpId !== "0") {
                 apiUrl += `&FingerPrintId=${EmpId}`;
-            } else if (userTypeId !== 1 || userTypeId !== 0) {
-                // Use FingerPrintId parameter for all other cases
-                apiUrl += `&EmpId=${EmpId}`;
             }
+            // else {
+            //   // If EmpId is 0 or not provided, use FingerPrintId parameter with the user's fingerprint ID
+            //   const fingerPrintId = storage?.fingerPrintEmpId || storage?.UserId;
+            //   if (fingerPrintId) {
+            //     apiUrl += `&FingerPrintId=${fingerPrintId}`;
+            //   }
+            // }
 
             const response = await fetchLink({
                 address: apiUrl,
@@ -817,7 +839,6 @@ const AttendanceNewScreen = ({ loadingOn, loadingOff }) => {
             console.error("Error fetching attendance data:", e);
         }
     };
-
     useEffect(() => {
         const queryFilters = {
             FromDate:
@@ -1948,4 +1969,5 @@ const AttendanceNewScreen = ({ loadingOn, loadingOff }) => {
         </>
     );
 };
+
 export default AttendanceNewScreen;

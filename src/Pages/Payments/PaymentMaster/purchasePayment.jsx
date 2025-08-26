@@ -30,6 +30,7 @@ const PurchaseInvoicePayment = ({
             } else {
                 const reStruc = Object.fromEntries(
                     Object.entries(paymentBillInfoInitialValue).map(([key, value]) => {
+                        // const totalReference = 
                         switch (key) {
                             case 'pay_bill_id': return [key, invoiceDetails?.PIN_Id];
                             case 'bill_name': return [key, invoiceDetails?.Po_Inv_No];
@@ -76,6 +77,8 @@ const PurchaseInvoicePayment = ({
         const inputValue = checkIsNumber(input) ? RoundNumber(input) : 0;
         return inputValue < max ? inputValue : max;
     };
+
+    console.log(paymentBillInfo)
 
 
     return (

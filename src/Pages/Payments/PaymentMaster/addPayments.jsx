@@ -256,7 +256,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     disabled={checkIsNumber(paymentValue.pay_id)}
                                 >
                                     <option value="" disabled>Select</option>
-                                    {console.log(toArray(baseData.voucherType))}
                                     {toArray(baseData.voucherType).filter(
                                         fil => stringCompare(fil.Type, 'PAYMENT')
                                     ).map(

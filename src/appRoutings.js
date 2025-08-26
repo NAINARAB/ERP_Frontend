@@ -82,7 +82,8 @@ const ItemGroupWiseStockValue = lazy(() => import("./Pages/Reports/storageClosin
 const PurchaseBrokerageReport = lazy(() => import("./Pages/Reports/CostCenterReports/purchaseBrokerageReport"));
 const NakalReports = lazy(() => import("./Pages/Reports/NakalReports/nakalReports"));
 const PendingDetails = lazy(() => import('./Pages/Reports/PendingDetails'));
-const OutstandingNew = lazy(() => import("./Pages/Reports/outStandingNew"))
+const OutstandingNew = lazy(() => import("./Pages/Reports/outStandingNew"));
+const StockPaper = lazy(() => import("./Pages/Reports/smtstockPaper"));
 
 // Attendance
 const AttendanceReportForEmployee = lazy(() => import("./Pages/Attendance/attendanceReportForEmp"))
@@ -279,6 +280,7 @@ const RoutingArray = [
     { component: <NakalReports />, path: '/erp/reports/nakalReports' },
     { component: <PendingDetails />, path: '/erp/reports/PendingDetails' },
     { component: <OutstandingNew />, path: '/erp/reports/OutstandingNew' },
+    { component: <StockPaper />, path: '/erp/reports/smstockPaper' },
 
     // ERP - sales
     { component: <DisplayNavigations />, path: '/erp/sales' },
