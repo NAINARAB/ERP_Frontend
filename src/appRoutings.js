@@ -129,6 +129,7 @@ const BatchAssign = lazy(() => import("./Pages/Inventry/BatchManagement/batchAss
 const BatchListing = lazy(() => import("./Pages/Inventry/BatchManagement/batchList"));
 const JournalListing = lazy(() => import("./Pages/Journal/JournalMaster/journalList"));
 const JournalCreate = lazy(() => import("./Pages/Journal/JournalMaster/journalCreate"));
+const InventoryTrunoverReport = lazy(() => import("./Pages/Inventry/turnOverReport"))
 
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
@@ -314,6 +315,8 @@ const RoutingArray = [
     { component: <StockMangement />, path: '/erp/inventory/stockProcessing' },
     { component: <StockManagementCreate />, path: '/erp/inventory/stockProcessing/create' },
     { component: <ArrivalMaster />, path: '/erp/inventory/arrivalEntry' },
+    { component: <InventoryTrunoverReport />, path: '/erp/inventory/trunOverReport' },
+
 
     { component: <SalesConvert />, path: '/erp/sales/Tripsheet/Tripsheetcreation/SaleOrderconvert' },
     { component: <DeliveryTripSheetAdd />, path: '/erp/sales/Tripsheet/Tripsheetcreation' },

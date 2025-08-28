@@ -78,8 +78,33 @@ const PurchaseInvoicePayment = ({
         return inputValue < max ? inputValue : max;
     };
 
-    console.log(paymentBillInfo)
+    const TotalAmount = baseData.purchaseInvoiceSearchResult.reduce(
+        (acc, invoice) => Addition(acc, invoice?.Total_Invoice_value), 0
+    );
 
+    const SelectedBillAmount = baseData.purchaseInvoiceSearchResult.reduce(
+        (acc, invoice) => {
+            const isChecked = paymentBillInfo.findIndex(o =>
+                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+            ) !== -1;
+
+            if (isChecked) return Addition(acc, invoice?.Total_Invoice_value);
+
+            return acc
+        }, 0
+    );
+
+    const PendingBillAmount = baseData.purchaseInvoiceSearchResult.reduce(
+        (acc, invoice) => {
+            const isNotChecked = paymentBillInfo.findIndex(o =>
+                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
+            ) === -1;
+
+            if (isNotChecked) return Addition(acc, invoice?.Total_Invoice_value);
+
+            return acc
+        }, 0
+    )
 
     return (
         <>
@@ -171,12 +196,10 @@ const PurchaseInvoicePayment = ({
                         <thead>
                             <tr>
                                 <th className="text-primary fa-15 vctr" style={cellHeadStype}>Pending Invoices</th>
-                                <th colSpan={6} className="text-end">
-
-                                </th>
+                                <th colSpan={8} className="text-end"></th>
                             </tr>
                             <tr>
-                                {['Sno', 'Payment InvoiceNo', 'Source', 'Date', 'Invoice Value', 'Paid Amount', 'Pending Amount', '#'].map(
+                                {['Sno', 'Payment InvoiceNo', 'Source', 'Date', 'Invoice Value', 'Paid Amount', 'J-Adjustment', 'Pending Amount', '#'].map(
                                     (col, colInd) => <td key={colInd}>{col}</td>
                                 )}
                             </tr>
@@ -189,9 +212,10 @@ const PurchaseInvoicePayment = ({
                                         <td>{invoice?.Po_Inv_No}</td>
                                         <td>{invoice?.dataSource}</td>
                                         <td>{LocalDate(invoice?.Po_Inv_Date)}</td>
-                                        <td>{invoice?.Total_Invoice_value}</td>
-                                        <td>{invoice?.Paid_Amount}</td>
-                                        <td>{Subraction(invoice?.Total_Invoice_value, invoice?.Paid_Amount)}</td>
+                                        <td>{NumberFormat(invoice?.Total_Invoice_value)}</td>
+                                        <td>{NumberFormat(invoice?.Paid_Amount)}</td>
+                                        <td>{NumberFormat(invoice?.journalAdjustment)}</td>
+                                        <td>{NumberFormat(Subraction(invoice?.Total_Invoice_value, invoice?.Paid_Amount))}</td>
                                         <td>
                                             {(() => {
                                                 const isChecked = paymentBillInfo.findIndex(o =>
@@ -229,42 +253,20 @@ const PurchaseInvoicePayment = ({
                             <tr>
                                 <td colSpan={4} rowSpan={3}></td>
                                 <td>Total Amount: </td>
-                                <td colSpan={2} className="fw-bold fa-15">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
-                                        (acc, invoice) => Addition(acc, invoice?.Total_Invoice_value), 0
-                                    )}
+                                <td colSpan={4} className="fw-bold fa-15 text-end">
+                                    {NumberFormat(TotalAmount)}
                                 </td>
                             </tr>
                             <tr>
                                 <td>Selected Bill Amount: </td>
-                                <td colSpan={2} className="text-primary fw-bold">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
-                                        (acc, invoice) => {
-                                            const isChecked = paymentBillInfo.findIndex(o =>
-                                                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
-                                            ) !== -1;
-
-                                            if (isChecked) return Addition(acc, invoice?.Total_Invoice_value);
-
-                                            return acc
-                                        }, 0
-                                    )}
+                                <td colSpan={4} className="text-primary text-end fw-bold">
+                                    {NumberFormat(SelectedBillAmount)}
                                 </td>
                             </tr>
                             <tr>
                                 <td>Pending Bill Amount: </td>
-                                <td colSpan={2} className="text-danger">
-                                    {baseData.purchaseInvoiceSearchResult.reduce(
-                                        (acc, invoice) => {
-                                            const isNotChecked = paymentBillInfo.findIndex(o =>
-                                                isEqualNumber(o?.pay_bill_id, invoice.PIN_Id)
-                                            ) === -1;
-
-                                            if (isNotChecked) return Addition(acc, invoice?.Total_Invoice_value);
-
-                                            return acc
-                                        }, 0
-                                    )}
+                                <td colSpan={4} className="text-danger text-end">
+                                    {NumberFormat(PendingBillAmount)}
                                 </td>
                             </tr>
                         </tbody>
