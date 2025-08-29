@@ -97,7 +97,7 @@ const PROTECTED_COLUMNS = [
     // "Actual_Party_Name_with_Brokers",
 ];
 
-function Lollist() {
+function Lollist({ loadingOn, loadingOff }) {
     const [lolData, setLolData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [page, setPage] = useState(0);
@@ -140,61 +140,67 @@ function Lollist() {
         fetchColumnData();
     }, [parseData?.companyId]);
 
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                const columnRes = await fetchLink({
-                    address: `masters/displayColumn?company_id=${parseData?.companyId}`,
+useEffect(() => {
+    async function fetchData() {
+        try {
+            setIsLoading(true);  
+            loadingOn()
+            const columnRes = await fetchLink({
+                address: `masters/displayColumn?company_id=${parseData?.companyId}`,
+            });
+
+            if (!columnRes.success || !Array.isArray(columnRes.data)) {
+                console.error("No display columns found");
+                return;
+            }
+
+            const sortedColumns = [...columnRes.data].sort(
+                (a, b) => a.Position - b.Position
+            );
+            setColumnSettings(sortedColumns);
+            setOriginalColumnSettings([...sortedColumns]);
+
+            const visibleColumns = sortedColumns
+                .filter(
+                    (col) =>
+                        col.status === 1 &&
+                        !["Auto_Id", "Ledger_Tally_Id"].includes(col.ColumnName)
+                )
+                .sort((a, b) => a.Position - b.Position)
+                .map((col) => ({
+                    header: col.Alias_Name || col.ColumnName,
+                    accessor: col.ColumnName,
+                    position: col.Position,
+                }));
+            setColumns(visibleColumns);
+
+            const dataRes = await fetchLink({ address: `masters/getlolDetails` });
+
+            if (dataRes.success && Array.isArray(dataRes.data)) {
+                setAllData(dataRes.data);
+
+                const allowedKeys = visibleColumns.map((col) => col.accessor);
+                const filteredData = dataRes.data.map((row) => {
+                    const filteredRow = {};
+                    allowedKeys.forEach((key) => {
+                        filteredRow[key] = row[key] || "";
+                    });
+                    return filteredRow;
                 });
 
-                if (!columnRes.success || !Array.isArray(columnRes.data)) {
-                    console.error("No display columns found");
-                    return;
-                }
-
-                const sortedColumns = [...columnRes.data].sort(
-                    (a, b) => a.Position - b.Position
-                );
-                setColumnSettings(sortedColumns);
-                setOriginalColumnSettings([...sortedColumns]);
-
-                const visibleColumns = sortedColumns
-                    .filter(
-                        (col) =>
-                            col.status === 1 &&
-                            !["Auto_Id", "Ledger_Tally_Id"].includes(col.ColumnName)
-                    )
-                    .sort((a, b) => a.Position - b.Position)
-                    .map((col) => ({
-                        header: col.Alias_Name || col.ColumnName,
-                        accessor: col.ColumnName,
-                        position: col.Position,
-                    }));
-                setColumns(visibleColumns);
-
-                const dataRes = await fetchLink({ address: `masters/getlolDetails` });
-
-                if (dataRes.success && Array.isArray(dataRes.data)) {
-                    setAllData(dataRes.data);
-
-                    const allowedKeys = visibleColumns.map((col) => col.accessor);
-                    const filteredData = dataRes.data.map((row) => {
-                        const filteredRow = {};
-                        allowedKeys.forEach((key) => {
-                            filteredRow[key] = row[key] || "";
-                        });
-                        return filteredRow;
-                    });
-
-                    setLolData(filteredData);
-                }
-            } catch (error) {
-                console.error("Error loading data:", error);
+                setLolData(filteredData);
             }
+        } catch (error) {
+            console.error("Error loading data:", error);
+        } finally {
+            setIsLoading(false);  
+            loadingOff()
         }
+    }
 
-        fetchData();
-    }, [data, isApplying]);
+    fetchData();
+}, [data, isApplying, parseData?.companyId]);
+
 
     const handlePositionChange = (columnId, newPosition) => {
         const positionValue = parseInt(newPosition);
@@ -662,15 +668,14 @@ function Lollist() {
         </TableHead>
     );
 
-    {
-        isLoading && (
-            <Box sx={{ mt: 2, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                    Processing your file, please wait...
-                </Typography>
-            </Box>
-        );
-    }
+//    if (isLoading) {
+//     return (
+//         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
+//             <CircularProgress size={50} />
+//         </Box>
+//     );
+// }
+
 
     const handleCheckboxChange = (row) => {
         setSelectedRows((prevSelected) => {
