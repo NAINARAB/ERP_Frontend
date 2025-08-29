@@ -13,14 +13,26 @@ import { FilterAltOff } from "@mui/icons-material";
 import { toast } from "react-toastify";
 
 
-const calculateTurnoverRatio = (monthlySales, weekSales, yesterday, liveStock) => {
-    if (monthlySales === undefined || liveStock === undefined || Math.abs(liveStock) === 0) {
+const calculateTurnoverRatio = (monthlySales = 0, weekSales = 0, yesterday = 0, liveStock = 0) => {
+  
+    if (!liveStock || liveStock <= 0) {
         return 0;
     }
 
-    const ratio = (monthlySales + weekSales + yesterday) / Math.abs(liveStock);
-    return Math.round(ratio * 100) / 100;
+  
+    const dividedResult = (monthlySales + weekSales + yesterday) / 3;
+
+ 
+    if (dividedResult <= 0) {
+        return 0;
+    }
+
+
+    const ratio = liveStock / dividedResult;
+
+    return Math.round(ratio);
 };
+
 
 const TrunoverRatio = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState('1');
@@ -164,12 +176,30 @@ const StockPerformanceReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => 
     const groupedData = groupBy ? groupData(filteredData, groupBy) : [];
 
     const showData = groupBy ? groupedData.map(group => {
-        const totalMonthlySales = group.groupedData.reduce((sum, item) => sum + (item.OneMonth_Act_Qty || 0), 0);
-        const totalWeeklySales = group.groupedData.reduce((sum, item) => sum + (item.OneWeek_Act_Qty || 0), 0);
-        const totalYesterdaySales = group.groupedData.reduce((sum, item) => sum + (item.Yesterday_Act_Qty || 0), 0);
-        const totalCurrentStock = group.groupedData.reduce((sum, item) => sum + (Math.abs(item.Bal_Qty) || 0), 0);
+   const totalMonthlySales = group.groupedData.reduce(
+  (sum, item) => sum + (item.OneMonth_Act_Qty || 0),
+  0
+);
+const totalWeeklySales = group.groupedData.reduce(
+  (sum, item) => sum + (item.OneWeek_Act_Qty || 0),
+  0
+);
+const totalYesterdaySales = group.groupedData.reduce(
+  (sum, item) => sum + (item.Yesterday_Act_Qty || 0),
+  0
+);
+const totalCurrentStock = group.groupedData.reduce(
+  (sum, item) => sum + ((item.Bal_Qty > 0 ? item.Bal_Qty : 0) || 0),
+  0
+);
 
-        const groupTurnoverRatio = totalCurrentStock !== 0 ? ((totalMonthlySales + totalWeeklySales + totalYesterdaySales) / totalCurrentStock) : 0;
+const avgSales = (totalMonthlySales + totalWeeklySales + totalYesterdaySales) / 3;
+
+const ratio = (avgSales > 0) 
+  ? totalCurrentStock / avgSales 
+  : 0;
+
+const groupTurnoverRatio = parseFloat(ratio.toFixed(2));
 
         return {
             ...group,
@@ -177,7 +207,7 @@ const StockPerformanceReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => 
             OneWeek_Act_Qty: totalWeeklySales,
             Yesterday_Act_Qty: totalYesterdaySales,
             Bal_Qty: totalCurrentStock,
-            Turnover_Ratio: Math.round(groupTurnoverRatio * 100) / 100
+            Turnover_Ratio: Math.round(groupTurnoverRatio)
         };
     }) : filteredData;
 
