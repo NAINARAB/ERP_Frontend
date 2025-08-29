@@ -26,7 +26,7 @@ const SalesInvoiceReceipt = ({
             const previousValue = toArray(pre);
 
             const excludeCurrentValue = previousValue.filter(o => !(
-                isEqualNumber(o?.bill_name, invoiceDetails.bill_name) &&
+                stringCompare(o?.bill_name, invoiceDetails.bill_name) &&
                 isEqualNumber(o?.bill_id, invoiceDetails?.bill_id)
             ));
 
@@ -45,10 +45,10 @@ const SalesInvoiceReceipt = ({
                             case 'JournalBillType': return [key, 'SALES INVOICE'];
 
                             case 'SalesInvoiceDate': return [key, invoiceDetails.Do_Date];
-                            case 'TotalPaidAmount': return [key, invoiceDetails.Paid_Amount];
+                            case 'TotalPaidAmount': return [key, invoiceDetails.totalReference];
                             case 'PendingAmount': return [key, Subraction(
                                 invoiceDetails?.Total_Invoice_value,
-                                invoiceDetails.Paid_Amount
+                                invoiceDetails.totalReference
                             )];
                             default: return [key, value];
                         }
@@ -196,7 +196,7 @@ const SalesInvoiceReceipt = ({
                                         <td>{LocalDate(invoice?.Do_Date)}</td>
                                         <td>{invoice?.Total_Invoice_value}</td>
                                         <td>{invoice?.Paid_Amount}</td>
-                                        <td>{Subraction(invoice?.Total_Invoice_value, invoice?.Paid_Amount)}</td>
+                                        <td>{Subraction(invoice?.Total_Invoice_value, invoice?.totalReference)}</td>
                                         <td>
                                             {(() => {
                                                 const isChecked = receiptBillInfo.findIndex(o =>

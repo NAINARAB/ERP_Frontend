@@ -40,10 +40,10 @@ const PurchaseInvoicePayment = ({
                             case 'JournalBillType': return [key, 'PURCHASE INVOICE'];
 
                             case 'PurchaseInvoiceDate': return [key, invoiceDetails.Po_Inv_Date];
-                            case 'TotalPaidAmount': return [key, invoiceDetails.Paid_Amount];
+                            case 'TotalPaidAmount': return [key, invoiceDetails.totalReference];
                             case 'PendingAmount': return [key, Subraction(
                                 invoiceDetails?.Total_Invoice_value,
-                                invoiceDetails.Paid_Amount
+                                invoiceDetails.totalReference
                             )];
                             default: return [key, value];
                         }
@@ -215,7 +215,7 @@ const PurchaseInvoicePayment = ({
                                         <td>{NumberFormat(invoice?.Total_Invoice_value)}</td>
                                         <td>{NumberFormat(invoice?.Paid_Amount)}</td>
                                         <td>{NumberFormat(invoice?.journalAdjustment)}</td>
-                                        <td>{NumberFormat(Subraction(invoice?.Total_Invoice_value, invoice?.Paid_Amount))}</td>
+                                        <td>{NumberFormat(Subraction(invoice?.Total_Invoice_value, invoice?.totalReference))}</td>
                                         <td>
                                             {(() => {
                                                 const isChecked = paymentBillInfo.findIndex(o =>

@@ -8,6 +8,7 @@ import JournalGeneralInfo from "./journalGeneralInfo";
 import JournalEntriesPanel from "./JournalEntries";
 import BillRefDialog from "./addBillReference";
 import { useLocation } from "react-router-dom";
+import { toast } from 'react-toastify'
 
 // const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 const money = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
@@ -138,6 +139,9 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         const num = (v) => (v == null || v === "" ? 0 : Number(v) || 0);
         const nearlyEqual = (a, b, eps = 0.005) => Math.abs(num(a) - num(b)) < eps;
 
+        if (!checkIsNumber(journalGeneralInfo.VoucherType)) return false;
+        if (!checkIsNumber(journalGeneralInfo.BranchId)) return false;
+
         const hasDr = journalEntriesInfo.some(
             (e) => e.DrCr === "Dr" && num(e.Amount) > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0)
         );
@@ -145,44 +149,56 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             (e) => e.DrCr === "Cr" && num(e.Amount) > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0)
         );
 
-        if (!(hasDr && hasCr && nearlyEqual(sumOfDebit, sumOfCredit))) return false;
+        return hasDr && hasCr && nearlyEqual(sumOfDebit, sumOfCredit);
 
-        const refsByLine = journalBillReference.reduce((m, r) => {
-            if (!r?.LineId) return m;
-            m[r.LineId] = (m[r.LineId] || 0) + num(r.Amount);
-            return m;
-        }, {});
+        // const refsByLine = journalBillReference.reduce((m, r) => {
+        //     if (!r?.LineId) return m;
+        //     m[r.LineId] = (m[r.LineId] || 0) + num(r.Amount);
+        //     return m;
+        // }, {});
 
-        const allRefdLinesBalanced = journalEntriesInfo
-            .filter((e) => refsByLine[e.LineId] != null)
-            .every((e) => nearlyEqual(refsByLine[e.LineId], e.Amount));
+        // const allRefdLinesBalanced = journalEntriesInfo
+        //     .filter((e) => refsByLine[e.LineId] != null)
+        //     .every((e) => nearlyEqual(refsByLine[e.LineId], e.Amount));
 
-        return allRefdLinesBalanced;
-    }, [journalEntriesInfo, journalBillReference, sumOfDebit, sumOfCredit]);
+        // return allRefdLinesBalanced;
+    }, [journalGeneralInfo, journalEntriesInfo, journalBillReference, sumOfDebit, sumOfCredit]);
 
+    const resetValues = () => {
+        setJournalGeneralInfo({ ...journalGeneralInfoIV, JournalDate: ISOString() });
+        setJournalEntriesInfo([
+            { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Dr" },
+            { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Cr" },
+        ]);
+        setJournalBillReference([]);
+    }
 
     const saveJournal = useCallback(async () => {
         if (!saveStatus) return;
-        try {
-            const method =
-                journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
-            const bodyData = {
-                ...journalGeneralInfo,
-                Entries: journalEntriesInfo,
-                BillReferences: journalBillReference
-            };
+        const method =
+            journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
+        const bodyData = {
+            ...journalGeneralInfo,
+            Entries: journalEntriesInfo,
+            BillReferences: journalBillReference
+        };
 
-            await fetchLink({ address: `journal/journalMaster`, method, bodyData, loadingOn, loadingOff });
-
-            setJournalGeneralInfo({ ...journalGeneralInfoIV, JournalDate: ISOString() });
-            setJournalEntriesInfo([
-                { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Dr" },
-                { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Cr" },
-            ]);
-            setJournalBillReference([]);
-        } catch (e) {
+        fetchLink({
+            address: `journal/journalMaster`,
+            method,
+            bodyData,
+            loadingOn,
+            loadingOff
+        }).then(res => {
+            if (res.success) {
+                resetValues();
+                toast.success(res.message);
+            } else {
+                toast.error(res.message);
+            }
+        }).catch(e => {
             console.error("Save journal error", e);
-        }
+        });
     }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, loadingOn, loadingOff]);
 
     return (
