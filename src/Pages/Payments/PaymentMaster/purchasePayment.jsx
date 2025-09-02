@@ -38,8 +38,9 @@ const PurchaseInvoicePayment = ({
                             case 'Debit_Amo': return [key, 0];
                             case 'Credit_Amo': return [key, 0];
                             case 'JournalBillType': return [key, 'PURCHASE INVOICE'];
-
+                            
                             case 'PurchaseInvoiceDate': return [key, invoiceDetails.Po_Inv_Date];
+                            case 'bill_ref_number': return [key, invoiceDetails?.bill_ref_number || ''];
                             case 'TotalPaidAmount': return [key, invoiceDetails.totalReference];
                             case 'PendingAmount': return [key, Subraction(
                                 invoiceDetails?.Total_Invoice_value,

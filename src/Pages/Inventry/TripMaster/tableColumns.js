@@ -1,7 +1,7 @@
-import { ISOString } from "../../../Components/functions";
+import { checkIsNumber, ISOString } from "../../../Components/functions";
 import { getSessionUser } from "../../../Components/functions";
 
-const { user } = getSessionUser();
+const userDetails = getSessionUser().user;
 
 export const tripMasterDetails = {
     Trip_Id: '',
@@ -26,8 +26,8 @@ export const tripMasterDetails = {
     VoucherType: '',
     Narration: '',
     TripStatus: 'New',
-    Created_By: user.UserId,
-    Updated_By: user.UserId,
+    Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
+    Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
 }
 
 export const tripDetailsColumns = {
@@ -92,7 +92,7 @@ export const initialArrivalValue = {
     Taxable_Value: '',
     Round_off: '',
     Total_Value: '',
-    Created_By: user.UserId,
+    Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     CreatedAt: '',
-    Updated_By: user.UserId,
+    Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
 }

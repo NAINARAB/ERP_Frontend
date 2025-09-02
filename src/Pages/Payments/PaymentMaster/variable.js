@@ -47,6 +47,7 @@ export const paymentBillInfoInitialValue = {
     pay_bill_id: '',
     JournalBillType: '',
     bill_name: '',
+    bill_ref_number: '',
     bill_amount: 0,
     Debit_Amo: 0,
     Credit_Amo: 0,

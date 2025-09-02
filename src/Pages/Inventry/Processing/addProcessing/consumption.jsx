@@ -1,0 +1,253 @@
+import RequiredStar from '../../../../Components/requiredStar';
+import { initialSoruceValue } from './variables'
+import Select from 'react-select';
+import { customSelectStyles } from "../../../../Components/tablecolumn";
+import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum } from '../../../../Components/functions';
+import { Button, IconButton } from '@mui/material';
+import { Delete } from '@mui/icons-material';
+import { useEffect } from 'react';
+import { useCallback } from 'react';
+import { fetchLink } from '../../../../Components/fetchComponent';
+import { useState } from 'react';
+
+
+const ConsumptionOfProcessing = ({
+    sourceList = [],
+    setSourceList,
+    products = [],
+    uom = [],
+    godown = [],
+}) => {
+
+    const changeSourceValue = (rowIndex, key, value) => {
+        setSourceList((prev) => {
+            return prev.map((item, index) => {
+
+                if (isEqualNumber(index, rowIndex)) {
+                    switch (key) {
+                        case 'Sour_Item_Id': {
+                            const newItem = { ...item, Sour_Item_Id: value };
+                            newItem.Sour_Item_Name = products?.find(pro =>
+                                isEqualNumber(pro?.Product_Id, value)
+                            )?.Product_Name ?? 'Not available';
+                            return newItem;
+                        }
+                        case 'Sour_Unit_Id': {
+                            const newItem = { ...item, Sour_Unit_Id: value };
+                            newItem.Sour_Unit = uom?.find(uom =>
+                                isEqualNumber(uom?.Unit_Id, value)
+                            )?.Units ?? 'Not available';
+                            return newItem;
+                        }
+                        case 'Sour_Qty': {
+                            const newItem = { ...item, Sour_Qty: value };
+                            if (item.Sour_Rate) {
+                                newItem.Sour_Amt = Multiplication(item.Sour_Rate, value);
+                            } else if (item.Sour_Amt) {
+                                newItem.Sour_Rate = Division(item.Sour_Amt, value);
+                            } else {
+                                newItem.Sour_Amt = '';
+                                newItem.Sour_Rate = '';
+                            }
+                            return newItem;
+                        }
+                        case 'Sour_Rate': {
+                            const newItem = { ...item, Sour_Rate: value };
+                            if (item.Sour_Qty) {
+                                newItem.Sour_Amt = Multiplication(value, item.Sour_Qty);
+                            } else if (item.Sour_Amt) {
+                                newItem.Sour_Qty = Division(item.Sour_Amt, value);
+                            } else {
+                                newItem.Sour_Amt = '';
+                                newItem.Sour_Qty = '';
+                            }
+                            return newItem;
+                        }
+                        case 'Sour_Amt': {
+                            const newItem = { ...item, Sour_Amt: value };
+                            if (checkIsNumber(item.Sour_Qty)) {
+                                newItem.Sour_Rate = Division(value, item.Sour_Qty);
+                            } else if (checkIsNumber(item.Sour_Rate)) {
+                                newItem.Sour_Qty = Division(value, item.Sour_Rate);
+                            } else {
+                                newItem.Sour_Rate = '';
+                                newItem.Sour_Qty = '';
+                            }
+                            return newItem;
+                        }
+                        default:
+                            return { ...item, [key]: value };
+                    }
+                }
+                return item;
+            });
+        });
+    };
+
+    const SourceItems = ({ row, index }) => {
+        const [batchDetails, setBatchDetails] = useState([]);
+
+        useEffect(() => {
+            if (!checkIsNumber(row?.Sour_Item_Id)) return;
+
+            fetchLink({
+                address: `inventory/batchMaster/stockBalance?Product_Id=${row?.Sour_Item_Id}`
+            }).then(data => {
+                if (data.success) {
+                    setBatchDetails(data.data);
+                } else {
+                    setBatchDetails([])
+                }
+            }).catch(err => {
+                console.log(err);
+                setBatchDetails([])
+            })
+
+        }, [row?.Sour_Item_Id])
+
+        return (
+            <tr>
+                <td className='fa-13'>{index + 1}</td>
+                <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
+                    <Select
+                        value={{ value: row?.Sour_Item_Id, label: row?.Sour_Item_Name }}
+                        onChange={e => changeSourceValue(index, 'Sour_Item_Id', e.value)}
+                        options={
+                            products
+                                // .filter(pro =>
+                                //     !sourceList.some(src => isEqualNumber(pro.Product_Id, src.Sour_Item_Id))
+                                // )
+                                .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
+                        }
+                        menuPortalTarget={document.body}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        placeholder={"Select Item"}
+                        maxMenuHeight={300}
+                    />
+
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <input
+                        value={row?.Sour_Batch_Lot_No ?? ""}
+                        onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
+                        className="cus-inpt p-2"
+                    />
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <input
+                        value={row?.Sour_Qty ?? ""}
+                        required
+                        onInput={onlynum}
+                        onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
+                        className="cus-inpt p-2"
+                    />
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <select
+                        value={row?.Sour_Unit_Id ?? ""}
+                        onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
+                        className="cus-inpt p-2"
+                        style={{ minWidth: '40px' }}
+                    >
+                        <option value="" disabled>Select Unit</option>
+                        {uom.map((uom, ind) => (
+                            <option key={ind} value={uom.Unit_Id}>{uom.Units}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <input
+                        value={row?.Sour_Rate ?? ""}
+                        onInput={onlynum}
+                        onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
+                        className="cus-inpt p-2"
+                    />
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <input
+                        value={row?.Sour_Amt ?? ""}
+                        onInput={onlynum}
+                        onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
+                        className="cus-inpt p-2"
+                    />
+                </td>
+                <td className='fa-13 px-1 py-0 vctr'>
+                    <select
+                        value={row?.Sour_Goodown_Id ?? ""}
+                        required
+                        onChange={e => changeSourceValue(index, 'Sour_Goodown_Id', e.target.value)}
+                        className="cus-inpt p-2"
+                        style={{ minWidth: '40px' }}
+                    >
+                        <option value="" disabled>Select Location</option>
+                        {godown.map((god, ind) => (
+                            <option key={ind} value={god.Godown_Id}>{god.Godown_Name}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className='fa-13 px-1 py-0 p-0 vctr text-center'>
+                    <IconButton
+                        variant="contained"
+                        color="error"
+                        type="button"
+                        size="small"
+                        onClick={() => {
+                            setSourceList(sourceList.filter((_, ind) => ind !== index));
+                        }}
+                    ><Delete className="fa-20" /></IconButton>
+                </td>
+            </tr>
+        )
+    }
+
+    return (
+        <div className="col-12 p-2 mb-2">
+            <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
+                <h5 className="flex-grow-1 ">
+                    CONSUMPTION
+                </h5>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    type="button"
+                    onClick={() => {
+                        setSourceList(pre => [...pre, { ...initialSoruceValue }]);
+                    }}
+                >Add</Button>
+            </div>
+            <div className="table-responsive">
+                <table className="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th className="fa-13">Sno</th>
+                            <th className="fa-13">Item <RequiredStar /></th>
+                            <th className="fa-13">Batch Lot No</th>
+                            <th className="fa-13">Quantity <RequiredStar /></th>
+                            <th className="fa-13">Unit</th>
+                            <th className="fa-13">Rate</th>
+                            <th className="fa-13">Amount</th>
+                            <th className="fa-13">Location <RequiredStar /></th>
+                            <th className="fa-13">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sourceList.map((row, index) => (
+                            <SourceItems key={index} row={row} index={index} />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="text-end">
+                <span className="rounded-2 border bg-light fw-bold text-primary fa-14 p-2">
+                    <span className=" py-2 pe-2">Total Quantity: </span>
+                    {sourceList.reduce((acc, item) => {
+                        return checkIsNumber(item?.Sour_Item_Id) ? Addition(acc, item.Sour_Qty) : acc;
+                    }, 0)}
+                </span>
+            </div>
+        </div>
+    )
+}
+
+export default ConsumptionOfProcessing;

@@ -3,7 +3,8 @@ import {
     Addition, Division, ISOString, Multiplication, checkIsNumber,
     formatSQLDateTimeObjectToInputDateTime,
     getSessionUser, isEqualNumber, isGraterNumber, isValidObject,
-    onlynum
+    onlynum,
+    toArray
 } from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
 import { fetchLink } from "../../../Components/fetchComponent"
@@ -13,80 +14,8 @@ import { Delete } from "@mui/icons-material";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation } from "react-router-dom";
-
-const { user } = getSessionUser();
-
-const initialStockJournalInfoValues = {
-    PR_Id: '',
-    PR_Inv_Id: '',
-    Year_Id: '',
-    Branch_Id: '',
-    Process_no: '',
-    P_No: '',
-
-    Godownlocation: '',
-    BillType: 'New',
-    VoucherType: '',
-    Process_date: '',
-    Machine_No: '',
-    StartDateTime: '',
-    EndDateTime: '',
-    ST_Reading: '',
-    EN_Reading: '',
-    Total_Reading: '',
-    Narration: '',
-    PR_Status: 'NEW',
-    Created_By: user?.name,
-    Updated_By: user?.name,
-}
-
-const initialSoruceValue = {
-    SJD_Id: '',
-    STJ_Id: '',
-    Sour_Item_Id: '',
-    Sour_Item_Name: '',
-    Sour_Goodown_Id: '',
-    Sour_Batch_Lot_No: '',
-    Sour_Qty: '',
-    Sour_Unit_Id: '',
-    Sour_Unit: '',
-    Sour_Rate: '',
-    Sour_Amt: '',
-}
-
-const initialDestinationValue = {
-    SJD_Id: '',
-    STJ_Id: '',
-    Dest_Item_Id: '',
-    Dest_Item_Name: '',
-    Dest_Goodown_Id: '',
-    Dest_Batch_Lot_No: '',
-    Dest_Qty: '',
-    Dest_Unit_Id: '',
-    Dest_Unit: '',
-    Dest_Rate: '',
-    Dest_Amt: '',
-}
-
-const initialStaffInvolvedValue = {
-    STJ_Id: '',
-    S_Id: '',
-    Staff_Id: '',
-    Staff_Name: '',
-    Staff_Type_Id: '',
-}
-
-const soruceAndDestination = [
-    { source: 'Sour_Item_Id', destination: 'Dest_Item_Id' },
-    { source: 'Sour_Item_Name', destination: 'Dest_Item_Name' },
-    { source: 'Sour_Goodown_Id', destination: 'Dest_Goodown_Id' },
-    { source: 'Sour_Batch_Lot_No', destination: 'Dest_Batch_Lot_No' },
-    { source: 'Sour_Qty', destination: 'Dest_Qty' },
-    { source: 'Sour_Unit_Id', destination: 'Dest_Unit_Id' },
-    { source: 'Sour_Unit', destination: 'Dest_Unit' },
-    { source: 'Sour_Rate', destination: 'Dest_Rate' },
-    { source: 'Sour_Amt', destination: 'Dest_Amt' },
-];
+import { initialStockJournalInfoValues, initialDestinationValue, initialSoruceValue, initialStaffInvolvedValue } from './addProcessing/variables'
+import ConsumptionOfProcessing from './addProcessing/consumption'
 
 const StockManagementCreate = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
@@ -220,71 +149,6 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
             );
         }
     }, [stateDetails])
-
-    const changeSourceValue = (rowIndex, key, value) => {
-        setSourceList((prev) => {
-            return prev.map((item, index) => {
-
-                if (isEqualNumber(index, rowIndex)) {
-                    switch (key) {
-                        case 'Sour_Item_Id': {
-                            const newItem = { ...item, Sour_Item_Id: value };
-                            newItem.Sour_Item_Name = baseData.products?.find(pro =>
-                                isEqualNumber(pro?.Product_Id, value)
-                            )?.Product_Name ?? 'Not available';
-                            return newItem;
-                        }
-                        case 'Sour_Unit_Id': {
-                            const newItem = { ...item, Sour_Unit_Id: value };
-                            newItem.Sour_Unit = baseData.uom?.find(uom =>
-                                isEqualNumber(uom?.Unit_Id, value)
-                            )?.Units ?? 'Not available';
-                            return newItem;
-                        }
-                        case 'Sour_Qty': {
-                            const newItem = { ...item, Sour_Qty: value };
-                            if (item.Sour_Rate) {
-                                newItem.Sour_Amt = Multiplication(item.Sour_Rate, value);
-                            } else if (item.Sour_Amt) {
-                                newItem.Sour_Rate = Division(item.Sour_Amt, value);
-                            } else {
-                                newItem.Sour_Amt = '';
-                                newItem.Sour_Rate = '';
-                            }
-                            return newItem;
-                        }
-                        case 'Sour_Rate': {
-                            const newItem = { ...item, Sour_Rate: value };
-                            if (item.Sour_Qty) {
-                                newItem.Sour_Amt = Multiplication(value, item.Sour_Qty);
-                            } else if (item.Sour_Amt) {
-                                newItem.Sour_Qty = Division(item.Sour_Amt, value);
-                            } else {
-                                newItem.Sour_Amt = '';
-                                newItem.Sour_Qty = '';
-                            }
-                            return newItem;
-                        }
-                        case 'Sour_Amt': {
-                            const newItem = { ...item, Sour_Amt: value };
-                            if (checkIsNumber(item.Sour_Qty)) {
-                                newItem.Sour_Rate = Division(value, item.Sour_Qty);
-                            } else if (checkIsNumber(item.Sour_Rate)) {
-                                newItem.Sour_Qty = Division(value, item.Sour_Rate);
-                            } else {
-                                newItem.Sour_Rate = '';
-                                newItem.Sour_Qty = '';
-                            }
-                            return newItem;
-                        }
-                        default:
-                            return { ...item, [key]: value };
-                    }
-                }
-                return item;
-            });
-        });
-    };
 
     const changeDestinationValues = (rowIndex, key, value) => {
         setDestinationList((prev) => {
@@ -667,142 +531,13 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             {/* Source Details */}
-                            <div className="col-12 p-2 mb-2">
-                                <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
-                                    <h5 className="flex-grow-1 ">
-                                        CONSUMPTION
-                                    </h5>
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        type="button"
-                                        onClick={() => {
-                                            setSourceList([...sourceList, { ...initialSoruceValue }]);
-                                        }}
-                                    >Add</Button>
-                                </div>
-                                <div className="table-responsive">
-                                    <table className="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th className="fa-13">Sno</th>
-                                                <th className="fa-13">Item <RequiredStar /></th>
-                                                <th className="fa-13">Batch Lot No</th>
-                                                <th className="fa-13">Quantity <RequiredStar /></th>
-                                                <th className="fa-13">Unit</th>
-                                                <th className="fa-13">Rate</th>
-                                                <th className="fa-13">Amount</th>
-                                                <th className="fa-13">Location <RequiredStar /></th>
-                                                <th className="fa-13">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sourceList.map((row, index) => (
-                                                <tr key={index}>
-                                                    <td className='fa-13'>{index + 1}</td>
-                                                    <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                                                        <Select
-                                                            value={{ value: row?.Sour_Item_Id, label: row?.Sour_Item_Name }}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Item_Id', e.value)}
-                                                            options={
-                                                                baseData.products
-                                                                    .filter(pro =>
-                                                                        !sourceList.some(src => isEqualNumber(pro.Product_Id, src.Sour_Item_Id))
-                                                                    )
-                                                                    .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
-                                                            }
-                                                            menuPortalTarget={document.body}
-                                                            styles={customSelectStyles}
-                                                            isSearchable={true}
-                                                            placeholder={"Select Item"}
-                                                            maxMenuHeight={300}
-                                                        />
-
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Sour_Batch_Lot_No ?? ""}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Sour_Qty ?? ""}
-                                                            required
-                                                            onInput={onlynum}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <select
-                                                            value={row?.Sour_Unit_Id ?? ""}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                            style={{ minWidth: '40px' }}
-                                                        >
-                                                            <option value="" disabled>Select Unit</option>
-                                                            {baseData.uom.map((uom, ind) => (
-                                                                <option key={ind} value={uom.Unit_Id}>{uom.Units}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Sour_Rate ?? ""}
-                                                            onInput={onlynum}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Sour_Amt ?? ""}
-                                                            onInput={onlynum}
-                                                            onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <select
-                                                            value={row?.Sour_Goodown_Id ?? ""}
-                                                            required
-                                                            onChange={e => changeSourceValue(index, 'Sour_Goodown_Id', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                            style={{ minWidth: '40px' }}
-                                                        >
-                                                            <option value="" disabled>Select Location</option>
-                                                            {baseData.godown.map((god, ind) => (
-                                                                <option key={ind} value={god.Godown_Id}>{god.Godown_Name}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 p-0 vctr text-center'>
-                                                        <IconButton
-                                                            variant="contained"
-                                                            color="error"
-                                                            type="button"
-                                                            size="small"
-                                                            onClick={() => {
-                                                                setSourceList(sourceList.filter((_, ind) => ind !== index));
-                                                            }}
-                                                        ><Delete className="fa-20" /></IconButton>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="text-end">
-                                    <span className="rounded-2 border bg-light fw-bold text-primary fa-14 p-2">
-                                        <span className=" py-2 pe-2">Total Quantity: </span>
-                                        {sourceList.reduce((acc, item) => {
-                                            return checkIsNumber(item?.Sour_Item_Id) ? Addition(acc, item.Sour_Qty) : acc;
-                                        }, 0)}
-                                    </span>
-                                </div>
-                            </div>
+                            <ConsumptionOfProcessing 
+                                sourceList={sourceList}
+                                setSourceList={setSourceList}
+                                products={toArray(baseData?.products)}
+                                uom={toArray(baseData?.uom)}
+                                godown={toArray(baseData?.godown)}
+                            />
 
                             {/* Destination Entry */}
                             <div className="col-12 p-2 mb-2">
@@ -972,9 +707,9 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
 
 export default StockManagementCreate;
 
-export {
-    initialStockJournalInfoValues,
-    initialSoruceValue,
-    initialDestinationValue,
-    initialStaffInvolvedValue
-}
+// export {
+//     initialStockJournalInfoValues,
+//     initialSoruceValue,
+//     initialDestinationValue,
+//     initialStaffInvolvedValue
+// }
