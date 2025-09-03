@@ -11,11 +11,11 @@ import { fetchLink } from "../../../Components/fetchComponent"
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
-import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation } from "react-router-dom";
 import { initialStockJournalInfoValues, initialDestinationValue, initialSoruceValue, initialStaffInvolvedValue } from './addProcessing/variables'
-import ConsumptionOfProcessing from './addProcessing/consumption'
+import ConsumptionOfProcessing from './addProcessingComp/consumption'
+import ProductionOfProcessing from "./addProcessingComp/production";
 
 const StockManagementCreate = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
@@ -531,7 +531,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                             </div>
 
                             {/* Source Details */}
-                            <ConsumptionOfProcessing 
+                            <ConsumptionOfProcessing
                                 sourceList={sourceList}
                                 setSourceList={setSourceList}
                                 products={toArray(baseData?.products)}
@@ -540,7 +540,14 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                             />
 
                             {/* Destination Entry */}
-                            <div className="col-12 p-2 mb-2">
+                            <ProductionOfProcessing
+                                destinationList={destinationList}
+                                setDestinationList={setDestinationList}
+                                products={toArray(baseData?.products)}
+                                uom={toArray(baseData?.uom)}
+                                godown={toArray(baseData?.godown)}
+                            />
+                            {/* <div className="col-12 p-2 mb-2">
                                 <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
                                     <h5 className="flex-grow-1 ">
                                         PRODUCTION
@@ -674,7 +681,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                         }, 0)}
                                     </span>
                                 </div>
-                            </div>
+                            </div> */}
 
                         </div>
 

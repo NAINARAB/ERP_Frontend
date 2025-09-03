@@ -1,4 +1,4 @@
-import { getSessionUser } from "../../../../Components/functions";
+import { getSessionUser, ISOString } from "../../../../Components/functions";
 
 const { user } = getSessionUser();
 
@@ -13,7 +13,7 @@ export const initialStockJournalInfoValues = {
     Godownlocation: '',
     BillType: 'New',
     VoucherType: '',
-    Process_date: '',
+    Process_date: ISOString(),
     Machine_No: '',
     StartDateTime: '',
     EndDateTime: '',
@@ -32,6 +32,7 @@ export const initialSoruceValue = {
     Sour_Item_Id: '',
     Sour_Item_Name: '',
     Sour_Goodown_Id: '',
+    Godown_Name: '',
     Sour_Batch_Lot_No: '',
     Sour_Qty: '',
     Sour_Unit_Id: '',
@@ -46,6 +47,7 @@ export const initialDestinationValue = {
     Dest_Item_Id: '',
     Dest_Item_Name: '',
     Dest_Goodown_Id: '',
+    Godown_Name: '',
     Dest_Batch_Lot_No: '',
     Dest_Qty: '',
     Dest_Unit_Id: '',

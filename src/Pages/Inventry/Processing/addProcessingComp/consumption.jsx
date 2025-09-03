@@ -5,11 +5,120 @@ import { customSelectStyles } from "../../../../Components/tablecolumn";
 import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum } from '../../../../Components/functions';
 import { Button, IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
-import { useEffect } from 'react';
-import { useCallback } from 'react';
+import { memo, useEffect } from 'react';
 import { fetchLink } from '../../../../Components/fetchComponent';
 import { useState } from 'react';
 
+const SourceItems = memo(function SourceItems({
+    row,
+    index,
+    products,
+    uom,
+    godown,
+    changeSourceValue,
+    removeRow,
+}) {
+    const [batchDetails, setBatchDetails] = useState([]);
+
+    useEffect(() => {
+        if (!checkIsNumber(row?.Sour_Item_Id)) return;
+        fetchLink({
+            address: `inventory/batchMaster/stockBalance?Product_Id=${row?.Sour_Item_Id}`
+        }).then(
+            data => setBatchDetails(data.success ? data.data : [])
+        ).catch(() => setBatchDetails([]));
+    }, [row?.Sour_Item_Id]);
+
+    return (
+        <tr>
+            <td className='fa-13'>{index + 1}</td>
+            <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
+                <Select
+                    value={{ value: row?.Sour_Item_Id, label: row?.Sour_Item_Name }}
+                    onChange={e => changeSourceValue(index, 'Sour_Item_Id', e.value)}
+                    options={products.map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))}
+                    menuPortalTarget={document.body}
+                    styles={customSelectStyles}
+                    isSearchable
+                    placeholder="Select Item"
+                    maxMenuHeight={300}
+                />
+            </td>
+
+            <td className='fa-13 px-1 py-0 vctr'>
+                <input
+                    value={row?.Sour_Batch_Lot_No ?? ""}
+                    onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
+                    className="cus-inpt p-2"
+                />
+            </td>
+
+            <td className='fa-13 px-1 py-0 vctr'>
+                <input
+                    value={row?.Sour_Qty ?? ""}
+                    required
+                    onInput={onlynum}
+                    onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
+                    className="cus-inpt p-2"
+                />
+            </td>
+
+            <td className='fa-13 px-1 py-0 vctr'>
+                <select
+                    value={row?.Sour_Unit_Id ?? ""}
+                    onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
+                    className="cus-inpt p-2"
+                    style={{ minWidth: '40px' }}
+                >
+                    <option value="" disabled>Select Unit</option>
+                    {uom.map((u, ind) => (
+                        <option key={u.Unit_Id ?? ind} value={u.Unit_Id}>{u.Units}</option>
+                    ))}
+                </select>
+            </td>
+
+            <td className='fa-13 px-1 py-0 vctr'>
+                <input
+                    value={row?.Sour_Rate ?? ""}
+                    onInput={onlynum}
+                    onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
+                    className="cus-inpt p-2"
+                />
+            </td>
+
+            <td className='fa-13 px-1 py-0 vctr'>
+                <input
+                    value={row?.Sour_Amt ?? ""}
+                    onInput={onlynum}
+                    onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
+                    className="cus-inpt p-2"
+                />
+            </td>
+
+            <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
+                <Select
+                    value={{ value: row?.Sour_Goodown_Id, label: row?.Godown_Name }}
+                    onChange={e => {
+                        changeSourceValue(index, 'Sour_Goodown_Id', e.value);
+                        changeSourceValue(index, 'Godown_Name', e.label);
+                    }}
+                    options={godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
+                    menuPortalTarget={document.body}
+                    styles={customSelectStyles}
+                    isSearchable
+                    placeholder="Select Godown"
+                    maxMenuHeight={300}
+                />
+            </td>
+
+            <td className='fa-13 px-1 py-0 p-0 vctr text-center'>
+                <IconButton color="error" size="small" onClick={removeRow}>
+                    <Delete className="fa-20" />
+                </IconButton>
+            </td>
+        </tr>
+    );
+});
 
 const ConsumptionOfProcessing = ({
     sourceList = [],
@@ -84,121 +193,11 @@ const ConsumptionOfProcessing = ({
         });
     };
 
-    const SourceItems = ({ row, index }) => {
-        const [batchDetails, setBatchDetails] = useState([]);
-
-        useEffect(() => {
-            if (!checkIsNumber(row?.Sour_Item_Id)) return;
-
-            fetchLink({
-                address: `inventory/batchMaster/stockBalance?Product_Id=${row?.Sour_Item_Id}`
-            }).then(data => {
-                if (data.success) {
-                    setBatchDetails(data.data);
-                } else {
-                    setBatchDetails([])
-                }
-            }).catch(err => {
-                console.log(err);
-                setBatchDetails([])
-            })
-
-        }, [row?.Sour_Item_Id])
-
-        return (
-            <tr>
-                <td className='fa-13'>{index + 1}</td>
-                <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                    <Select
-                        value={{ value: row?.Sour_Item_Id, label: row?.Sour_Item_Name }}
-                        onChange={e => changeSourceValue(index, 'Sour_Item_Id', e.value)}
-                        options={
-                            products
-                                // .filter(pro =>
-                                //     !sourceList.some(src => isEqualNumber(pro.Product_Id, src.Sour_Item_Id))
-                                // )
-                                .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
-                        }
-                        menuPortalTarget={document.body}
-                        styles={customSelectStyles}
-                        isSearchable={true}
-                        placeholder={"Select Item"}
-                        maxMenuHeight={300}
-                    />
-
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <input
-                        value={row?.Sour_Batch_Lot_No ?? ""}
-                        onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
-                        className="cus-inpt p-2"
-                    />
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <input
-                        value={row?.Sour_Qty ?? ""}
-                        required
-                        onInput={onlynum}
-                        onChange={e => changeSourceValue(index, 'Sour_Qty', e.target.value)}
-                        className="cus-inpt p-2"
-                    />
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <select
-                        value={row?.Sour_Unit_Id ?? ""}
-                        onChange={e => changeSourceValue(index, 'Sour_Unit_Id', e.target.value)}
-                        className="cus-inpt p-2"
-                        style={{ minWidth: '40px' }}
-                    >
-                        <option value="" disabled>Select Unit</option>
-                        {uom.map((uom, ind) => (
-                            <option key={ind} value={uom.Unit_Id}>{uom.Units}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <input
-                        value={row?.Sour_Rate ?? ""}
-                        onInput={onlynum}
-                        onChange={e => changeSourceValue(index, 'Sour_Rate', e.target.value)}
-                        className="cus-inpt p-2"
-                    />
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <input
-                        value={row?.Sour_Amt ?? ""}
-                        onInput={onlynum}
-                        onChange={e => changeSourceValue(index, 'Sour_Amt', e.target.value)}
-                        className="cus-inpt p-2"
-                    />
-                </td>
-                <td className='fa-13 px-1 py-0 vctr'>
-                    <select
-                        value={row?.Sour_Goodown_Id ?? ""}
-                        required
-                        onChange={e => changeSourceValue(index, 'Sour_Goodown_Id', e.target.value)}
-                        className="cus-inpt p-2"
-                        style={{ minWidth: '40px' }}
-                    >
-                        <option value="" disabled>Select Location</option>
-                        {godown.map((god, ind) => (
-                            <option key={ind} value={god.Godown_Id}>{god.Godown_Name}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className='fa-13 px-1 py-0 p-0 vctr text-center'>
-                    <IconButton
-                        variant="contained"
-                        color="error"
-                        type="button"
-                        size="small"
-                        onClick={() => {
-                            setSourceList(sourceList.filter((_, ind) => ind !== index));
-                        }}
-                    ><Delete className="fa-20" /></IconButton>
-                </td>
-            </tr>
-        )
+    const addRow = () => {
+        setSourceList(prev => [
+            ...prev,
+            { _rowId: crypto.randomUUID(), ...initialSoruceValue }
+        ]);
     }
 
     return (
@@ -211,9 +210,7 @@ const ConsumptionOfProcessing = ({
                     variant="outlined"
                     color="primary"
                     type="button"
-                    onClick={() => {
-                        setSourceList(pre => [...pre, { ...initialSoruceValue }]);
-                    }}
+                    onClick={addRow}
                 >Add</Button>
             </div>
             <div className="table-responsive">
@@ -233,7 +230,18 @@ const ConsumptionOfProcessing = ({
                     </thead>
                     <tbody>
                         {sourceList.map((row, index) => (
-                            <SourceItems key={index} row={row} index={index} />
+                            <SourceItems
+                                key={row._rowId ?? index}
+                                row={row}
+                                index={index}
+                                products={products}
+                                uom={uom}
+                                godown={godown}
+                                changeSourceValue={changeSourceValue}
+                                removeRow={() =>
+                                    setSourceList(list => list.filter((_, i) => i !== index))
+                                }
+                            />
                         ))}
                     </tbody>
                 </table>
