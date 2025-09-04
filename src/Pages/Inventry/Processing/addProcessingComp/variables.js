@@ -27,12 +27,12 @@ export const initialStockJournalInfoValues = {
 }
 
 export const initialSoruceValue = {
-    SJD_Id: '',
-    STJ_Id: '',
+    PRS_Id: '',
+    PR_Id: '',
     Sour_Item_Id: '',
-    Sour_Item_Name: '',
+    Sour_Item_Name: 'Select',
     Sour_Goodown_Id: '',
-    Godown_Name: '',
+    Godown_Name: 'Select',
     Sour_Batch_Lot_No: '',
     Sour_Qty: '',
     Sour_Unit_Id: '',
@@ -42,12 +42,12 @@ export const initialSoruceValue = {
 }
 
 export const initialDestinationValue = {
-    SJD_Id: '',
-    STJ_Id: '',
+    PRS_Id: '',
+    PR_Id: '',
     Dest_Item_Id: '',
-    Dest_Item_Name: '',
+    Dest_Item_Name: 'Select',
     Dest_Goodown_Id: '',
-    Godown_Name: '',
+    Godown_Name: 'Select',
     Dest_Batch_Lot_No: '',
     Dest_Qty: '',
     Dest_Unit_Id: '',
@@ -57,7 +57,7 @@ export const initialDestinationValue = {
 }
 
 export const initialStaffInvolvedValue = {
-    STJ_Id: '',
+    PR_Id: '',
     S_Id: '',
     Staff_Id: '',
     Staff_Name: '',

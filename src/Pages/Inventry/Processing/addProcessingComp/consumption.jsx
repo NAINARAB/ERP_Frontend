@@ -2,7 +2,7 @@ import RequiredStar from '../../../../Components/requiredStar';
 import { initialSoruceValue } from './variables'
 import Select from 'react-select';
 import { customSelectStyles } from "../../../../Components/tablecolumn";
-import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum } from '../../../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, toNumber } from '../../../../Components/functions';
 import { Button, IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { memo, useEffect } from 'react';
@@ -42,14 +42,6 @@ const SourceItems = memo(function SourceItems({
                     isSearchable
                     placeholder="Select Item"
                     maxMenuHeight={300}
-                />
-            </td>
-
-            <td className='fa-13 px-1 py-0 vctr'>
-                <input
-                    value={row?.Sour_Batch_Lot_No ?? ""}
-                    onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
-                    className="cus-inpt p-2"
                 />
             </td>
 
@@ -101,8 +93,35 @@ const SourceItems = memo(function SourceItems({
                     onChange={e => {
                         changeSourceValue(index, 'Sour_Goodown_Id', e.value);
                         changeSourceValue(index, 'Godown_Name', e.label);
+                        changeSourceValue(index, 'Sour_Batch_Lot_No', '');
                     }}
                     options={godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
+                    menuPortalTarget={document.body}
+                    styles={customSelectStyles}
+                    isSearchable
+                    placeholder="Select Godown"
+                    maxMenuHeight={300}
+                />
+            </td>
+
+            <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
+                <Select
+                    value={{ value: row?.Sour_Batch_Lot_No, label: row?.Sour_Batch_Lot_No }}
+                    onChange={e => {
+                        const selectedBatch = batchDetails.find(b => b.id === e.value);
+                        changeSourceValue(index, 'Sour_Batch_Lot_No', selectedBatch?.batch || '');
+                        changeSourceValue(index, 'Sour_Goodown_Id', selectedBatch?.godown_id || '');
+                        changeSourceValue(index, 'Godown_Name', selectedBatch?.godownName || '');
+                    }}
+                    options={
+                        batchDetails
+                            .filter(b => 
+                                checkIsNumber(row?.Sour_Goodown_Id, 1) 
+                                ? isEqualNumber(b.godown_id, row?.Sour_Goodown_Id)
+                                : true
+                            )
+                            .map(b => ({ value: b.id, label: `${b?.batch} (${toNumber(b?.pendingQuantity)})` }))
+                    }
                     menuPortalTarget={document.body}
                     styles={customSelectStyles}
                     isSearchable
@@ -219,12 +238,12 @@ const ConsumptionOfProcessing = ({
                         <tr>
                             <th className="fa-13">Sno</th>
                             <th className="fa-13">Item <RequiredStar /></th>
-                            <th className="fa-13">Batch Lot No</th>
                             <th className="fa-13">Quantity <RequiredStar /></th>
                             <th className="fa-13">Unit</th>
                             <th className="fa-13">Rate</th>
                             <th className="fa-13">Amount</th>
                             <th className="fa-13">Location <RequiredStar /></th>
+                            <th className="fa-13">Batch Lot No</th>
                             <th className="fa-13">Action</th>
                         </tr>
                     </thead>

@@ -15,121 +15,6 @@ import {
 } from "../../../../Components/functions";
 import { initialDestinationValue } from "./variables";
 
-
-const DestinationRow = memo(function DestinationRow({
-    row,
-    index,
-    products = [], uom = [], godown = [],
-    changeDestinationValues,
-    removeRow,
-}) {
-
-    return (
-        <tr>
-            <td className="fa-13">{index + 1}</td>
-
-            <td className="fa-13 p-0" style={{ minWidth: "200px" }}>
-                <Select
-                    value={{ value: row?.Dest_Item_Id, label: row?.Dest_Item_Name }}
-                    onChange={(e) => changeDestinationValues(index, "Dest_Item_Id", e.value)}
-                    options={
-                        products.map((pro) => ({
-                            value: pro.Product_Id,
-                            label: pro.Product_Name
-                        }))
-                    }
-                    menuPortalTarget={document.body}
-                    styles={customSelectStyles}
-                    isSearchable
-                    placeholder="Select Item"
-                    maxMenuHeight={300}
-                />
-            </td>
-
-            <td className="fa-13 px-1 py-0 vctr">
-                <input
-                    value={row?.Dest_Batch_Lot_No ?? ""}
-                    onChange={(e) =>
-                        changeDestinationValues(index, "Dest_Batch_Lot_No", e.target.value)
-                    }
-                    className="cus-inpt p-2"
-                />
-            </td>
-
-            <td className="fa-13 px-1 py-0 vctr">
-                <input
-                    value={row?.Dest_Qty ?? ""}
-                    required
-                    onInput={onlynum}
-                    onChange={(e) => changeDestinationValues(index, "Dest_Qty", e.target.value)}
-                    className="cus-inpt p-2"
-                />
-            </td>
-
-            <td className="fa-13 px-1 py-0 vctr">
-                <select
-                    value={row?.Dest_Unit_Id ?? ""}
-                    onChange={(e) =>
-                        changeDestinationValues(index, "Dest_Unit_Id", e.target.value)
-                    }
-                    className="cus-inpt p-2"
-                    style={{ minWidth: "40px" }}
-                >
-                    <option value="" disabled>
-                        Select Unit
-                    </option>
-                    {uom.map((u, ind) => (
-                        <option key={u.Unit_Id ?? ind} value={u.Unit_Id}>
-                            {u.Units}
-                        </option>
-                    ))}
-                </select>
-            </td>
-
-            <td className="fa-13 px-1 py-0 vctr">
-                <input
-                    value={row?.Dest_Rate ?? ""}
-                    onInput={onlynum}
-                    onChange={(e) => changeDestinationValues(index, "Dest_Rate", e.target.value)}
-                    className="cus-inpt p-2"
-                />
-            </td>
-
-            <td className="fa-13 px-1 py-0 vctr">
-                <input
-                    value={row?.Dest_Amt ?? ""}
-                    onInput={onlynum}
-                    onChange={(e) => changeDestinationValues(index, "Dest_Amt", e.target.value)}
-                    className="cus-inpt p-2"
-                />
-            </td>
-
-            <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                <Select
-                    value={{ value: row?.Dest_Goodown_Id, label: row?.Godown_Name }}
-                    onChange={e => {
-                        changeDestinationValues(index, 'Dest_Goodown_Id', e.value);
-                        changeDestinationValues(index, 'Godown_Name', e.label);
-                    }}
-                    options={godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
-                    menuPortalTarget={document.body}
-                    styles={customSelectStyles}
-                    isSearchable
-                    placeholder="Select Godown"
-                    maxMenuHeight={300}
-                />
-            </td>
-
-            <td className="fa-13 px-1 py-0 p-0 vctr text-center">
-                <IconButton color="error" size="small" onClick={removeRow}>
-                    <Delete className="fa-20" />
-                </IconButton>
-            </td>
-        </tr>
-    );
-});
-
-
 const ProductionOfProcessing = ({
     destinationList = [],
     setDestinationList,
@@ -234,38 +119,124 @@ const ProductionOfProcessing = ({
                     <thead>
                         <tr>
                             <th className="fa-13">Sno</th>
-                            <th className="fa-13">
-                                Item <RequiredStar />
-                            </th>
-                            <th className="fa-13">Batch Lot No</th>
-                            <th className="fa-13">
-                                Quantity <RequiredStar />
-                            </th>
+                            <th className="fa-13">Item <RequiredStar /></th>
+                            <th className="fa-13">Quantity <RequiredStar /></th>
                             <th className="fa-13">Unit</th>
                             <th className="fa-13">Rate</th>
                             <th className="fa-13">Amount</th>
-                            <th className="fa-13">
-                                Location <RequiredStar />
-                            </th>
+                            <th className="fa-13">Location <RequiredStar /></th>
+                            <th className="fa-13">Batch Lot No</th>
                             <th className="fa-13">Action</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {destinationList.map((row, index) => (
-                            <DestinationRow
-                                key={row._rowId ?? index}
-                                row={row}
-                                index={index}
-                                products={products}
-                                uom={uom}
-                                godown={godown}
-                                destinationList={destinationList}
-                                changeDestinationValues={changeDestinationValues}
-                                removeRow={() =>
-                                    setDestinationList((list) => list.filter((_, i) => i !== index))
-                                }
-                            />
+                            <tr key={row._rowId ?? index}>
+                                <td className="fa-13">{index + 1}</td>
+
+                                <td className="fa-13 p-0" style={{ minWidth: "200px" }}>
+                                    <Select
+                                        value={{ value: row?.Dest_Item_Id, label: row?.Dest_Item_Name }}
+                                        onChange={(e) => changeDestinationValues(index, "Dest_Item_Id", e.value)}
+                                        options={
+                                            products.map((pro) => ({
+                                                value: pro.Product_Id,
+                                                label: pro.Product_Name
+                                            }))
+                                        }
+                                        menuPortalTarget={document.body}
+                                        styles={customSelectStyles}
+                                        isSearchable
+                                        placeholder="Select Item"
+                                        maxMenuHeight={300}
+                                    />
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 vctr">
+                                    <input
+                                        value={row?.Dest_Qty ?? ""}
+                                        required
+                                        onInput={onlynum}
+                                        onChange={(e) => changeDestinationValues(index, "Dest_Qty", e.target.value)}
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 vctr">
+                                    <select
+                                        value={row?.Dest_Unit_Id ?? ""}
+                                        onChange={(e) =>
+                                            changeDestinationValues(index, "Dest_Unit_Id", e.target.value)
+                                        }
+                                        className="cus-inpt p-2"
+                                        style={{ minWidth: "40px" }}
+                                    >
+                                        <option value="" disabled>
+                                            Select Unit
+                                        </option>
+                                        {uom.map((u, ind) => (
+                                            <option key={u.Unit_Id ?? ind} value={u.Unit_Id}>
+                                                {u.Units}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 vctr">
+                                    <input
+                                        value={row?.Dest_Rate ?? ""}
+                                        onInput={onlynum}
+                                        onChange={(e) => changeDestinationValues(index, "Dest_Rate", e.target.value)}
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 vctr">
+                                    <input
+                                        value={row?.Dest_Amt ?? ""}
+                                        onInput={onlynum}
+                                        onChange={(e) => changeDestinationValues(index, "Dest_Amt", e.target.value)}
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+
+                                <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
+                                    <Select
+                                        value={{ value: row?.Dest_Goodown_Id, label: row?.Godown_Name }}
+                                        onChange={e => {
+                                            changeDestinationValues(index, 'Dest_Goodown_Id', e.value);
+                                            changeDestinationValues(index, 'Godown_Name', e.label);
+                                        }}
+                                        options={godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
+                                        menuPortalTarget={document.body}
+                                        styles={customSelectStyles}
+                                        isSearchable
+                                        placeholder="Select Godown"
+                                        maxMenuHeight={300}
+                                    />
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 vctr">
+                                    <input
+                                        value={row?.Dest_Batch_Lot_No ?? ""}
+                                        onChange={(e) =>
+                                            changeDestinationValues(index, "Dest_Batch_Lot_No", e.target.value)
+                                        }
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+
+                                <td className="fa-13 px-1 py-0 p-0 vctr text-center">
+                                    <IconButton 
+                                        color="error" 
+                                        size="small" 
+                                        onClick={() => setDestinationList((list) => list.filter((_, i) => i !== index))}
+                                    >
+                                        <Delete className="fa-20" />
+                                    </IconButton>
+                                </td>
+                            </tr>
                         ))}
                     </tbody>
                 </table>

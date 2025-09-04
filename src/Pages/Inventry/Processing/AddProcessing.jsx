@@ -2,8 +2,7 @@ import { useEffect, useState } from "react"
 import {
     Addition, Division, ISOString, Multiplication, checkIsNumber,
     formatSQLDateTimeObjectToInputDateTime,
-    getSessionUser, isEqualNumber, isGraterNumber, isValidObject,
-    onlynum,
+    isEqualNumber, isGraterNumber, isValidObject,
     toArray
 } from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
@@ -13,13 +12,12 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import { toast } from 'react-toastify';
 import { useLocation } from "react-router-dom";
-import { initialStockJournalInfoValues, initialDestinationValue, initialSoruceValue, initialStaffInvolvedValue } from './addProcessing/variables'
+import { initialStockJournalInfoValues, initialDestinationValue, initialSoruceValue, initialStaffInvolvedValue } from './addProcessingComp/variables'
 import ConsumptionOfProcessing from './addProcessingComp/consumption'
 import ProductionOfProcessing from "./addProcessingComp/production";
 
 const StockManagementCreate = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
-    // const navigation = useNavigate();
     const stateDetails = location.state;
     const [baseData, setBaseData] = useState({
         products: [],
@@ -149,71 +147,6 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
             );
         }
     }, [stateDetails])
-
-    const changeDestinationValues = (rowIndex, key, value) => {
-        setDestinationList((prev) => {
-            return prev.map((item, index) => {
-
-                if (isEqualNumber(index, rowIndex)) {
-                    switch (key) {
-                        case 'Dest_Item_Id': {
-                            const newItem = { ...item, Dest_Item_Id: value };
-                            newItem.Dest_Item_Name = baseData.products?.find(pro =>
-                                isEqualNumber(pro?.Product_Id, value)
-                            )?.Product_Name ?? 'Not available';
-                            return newItem;
-                        }
-                        case 'Dest_Unit_Id': {
-                            const newItem = { ...item, Dest_Unit_Id: value };
-                            newItem.Dest_Unit = baseData.uom?.find(uom =>
-                                isEqualNumber(uom?.Unit_Id, value)
-                            )?.Units ?? 'Not available';
-                            return newItem;
-                        }
-                        case 'Dest_Qty': {
-                            const newItem = { ...item, Dest_Qty: value };
-                            if (item.Dest_Rate) {
-                                newItem.Dest_Amt = Multiplication(item.Dest_Rate, value);
-                            } else if (item.Dest_Amt) {
-                                newItem.Dest_Rate = Division(item.Dest_Amt, value);
-                            } else {
-                                newItem.Dest_Amt = '';
-                                newItem.Dest_Rate = '';
-                            }
-                            return newItem;
-                        }
-                        case 'Dest_Rate': {
-                            const newItem = { ...item, Dest_Rate: value };
-                            if (item.Dest_Qty) {
-                                newItem.Dest_Amt = Multiplication(value, item.Dest_Qty);
-                            } else if (item.Dest_Amt) {
-                                newItem.Dest_Qty = Division(item.Dest_Amt, value);
-                            } else {
-                                newItem.Dest_Amt = '';
-                                newItem.Dest_Qty = '';
-                            }
-                            return newItem;
-                        }
-                        case 'Dest_Amt': {
-                            const newItem = { ...item, Dest_Amt: value };
-                            if (checkIsNumber(item.Dest_Qty)) {
-                                newItem.Dest_Rate = Division(value, item.Dest_Qty);
-                            } else if (checkIsNumber(item.Dest_Rate)) {
-                                newItem.Dest_Qty = Division(value, item.Dest_Rate);
-                            } else {
-                                newItem.Dest_Rate = '';
-                                newItem.Dest_Qty = '';
-                            }
-                            return newItem;
-                        }
-                        default:
-                            return { ...item, [key]: value };
-                    }
-                }
-                return item;
-            });
-        });
-    };
 
     const resetForm = () => {
         setStockJorunalInfo(initialStockJournalInfoValues)
@@ -504,7 +437,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                                     type="number"
                                                                     onChange={e => setStockJorunalInfo(pre => ({ ...pre, EN_Reading: e.target.value }))}
                                                                     value={stockJorunalInfo?.EN_Reading}
-                                                                    min={Addition(stockJorunalInfo?.ST_Reading, 1)}
+                                                                    min={stockJorunalInfo?.ST_Reading}
                                                                     className="cus-inpt p-2"
                                                                     placeholder="Ex: 2200"
                                                                     disabled={isViewOnly}
@@ -547,141 +480,6 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                 uom={toArray(baseData?.uom)}
                                 godown={toArray(baseData?.godown)}
                             />
-                            {/* <div className="col-12 p-2 mb-2">
-                                <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
-                                    <h5 className="flex-grow-1 ">
-                                        PRODUCTION
-                                    </h5>
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        type="button"
-                                        onClick={() => {
-                                            setDestinationList([...destinationList, { ...initialDestinationValue }]);
-                                        }}
-                                    >Add</Button>
-                                </div>
-                                <div className="table-responsive">
-                                    <table className="table table-bordered ">
-                                        <thead>
-                                            <tr>
-                                                <th className="fa-13">Sno</th>
-                                                <th className="fa-13">Item <RequiredStar /></th>
-                                                <th className="fa-13">Batch Lot No</th>
-                                                <th className="fa-13">Quantity <RequiredStar /></th>
-                                                <th className="fa-13">Unit</th>
-                                                <th className="fa-13">Rate</th>
-                                                <th className="fa-13">Amount</th>
-                                                <th className="fa-13">Location <RequiredStar /></th>
-                                                <th className="fa-13">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {destinationList.map((row, index) => (
-                                                <tr key={index}>
-                                                    <td className='fa-13'>{index + 1}</td>
-                                                    <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                                                        <Select
-                                                            value={{ value: row?.Dest_Item_Id, label: row?.Dest_Item_Name }}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Item_Id', e.value)}
-                                                            options={
-                                                                baseData.products
-                                                                    .filter(pro =>
-                                                                        !destinationList.some(src => isEqualNumber(pro.Product_Id, src.Dest_Item_Id))
-                                                                    )
-                                                                    .map(pro => ({ value: pro.Product_Id, label: pro.Product_Name }))
-                                                            }
-                                                            menuPortalTarget={document.body}
-                                                            styles={customSelectStyles}
-                                                            isSearchable={true}
-                                                            placeholder={"Select Item"}
-                                                            maxMenuHeight={300}
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Dest_Batch_Lot_No ?? ""}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Batch_Lot_No', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Dest_Qty ?? ""}
-                                                            required
-                                                            onInput={onlynum}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Qty', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <select
-                                                            value={row?.Dest_Unit_Id ?? ""}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Unit_Id', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                            style={{ minWidth: '40px' }}
-                                                        >
-                                                            <option value="" disabled>Select Unit</option>
-                                                            {baseData.uom.map((uom, ind) => (
-                                                                <option key={ind} value={uom.Unit_Id}>{uom.Units}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Dest_Rate ?? ""}
-                                                            onInput={onlynum}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Rate', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <input
-                                                            value={row?.Dest_Amt ?? ""}
-                                                            onInput={onlynum}
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Amt', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                        />
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 vctr'>
-                                                        <select
-                                                            value={row?.Dest_Goodown_Id ?? ""}
-                                                            required
-                                                            onChange={e => changeDestinationValues(index, 'Dest_Goodown_Id', e.target.value)}
-                                                            className="cus-inpt p-2"
-                                                            style={{ minWidth: '40px' }}
-                                                        >
-                                                            <option value="" disabled>Select Location</option>
-                                                            {baseData.godown.map((god, ind) => (
-                                                                <option key={ind} value={god.Godown_Id}>{god.Godown_Name}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
-                                                    <td className='fa-13 px-1 py-0 p-0 vctr text-center'>
-                                                        <IconButton
-                                                            variant="contained"
-                                                            color="error"
-                                                            type="button"
-                                                            size="small"
-                                                            onClick={() => {
-                                                                setDestinationList(destinationList.filter((_, ind) => ind !== index));
-                                                            }}
-                                                        ><Delete className="fa-20" /></IconButton>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="text-end">
-                                    <span className="rounded-2 border bg-light fw-bold text-primary fa-14 p-2">
-                                        <span className=" py-2 pe-2">Total Quantity: </span>
-                                        {destinationList.reduce((acc, item) => {
-                                            return checkIsNumber(item?.Dest_Item_Id) ? Addition(acc, item.Dest_Qty) : acc;
-                                        }, 0)}
-                                    </span>
-                                </div>
-                            </div> */}
 
                         </div>
 
@@ -713,10 +511,3 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
 }
 
 export default StockManagementCreate;
-
-// export {
-//     initialStockJournalInfoValues,
-//     initialSoruceValue,
-//     initialDestinationValue,
-//     initialStaffInvolvedValue
-// }
