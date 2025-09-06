@@ -34,11 +34,11 @@ export const initialSoruceValue = {
     Sour_Goodown_Id: '',
     Godown_Name: 'Select',
     Sour_Batch_Lot_No: '',
-    Sour_Qty: '',
+    Sour_Qty: 0,
     Sour_Unit_Id: '',
     Sour_Unit: '',
-    Sour_Rate: '',
-    Sour_Amt: '',
+    Sour_Rate: 0,
+    Sour_Amt: 0,
 }
 
 export const initialDestinationValue = {
@@ -49,11 +49,11 @@ export const initialDestinationValue = {
     Dest_Goodown_Id: '',
     Godown_Name: 'Select',
     Dest_Batch_Lot_No: '',
-    Dest_Qty: '',
+    Dest_Qty: 0,
     Dest_Unit_Id: '',
     Dest_Unit: '',
-    Dest_Rate: '',
-    Dest_Amt: '',
+    Dest_Rate: 0,
+    Dest_Amt: 0,
 }
 
 export const initialStaffInvolvedValue = {

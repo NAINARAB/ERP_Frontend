@@ -75,6 +75,7 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
 
         fetchAllAccounts();
     }, [storage?.Company_id]);
+
     const resetFilters = () => {
         setFilters({
             ...defaultFilters,
@@ -95,14 +96,15 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
 
         fetchAllAccounts();
     };
+
     const fetchAllAccounts = () => {
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `payment/debtorsCreditors?fromDate=${filters?.fromDate}&toDate=${filters?.toDate}`,
-            method: "post",
+            address: `payment/getDebtorDetails?fromDate=${filters?.fromDate}&toDate=${filters?.toDate}`,
+            method: "GET",
         })
             .then((data) => {
-                if (data.success) setAllAccounts(data.data);
+                if (data.success) setAllAccounts(data.data || []);
             })
             .finally(() => loadingOff && loadingOff())
             .catch(console.error);
@@ -135,8 +137,12 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
         return allAccounts.filter((item) => {
             const balance = parseFloat(item?.Bal_Amount || 0);
 
-            if (viewType === "debtors" && balance <= 0) return false;
-            if (viewType === "creditors" && balance >= 0) return false;
+            // Skip zero balances
+            if (balance === 0) return false;
+
+            // Filter by account type
+            if (viewType === "debtors" && item.Account_Types !== "Debtor") return false;
+            if (viewType === "creditors" && item.Account_Types !== "Creditor") return false;
 
             if (filters.Account_Id && item.Acc_Id !== filters.Account_Id)
                 return false;
@@ -147,9 +153,17 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
         });
     }, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
 
-    const Total_Invoice_value = useMemo(() => {
-        return tableData.reduce((acc, item) => Addition(acc, item?.Bal_Amount), 0);
+    const Total_Debit = useMemo(() => {
+        return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Dr_Amount || 0)), 0);
     }, [tableData]);
+
+    const Total_Credit = useMemo(() => {
+        return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Cr_Amount || 0)), 0);
+    }, [tableData]);
+
+    const Total_Outstanding = useMemo(() => {
+        return Total_Debit - Total_Credit;
+    }, [Total_Debit, Total_Credit]);
 
     useEffect(() => {
         const queryFilters = {
@@ -187,41 +201,56 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                         : "Creditors Outstanding"
                 }
                 ButtonArea={
-                    <>
+                    <div className="d-flex justify-content-between align-items-center w-100">
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <Button
                                 variant={viewType === "debtors" ? "contained" : "outlined"}
                                 onClick={() => setViewType("debtors")}
+                                size="small"
                             >
                                 Debtors
                             </Button>
                             <Button
                                 variant={viewType === "creditors" ? "contained" : "outlined"}
                                 onClick={() => setViewType("creditors")}
+                                size="small"
                             >
                                 Creditors
                             </Button>
+                            <div className="d-flex align-items-center">
+                                <Tooltip title="Filters">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setFilters({ ...filters, filterDialog: true })}
+                                    >
+                                        <FilterAlt />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Reset Filters">
+                                    <IconButton size="small" onClick={resetFilters}>
+                                        <FilterAltOff />
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
                         </div>
 
-                        <Tooltip title="Filters">
-                            <IconButton
-                                size="small"
-                                onClick={() => setFilters({ ...filters, filterDialog: true })}
-                            >
-                                <FilterAlt />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Reset Filters">
-                            <IconButton size="small" onClick={resetFilters}>
-                                <FilterAltOff />
-                            </IconButton>
-                        </Tooltip>
-                        {NumberFormat(Total_Invoice_value) !== 0 && (
-                            <h6 className="m-0 text-end text-muted px-3">
-                                Total: {NumberFormat(Math.abs(Total_Invoice_value))}
-                            </h6>
-                        )}
-                    </>
+                        <div className="d-flex flex-column align-items-end">
+                            <div className="d-flex align-items-center">
+                                <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Debit:</span>
+                                <strong>{NumberFormat(Total_Debit)}</strong>
+                            </div>
+                            <div className="d-flex align-items-center">
+                                <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Credit:</span>
+                                <strong>{NumberFormat(Total_Credit)}</strong>
+                            </div>
+                            <div className="d-flex align-items-center">
+                                <span className="text-muted me-2">Total Outstanding:</span>
+                                <strong className={Total_Outstanding >= 0 ? "text-danger" : "text-success"}>
+                                    {NumberFormat(Math.abs(Total_Outstanding))} {Total_Outstanding >= 0 ? "DR" : "CR"}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
                 }
                 EnableSerialNumber
                 ExcelPrintOption={true}
@@ -232,23 +261,35 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                     createCol("Acc_Id", "string", "Account ID"),
                     createCol("Account_name", "string", "Account Name"),
                     createCol("Group_Name", "string", "Group"),
-                    createCol("OB_Amount", "number", "Opening Balance"),
-                    createCol("Debit_Amt", "number", "Debit Amount"),
-                    createCol("Credit_Amt", "number", "Credit Amount"),
+                    {
+                        ...createCol("Account_Types", "string", "Account Type"),
+                        isVisible: 1
+                    },
+                    {
+                        ...createCol("OB_Amount", "number", "Opening Balance"),
+                        format: (value) => NumberFormat(value || 0)
+                    },
+                    {
+                        ...createCol("Dr_Amount", "number", "Debit Amount"),
+                        format: (value) => NumberFormat(value || 0)
+                    },
+                    {
+                        ...createCol("Cr_Amount", "number", "Credit Amount"),
+                        format: (value) => NumberFormat(value || 0)
+                    },
+                    createCol("CR_DR", "string", "Type"),
                     {
                         Field_Name: "Bal_Amount",
                         isVisible: 1,
                         Fied_Data: "number",
                         isCustomCell: true,
+                        Header: "Balance Amount",
                         Cell: ({ row }) => (
-                            <div className="d-flex align-items-center flex-wrap p-2 pb-0">
-                                {row?.CR_DR === "DR"
-                                    ? `${NumberFormat(row?.Dr_Amount)} `
-                                    : `${NumberFormat(row?.Cr_Amount)} `}
-                            </div>
+                            <span className={row?.CR_DR === "DR" ? "text-danger" : "text-success"}>
+                                {NumberFormat(Math.abs(row?.Bal_Amount || 0))} {row?.CR_DR}
+                            </span>
                         ),
                     },
-                    createCol("CR_DR", "string", "Type"),
                 ]}
             />
 
@@ -345,9 +386,6 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                             const updatedFilters = {
                                 fromDate: filters?.fromDate,
                                 toDate: filters?.toDate,
-                                Retailer_Id: filters?.Retailer_Id,
-                                Area_Id: filters?.Area_Id,
-                                Route_Id: filters?.Route_Id,
                                 Account_Id: filters?.Account_Id,
                                 Group_Name: filters?.Group_Name,
                             };
