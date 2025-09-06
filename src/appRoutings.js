@@ -203,8 +203,14 @@ const SalesDelivery = lazy(() => import("./Pages/Sales/SalesReportComponent/Sale
 const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
 
-const RoutingArray = [
 
+const SalesReportBranch=lazy(()=>import("./Pages/Sales/salesInvoiceReportBranch"))
+
+
+const SalesOrderBranch=lazy(()=>import("./Pages/Sales/salesOrderReportBranch"))
+const RoutingArray = [
+    {component:<SalesOrderBranch/>,path:'/erp/sales/salesOrderReport'},
+       {component:<SalesReportBranch/>,path:'/erp/sales/salesReportBranch'},
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
     // Dashboard
