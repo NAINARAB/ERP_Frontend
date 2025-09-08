@@ -3,7 +3,7 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue, getSessionUser } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue, getSessionUser, isArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
@@ -20,6 +20,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
     const storage = getSessionUser().user;
 
     const [paymentValue, setPaymentValue] = useState(paymentGeneralInfoInitialValue);
+    const [paymentBillDetails, setPaymentBillDetails] = useState([]);
     const [baseData, setBaseData] = useState({
         accountsList: [],
         accountGroupData: [],
@@ -44,6 +45,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         if (
             isValidObject(editValues)
         ) {
+            console.log(editValues)
             setPaymentValue(
                 Object.fromEntries(
                     Object.entries(paymentGeneralInfoInitialValue).map(([key, value]) => {
@@ -54,6 +56,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     })
                 )
             );
+
+            if (isArray(editValues?.BillsDetails) && editValues?.BillsDetails?.length > 0) {
+                setPaymentBillDetails(editValues?.BillsDetails);
+            }
         }
     }, [editValues])
 
@@ -151,6 +157,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 ...postValues,
                 created_by: createrOrModifier,
                 altered_by: createrOrModifier,
+                BillsDetails: paymentBillDetails
             },
             loadingOn, loadingOff
         }).then(data => {

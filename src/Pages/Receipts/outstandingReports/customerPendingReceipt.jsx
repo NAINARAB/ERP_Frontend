@@ -45,7 +45,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
             if (data.success) {
                 const repDat = toArray(data.data).map(o => ({
                     ...o,
-                    receiptPendingAmount: Subraction(o.Total_Invoice_value, o.Paid_Amount)
+                    receiptPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
                 }))
                 setReportData(repDat);
             }
@@ -145,13 +145,13 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                                     <td className="bg-light">
                                         {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
-                                            bill.Paid_Amount
+                                            bill.totalReference
                                         ), 0))}
                                     </td>
                                     <td className="bg-light">
                                         {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
-                                            Subraction(bill.Total_Invoice_value, bill.Paid_Amount)
+                                            Subraction(bill.Total_Invoice_value, bill.totalReference)
                                         ), 0))}
                                     </td>
                                     <td className="text-primary fw-bold text-end fa-17 bg-light">
@@ -176,7 +176,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                                             <td>{row?.dataSource}</td>
                                             <td>{LocalDate(row?.Do_Date)}</td>
                                             <td>{NumberFormat(row?.Total_Invoice_value)}</td>
-                                            <td>{NumberFormat(row?.Paid_Amount)}</td>
+                                            <td>{NumberFormat(row?.totalReference)}</td>
                                             <td>{NumberFormat(row?.receiptPendingAmount)}</td>
                                             <td className="p-0 vctr text-center" style={{ verticalAlign: 'middle' }}>
                                                 <div className="d-flex align-items-center">

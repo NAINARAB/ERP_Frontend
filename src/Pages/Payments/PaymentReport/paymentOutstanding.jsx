@@ -44,7 +44,7 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
             if (data.success) {
                 const repDat = toArray(data.data).map(o => ({
                     ...o,
-                    receiptPendingAmount: Subraction(o.Total_Invoice_value, o.Paid_Amount)
+                    paymentPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
                 }))
                 setReportData(repDat);
             }
@@ -55,13 +55,13 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice(pre => {
             const previousValue = toArray(pre);
 
-            const excludeCurrentValue = previousValue.filter(o => !stringCompare(o?.Do_Inv_No, row.Do_Inv_No));
+            const excludeCurrentValue = previousValue.filter(o => !stringCompare(o?.Po_Inv_No, row.Po_Inv_No));
 
             let updateBillInfo;
             if (deleteOption) {
                 updateBillInfo = excludeCurrentValue;
             } else {
-                updateBillInfo = [...excludeCurrentValue, { ...row, newReceiptBillAmount: toNumber(row?.receiptPendingAmount) }];
+                updateBillInfo = [...excludeCurrentValue, { ...row, newPaymentBillAmount: toNumber(row?.paymentPendingAmount) }];
             }
             return updateBillInfo;
         })
@@ -71,9 +71,9 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice(pre => pre.map(
             bill => ({
                 ...bill,
-                newReceiptBillAmount: stringCompare(
-                    billId, bill.Do_Inv_No
-                ) ? value : bill.newReceiptBillAmount
+                newPaymentBillAmount: stringCompare(
+                    billId, bill.Po_Inv_No
+                ) ? value : bill.newPaymentBillAmount
             })
         ))
     }
@@ -103,20 +103,21 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
 
                 <form onSubmit={e => {
                     e.preventDefault();
-                    navigation('/erp/receipts/listReceipts/create', {
+                    navigation('/erp/payments/paymentList/create', {
                         state: {
                             ...paymentGeneralInfoInitialValue,
-                            credit_ledger: filters.ledger.value,
-                            credit_ledger_name: filters.ledger.label,
-                            credit_amount: selectedInvoice.reduce((acc, bill) => Addition(
-                                acc, bill?.newReceiptBillAmount
+                            debit_ledger: filters.ledger.value,
+                            debit_ledger_name: filters.ledger.label,
+                            debit_amount: selectedInvoice.reduce((acc, bill) => Addition(
+                                acc, bill?.newPaymentBillAmount
                             ), 0),
                             BillsDetails: selectedInvoice.map(bill => ({
-                                bill_id: bill.Do_Id,
-                                bill_name: bill.Do_Inv_No,
+                                bill_id: bill.PIN_Id,
+                                bill_name: bill.Po_Inv_No,
+                                bill_ref_number: bill.bill_ref_number,
                                 bill_amount: bill.Total_Invoice_value,
-                                Debit_Amo: 0,
-                                Credit_Amo: bill.newReceiptBillAmount
+                                Debit_Amo: bill.newPaymentBillAmount,
+                                Credit_Amo: 0
                             }))
                         }
                     })
@@ -125,7 +126,7 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                         <table className="table table-bordered fa-12">
                             <thead>
                                 <tr>
-                                    {['Sno', 'Sales Invoice No', 'Source', 'Date', 'Inv-Value', 'Closed Value', 'Outstanding', 'Make a Receipt'].map(
+                                    {['Sno', 'Voucher-No', 'Source', 'Date', 'Total-Value', 'Closed Value', 'Outstanding', 'Make a Payment'].map(
                                         (o, i) => <th key={i} className="fa-13">{o}</th>
                                     )}
                                 </tr>
@@ -144,39 +145,39 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                                     <td className="bg-light">
                                         {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
-                                            bill.Paid_Amount
+                                            bill.totalReference
                                         ), 0))}
                                     </td>
                                     <td className="bg-light">
                                         {NumberFormat(reportData.reduce((acc, bill) => Addition(
                                             acc,
-                                            Subraction(bill.Total_Invoice_value, bill.Paid_Amount)
+                                            Subraction(bill.Total_Invoice_value, bill.totalReference)
                                         ), 0))}
                                     </td>
                                     <td className="text-primary fw-bold text-end fa-17 bg-light">
                                         {NumberFormat(selectedInvoice.reduce((acc, bill) => Addition(
-                                            acc, bill?.newReceiptBillAmount
+                                            acc, bill?.newPaymentBillAmount
                                         ), 0))}
                                     </td>
                                 </tr>
 
-                                {/* pengin receipts */}
+                                {/* pending payments */}
                                 {reportData.map((row, rowIndex) => {
                                     const invIndex = selectedInvoice.findIndex(
-                                        bill => stringCompare(bill?.Do_Inv_No, row?.Do_Inv_No)
+                                        bill => stringCompare(bill?.Po_Inv_No, row?.Po_Inv_No)
                                     );
-                                    const amount = selectedInvoice[invIndex] ? selectedInvoice[invIndex]?.newReceiptBillAmount : 0;
+                                    const amount = selectedInvoice[invIndex] ? selectedInvoice[invIndex]?.newPaymentBillAmount : 0;
                                     const isChecked = invIndex !== -1;
 
                                     return (
                                         <tr key={rowIndex}>
                                             <td>{rowIndex + 1}</td>
-                                            <td>{row?.Do_Inv_No}</td>
+                                            <td>{row?.Po_Inv_No}</td>
                                             <td>{row?.dataSource}</td>
-                                            <td>{LocalDate(row?.Do_Date)}</td>
+                                            <td>{LocalDate(row?.Po_Inv_Date)}</td>
                                             <td>{NumberFormat(row?.Total_Invoice_value)}</td>
-                                            <td>{NumberFormat(row?.Paid_Amount)}</td>
-                                            <td>{NumberFormat(row?.receiptPendingAmount)}</td>
+                                            <td>{NumberFormat(row?.totalReference)}</td>
+                                            <td>{NumberFormat(row?.paymentPendingAmount)}</td>
                                             <td className="p-0 vctr text-center" style={{ verticalAlign: 'middle' }}>
                                                 <div className="d-flex align-items-center">
 
@@ -197,9 +198,9 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                                                             onInput={onlynum}
                                                             required={isChecked}
                                                             type="number"
-                                                            max={toNumber(row?.receiptPendingAmount)}
+                                                            max={toNumber(row?.paymentPendingAmount)}
                                                             className="cus-inpt flex-grow-1 p-2 border-0 me-1"
-                                                            onChange={e => onChangeAmount(row?.Do_Inv_No, e.target.value)}
+                                                            onChange={e => onChangeAmount(row?.Po_Inv_No, e.target.value)}
                                                             placeholder={isChecked ? "Enter amount" : ''}
                                                         />
                                                     )}
@@ -209,14 +210,14 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                                     )
                                 })}
 
-                                {/* nave to receipt */}
+                                {/* nave to payment */}
                                 <tr>
                                     <td colSpan={8} className="text-end">
                                         <Button
                                             variant="outlined"
                                             disabled={selectedInvoice.length === 0}
                                             type="submit"
-                                        >Create Receipt</Button>
+                                        >Create Payment</Button>
                                     </td>
                                 </tr>
 
