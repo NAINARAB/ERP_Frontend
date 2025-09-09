@@ -167,6 +167,9 @@ const ReceiptReferenceCreation = lazy(() => import("./Pages/Receipts/ReceiptMast
 const PaymentCollectionReport = lazy(() => import("./Pages/Reports/paymentCollectionReport"));
 const CustomerPendingReceipt = lazy(() => import("./Pages/Receipts/outstandingReports/customerPendingReceipt"));
 
+const ContraList = lazy(() => import("./Pages/Contra/master/ListContra"));
+const ContraCreate = lazy(() => import("./Pages/Contra/master/ContraCreate"));
+
 
 // Data Entry
 const DriverActivities = lazy(() => import("./Pages/DataEntry/newDriverActivities"))
@@ -351,6 +354,11 @@ const RoutingArray = [
     { component: <TallyPendingReceipt />, path: '/erp/receipt/tallyPendingReceipt' },
     { component: <CustomerPendingReceipt />, path: '/erp/receipt/customerPendingReceipt' },
     { component: <PaymentCollectionReport />, path: '/erp/reports/paymentCollectionReport' },
+
+    // ERP - CONTRA
+    { component: <DisplayNavigations />, path: '/erp/contra' },
+    { component: <ContraList />, path: '/erp/contra/contraList' },
+    { component: <ContraCreate />, path: '/erp/contra/contraList/create' },
 
     // ERP - CRM
     { component: <DisplayNavigations />, path: '/erp/crm' },

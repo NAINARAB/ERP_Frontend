@@ -27,11 +27,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         voucherType: [],
         debit_ledger: [],
         defaultBankMaster: [],
-        creditLedgers: [
-            { value: 1, label: 'CashBox 1' },
-            { value: 2, label: 'CashBox 2' },
-            { value: 3, label: 'CashBox 3' }
-        ],
+        creditLedgers: [],
     });
 
     // to filter group, account
@@ -45,7 +41,6 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         if (
             isValidObject(editValues)
         ) {
-            console.log(editValues)
             setPaymentValue(
                 Object.fromEntries(
                     Object.entries(paymentGeneralInfoInitialValue).map(([key, value]) => {
