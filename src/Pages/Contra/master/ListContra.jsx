@@ -115,7 +115,9 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
         }).catch(e => console.error(e))
     }, [sessionValue, pageID]);
 
-    const TotalAmount = useMemo(() => contraData.reduce(
+    const TotalAmount = useMemo(() => contraData.filter(
+        con => con?.ContraStatus !== 0
+    ).reduce(
         (acc, orders) => Addition(acc, orders?.Amount), 0
     ), [contraData]);
 
@@ -289,8 +291,22 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                     <td>
                                         <select
                                             className="cus-inpt p-2"
-                                            value={filters.branch}
-                                            onChange={e => setFilters(pre => ({ ...pre, branch: e.target.value }))}
+                                            value={filters.branch.value}
+                                            onChange={e => {
+
+                                                const branchValue = filterDropDown.branch.find(
+                                                    b => isEqualNumber(b.value, e.target.value)
+                                                ) || { label: '', value: '' };
+
+                                                setFilters({
+                                                    ...filters,
+                                                    branch: {
+                                                        label: branchValue?.label || '',
+                                                        value: branchValue?.value || ''
+                                                    }
+                                                });
+                                                
+                                            }}
                                         >
                                             <option value={''}>ALL</option>
                                             {filterDropDown.branch.map((type, ind) => (
@@ -324,8 +340,22 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                     <td style={{ verticalAlign: 'middle' }}>Status</td>
                                     <td>
                                         <select
-                                            value={filters.status}
-                                            onChange={e => setFilters({ ...filters, status: e.target.value })}
+                                            value={filters.status.value}
+                                            onChange={e => {
+
+                                                const statusValue = contraStatus.find(
+                                                    s => isEqualNumber(s.value, e.target.value)
+                                                ) || { label: '', value: '' };
+                                                
+                                                setFilters({
+                                                    ...filters,
+                                                    status: {
+                                                        label: statusValue?.label || '',
+                                                        value: statusValue?.value || ''
+                                                    }
+                                                });
+
+                                            }}
                                             className="cus-inpt"
                                         >
                                             <option value={''}>All</option>

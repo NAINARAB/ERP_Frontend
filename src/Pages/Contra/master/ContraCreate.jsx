@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { contraIV, contraStatus } from "./contraVariables";
-import { checkIsNumber, isEqualNumber, ISOString, onlynum } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
+
 
 const ContraScreen = ({
     loadingOn, loadingOff
@@ -22,6 +23,22 @@ const ContraScreen = ({
         voucherType: [],
         branch: []
     });
+
+    useEffect(() => {
+        if (
+            isValidObject(editValues)
+        ) {
+            setData(
+                Object.fromEntries(
+                    Object.entries(contraIV).map(([key, value]) => {
+                        if (key === 'ContraDate') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        return [key, editValues[key] ?? value]
+                    })
+                )
+            );
+        }
+    }, [editValues])
+
 
     useEffect(() => {
 
@@ -88,6 +105,10 @@ const ContraScreen = ({
             if (res.success) {
                 toast.success(res.message);
                 clear();
+
+                if (data?.ContraAutoId) {
+                    navigate('/erp/contra/contraList');
+                } 
             } else {
                 toast.error(res.message);
             }
@@ -170,6 +191,7 @@ const ContraScreen = ({
                                     { value: "", label: "select" },
                                     ...baseData.voucherType.map((v) => ({ value: v.Vocher_Type_Id, label: v.Voucher_Type }))
                                 ]}
+                                isDisabled={data?.ContraAutoId}
                                 styles={customSelectStyles}
                                 menuPortalTarget={document.body}
                                 onChange={(opt) => {

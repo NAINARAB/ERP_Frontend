@@ -111,11 +111,30 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         }).catch(e => console.error(e))
     }, [sessionValue, pageID]);
 
-    const TotalReceipt = useMemo(() => receiptData.reduce(
+    const TotalReceipt = useMemo(() => receiptData.filter(
+        rec => !isEqualNumber(rec.receipt_bill_type, 0)
+    ).reduce(
         (acc, orders) => Addition(acc, orders?.credit_amount), 0
     ), [receiptData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
+
+    const statusColor = {
+        NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
+        OnProcess: ' bg-warning fw-bold fa-11 px-2 py-1 rounded-3 ',
+        Completed: ' bg-success text-light fa-11 px-2 py-1 rounded-3 ',
+        Canceled: ' bg-danger text-light fw-bold fa-11 px-2 py-1 rounded-3 '
+    }
+
+    const chooseColor = (orderStatus) => {
+        switch (orderStatus) {
+            case 1: return statusColor.NewOrder;
+            case 2: return statusColor.OnProcess;
+            case 3: return statusColor.Completed;
+            case 0: return statusColor.Canceled;
+            default: return ''
+        }
+    }
 
     return (
         <>
@@ -173,12 +192,26 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     createCol('TotalReferencedAmount', 'number', 'Added Ref'),
                     createCol('debit_ledger_name', 'string', 'Debit-Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
+                    createCol('CreatedByGet', 'string', 'Created By'),
                     createCol('Voucher_Type', 'string', 'Voucher'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Bill Type',
                         isCustomCell: true,
                         Cell: ({ row }) => receiptTypes.find(type => isEqualNumber(type.value, row.receipt_bill_type))?.label
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Status',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const paymentStatusString = receiptStatus.find(s => isEqualNumber(s.value, row?.status)) || {}
+                            return (
+                                <span className={chooseColor(paymentStatusString.value)}>
+                                    {String(paymentStatusString.label).replace(' ', '')}
+                                </span>
+                            )
+                        }
                     },
                     {
                         isVisible: 1,
