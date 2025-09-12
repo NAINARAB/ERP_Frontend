@@ -39,7 +39,6 @@ const ContraScreen = ({
         }
     }, [editValues])
 
-
     useEffect(() => {
 
         const fetchData = async () => {
@@ -49,7 +48,7 @@ const ContraScreen = ({
                     voucherTypeResponse,
                     branchRes
                 ] = await Promise.all([
-                    fetchLink({ address: `masters/accountMaster/groupFilter?recursiveGroup=11,22` }),
+                    fetchLink({ address: `masters/accountMaster/groupFilter?recursiveGroup=11,21,22` }),
                     fetchLink({ address: `masters/voucher?module=CONTRA` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
                 ]);
