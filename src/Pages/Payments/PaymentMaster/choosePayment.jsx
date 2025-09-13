@@ -23,7 +23,8 @@ const ChoosePaymentComponent = ({
     updateBaseData,
     closeDialog,
     loadingOn,
-    loadingOff
+    loadingOff,
+    paymentAdjesments = []
 }) => {
 
     const searchPayments = (debitAccount, creditAccount, paymentType) => {
@@ -52,8 +53,10 @@ const ChoosePaymentComponent = ({
     const TotalAgainstRef = useMemo(() => {
         return paymentBillInfo.reduce(
             (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+        ) + paymentAdjesments.reduce(
+            (acc, ref) => Addition(acc, ref?.adjesmentValue), 0
         )
-    }, [paymentBillInfo]);
+    }, [paymentBillInfo, paymentAdjesments]);
 
     const PendingAgainstRef = useMemo(() => {
         return Subraction(paymentGeneralInfo.debit_amount, TotalAgainstRef)

@@ -26,7 +26,8 @@ const ExpenceReceipt = ({
     updateBaseData,
     closeDialog,
     loadingOn,
-    loadingOff
+    loadingOff,
+    receiptAdjesments= []
 }) => {
 
     const [searchFilter, setSearchFilter] = useState({

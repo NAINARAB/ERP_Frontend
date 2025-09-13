@@ -19,6 +19,7 @@ const SalesInvoiceReceipt = ({
     updateFilterData,
     updateBaseData,
     closeDialog,
+    receiptAdjesments= []
 }) => {
 
     const onClickSalesInvoice = (invoiceDetails, deleteOption) => {

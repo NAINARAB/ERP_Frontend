@@ -11,6 +11,7 @@ import { receiptValueInitialValue, receiptGeneralInfoInitialValue } from "./vari
 import SalesInvoiceReceipt from "./salesReceipt";
 import ChooseReceiptComponent from "./chooseReceipt";
 import ExpenceReceipt from "./expencesReceipt";
+import AdjesmentsList from "./adjesments";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -37,6 +38,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
     const [receiptBillInfo, setReceiptBillInfo] = useState([]);
     const [receiptCostingInfo, setReceiptCostingInfo] = useState([]);
+    const [receiptAdjesments, setReceiptAdjesmentsInfo] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountGroup: [],
@@ -129,7 +131,19 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             }
         }).catch(e => console.error(e));
 
-    }, [receiptValue.receipt_id, receiptValue.receipt_bill_type])
+    }, [receiptValue.receipt_id, receiptValue.receipt_bill_type]);
+
+    useEffect(() => {
+        if (!checkIsNumber(receiptValue.receipt_id)) return setReceiptAdjesmentsInfo([]);
+
+        fetchLink({
+            address: `receipt/receiptMaster/adjesments?receipt_id=${receiptValue.receipt_id}`
+        }).then(data => {
+            if (data.success) {
+                setReceiptAdjesmentsInfo(toArray(data.data));
+            }
+        }).catch(e => console.error(e));
+    }, [receiptValue.receipt_id])
 
     useEffect(() => {
         if (isValidObject(editValues)) {
@@ -169,10 +183,12 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     }
 
     const TotalAgainstRef = useMemo(() => {
-        return receiptBillInfo.reduce(
+        return toArray(receiptBillInfo).reduce(
             (acc, invoice) => Addition(acc, invoice.Credit_Amo), 0
+        ) + toArray(receiptAdjesments).reduce(
+            (acc, ref) => Addition(acc, ref?.adjesmentValue), 0
         )
-    }, [receiptBillInfo]);
+    }, [receiptBillInfo, receiptAdjesments]);
 
     const SavePayment = () => {
         if (TotalAgainstRef > receiptValue.credit_amount) return toast.warn('Receipt amount is invalid');
@@ -233,6 +249,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         closeDialog={closeDialog}
                         loadingOn={loadingOn}
                         loadingOff={loadingOff}
+                        receiptAdjesments={receiptAdjesments}
                     />
 
                     {/* choose Purchase invoice */}
@@ -249,6 +266,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             closeDialog={closeDialog}
                             receiptBillInfo={receiptBillInfo}
                             setReceiptBillInfo={setReceiptBillInfo}
+                            receiptAdjesments={receiptAdjesments}
                         />
                     )}
 
@@ -270,7 +288,12 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             closeDialog={closeDialog}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
+                            receiptAdjesments={receiptAdjesments}
                         />
+                    )}
+
+                    {receiptAdjesments.length > 0 && (
+                        <AdjesmentsList adjesmentData={receiptAdjesments} />
                     )}
 
                 </div>

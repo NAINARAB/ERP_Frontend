@@ -9,6 +9,7 @@ import PurchaseInvoicePayment from "./purchasePayment";
 import ChoosePaymentComponent from "./choosePayment";
 import { toast } from "react-toastify";
 import ExpencePayment from "./expencesPayment";
+import AdjesmentsList from "../../Receipts/ReceiptMaster/adjesments";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -35,6 +36,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const [paymentGeneralInfo, setPaymentGeneralInfo] = useState(paymentGeneralInfoInitialValue)
     const [paymentBillInfo, setPaymentBillInfo] = useState([]);
     const [paymentCostingInfo, setPaymentCostingInfo] = useState([]);
+    const [paymentAdjesments, setPaymentAdjesments] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountGroup: [],
@@ -94,7 +96,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
 
     useEffect(() => {
         if (
-            !checkIsNumber(paymentGeneralInfo.pay_id) 
+            !checkIsNumber(paymentGeneralInfo.pay_id)
             || !checkIsNumber(paymentGeneralInfo.pay_bill_type)
             || (
                 !isEqualNumber(paymentGeneralInfo.pay_bill_type, 1)
@@ -126,7 +128,19 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                 setPaymentCostingInfo(toArray(data.data));
             }
         }).catch(e => console.error(e))
-    }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type])
+    }, [paymentGeneralInfo.pay_id, paymentGeneralInfo.pay_bill_type]);
+
+    useEffect(() => {
+        if (!checkIsNumber(paymentGeneralInfo.pay_id)) return setPaymentAdjesments([]);
+
+        fetchLink({
+            address: `payment/paymentMaster/adjesments?payment_id=${paymentGeneralInfo.pay_id}`
+        }).then(data => {
+            if (data.success) {
+                setPaymentAdjesments(toArray(data.data));
+            }
+        }).catch(e => console.error(e))
+    }, [paymentGeneralInfo.pay_id])
 
     useEffect(() => {
         if (isValidObject(editValues)) {
@@ -168,8 +182,10 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
     const TotalAgainstRef = useMemo(() => {
         return paymentBillInfo.reduce(
             (acc, invoice) => Addition(acc, invoice.Debit_Amo), 0
+        ) + paymentAdjesments.reduce(
+            (acc, ref) => Addition(acc, ref?.adjesmentValue), 0
         )
-    }, [paymentBillInfo]);
+    }, [paymentBillInfo, paymentAdjesments]);
 
     const SavePayment = () => {
         if (TotalAgainstRef > paymentGeneralInfo.debit_amount) return toast.warn('Payment amount is invalid');
@@ -230,6 +246,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         closeDialog={closeDialog}
                         loadingOn={loadingOn}
                         loadingOff={loadingOff}
+                        paymentAdjesments={paymentAdjesments}
                     />
 
                     {/* choose Purchase invoice */}
@@ -246,6 +263,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             closeDialog={closeDialog}
                             paymentBillInfo={paymentBillInfo}
                             setPaymentBillInfo={setPaymentBillInfo}
+                            paymentAdjesments={paymentAdjesments}
                         />
                     )}
 
@@ -267,7 +285,12 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             closeDialog={closeDialog}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
+                            paymentAdjesments={paymentAdjesments}
                         />
+                    )}
+
+                    {paymentAdjesments.length > 0 && (
+                        <AdjesmentsList adjesmentData={paymentAdjesments} />
                     )}
 
                 </div>

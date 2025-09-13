@@ -23,7 +23,8 @@ const ChooseReceiptComponent = ({
     updateBaseData,
     closeDialog,
     loadingOn,
-    loadingOff
+    loadingOff,
+    receiptAdjesments= []
 }) => {
 
     const searchReceipts = (debitAccount, creditAccount, receiptType) => {
@@ -50,10 +51,12 @@ const ChooseReceiptComponent = ({
     }
 
     const TotalAgainstRef = useMemo(() => {
-        return receiptBillInfo.reduce(
+        return toArray(receiptBillInfo).reduce(
             (acc, invoice) => Addition(acc, invoice.Credit_Amo), 0
+        ) + toArray(receiptAdjesments).reduce(
+            (acc, ref) => Addition(acc, ref?.adjesmentValue), 0
         )
-    }, [receiptBillInfo]);
+    }, [receiptBillInfo, receiptAdjesments]);
 
     const PendingAgainstRef = useMemo(() => {
         return Subraction(receiptValue.credit_amount, TotalAgainstRef)
