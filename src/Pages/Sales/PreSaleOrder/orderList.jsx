@@ -8,7 +8,10 @@ import { Card, IconButton, Button } from "@mui/material";
 import { toast } from "react-toastify";
 import { AddBox, Edit } from "@mui/icons-material";
 import { convertedStatus } from "../convertedStatus";
-
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+// import directSaleInvoiceFromPos from "../SalesInvoice/directSaleInvoiceFromPos";
+import DirectSaleInvoiceFromPos from "../SalesInvoice/directSaleInvoiceFromPos";
+import { useLocation, useNavigate } from "react-router-dom";
 const OrderList = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         FromDate: new Date().toISOString().split("T")[0],
@@ -20,6 +23,22 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     const [data, setData] = useState([]);
     const [load, setLoad] = useState(false)
     const [isLoading, setIsLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false); // State for modal visibility
+    const [selectedOrder, setSelectedOrder] = useState(null); // State for selected order data
+ const navigate = useNavigate();
+
+    const handleOpenModal = (row) => {
+        setSelectedOrder(row); // Set the selected order data
+        setModalOpen(true);   // Open the modal
+    };
+
+    const handleCloseModal = (success) => {
+        setModalOpen(false);
+        if (success) {
+            // Optionally refresh the data if the modal was closed after a successful action
+            setLoad(true);
+        }
+    };
 useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -143,6 +162,10 @@ useEffect(() => {
         );
     };
 
+
+    const posData=(datas)=>{
+
+    }
 
 const postSaleOrder = (data) => {
     loadingOn();
@@ -331,18 +354,27 @@ const postSaleOrder = (data) => {
                                     },
                                 },
                                 {
-                                    Field_Name: "Actions",
-                                    ColumnHeader: "Actions",
-                                    isVisible: 1,
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <td className="fa-12" style={{ minWidth: "80px" }}>
-                                            <IconButton size="small" onClick={() => postSaleOrder(row)}>
-                                                {row?.isConverted === 0 ? <AddBox /> : <Edit />}
-                                            </IconButton>
-                                        </td>
-                                    ),
+                                Field_Name: "Actions",
+                                ColumnHeader: "Actions",
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    return (
+                                        <>
+                                            <td className="fa-12" style={{ minWidth: "80px" }}>
+                                                <IconButton size="small" onClick={() => postSaleOrder(row)}>
+                                                    {row?.isConverted === 0 ? <AddBox /> : <Edit />}
+                                                </IconButton>
+                                            </td>
+                                            <td className="fa-12" style={{ minWidth: "80px" }}>
+                                                <IconButton size="small" onClick={() => handleOpenModal(row)}>
+                                                    <ArrowOutwardIcon />
+                                                </IconButton>
+                                            </td>
+                                        </>
+                                    )
                                 }
+                            }
 
                             ]}
                             isExpendable={true}
@@ -417,20 +449,34 @@ const postSaleOrder = (data) => {
                                         );
                                     },
                                 },
-                                {
-                                    Field_Name: "Actions",
-                                    ColumnHeader: "Actions",
-                                    isVisible: 1,
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => (
-                                        <td className="fa-12" style={{ minWidth: "80px" }}>
-                                            <IconButton size="small" onClick={() => postSaleOrder(row)}>
-                                                {row?.isConverted === 0 ? <AddBox /> : <Edit />}
-                                            </IconButton>
-                                        </td>
-                                    ),
-                                }
+                           {
+                                Field_Name: "Actions",
+                                ColumnHeader: "Actions",
+                                isVisible: 1,
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    return (
+                                        <>
+                                            <td className="fa-12" style={{ minWidth: "50px" }}>
+                                                <IconButton size="small" onClick={() => postSaleOrder(row)}>
+                                                    {row?.isConverted === 0 ? <AddBox /> : <Edit />}
+                                                </IconButton>
+                                            </td>
+                                           { row?.isConverted !=2 && (
+<td className="fa-12" style={{ minWidth: "50px" }}>
+                                                <IconButton size="small" onClick={() => handleOpenModal(row)}>
+                                                    <ArrowOutwardIcon />
+                                                </IconButton>
+                                               
+                                            </td>
+                                           )
 
+
+                                           } 
+                                        </>
+                                    )
+                                }
+                            }
                             ]}
                             isExpendable={true}
                             tableMaxHeight={550}
@@ -464,8 +510,21 @@ const postSaleOrder = (data) => {
                     )
                 }
             </Card>
+
+               <DirectSaleInvoiceFromPos
+                open={modalOpen}
+                onClose={handleCloseModal}
+                editValues={selectedOrder} 
+                loadingOn={loadingOn}
+                loadingOff={loadingOff}
+            />
         </>
     );
 };
 
 export default OrderList;
+
+
+
+
+
