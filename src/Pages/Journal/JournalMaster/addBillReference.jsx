@@ -1,10 +1,16 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, Subraction, isEqualNumber, checkIsNumber, rid, LocalDate } from "../../../Components/functions";
+import { Addition, Subraction, isEqualNumber, checkIsNumber, rid, LocalDate, onlynum, toArray, stringCompare } from "../../../Components/functions";
 import { journalBillReferenceIV } from "./variable";
 
-const BillRefDialog = ({ open, onClose, line, journalBillReference, setJournalBillReference }) => {
+const BillRefDialog = ({
+    open,
+    onClose,
+    line,
+    journalBillReference,
+    setJournalBillReference
+}) => {
     const LineId = line?.LineId;
     const Acc_Id = line?.Acc_Id;
     const DrCr = line?.DrCr;
@@ -14,41 +20,58 @@ const BillRefDialog = ({ open, onClose, line, journalBillReference, setJournalBi
     useEffect(() => {
         if (!open || !checkIsNumber(Acc_Id)) return;
         setPendingRefDetails([]);
-        
-        fetchLink({ 
-            address: `journal/accountPendingReference?Acc_Id=${Acc_Id}` 
-        }).then(
-            (data) => setPendingRefDetails(data?.success ? data.data : [])
-        ).catch(() => setPendingRefDetails([]));
+        fetchLink({ address: `journal/accountPendingReference?Acc_Id=${Acc_Id}` })
+            .then((data) => setPendingRefDetails(data?.success ? data.data : []))
+            .catch(() => setPendingRefDetails([]));
     }, [open, Acc_Id]);
 
-    const toggleRef = (row, deleteOption = false) => {
-        setJournalBillReference((prev) => {
-            const keep = prev.filter(
-                (b) =>
-                    !(
-                        b.LineId === LineId &&
-                        isEqualNumber(b.Acc_Id, Acc_Id) &&
-                        b.DrCr === DrCr &&
-                        b.RefNo === row.voucherNumber
-                    )
-            );
-            if (deleteOption) return keep;
+    const keyMatch = (b, row) =>
+        b.LineId === LineId &&
+        isEqualNumber(b.Acc_Id, Acc_Id) &&
+        b.DrCr === DrCr &&
+        b.RefNo === row.voucherNumber;
 
+    const findExisting = (arr, row) => arr.find((b) => keyMatch(b, row));
+
+    const toggleRef = (row, isChecked) => {
+        setJournalBillReference((prev) => {
+            if (isChecked) {
+                return prev.filter((b) => !keyMatch(b, row));
+            }
+            const existing = findExisting(prev, row);
+            const amountToKeep = existing?.Amount ?? 0;
             return [
-                ...keep,
+                ...prev.filter((b) => !keyMatch(b, row)),
                 {
                     ...journalBillReferenceIV,
-                    autoGenId: rid(),
+                    autoGenId: existing?.autoGenId || rid(),
                     LineId,
                     Acc_Id,
                     DrCr,
                     RefId: row.voucherId,
                     RefNo: row.voucherNumber,
                     RefType: row.actualSource,
-                    Amount: 0,
-                },
+                    Amount: amountToKeep
+                }
             ];
+        });
+    };
+
+    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+    const changeAmount = (row, raw) => {
+        setJournalBillReference((prev) => {
+            const next = prev.map((b) => {
+                if (!keyMatch(b, row)) return b;
+                const n = parseFloat(raw);
+                const safe = Number.isFinite(n) ? n : 0;
+                // compute pending for this row
+                const totalRef = Addition(row?.againstAmount, row?.journalAdjustment);
+                const pending = Subraction(row?.totalValue, totalRef);
+                const clamped = clamp(safe, 0, Number(pending) || 0);
+                return { ...b, Amount: clamped };
+            });
+            return next;
         });
     };
 
@@ -64,9 +87,9 @@ const BillRefDialog = ({ open, onClose, line, journalBillReference, setJournalBi
                             <thead>
                                 <tr>
                                     {[
-                                        "Sno", "Voucher-Number", "Date", 
-                                        "Source", "Dr/Cr", "Total", "Pending", 
-                                        "Journal", "Pay/Rec", "Total Ref", "#"
+                                        "Sno", "Voucher-Number", "Date",
+                                        "Source", "Dr/Cr", "Total", "Total Ref",
+                                        "Journal", "Pay/Rec", "Pending", "#"
                                     ].map((c) => (
                                         <th key={c} className="fa-13">{c}</th>
                                     ))}
@@ -76,36 +99,54 @@ const BillRefDialog = ({ open, onClose, line, journalBillReference, setJournalBi
                                 {pendingRefDetails.map((row, i) => {
                                     const totalRef = Addition(row?.againstAmount, row?.journalAdjustment);
                                     const pending = Subraction(row?.totalValue, totalRef);
-                                    const checked = journalBillReference.some(
-                                        (b) => b.LineId === LineId && isEqualNumber(b.Acc_Id, Acc_Id) && b.DrCr === DrCr && b.RefNo === row.voucherNumber
-                                    );
+                                    const existing = findExisting(toArray(journalBillReference), row);
+                                    const checked = !!existing;
+                                    const amountVal = checked ? (existing?.Amount ?? 0) : "";
+                                    const canSelect = stringCompare(DrCr, row?.accountSide);
+
                                     return (
                                         <tr key={row.voucherNumber + "-" + i}>
                                             <td className="fa-12">{i + 1}</td>
                                             <td className="fa-12">{row?.voucherNumber}</td>
-                                            <td className="fa-12">{row?.eventDate ? LocalDate(row?.eventDate) : '-'}</td>
+                                            <td className="fa-12">{row?.eventDate ? LocalDate(row?.eventDate) : "-"}</td>
                                             <td className="fa-12">{row?.actualSource}</td>
                                             <td className="fa-12">{row?.accountSide}</td>
                                             <td className="fa-12">{row?.totalValue}</td>
-                                            <td className="fa-12">{pending}</td>
+                                            <td className="fa-12">{totalRef}</td>
                                             <td className="fa-12">{row?.journalAdjustment}</td>
                                             <td className="fa-12">{row?.againstAmount}</td>
-                                            <td className="fa-12">{totalRef}</td>
-                                            <td>
-                                                <input
-                                                    className="form-check-input shadow-none pointer mx-2"
-                                                    style={{ padding: "0.7em" }}
-                                                    type="checkbox"
-                                                    checked={checked}
-                                                    onChange={() => toggleRef(row, checked)}
-                                                />
+                                            <td className="fa-12">{pending}</td>
+                                            <td className="p-0">
+                                                <div className="d-flex align-items-center">
+                                                    <input
+                                                        className={`form-check-input shadow-none pointer mx-2 ${!canSelect ? ' border-primary ' : ''}`}
+                                                        style={{ padding: "0.7em" }}
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleRef(row, checked)}
+                                                        disabled={canSelect}
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        max={pending}
+                                                        value={amountVal ? amountVal : ''}
+                                                        onInput={onlynum}
+                                                        onChange={(e) => changeAmount(row, e.target.value)}
+                                                        className="cus-inpt p-2"
+                                                        disabled={!checked}
+                                                    />
+                                                </div>
                                             </td>
                                         </tr>
                                     );
                                 })}
                                 {pendingRefDetails.length === 0 && (
                                     <tr>
-                                        <td colSpan={11} className="text-center text-muted">No pending references.</td>
+                                        <td colSpan={11} className="text-center text-muted">
+                                            No pending references.
+                                        </td>
                                     </tr>
                                 )}
                             </tbody>

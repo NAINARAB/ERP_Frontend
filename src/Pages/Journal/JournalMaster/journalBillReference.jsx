@@ -32,15 +32,7 @@ const InlineBillRefTable = ({
                             <td className="fa-12">{i + 1}</td>
                             <td className="fa-12">{bill?.RefNo}</td>
                             <td className="fa-12">{bill?.RefType}</td>
-                            <td className="fa-12 p-0">
-                                <input
-                                    onInput={onlynum}
-                                    className="cus-inpt p-2 border-0"
-                                    value={bill?.Amount || ""}
-                                    disabled={!checkIsNumber(bill?.RefId)}
-                                    onChange={(e) => updateAmount(bill.autoGenId, e.target.value)}
-                                />
-                            </td>
+                            <td className="fa-12">{bill?.Amount}</td>
                             <td className="fa-12 p-0">
                                 <IconButton size="small" onClick={() => removeRow(bill.autoGenId)}>
                                     <Delete color="error" className="fa-20" />

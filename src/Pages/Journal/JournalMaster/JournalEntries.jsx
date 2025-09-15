@@ -23,12 +23,15 @@ const JournalEntriesPanel = ({
         () =>
             journalEntriesInfo
                 .filter((e) => e.DrCr === "Dr")
-                .map((line) => ({
-                    ...line,
-                    Entries: journalBillReference.filter(
-                        (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
-                    ),
-                })),
+                .map((line) => {
+
+                    return {
+                        ...line,
+                        Entries: journalBillReference.filter(
+                            (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
+                        ),
+                    }
+                }),
         [journalEntriesInfo, journalBillReference]
     );
 

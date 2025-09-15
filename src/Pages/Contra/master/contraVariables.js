@@ -15,6 +15,8 @@ export const contraIV = {
     DebitAccountName: "",
     CreditAccount: null,
     CreditAccountName: "",
+    BankName: "",
+    BankDate: null,
     Amount: 0,
     Narration: "",
     ContraStatus: 1,
