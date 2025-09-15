@@ -88,7 +88,7 @@ const ExpencesOfSalesInvoice = ({
         setInvoiceExpences(prev => prev.filter((_, i) => i !== index));
     };
 
-    return (
+     return (
         <>
             <Card >
                 <div className="d-flex align-items-center justify-content-between flex-wrap px-3 py-2">
@@ -96,7 +96,6 @@ const ExpencesOfSalesInvoice = ({
                     <Button variant="outlined" type="button" onClick={addNewRow}>Add</Button>
                 </div>
                 <div className="table-responsive">
-
                     <table className="table table-bordered m-0">
                         <thead className="table-light">
                             <tr>
@@ -108,46 +107,60 @@ const ExpencesOfSalesInvoice = ({
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
-                            {invoiceExpences.map((row, index) => (
-                                <tr key={index}>
-                                    <td>{index + 1}</td>
-                                    <td className="p-0 vctr" style={{ minWidth: '180px' }}>
-                                        <Select
-                                            value={{
-                                                value: row?.Expense_Id,
-                                                label: expenceMaster.find(
-                                                    exp => isEqualNumber(exp.Id, row?.Expense_Id)
-                                                )?.Expence_Name || '',
-                                            }}
-                                            onChange={e => handleSelectChange(index, e)}
-                                            options={expenceMaster
-                                                .filter(exp => !invoiceExpences.some(inv => inv.Expense_Id === exp.Id))
-                                                .map(exp => ({ value: exp.Id, label: exp.Expence_Name }))
-                                            }
-                                            menuPortalTarget={document.body}
-                                            isSearchable={true}
-                                            placeholder="Select Expense"
-                                        />
-                                    </td>
-                                    <td className="p-0 vctr">
-                                        <input
-                                            onInput={onlynumAndNegative}
-                                            className="cus-inpt p-2 border-0"
-                                            value={row.Expence_Value || ''}
-                                            disabled={!checkIsNumber(row.Expense_Id)}
-                                            onChange={e => {
-                                                console.log(e.target.value)
-                                                handleInputChange(index, 'Expence_Value', e.target.value)
-                                            }}
-                                        />
-                                    </td>
-                                    <td className="p-0 vctr  text-center ">
-                                        <IconButton onClick={() => removeRow(index)} size="small">
-                                            <Delete color="error" fontSize="small" />
-                                        </IconButton>
-                                    </td>
-                                </tr>
-                            ))}
+                            {invoiceExpences.map((row, index) => {
+                                // Get the current expense name for display
+                                const currentExpenseName = expenceMaster.find(
+                                    exp => isEqualNumber(exp.Id, row?.Expense_Id)
+                                )?.Expence_Name || '';
+                                
+                                return (
+                                    <tr key={index}>
+                                        <td>{index + 1}</td>
+                                        <td className="p-0 vctr" style={{ minWidth: '180px' }}>
+                                            <Select
+                                                value={{
+                                                    value: row?.Expense_Id,
+                                                    label: currentExpenseName,
+                                                }}
+                                                onChange={e => handleSelectChange(index, e)}
+                                                options={expenceMaster
+                                                    // Fix the filtering logic
+                                                    .filter(exp => {
+                                                        // Always include the currently selected expense
+                                                        if (isEqualNumber(exp.Id, row?.Expense_Id)) return true;
+                                                        
+                                                        // Exclude expenses that are already selected in other rows
+                                                        return !invoiceExpences.some(
+                                                            (inv, idx) => idx !== index && isEqualNumber(inv.Expense_Id, exp.Id)
+                                                        );
+                                                    })
+                                                    .map(exp => ({ value: exp.Id, label: exp.Expence_Name }))
+                                                }
+                                                styles={customSelectStyles}
+                                                menuPortalTarget={document.body}
+                                                isSearchable={true}
+                                                placeholder="Select Expense"
+                                            />
+                                        </td>
+                                        <td className="p-0 vctr">
+                                            <input
+                                                onInput={onlynumAndNegative}
+                                                className="cus-inpt p-2 border-0"
+                                                value={row.Expence_Value || ''}
+                                                disabled={!checkIsNumber(row.Expense_Id)}
+                                                onChange={e => {
+                                                    handleInputChange(index, 'Expence_Value', e.target.value)
+                                                }}
+                                            />
+                                        </td>
+                                        <td className="p-0 vctr  text-center ">
+                                            <IconButton onClick={() => removeRow(index)} size="small">
+                                                <Delete color="error" fontSize="small" />
+                                            </IconButton>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {invoiceExpences.length === 0 && (
                                 <tr><td className="text-center" colSpan={6}>No rows</td></tr>
                             )}

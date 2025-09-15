@@ -75,7 +75,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                         required={true}
                         placeholder={"Select Voucher Type"}
                         maxMenuHeight={300}
-                        isDisabled={checkIsNumber(invoiceInfo?.Do_Id)}
+                       isDisabled={!!checkIsNumber(invoiceInfo?.Do_Id)}
                     />
                 </div>
 

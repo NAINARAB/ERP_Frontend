@@ -2,8 +2,6 @@ import { useMemo } from "react";
 import { Addition, isEqualNumber, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, toArray } from "../../../Components/functions";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 
-
-
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const SalesInvoiceTaxDetails = ({
@@ -64,8 +62,9 @@ const SalesInvoiceTaxDetails = ({
         });
 
         const totalWithTax = Addition(totalTaxable, totalTax);
-        const roundedTotal = Math.round(totalWithTax);
-        const roundOff = RoundNumber(roundedTotal - totalWithTax);
+        const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
+        const roundedTotal = Math.round(totalWithExpenses);
+        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
 
         const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
         const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
@@ -81,7 +80,14 @@ const SalesInvoiceTaxDetails = ({
             invoiceTotal: roundedTotal
         };
 
-    }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive]);
+    }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
+
+    // Update invoiceInfo when roundOff changes
+    useMemo(() => {
+        if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
+            setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
+        }
+    }, [taxSplitUp.roundOff]);
 
     return (
         <>
@@ -129,11 +135,13 @@ const SalesInvoiceTaxDetails = ({
                         <td className="border p-2">Round Off</td>
                         <td className="border p-0">
                             <input
-                                value={invoiceInfo.Round_off}
-                                defaultValue={taxSplitUp.roundOff}
+                                value={invoiceInfo.Round_off || taxSplitUp.roundOff || 0}
                                 className="cus-inpt p-2 m-0 border-0"
                                 onInput={onlynumAndNegative}
-                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Round_off: e.target.value }))}
+                                onChange={e => setInvoiceInfo(pre => ({ 
+                                    ...pre, 
+                                    Round_off: parseFloat(e.target.value) || 0 
+                                }))}
                             />
                         </td>
                     </tr>
@@ -143,7 +151,6 @@ const SalesInvoiceTaxDetails = ({
                             {NumberFormat(Math.round(Total_Invoice_value))}
                         </td>
                     </tr>
-
                 </tbody>
             </table>
         </>
