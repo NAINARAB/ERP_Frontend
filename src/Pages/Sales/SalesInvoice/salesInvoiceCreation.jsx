@@ -170,7 +170,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         setStaffArray([]);
     }
 
-    // re-calculate the tax after changeing tax-type, invoice-type
     useEffect(() => {
         setInvoiceProduct(pre => {
             const exist = [...pre];
@@ -285,6 +284,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             );
         }
     }, [editValues])
+
 
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
@@ -404,6 +404,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                             && checkIsNumber(invoiceInfo.So_No))
                                     }
                                 >Add Product</Button>
+
 
                                 <AddProductsInSalesInvoice
                                     loadingOn={loadingOn}

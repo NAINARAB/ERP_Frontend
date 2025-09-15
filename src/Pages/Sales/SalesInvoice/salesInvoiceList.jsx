@@ -237,7 +237,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 startIcon={<Add />}
                                 onClick={() => navigate('create')}
                             >
-                                {'New'}
+                               NEW
                             </Button>
                         )}
                         {AddRights && (

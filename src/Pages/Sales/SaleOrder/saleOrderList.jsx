@@ -9,7 +9,7 @@ import { convertedStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate } from "react-router-dom";
-
+import NoteIcon from '@mui/icons-material/Note';
 const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const defaultFilters = {
@@ -30,6 +30,10 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
     const [users, setUsers] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
+  const [receiptOrder, setReceiptOrder] = useState(false);
+const [receiptData, setReceiptData] = useState([]);
+const [loading, setLoading] = useState(false);
+
 
     const [filters, setFilters] = useState(defaultFilters);
 
@@ -162,6 +166,27 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         )
     }
 
+
+const InvoicePendingData = async (row) => {
+  setLoading(true);
+  try {
+    const res = await fetchLink({
+      address: `/sales/salesInvoice/Details?So_Id=${row?.So_Id}`
+    });
+
+    if (res?.success) {
+      setReceiptData(res.data); // store API response data
+    } else {
+      console.error("Failed to fetch invoice details:", res?.message);
+    }
+  } catch (err) {
+    console.error("Error fetching receipts:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
     const closeDialog = () => {
         setDialog({
             ...dialog,
@@ -222,7 +247,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             <Visibility className="fa-16" />
                                         </IconButton>
                                     </Tooltip>
-
+                                  
                                     {EditRights && (
                                         <Tooltip title='Edit'>
                                             <IconButton
@@ -238,8 +263,18 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             </IconButton>
                                         </Tooltip>
                                     )}
-
-                                </>
+<Tooltip title="View Receipts">
+  <IconButton
+    onClick={() => {
+      setReceiptOrder(true);   // open dialog
+      setLoading(true);        // show loader
+      InvoicePendingData(row); // fetch data once
+    }}
+  >
+    <NoteIcon />
+  </IconButton>
+</Tooltip>
+                </>
                             )
                         },
                     },
@@ -437,6 +472,96 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     >Search</Button>
                 </DialogActions>
             </Dialog>
+
+
+
+<Dialog
+  open={receiptOrder}
+  onClose={() => setReceiptOrder(false)}
+  maxWidth="lg"
+  fullWidth
+>
+  <DialogTitle>Order Details</DialogTitle>
+  <DialogContent dividers>
+    {loading ? (
+      <p>Loading...</p>
+    ) : receiptData ? (
+      <>
+        {/* Receipts Section */}
+        {receiptData?.Receipts?.length > 0 && (
+          <>
+            <h3 className="font-bold mb-2">Receipts</h3>
+            <table className="table-auto w-full border mb-4">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">Receipt No</th>
+                  <th className="border px-2 py-1">Amount</th>
+                  <th className="border px-2 py-1">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receiptData.Receipts.map((r, i) => (
+                  <tr key={i}>
+                    <td className="border px-2 py-1">{r.Receipt_No}</td>
+                    <td className="border px-2 py-1">{r.Amount}</td>
+                    <td className="border px-2 py-1">{r.Receipt_Date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+
+        {/* Products Section */}
+        {receiptData?.Products_List?.length > 0 && (
+          <>
+            <h3 className="font-bold mb-2">Products</h3>
+            <table className="table-auto w-full border">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">Product</th>
+                  <th className="border px-2 py-1">Bill Qty</th>
+                  <th className="border px-2 py-1">Actual Qty</th>
+                  <th className="border px-2 py-1">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receiptData.Products_List.map((p, i) => {
+                  const status =
+                    Number(p.Bill_Qty) === Number(p.Act_Qty)
+                      ? "Completed"
+                      : "Pending";
+                  return (
+                    <tr key={i}>
+                      <td className="border px-2 py-1">{p.Product_Name}</td>
+                      <td className="border px-2 py-1">{p.Bill_Qty}</td>
+                      <td className="border px-2 py-1">{p.Act_Qty ?? "-"}</td>
+                      <td
+                        className={`border px-2 py-1 font-bold ${
+                          status === "Completed"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {status}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
+        )}
+      </>
+    ) : (
+      <p>No details found.</p>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setReceiptOrder(false)}>Close</Button>
+  </DialogActions>
+</Dialog>
+
 
         </>
     )
