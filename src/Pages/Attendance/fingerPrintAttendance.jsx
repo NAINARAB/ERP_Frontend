@@ -790,7 +790,7 @@ const handleOverallWithPunch = async () => {
     setLoading(true);
     try {
       const data = await fetchLink({
-        address: `masters/Employeedetails/dropDown?Company_id=${parseData.Company_id}`,
+        address: `masters/EmployeedetailsfingerPrint/dropDown?Company_id=${parseData.Company_id}`,
       });
       if (data.success) {
    
@@ -1077,7 +1077,7 @@ const fetchAttendanceData = async (From, EmpId) => {
     const companyId = storage?.Company_id;
 
     fetchLink({
-      address: `masters/Employeedetails/dropDown?Company_id=${companyId}`,
+      address: `masters/EmployeedetailsfingerPrint/dropDown?Company_id=${companyId}`,
       headers: {
         Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
       },
@@ -1289,7 +1289,7 @@ const handleViewChange = (newView) => {
     const companyId = storage?.Company_id;
 
     fetchLink({
-      address: `masters/Employeedetails/dropDown?Company_id=${companyId}`,
+      address: `masters/EmployeedetailsfingerPrint/dropDown?Company_id=${companyId}`,
       headers: {
         Authorization: `Bearer ${localStorage.getItem("Autheticate_Id")}`,
       },
