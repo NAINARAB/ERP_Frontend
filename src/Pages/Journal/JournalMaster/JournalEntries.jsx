@@ -14,10 +14,10 @@ const JournalEntriesPanel = ({
     totals = { sumOfDebit: 0, sumOfCredit: 0, diff: 0 },
 }) => {
 
-    const accountOptions = useMemo(
-        () => accountsList.map(a => ({ value: Number(a.Acc_Id), label: a.Account_name })),
-        [accountsList]
-    );
+    // const accountOptions = useMemo(
+    //     () => accountsList.map(a => ({ value: Number(a.Acc_Id), label: a.Account_name })),
+    //     [accountsList]
+    // );
 
     const debitLines = useMemo(
         () =>
@@ -103,7 +103,7 @@ const JournalEntriesPanel = ({
                         <LineCard
                             key={entry.LineId}
                             entry={entry}
-                            accountOptions={accountOptions}
+                            accountOptions={accountsList}
                             isOptionDisabled={(opt) => isOptionDisabledDr(opt, entry)}
                             updateLine={updateLine}
                             removeLine={removeLine}
@@ -124,7 +124,7 @@ const JournalEntriesPanel = ({
                         <LineCard
                             key={entry.LineId}
                             entry={entry}
-                            accountOptions={accountOptions}
+                            accountOptions={accountsList}
                             isOptionDisabled={(opt) => isOptionDisabledCr(opt, entry)}
                             updateLine={updateLine}
                             removeLine={removeLine}

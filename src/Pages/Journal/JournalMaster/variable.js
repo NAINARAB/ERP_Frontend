@@ -28,6 +28,7 @@ export const journalEntriesInfoIV = {
     JournalDate: '',
     Acc_Id: null,
     AccountGet: '',
+    isSundryParty: 0,
     DrCr: '',
     Amount: 0,
     Remarks: '',
@@ -47,6 +48,7 @@ export const journalBillReferenceIV = {
     RefId: '',
     RefNo: '',
     RefType: '',
+    BillRefNo: '',
     Amount: '',
 }
 

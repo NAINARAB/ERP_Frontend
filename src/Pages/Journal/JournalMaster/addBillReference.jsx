@@ -11,6 +11,7 @@ const BillRefDialog = ({
     journalBillReference,
     setJournalBillReference
 }) => {
+
     const LineId = line?.LineId;
     const Acc_Id = line?.Acc_Id;
     const DrCr = line?.DrCr;
@@ -38,20 +39,19 @@ const BillRefDialog = ({
             if (isChecked) {
                 return prev.filter((b) => !keyMatch(b, row));
             }
-            const existing = findExisting(prev, row);
-            const amountToKeep = existing?.Amount ?? 0;
             return [
                 ...prev.filter((b) => !keyMatch(b, row)),
                 {
                     ...journalBillReferenceIV,
-                    autoGenId: existing?.autoGenId || rid(),
+                    autoGenId: rid(),
                     LineId,
                     Acc_Id,
                     DrCr,
                     RefId: row.voucherId,
                     RefNo: row.voucherNumber,
                     RefType: row.actualSource,
-                    Amount: amountToKeep
+                    Amount: 0,
+                    BillRefNo: row?.BillRefNo || ''
                 }
             ];
         });
@@ -87,7 +87,7 @@ const BillRefDialog = ({
                             <thead>
                                 <tr>
                                     {[
-                                        "Sno", "Voucher-Number", "Date",
+                                        "Sno", "Voucher-Number", 'Voucher-Ref', "Date",
                                         "Source", "Dr/Cr", "Total", "Total Ref",
                                         "Journal", "Pay/Rec", "Pending", "#"
                                     ].map((c) => (
@@ -100,7 +100,13 @@ const BillRefDialog = ({
                                     const totalRef = Addition(row?.againstAmount, row?.journalAdjustment);
                                     const pending = Subraction(row?.totalValue, totalRef);
                                     const existing = findExisting(toArray(journalBillReference), row);
-                                    const checked = !!existing;
+                                    // const checked = !!existing;
+                                    const checked = journalBillReference.some(
+                                        (b) => (
+                                            b.RefNo === row.voucherNumber
+                                            && b.DrCr !== row?.accountSide
+                                        )
+                                    );
                                     const amountVal = checked ? (existing?.Amount ?? 0) : "";
                                     const canSelect = stringCompare(DrCr, row?.accountSide);
 
@@ -108,6 +114,7 @@ const BillRefDialog = ({
                                         <tr key={row.voucherNumber + "-" + i}>
                                             <td className="fa-12">{i + 1}</td>
                                             <td className="fa-12">{row?.voucherNumber}</td>
+                                            <td className="fa-12">{row?.BillRefNo}</td>
                                             <td className="fa-12">{row?.eventDate ? LocalDate(row?.eventDate) : "-"}</td>
                                             <td className="fa-12">{row?.actualSource}</td>
                                             <td className="fa-12">{row?.accountSide}</td>
@@ -144,7 +151,7 @@ const BillRefDialog = ({
                                 })}
                                 {pendingRefDetails.length === 0 && (
                                     <tr>
-                                        <td colSpan={11} className="text-center text-muted">
+                                        <td colSpan={12} className="text-center text-muted">
                                             No pending references.
                                         </td>
                                     </tr>

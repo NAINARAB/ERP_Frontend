@@ -44,7 +44,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         (async () => {
             try {
                 const [accountsRes, voucherRes, branchRes] = await Promise.all([
-                    fetchLink({ address: `payment/accounts` }),
+                    fetchLink({ address: `journal/accounts` }),
                     fetchLink({ address: `masters/voucher?module=JOURNAL` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
                 ]);
@@ -200,6 +200,8 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             console.error("Save journal error", e);
         });
     }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, loadingOn, loadingOff]);
+
+    console.log(journalEntriesInfo)
 
     return (
         <Card>
