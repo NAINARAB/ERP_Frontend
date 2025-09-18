@@ -49,7 +49,7 @@ function AccountMaster() {
     }, [reload]);
 
     useEffect(() => {
-        fetchLink({ address: `masters/account/dropdown` })
+        fetchLink({ address: `masters/accountGroup/dropdown` })
             .then((data) => {
                 if (data.success) setGroupList(data.data);
             })
@@ -279,7 +279,7 @@ function AccountMaster() {
                             fullWidth
                         >
                             {groupList.map((group) => (
-                                <MenuItem key={group.Value} value={group.Value}>
+                                <MenuItem key={group.value} value={group.value}>
                                     {group.label}
                                 </MenuItem>
                             ))}
@@ -340,7 +340,7 @@ function AccountMaster() {
                                     Select Group
                                 </MenuItem>
                                 {groupList.map((group) => (
-                                    <MenuItem key={group.Value} value={group.Value}>
+                                    <MenuItem key={group.value} value={group.value}>
                                         {group.label}
                                     </MenuItem>
                                 ))}

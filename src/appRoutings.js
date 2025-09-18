@@ -127,9 +127,14 @@ const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/Add
 const ArrivalMaster = lazy(() => import("./Pages/Inventry/TripMaster/arrivalMaster"));
 const BatchAssign = lazy(() => import("./Pages/Inventry/BatchManagement/batchAssign"));
 const BatchListing = lazy(() => import("./Pages/Inventry/BatchManagement/batchList"));
+const InventoryTrunoverReport = lazy(() => import("./Pages/Inventry/turnOverReport"));
+
+
+// Journal
+
 const JournalListing = lazy(() => import("./Pages/Journal/JournalMaster/journalList"));
 const JournalCreate = lazy(() => import("./Pages/Journal/JournalMaster/journalCreate"));
-const InventoryTrunoverReport = lazy(() => import("./Pages/Inventry/turnOverReport"))
+const AccountBalance = lazy(() => import("./Pages/Journal/JournalReport/accountBalance"))
 
 
 const DeliveryTripSheet = lazy(() => import("./Pages/Sales/TripMaster/DeliveryTripSheet"))
@@ -277,10 +282,11 @@ const RoutingArray = [
     { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
     { component: <BatchAssign />, path: '/erp/batchManagement/batchCreation' },
 
-    //ERP - BATCH MANAGEMENT
+    //ERP - Journal
     { component: <DisplayNavigations />, path: '/erp/journal' },
     { component: <JournalListing />, path: '/erp/journal/journalList' },
     { component: <JournalCreate />, path: '/erp/journal/journalList/create' },
+    { component: <AccountBalance />, path: '/erp/journal/accountBalance' },
 
     // ERP - reports
     { component: <TripReports />, path: '/erp/reports/tripReports' },

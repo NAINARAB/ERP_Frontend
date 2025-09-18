@@ -1,5 +1,3 @@
-// DestinationOfProcessing.jsx
-import { memo } from "react";
 import RequiredStar from "../../../../Components/requiredStar";
 import Select from "react-select";
 import { Button, IconButton } from "@mui/material";
@@ -12,6 +10,7 @@ import {
     isEqualNumber,
     Multiplication,
     onlynum,
+    rid,
 } from "../../../../Components/functions";
 import { initialDestinationValue } from "./variables";
 
@@ -24,15 +23,9 @@ const ProductionOfProcessing = ({
 }) => {
 
     const addRow = () => {
-        const _rowId =
-            (typeof crypto !== "undefined" &&
-                crypto.randomUUID &&
-                crypto.randomUUID()) ||
-            String(Date.now()) + Math.random().toString(36).slice(2);
-
         setDestinationList((prev) => [
             ...prev,
-            { _rowId, ...initialDestinationValue },
+            { _rowId: rid(), ...initialDestinationValue },
         ]);
     };
 

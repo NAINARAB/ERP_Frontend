@@ -62,7 +62,7 @@ function AccountingGroup() {
     useEffect(() => {
         const fetchGroupDropdown = async () => {
             try {
-                const data = await fetchLink({ address: `masters/account/dropdown` });
+                const data = await fetchLink({ address: `masters/accountGroup/dropdown` });
                 if (data.success) setGroupList(data.data);
             } catch (e) {
                 console.error(e);
@@ -338,7 +338,7 @@ function AccountingGroup() {
                                     <em>None</em>
                                 </MenuItem>
                                 {groupList.map((group) => (
-                                    <MenuItem key={group.Value} value={group.Value}>
+                                    <MenuItem key={group.value} value={group.value}>
                                         {group.label}
                                     </MenuItem>
                                 ))}
@@ -409,7 +409,7 @@ function AccountingGroup() {
                                     <em>None</em>
                                 </MenuItem>
                                 {groupList.map((group) => (
-                                    <MenuItem key={group.Value} value={group.Value}>
+                                    <MenuItem key={group.value} value={group.value}>
                                         {group.label}
                                     </MenuItem>
                                 ))}

@@ -33,7 +33,22 @@ const LineCard = memo(function LineCard({
                         value={selected}
                         options={accountOptions}
                         isOptionDisabled={(opt) => isOptionDisabled(opt, entry)}
-                        onChange={(opt) => updateLine(entry.LineId, { Acc_Id: !opt ? null : toNum(opt.value), AccountGet: !opt ? "" : opt.label })}
+                        onChange={(opt) => {
+
+                            const isSundryParty = (accountOptions.find(
+                                ac => isEqualNumber(ac?.value, opt?.value)) || {}
+                            )?.isSundryParty;
+
+                            updateLine(
+                                entry.LineId, 
+                                { 
+                                    Acc_Id: !opt ? null : toNum(opt.value), 
+                                    AccountGet: !opt ? "" : opt.label,
+                                    isSundryParty: isSundryParty ? 1 : 0
+                                }
+                            );
+
+                        }}
                         isClearable
                         isSearchable
                         styles={customSelectStyles}

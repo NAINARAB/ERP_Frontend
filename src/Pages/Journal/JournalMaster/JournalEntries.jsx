@@ -14,21 +14,24 @@ const JournalEntriesPanel = ({
     totals = { sumOfDebit: 0, sumOfCredit: 0, diff: 0 },
 }) => {
 
-    const accountOptions = useMemo(
-        () => accountsList.map(a => ({ value: Number(a.Acc_Id), label: a.Account_name })),
-        [accountsList]
-    );
+    // const accountOptions = useMemo(
+    //     () => accountsList.map(a => ({ value: Number(a.Acc_Id), label: a.Account_name })),
+    //     [accountsList]
+    // );
 
     const debitLines = useMemo(
         () =>
             journalEntriesInfo
                 .filter((e) => e.DrCr === "Dr")
-                .map((line) => ({
-                    ...line,
-                    Entries: journalBillReference.filter(
-                        (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
-                    ),
-                })),
+                .map((line) => {
+
+                    return {
+                        ...line,
+                        Entries: journalBillReference.filter(
+                            (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
+                        ),
+                    }
+                }),
         [journalEntriesInfo, journalBillReference]
     );
 
@@ -100,7 +103,7 @@ const JournalEntriesPanel = ({
                         <LineCard
                             key={entry.LineId}
                             entry={entry}
-                            accountOptions={accountOptions}
+                            accountOptions={accountsList}
                             isOptionDisabled={(opt) => isOptionDisabledDr(opt, entry)}
                             updateLine={updateLine}
                             removeLine={removeLine}
@@ -121,7 +124,7 @@ const JournalEntriesPanel = ({
                         <LineCard
                             key={entry.LineId}
                             entry={entry}
-                            accountOptions={accountOptions}
+                            accountOptions={accountsList}
                             isOptionDisabled={(opt) => isOptionDisabledCr(opt, entry)}
                             updateLine={updateLine}
                             removeLine={removeLine}

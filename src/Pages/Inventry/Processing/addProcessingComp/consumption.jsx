@@ -2,7 +2,7 @@ import RequiredStar from '../../../../Components/requiredStar';
 import { initialSoruceValue } from './variables'
 import Select from 'react-select';
 import { customSelectStyles } from "../../../../Components/tablecolumn";
-import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, toNumber } from '../../../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, rid, toNumber } from '../../../../Components/functions';
 import { Button, IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { memo, useEffect } from 'react';
@@ -215,7 +215,7 @@ const ConsumptionOfProcessing = ({
     const addRow = () => {
         setSourceList(prev => [
             ...prev,
-            { _rowId: crypto.randomUUID(), ...initialSoruceValue }
+            { _rowId: rid(), ...initialSoruceValue }
         ]);
     }
 

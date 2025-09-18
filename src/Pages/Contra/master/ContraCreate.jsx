@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { contraIV, contraStatus } from "./contraVariables";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, toArray } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent } from "@mui/material";
@@ -21,7 +21,8 @@ const ContraScreen = ({
     const [baseData, setBaseData] = useState({
         accountsList: [],
         voucherType: [],
-        branch: []
+        branch: [],
+        bankMaster: []
     });
 
     useEffect(() => {
@@ -32,6 +33,7 @@ const ContraScreen = ({
                 Object.fromEntries(
                     Object.entries(contraIV).map(([key, value]) => {
                         if (key === 'ContraDate') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        if (key === 'BankDate') return [key, editValues[key] ? ISOString(editValues[key]) : value]
                         return [key, editValues[key] ?? value]
                     })
                 )
@@ -46,11 +48,13 @@ const ContraScreen = ({
                 const [
                     accountsResponse,
                     voucherTypeResponse,
-                    branchRes
+                    branchRes,
+                    banksMaster
                 ] = await Promise.all([
                     fetchLink({ address: `masters/accountMaster/groupFilter?recursiveGroup=11,21,22` }),
                     fetchLink({ address: `masters/voucher?module=CONTRA` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
+                    fetchLink({ address: `masters/defaultBanks` }),
                 ]);
 
                 const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
@@ -62,11 +66,14 @@ const ContraScreen = ({
                 const branch = (branchRes.success ? branchRes.data : [])
                     .sort((a, b) => String(a?.BranchName).localeCompare(b?.BranchName));
 
+                const bank = toArray(banksMaster?.data);
+
                 setBaseData((pre) => ({
                     ...pre,
                     accountsList: accountsList,
                     voucherType: voucherType,
-                    branch: branch
+                    branch: branch,
+                    bankMaster: bank
                 }));
 
             } catch (e) {
@@ -107,7 +114,7 @@ const ContraScreen = ({
 
                 if (data?.ContraAutoId) {
                     navigate('/erp/contra/contraList');
-                } 
+                }
             } else {
                 toast.error(res.message);
             }
@@ -281,6 +288,37 @@ const ContraScreen = ({
                                 value={data.Amount || ''}
                                 onInput={onlynum}
                                 onChange={(e) => change("Amount", e.target.value)}
+                            />
+                        </div>
+
+                        {/* bank name */}
+                        <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label>Bank Name</label>
+                            <Select
+                                placeholder="Select debit account"
+                                value={{ value: data.BankName, label: data.BankName }}
+                                options={toArray(baseData.bankMaster).map(
+                                    bank => ({ value: bank?.label, label: bank?.label })
+                                )}
+                                onChange={(opt) => setData((p) => ({
+                                    ...p,
+                                    BankName: !opt ? "" : opt.value
+                                }))}
+                                isClearable
+                                isSearchable
+                                styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
+                                menuPortalTarget={document.body}
+                            />
+                        </div>
+
+                        {/* bank Date */}
+                        <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label>Bank Date</label>
+                            <input
+                                type="date"
+                                className="cus-inpt p-2"
+                                value={data?.BankDate || ''}
+                                onChange={(e) => change("BankDate", e.target.value)}
                             />
                         </div>
 
