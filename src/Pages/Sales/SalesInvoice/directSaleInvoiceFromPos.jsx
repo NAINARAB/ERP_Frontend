@@ -877,8 +877,9 @@ const storage = getSessionUser().user;
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 
-const DirectSaleInvoiceModal = ({ loadingOn, loadingOff, open, onClose, editValues }) => {
-console.log("Editvalues",editValues)
+const DirectSaleInvoiceModal = ({ loadingOn, loadingOff, open, onClose, editValues,defaultValues }) => {
+console.log("defaultValues",defaultValues)
+console.log("editValues",editValues)
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -1285,13 +1286,24 @@ const saveSalesInvoice = () => {
         Involved_Emp_Id: staff.Involved_Emp_Id,
         Cost_Center_Type_Id: staff.Cost_Center_Type_Id
     }));
-     console.log("invoiceinfo",invoiceInfo)
+   
+//   console.log("npdudata", {
+//     ...defaultValues,
+//     ...invoiceInfo,
+//     Pre_Id: invoiceInfo.Do_Id,
+//     Product_Array: invoiceProducts,
+//     staff_Involved_List: staff_Involved_List,
+//     Expence_Array: invoiceExpences,
+//     transactionType: "both"
+// });
+
 
     fetchLink({
         address: `sales/salesOrderSalesInvoice`,
-        // method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
+        method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
         method:'POST',
         bodyData: {
+            ...defaultValues,
             ...invoiceInfo,
             Pre_Id:invoiceInfo.Do_Id,
             Product_Array: invoiceProducts,
@@ -1300,6 +1312,7 @@ const saveSalesInvoice = () => {
             transactionType:'both'
         }
     }).then(data => {
+        console.log("data",data)
         if (data.success) {
             clearValues();
             toast.success(data.message);
@@ -1546,7 +1559,6 @@ export default DirectSaleInvoiceModal;
 
 const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costCategory = [] }) => {
 
-    // Function to get category ID from category name
     const getCategoryIdFromName = (categoryName) => {
         const category = costCategory.find(cat => 
             stringCompare(cat.Cost_Category, categoryName)
@@ -1554,7 +1566,6 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
         return category?.Cost_Category_Id || '';
     };
 
-    // Function to get category name from ID
     const getCategoryNameFromId = (categoryId) => {
         const category = costCategory.find(cat => 
             isEqualNumber(cat.Cost_Category_Id, categoryId)
