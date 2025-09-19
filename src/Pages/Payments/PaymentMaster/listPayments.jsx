@@ -109,7 +109,9 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
         }).catch(e => console.error(e))
     }, [sessionValue, pageID]);
 
-    const TotalPayment = useMemo(() => paymentData.reduce(
+    const TotalPayment = useMemo(() => paymentData.filter(
+        rec => !isEqualNumber(rec.status, 0)
+    ).reduce(
         (acc, orders) => Addition(acc, orders?.debit_amount), 0
     ), [paymentData]);
 

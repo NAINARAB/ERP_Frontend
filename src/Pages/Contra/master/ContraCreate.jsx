@@ -7,6 +7,7 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
+import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 
 
 const ContraScreen = ({
@@ -32,9 +33,11 @@ const ContraScreen = ({
             setData(
                 Object.fromEntries(
                     Object.entries(contraIV).map(([key, value]) => {
-                        if (key === 'ContraDate') return [key, editValues[key] ? ISOString(editValues[key]) : value]
-                        if (key === 'BankDate') return [key, editValues[key] ? ISOString(editValues[key]) : value]
-                        return [key, editValues[key] ?? value]
+                        if (key === 'ContraDate' || key === 'BankDate' || key === 'ChequeDate') return [
+                            key, 
+                            editValues[key] ? ISOString(editValues[key]) : value
+                        ];
+                        return [key, editValues[key] ?? value];
                     })
                 )
             );
@@ -89,7 +92,7 @@ const ContraScreen = ({
         const okDr = checkIsNumber(data.DebitAccount) && data.DebitAccount !== 0;
         const okCr = checkIsNumber(data.CreditAccount) && data.CreditAccount !== 0;
         const notSame = okDr && okCr && Number(data.DebitAccount) !== Number(data.CreditAccount);
-        return okDr && okCr && notSame && data.ContraDate && data.BranchId && data.VoucherType !== "";
+        return okDr && okCr && notSame && data.ContraDate && data.BranchId && data.VoucherType !== "" && data.TransactionType;
     }, [data]);
 
     const clear = () => {
@@ -291,8 +294,25 @@ const ContraScreen = ({
                             />
                         </div>
 
-                        {/* bank name */}
+                        {/* Transaction Type */}
                         <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label>Transaction Type</label>
+                            <select
+                                value={data.TransactionType || ''}
+                                onChange={e => change('TransactionType', e.target.value)}
+                                className="cus-inpt p-2"
+                                required
+                            >
+                                {transactionTypes.map((type, ind) => (
+                                    <option value={type.value} key={ind}>{type.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="col-12"></div>
+
+                        {/* bank name */}
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label>Bank Name</label>
                             <Select
                                 placeholder="Select debit account"
@@ -312,13 +332,34 @@ const ContraScreen = ({
                         </div>
 
                         {/* bank Date */}
-                        <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
                             <label>Bank Date</label>
                             <input
                                 type="date"
                                 className="cus-inpt p-2"
                                 value={data?.BankDate || ''}
                                 onChange={(e) => change("BankDate", e.target.value)}
+                            />
+                        </div>
+
+                        {/* check number */}
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label>Cheque Number</label>
+                            <input
+                                className="cus-inpt p-2"
+                                value={data.Chequeno || ''}
+                                onChange={(e) => change("Chequeno", e.target.value)}
+                            />
+                        </div>
+
+                        {/* cheque Date */}
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label>Cheque Date</label>
+                            <input
+                                type="date"
+                                className="cus-inpt p-2"
+                                value={data?.ChequeDate || ''}
+                                onChange={(e) => change("ChequeDate", e.target.value)}
                             />
                         </div>
 

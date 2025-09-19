@@ -253,6 +253,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                     line={refModal.line}
                     journalBillReference={journalBillReference}
                     setJournalBillReference={setJournalBillReference}
+                    JournalAutoId={journalGeneralInfo?.JournalAutoId || ''}
                 />
             </CardContent>
         </Card>

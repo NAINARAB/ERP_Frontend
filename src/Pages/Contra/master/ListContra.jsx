@@ -143,7 +143,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
     return (
         <>
             <FilterableTable
-                title='Payments'
+                title='Contra'
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 ButtonArea={

@@ -112,7 +112,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
     }, [sessionValue, pageID]);
 
     const TotalReceipt = useMemo(() => receiptData.filter(
-        rec => !isEqualNumber(rec.receipt_bill_type, 0)
+        rec => !isEqualNumber(rec.status, 0)
     ).reduce(
         (acc, orders) => Addition(acc, orders?.credit_amount), 0
     ), [receiptData]);

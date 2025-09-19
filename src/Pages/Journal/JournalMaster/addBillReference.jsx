@@ -9,7 +9,8 @@ const BillRefDialog = ({
     onClose,
     line,
     journalBillReference,
-    setJournalBillReference
+    setJournalBillReference,
+    JournalAutoId
 }) => {
 
     const LineId = line?.LineId;
@@ -21,10 +22,10 @@ const BillRefDialog = ({
     useEffect(() => {
         if (!open || !checkIsNumber(Acc_Id)) return;
         setPendingRefDetails([]);
-        fetchLink({ address: `journal/accountPendingReference?Acc_Id=${Acc_Id}` })
+        fetchLink({ address: `journal/accountPendingReference?Acc_Id=${Acc_Id}&JournalAutoId=${JournalAutoId}` })
             .then((data) => setPendingRefDetails(data?.success ? data.data : []))
             .catch(() => setPendingRefDetails([]));
-    }, [open, Acc_Id]);
+    }, [open, Acc_Id, JournalAutoId]);
 
     const keyMatch = (b, row) =>
         b.LineId === LineId &&
@@ -47,10 +48,10 @@ const BillRefDialog = ({
                     LineId,
                     Acc_Id,
                     DrCr,
-                    RefId: row.voucherId,
-                    RefNo: row.voucherNumber,
-                    RefType: row.actualSource,
-                    Amount: 0,
+                    RefId: row?.voucherId,
+                    RefNo: row?.voucherNumber,
+                    RefType: row?.actualSource,
+                    Amount: row?.pending || 0,
                     BillRefNo: row?.BillRefNo || ''
                 }
             ];
@@ -108,7 +109,7 @@ const BillRefDialog = ({
                                         )
                                     );
                                     const amountVal = checked ? (existing?.Amount ?? 0) : "";
-                                    const canSelect = stringCompare(DrCr, row?.accountSide);
+                                    const canSelect = !stringCompare(DrCr, row?.accountSide);
 
                                     return (
                                         <tr key={row.voucherNumber + "-" + i}>
@@ -126,23 +127,23 @@ const BillRefDialog = ({
                                             <td className="p-0">
                                                 <div className="d-flex align-items-center">
                                                     <input
-                                                        className={`form-check-input shadow-none pointer mx-2 ${!canSelect ? ' border-primary ' : ''}`}
+                                                        className={`form-check-input shadow-none pointer mx-2 ${canSelect && ' border-primary '}`}
                                                         style={{ padding: "0.7em" }}
                                                         type="checkbox"
                                                         checked={checked}
-                                                        onChange={() => toggleRef(row, checked)}
-                                                        disabled={canSelect}
+                                                        onChange={() => toggleRef({ ...row, pending }, checked)}
+                                                        disabled={!canSelect}
                                                     />
                                                     <input
                                                         type="number"
-                                                        min="0"
+                                                        min={0}
                                                         step="0.01"
                                                         max={pending}
                                                         value={amountVal ? amountVal : ''}
                                                         onInput={onlynum}
                                                         onChange={(e) => changeAmount(row, e.target.value)}
                                                         className="cus-inpt p-2"
-                                                        disabled={!checked}
+                                                        disabled={!checked || !canSelect}
                                                     />
                                                 </div>
                                             </td>
