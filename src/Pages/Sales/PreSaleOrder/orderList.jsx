@@ -555,71 +555,157 @@ const OrderList = ({ loadingOn, loadingOff }) => {
     const [data, setData] = useState([]);
     const [load, setLoad] = useState(false)
     const [isLoading, setIsLoading] = useState(false);
-    const [modalOpen, setModalOpen] = useState(false); // State for modal visibility
-    const [selectedOrder, setSelectedOrder] = useState(null); // State for selected order data
+    const [modalOpen, setModalOpen] = useState(false); 
+    const [selectedOrder, setSelectedOrder] = useState(null); 
  const navigate = useNavigate();
 
 
 
 
- const buildSaleOrderPayload = (data) => {
+//  const buildSaleOrderPayload = (data) => {
   
-    const extractWeightFromName = (name) => {
-        const match = name?.match(/(\d+)\s?kg/i);
-        return match ? parseInt(match[1]) : 1;
-    };
+//     const extractWeightFromName = (name) => {
+//         const match = name?.match(/(\d+)\s?kg/i);
+//         return match ? parseInt(match[1]) : 1;
+//     };
 
-    const validProducts = Array.isArray(data.ProductList)
-        ? data.ProductList
-            .filter(p => isGraterNumber(p?.Bill_Qty, 0))
-            .map(p => {
-                const weight = extractWeightFromName(p?.Product_Name);
-                return {
-                    ...p,
-                    Pre_Id: data?.Pre_Id,
-                    Bill_Qty: weight * p?.Bill_Qty,
-                    Total_Qty: p?.Bill_Qty
-                };
-            })
-        : [];
+//     const validProducts = Array.isArray(data.ProductList)
+//         ? data.ProductList
+//             .filter(p => isGraterNumber(p?.Bill_Qty, 0))
+//             .map(p => {
+//                 const weight = extractWeightFromName(p?.Product_Name);
+//                 return {
+//                     ...p,
+//                     Pre_Id: data?.Pre_Id,
+//                     Bill_Qty: weight * p?.Bill_Qty,
+//                     Total_Qty: p?.Bill_Qty
+//                 };
+//             })
+//         : [];
 
   
-    const transformStaffData = (orderData) => {
-        const staffs = [];
-        if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
-            staffs.push({
-                Id: "",
-                So_Id: "",
-                Emp_Id: orderData.Broker_Id,
-                Emp_Type_Id: orderData.Broker_Type || 0 
-            });
-        }
-        if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
-            staffs.push({
-                Id: "",
-                Do_Id: "",
-                Emp_Id: orderData.Transporter_Id,
-                Emp_Type_Id: orderData.TrasnportType || 0  
-            });
-        }
-        return staffs.filter(staff => staff.Emp_Type_Id !== 0);  
-    };
+//     const transformStaffData = (orderData) => {
+//         const staffs = [];
+//         if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+//             staffs.push({
+//                 Id: "",
+//                 So_Id: "",
+//                 Emp_Id: orderData.Broker_Id,
+//                 Emp_Type_Id: orderData.Broker_Type || 0 
+//             });
+//         }
+//         if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+//             staffs.push({
+//                 Id: "",
+//                 Do_Id: "",
+//                 Emp_Id: orderData.Transporter_Id,
+//                 Emp_Type_Id: orderData.TrasnportType || 0  
+//             });
+//         }
+//         return staffs.filter(staff => staff.Emp_Type_Id !== 0);  
+//     };
 
-    return {
-        ...data,
-        Product_Array: validProducts,
-        Retailer_Id: data?.Custome_Id,
-        Staffs_Array: transformStaffData(data)
-    };
+//     return {
+//         ...data,
+//         Product_Array: validProducts,
+//         Retailer_Id: data?.Custome_Id,
+//         Staffs_Array: transformStaffData(data)
+//     };
+// };
+
+const buildSaleOrderPayload = (data) => {
+  const extractWeightFromName = (name) => {
+    const match = name?.match(/(\d+)\s?kg/i);
+    return match ? parseInt(match[1]) : 1;
+  };
+
+  const validProducts = Array.isArray(data.ProductList)
+    ? data.ProductList
+        .filter(p => isGraterNumber(p?.Bill_Qty, 0))
+        .map(p => {
+          const weight = extractWeightFromName(p?.Product_Name);
+          const actQty = Number(p?.Bill_Qty) || 0; 
+          const packValue = Number(p?.PackValue) || 1;
+
+          return {
+            ...p,
+            Pre_Id: data?.Pos_Id,
+            Act_Qty: actQty, 
+            Bill_Qty: actQty * packValue, 
+            Total_Qty: actQty, 
+            Amount: actQty * (Number(p?.Item_Rate) || 0),
+          };
+        })
+    : [];
+
+  const transformStaffData = (orderData) => {
+    const staffs = [];
+    if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+      staffs.push({
+        Id: "",
+        So_Id: "",
+        Emp_Id: orderData.Broker_Id,
+        Emp_Type_Id: orderData.Broker_Type || 0,
+      });
+    }
+    if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+      staffs.push({
+        Id: "",
+        Do_Id: "",
+        Emp_Id: orderData.Transporter_Id,
+        Emp_Type_Id: orderData.TrasnportType || 0,
+      });
+    }
+    return staffs.filter(staff => staff.Emp_Type_Id !== 0);
+  };
+
+  return {
+    ...data,
+    Product_Array: validProducts,
+    Retailer_Id: data?.Custome_Id,
+    Staffs_Array: transformStaffData(data),
+  };
 };
 
-
-    const handleOpenModal = (row) => {
-    const payload = buildSaleOrderPayload(row);
-    setSelectedOrder({
-        row,      
-        payload   
+const handleOpenModal = (row) => {
+    
+    const updatedProducts = (row?.ProductList || []).map(p => {
+        const actQty = Number(p?.Bill_Qty) || 0;
+        const packValue = Number(p?.PackValue) || 1;
+        return {
+            ...p,
+            Act_Qty: actQty,
+            Bill_Qty: actQty * packValue,
+            Total_Qty: actQty,
+            Amount: actQty * packValue * (Number(p?.Item_Rate) || 0),
+        };
     });
+
+  
+    const updatedStaffs = (row?.Staff_Involved_List || []).map(item => ({
+        Emp_Id: item.Involved_Emp_Id,
+        Emp_Type_Id: item.Cost_Center_Type_Id,
+        Id: "",
+        So_Id: "",
+    }));
+
+  
+    const retailerId = row?.Custome_Id || row?.Retailer_Id || 0;
+
+    const updatedRow = {
+        ...row,
+        ProductList: updatedProducts,
+        Staffs_Array: updatedStaffs,
+        Retailer_Id: retailerId,
+    };
+
+    const payload = buildSaleOrderPayload(updatedRow);
+
+    setSelectedOrder({
+        row: updatedRow,
+        payload: payload,
+    });
+
     setModalOpen(true);
 };
 
@@ -758,7 +844,6 @@ useEffect(() => {
 const postSaleOrder = (data) => {
     loadingOn();
 
-    // Product processing remains the same
     const extractWeightFromName = (name) => {
         const match = name?.match(/(\d+)\s?kg/i);
         return match ? parseInt(match[1]) : 1;
@@ -1107,6 +1192,7 @@ const postSaleOrder = (data) => {
     defaultValues={selectedOrder?.payload} 
                 loadingOn={loadingOn}
                 loadingOff={loadingOff}
+                 transactionType="both" 
             />
         </>
     );
