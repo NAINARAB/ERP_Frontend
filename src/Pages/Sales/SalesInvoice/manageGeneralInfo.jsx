@@ -52,7 +52,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                     />
                 </div>
 
-                {/* voucher type */}
+               
                 <div className="col-sm-4 p-2">
                     <label className='fa-13'>Voucher Type</label>
                     <Select
@@ -75,7 +75,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                         required={true}
                         placeholder={"Select Voucher Type"}
                         maxMenuHeight={300}
-                       isDisabled={!!checkIsNumber(invoiceInfo?.Do_Id)}
+                    //   isDisabled={checkIsNumber(invoiceInfo?.Do_Id) || checkIsNumber(invoiceInfo?.Pre_Id)}
+
                     />
                 </div>
 
