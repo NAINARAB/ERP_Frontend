@@ -10,6 +10,10 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate } from "react-router-dom";
 import NoteIcon from '@mui/icons-material/Note';
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+import DirectSaleInvoiceFromPos from "../SalesInvoice/directSaleInvoiceFromPos";
+import { isGraterNumber } from "../../../Components/functions";
+
 const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const defaultFilters = {
@@ -19,7 +23,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         CreatedBy: { value: '', label: 'ALL' },
         SalesPerson: { value: '', label: 'ALL' },
         VoucherType: { value: '', label: 'ALL' },
-        Cancel_status: 0
+        Cancel_status: 0,
+         OrderStatus: { value: '', label: 'ALL' }
     };
 
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -30,11 +35,12 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
     const [users, setUsers] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
-  const [receiptOrder, setReceiptOrder] = useState(false);
-const [receiptData, setReceiptData] = useState([]);
+//   const [receiptOrder, setReceiptOrder] = useState(false);
+// const [receiptData, setReceiptData] = useState([]);
 const [loading, setLoading] = useState(false);
 
-
+const [selectedOrder, setSelectedOrder] = useState(null);
+const [modalOpen, setModalOpen] = useState(false);
     const [filters, setFilters] = useState(defaultFilters);
 
     const [dialog, setDialog] = useState({
@@ -51,17 +57,125 @@ const [loading, setLoading] = useState(false);
             CreatedBy = defaultFilters.CreatedBy,
             SalesPerson = defaultFilters.SalesPerson,
             VoucherType = defaultFilters.VoucherType,
-            Cancel_status = defaultFilters.Cancel_status
+            Cancel_status = defaultFilters.Cancel_status,
+              OrderStatus = defaultFilters.OrderStatus // NEW
         } = otherSessionFiler;
 
         setFilters(pre => ({
             ...pre,
             Fromdate, Todate,
             Retailer, CreatedBy, SalesPerson,
-            VoucherType, Cancel_status
+            VoucherType, Cancel_status,
+            OrderStatus
         }));
 
     }, [sessionValue, pageID]);
+
+const handleOpenModal = (row) => {
+  // Build payload in Pre-Sale style format
+  const payload = buildSaleOrderPayload(row);
+
+  // Normalize staff array (always ensure it exists)
+  const normalizedPayload = {
+    ...payload,
+    Staffs_Array: payload?.Staffs_Array || [],
+  };
+
+  setSelectedOrder({
+    row,
+    payload: normalizedPayload,
+  });
+
+  setModalOpen(true);
+};
+
+const handleCloseModal = () => {
+  setModalOpen(false);
+  setSelectedOrder(null);
+};
+
+const buildSaleOrderPayload = (data) => {
+  // Extract weight from product name (e.g., "2kg Chips" → 2)
+  const extractWeightFromName = (name) => {
+    const match = name?.match(/(\d+)\s?kg/i);
+    return match ? parseInt(match[1]) : 1;
+  };
+
+  // Convert Products_List → Product_Array
+  const validProducts = Array.isArray(data.ProductList)
+    ? data.ProductList
+        .filter((p) => isGraterNumber(p?.Bill_Qty, 0))
+        .map((p) => {
+          const weight = extractWeightFromName(p?.Product_Name);
+          return {
+            ...p,
+            Pre_Id: data?.Pre_Id,
+            Bill_Qty: weight * p?.Bill_Qty,
+            Total_Qty: p?.Bill_Qty,
+          };
+        })
+    : [];
+
+  // Convert Staff_Involved_List → Staffs_Array
+  const transformStaffData = (orderData) => {
+    const staffs = [];
+
+    // Broker
+    if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+      staffs.push({
+        Id: "",
+        So_Id: "",
+        Emp_Id: orderData.Broker_Id,
+        Emp_Type_Id: orderData.Broker_Type || 0,
+      });
+    }
+
+    // Transporter
+    if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+      staffs.push({
+        Id: "",
+        Do_Id: "",
+        Emp_Id: orderData.Transporter_Id,
+        Emp_Type_Id: orderData.TrasnportType || 0,
+      });
+    }
+
+    return staffs.filter((s) => s.Emp_Type_Id !== 0);
+  };
+
+  // Return normalized Pre-Sale invoice format
+  return {
+    Pre_Id: data?.Pre_Id ?? data?.So_Id ?? null,
+    Pos_Id: data?.So_Branch_Inv_Id ?? null,
+    Pre_Date: data?.So_Date ?? data?.Pre_Date ?? null,
+
+    Custome_Id: data?.Retailer_Id ?? null,
+    Retailer_Id: data?.Retailer_Id ?? null,
+    Retailer_Name: data?.Retailer_Name ?? "",
+
+    Broker_Id: data?.Broker_Id ?? null,
+    Broker_Name: data?.Broker_Name ?? "",
+    Broker_Type: data?.Broker_Type ?? null,
+
+    Transporter_Id: data?.Transporter_Id ?? null,
+    Transporter_Name: data?.Transporter_Name ?? "",
+    TrasnportType: data?.TrasnportType ?? null,
+
+    ProductList: data?.ProductList ?? [],
+    Product_Array: validProducts,
+
+    Staffs_Array: transformStaffData(data),
+
+    Total_Invoice_value: data?.Total_Invoice_value ?? 0,
+    Status: data?.OrderStatus ?? data?.Status ?? "Pending",
+
+    Trans_Type: data?.Trans_Type ?? null,
+    Created_by: data?.Created_by ?? "0",
+    Created_on: data?.Created_on ?? null,
+    isConverted: data?.isConverted ?? 0,
+  };
+};
+
 
     useEffect(() => {
 
@@ -118,7 +232,8 @@ const [loading, setLoading] = useState(false);
             Sales_Person_Id=${SalesPerson?.value}&
             Created_by=${CreatedBy?.value}&
             VoucherType=${VoucherType?.value}&
-            Cancel_status=${Cancel_status}`,
+            Cancel_status=${Cancel_status}&
+            OrderStatus=${filters?.OrderStatus?.value || ''}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -128,63 +243,74 @@ const [loading, setLoading] = useState(false);
 
     }, [sessionValue, pageID]);
 
-    const ExpendableComponent = ({ row }) => {
+ 
+const ExpendableComponent = ({ row, handleOpenModal }) => {
+  const getDeliveredQty = (product) => {
+    let deliveredQty = 0;
 
-        return (
-            <>
-                <table className="table">
-                    <tbody>
-                        <tr>
-                            <td className="border p-2 bg-light">Branch</td>
-                            <td className="border p-2">{row.Branch_Name}</td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
-                            <td className="border p-2 bg-light">Round off</td>
-                            <td className="border p-2">{row.Round_off}</td>
-                        </tr>
-                        <tr>
-                            <td className="border p-2 bg-light">Invoice Type</td>
-                            <td className="border p-2">
-                                {isEqualNumber(row.GST_Inclusive, 1) && 'Inclusive'}
-                                {isEqualNumber(row.GST_Inclusive, 0) && 'Exclusive'}
-                            </td>
-                            <td className="border p-2 bg-light">Tax Type</td>
-                            <td className="border p-2">
-                                {isEqualNumber(row.IS_IGST, 1) && 'IGST'}
-                                {isEqualNumber(row.IS_IGST, 0) && 'GST'}
-                            </td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
-                        </tr>
-                        <tr>
-                            <td className="border p-2 bg-light">Narration</td>
-                            <td className="border p-2" colSpan={5}>{row.Narration}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </>
-        )
+    if (row.ConvertedInvoice?.length > 0) {
+      row.ConvertedInvoice.forEach((invoice) => {
+        if (invoice.InvoicedProducts?.length > 0) {
+          invoice.InvoicedProducts.forEach((ip) => {
+            if (Number(ip.Item_Id) === Number(product.Item_Id)) {
+              deliveredQty += Number(ip.Bill_Qty || 0);
+            }
+          });
+        }
+      });
     }
+    return deliveredQty;
+  };
 
+  const hasPending = row.Products_List?.some((product) => {
+    const deliveredQty = getDeliveredQty(product);
+    return Number(product.Bill_Qty) - deliveredQty > 0;
+  });
 
-const InvoicePendingData = async (row) => {
-  setLoading(true);
-  try {
-    const res = await fetchLink({
-      address: `/sales/salesInvoice/Details?So_Id=${row?.So_Id}`
-    });
+  return (
+    <>
+      <table className="table table-bordered">
+        <thead className="bg-light">
+          <tr>
+            <th className="p-2">Product</th>
+            <th className="p-2">Ordered Qty</th>
+            <th className="p-2">Delivered Qty</th>
+            <th className="p-2">
+              Pending Qty
+              {hasPending && (
+                <IconButton size="small" onClick={() => handleOpenModal(row)}>
+                  <ArrowOutwardIcon className="text-blue-600" />
+                </IconButton>
+              )}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {row.Products_List?.map((product, index) => {
+            const deliveredQty = getDeliveredQty(product);
+            const pendingQty = Number(product.Bill_Qty) - deliveredQty;
 
-    if (res?.success) {
-      setReceiptData(res.data); // store API response data
-    } else {
-      console.error("Failed to fetch invoice details:", res?.message);
-    }
-  } catch (err) {
-    console.error("Error fetching receipts:", err);
-  } finally {
-    setLoading(false);
-  }
+            return (
+              <tr key={index}>
+                <td className="p-2">{product.Product_Name}</td>
+                <td className="p-2">{product.Bill_Qty}</td>
+                <td className="p-2">{deliveredQty}</td>
+                <td
+                  className={`p-2 font-bold ${
+                    pendingQty === 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {pendingQty}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
+  );
 };
+
 
 
     const closeDialog = () => {
@@ -263,17 +389,7 @@ const InvoicePendingData = async (row) => {
                                             </IconButton>
                                         </Tooltip>
                                     )}
-<Tooltip title="View Receipts">
-  <IconButton
-    onClick={() => {
-      setReceiptOrder(true);   // open dialog
-      setLoading(true);        // show loader
-      InvoicePendingData(row); // fetch data once
-    }}
-  >
-    <NoteIcon />
-  </IconButton>
-</Tooltip>
+
                 </>
                             )
                         },
@@ -306,7 +422,9 @@ const InvoicePendingData = async (row) => {
                 // EnableSerialNumber={true}
                 isExpendable={true}
                 tableMaxHeight={550}
-                expandableComp={ExpendableComponent}
+              expandableComp={(props) => (
+    <ExpendableComponent {...props} handleOpenModal={handleOpenModal} />
+  )}
             />
 
             {Object.keys(viewOrder).length > 0 && (
@@ -447,6 +565,24 @@ const InvoicePendingData = async (row) => {
                                     </td>
                                 </tr>
 
+                                <tr>
+    <td style={{ verticalAlign: 'middle' }}>Order Status</td>
+    <td>
+        <Select
+            value={filters?.OrderStatus}
+            onChange={(e) => setFilters({ ...filters, OrderStatus: e })}
+            options={[
+                { value: '', label: 'ALL' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'completed', label: 'Completed' }
+            ]}
+            styles={customSelectStyles}
+            isSearchable={false}
+            placeholder={"Order Status"}
+        />
+    </td>
+</tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -464,7 +600,8 @@ const InvoicePendingData = async (row) => {
                                 CreatedBy: filters.CreatedBy,
                                 SalesPerson: filters.SalesPerson,
                                 VoucherType: filters.VoucherType,
-                                Cancel_status: filters.Cancel_status
+                                Cancel_status: filters.Cancel_status,
+                                OrderStatus: filters.OrderStatus
                             });
                         }}
                         startIcon={<Search />}
@@ -474,93 +611,17 @@ const InvoicePendingData = async (row) => {
             </Dialog>
 
 
+<DirectSaleInvoiceFromPos
+  open={modalOpen}
+  onClose={handleCloseModal}
+  editValues={selectedOrder?.row}         // original row (unchanged)
+  defaultValues={selectedOrder?.row}  // processed payload (with BillQty, ActQty, PendingQty)
+  loadingOn={loadingOn}
+  loadingOff={loadingOff}
+/>
 
-<Dialog
-  open={receiptOrder}
-  onClose={() => setReceiptOrder(false)}
-  maxWidth="lg"
-  fullWidth
->
-  <DialogTitle>Order Details</DialogTitle>
-  <DialogContent dividers>
-    {loading ? (
-      <p>Loading...</p>
-    ) : receiptData ? (
-      <>
-        {/* Receipts Section */}
-        {receiptData?.Receipts?.length > 0 && (
-          <>
-            <h3 className="font-bold mb-2">Receipts</h3>
-            <table className="table-auto w-full border mb-4">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1">Receipt No</th>
-                  <th className="border px-2 py-1">Amount</th>
-                  <th className="border px-2 py-1">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receiptData.Receipts.map((r, i) => (
-                  <tr key={i}>
-                    <td className="border px-2 py-1">{r.Receipt_No}</td>
-                    <td className="border px-2 py-1">{r.Amount}</td>
-                    <td className="border px-2 py-1">{r.Receipt_Date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
 
-        {/* Products Section */}
-        {receiptData?.Products_List?.length > 0 && (
-          <>
-            <h3 className="font-bold mb-2">Products</h3>
-            <table className="table-auto w-full border">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1">Product</th>
-                  <th className="border px-2 py-1">Bill Qty</th>
-                  <th className="border px-2 py-1">Actual Qty</th>
-                  <th className="border px-2 py-1">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receiptData.Products_List.map((p, i) => {
-                  const status =
-                    Number(p.Bill_Qty) === Number(p.Act_Qty)
-                      ? "Completed"
-                      : "Pending";
-                  return (
-                    <tr key={i}>
-                      <td className="border px-2 py-1">{p.Product_Name}</td>
-                      <td className="border px-2 py-1">{p.Bill_Qty}</td>
-                      <td className="border px-2 py-1">{p.Act_Qty ?? "-"}</td>
-                      <td
-                        className={`border px-2 py-1 font-bold ${
-                          status === "Completed"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {status}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
-        )}
-      </>
-    ) : (
-      <p>No details found.</p>
-    )}
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setReceiptOrder(false)}>Close</Button>
-  </DialogActions>
-</Dialog>
+
 
 
         </>
