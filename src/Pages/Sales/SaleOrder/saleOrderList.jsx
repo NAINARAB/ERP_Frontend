@@ -87,15 +87,68 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
   }, [sessionValue, pageID]);
 
 
- const buildSaleOrderPayload = (data) => {
+//  const buildSaleOrderPayload = (data) => {
 
-    const extractWeightFromName = (name) => {
-      const match = name?.match(/(\d+)\s?kg/i);
-      return match ? parseInt(match[1]) : 1;
-    };
+//     const extractWeightFromName = (name) => {
+//       const match = name?.match(/(\d+)\s?kg/i);
+//       return match ? parseInt(match[1]) : 1;
+//     };
 
-    const validProducts = Array.isArray(data.ProductList)
-      ? data.ProductList.filter((p) => Number(p?.Bill_Qty) > 0).map((p) => {
+//     const validProducts = Array.isArray(data.ProductList)
+//       ? data.ProductList.filter((p) => Number(p?.Bill_Qty) > 0).map((p) => {
+//           const weight = extractWeightFromName(p?.Product_Name);
+//           return {
+//             ...p,
+//             Pre_Id: data?.Pre_Id,
+//             Bill_Qty: (Number(p?.Bill_Qty) || 0) * (Number(p?.PackValue) || 1),
+//             Act_Qty: Number(p?.Total_Qty) || 0,
+//             Total_Qty: Number(p?.Bill_Qty) || 0,
+//           };
+//         })
+//       : [];
+
+//     const transformStaffData = (orderData) => {
+//       const staffs = [];
+//       if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+//         staffs.push({
+//           Id: "",
+//           So_Id: "",
+//           Emp_Id: orderData.Broker_Id,
+//           Emp_Type_Id: orderData.Broker_Type || 0,
+//         });
+//       }
+//       if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+//         staffs.push({
+//           Id: "",
+//           Do_Id: "",
+//           Emp_Id: orderData.Transporter_Id,
+//           Emp_Type_Id: orderData.TrasnportType || 0,
+//         });
+//       }
+//       return staffs.filter((s) => s.Emp_Type_Id !== 0);
+//     };
+
+//     return {
+//       ...data,
+//       Product_Array: validProducts,
+//       Retailer_Id: Number(data?.Retailer_Id) || 0, 
+//       Retailer_Name: data?.Retailer_Name || "",
+//       Staffs_Array: transformStaffData(data),
+//     };
+//   };
+
+
+const buildSaleOrderPayload = (data) => {
+  const extractWeightFromName = (name) => {
+    const match = name?.match(/(\d+)\s?kg/i);
+    return match ? parseInt(match[1]) : 1;
+  };
+
+  // Only include products with Bill_Qty > 0
+  const validProducts = Array.isArray(data.ProductList)
+    ? data.ProductList
+        .filter((p) => Number(p?.Bill_Qty) > 0) // Remove products with Bill_Qty 0
+        .map((p) => {
           const weight = extractWeightFromName(p?.Product_Name);
           return {
             ...p,
@@ -105,37 +158,38 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             Total_Qty: Number(p?.Bill_Qty) || 0,
           };
         })
-      : [];
+    : [];
 
-    const transformStaffData = (orderData) => {
-      const staffs = [];
-      if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
-        staffs.push({
-          Id: "",
-          So_Id: "",
-          Emp_Id: orderData.Broker_Id,
-          Emp_Type_Id: orderData.Broker_Type || 0,
-        });
-      }
-      if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
-        staffs.push({
-          Id: "",
-          Do_Id: "",
-          Emp_Id: orderData.Transporter_Id,
-          Emp_Type_Id: orderData.TrasnportType || 0,
-        });
-      }
-      return staffs.filter((s) => s.Emp_Type_Id !== 0);
-    };
-
-    return {
-      ...data,
-      Product_Array: validProducts,
-      Retailer_Id: Number(data?.Retailer_Id) || 0, 
-      Retailer_Name: data?.Retailer_Name || "",
-      Staffs_Array: transformStaffData(data),
-    };
+  const transformStaffData = (orderData) => {
+    const staffs = [];
+    if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
+      staffs.push({
+        Id: "",
+        So_Id: "",
+        Emp_Id: orderData.Broker_Id,
+        Emp_Type_Id: orderData.Broker_Type || 0,
+      });
+    }
+    if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
+      staffs.push({
+        Id: "",
+        Do_Id: "",
+        Emp_Id: orderData.Transporter_Id,
+        Emp_Type_Id: orderData.TrasnportType || 0,
+      });
+    }
+    return staffs.filter((s) => s.Emp_Type_Id !== 0);
   };
+
+  return {
+    ...data,
+    Product_Array: validProducts, // Only products with Bill_Qty > 0
+    Retailer_Id: Number(data?.Retailer_Id) || 0,
+    Retailer_Name: data?.Retailer_Name || "",
+    Staffs_Array: transformStaffData(data),
+  };
+};
+
 
   const handleOpenModal = (row) => {
     const payload = buildSaleOrderPayload(row);
@@ -165,6 +219,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
 
     const updatedRow = {
       ...row,
+      Do_Date:row?.So_Date,
       ProductList: productChanges,
       Staffs_Array:
         row?.Staff_Involved_List?.map((item) => ({
@@ -232,38 +287,79 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
       .catch((e) => console.error(e));
   }, []);
 
-  useEffect(() => {
-    const otherSessionFiler = getSessionFiltersByPageId(pageID);
-    const {
-      Fromdate,
-      Todate,
-      Retailer = defaultFilters.Retailer,
-      CreatedBy = defaultFilters.CreatedBy,
-      SalesPerson = defaultFilters.SalesPerson,
-      VoucherType = defaultFilters.VoucherType,
-      Cancel_status = defaultFilters.Cancel_status,
-    } = otherSessionFiler;
+  // useEffect(() => {
+  //   const otherSessionFiler = getSessionFiltersByPageId(pageID);
+  //   const {
+  //     Fromdate,
+  //     Todate,
+  //     Retailer = defaultFilters.Retailer,
+  //     CreatedBy = defaultFilters.CreatedBy,
+  //     SalesPerson = defaultFilters.SalesPerson,
+  //     VoucherType = defaultFilters.VoucherType,
+  //     Cancel_status = defaultFilters.Cancel_status,
+  //   } = otherSessionFiler;
 
-    fetchLink({
-      address: `sales/saleOrder?
-            Fromdate=${Fromdate}&
-            Todate=${Todate}&
-            Retailer_Id=${Retailer?.value}&
-            Sales_Person_Id=${SalesPerson?.value}&
-            Created_by=${CreatedBy?.value}&
-            VoucherType=${VoucherType?.value}&
-            Cancel_status=${Cancel_status}&
-            OrderStatus=${filters?.OrderStatus?.value || ""}`,
-      loadingOn,
-      loadingOff,
+  //   fetchLink({
+  //     address: `sales/saleOrder?
+  //           Fromdate=${Fromdate}&
+  //           Todate=${Todate}&
+  //           Retailer_Id=${Retailer?.value}&
+  //           Sales_Person_Id=${SalesPerson?.value}&
+  //           Created_by=${CreatedBy?.value}&
+  //           VoucherType=${VoucherType?.value}&
+  //           Cancel_status=${Cancel_status}&
+  //           OrderStatus=${filters?.OrderStatus?.value || ""}`,
+  //     loadingOn,
+  //     loadingOff,
+  //   })
+  //     .then((data) => {
+  //       if (data.success) {
+  //         setSaleOrders(data?.data);
+  //       }
+  //     })
+  //     .catch((e) => console.error(e));
+  // }, [sessionValue, pageID]);
+
+
+const fetchSaleOrders = () => {
+  const otherSessionFiler = getSessionFiltersByPageId(pageID);
+  const {
+    Fromdate,
+    Todate,
+    Retailer = defaultFilters.Retailer,
+    CreatedBy = defaultFilters.CreatedBy,
+    SalesPerson = defaultFilters.SalesPerson,
+    VoucherType = defaultFilters.VoucherType,
+    Cancel_status = defaultFilters.Cancel_status,
+  } = otherSessionFiler;
+
+  fetchLink({
+    address: `sales/saleOrder?
+      Fromdate=${Fromdate}&
+      Todate=${Todate}&
+      Retailer_Id=${Retailer?.value}&
+      Sales_Person_Id=${SalesPerson?.value}&
+      Created_by=${CreatedBy?.value}&
+      VoucherType=${VoucherType?.value}&
+      Cancel_status=${Cancel_status}&
+      OrderStatus=${filters?.OrderStatus?.value || ""}`,
+    loadingOn,
+    loadingOff,
+  })
+    .then((data) => {
+      if (data.success) {
+        setSaleOrders(data?.data);
+      }
     })
-      .then((data) => {
-        if (data.success) {
-          setSaleOrders(data?.data);
-        }
-      })
-      .catch((e) => console.error(e));
-  }, [sessionValue, pageID]);
+    .catch((e) => console.error(e));
+};
+
+useEffect(() => {
+  fetchSaleOrders();
+}, [sessionValue, pageID]);
+
+
+
 
   const ExpendableComponent = ({ row, handleOpenModal }) => {
     const getDeliveredQty = (product) => {
@@ -394,27 +490,68 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
           createCol("Total_Before_Tax", "number", "Before Tax"),
           createCol("Total_Tax", "number", "Tax"),
           createCol("Total_Invoice_value", "number", "Invoice Value"),
+          // {
+          //   ColumnHeader: "Status",
+          //   isVisible: 1,
+          //   align: "center",
+          //   isCustomCell: true,
+          //   Cell: ({ row }) => {
+          //     const convert = convertedStatus.find(
+          //       (status) => status.id === Number(row?.isConverted)
+          //     );
+          //     return (
+          //       <span
+          //         className={
+          //           "py-0 fw-bold px-2 rounded-4 fa-12 " +
+          //           (convert?.color ?? "bg-secondary text-white")
+          //         }
+          //       >
+          //         {convert?.label ?? "Undefined"}
+          //       </span>
+          //     );
+          //   },
+          // },
           {
-            ColumnHeader: "Status",
-            isVisible: 1,
-            align: "center",
-            isCustomCell: true,
-            Cell: ({ row }) => {
-              const convert = convertedStatus.find(
-                (status) => status.id === Number(row?.isConverted)
-              );
-              return (
-                <span
-                  className={
-                    "py-0 fw-bold px-2 rounded-4 fa-12 " +
-                    (convert?.color ?? "bg-secondary text-white")
-                  }
-                >
-                  {convert?.label ?? "Undefined"}
-                </span>
-              );
-            },
-          },
+  ColumnHeader: "Status",
+  isVisible: 1,
+  align: "center",
+  isCustomCell: true,
+  Cell: ({ row }) => {
+    // Calculate ordered qty
+    const orderedQty = row?.Products_List?.reduce(
+      (sum, p) => sum + (Number(p?.Bill_Qty) || 0),
+      0
+    );
+
+    // Calculate delivered qty
+    const deliveredQty = row?.ConvertedInvoice?.reduce((sum, d) => {
+      const items = d?.InvoicedProducts || [];
+      return (
+        sum +
+        items.reduce((sub, prod) => sub + (Number(prod?.Bill_Qty) || 0), 0)
+      );
+    }, 0);
+
+   
+    const pendingQty = orderedQty - deliveredQty;
+
+   
+    const isCompleted = pendingQty <= 0;
+    const status = isCompleted ? "Completed" : "Pending";
+    const statusColor = isCompleted ? "bg-success text-white" : "bg-warning text-dark";
+
+    return (
+      <span
+        className={
+          "py-0 fw-bold px-2 rounded-4 fa-12 " + statusColor
+        }
+      >
+        {status}
+      </span>
+    );
+  },
+},
+
           {
             Field_Name: "Action",
             isVisible: 1,
@@ -705,6 +842,10 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         loadingOn={loadingOn}
         loadingOff={loadingOff}
         transactionType="invoice" 
+         onSuccess={() => {
+    fetchSaleOrders();  
+    handleCloseModal(); 
+  }}
       />
     </>
   );

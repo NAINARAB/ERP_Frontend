@@ -614,6 +614,7 @@ const OrderList = ({ loadingOn, loadingOff }) => {
 // };
 
 const buildSaleOrderPayload = (data) => {
+   
   const extractWeightFromName = (name) => {
     const match = name?.match(/(\d+)\s?kg/i);
     return match ? parseInt(match[1]) : 1;
@@ -694,6 +695,8 @@ const handleOpenModal = (row) => {
 
     const updatedRow = {
         ...row,
+        Pre_Date: row?.Pre_Date ? row.Pre_Date : "", 
+        Do_Date: row?.Pre_Date ? row.Pre_Date : row?.Do_Date || "",
         ProductList: updatedProducts,
         Staffs_Array: updatedStaffs,
         Retailer_Id: retailerId,
@@ -1136,7 +1139,7 @@ const postSaleOrder = (data) => {
                                                 </IconButton>
                                             </td>
                                            { row?.isConverted !=2 && (
-<td className="fa-12" style={{ minWidth: "50px" }}>
+                                                <td className="fa-12" style={{ minWidth: "50px" }}>
                                                 <IconButton size="small" onClick={() => handleOpenModal(row)}>
                                                     <ArrowOutwardIcon />
                                                 </IconButton>
@@ -1189,7 +1192,7 @@ const postSaleOrder = (data) => {
                 onClose={handleCloseModal}
                 // editValues={selectedOrder} 
                 editValues={selectedOrder?.row} 
-    defaultValues={selectedOrder?.payload} 
+                defaultValues={selectedOrder?.payload} 
                 loadingOn={loadingOn}
                 loadingOff={loadingOff}
                  transactionType="both" 
