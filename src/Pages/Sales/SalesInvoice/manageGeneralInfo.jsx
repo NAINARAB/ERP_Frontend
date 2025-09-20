@@ -79,12 +79,13 @@ const ManageSalesInvoiceGeneralInfo = ({
 
                     />
                 </div>
+                
 
                 {/* Date */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label className='fa-13'>Entry Date <RequiredStar /></label>
                     <input
-                        value={invoiceInfo?.Do_Date}
+                        value={invoiceInfo?.Pre_Date || invoiceInfo?.Do_Date || ""}
                         type="date"
                         required
                         className={inputStyle}
