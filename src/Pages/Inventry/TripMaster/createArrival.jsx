@@ -75,12 +75,12 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
     }
 
     const saveArrival = () => {
-        if (loadingOn) loadingOn();
         const method = checkIsNumber(productInput?.Arr_Id) ? 'PUT' : 'POST';
         fetchLink({
             address: `inventory/tripSheet/arrivalEntry`,
             method: method,
-            bodyData: productInput
+            bodyData: productInput,
+            loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 toast.success(data.message);
@@ -91,9 +91,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
             }
         }).catch(
             e => console.log(e)
-        ).finally(() => {
-            if (loadingOff) loadingOff();
-        })
+        )
     }
 
     return (
@@ -294,7 +292,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                                         />
                                     </td>
                                 </tr>
-                                <tr>
+                                {/* <tr>
                                     <td className={tdStyle}>Batch / Lot Number</td>
                                     <td className={tdStyle}>
                                         <input
@@ -303,7 +301,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                                             className="cus-inpt p-2"
                                         />
                                     </td>
-                                </tr>
+                                </tr> */}
                                 <tr>
                                     <td className={tdStyle}>BillNo</td>
                                     <td className={tdStyle}>

@@ -169,6 +169,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                             setOpen(false);
                             setFilters(pre => ({ ...pre, refresh: !pre.refresh }));
                         }}
+                        loadingOff={loadingOff} loadingOn={loadingOn}
                     >
                         H
                     </CreateArrival>
@@ -203,6 +204,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                             onSubmit={() => setFilters(pre => ({ ...pre, refresh: !pre.refresh }))}
                             open={filters.addDialog}
                             close={() => setFilters(pre => ({ ...pre, addDialog: false }))}
+                            loadingOff={loadingOff} loadingOn={loadingOn}
                         >
                             <Button onClick={() => setFilters(pre => ({ ...pre, addDialog: true }))}>
                                 Add

@@ -4,7 +4,9 @@ import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, Dialog
 import {
     Addition, checkIsNumber, combineDateTime, isEqualNumber,
     isValidDate, isValidObject, onlynum, ISOString,
-    Subraction, stringCompare, LocalDate, formatDateForTimeLocal
+    Subraction, stringCompare, LocalDate, formatDateForTimeLocal,
+    toArray,
+    toNumber
 } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -13,6 +15,8 @@ import FilterableTable, { createCol } from "../../../Components/filterableTable2
 import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
 import { toast } from 'react-toastify'
 import { useLocation } from "react-router-dom";
+import TripSheetGeneralInfo from "./createComp/generalInfo";
+import TripSheetStaffInvolved from "./createComp/staffInfo";
 
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
@@ -45,6 +49,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [branch, setBranch] = useState([]);
     const [voucherType, setVoucherType] = useState([]);
     const [godownActivity, setGodownActivity] = useState([]);
+    const [batchDetails, setBatchDetails] = useState([]);
     const [tripSheetInfo, setTripSheetInfo] = useState(tripMasterDetails);
     const [selectedItems, setSelectedItems] = useState([]);
     const [staffInvolvedList, setStaffInvolvedList] = useState([]);
@@ -53,6 +58,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
         const fetchData = async () => {
             try {
+                if (loadingOn) loadingOn();
                 const [
                     branchResponse,
                     productsResponse,
@@ -60,7 +66,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     staffResponse,
                     staffCategory,
                     uomResponse,
-                    voucherTypeResponse
+                    voucherTypeResponse,
+                    batchStockResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -68,7 +75,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `masters/uom` }),
-                    fetchLink({ address: `masters/voucher` })
+                    fetchLink({ address: `masters/voucher` }),
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -93,16 +101,19 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     (a, b) => String(a?.Vocher_Type_Id).localeCompare(b?.Voucher_Type)
                 );
 
-                setBranch(branchData)
+                setBranch(branchData);
                 setProducts(productsData);
                 setGodown(godownLocations);
                 setCostCenter(staffData);
                 setCostCenterCategory(staffCategoryData);
                 setUom(uomOrdered);
-                setVoucherType(voucherOrdered)
+                setVoucherType(voucherOrdered);
+                setBatchDetails(toArray(batchStockResponse.data));
 
             } catch (e) {
                 console.error("Error fetching data:", e);
+            } finally {
+                if (loadingOff) loadingOff();
             }
         };
 
@@ -151,6 +162,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         setSelectedItems([]);
         setStaffInvolvedList([]);
         setTripSheetInfo(tripMasterDetails);
+        setGodownActivity([])
     }
 
     const saveTripSheet = () => {
@@ -192,20 +204,18 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const searchGodownActivity = (from, to, fromGodown, toGodown) => {
-        if (checkIsNumber(fromGodown) && checkIsNumber(toGodown)) {
-            if (loadingOn) loadingOn();
-            fetchLink({
-                address: `inventory/tripSheet/arrivalEntry?Fromdate=${from}&Todate=${to}&FromGodown=${fromGodown}&ToGodown=${toGodown}&convertedStatus=0`
-            }).then(data => {
-                if (data.success) {
-                    setGodownActivity(data.data);
-                }
-            }).catch(e => console.log(e)).finally(() => {
-                if (loadingOff) loadingOff();
-            })
-        } else {
-            toast.warn('Select godown location')
-        }
+        fetchLink({
+            address: `
+                inventory/tripSheet/arrivalEntry?
+                Fromdate=${from}&
+                Todate=${to}&
+                FromGodown=${fromGodown}&
+                ToGodown=${toGodown}&
+                convertedStatus=0`,
+            loadingOn, loadingOff,
+        }).then(data => {
+            if (data.success) setGodownActivity(data.data); else setGodownActivity([]);
+        }).catch(e => console.log(e));
     }
 
     const changeTripDetails = (itemDetail, deleteRow = false) => {
@@ -249,369 +259,23 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
                     <div className="row ">
                         {/* Staff involved Info */}
-                        <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
-                            <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
-                                <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
-                                    <h6 className="flex-grow-1 m-0">Staff Involved</h6>
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        type="button"
-                                        onClick={() => setStaffInvolvedList([...staffInvolvedList, { ...tripStaffsColumns }])}
-                                    >Add</Button>
-                                </div>
-                                <table className="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th className="fa-13">Sno</th>
-                                            <th className="fa-13">Staff Name</th>
-                                            <th className="fa-13">Category</th>
-                                            <th className="fa-13">#</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {staffInvolvedList.map((row, index) => (
-                                            <tr key={index}>
-                                                <td className='fa-13 vctr text-center'>{index + 1}</td>
-                                                <td className='fa-13 w-100 p-0'>
-                                                    <Select
-                                                        value={{
-                                                            value: row?.Involved_Emp_Id,
-                                                            label: row?.Emp_Name
-                                                        }}
-                                                        onChange={e => setStaffInvolvedList((prev) => {
-                                                            return prev.map((item, ind) => {
-                                                                if (isEqualNumber(ind, index)) {
-                                                                    const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
-                                                                    return {
-                                                                        ...item,
-                                                                        Cost_Center_Type_Id:
-                                                                            checkIsNumber(item.Cost_Center_Type_Id)
-                                                                                ? item.Cost_Center_Type_Id
-                                                                                : checkIsNumber(staff.User_Type)
-                                                                                    ? staff.User_Type
-                                                                                    : 0,
-                                                                        Involved_Emp_Id: e.value,
-                                                                        Emp_Name: staff.Cost_Center_Name ?? ''
-                                                                    }
-                                                                }
-                                                                return item;
-                                                            });
-                                                        })}
-                                                        options={
-                                                            [...costCenter.filter(fil => (
-                                                                staffInvolvedList.findIndex(st => (
-                                                                    isEqualNumber(st.Involved_Emp_Id, fil.Cost_Center_Id)
-                                                                )) === -1 ? true : false
-                                                            ))].map(st => ({
-                                                                value: st.Cost_Center_Id,
-                                                                label: st.Cost_Center_Name
-                                                            }))
-                                                        }
-                                                        styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Staff"}
-                                                    />
-                                                </td>
-                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '80px' }}>
-                                                    <select
-                                                        value={row?.Cost_Center_Type_Id}
-                                                        onChange={e => setStaffInvolvedList((prev) => {
-                                                            return prev.map((item, ind) => {
-                                                                if (isEqualNumber(ind, index)) {
-                                                                    return {
-                                                                        ...item,
-                                                                        Cost_Center_Type_Id: e.target.value
-                                                                    }
-                                                                }
-                                                                return item;
-                                                            });
-                                                        })}
-                                                        className="cus-inpt p-2"
-                                                    >
-                                                        <option value="">Select</option>
-                                                        {costCenterCategory.map((st, sti) =>
-                                                            <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
-                                                        )}
-                                                    </select>
-                                                </td>
-                                                <td className='fa-13 vctr p-0'>
-                                                    <IconButton
-                                                        onClick={() => {
-                                                            setStaffInvolvedList(prev => {
-                                                                return prev.filter((_, filIndex) => index !== filIndex);
-                                                            });
-                                                        }}
-                                                        size='small'
-                                                    >
-                                                        <Delete color='error' />
-                                                    </IconButton>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <TripSheetStaffInvolved
+                            staffInvolvedList={staffInvolvedList}
+                            setStaffInvolvedList={setStaffInvolvedList}
+                            costCenter={costCenter}
+                            costCenterCategory={costCenterCategory}
+                        />
 
                         {/* Stock Journal Details */}
-                        <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0 fa-12">
-
-                            <div className="border" style={{ minHeight: '30vh', height: '100%' }}>
-                                <div className="row px-3">
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Branch</label>
-                                        <select
-                                            value={tripSheetInfo.Branch_Id}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Branch_Id: e.target.value })}
-                                            placeholder={"Select Branch"}
-                                            className="cus-inpt p-2"
-                                        >
-                                            <option value="" disabled>Select Branch</option>
-                                            {branch.map((br, bi) => (
-                                                <option key={bi} value={br.BranchId}>{br.BranchName}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Date</label>
-                                        <input
-                                            value={tripSheetInfo.Trip_Date}
-                                            type="date"
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_Date: e.target.value })}
-                                            className="cus-inpt p-2"
-                                        />
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Vehicle No</label>
-                                        <input
-                                            value={tripSheetInfo.Vehicle_No}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Vehicle_No: e.target.value })}
-                                            className="cus-inpt p-2"
-                                            placeholder="ex: TN XX YYYY"
-                                        />
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Phone Number</label>
-                                        <input
-                                            value={tripSheetInfo.PhoneNumber}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, PhoneNumber: e.target.value })}
-                                            className="cus-inpt p-2"
-                                            maxLength={10}
-                                            placeholder="ex: 987-654-3210"
-                                        />
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Activity Location</label>
-                                        <select
-                                            value={tripSheetInfo.Godownlocation}
-                                            onChange={e => {
-                                                setTripSheetInfo({ ...tripSheetInfo, Godownlocation: e.target.value });
-                                                setSelectedItems([]);
-                                            }}
-                                            className="cus-inpt p-2"
-                                        >
-                                            <option value={''} disabled>select godown</option>
-                                            {godown.map((god, godInd) => (
-                                                <option value={god.Godown_Id} key={godInd}>{god.Godown_Name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Bill Type</label>
-                                        <select
-                                            value={tripSheetInfo.BillType}
-                                            onChange={e => setTripSheetInfo({
-                                                ...tripSheetInfo,
-                                                BillType: e.target.value,
-                                                VoucherType: ''
-                                            })}
-                                            className="cus-inpt p-2"
-                                        >
-                                            <option value={''} disabled>select</option>
-                                            <option value={'MATERIAL INWARD'}>MATERIAL INWARD</option>
-                                            <option value={'OTHER GODOWN'}>OTHER GODOWN</option>
-                                            <option value={'OTHERS'}>OTHERS</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Voucher Type</label>
-                                        <select
-                                            value={tripSheetInfo.VoucherType}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
-                                            className="cus-inpt p-2"
-                                        >
-                                            <option value={''} disabled>select voucher</option>
-                                            {voucherType.filter(
-                                                v => stringCompare(v.Type, tripSheetInfo.BillType)
-                                            ).map((voucher, voucherInd) => (
-                                                <option value={voucher.Vocher_Type_Id} key={voucherInd}>{voucher.Voucher_Type}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                                        <label>Status</label>
-                                        {/* <input
-                                            value={tripSheetInfo.Trip_No}
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Trip_No: e.target.value })}
-                                            className="cus-inpt p-2"
-                                            placeholder="ex: 1, 2, 3"
-                                        /> */}
-                                        <select
-                                            value={tripSheetInfo?.TripStatus || ''}
-                                            onChange={e => setTripSheetInfo(pre => ({ ...pre, TripStatus: e.target.value }))}
-                                            className="cus-inpt p-2"
-                                        >
-                                            <option value="">Select</option>
-                                            <option value="New">New</option>
-                                            <option value="OnProcess">OnProcess</option>
-                                            <option value="Completed">Completed</option>
-                                            <option value="Canceled">Canceled</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="col-12 px-2 py-1">
-                                        <label>Narration</label>
-                                        <textarea
-                                            value={tripSheetInfo.Narration}
-                                            className="cus-inpt p-2"
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Narration: e.target.value })}
-                                            rows={2}
-                                            placeholder="Other Details"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered fa-13 m-0">
-                                        <thead>
-                                            <tr>
-                                                <th colSpan={2} className="text-center bg-light">Time</th>
-                                                <th colSpan={2} className="text-center bg-light">Distance</th>
-                                            </tr>
-                                            <tr>
-                                                <th className="text-center">Start</th>
-                                                <th className="text-center">End</th>
-                                                <th className="text-center">Start (Km)</th>
-                                                <th className="text-center">End (Km)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <input
-                                                        type='time'
-                                                        onChange={e => {
-                                                            console.log(e.target.value);
-                                                            setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))
-                                                        }}
-                                                        value={tripSheetInfo?.StartTime}
-                                                        className="cus-inpt p-2"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        type='time'
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, EndTime: e.target.value }))}
-                                                        value={tripSheetInfo?.EndTime}
-                                                        className="cus-inpt p-2"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        type="number"
-                                                        onChange={e => setTripSheetInfo(pre => ({
-                                                            ...pre,
-                                                            Trip_ST_KM: e.target.value,
-                                                            Trip_Tot_Kms: Subraction(pre.Trip_EN_KM ?? 0, e.target.value ?? 0)
-                                                        }))}
-                                                        value={tripSheetInfo?.Trip_ST_KM}
-                                                        min={0}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="Kilometers"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        type="number"
-                                                        onChange={e => setTripSheetInfo(pre => ({
-                                                            ...pre,
-                                                            Trip_EN_KM: e.target.value,
-                                                            Trip_Tot_Kms: Subraction(e.target.value ?? 0, pre.Trip_ST_KM ?? 0)
-                                                        }))}
-                                                        value={tripSheetInfo?.Trip_EN_KM}
-                                                        min={Addition(tripSheetInfo?.Trip_ST_KM, 1)}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="Kilometers"
-                                                    />
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                        <thead>
-                                            <tr>
-                                                <th colSpan={2} className="text-center bg-light">Loading</th>
-                                                <th colSpan={2} className="text-center bg-light">Un-Loading</th>
-                                            </tr>
-                                            <tr>
-                                                <th className="text-center">Load</th>
-                                                <th className="text-center">Empty</th>
-                                                <th className="text-center">Load</th>
-                                                <th className="text-center">Empty</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <input
-                                                        onInput={onlynum}
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, LoadingLoad: e.target.value }))}
-                                                        value={tripSheetInfo?.LoadingLoad}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="ex: 123Kg"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        onInput={onlynum}
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, LoadingEmpty: e.target.value }))}
-                                                        value={tripSheetInfo?.LoadingEmpty}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="ex: 123Kg"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        onInput={onlynum}
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, UnloadingLoad: e.target.value }))}
-                                                        value={tripSheetInfo?.UnloadingLoad}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="ex: 123Kg"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        onInput={onlynum}
-                                                        onChange={e => setTripSheetInfo(pre => ({ ...pre, UnloadingEmpty: e.target.value }))}
-                                                        value={tripSheetInfo?.UnloadingEmpty}
-                                                        className="cus-inpt p-2"
-                                                        placeholder="ex: 123Kg"
-                                                    />
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                            </div>
-                        </div>
+                        <TripSheetGeneralInfo
+                            tripSheetInfo={tripSheetInfo}
+                            setTripSheetInfo={setTripSheetInfo}
+                            branch={branch}
+                            godown={godown}
+                            voucherType={voucherType}
+                            selectedItems={selectedItems}
+                            setSelectedItems={setSelectedItems}
+                        />
                     </div>
 
                     <FilterableTable
@@ -645,7 +309,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 isCustomCell: true,
                                 Cell: ({ row }) => findProductDetails(products, row.Product_Id)?.Product_Name
                             },
-                            createCol('HSN_Code', 'string', 'HSN Code'),
+                            createCol('Batch_No', 'string', 'Batch'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Units',
@@ -717,12 +381,17 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
                     <form className="p-2" onSubmit={e => {
                         e.preventDefault();
-                        searchGodownActivity(
-                            filters?.fromGodownSearchDate,
-                            filters?.toGodownSearchDate,
-                            filters?.fromSearchGodown,
-                            tripSheetInfo?.Godownlocation
-                        )
+                        if (checkIsNumber(filters?.fromSearchGodown) && checkIsNumber(tripSheetInfo?.Godownlocation)) {
+                            searchGodownActivity(
+                                filters?.fromGodownSearchDate,
+                                filters?.toGodownSearchDate,
+                                filters?.fromSearchGodown,
+                                tripSheetInfo?.Godownlocation
+                            );
+                        } else {
+                            toast.warn('Select godown location');
+                        }
+
                     }}>
                         <div className="d-flex flex-wrap align-items-end">
                             <div>
@@ -785,44 +454,81 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {godownActivity.map((arrival, arrivalIndex) => (
-                                    <tr key={arrivalIndex}>
-                                        <td className='fa-12'>
-                                            {(() => {
-                                                const isChecked = selectedItems.findIndex(o =>
-                                                    isEqualNumber(o?.Arrival_Id, arrival.Arr_Id)
-                                                ) !== -1;
-
-                                                return (
-                                                    <div>
-                                                        <input
-                                                            className="form-check-input shadow-none pointer"
-                                                            style={{ padding: '0.7em' }}
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={() => {
-                                                                if (isChecked) changeTripDetails(arrival, true)
-                                                                else changeTripDetails(arrival)
-                                                            }}
-                                                        />
-                                                    </div>
-                                                )
-                                            })()}
-                                        </td>
-                                        <td className='fa-12'>{arrivalIndex + 1}</td>
-                                        <td className='fa-12'>{arrival?.Arrival_Date ? LocalDate(arrival.Arrival_Date) : ''}</td>
-                                        <td className='fa-12'>{arrival?.Product_Name}</td>
-                                        <td className='fa-12'>{arrival?.Gst_Rate}</td>
-                                        <td className='fa-12'>{arrival?.QTY}</td>
-                                        <td className='fa-12'>{arrival?.Batch_No}</td>
-                                    </tr>
-                                ))}
+                                {godownActivity.map((arrival, arrivalIndex) => {
+                                    const isChecked = selectedItems.findIndex(o =>
+                                        isEqualNumber(o?.Arrival_Id, arrival.Arr_Id)
+                                    ) !== -1;
+                                    const batchValue = isChecked ? selectedItems.find(o =>
+                                        isEqualNumber(o?.Arrival_Id, arrival.Arr_Id)
+                                    ) : {}
+                                    return (
+                                        <tr key={arrivalIndex}>
+                                            <td className='fa-12'>
+                                                <div>
+                                                    <input
+                                                        className="form-check-input shadow-none pointer"
+                                                        style={{ padding: '0.7em' }}
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={() => {
+                                                            if (isChecked) changeTripDetails(arrival, true)
+                                                            else changeTripDetails(arrival)
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className='fa-12'>{arrivalIndex + 1}</td>
+                                            <td className='fa-12'>{arrival?.Arrival_Date ? LocalDate(arrival.Arrival_Date) : ''}</td>
+                                            <td className='fa-12'>{arrival?.Product_Name}</td>
+                                            <td className='fa-12'>{arrival?.Gst_Rate}</td>
+                                            <td className='fa-12'>{arrival?.QTY}</td>
+                                            <td className='fa-12'>
+                                                {/* {arrival?.Batch_No} */}
+                                                {tripSheetInfo.BillType === 'OTHER GODOWN' && (
+                                                    <Select
+                                                        value={{
+                                                            value: batchValue?.Batch_No || '',
+                                                            label: batchValue?.Batch_No || ''
+                                                        }}
+                                                        onChange={e => changeTripDetails({ ...arrival, Batch_No: e.value })}
+                                                        options={
+                                                            batchDetails.filter(
+                                                                bat => (
+                                                                    isEqualNumber(bat.item_id, arrival.Product_Id)
+                                                                    && toNumber(bat.pendingQuantity) >= toNumber(arrival.QTY)
+                                                                    && isEqualNumber(bat?.godown_id, arrival?.From_Location)
+                                                                )
+                                                            ).map(
+                                                                bat => ({ value: bat.batch, label: bat.batch })
+                                                            )
+                                                        }
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        placeholder={"Select Batch"}
+                                                        menuPortalTarget={document.body}
+                                                        isDisabled={!isChecked}
+                                                    />
+                                                )}
+                                                {tripSheetInfo.BillType === 'MATERIAL INWARD' && (
+                                                    <input
+                                                        value={batchValue?.Batch_No || ''}
+                                                        onChange={e => changeTripDetails({ ...arrival, Batch_No: e.target.value })}
+                                                        className="cus-inpt p-2"
+                                                        disabled={!isChecked}
+                                                    />
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
 
                 </DialogContent>
-                <DialogActions></DialogActions>
+                <DialogActions>
+                    <Button onClick={closeDialog}>Close</Button>
+                </DialogActions>
             </Dialog>
         </>
     )
