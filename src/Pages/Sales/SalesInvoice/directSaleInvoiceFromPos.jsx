@@ -31,7 +31,7 @@ const storage = getSessionUser().user;
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 
-const DirectSaleInvoiceModal = ({ loadingOn, loadingOff, open, onClose, editValues,defaultValues,transactionType }) => {
+const DirectSaleInvoiceModal = ({ loadingOn, loadingOff, open, onClose, editValues,defaultValues,transactionType,onSuccess }) => {
 
     const [baseData, setBaseData] = useState({
         products: [],
@@ -444,7 +444,9 @@ const saveSalesInvoice = () => {
         Cost_Center_Type_Id: staff.Cost_Center_Type_Id
     }));
    
-
+  const filteredProducts = invoiceProducts.filter(
+        item => !(Number(item.Bill_Qty) === 0 && Number(item.Act_Qty) === 0)
+    );
 
     fetchLink({
         address: `sales/salesOrderSalesInvoice`,
@@ -454,18 +456,19 @@ const saveSalesInvoice = () => {
             ...defaultValues,
             ...invoiceInfo,
             Pre_Id:invoiceInfo.Do_Id,
-            Product_Array: invoiceProducts,
+            Product_Array: filteredProducts,
             staff_Involved_List: staff_Involved_List, 
             Expence_Array: invoiceExpences,
             transactionType:transactionType
         }
     }).then(data => {
      
-        if (data.success) {
-            clearValues();
-            toast.success(data.message);
-            onClose(true);
-        } else {
+       if (data.success) {
+  clearValues();
+  toast.success(data.message);
+  if (onSuccess) onSuccess();   
+  onClose(true);
+}else {
             toast.warn(data.message)
         }
     }).catch(e => console.error(e)).finally(() => {
@@ -602,12 +605,12 @@ const saveSalesInvoice = () => {
                                     </AddProductsInSalesInvoice>
                                 </>
                             }
-                            dataArray={[
-                                ...invoiceProducts,
-                                ...Array.from({
-                                    length: dummyRowCount > 0 ? dummyRowCount : 0
-                                }).map(d => salesInvoiceDetailsInfo)
-                            ]}
+                        dataArray={[
+    ...[...invoiceProducts,
+        ...Array.from({ length: dummyRowCount > 0 ? dummyRowCount : 0 }).map(d => salesInvoiceDetailsInfo)
+    ].filter(item => !(Number(item.Bill_Qty) === 0 && Number(item.Act_Qty) === 0)) 
+]}
+
                             columns={[
                                 createCol('Item_Name', 'string'),
                                 createCol('HSN_Code', 'string'),
