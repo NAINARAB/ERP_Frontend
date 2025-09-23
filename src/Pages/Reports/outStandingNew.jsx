@@ -184,8 +184,6 @@
 // export default OutStandingNew;
 
 
-
-
 import React, { useState, useEffect } from "react";
 import {
   Button,
@@ -207,12 +205,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import CloseIcon from "@mui/icons-material/Close";
+
 function OutStandingNew({ loadingOn, loadingOff }) {
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split("T")[0];
   };
-
 
   const [filters, setFilters] = useState({
     Fromdate: getTodayDate(),
@@ -220,21 +218,33 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     filterMode: "include", 
   });
   const [fileNoOptions, setFileNoOptions] = useState([]);
-
-
   const [originalTillBilling, setOriginalTillBilling] = useState([]);
   const [originalNoBilling, setOriginalNoBilling] = useState([]);
   const [salesReceipts, setSalesReceipts] = useState([]);
   const [Total_Invoice_value, setTotal_Invoice_value] = useState(0);
   const [activeButton, setActiveButton] = useState("tillBilling");
-
- 
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
-  const calculateTotal = (arr) =>
-    arr.reduce((sum, item) => sum + Number(item.Total_Invoice_value || 0), 0);
+  // Function to convert negative values to positive
+  const convertToPositive = (value) => {
+    const numValue = Number(value || 0);
+    return Math.abs(numValue);
+  };
 
- 
+  // Function to process data and convert negative values
+  const processData = (data) => {
+    return data.map(item => ({
+      ...item,
+      "Above 30 Pending Amt": convertToPositive(item["Above 30 Pending Amt"]),
+      "Overall Outstanding Amt": convertToPositive(item["Overall Outstanding Amt"]),
+      Total_Invoice_value: convertToPositive(item.Total_Invoice_value),
+      // Add other numeric fields if needed
+    }));
+  };
+
+  const calculateTotal = (arr) =>
+    arr.reduce((sum, item) => sum + convertToPositive(item.Total_Invoice_value || 0), 0);
+
   const fetchFileNoOptions = async () => {
     try {
       const res = await fetchLink({
@@ -243,8 +253,9 @@ function OutStandingNew({ loadingOn, loadingOff }) {
         )}`,
       });
       const data = Array.isArray(res) ? res : res?.data || [];
+      const processedData = processData(data);
       const uniqueFileNos = [
-        ...new Set(data.map((item) => item.File_No).filter(Boolean)),
+        ...new Set(processedData.map((item) => item.File_No).filter(Boolean)),
       ];
       setFileNoOptions(uniqueFileNos);
     } catch (err) {
@@ -252,7 +263,6 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     }
   };
 
-  
   const fetchData = async () => {
     try {
       if (loadingOn) loadingOn();
@@ -270,14 +280,15 @@ function OutStandingNew({ loadingOn, loadingOff }) {
       const tillArr = Array.isArray(tillRes) ? tillRes : tillRes?.data || [];
       const noBillArr = Array.isArray(noBillRes) ? noBillRes : noBillRes?.data || [];
 
-      
-      setOriginalTillBilling(tillArr);
-      setOriginalNoBilling(noBillArr);
+      // Process data to convert negative values to positive
+      const processedTillArr = processData(tillArr);
+      const processedNoBillArr = processData(noBillArr);
 
-      
+      setOriginalTillBilling(processedTillArr);
+      setOriginalNoBilling(processedNoBillArr);
       setActiveButton("tillBilling");
-      setSalesReceipts(tillArr);
-      setTotal_Invoice_value(calculateTotal(tillArr));
+      setSalesReceipts(processedTillArr);
+      setTotal_Invoice_value(calculateTotal(processedTillArr));
     } catch (error) {
       console.error("Error fetching outstanding data:", error);
       setOriginalTillBilling([]);
@@ -289,13 +300,10 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     }
   };
 
-
   useEffect(() => {
     fetchFileNoOptions();
     fetchData();
- 
   }, []);
-
 
   useEffect(() => {
     const sourceData =
@@ -339,7 +347,6 @@ function OutStandingNew({ loadingOn, loadingOff }) {
         }
         ButtonArea={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-           
             <input
               type="date"
               value={filters.Fromdate || ""}
@@ -348,17 +355,15 @@ function OutStandingNew({ loadingOn, loadingOff }) {
               style={{ padding: "4px" }}
             />
 
-   
             <Button
               variant="outlined"
               color="secondary"
               onClick={() => setFilterDialogOpen(true)}
               sx={{ height: 50 }}
             >
-               Filter
+              Filter
             </Button>
 
-         
             <Tooltip title="Search">
               <IconButton
                 color="primary"
@@ -370,7 +375,6 @@ function OutStandingNew({ loadingOn, loadingOff }) {
               </IconButton>
             </Tooltip>
 
-       
             <Button
               variant={activeButton === "tillBilling" ? "contained" : "outlined"}
               color="primary"
@@ -434,100 +438,97 @@ function OutStandingNew({ loadingOn, loadingOff }) {
                   ColumnHeader: "Pending Amount",
                   isCustomCell: true,
                   Cell: ({ row }) =>
-                    Number(row?.bill_amount || 0) -
-                    Number(row?.total_receipt_amount || 0),
+                    convertToPositive(
+                      Number(row?.bill_amount || 0) -
+                      Number(row?.total_receipt_amount || 0)
+                    ),
                 },
               ]}
             />
           </div>
         )}
       />
-<Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
-  <DialogTitle>File Name Filter</DialogTitle>
-  <DialogContent dividers sx={{ minWidth: 500 }}>
-    {/* File No Multi Select */}
-    <div style={{ marginBottom: "20px" }}>
-      <InputLabel id="file-no-label">File Nos</InputLabel>
-      <Select
-        labelId="file-no-label"
-        multiple
-        fullWidth
-        value={filters.File_No}
-        onChange={(e) =>
-          setFilters({
-            ...filters,
-            File_No:
-              typeof e.target.value === "string"
-                ? e.target.value.split(",")
-                : e.target.value,
-          })
-        }
-        renderValue={(selected) => (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
-            {selected.map((value) => (
-              <Chip
-                key={value}
-                label={value}
-                onDelete={() =>
-                  setFilters({
-                    ...filters,
-                    File_No: filters.File_No.filter((f) => f !== value),
-                  })
-                }
-                deleteIcon={<CloseIcon />}
-              />
-            ))}
+
+      <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
+        <DialogTitle>File Name Filter</DialogTitle>
+        <DialogContent dividers sx={{ minWidth: 500 }}>
+          <div style={{ marginBottom: "20px" }}>
+            <InputLabel id="file-no-label">File Nos</InputLabel>
+            <Select
+              labelId="file-no-label"
+              multiple
+              fullWidth
+              value={filters.File_No}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  File_No:
+                    typeof e.target.value === "string"
+                      ? e.target.value.split(",")
+                      : e.target.value,
+                })
+              }
+              renderValue={(selected) => (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                  {selected.map((value) => (
+                    <Chip
+                      key={value}
+                      label={value}
+                      onDelete={() =>
+                        setFilters({
+                          ...filters,
+                          File_No: filters.File_No.filter((f) => f !== value),
+                        })
+                      }
+                      deleteIcon={<CloseIcon />}
+                    />
+                  ))}
+                </div>
+              )}
+            >
+              {fileNoOptions.map((file, idx) => (
+                <MenuItem key={idx} value={file}>
+                  <Checkbox checked={filters.File_No.includes(file)} />
+                  <ListItemText primary={file} />
+                </MenuItem>
+              ))}
+            </Select>
           </div>
-        )}
-      >
-        {fileNoOptions.map((file, idx) => (
-          <MenuItem key={idx} value={file}>
-            <Checkbox checked={filters.File_No.includes(file)} />
-            <ListItemText primary={file} />
-          </MenuItem>
-        ))}
-      </Select>
-    </div>
 
-   
-    <div style={{ marginBottom: "10px" }}>
-      <InputLabel id="filter-mode-label">Filter Mode</InputLabel>
-      <Select
-        labelId="filter-mode-label"
-        fullWidth
-        value={filters.filterMode}
-        onChange={(e) =>
-          setFilters({ ...filters, filterMode: e.target.value })
-        }
-      >
-        <MenuItem value="include">Include</MenuItem>
-        <MenuItem value="exclude">Exclude</MenuItem>
-      </Select>
-    </div>
-  </DialogContent>
+          <div style={{ marginBottom: "10px" }}>
+            <InputLabel id="filter-mode-label">Filter Mode</InputLabel>
+            <Select
+              labelId="filter-mode-label"
+              fullWidth
+              value={filters.filterMode}
+              onChange={(e) =>
+                setFilters({ ...filters, filterMode: e.target.value })
+              }
+            >
+              <MenuItem value="include">Include</MenuItem>
+              <MenuItem value="exclude">Exclude</MenuItem>
+            </Select>
+          </div>
+        </DialogContent>
 
-  <DialogActions sx={{ justifyContent: "space-between" }}>
+        <DialogActions sx={{ justifyContent: "space-between" }}>
+          <Button
+            onClick={() => setFilters({ ...filters, File_No: [] })}  
+            color="secondary"
+            variant="outlined"
+          >
+            Clear Filter
+          </Button>
 
-<Button
-    onClick={() => setFilters({ ...filters, File_No: [] })}  
-    color="secondary"
-    variant="outlined"
-  >
-    Clear Filter
-    </Button>
-
-   
-    <Button
-      onClick={() => setFilterDialogOpen(false)}
-      variant="contained"
-      color="primary"
-    >
-      Apply Filter
-    </Button>
-  </DialogActions>
-</Dialog>
-
-
+          <Button
+            onClick={() => setFilterDialogOpen(false)}
+            variant="contained"
+            color="primary"
+          >
+            Apply Filter
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
