@@ -29,6 +29,7 @@ import FilterableTable, {
 import { tripMasterDetails, tripStaffsColumns } from "./tableColumns";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
+import Godown from "../../Masters/Godown";
 
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
@@ -50,8 +51,14 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         AreaGet: "ALL",
         Fromdate: ISOString(),
         Todate: ISOString(),
+        VoucherType: [],
+        Broker:[],
+        Transporters:[],
+        Item:[],
+        Godown:"",
         search: false,
         addItemDialog: false,
+          Retailer: []     
     });
 
     const [transactionData, setTransactionData] = useState([]);
@@ -61,41 +68,93 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [tripSheetInfo, setTripSheetInfo] = useState(tripMasterDetails);
     const [staffInvolvedList, setStaffInvolvedList] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
+const [voucher, setVoucher] = useState([]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [branchResponse, staffResponse, staffCategory] =
-                    await Promise.all([
-                        fetchLink({ address: `masters/branch/dropDown` }),
+const [broker, setBroker] = useState([]);
+const [transporters, setTransporters] = useState([]);
+const [items, setItems] = useState([]);
+const [godowns, setGodowns] = useState([]);
+const[retailers,setRetailers]=useState([])
 
-                        fetchLink({ address: `dataEntry/costCenter` }),
-                        fetchLink({ address: `dataEntry/costCenter/category` }),
-                    ]);
-                const branchData = (
-                    branchResponse.success ? branchResponse.data : []
-                ).sort((a, b) => String(a?.BranchName).localeCompare(b?.BranchName));
-                const staffData = (
-                    staffResponse.success ? staffResponse.data : []
-                ).sort((a, b) =>
-                    String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
-                );
-                const staffCategoryData = (
-                    staffCategory.success ? staffCategory.data : []
-                ).sort((a, b) =>
-                    String(a?.Cost_Category).localeCompare(b?.Cost_Category)
-                );
 
-                setBranch(branchData);
-                setCostCenter(staffData);
-                setCostCenterCategory(staffCategoryData);
-            } catch (e) {
-                console.error("Error fetching data:", e);
-            }
-        };
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [
+        branchResponse,
+        staffResponse,
+        staffCategory,
+        voucherResponse,
+        itemsRes,
+        godownRes,
+        retailerRes
+      ] = await Promise.all([
+        fetchLink({ address: `masters/branch/dropDown` }),
+        fetchLink({ address: `dataEntry/costCenter` }),
+        fetchLink({ address: `dataEntry/costCenter/category` }),
+        fetchLink({ address: `masters/voucher` }),
+        fetchLink({ address: `masters/products/dropDown` }),
+        fetchLink({ address: `masters/godown` }),
+        fetchLink({ address: `masters/retailers/dropDown` })
+      ]);
 
-        fetchData();
-    }, []);
+      // Branches
+      const branchData = (branchResponse.success ? branchResponse.data : [])
+        .sort((a, b) => String(a?.BranchName).localeCompare(b?.BranchName));
+
+      // All Cost Centers
+      const staffData = (staffResponse.success ? staffResponse.data : [])
+        .sort((a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name));
+
+      // Cost Center Categories
+      const staffCategoryData = (staffCategory.success ? staffCategory.data : [])
+        .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
+
+      // Filter brokers and transporters
+      const brokers = staffData.filter(cc => cc.UserTypeGet === "Broker");
+      const transporters = staffData.filter(cc => cc.UserTypeGet === "Transport");
+
+      // Other masters
+      const voucherData = voucherResponse.success ? voucherResponse.data : [];
+      const itemData = itemsRes.success ? itemsRes.data : [];
+      const godownData = godownRes.success ? godownRes.data : [];
+      const retailData = retailerRes.success ? retailerRes.data : [];
+
+      // Update states
+      setVoucher(voucherData);
+      setBranch(branchData);
+      setCostCenter(staffData);
+      setCostCenterCategory(staffCategoryData);
+      setBroker(brokers);
+      setTransporters(transporters);
+      setGodowns(godownData);
+      setItems(itemData);
+      setRetailers(retailData);
+
+    } catch (e) {
+      console.error("Error fetching data:", e);
+    }
+  };
+
+  fetchData();
+}, []);
+
+ const voucherTypeOptions = [
+        { value: '', label: 'ALL' },
+        ...voucher
+            .filter(obj => obj.Type === 'SALES')
+            .map(obj => ({ 
+                value: obj?.Vocher_Type_Id, 
+                label: obj?.Voucher_Type 
+            }))
+    ];
+
+    const tripVoucherTypeOptions = voucher
+        .filter(obj => obj.Type === 'SALES')
+        .map(obj => ({ 
+            value: obj?.Voucher_Type, 
+            label: obj?.Voucher_Type 
+        }));
 
     useEffect(() => {
         fetchLink({
@@ -172,25 +231,80 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }
     }, [stateDetails]);
 
-    const searchTransaction = (e) => {
-        e.preventDefault();
-        const { Fromdate, Todate, Sales_Person_Id } = filters;
+    // const searchTransaction = (e) => {
+    //     e.preventDefault();
+    //     const { Fromdate, Todate, Sales_Person_Id,Broker,Transporters,Godown,Item,Retailer_Id   } = filters;
+    //     console.log("filterts",filters)
+    //    const branchValue =filters?.Branch || '';
+    //    const VoucherValue=filters?.VoucherType || '';
+    //     if (Fromdate && Todate) {
+    //         if (loadingOn) loadingOn();
+    //         setTransactionData([]);
+    //         fetchLink({
+    //             address: `delivery/deliveryDetailsList?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}&VoucherType=${VoucherValue}&Branch=${branchValue}
+    //             &Broker=${Broker}&Transporter=${Transporters}&Godown=${Godown}&Item=${Item}&Retailer=${Retailer_Id}`,
+    //         })
+    //             .then((data) => {
+    //                 if (data.success) setTransactionData(data.data);
+    //             })
+    //             .catch((e) => console.log(e))
+    //             .finally(() => {
+    //                 if (loadingOff) loadingOff();
+    //             });
+    //     }
+    // };
 
-        if (Fromdate && Todate) {
-            if (loadingOn) loadingOn();
-            setTransactionData([]);
-            fetchLink({
-                address: `delivery/deliveryDetailsList?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}`,
+
+
+const searchTransaction = (e) => {
+    e.preventDefault();
+    const { Fromdate, Todate, Sales_Person_Id, Broker, Transporters, Godown, Item, Retailer, VoucherType } = filters;
+    
+   
+    const voucherTypeString = Array.isArray(VoucherType) ? VoucherType.join(',') : VoucherType || '';
+    const brokerString = Array.isArray(Broker) ? Broker.join(',') : Broker || '';
+    const transporterString = Array.isArray(Transporters) ? Transporters.join(',') : Transporters || '';
+    const itemString = Array.isArray(Item) ? Item.join(',') : Item || '';
+    const retailerString = Array.isArray(Retailer) ? Retailer.join(',') : Retailer || '';
+    const branchValue = filters?.Branch || '';
+    
+    if (Fromdate && Todate) {
+        if (loadingOn) loadingOn();
+        setTransactionData([]);
+        fetchLink({
+            address: `delivery/deliveryDetailsList?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}&VoucherType=${voucherTypeString}&Branch=${branchValue}
+            &Broker=${brokerString}&Transporter=${transporterString}&Godown=${Godown}&Item=${itemString}&Retailer=${retailerString}`,
+        })
+            .then((data) => {
+                if (data.success) setTransactionData(data.data);
             })
-                .then((data) => {
-                    if (data.success) setTransactionData(data.data);
-                })
-                .catch((e) => console.log(e))
-                .finally(() => {
-                    if (loadingOff) loadingOff();
-                });
-        }
-    };
+            .catch((e) => console.log(e))
+            .finally(() => {
+                if (loadingOff) loadingOff();
+            });
+    }
+};
+
+const MultiSelect = ({ value, onChange, options, placeholder, isSearchable = true }) => {
+    return (
+        <Select
+            isMulti
+            value={value}
+            onChange={onChange}
+            options={options}
+            placeholder={placeholder}
+            styles={{
+                ...customSelectStyles,
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
+            isSearchable={isSearchable}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+            menuPlacement="auto"
+        />
+    );
+};
+
 
     const resetForm = () => {
         setSelectedItems([]);
@@ -362,80 +476,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <th className="fa-13">Category</th>
                                         </tr>
                                     </thead>
-                                    {/* <tbody>
-                                        {staffInvolvedList.map((row, index) => (
-                                            <tr key={index}>
-                                                <td className='fa-13 vctr text-center'>{index + 1}</td>
-                                                <td className='fa-13 w-100 p-0'>
-                                                    
-                                                    <Select
-                                                        value={{
-                                                            value: row?.Involved_Emp_Id,
-                                                            label: row?.Emp_Name
-                                                        }}
-                                                        onChange={e => {
-                                                            setStaffInvolvedList((prev) => {
-                                                                const updatedList = prev.map((item, ind) => {
-                                                                    
-                                                                    if (isEqualNumber(ind, index)) {
-                                                                        const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value));
-                                                                        const updatedItem = {
-                                                                            ...item,
-                                                                            Cost_Center_Type_Id: item.Cost_Center_Type_Id || staff.User_Type || 0,
-                                                                            Involved_Emp_Id: e.value,
-                                                                            Emp_Name: staff.Cost_Center_Name ?? ''
-                                                                        };
-
-
-                                                                        if (Number(updatedItem.Cost_Center_Type_Id) === 9) {
-                                                                            setDeliveryPerson({
-                                                                                UserId: updatedItem.Involved_Emp_Id,
-                                                                                Name: updatedItem.Emp_Name,
-                                                                            });
-                                                                        } else if (deliveryPerson?.UserId === updatedItem.Involved_Emp_Id) {
-
-                                                                            setDeliveryPerson(null);
-                                                                        }
-
-                                                                        return updatedItem;
-                                                                    }
-                                                                    return item;
-                                                                });
-
-                                                                return updatedList;
-                                                            });
-                                                        }}
-                                                        
-                                                        options={costCenter.filter(fil => (
-                                                            staffInvolvedList.findIndex(st => isEqualNumber(st.Cost_Center_Type_Id, fil.Cost_Center_Id)) === -1
-                                                        )).map(st => ({
-                                                            value: st.Cost_Center_Id,
-                                                            label: st.Cost_Center_Name
-                                                        }))}
-                                                        styles={customSelectStyles}
-                                                        isSearchable
-                                                        placeholder="Select Staff"
-                                                    />
-                                                </td>
-                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '110px' }}>
-                                                    <select
-                                                        value={row?.Cost_Center_Type_Id}
-                                                        onChange={e => handleCostCenterChange(e, index)}
-                                                        className="cus-inpt p-2"
-                                                    >
-                                                        <option value="">Select</option>
-                                                        {costCenterCategory.map((st, sti) => (
-                                                            <option value={st?.Cost_Category_Id} key={sti}>
-                                                                {st?.Cost_Category}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody> */}
-
-                                    <tbody>
+                                  <tbody>
                                         {staffInvolvedList.map((row, index) => (
                                             <tr key={index}>
                                                 <td className="fa-13 vctr text-center">{index + 1}</td>
@@ -597,15 +638,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             className="cus-inpt p-2 mb-2"
                                         />
                                     </div>
-                                    {/* <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label>Delivery Date <span style={{ color: "red" }}>*</span></label>
-                                        <input
-                                            value={tripSheetInfo?.DO_Date || ""}
-                                            type="date"
-                                            onChange={e => setTripSheetInfo({ ...tripSheetInfo, Do_Date: e.target.value })}
-                                            className="cus-inpt p-2 mb-2"
-                                        />
-                                    </div> */}
+                                   
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label>Vehicle No</label>
                                         <input
@@ -651,7 +684,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         <label>Voucher Type</label>
                                         <select
                                             className="cus-inpt p-2 mb-2"
-                                            value={tripSheetInfo?.VoucherType ?? ""} // FIXED
+                                            value={tripSheetInfo?.VoucherType ?? ""} 
                                             onChange={(e) =>
                                                 setTripSheetInfo({
                                                     ...tripSheetInfo,
@@ -793,6 +826,12 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     </div>
                     {
                         <div className="d-flex justify-content-end gap-3">
+                            <h6 className="m-0 text-muted">
+        Total Bill Qty: {selectedItems?.reduce((acc, item) => 
+            acc + (item?.Products_List?.reduce((sum, product) => 
+                sum + (parseFloat(product?.Bill_Qty) || 0), 0) || 0), 0)
+        }
+    </h6>
                             <h6 className="m-0 text-muted">Selected Sales Orders: {selectedItems.length}</h6> <span></span>
                             <h6 className="m-0 text-muted">
                                 Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
@@ -905,158 +944,336 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         </IconButton>
                     </DialogTitle>
 
-                    <DialogContent>
-                        <div className="table-responsive">
-                            <table className="table table-bordered">
-                                <tbody>
-                                    <tr>
-                                        <td className="fa-13 text-center">
-                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
-                                                From Date
-                                            </td>
-                                            <input
-                                                type="date"
-                                                value={filters.Fromdate}
-                                                className="cus-inpt p-2"
-                                                required
-                                                max={filters.Todate}
-                                                onChange={(e) =>
-                                                    setFilters((pre) => ({
-                                                        ...pre,
-                                                        Fromdate: e.target.value,
-                                                    }))
-                                                }
-                                                style={{ width: "100%" }}
-                                            />
-                                        </td>
-
-                                        <td className="fa-13 text-center">
-                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
-                                                To Date
-                                            </td>
-                                            <input
-                                                type="date"
-                                                value={filters.Todate}
-                                                className="cus-inpt p-2"
-                                                min={filters.Fromdate}
-                                                required
-                                                onChange={(e) =>
-                                                    setFilters((pre) => ({
-                                                        ...pre,
-                                                        Todate: e.target.value,
-                                                    }))
-                                                }
-                                                style={{ width: "100%" }}
-                                            />
-                                        </td>
-                                        <td>
-                                            <td className="text-center fa-13 fw-bold" colSpan={6}>
-                                                Sales_Person
-                                            </td>
-                                            <select
-                                                value={filters?.Sales_Person_Id || ""}
-                                                className="cus-inpt p-2"
-                                                onChange={(e) => {
-                                                    const selected = salesPerson.find(
-                                                        (sp) => sp.UserId == Number(e.target.value)
-                                                    );
-                                                    setFilters({
-                                                        ...filters,
-                                                        Sales_Person_Id: selected?.UserId || "",
-                                                        SalsePersonGet: selected?.Name || "",
-                                                    });
-                                                }}
-                                                style={{ width: "100%" }}
-                                            >
-                                                <option value="">ALL</option>
-                                                {salesPerson.map((obj) => (
-                                                    <option key={obj.UserId} value={obj.UserId}>
-                                                        {obj.Name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        {/* <div className="w-100 p-2 d-flex justify-content-center"> */}
-
-                        <div className="d-flex justify-content-between align-items-center">
-                            {transactionData.length > 0 && (
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => {
-                                        if (selectedItems.length === transactionData.length) {
-                                            setSelectedItems([]);
-                                        } else {
-                                            setSelectedItems(transactionData);
-                                        }
-                                    }}
-                                >
-                                    {selectedItems.length === transactionData.length
-                                        ? "Unselect All"
-                                        : "Select All"}
-                                </Button>
-                            )}
-
-
-
-                            {selectedItems.length >= 0 && (
-                                <div className="d-flex justify-content-end gap-3">
-                                    <h6 className="m-0 text-muted">Selected Sales Orders: {selectedItems.length}</h6>
-                                    <h6 className="m-0 text-muted">
-                                        Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
-                                    </h6>
-                                </div>
-                            )}
-                        </div>
-
-                        <FilterableTable
-                            dataArray={transactionData}
-                            disablePagination
-                            maxHeightOption
-                            columns={[
-
-                                {
-                                    Field_Name: "checkbox",
-                                    ColumnHeader: "",
-                                    isVisible: 1,
-                                    pointer: true,
-                                    isCustomCell: true,
-                                    Cell: ({ row }) => {
-                                        // const isSelected = selectedItems.some((selectedRow) => selectedRow.So_Id === row.So_Id);
-
-                                        return (
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedItems.some(
-                                                    (selectedRow) => selectedRow.Do_Id === row.Do_Id
-                                                )}
-                                                onChange={() => handleCheckboxChange(row)}
-                                                onFocus={(e) => {
-                                                    e.target.blur();
-                                                }}
-                                                style={{
-                                                    cursor: "pointer",
-                                                    transform: "scale(1.5)",
-                                                    width: "14px",
-                                                    height: "20px",
-                                                }}
-                                            />
-                                        );
-                                    },
-                                },
-                                createCol("Retailer_Name", "string", "Retailer_Name"),
-                                createCol("Branch_Name", "string", "Branch_Name"),
-                                createCol("AreaName", "string", "AreaName"),
-                                createCol("Do_Date", "date", "Do_Date"),
-                                createCol("Total_Before_Tax", "string", "Total_Before_Tax"),
-                                createCol("Total_Tax", "number", "Total_Tax"),
-                                createCol("Total_Invoice_value", "number", "Total_Invoice_value"),
-                            ]}
+            <DialogContent>
+    <div className="table-responsive">
+        <table className="table table-bordered">
+            <tbody>
+  
+                <tr>
+            
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">From Date</td>
+                    <td>
+                        <input
+                            type="date"
+                            value={filters.Fromdate}
+                            className="cus-inpt p-2"
+                            required
+                            max={filters.Todate}
+                            onChange={(e) =>
+                                setFilters((pre) => ({
+                                    ...pre,
+                                    Fromdate: e.target.value,
+                                }))
+                            }
+                            style={{ width: "100%" }}
                         />
-                    </DialogContent>
+                    </td>
+
+             
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">To Date</td>
+                    <td>
+                        <input
+                            type="date"
+                            value={filters.Todate}
+                            className="cus-inpt p-2"
+                            min={filters.Fromdate}
+                            required
+                            onChange={(e) =>
+                                setFilters((pre) => ({
+                                    ...pre,
+                                    Todate: e.target.value,
+                                }))
+                            }
+                            style={{ width: "100%" }}
+                        />
+                    </td>
+
+                   
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Sales Person</td>
+                    <td>
+                        <Select
+                            value={{ 
+                                value: filters?.Sales_Person_Id, 
+                                label: filters?.Sales_Person_Name || "ALL" 
+                            }}
+                            onChange={(e) => {
+                                setFilters({
+                                    ...filters,
+                                    Sales_Person_Id: e.value,
+                                    Sales_Person_Name: e.label,
+                                });
+                            }}
+                            options={[
+                                { value: "", label: "ALL" },
+                                ...salesPerson.map((obj) => ({
+                                    value: obj?.UserId,
+                                    label: obj?.Name,
+                                })),
+                            ]}
+                            placeholder={"Select Sales Person"}
+                            styles={{
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            isSearchable={true}
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
+                            menuPlacement="auto"
+                        />
+                    </td>
+
+                 
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Voucher Type</td>
+                    <td>
+                        <MultiSelect
+                            value={(filters.VoucherType || []).map(val => ({
+                                value: val,
+                                label: voucherTypeOptions.find(opt => opt.value === val)?.label || val
+                            }))}
+                            onChange={(selectedOptions) =>
+                                setFilters({
+                                    ...filters,
+                                    VoucherType: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                })
+                            }
+                            options={voucherTypeOptions}
+                            placeholder={"Select Voucher Types"}
+                        />
+                    </td>
+                </tr>
+                
+             
+                <tr>
+                  
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Branch</td>
+                    <td>
+                        <Select
+                            value={{ 
+                                value: filters?.Branch, 
+                                label: filters?.BranchName || "ALL" 
+                            }}
+                            onChange={(e) =>
+                                setFilters({
+                                    ...filters,
+                                    Branch: e.value,
+                                    BranchName: e.label,
+                                })
+                            }
+                            options={[
+                                { value: "", label: "ALL" },
+                                ...branch.map((option) => ({
+                                    value: option.BranchId,
+                                    label: option.BranchName,
+                                })),
+                            ]}
+                            placeholder={"Select Branch"}
+                            styles={{
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            isSearchable={true}
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
+                            menuPlacement="auto"
+                        />
+                    </td>
+
+               
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Broker</td>
+                    <td>
+                        <MultiSelect
+                            value={(filters.Broker || []).map(val => ({
+                                value: val,
+                                label: broker.find(b => b.Cost_Center_Id === val)?.Cost_Center_Name || val
+                            }))}
+                            onChange={(selectedOptions) =>
+                                setFilters({
+                                    ...filters,
+                                    Broker: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                })
+                            }
+                            options={broker.map(option => ({
+                                value: option.Cost_Center_Id,
+                                label: option.Cost_Center_Name,
+                            }))}
+                            placeholder={"Select Brokers"}
+                        />
+                    </td>
+      
+             
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Transporter</td>
+                    <td>
+                        <MultiSelect
+                            value={(filters.Transporters || []).map(val => ({
+                                value: val,
+                                label: transporters.find(t => t.Cost_Center_Id === val)?.Cost_Center_Name || val
+                            }))}
+                            onChange={(selectedOptions) =>
+                                setFilters({
+                                    ...filters,
+                                    Transporters: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                })
+                            }
+                            options={transporters.map(option => ({
+                                value: option.Cost_Center_Id,
+                                label: option.Cost_Center_Name,
+                            }))}
+                            placeholder={"Select Transporters"}
+                        />
+                    </td>
+
+                    {/* Godown */}
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Godown</td>
+                    <td>
+                        <Select
+                            value={{ 
+                                value: filters?.Godown, 
+                                label: filters?.GodownName || "ALL" 
+                            }}
+                            onChange={(e) =>
+                                setFilters({
+                                    ...filters,
+                                    Godown: e.value,
+                                    GodownName: e.label,
+                                })
+                            }
+                            options={[
+                                { value: "", label: "ALL" },
+                                ...godowns.map((option) => ({
+                                    value: option.Godown_Id,
+                                    label: option.Godown_Name,
+                                })),
+                            ]}
+                            placeholder={"Select Godown"}
+                            styles={{
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            isSearchable={true}
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
+                            menuPlacement="auto"
+                        />
+                    </td>
+                </tr>
+
+             
+                <tr>
+              
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Retailers</td>
+                    <td colSpan="3">
+                        <MultiSelect
+                            value={(filters.Retailer || []).map(val => ({
+                                value: val,
+                                label: retailers.find(r => r.Retailer_Id === val)?.Retailer_Name || val
+                            }))}
+                            onChange={(selectedOptions) =>
+                                setFilters({
+                                    ...filters,
+                                    Retailer: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                })
+                            }
+                            options={retailers.map(option => ({
+                                value: option.Retailer_Id,
+                                label: option.Retailer_Name,
+                            }))}
+                            placeholder={"Select Retailers"}
+                        />
+                    </td>
+
+                    {/* Products */}
+                    <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Products</td>
+                    <td colSpan="3">
+                        <MultiSelect
+                            value={(filters.Item || []).map(val => ({
+                                value: val,
+                                label: items.find(i => i.Product_Id === val)?.Product_Name || val
+                            }))}
+                            onChange={(selectedOptions) =>
+                                setFilters({
+                                    ...filters,
+                                    Item: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                })
+                            }
+                            options={items.map(option => ({
+                                value: option.Product_Id,
+                                label: option.Product_Name,
+                            }))}
+                            placeholder={"Select Products"}
+                        />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div className="d-flex justify-content-between align-items-center">
+        {transactionData.length > 0 && (
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    if (selectedItems.length === transactionData.length) {
+                        setSelectedItems([]);
+                    } else {
+                        setSelectedItems(transactionData);
+                    }
+                }}
+            >
+                {selectedItems.length === transactionData.length
+                    ? "Unselect All"
+                    : "Select All"}
+            </Button>
+        )}
+
+        {selectedItems.length >= 0 && (
+            <div className="d-flex justify-content-end gap-3">
+                <h6 className="m-0 text-muted">Selected Sales Orders: {selectedItems.length}</h6>
+                <h6 className="m-0 text-muted">
+                    Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
+                </h6>
+            </div>
+        )}
+    </div>
+
+    <FilterableTable
+        dataArray={transactionData}
+        disablePagination
+        maxHeightOption
+        columns={[
+            {
+                Field_Name: "checkbox",
+                ColumnHeader: "",
+                isVisible: 1,
+                pointer: true,
+                isCustomCell: true,
+                Cell: ({ row }) => {
+                    return (
+                        <input
+                            type="checkbox"
+                            checked={selectedItems.some(
+                                (selectedRow) => selectedRow.Do_Id === row.Do_Id
+                            )}
+                            onChange={() => handleCheckboxChange(row)}
+                            onFocus={(e) => {
+                                e.target.blur();
+                            }}
+                            style={{
+                                cursor: "pointer",
+                                transform: "scale(1.5)",
+                                width: "14px",
+                                height: "20px",
+                            }}
+                        />
+                    );
+                },
+            },
+            createCol("Retailer_Name", "string", "Retailer_Name"),
+            createCol("Branch_Name", "string", "Branch_Name"),
+            createCol("AreaName", "string", "AreaName"),
+            createCol("Do_Date", "date", "Do_Date"),
+            createCol("Total_Before_Tax", "string", "Total_Before_Tax"),
+            createCol("Total_Tax", "number", "Total_Tax"),
+            createCol("Total_Invoice_value", "number", "Total_Invoice_value"),
+        ]}
+    />
+</DialogContent>
 
                     <DialogActions>
                         <Button
