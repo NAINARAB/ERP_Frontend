@@ -3,7 +3,7 @@ import FilterableTable, { createCol, formatString } from "../../../Components/fi
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, Search } from "@mui/icons-material";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
@@ -118,7 +118,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
             const billRefData = billReferenceInfo.filter(item => item.JournalAutoId === journal.JournalAutoId);
 
             const debitSide = entriesInfo.filter(item => (
-                item.JournalAutoId === journal.JournalAutoId 
+                item.JournalAutoId === journal.JournalAutoId
                 && item.DrCr === 'Dr'
             )).map(entry => ({
                 ...entry,
@@ -130,7 +130,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
             }));
 
             const creditSide = entriesInfo.filter(item => (
-                item.JournalAutoId === journal.JournalAutoId 
+                item.JournalAutoId === journal.JournalAutoId
                 && item.DrCr === 'Cr'
             )).map(entry => ({
                 ...entry,
@@ -312,6 +312,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                                             isSearchable={true}
                                             placeholder={"Debit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -331,6 +332,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                                             isSearchable={true}
                                             placeholder={"Credit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -350,6 +352,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                                             isSearchable={true}
                                             placeholder={"Voucher Type"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -386,6 +389,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                                             styles={customSelectStyles}
                                             isSearchable={true}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

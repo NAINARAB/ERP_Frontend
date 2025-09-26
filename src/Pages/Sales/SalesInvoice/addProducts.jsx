@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
-import { validStockValue } from "../SalesInvoice/importFromSaleOrder";
 
-const AddItemToSaleOrderCart = ({
+const AddProductForm = ({
     children,
     orderProducts = [],
     setOrderProducts,
@@ -23,7 +22,7 @@ const AddItemToSaleOrderCart = ({
     IS_IGST,
     editValues = null,
     initialValue = {},
-    stockInGodown = [],
+    batchDetails = []
 }) => {
 
     const [productDetails, setProductDetails] = useState(initialValue);
@@ -246,43 +245,10 @@ const AddItemToSaleOrderCart = ({
                                         onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
                                         options={[
                                             { value: '', label: 'select', isDisabled: true },
-                                            {
-                                                label: 'Stock-Available-Godowns',
-                                                options: toArray(godowns).filter(fil => {
-                                                    const stockList = toArray(stockInGodown);
-
-                                                    if (stockList.length === 0) return false;
-
-                                                    return stockList.some(
-                                                        fnd => (
-                                                            isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
-                                                            && isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                        )
-                                                    )
-                                                }).map(obj => ({
-                                                    value: obj?.Godown_Id,
-                                                    label: obj?.Godown_Name
-                                                        + " (Bal: "
-                                                        + validStockValue(productDetails?.Item_Id, obj?.Godown_Id, stockInGodown)
-                                                        + ")"
-                                                }))
-                                            },
-                                            {
-                                                label: 'Other Godowns',
-                                                options: toArray(godowns).filter(fil => {
-                                                    const stockList = toArray(stockInGodown);
-
-                                                    if (stockList.length === 0) return true;
-
-                                                    return !stockList.some(fnd =>
-                                                        isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id) &&
-                                                        isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                    );
-                                                }).map(obj => ({
-                                                    value: obj?.Godown_Id,
-                                                    label: obj?.Godown_Name
-                                                }))
-                                            }
+                                            ...toArray(godowns).map(obj => ({
+                                                value: obj?.Godown_Id,
+                                                label: obj?.Godown_Name
+                                            }))
                                         ]}
                                         styles={customSelectStyles}
                                         isDisabled={!checkIsNumber(productDetails?.Item_Id)}
@@ -393,7 +359,7 @@ const AddItemToSaleOrderCart = ({
                             </div>
 
                             {/* Amount */}
-                            <div className="col-md-6 p-2">
+                            <div className="col-lg-4 col-md-6 p-2">
                                 <label>Amount</label>
                                 <input
                                     required
@@ -410,6 +376,37 @@ const AddItemToSaleOrderCart = ({
                                 />
                             </div>
 
+                            {/* Batch */}
+                            <div className="col-lg-4 col-md-6 p-2">
+                                <label>Batch</label>
+                                <Select
+                                    value={{
+                                        value: productDetails?.Batch_Name || '',
+                                        label: productDetails?.Batch_Name || ''
+                                    }}
+                                    onChange={e => setProductDetails(pre => ({ ...pre, Batch_Name: e.value }))}
+                                    options={
+                                        batchDetails.filter(
+                                            bat => (
+                                                isEqualNumber(bat.item_id, productDetails?.Item_Id)
+                                                && isEqualNumber(bat?.godown_id, productDetails?.GoDown_Id)
+                                                && toNumber(bat.pendingQuantity) >= toNumber(productDetails?.Bill_Qty)
+                                            )
+                                        ).map(
+                                            bat => ({ value: bat.batch, label: bat.batch })
+                                        )
+                                    }
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Select Batch"}
+                                    menuPortalTarget={document.body}
+                                    isDisabled={
+                                        !checkIsNumber(productDetails?.Item_Id) 
+                                        || !checkIsNumber(productDetails?.GoDown_Id) 
+                                        || isEqualNumber(productDetails?.Bill_Qty, 0)
+                                    }
+                                />
+                            </div>
 
                         </div>
 
@@ -427,4 +424,4 @@ const AddItemToSaleOrderCart = ({
     )
 }
 
-export default AddItemToSaleOrderCart;
+export default AddProductForm;

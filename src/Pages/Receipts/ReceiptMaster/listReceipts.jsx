@@ -3,7 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { receiptStatus, receiptTypes } from "./variable";
@@ -308,6 +308,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             isSearchable={true}
                                             placeholder={"Debit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -327,6 +328,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             isSearchable={true}
                                             placeholder={"Credit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -363,6 +365,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             isSearchable={true}
                                             placeholder={"Voucher Type"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -400,6 +403,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             isSearchable={true}
                                             placeholder={"Sales Person Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

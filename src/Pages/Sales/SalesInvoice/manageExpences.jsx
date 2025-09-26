@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { Addition, checkIsNumber, Division, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
 import { useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -46,9 +46,9 @@ const ExpencesOfSalesInvoice = ({
                 }
 
                 if (field === 'Igst') {
-                    const 
-                        Igst = IS_IGST ? toNumber(value) : 0, 
-                        Cgst = !IS_IGST ? Division(toNumber(value), 2) : 0, 
+                    const
+                        Igst = IS_IGST ? toNumber(value) : 0,
+                        Cgst = !IS_IGST ? Division(toNumber(value), 2) : 0,
                         Sgst = !IS_IGST ? Division(toNumber(value), 2) : 0;
 
                     const expVal = toNumber(item.Expence_Value), taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
@@ -88,7 +88,7 @@ const ExpencesOfSalesInvoice = ({
         setInvoiceExpences(prev => prev.filter((_, i) => i !== index));
     };
 
-     return (
+    return (
         <>
             <Card >
                 <div className="d-flex align-items-center justify-content-between flex-wrap px-3 py-2">
@@ -100,10 +100,10 @@ const ExpencesOfSalesInvoice = ({
                         <thead className="table-light">
                             <tr>
                                 {[
-                                    'S.No', 'Expense', 
+                                    'S.No', 'Expense',
                                     'Expense Value', 'Action'].map(
-                                    (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
-                                )}
+                                        (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
+                                    )}
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
@@ -112,7 +112,7 @@ const ExpencesOfSalesInvoice = ({
                                 const currentExpenseName = expenceMaster.find(
                                     exp => isEqualNumber(exp.Id, row?.Expense_Id)
                                 )?.Expence_Name || '';
-                                
+
                                 return (
                                     <tr key={index}>
                                         <td>{index + 1}</td>
@@ -128,7 +128,7 @@ const ExpencesOfSalesInvoice = ({
                                                     .filter(exp => {
                                                         // Always include the currently selected expense
                                                         if (isEqualNumber(exp.Id, row?.Expense_Id)) return true;
-                                                        
+
                                                         // Exclude expenses that are already selected in other rows
                                                         return !invoiceExpences.some(
                                                             (inv, idx) => idx !== index && isEqualNumber(inv.Expense_Id, exp.Id)
@@ -140,6 +140,7 @@ const ExpencesOfSalesInvoice = ({
                                                 menuPortalTarget={document.body}
                                                 isSearchable={true}
                                                 placeholder="Select Expense"
+                                                filterOption={reactSelectFilterLogic}
                                             />
                                         </td>
                                         <td className="p-0 vctr">

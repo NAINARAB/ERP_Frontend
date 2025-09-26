@@ -3,6 +3,7 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import {
     checkIsNumber, isEqualNumber, ISOString, Multiplication, onlynum,
+    reactSelectFilterLogic,
 } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -22,7 +23,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
         if (open) {
             const fetchData = async () => {
                 try {
-                    if (loadingOn) loadingOn();
+                    // if (loadingOn) loadingOn();
                     const [
                         productsResponse,
                         godownLocationsResponse,
@@ -50,13 +51,13 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                 } catch (e) {
                     console.error("Error fetching data:", e);
                 } finally {
-                    if (loadingOff) loadingOff();
+                    // if (loadingOff) loadingOff();
                 }
             };
 
             fetchData();
         }
-    }, [open])
+    }, [open, loadingOn, loadingOff])
 
     useEffect(() => {
         if (checkIsNumber(productValue?.Arr_Id)) {
@@ -175,6 +176,7 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                                             isSearchable={true}
                                             placeholder={"Select Product"}
                                             maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { contraIV, contraStatus } from "./contraVariables";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent } from "@mui/material";
@@ -34,7 +34,7 @@ const ContraScreen = ({
                 Object.fromEntries(
                     Object.entries(contraIV).map(([key, value]) => {
                         if (key === 'ContraDate' || key === 'BankDate' || key === 'ChequeDate') return [
-                            key, 
+                            key,
                             editValues[key] ? ISOString(editValues[key]) : value
                         ];
                         return [key, editValues[key] ?? value];
@@ -208,6 +208,7 @@ const ContraScreen = ({
                                     change("VoucherTypeGet", opt?.label || "");
                                 }}
                                 isSearchable
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 
@@ -249,6 +250,7 @@ const ContraScreen = ({
                                                 isSearchable
                                                 styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                                                 menuPortalTarget={document.body}
+                                                filterOption={reactSelectFilterLogic}
                                             />
                                         </div>
                                     </div>
@@ -275,6 +277,7 @@ const ContraScreen = ({
                                                 isSearchable
                                                 styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                                                 menuPortalTarget={document.body}
+                                                filterOption={reactSelectFilterLogic}
                                             />
                                         </div>
                                     </div>
@@ -328,6 +331,7 @@ const ContraScreen = ({
                                 isSearchable
                                 styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                                 menuPortalTarget={document.body}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 

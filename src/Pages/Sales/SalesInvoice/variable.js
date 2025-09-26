@@ -61,6 +61,7 @@ export const salesInvoiceDetailsInfo = {
     Item_Name: '',
     HSN_Code: '',
     Taxble: '',
+    Batch_Name: '',
 
     Bill_Qty: '',               // From front-end
     Act_Qty: '',

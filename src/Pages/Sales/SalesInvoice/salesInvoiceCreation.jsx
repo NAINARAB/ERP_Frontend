@@ -1,19 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button, IconButton, CardContent, Card } from "@mui/material";
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
 import {
-    isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData,
-    NumberFormat, numberToWords,
-    RoundNumber, Addition,
+    isEqualNumber, isValidObject, ISOString, getUniqueData,
+    Addition,
     getSessionUser,
     checkIsNumber,
     toNumber,
     toArray,
     stringCompare
 } from "../../../Components/functions";
-import { Add, ArrowLeft, Clear, Delete, Download, Edit, ReceiptLong, Save } from "@mui/icons-material";
+import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
@@ -22,9 +19,9 @@ import { salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesI
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
 import SalesInvoiceTaxDetails from "./taxDetails";
-import AddItemToSaleOrderCart from "../SaleOrder/addItemToCart";
 import AddProductsInSalesInvoice from "./importFromSaleOrder";
 import ExpencesOfSalesInvoice from "./manageExpences";
+import AddProductForm from "./addProducts";
 
 
 const storage = getSessionUser().user;
@@ -48,6 +45,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         expence: [],
         stockInGodown: [],
         stockItemLedgerName: [],
+        batchDetails: []
     });
 
     const [dialog, setDialog] = useState({
@@ -86,7 +84,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     godownLocationsResponse,
                     expenceResponse,
                     godownWiseStock,
-                    stockItemLedgerNameResponse
+                    stockItemLedgerNameResponse,
+                    batchDetailsResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -99,6 +98,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/defaultAccountMaster` }),
                     fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -150,7 +150,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         exp => !stringCompare(exp.Type, 'DEFAULT')
                     ).map(exp => ({ Id: exp.Acc_Id, Expence_Name: exp.Account_Name })),
                     stockInGodown: stockInGodowns,
-                    stockItemLedgerName: stockItemLedgerName
+                    stockItemLedgerName: stockItemLedgerName,
+                    batchDetails: toArray(batchDetailsResponse.data)
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -285,7 +286,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }
     }, [editValues])
 
-
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
 
@@ -314,7 +314,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     return (
         <>
 
-            <AddItemToSaleOrderCart
+            <AddProductForm
                 orderProducts={invoiceProducts}
                 setOrderProducts={setInvoiceProduct}
                 open={dialog.addProductDialog}
@@ -330,7 +330,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
                 initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
-                stockInGodown={baseData.stockInGodown}
+                batchDetails={baseData.batchDetails}
             />
 
             <Card>
@@ -449,7 +449,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         ]}
                         columns={[
                             createCol('Item_Name', 'string'),
-                            createCol('HSN_Code', 'string'),
+                            createCol('Batch_Name', 'string'),
                             createCol('Bill_Qty', 'number'),
                             createCol('Act_Qty', 'number'),
                             createCol('Item_Rate', 'number'),

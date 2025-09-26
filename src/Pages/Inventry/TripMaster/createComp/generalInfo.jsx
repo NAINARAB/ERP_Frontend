@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, onlynum, stringCompare, Subraction } from "../../../../Components/functions";
+import { Addition, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
 import { customSelectStyles } from "../../../../Components/tablecolumn";
 import Select from 'react-select';
 
@@ -82,6 +82,7 @@ const TripSheetGeneralInfo = ({
                                 styles={customSelectStyles}
                                 isSearchable={true}
                                 placeholder={"Godown"}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 

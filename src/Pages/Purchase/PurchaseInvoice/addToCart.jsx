@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
-import { validStockValue } from "../SalesInvoice/importFromSaleOrder";
 
-const AddItemToSaleOrderCart = ({
+const AddItemsDialog = ({
     children,
     orderProducts = [],
     setOrderProducts,
@@ -23,7 +22,6 @@ const AddItemToSaleOrderCart = ({
     IS_IGST,
     editValues = null,
     initialValue = {},
-    stockInGodown = [],
 }) => {
 
     const [productDetails, setProductDetails] = useState(initialValue);
@@ -177,9 +175,7 @@ const AddItemToSaleOrderCart = ({
                             </div>
 
                             {/* item name */}
-                            <div className={
-                                Object.hasOwn(productDetails, 'GoDown_Id') ? 'col-md-8 p-2' : "col-12 p-2"
-                            }>
+                            <div className={'col-md-8 p-2'}>
                                 <label>Item Name <RequiredStar /></label>
                                 <Select
                                     value={{
@@ -235,65 +231,32 @@ const AddItemToSaleOrderCart = ({
                             </div>
 
                             {/* godown  */}
-                            {Object.hasOwn(productDetails, 'GoDown_Id') && (
-                                <div className="col-md-4 p-2">
-                                    <label>Godown</label>
-                                    <Select
-                                        value={{
-                                            value: productDetails?.GoDown_Id,
-                                            label: godowns.find(g => isEqualNumber(g.Godown_Id, productDetails?.GoDown_Id))?.Godown_Name || ''
-                                        }}
-                                        onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
-                                        options={[
-                                            { value: '', label: 'select', isDisabled: true },
-                                            {
-                                                label: 'Stock-Available-Godowns',
-                                                options: toArray(godowns).filter(fil => {
-                                                    const stockList = toArray(stockInGodown);
-
-                                                    if (stockList.length === 0) return false;
-
-                                                    return stockList.some(
-                                                        fnd => (
-                                                            isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id)
-                                                            && isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                        )
-                                                    )
-                                                }).map(obj => ({
-                                                    value: obj?.Godown_Id,
-                                                    label: obj?.Godown_Name
-                                                        + " (Bal: "
-                                                        + validStockValue(productDetails?.Item_Id, obj?.Godown_Id, stockInGodown)
-                                                        + ")"
-                                                }))
-                                            },
-                                            {
-                                                label: 'Other Godowns',
-                                                options: toArray(godowns).filter(fil => {
-                                                    const stockList = toArray(stockInGodown);
-
-                                                    if (stockList.length === 0) return true;
-
-                                                    return !stockList.some(fnd =>
-                                                        isEqualNumber(fnd?.Godown_Id, fil?.Godown_Id) &&
-                                                        isEqualNumber(productDetails?.Item_Id, fnd?.Product_Id)
-                                                    );
-                                                }).map(obj => ({
-                                                    value: obj?.Godown_Id,
-                                                    label: obj?.Godown_Name
-                                                }))
-                                            }
-                                        ]}
-                                        styles={customSelectStyles}
-                                        isDisabled={!checkIsNumber(productDetails?.Item_Id)}
-                                        menuPortalTarget={document.body}
-                                        isSearchable={true}
-                                        placeholder={"Select Godown"}
-                                        filterOption={reactSelectFilterLogic}
-                                    // maxMenuHeight={200}  
-                                    />
-                                </div>
-                            )}
+                            <div className="col-md-4 p-2">
+                                <label>Godown</label>
+                                <Select
+                                    value={{
+                                        value: productDetails?.Location_Id,
+                                        label: godowns.find(
+                                            g => isEqualNumber(g.Godown_Id, productDetails?.Location_Id)
+                                        )?.Godown_Name || ''
+                                    }}
+                                    onChange={(e) => setProductDetails(pre => ({ ...pre, Location_Id: e.value }))}
+                                    options={[
+                                        { value: '', label: 'select', isDisabled: true },
+                                        ...toArray(godowns).map(obj => ({
+                                            value: obj?.Godown_Id,
+                                            label: obj?.Godown_Name
+                                        }))
+                                    ]}
+                                    styles={customSelectStyles}
+                                    isDisabled={!checkIsNumber(productDetails?.Item_Id)}
+                                    menuPortalTarget={document.body}
+                                    isSearchable={true}
+                                    placeholder={"Select Godown"}
+                                    filterOption={reactSelectFilterLogic}
+                                // maxMenuHeight={200}  
+                                />
+                            </div>
 
                             {/* quantity */}
                             <div className="col-lg-4 col-md-6 p-2">
@@ -393,7 +356,7 @@ const AddItemToSaleOrderCart = ({
                             </div>
 
                             {/* Amount */}
-                            <div className="col-md-6 p-2">
+                            <div className="col-lg-4 col-md-6 p-2">
                                 <label>Amount</label>
                                 <input
                                     required
@@ -407,6 +370,20 @@ const AddItemToSaleOrderCart = ({
                                     }))}
                                     className="cus-inpt"
                                     min={1}
+                                />
+                            </div>
+
+                            {/* Batch */}
+                            <div className="col-lg-4 col-md-6 p-2">
+                                <label>Batch</label>
+                                <input
+                                    value={productDetails.Batch_No ? productDetails.Batch_No : ''}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
+                                    onChange={e => setProductDetails(pre => ({
+                                        ...pre,
+                                        Batch_No: e.target.value
+                                    }))}
+                                    className="cus-inpt"
                                 />
                             </div>
 
@@ -427,4 +404,4 @@ const AddItemToSaleOrderCart = ({
     )
 }
 
-export default AddItemToSaleOrderCart;
+export default AddItemsDialog;

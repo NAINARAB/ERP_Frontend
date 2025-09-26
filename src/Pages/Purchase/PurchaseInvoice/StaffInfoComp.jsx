@@ -1,19 +1,19 @@
 import { Button, IconButton } from "@mui/material";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic } from "../../../Components/functions";
+import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from 'react-select';
-import { customSelectStyles } from "../../../../Components/tablecolumn";
-import { tripStaffsColumns } from "../tableColumns";
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic } from "../../../../Components/functions";
 import { Delete } from "@mui/icons-material";
 
-
-const TripSheetStaffInvolved = ({
-    staffInvolvedList,
-    setStaffInvolvedList,
-    costCenter,
-    costCenterCategory
+const PurchaseInvoiceStaffInvolved = ({
+    baseData,
+    StaffArray,
+    setStaffArray,
+    staffRowDetails
 }) => {
     return (
         <>
+
+            {/* staff info */}
             <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
                 <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
                     <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
@@ -22,7 +22,7 @@ const TripSheetStaffInvolved = ({
                             variant="outlined"
                             color="primary"
                             type="button"
-                            onClick={() => setStaffInvolvedList([...staffInvolvedList, { ...tripStaffsColumns }])}
+                            onClick={() => setStaffArray([...StaffArray, { ...staffRowDetails }])}
                         >Add</Button>
                     </div>
                     <table className="table table-bordered">
@@ -35,39 +35,39 @@ const TripSheetStaffInvolved = ({
                             </tr>
                         </thead>
                         <tbody>
-                            {staffInvolvedList.map((row, index) => (
+                            {StaffArray.map((row, index) => (
                                 <tr key={index}>
                                     <td className='fa-13 vctr text-center'>{index + 1}</td>
                                     <td className='fa-13 w-100 p-0'>
                                         <Select
                                             value={{
                                                 value: row?.Involved_Emp_Id,
-                                                label: row?.Emp_Name
+                                                label: row?.Involved_Emp_Name,
                                             }}
-                                            onChange={e => setStaffInvolvedList((prev) => {
+                                            onChange={e => setStaffArray((prev) => {
                                                 return prev.map((item, ind) => {
                                                     if (isEqualNumber(ind, index)) {
-                                                        const staff = costCenter.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
+                                                        const staff = baseData.staff.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
                                                         return {
                                                             ...item,
                                                             Cost_Center_Type_Id:
                                                                 checkIsNumber(item.Cost_Center_Type_Id)
-                                                                    ? item.Cost_Center_Type_Id
+                                                                    ? Number(item.Cost_Center_Type_Id)
                                                                     : checkIsNumber(staff.User_Type)
-                                                                        ? staff.User_Type
+                                                                        ? Number(staff.User_Type)
                                                                         : 0,
-                                                            Involved_Emp_Id: e.value,
-                                                            Emp_Name: staff.Cost_Center_Name ?? ''
+                                                            Involved_Emp_Id: Number(e.value),
+                                                            Involved_Emp_Name: e.label
                                                         }
                                                     }
                                                     return item;
                                                 });
                                             })}
                                             options={
-                                                [...costCenter.filter(fil => (
-                                                    staffInvolvedList.findIndex(st => (
+                                                [...baseData.staff.filter(fil => (
+                                                    !StaffArray.some(st => (
                                                         isEqualNumber(st.Involved_Emp_Id, fil.Cost_Center_Id)
-                                                    )) === -1 ? true : false
+                                                    ))
                                                 ))].map(st => ({
                                                     value: st.Cost_Center_Id,
                                                     label: st.Cost_Center_Name
@@ -79,10 +79,10 @@ const TripSheetStaffInvolved = ({
                                             filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
-                                    <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '80px' }}>
+                                    <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
                                         <select
                                             value={row?.Cost_Center_Type_Id}
-                                            onChange={e => setStaffInvolvedList((prev) => {
+                                            onChange={e => setStaffArray((prev) => {
                                                 return prev.map((item, ind) => {
                                                     if (isEqualNumber(ind, index)) {
                                                         return {
@@ -93,10 +93,10 @@ const TripSheetStaffInvolved = ({
                                                     return item;
                                                 });
                                             })}
-                                            className="cus-inpt p-2"
+                                            className="cus-inpt p-2 border-0"
                                         >
                                             <option value="">Select</option>
-                                            {costCenterCategory.map((st, sti) =>
+                                            {baseData.staffType.map((st, sti) =>
                                                 <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
                                             )}
                                         </select>
@@ -104,7 +104,7 @@ const TripSheetStaffInvolved = ({
                                     <td className='fa-13 vctr p-0'>
                                         <IconButton
                                             onClick={() => {
-                                                setStaffInvolvedList(prev => {
+                                                setStaffArray(prev => {
                                                     return prev.filter((_, filIndex) => index !== filIndex);
                                                 });
                                             }}
@@ -123,4 +123,4 @@ const TripSheetStaffInvolved = ({
     )
 }
 
-export default TripSheetStaffInvolved;
+export default PurchaseInvoiceStaffInvolved;

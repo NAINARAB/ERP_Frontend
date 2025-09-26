@@ -2,7 +2,7 @@ import RequiredStar from '../../../../Components/requiredStar';
 import { initialSoruceValue } from './variables'
 import Select from 'react-select';
 import { customSelectStyles } from "../../../../Components/tablecolumn";
-import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, rid, toNumber } from '../../../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, rid, toNumber, reactSelectFilterLogic } from '../../../../Components/functions';
 import { Button, IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { memo, useEffect } from 'react';
@@ -42,6 +42,7 @@ const SourceItems = memo(function SourceItems({
                     isSearchable
                     placeholder="Select Item"
                     maxMenuHeight={300}
+                    filterOption={reactSelectFilterLogic}
                 />
             </td>
 
@@ -101,6 +102,7 @@ const SourceItems = memo(function SourceItems({
                     isSearchable
                     placeholder="Select Godown"
                     maxMenuHeight={300}
+                    filterOption={reactSelectFilterLogic}
                 />
             </td>
 
@@ -115,10 +117,10 @@ const SourceItems = memo(function SourceItems({
                     }}
                     options={
                         batchDetails
-                            .filter(b => 
-                                checkIsNumber(row?.Sour_Goodown_Id, 1) 
-                                ? isEqualNumber(b.godown_id, row?.Sour_Goodown_Id)
-                                : true
+                            .filter(b =>
+                                checkIsNumber(row?.Sour_Goodown_Id, 1)
+                                    ? isEqualNumber(b.godown_id, row?.Sour_Goodown_Id)
+                                    : true
                             )
                             .map(b => ({ value: b.id, label: `${b?.batch} (${toNumber(b?.pendingQuantity)})` }))
                     }

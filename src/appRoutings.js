@@ -143,11 +143,15 @@ const SalesConvert = lazy(() => import("./Pages/Sales/TripMaster/SalesDeliveryAd
 
 
 // Purchase
+
+const PurchaseOrderEntries = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
+const PurchaseOrderDataEntry = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderCreation"))
+
 const PurchaseReport = lazy(() => import("./Pages/Purchase/purchaseReport"))
 const PurchaseReportForCustomer = lazy(() => import("./Pages/Purchase/purchaseReportForCustomer"))
 // const PurchaseOrderList = lazy(() => import("./Pages/Purchase/PurchaseOrder/purchaseOrderList"))
 const PurchaseOrderTallyBasedReport = lazy(() => import("./Pages/Purchase/tallyBasedReport"))
-const PurchaseInvoiceManagement = lazy(() => import("./Pages/Purchase/purchaseInvoiceManagement"))
+const PurchaseInvoiceCreate = lazy(() => import("./Pages/Purchase/PurchaseInvoice/purchaseInvoiceCreate"))
 const PurchaseInvoces = lazy(() => import("./Pages/Purchase/purchaseInvoices"))
 
 
@@ -184,8 +188,6 @@ const StaffActivity = lazy(() => import("./Pages/DataEntry/staffActivity"))
 const ActivityImagesUpload = lazy(() => import("./Pages/DataEntry/fileUploads"))
 const WeightCheckActivity = lazy(() => import("./Pages/DataEntry/WeightCheckActivity"))
 const DataEntryAttendance = lazy(() => import("./Pages/DataEntry/dataEntryAttendance"))
-const PurchaseOrderEntries = lazy(() => import("./Pages/DataEntry/purchaseOrderEntry"))
-const PurchaseOrderDataEntry = lazy(() => import("./Pages/DataEntry/purchaseOrderFormTemplate"))
 const CostCenter = lazy(() => import("./Pages/DataEntry/costCenter"))
 
 
@@ -213,18 +215,18 @@ const ProjectReports = lazy(() => import("./Pages/ProjectReports/reports"))
 const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"));
 
 
-const SalesReportBranch=lazy(()=>import("./Pages/Sales/salesInvoiceReportBranch"))
+const SalesReportBranch = lazy(() => import("./Pages/Sales/salesInvoiceReportBranch"))
+const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch"))
 
 
-const SalesOrderBranch=lazy(()=>import("./Pages/Sales/salesOrderReportBranch"))
 const RoutingArray = [
-    {component:<SalesOrderBranch/>,path:'/erp/sales/salesOrderReport'},
-       {component:<SalesReportBranch/>,path:'/erp/sales/salesReportBranch'},
+    { component: <SalesOrderBranch />, path: '/erp/sales/salesOrderReport' },
+    { component: <SalesReportBranch />, path: '/erp/sales/salesReportBranch' },
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
     // Dashboard
     { component: <CommonDashboard />, path: '/dashboard' },
-    { component: <CommonDashboard />, path: '' },
+    { component: <CommonDashboard />, path: '/' },
 
     // Change password
     { component: <ChangePassword />, path: '/changePassword' },
@@ -316,7 +318,7 @@ const RoutingArray = [
     { component: <PurchaseOrderDataEntry />, path: '/erp/purchase/purchaseOrder/create' },
     // { component: <PurchaseOrderEntries />, path: '/dataEntry/purchaseOrder' },
     { component: <PurchaseOrderTallyBasedReport />, path: '/erp/purchase/tallyBasedReport' },
-    { component: <PurchaseInvoiceManagement />, path: '/erp/purchase/invoice/create' },
+    { component: <PurchaseInvoiceCreate />, path: '/erp/purchase/invoice/create' },
     { component: <PurchaseInvoces />, path: '/erp/purchase/invoice' },
     // ERP - inventory
     { component: <DisplayNavigations />, path: '/erp/inventory' },

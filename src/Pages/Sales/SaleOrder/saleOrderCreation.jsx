@@ -9,7 +9,8 @@ import {
     RoundNumber, Addition,
     getSessionUser,
     checkIsNumber,
-    toNumber
+    toNumber,
+    reactSelectFilterLogic
 } from "../../../Components/functions";
 import { Add, ArrowLeft, Clear, Delete, Download, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -363,6 +364,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
                                             maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </div>
 

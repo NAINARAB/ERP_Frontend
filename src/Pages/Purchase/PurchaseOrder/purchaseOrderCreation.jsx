@@ -1,992 +1,1501 @@
-import React, { useState, useEffect } from "react";
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
-import { toast } from 'react-toastify';
-import {
-    isEqualNumber, isGraterNumber, isValidObject, ISOString, getUniqueData,
-    Multiplication, Division, NumberFormat, Subraction, numberToWords,
-    RoundNumber, Addition
-} from "../../../Components/functions";
-import { Add, Clear, ClearAll, Delete, Edit, Save } from "@mui/icons-material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Card, CardContent } from '@mui/material';
+import { useEffect, useState } from 'react';
+import Select from 'react-select';
+import { customSelectStyles } from '../../../Components/tablecolumn';
+import RequiredStar from '../../../Components/requiredStar';
 import { fetchLink } from '../../../Components/fetchComponent';
-import FilterableTable from "../../../Components/filterableTable2";
-import RequiredStar from "../../../Components/requiredStar";
-
-const taxCalc = (method = 1, amount = 0, percentage = 0) => {
-    switch (method) {
-        case 0:
-            return RoundNumber(amount * (percentage / 100));
-        case 1:
-            return RoundNumber(amount - (amount * (100 / (100 + percentage))));
-        case 2:
-            return 0;
-        default:
-            return 0;
-    }
-}
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum, toNumber, toArray, reactSelectFilterLogic } from '../../../Components/functions';
+import { Delete, Add, Save, ClearAll, Edit, Search, Close, Download } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify'
+import { initialDeliveryDetailsValue, initialItemDetailsValue, initialOrderDetailsValue, initialTranspoterDetailsValue, initialStaffDetailsValue } from './variable';
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const PurchaseOrderCreation = ({ editValues, loadingOn, loadingOff, reload, switchScreen }) => {
+const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem('user'));
+    const nav = useNavigate();
+    const location = useLocation();
+    const stateDetails = location.state;
+    const tdStyle = 'border fa-14 vctr';
+    const inputStyle = 'cus-inpt p-2';
 
-    const [retailers, setRetailers] = useState([]);
     const [products, setProducts] = useState([]);
-    // const [productGroup, setProductGroup] = useState([]);
-    const [productBrand, setProductBrand] = useState([]);
-    const [productUOM, setProductUOM] = useState([]);
-    // const [salesPerson, setSalePerson] = useState([]);
-    const [companyInfo, setCompanyInfo] = useState({});
+    const [costCenterData, setCostCenterData] = useState([]);
+    const [costCenterCategoryData, setCostCenterCategoryData] = useState([]);
+    const [godownLocations, setGodownLocations] = useState([]);
+    const [retailers, setRetailers] = useState([]);
+    const [branch, setBranch] = useState([]);
 
-    const initialValue = {
-        Company_Id: storage?.Company_id,
-        Po_Date: ISOString(),
-        Retailer_Id: '',
-        Retailer_Name: 'Select',
-        Loadman_Id: storage?.UserId,
-        Loadman: storage?.Name,
-        Broker_Id: storage?.UserId,
-        Broker: storage?.Name,
-        Transpoter_Id: storage?.UserId,
-        Transpoter: storage?.Name,
-        Branch_Id: storage?.BranchId,
-        Narration: '',
-        Created_by: storage?.UserId,
-        Product_Array: [],
-        So_Id: '',
-        GST_Inclusive: 1,
-        IS_IGST: 0,
-    }
+    const [OrderItemsArray, setOrderItemArray] = useState([])
+    const [DeliveryArray, setDeliveryArray] = useState([]);
+    const [TranspoterArray, setTranspoterArray] = useState([]);
+    const [StaffArray, setStaffArray] = useState([]);
+    const [tripData, setTripData] = useState([]);
 
-    const productInitialDetails = {
-        Item_Id: '',
-        ItemName: 'Search Item',
-        Bill_Qty: 0,
-        Item_Rate: 0,
-        UOM: '',
-        Units: '',
-        Product: {},
-        Group: 'Search Group',
-        GroupID: '',
-        Brand: 'Search Brand',
-        BrandID: '',
-        Amount: 0
-    }
+    const [filters, setFilters] = useState({
+        FromGodown: '',
+        FromGodownName: 'Select From Location',
+        ToGodown: '',
+        ToGodownName: 'Select To Location',
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        search: false,
+        tripSheetDialog: false,
+    })
 
-    const [orderDetails, setOrderDetails] = useState(initialValue)
-    const [orderProducts, setOrderProducts] = useState([]);
-    const [productDetails, setProductDetails] = useState(productInitialDetails);
-    const [isEdit, setIsEdit] = useState(false);
-    const [addProductDialog, setAddProductDialog] = useState(false);
+    const [OrderDetails, setOrderDetails] = useState(initialOrderDetailsValue);
+    const [orderItemsInput, setOrderItemsInput] = useState(initialItemDetailsValue);
+    const [deliveryInput, setDeliveryInput] = useState(initialDeliveryDetailsValue);
+    const [transpoterInput, setTransportInput] = useState(initialTranspoterDetailsValue);
+    const isEdit = OrderDetails?.Id ? true : false;
 
-    const isExclusiveBill = isEqualNumber(orderDetails.GST_Inclusive, 0);
-    const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
-    const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
-    const IS_IGST = isEqualNumber(orderDetails.IS_IGST, 1);
+    const [dialogs, setDialogs] = useState({
+        itemsDialog: false,
+        deliveryDialog: false,
+        transporterDialog: false,
+    })
+
+    const [options, setOptions] = useState({
+        PurchaseOrderOnly: true,
+        PurchaseOderWithDelivery: false,
+        DeliveryEntry: false,
+    })
 
     useEffect(() => {
-        if (isValidObject(editValues)) {
-            setOrderDetails(pre => ({
-                ...pre,
-                Po_Id: Number(editValues?.Po_Id),
-                Po_Date: editValues?.Po_Date,
-                Retailer_Id: editValues?.Retailer_Id,
-                Retailer_Name: editValues?.Retailer_Name,
-                Loadman_Id: editValues?.Loadman_Id,
-                Loadman: editValues?.Loadman,
-                Broker_Id: editValues?.Broker_Id,
-                Broker: editValues?.Broker,
-                Transpoter_Id: editValues?.Transpoter_Id,
-                Transpoter: editValues?.Transpoter,
-                Sales_Person_Id: editValues?.Sales_Person_Id,
-                Sales_Person_Name: editValues?.Sales_Person_Name,
-                Branch_Id: editValues?.Branch_Id,
-                Narration: editValues?.Narration,
-                Created_by: editValues?.Created_by,
-                So_Id: editValues?.So_Id,
-                GST_Inclusive: editValues?.GST_Inclusive,
-                IS_IGST: editValues?.IS_IGST,
-            }));
-            setOrderProducts(editValues?.Products_List?.map(pro => ({
-                ...pro,
-                Item_Id: pro.Item_Id ?? '',
-                ItemName: pro?.Product_Name ?? "",
-                Bill_Qty: pro?.Bill_Qty ?? 0,
-                Item_Rate: pro?.Item_Rate ?? 0,
-                UOM: pro?.Unit_Id ?? '',
-                Units: pro?.Units ?? '',
-                Product: {
-                    ...pro,
-                    Cgst_P: Number(findProductDetails(products, pro.Item_Id)?.Cgst_P) ?? 0,
-                    Sgst_P: Number(findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0,
-                    Igst_P: Number(findProductDetails(products, pro.Item_Id)?.Igst_P) ?? 0,
-                    Gst_P: Addition(findProductDetails(products, pro.Item_Id)?.Cgst_P, findProductDetails(products, pro.Item_Id)?.Sgst_P) ?? 0
-                } ?? {},
-                Group: 'Search Group',
-                GroupID: '',
-                Brand: 'Search Brand',
-                BrandID: '',
-                Amount: pro?.Amount ?? 0
-            })));
-            setIsEdit(true)
-        } else {
-            setOrderDetails(initialValue);
-            setOrderProducts([])
-            setIsEdit(false)
-        }
-    }, [editValues, products])
+        fetchLink({
+            address: `masters/products`
+        }).then(data => {
+            const productsData = (data.success ? data.data : []).sort(
+                (a, b) => String(a?.Product_Name).localeCompare(b?.Product_Name)
+            );
+            setProducts(productsData);
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter`
+        }).then(data => {
+            if (data.success) {
+                setCostCenterData(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `dataEntry/costCenter/category`
+        }).then(data => {
+            if (data.success) {
+                setCostCenterCategoryData(data.data);
+            }
+        }).catch(e => console.log(e))
+
+        fetchLink({
+            address: `dataEntry/godownLocationMaster`
+        }).then(data => {
+            if (data.success) {
+                setGodownLocations(data.data);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/retailers/dropdown`
+        }).then(data => {
+            if (data.success) {
+                const retailerData = toArray(data?.data).sort(
+                    (a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)
+                );
+                setRetailers(retailerData);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/branch/dropDown`
+        }).then(data => {
+            if (data.success) {
+                setBranch(data.data);
+            }
+        }).catch(e => console.error(e));
+    }, [])
 
     useEffect(() => {
 
-        fetchLink({
-            address: `masters/retailers?isVendor=1&isRetailer=0`
-        }).then(data => {
-            if (data.success) {
-                setRetailers(data?.data?.sort((a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)));
-            }
-        }).catch(e => console.error(e))
+        if (!isValidObject(stateDetails) || !isValidObject(stateDetails.OrderDetails)) return;
 
-        fetchLink({
-            address: `masters/uom`
-        }).then(data => {
-            if (data.success) {
-                setProductUOM(data.data);
-            }
-        }).catch(e => console.error(e))
+        const LoadingDate = stateDetails.OrderDetails?.LoadingDate ? ISOString(stateDetails.OrderDetails?.LoadingDate) : '';
+        const TradeConfirmDate = stateDetails.OrderDetails?.TradeConfirmDate ? ISOString(stateDetails.OrderDetails?.TradeConfirmDate) : '';
+        const editPage = stateDetails?.editPage;
 
-        fetchLink({
-            address: `masters/products?IS_Sold=0`
-        }).then(data => {
-            if (data.success) {
-                setProducts(data.data);
-                // const uniqueGroup = getUniqueData(data.data, 'Product_Group', ['Pro_Group']);
-                // setProductGroup(uniqueGroup);
-                const uniqueBrand = getUniqueData(data.data, 'Brand', ['Brand_Name']);
-                setProductBrand(uniqueBrand);
-                // const uniqueUOM = getUniqueData(data.data, 'UOM_Id', ['Units']);
-                // setProductUOM(uniqueUOM)
-            } else {
-                setProducts([]);
-                // setProductGroup([])
-                setProductBrand([]);
-            }
-        }).catch(e => console.error(e))
+        setOrderDetails({
+            ...stateDetails.OrderDetails,
+            PartyId: stateDetails?.OrderDetails?.PartyId ?? '',
+            OwnerId: stateDetails?.OrderDetails?.OwnerId ?? '',
+            BrokerId: stateDetails?.OrderDetails?.BrokerId ?? '',
+            OrderStatus: stateDetails.OrderDetails?.OrderStatus ?? 'New Order',
+            LoadingDate,
+            TradeConfirmDate,
+            CreatedBy: storage?.UserId
+        });
 
-        // fetchLink({
-        //     address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        // }).then(data => {
-        //     if (data.success) {
-        //         setSalePerson(data.data)
-        //     }
-        // }).catch(e => console.error(e))
+        setOrderItemArray(stateDetails?.OrderItemsArray ?? []);
+        setDeliveryArray(
+            stateDetails?.DeliveryArray?.map((o, i) => ({
+                ...o,
+                indexValue: o?.indexValue === null ? i : o?.indexValue
+            })) ?? []
+        );
+        setTranspoterArray(
+            stateDetails?.TranspoterArray?.map((o, i) => ({
+                ...o,
+                indexValue: o?.indexValue === null ? i : o?.indexValue
+            })) ?? []
+        );
+        setStaffArray(stateDetails?.StaffArray ?? []);
 
-        fetchLink({
-            address: `masters/company?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setCompanyInfo(data?.data[0] ? data?.data[0] : {})
-            }
-        }).catch(e => console.error(e))
+        const isFound = Object.keys(options).findIndex(key => key === editPage);
 
-    }, [storage?.Company_id])
-
-    const handleProductInputChange = (productId, value, rate, obj, UOM_Id, Units) => {
-        const productIndex = orderProducts.findIndex(item => isEqualNumber(item.Item_Id, productId));
-
-        if (productIndex !== -1) {
-            const updatedValues = [...orderProducts];
-            updatedValues[productIndex].Bill_Qty = Number(value);
-            updatedValues[productIndex].Item_Rate = Number(rate);
-            updatedValues[productIndex].UOM = UOM_Id;
-            updatedValues[productIndex].Units = Units;
-            updatedValues[productIndex].Amount = Multiplication(value, rate);
-            updatedValues[productIndex] = { ...updatedValues[productIndex], Product: obj }
-
-            setOrderProducts(updatedValues);
+        if (isFound !== -1) {
+            setOptions(pre => Object.fromEntries(
+                Object.entries(pre).map(([key, value]) => [key, key === editPage ? true : false])
+            ));
         } else {
-            setOrderProducts(prevValues => [...prevValues, {
-                Item_Id: productId,
-                Bill_Qty: Number(value),
-                Item_Rate: Number(rate),
-                UOM: UOM_Id,
-                Units: Units,
-                Amount: Multiplication(value, rate),
-                Product: obj
-            }]);
+            setOptions({
+                PurchaseOrderOnly: false,
+                PurchaseOderWithDelivery: true,
+                DeliveryEntry: false,
+            })
         }
+
+    }, [stateDetails]);
+
+    const handleRadioChange = (event) => {
+        const { id } = event.target;
+
+        setOptions({
+            PurchaseOrderOnly: id === 'PurchaseOrderOnly',
+            PurchaseOderWithDelivery: id === 'PurchaseOderWithDelivery',
+            DeliveryEntry: id === 'DeliveryEntry',
+        });
     };
 
-    const postSaleOrder = () => {
-        if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
-            loadingOn();
-            fetchLink({
-                address: `purchase/purchaseOrder`,
-                method: isEdit ? 'PUT' : 'POST',
-                bodyData: {
-                    ...orderDetails,
-                    Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0))
-                }
-            }).then(data => {
-                if (data.success) {
-                    toast.success(data?.message);
-                    reload()
-                    setOrderDetails(initialValue);
-                    setOrderProducts([])
-                } else {
-                    toast.error(data?.message)
-                }
-            }).catch(e => console.error(e)).finally(() => loadingOff())
+    const changeItems = (itemDetail) => {
+        setOrderItemArray(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.ItemId, itemDetail?.ItemId));
 
+            const reStruc = Object.fromEntries(
+                Object.entries(initialItemDetailsValue).map(([key, value]) => {
+                    return [key, itemDetail[key] ?? value]
+                })
+            )
+            return [...preItems, reStruc];
+        });
+        setOrderItemsInput(initialItemDetailsValue);
+        setDialogs(pre => ({ ...pre, itemsDialog: false }));
+    }
+
+    const changeDeliveryInfo = (details) => {
+        setDeliveryArray(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.Trip_Item_SNo, details?.Trip_Item_SNo));
+
+            const reStruc = Object.fromEntries(
+                Object.entries(initialDeliveryDetailsValue).map(([key, value]) => {
+                    return [key, details[key] ?? value]
+                })
+            )
+            return [...preItems, reStruc];
+        });
+
+        setDeliveryInput(initialDeliveryDetailsValue);
+        setDialogs(pre => ({ ...pre, deliveryDialog: false }));
+    }
+
+    const changeTransporterInfo = (details) => {
+        if (checkIsNumber(details.indexValue)) {
+            setTranspoterArray(pre => {
+                const transporterData = [...pre];
+                transporterData[details.indexValue] = { ...details };
+                return transporterData;
+            });
         } else {
-            if (orderProducts.length <= 0) {
-                return toast.error('Enter any one product quantity')
-            }
-            if (!orderDetails?.Retailer_Id) {
-                return toast.error('Select Retailer')
-            }
+            setTranspoterArray(pre => [...pre, { ...details, indexValue: pre.length }]);
         }
+        setTransportInput(initialTranspoterDetailsValue);
+        setDialogs(pre => ({ ...pre, transporterDialog: false }));
+    };
+
+    const postOrder = () => {
+        if (loadingOn) {
+            loadingOn();
+        }
+        fetchLink({
+            address: `dataEntry/purchaseOrderEntry`,
+            method: isEdit ? 'PUT' : 'POST',
+            bodyData: {
+                OrderDetails: OrderDetails,
+                OrderItems: options.DeliveryEntry ? [] : OrderItemsArray,
+                DelivdryDetails: options.PurchaseOrderOnly ? [] : DeliveryArray,
+                TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray,
+                StaffDetails: StaffArray
+            }
+        }).then(data => {
+            if (data?.success) {
+                setOrderDetails(initialOrderDetailsValue);
+                setOrderItemArray([]);
+                setDeliveryArray([]);
+                setTranspoterArray([]);
+                setStaffArray([]);
+                toast.success(data?.message)
+            } else {
+                toast.error(data?.message)
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) {
+                loadingOff();
+            }
+        });
     }
 
-    const closeAddProduct = () => {
-        setAddProductDialog(false);
-        setProductDetails(productInitialDetails);
+    const closeDialog = () => {
+        setDialogs(pre => ({
+            ...pre,
+            itemsDialog: false,
+            deliveryDialog: false,
+            transporterDialog: false,
+        }));
+        setOrderItemsInput(initialItemDetailsValue);
+        setDeliveryInput(initialDeliveryDetailsValue);
+        setTransportInput(initialTranspoterDetailsValue);
     }
 
-    const Total_Invoice_value = orderProducts.reduce((o, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty);
-        const Amount = Multiplication(billQty, itemRate);
+    const searchTripData = () => {
+        if (loadingOn) loadingOn()
+        fetchLink({
+            address: `inventory/tripSheet?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}`,
+        }).then(data => {
+            if (data.success) {
+                setTripData(data.data);
+            }
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
+        })
+    }
 
-        if (isInclusive || isNotTaxableBill) {
-            return o += Number(Amount);
+    const updateTranspoterArray = (deliveryArray, deleteRow, itemDetail, trip) => {
+        setTranspoterArray(prev => {
+            const existingTrip = prev.find(o => isEqualNumber(o.indexValue, itemDetail.Trip_Id));
+
+            const hasOtherDeliveries = deliveryArray.some(o => isEqualNumber(o.Trip_Id, itemDetail.Trip_Id));
+
+            if (deleteRow) {
+                return hasOtherDeliveries ? prev : prev.filter(o => !isEqualNumber(o.indexValue, itemDetail.Trip_Id));
+            } else {
+                const newTripObj = Object.fromEntries(
+                    Object.entries(initialTranspoterDetailsValue).map(([key, value]) => {
+                        switch (key) {
+                            case "indexValue": return [key, trip?.Trip_Id];
+                            case "Loading_Load": return [key, toNumber(trip?.LoadingLoad)];
+                            case "Loading_Empty": return [key, toNumber(trip?.LoadingEmpty)];
+                            case "Unloading_Load": return [key, toNumber(trip?.UnloadingLoad)];
+                            case "Unloading_Empty": return [key, toNumber(trip?.UnloadingEmpty)];
+                            case "EX_SH": return [key, existingTrip ? existingTrip.EX_SH : 0];
+                            case "VehicleNo": return [key, trip?.Vehicle_No];
+                            case "PhoneNumber": return [key, trip?.PhoneNumber];
+                            default: return [key, value];
+                        }
+                    })
+                );
+
+                if (existingTrip) {
+                    return prev.map(o => isEqualNumber(o.indexValue, itemDetail.Trip_Id) ? newTripObj : o);
+                } else {
+                    return [...prev, newTripObj].sort((a, b) => a.indexValue - b.indexValue);
+                }
+            }
+        });
+    };
+
+    const changeTripItems = (itemDetail, deleteRow = false) => {
+        const trip = tripData.find((trp) =>
+            isEqualNumber(trp.Trip_Id, itemDetail.Trip_Id)
+        );
+        const getTripDate = trip?.Trip_Date;
+        const tripDate = getTripDate ? ISOString(getTripDate) : ISOString();
+
+        const notInStaffList = trip?.Employees_Involved?.filter(staff =>
+            !StaffArray.some(arrObj => isEqualNumber(arrObj.EmployeeId, staff.Involved_Emp_Id))
+        ) || [];
+
+        if (notInStaffList.length > 0) {
+            setStaffArray(prevStaffArray => [
+                ...prevStaffArray,
+                ...notInStaffList.map(staff => Object.fromEntries(
+                    Object.entries(initialStaffDetailsValue).map(([key, value]) => {
+                        switch (key) {
+                            case 'EmployeeId': return [key, staff?.Involved_Emp_Id];
+                            case 'CostType': return [key, staff?.Cost_Center_Type_Id];
+                            default: return [key, value];
+                        }
+                    })
+                ))
+            ]);
         }
 
-        if (isExclusiveBill) {
-            const product = findProductDetails(products, item.Item_Id);
-            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
-            const tax = taxCalc(0, itemRate, gstPercentage)
-            return o += (Number(Amount) + (tax * billQty));
-        }
-    }, 0);
+        setDeliveryArray(prev => {
+            const preItems = prev.filter(o => !(
+                isEqualNumber(o?.Trip_Id, itemDetail?.Trip_Id)
+                && isEqualNumber(o.Trip_Item_SNo, itemDetail.Arrival_Id)
+            ));
 
-    const totalValueBeforeTax = orderProducts.reduce((acc, item) => {
-        const itemRate = RoundNumber(item?.Item_Rate);
-        const billQty = parseInt(item?.Bill_Qty) || 0;
+            let updatedDeliveryArray;
+            if (deleteRow) {
+                updatedDeliveryArray = preItems;
+            } else {
+                const currentProduct = trip?.Products_List?.find(o => (
+                    isEqualNumber(o?.Trip_Id, itemDetail?.Trip_Id)
+                    && isEqualNumber(o.Arrival_Id, itemDetail.Arrival_Id)
+                )) || {};
 
-        if (isNotTaxableBill) {
-            acc.TotalValue += Multiplication(billQty, itemRate);
-            return acc;
-        }
+                const productDetails = findProductDetails(products, currentProduct?.Product_Id);
+                const pack = parseFloat(productDetails?.PackGet ?? 0);
+                const Quantity = Division(currentProduct?.QTY ?? 0, pack || 1);
 
-        const product = findProductDetails(products, item.Item_Id);
-        const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+                const reStruc = Object.fromEntries(
+                    Object.entries(initialDeliveryDetailsValue).map(([key, value]) => {
+                        switch (key) {
+                            case 'LocationId': return [key, Number(currentProduct?.To_Location) ?? value];
+                            case 'Location': return [key, currentProduct?.ToLocation ?? value];
+                            case "Trip_Id": return [key, currentProduct?.Trip_Id ?? null];
+                            case "Trip_Item_SNo": return [key, currentProduct?.Arrival_Id ?? null];
+                            case "TransporterIndex": return [key, toNumber(trip?.Trip_Id)];
+                            case "ArrivalDate": return [key, tripDate];
+                            case "ItemId": return [key, Number(currentProduct?.Product_Id)];
+                            case "ItemName": return [key, currentProduct?.Product_Name];
+                            case "Concern": return [key, currentProduct?.Concern ?? value];
+                            case "BillNo": return [key, currentProduct?.BillNo ?? value];
+                            case "BillDate": return [key, tripDate];
+                            case "BilledRate": return [key, Number(currentProduct?.Gst_Rate)];
+                            case "Quantity": return [key, Quantity];
+                            case "Weight": return [key, Number(currentProduct?.QTY) ?? 0];
+                            case "BatchLocation": return [key, currentProduct?.Batch_No ?? ""];
+                            default: return [key, value];
+                        }
+                    })
+                );
 
-        if (isInclusive) {
-            const itemTax = taxCalc(1, itemRate, gstPercentage);
-            const basePrice = Subraction(itemRate, itemTax);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, basePrice);
-        }
-        if (isExclusiveBill) {
-            const itemTax = taxCalc(0, itemRate, gstPercentage);
-            acc.TotalTax += Multiplication(billQty, itemTax);
-            acc.TotalValue += Multiplication(billQty, itemRate);
-        }
+                updatedDeliveryArray = [...preItems, reStruc];
+            }
 
-        return acc;
-    }, {
-        TotalValue: 0,
-        TotalTax: 0
-    });
+            updateTranspoterArray(updatedDeliveryArray, deleteRow, itemDetail, trip);
+            return updatedDeliveryArray;
+        });
+    };
 
-    useEffect(() => {
-        setOrderProducts(pre => pre?.map(pro => ({
-            ...pro,
-            Amount: Multiplication(pro?.Item_Rate, pro?.Bill_Qty)
-        })));
-    }, [orderDetails.GST_Inclusive])
+    const deleteDeliveryItem = (row, currentDeliveryArray = []) => {
+        const filterdDeliveryArray = currentDeliveryArray.filter(o => !(
+            isEqualNumber(o?.Trip_Id, row?.Trip_Id)
+            && isEqualNumber(o.Trip_Item_SNo, row?.Trip_Item_SNo)
+        ))
+
+        setDeliveryArray(filterdDeliveryArray);
+        setTranspoterArray(pre => {
+            return pre.filter(fil => (
+                filterdDeliveryArray.some(sme => isEqualNumber(sme.Trip_Id, fil.indexValue))
+            ))
+        });
+    }
 
     return (
         <>
+            <Card>
+                <CardContent>
 
-            <div className="p-3 pt-0">
-
-                {/* Order Info */}
-
-                <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
-                    <h5 className="border-bottom">Purchase From:</h5>
-                    <div className="row ">
-                        <div className="col-md-4">
-                            <table className="table">
-                                <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Vendor Name:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Retailer Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Address:</td>
-                                        <td className="border-0 bg-light">
-                                            {retailers?.find(ret => isEqualNumber(ret.Retailer_Id, orderDetails.Retailer_Id))?.Reatailer_Address}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Phone:</td>
-                                        <td className="border-0 bg-light">
-                                            {retailers?.find(ret => isEqualNumber(ret.Retailer_Id, orderDetails.Retailer_Id))?.Mobile_No}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="col-md-4">
-                            <table className="table">
-                                <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Broker Name:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Broker_Id, label: orderDetails?.Broker }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Broker_Id: e.value, Broker: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Broker Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Loadman:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Loadman_Id, label: orderDetails?.Loadman }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Loadman_Id: e.value, Loadman: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Loadman Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Transpoter Name:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Transpoter_Id, label: orderDetails?.Transpoter }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Transpoter_Id: e.value, Transpoter: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Transpoter Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="col-md-4">
-                            <table className="table">
-                                <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light">Date:</td>
-                                        <td className="border-0 bg-light">
-                                            <input
-                                                type="date"
-                                                value={orderDetails?.Po_Date ? ISOString(orderDetails?.Po_Date) : ''}
-                                                onChange={e => setOrderDetails({ ...orderDetails, Po_Date: e.target.value })}
-                                                className="cus-inpt p-1"
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Invoice Type:</td>
-                                        <td className="border-0 bg-light">
-                                            <select
-                                                className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, GST_Inclusive: Number(e.target.value) })}
-                                                value={orderDetails.GST_Inclusive}
-                                            >
-                                                <option value={1}>Inclusive Tax</option>
-                                                <option value={0}>Exclusive Tax</option>
-                                                <option value={2}>Not Taxable</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Tax Type:</td>
-                                        <td className="border-0 bg-light">
-                                            <select
-                                                className="cus-inpt p-1"
-                                                onChange={e => setOrderDetails({ ...orderDetails, IS_IGST: Number(e.target.value) })}
-                                                value={orderDetails.IS_IGST}
-                                            >
-                                                <option value='0'>GST</option>
-                                                <option value='1'>IGST</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
+                    <div className="d-flex flex-wrap">
+                        <h5 className='flex-grow-1'>Purchase Order</h5>
+                        <Button
+                            variant='outlined'
+                            onClick={() => nav(window.history.length > 1 ? -1 : '/dataEntry/purchaseOrder')}
+                        >back</Button>
                     </div>
-                </div>
 
-                {/* Other Info  */}
-                <div className="p-3 bg-light rounded-3 mb-3 shadow-sm">
-                    <h5 className="border-bottom">Others:</h5>
+                    {!checkIsNumber(OrderDetails.Id) && (
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <div className="d-flex justify-content-center flex-wrap p-2 mb-2">
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input shadow-none"
+                                        style={{ padding: '0.7em' }}
+                                        type="radio"
+                                        name="radioType"
+                                        id="PurchaseOrderOnly"
+                                        checked={options.PurchaseOrderOnly}
+                                        disabled={OrderDetails.Id ? true : false}
+                                        onChange={handleRadioChange}
+                                    />
+                                    <label
+                                        className="form-check-label p-1 me-3"
+                                        htmlFor="PurchaseOrderOnly"
+                                    >
+                                        Purchase Order
+                                    </label>
+                                </div>
+
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input shadow-none"
+                                        style={{ padding: '0.7em' }}
+                                        type="radio"
+                                        name="radioType"
+                                        id="PurchaseOderWithDelivery"
+                                        checked={options.PurchaseOderWithDelivery}
+                                        disabled={OrderDetails.Id ? true : false}
+                                        onChange={handleRadioChange}
+                                    />
+                                    <label
+                                        className="form-check-label p-1 me-3"
+                                        htmlFor="PurchaseOderWithDelivery"
+                                    >
+                                        Order With Arrival
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* display order id for edit only */}
+                    {(options.PurchaseOderWithDelivery && OrderDetails.Id) && (
+                        <>
+                            <label>Order ID</label>:
+                            <input
+                                value={OrderDetails.Id}
+                                disabled
+                                className={inputStyle + ' w-auto ms-2 mb-2'}
+                                onChange={e => setOrderDetails(pre => ({ ...pre, Id: e.target.value }))}
+                                placeholder='Ex: 233'
+                            />
+                        </>
+                    )}
+
                     <div className="row">
-                        <div className="col-md-7">
-                            <table className="table">
-                                <tbody>
-                                    <tr>
-                                        <td className="border-0 bg-light" colSpan={2}>
-                                            {companyInfo?.Company_Name}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Address:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Company_Address}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light">Phone:</td>
-                                        <td className="border-0 bg-light">{companyInfo?.Telephone_Number}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        {/* staff details */}
+                        <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                            <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                <div className="d-flex align-items-center flex-wrap mb-2 border-bottom pb-2">
+                                    <h6 className="flex-grow-1 m-0">Staff Involved</h6>
+                                    <Button
+                                        variant="outlined"
+                                        color="primary"
+                                        type="button"
+                                        onClick={() => setStaffArray([...StaffArray, { ...initialStaffDetailsValue }])}
+                                    >Add</Button>
+                                </div>
+                                <table className="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th className="fa-13">Sno</th>
+                                            <th className="fa-13">Staff Name</th>
+                                            <th className="fa-13">Category</th>
+                                            <th className="fa-13">#</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {StaffArray.map((row, index) => (
+                                            <tr key={index}>
+                                                <td className='fa-13 vctr text-center'>{index + 1}</td>
+                                                <td className='fa-13 w-100 p-0'>
+                                                    <Select
+                                                        value={{
+                                                            value: row?.EmployeeId,
+                                                            label: costCenterData.find(c => isEqualNumber(c?.Cost_Center_Id, row?.EmployeeId))?.Cost_Center_Name
+                                                        }}
+                                                        onChange={e => setStaffArray((prev) => {
+                                                            return prev.map((item, ind) => {
+                                                                if (isEqualNumber(ind, index)) {
+                                                                    const staff = costCenterData.find(c => isEqualNumber(c.Cost_Center_Id, e.value))
+                                                                    return {
+                                                                        ...item,
+                                                                        CostType:
+                                                                            checkIsNumber(item.CostType)
+                                                                                ? Number(item.CostType)
+                                                                                : checkIsNumber(staff.User_Type)
+                                                                                    ? Number(staff.User_Type)
+                                                                                    : 0,
+                                                                        EmployeeId: Number(e.value),
+                                                                    }
+                                                                }
+                                                                return item;
+                                                            });
+                                                        })}
+                                                        options={
+                                                            [...costCenterData.filter(fil => (
+                                                                StaffArray.findIndex(st => (
+                                                                    isEqualNumber(st.EmployeeId, fil.Cost_Center_Id)
+                                                                )) === -1 ? true : false
+                                                            ))].map(st => ({
+                                                                value: st.Cost_Center_Id,
+                                                                label: st.Cost_Center_Name
+                                                            }))
+                                                        }
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        placeholder={"Select Staff"}
+                                                        filterOption={reactSelectFilterLogic}
+                                                    />
+                                                </td>
+                                                <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
+                                                    <select
+                                                        value={row?.CostType}
+                                                        onChange={e => setStaffArray((prev) => {
+                                                            return prev.map((item, ind) => {
+                                                                if (isEqualNumber(ind, index)) {
+                                                                    return {
+                                                                        ...item,
+                                                                        CostType: e.target.value
+                                                                    }
+                                                                }
+                                                                return item;
+                                                            });
+                                                        })}
+                                                        className="cus-inpt p-2 border-0"
+                                                    >
+                                                        <option value="">Select</option>
+                                                        {costCenterCategoryData.map((st, sti) =>
+                                                            <option value={st?.Cost_Category_Id} key={sti}>{st?.Cost_Category}</option>
+                                                        )}
+                                                    </select>
+                                                </td>
+                                                <td className='fa-13 vctr p-0'>
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            setStaffArray(prev => {
+                                                                return prev.filter((_, filIndex) => index !== filIndex);
+                                                            });
+                                                        }}
+                                                        size='small'
+                                                    >
+                                                        <Delete color='error' />
+                                                    </IconButton>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        {/* <div className="col-md-5">
-                            <table className="table">
+
+                        {/* po general details */}
+                        <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                            <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                <div className="row py-2 px-3">
+
+                                    <div className="col-md-3 col-sm-6 p-2">
+                                        <label>Loading Date</label>
+                                        <input
+                                            type="date"
+                                            className={inputStyle + ' bg-light'}
+                                            value={OrderDetails.LoadingDate}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="col-md-3 col-sm-6 p-2">
+                                        <label>Trade Date</label>
+                                        <input
+                                            type="date"
+                                            className={inputStyle + ' bg-light'}
+                                            value={OrderDetails.TradeConfirmDate}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="col-md-3 col-sm-6 p-2">
+                                        <label>Order Status</label>
+                                        <select
+                                            className={inputStyle + ' bg-light'}
+                                            value={OrderDetails?.OrderStatus}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, OrderStatus: e.target.value }))}
+                                        >
+                                            <option value="New Order">New Order</option>
+                                            <option value="On Process">On Process</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Canceled">Canceled</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="col-md-3 col-sm-6 p-2">
+                                        <label>Branch</label>
+                                        <select
+                                            className={inputStyle + ' bg-light'}
+                                            value={OrderDetails?.BranchId}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, BranchId: e.target.value }))}
+                                            disabled={checkIsNumber(OrderDetails.Sno)}
+                                        >
+                                            <option value="">Select Branch</option>
+                                            {branch.map((o, i) => (
+                                                <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="d-flex flex-wrap bg-white">
+                                    <span className='flex-grow-1 p-2'>
+                                        <h6>Party Name</h6>
+                                        <Select
+                                            value={{ value: OrderDetails.PartyId, label: OrderDetails.PartyName }}
+                                            onChange={e => {
+                                                const selectedOption = retailers.find(
+                                                    ret => isEqualNumber(ret.Retailer_Id, e.value)
+                                                ) ?? {}
+
+                                                setOrderDetails(pre => ({
+                                                    ...pre,
+                                                    PartyId: selectedOption?.Retailer_Id,
+                                                    PartyName: selectedOption?.Retailer_Name,
+                                                    PartyAddress: selectedOption?.Reatailer_Address
+                                                }))
+                                            }}
+                                            options={[
+                                                { value: '', label: 'select', isDisabled: true },
+                                                ...retailers.map(obj => ({
+                                                    value: obj?.Retailer_Id,
+                                                    label: obj?.Retailer_Name
+                                                }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            placeholder={"Select Party"}
+                                            maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
+                                        />
+
+                                        <br />
+
+                                        <h6>Party Address</h6>
+                                        <textarea
+                                            className={inputStyle + ' mb-2'}
+                                            rows={3}
+                                            value={OrderDetails.PartyAddress}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
+                                        />
+                                    </span>
+
+                                    <span className='p-2'>
+                                        <h6>Payment Condition</h6>
+                                        <textarea
+                                            className={inputStyle}
+                                            rows={2}
+                                            value={OrderDetails.PaymentCondition}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
+                                        />
+                                        <h6>Remarks</h6>
+                                        <textarea
+                                            className={inputStyle}
+                                            rows={2}
+                                            value={OrderDetails.Remarks}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
+                                        />
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="table-responsive">
+
+                        {/* Item Details */}
+                        {(options.PurchaseOrderOnly || options.PurchaseOderWithDelivery) && (!options.DeliveryEntry) && (
+                            <table className="table m-0">
+                                <thead>
+                                    <tr>
+                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={6}>
+                                            ORDER ITEMS
+                                        </td>
+                                        <td className={tdStyle + ' text-end bg-light p-0'}>
+                                            <Button
+                                                startIcon={<Add />}
+                                                varient='outlined'
+                                                onClick={() => setDialogs(pre => ({ ...pre, itemsDialog: true }))}
+                                            >Add Product</Button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th className={tdStyle + ' text-center'}>SNo</th>
+                                        <th className={tdStyle + ' text-center'}>Item Name</th>
+                                        <th className={tdStyle + ' text-center'}>Tonnage</th>
+                                        <th className={tdStyle + ' text-center'}>
+                                            Rate <br />
+                                            Deliver/Spot
+                                        </th>
+                                        <th className={tdStyle + ' text-center'}>Discount</th>
+                                        <th className={tdStyle + ' text-center'}>Quality Condition</th>
+                                        <th className={tdStyle + ' text-center'}>Action</th>
+                                    </tr>
+                                </thead>
+
                                 <tbody>
+                                    {OrderItemsArray.map((o, i) => (
+                                        <tr key={i}>
+                                            <td className={tdStyle}>{i + 1}</td>
+                                            <td className={tdStyle}>{o?.ItemName}</td>
+                                            <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
+                                            <td className={tdStyle}>{o?.Rate}</td>
+                                            <td className={tdStyle}>{o?.Discount}</td>
+                                            <td className={tdStyle}>{o?.QualityCondition}</td>
+                                            <td className={tdStyle + ' p-0 text-center'}>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setOrderItemsInput(pre => Object.fromEntries(
+                                                            Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                        ));
+                                                        setDialogs(pre => ({ ...pre, itemsDialog: true }));
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setOrderItemArray(prev => {
+                                                            return prev.filter((_, index) => index !== i);
+                                                        });
+                                                    }}
+                                                    size='small'
+                                                >
+                                                    <Delete color='error' />
+                                                </IconButton>
+                                            </td>
+                                        </tr>
+                                    ))}
+
                                     <tr>
-                                        <td className="border-0 bg-light vctr">Broker Name:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Broker_Id, label: orderDetails?.Broker }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Broker_Id: e.value, Broker: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Broker Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Loadman:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Loadman_Id, label: orderDetails?.Loadman }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Loadman_Id: e.value, Loadman: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Loadman Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="border-0 bg-light vctr">Transpoter Name:</td>
-                                        <td className="border-0 bg-light">
-                                            <Select
-                                                value={{ value: orderDetails?.Transpoter_Id, label: orderDetails?.Transpoter }}
-                                                onChange={(e) => setOrderDetails({ ...orderDetails, Transpoter_Id: e.value, Transpoter: e.label })}
-                                                options={[
-                                                    { value: '', label: 'select', isDisabled: true },
-                                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                                ]}
-                                                styles={customSelectStyles}
-                                                isSearchable={true}
-                                                placeholder={"Transpoter Name"}
-                                                maxMenuHeight={200}
-                                            />
-                                        </td>
+                                        <td className={'p-3'} colSpan={7}></td>
                                     </tr>
                                 </tbody>
                             </table>
-                        </div> */}
+                        )}
+
+                        {(options.PurchaseOderWithDelivery || options.DeliveryEntry) && (
+                            <>
+
+                                {/* Delivery Details */}
+                                <table className="table m-0">
+                                    <thead>
+                                        <tr>
+                                            <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={10}>DELIVERY DETAILS</td>
+                                            <td className={tdStyle + ' text-end bg-light p-0'} colSpan={2}>
+                                                {/* <Button
+                                                    startIcon={<Add />}
+                                                    varient='outlined'
+                                                    disabled={TranspoterArray.length === 0}
+                                                    onClick={() => setDialogs(pre => ({ ...pre, deliveryDialog: true }))}
+                                                >Add Delivery</Button> */}
+                                                <Button
+                                                    startIcon={<Download />}
+                                                    varient='outlined'
+                                                    disabled={OrderItemsArray.length === 0}
+                                                    onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: true }))}
+                                                >From Trips</Button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th className={tdStyle + ' text-center'}>SNo</th>
+                                            <th className={tdStyle + ' text-center'}>Location</th>
+                                            <th className={tdStyle + ' text-center'}>Arrival Date</th>
+                                            <th className={tdStyle + ' text-center'}>Item Name</th>
+                                            <th className={tdStyle + ' text-center'}>Concern</th>
+
+                                            <th className={tdStyle + ' text-center'}>Bill No</th>
+                                            <th className={tdStyle + ' text-center'}>Bill Date</th>
+                                            <th className={tdStyle + ' text-center'}>Quantity</th>
+                                            <th className={tdStyle + ' text-center'}>Billed Rate</th>
+                                            <th className={tdStyle + ' text-center'}>Tonnage / KGs</th>
+                                            <th className={tdStyle + ' text-center'}>Batch / Location</th>
+
+                                            <th className={tdStyle + ' text-center'}>Action</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {DeliveryArray.map((o, i) => (
+                                            <tr key={i}>
+                                                <td className={tdStyle}>{i + 1}</td>
+                                                <td className={tdStyle}>{o?.Location}</td>
+                                                <td className={tdStyle}>{o?.ArrivalDate}</td>
+                                                <td className={tdStyle}>{o?.ItemName}</td>
+                                                <td className={tdStyle}>{o?.Concern}</td>
+
+                                                <td className={tdStyle}>{o?.BillNo}</td>
+                                                <td className={tdStyle}>{o?.BillDate}</td>
+                                                <td className={tdStyle}>{o?.Quantity}</td>
+                                                <td className={tdStyle}>{o?.BilledRate ?? 0}</td>
+                                                <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
+                                                <td className={tdStyle}>{o?.BatchLocation}</td>
+
+                                                <td className={tdStyle + ' p-0 text-center'}>
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            setDeliveryInput(pre => Object.fromEntries(
+                                                                Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                            ));
+                                                            setDialogs(pre => ({ ...pre, deliveryDialog: true }));
+                                                        }}
+                                                        size='small'
+                                                    >
+                                                        <Edit />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            // setDeliveryArray(prev => {
+                                                            //     return prev.filter((_, index) => index !== i);
+                                                            // });
+                                                            deleteDeliveryItem(o, DeliveryArray);
+                                                        }}
+                                                        size='small'
+                                                    >
+                                                        <Delete color='error' />
+                                                    </IconButton>
+                                                </td>
+                                            </tr>
+                                        ))}
+
+                                        <tr>
+                                            <td className={'p-3'} colSpan={12}></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+
+                                {/* TRANSPOTER DETAILS */}
+                                <table className="table m-0">
+                                    <thead>
+                                        <tr>
+                                            <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={10}>
+                                                OTHER DETAILS
+                                            </td>
+                                            {/* <td className={tdStyle + ' text-end bg-light p-0'}>
+                                                <Button
+                                                    startIcon={<Add />}
+                                                    varient='outlined'
+                                                    onClick={() => setDialogs(pre => ({ ...pre, transporterDialog: true }))}
+                                                >Add Transporter</Button>
+                                            </td> */}
+                                        </tr>
+                                        <tr>
+                                            <th className={tdStyle + ' text-center'} rowSpan={2}>SNo</th>
+                                            <th className={tdStyle + ' text-center'} colSpan={2}>Loading Wt</th>
+                                            <th className={tdStyle + ' text-center'} colSpan={2}>Unloading Wt</th>
+                                            <th className={tdStyle + ' text-center'}>Weight</th>
+                                            <th className={tdStyle + ' text-center'} colSpan={3}>Transport Details</th>
+                                            <th className={tdStyle + ' text-center'} rowSpan={2}>Action</th>
+                                        </tr>
+                                        <tr>
+                                            <th className={tdStyle + ' text-center'}>Load</th>
+                                            <th className={tdStyle + ' text-center'}>Empty</th>
+                                            <th className={tdStyle + ' text-center'}>Load</th>
+                                            <th className={tdStyle + ' text-center'}>Empty</th>
+                                            <th className={tdStyle + ' text-center'}>EX / SH</th>
+                                            <th className={tdStyle + ' text-center'}>Name</th>
+                                            <th className={tdStyle + ' text-center'}>Vehicle No</th>
+                                            <th className={tdStyle + ' text-center'}>Phone Number</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {TranspoterArray.map((o, i) => (
+                                            <tr key={i}>
+                                                <td className={tdStyle}>{i + 1}</td>
+                                                <td className={tdStyle}>{o?.Loading_Load}</td>
+                                                <td className={tdStyle}>{o?.Loading_Empty}</td>
+                                                <td className={tdStyle}>{o?.Unloading_Load}</td>
+                                                <td className={tdStyle}>{o?.Unloading_Empty}</td>
+                                                <td className={tdStyle}>{o?.EX_SH}</td>
+                                                <td className={tdStyle}>{o?.DriverName}</td>
+                                                <td className={tdStyle}>{o?.VehicleNo}</td>
+                                                <td className={tdStyle}>{o?.PhoneNumber}</td>
+                                                <td className={tdStyle + ' p-0 text-center'}>
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            setTransportInput(pre => Object.fromEntries(
+                                                                Object.entries(pre).map(([key, value]) => [key, o[key] ?? value])
+                                                            ));
+                                                            setDialogs(pre => ({ ...pre, transporterDialog: true }));
+                                                        }}
+                                                        size='small'
+                                                    >
+                                                        <Edit />
+                                                    </IconButton>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr>
+                                            <td className={tdStyle + ' p-3'} colSpan={10}></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                            </>
+                        )}
+
+                        <div className="d-flex justify-content-end flex-wrap my-3">
+                            <Button
+                                onClick={() => {
+                                    setOrderDetails(initialOrderDetailsValue);
+                                    setOrderItemArray([]);
+                                    setDeliveryArray([]);
+                                    setTranspoterArray([]);
+                                }}
+                                className='me-2'
+                                variant='outlined'
+                                startIcon={<ClearAll />}
+                            >Clear Values</Button>
+                            <Button
+                                onClick={postOrder}
+                                variant='contained'
+                                startIcon={<Save />}
+                                disabled={
+                                    (() => {
+                                        const noOrderItems = isEqualNumber(OrderItemsArray.length, 0);
+                                        const noPartyName = !OrderDetails.PartyName;
+                                        const noDeliveryDetails =
+                                            isEqualNumber(DeliveryArray.length, 0) &&
+                                            isEqualNumber(TranspoterArray.length, 0);
+                                        const noOrderId = !OrderDetails.Id;
+
+                                        return (
+                                            (options.PurchaseOrderOnly && (noOrderItems || noPartyName)) ||
+                                            (options.PurchaseOderWithDelivery && ((noDeliveryDetails && noOrderItems) || noPartyName)) ||
+                                            (options.DeliveryEntry && (noOrderId || noDeliveryDetails))
+                                        );
+                                    })()
+                                }
+                            >Save</Button>
+                        </div>
+
                     </div>
-                </div>
+                </CardContent>
+            </Card>
 
-                {/* Actions */}
-                <div className="d-flex align-items-end justify-content-end flex-wrap mb-3">
-
-                    <Button
-                        onClick={() => setAddProductDialog(true)}
-                        sx={{ ml: 1 }}
-                        variant='outlined'
-                        startIcon={<Add />}
-                    >Add Product</Button>
-                </div>
-
-                <FilterableTable
-                    dataArray={orderProducts}
-                    columns={[
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => row?.Product?.Product_Name,
-                            ColumnHeader: 'Product',
-                            isVisible: 1,
-                        },
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => row?.Product?.HSN_Code,
-                            ColumnHeader: 'HSN Code',
-                            isVisible: 1,
-                        },
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => row?.Bill_Qty + ' ' + (row?.Units ?? ''),
-                            ColumnHeader: 'Quantity',
-                            isVisible: 1,
-                            align: 'center'
-                        },
-                        {
-                            Field_Name: 'Item_Rate',
-                            ColumnHeader: "Rate",
-                            Fied_Data: 'number',
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            ColumnHeader: 'Taxable Amount',
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
-                                const amount = row.Amount ?? 0;
-                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage);
-                                return NumberFormat(
-                                    isInclusive ? (amount - tax) : amount
-                                )
-                            },
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST ? row?.Product?.Igst_P : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)) ?? 0;
-                                const amount = row.Amount ?? 0;
-                                return NumberFormat(
-                                    taxCalc(orderDetails.GST_Inclusive, amount, percentage)
-                                ) + ' (' + percentage + '%)'
-                            },
-                            ColumnHeader: 'Tax',
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            ColumnHeader: 'Amount',
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                const percentage = (
-                                    IS_IGST
-                                        ? row?.Product?.Igst_P
-                                        : Addition(row?.Product?.Cgst_P, row?.Product?.Sgst_P)
-                                ) ?? 0;
-                                const amount = row.Amount ?? 0;
-                                const tax = taxCalc(orderDetails.GST_Inclusive, amount, percentage)
-                                return NumberFormat(
-                                    isEqualNumber(orderDetails.GST_Inclusive, 1) ? amount : (amount + tax)
-                                )
-                            },
-                            isVisible: 1,
-                            align: 'right'
-                        },
-                        {
-                            isCustomCell: true,
-                            Cell: ({ row }) => {
-                                return (
-                                    <>
-                                        <IconButton
-                                            onClick={() => {
-                                                setProductDetails({
-                                                    Item_Id: row.Item_Id,
-                                                    ItemName: row?.Product?.Product_Name,
-                                                    Bill_Qty: row.Bill_Qty,
-                                                    Item_Rate: row.Item_Rate,
-                                                    UOM: row.Product.UOM_Id,
-                                                    Product: row.Product,
-                                                    Group: row?.Product?.Pro_Group,
-                                                    GroupID: row?.Product?.Product_Group,
-                                                    Brand: row?.Product?.Brand_Name,
-                                                    BrandID: row?.Product?.Brand,
-                                                    Amount: row?.Amount
-                                                });
-                                                setAddProductDialog(true);
-                                            }}
-                                            size="small"
-                                        >
-                                            <Edit />
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setOrderProducts(pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id)))
-                                            }}
-                                            color='error'
-                                        >
-                                            <Delete />
-                                        </IconButton>
-                                    </>
-                                )
-                            },
-                            ColumnHeader: 'Action',
-                            isVisible: 1,
-                        },
-                    ]}
-                    EnableSerialNumber
-                    CellSize="small"
-                    disablePagination={true}
-                />
-
-
-                {orderProducts.length > 0 && (
-                    <div className="d-flex justify-content-end py-2">
-                        <table className="table">
+            {/* add items dialog */}
+            <Dialog
+                open={dialogs.itemsDialog}
+                onClose={closeDialog}
+                maxWidth='sm' fullWidth
+            >
+                <DialogTitle>Add Items</DialogTitle>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    changeItems(orderItemsInput)
+                }}>
+                    <DialogContent>
+                        <table className="table m-0">
                             <tbody>
                                 <tr>
-                                    <td className="border p-2" rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}>
-                                        Total in words: {numberToWords(parseInt(Total_Invoice_value))}
-                                    </td>
-                                    <td className="border p-2">Total Taxable Amount</td>
-                                    <td className="border p-2">
-                                        {NumberFormat(totalValueBeforeTax.TotalValue)}
-                                    </td>
-                                </tr>
-                                {!isEqualNumber(orderDetails.IS_IGST, 1) ? (
-                                    <>
-                                        <tr>
-                                            <td className="border p-2">CGST</td>
-                                            <td className="border p-2">
-                                                {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="border p-2">SGST</td>
-                                            <td className="border p-2">
-                                                {NumberFormat(totalValueBeforeTax.TotalTax / 2)}
-                                            </td>
-                                        </tr>
-                                    </>
-                                ) : (
-                                    <tr>
-                                        <td className="border p-2">IGST</td>
-                                        <td className="border p-2">
-                                            {NumberFormat(totalValueBeforeTax.TotalTax)}
-                                        </td>
-                                    </tr>
-                                )}
-                                <tr>
-                                    <td className="border p-2">Round Off</td>
-                                    <td className="border p-2">
-                                        {NumberFormat(
-                                            Total_Invoice_value - (
-                                                totalValueBeforeTax.TotalValue + totalValueBeforeTax.TotalTax
-                                            )
-                                        )}
+                                    <td className={tdStyle}>Item Name <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <Select
+                                            value={{ value: orderItemsInput.ItemId, label: orderItemsInput.ItemName }}
+                                            onChange={(e) => setOrderItemsInput(pre => ({ ...pre, ItemId: e.value, ItemName: e.label }))}
+                                            options={[
+                                                { value: '', label: 'select', isDisabled: true },
+                                                ...products.map(obj => ({
+                                                    value: obj?.Product_Id,
+                                                    label: obj?.Product_Name,
+                                                    isDisabled: (OrderItemsArray.findIndex(o => isEqualNumber(
+                                                        o?.ItemId, obj?.Product_Id
+                                                    ))) === -1 ? false : true
+                                                }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            required
+                                            isSearchable={true}
+                                            placeholder={"Select Product"}
+                                            maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
+                                        />
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="border p-2">Total</td>
-                                    <td className="border p-2">
-                                        {NumberFormat(Total_Invoice_value)}
+                                    <td className={tdStyle}>Brand</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className='cus-inpt p-2'
+                                            value={
+                                                checkIsNumber(orderItemsInput.ItemId)
+                                                    ? (products.find(pro => isEqualNumber(pro.Product_Id, orderItemsInput.ItemId)).Brand_Name ?? 'Not found')
+                                                    : ''
+                                            }
+                                            placeholder='Product Brand'
+                                            disabled
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Weight <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="number"
+                                            className='cus-inpt p-2 w-auto'
+                                            value={orderItemsInput.Weight}
+                                            required
+                                            placeholder='Weight'
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, Weight: e.target.value }))}
+                                        />
+                                        <input
+                                            className='cus-inpt p-2 w-auto'
+                                            value={orderItemsInput.Units}
+                                            placeholder='Units ex: kg, l, ml...'
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, Units: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Rate <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="number"
+                                            required
+                                            className='cus-inpt p-2'
+                                            value={orderItemsInput.Rate}
+                                            placeholder='Rate'
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, Rate: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Delivery Location <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className='cus-inpt p-2'
+                                            required
+                                            value={orderItemsInput.DeliveryLocation}
+                                            placeholder='Location '
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, DeliveryLocation: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Discount</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="number"
+                                            className='cus-inpt p-2'
+                                            placeholder='Discount Amount'
+                                            value={orderItemsInput.Discount}
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, Discount: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Quality Condition</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className='cus-inpt p-2'
+                                            value={orderItemsInput.QualityCondition}
+                                            placeholder='Pencentage or condition'
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, QualityCondition: e.target.value }))}
+                                        />
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                )}
-
-
-                <p className="fa-15 mt-3 m-0">Narration</p>
-                <textarea
-                    className="cus-inpt "
-                    value={orderDetails.Narration}
-                    onChange={e => setOrderDetails(pre => ({ ...pre, Narration: e.target.value }))}
-                />
-
-                <div className="d-flex justify-content-end">
-                    <Button
-                        variant='outlined'
-                        startIcon={<Clear />}
-                        onClick={switchScreen}
-                    >
-                        {'cancel'}
-                    </Button>
-                    <Button
-                        onClick={postSaleOrder}
-                        sx={{ ml: 1 }}
-                        variant='outlined'
-                        color='success'
-                        startIcon={<Save />}
-                        disabled={orderProducts?.length === 0 || !orderDetails?.Retailer_Id}
-                    >Save</Button>
-                </div>
-            </div>
-
-            <Dialog
-                open={addProductDialog}
-                onClose={closeAddProduct}
-                maxWidth='sm' fullWidth
-            >
-                <DialogTitle className="border-bottom">
-                    <span>Add Products Details</span>
-                </DialogTitle>
-                <form onSubmit={e => {
-                    e.preventDefault();
-                    if (productDetails.Item_Id && productDetails.Bill_Qty && productDetails.Item_Rate) {
-                        handleProductInputChange(
-                            productDetails.Item_Id,
-                            productDetails.Bill_Qty,
-                            productDetails.Item_Rate,
-                            productDetails.Product,
-                            productDetails.UOM,
-                            productDetails.Units,
-                        );
-                        closeAddProduct();
-                    } else {
-                        toast.warn(!productDetails.Item_Id ? 'Select Product' : !productDetails.Bill_Qty ? 'Enter Quantity' : 'Enter Rate or Amount');
-                    }
-                }}>
-                    <DialogContent>
-                        <div className="row pb-5">
-                            <div className="col-6 p-2">
-                                <label>Brand</label>
-                                <Select
-                                    value={{ value: productDetails.BrandID, label: productDetails.Brand }}
-                                    onChange={(e) => setProductDetails(pre => ({ ...pre, BrandID: e.value, Brand: e.label }))}
-                                    options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...productBrand.map(obj => ({ value: obj?.Brand, label: obj?.Brand_Name }))
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    placeholder={"Select Brand"}
-                                    maxMenuHeight={200}
-                                />
-                            </div>
-                            {/* <div className="col-6 p-2">
-                                <label>Group</label>
-                                <Select
-                                    value={{ value: productDetails.GroupID, label: productDetails.Group }}
-                                    onChange={(e) => setProductDetails(pre => ({ ...pre, GroupID: e.value, Group: e.label }))}
-                                    options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...productGroup.map(obj => ({ value: obj?.Product_Group, label: obj?.Pro_Group }))
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    placeholder={"Select Group"}
-                                    maxMenuHeight={200}
-                                />
-                            </div> */}
-                            <div className="col-6 p-2">
-                                <label>Group</label>
-                                <Select
-                                    value={{ value: productDetails.GroupID, label: productDetails.Group }}
-                                    onChange={(e) =>
-                                        setProductDetails((pre) => ({ ...pre, GroupID: e.value, Group: e.label }))
-                                    }
-                                    options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...products
-                                            .filter(
-                                                (pro) =>
-                                                    productDetails.BrandID
-                                                        ? isEqualNumber(pro.Brand, productDetails.BrandID)
-                                                        : true
-                                            )
-                                            .reduce((acc, pro) => {
-                                                if (
-                                                    !acc.some((grp) => grp.value === pro.Product_Group)
-                                                ) {
-                                                    acc.push({
-                                                        value: pro.Product_Group,
-                                                        label: pro.Pro_Group,
-                                                    });
-                                                }
-                                                return acc;
-                                            }, []),
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    placeholder={"Select Group"}
-                                    maxMenuHeight={200}
-                                />
-                            </div>
-                            <div className="col-12 p-2">
-                                <label>Item Name <RequiredStar /></label>
-                                <Select
-                                    value={{ value: productDetails.Item_Id, label: productDetails.ItemName }}
-                                    onChange={e => {
-                                        const productInfo = products.find(pro => isEqualNumber(pro.Product_Id, e.value))
-                                        setProductDetails(pre => ({
-                                            ...pre,
-                                            Item_Id: e.value,
-                                            ItemName: e.label,
-                                            Product: productInfo ?? {},
-                                            Group: productInfo.Pro_Group ?? pre.Group,
-                                            GroupID: productInfo.Product_Group ?? pre.GroupID,
-                                            Brand: productInfo.Brand_Name ?? pre.Brand,
-                                            BrandID: productInfo.Brand ?? pre.BrandID,
-                                            UOM: productInfo.UOM_Id ?? pre.UOM,
-                                            Units: productInfo.Units ?? pre.Units,
-                                            Item_Rate: productInfo.Item_Rate ?? 0,
-                                            Amount: 0,
-                                            Bill_Qty: 0,
-                                        }));
-                                    }}
-                                    options={[
-                                        { value: '', label: 'select', isDisabled: true },
-                                        ...[
-                                            ...products
-                                                .filter(pro => productDetails.BrandID ? isEqualNumber(pro.Brand, productDetails.BrandID) : true)
-                                                .filter(pro => productDetails.GroupID ? isEqualNumber(pro.Product_Group, productDetails.GroupID) : true)
-                                        ].map(obj => ({
-                                            value: obj?.Product_Id,
-                                            label: obj?.Product_Name,
-                                            isDisabled: (
-                                                orderProducts.findIndex(ind => isEqualNumber(
-                                                    ind?.Item_Id, obj?.Product_Id
-                                                ))
-                                            ) === -1 ? false : true
-                                        }))
-                                    ]}
-                                    styles={customSelectStyles}
-                                    isSearchable={true}
-                                    required
-                                    placeholder={"Select Product"}
-                                    maxMenuHeight={200}
-                                />
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Quantity <RequiredStar /></label>
-                                <input
-                                    type="number"
-                                    required
-                                    value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
-                                    onChange={e => {
-                                        if (productDetails.Item_Rate) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Amount: Multiplication(productDetails.Item_Rate, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else if (productDetails.Amount) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Item_Rate: Division(pre.Amount, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Bill_Qty: e.target.value,
-                                            }));
-                                        }
-                                    }}
-                                    className="cus-inpt"
-                                    min={1}
-                                />
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Rate </label>
-                                <input
-                                    type="number"
-                                    value={productDetails.Item_Rate ? NumberFormat(productDetails.Item_Rate) : ''}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Item_Rate: e.target.value,
-                                        Amount: pre.Bill_Qty ? Multiplication(e.target.value, pre.Bill_Qty) : pre.Amount
-                                    }))}
-                                    min={1}
-                                    className="cus-inpt"
-                                />
-                            </div>
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>UOM</label>
-                                <select
-                                    value={productDetails.UOM}
-                                    onChange={e => {
-                                        const selectedIndex = e.target.selectedIndex;
-                                        const label = e.target.options[selectedIndex].text;
-                                        const value = e.target.value;
-                                        setProductDetails(pre => ({ ...pre, UOM: value, Units: label }));
-                                    }}
-                                    className="cus-inpt"
-                                >
-                                    <option value="" disabled>select</option>
-                                    {productUOM.map((o, i) => (
-                                        <option value={o.Unit_Id} key={i} >{o.Units}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="col-md-6 p-2">
-                                <label>Amount</label>
-                                <input
-                                    type="number"
-                                    value={productDetails.Amount ? productDetails.Amount : ''}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Amount: e.target.value,
-                                        Item_Rate: pre.Bill_Qty ? Division(e.target.value, pre.Bill_Qty) : pre.Item_Rate
-                                    }))}
-                                    className="cus-inpt"
-                                    min={1}
-                                />
-                            </div>
-                        </div>
-
                     </DialogContent>
-                    <DialogActions className="d-flex justify-content-between align-items-center">
-                        <Button onClick={() => setProductDetails(productInitialDetails)} type='button' startIcon={<ClearAll />}>Clear</Button>
+                    <DialogActions className='d-flex justify-content-between'>
                         <span>
-                            <Button type="button" onClick={closeAddProduct}>cancel</Button>
-                            <Button type='submit' variant="outlined">Add</Button>
+                            <Button variant='outlined' type='button' onClick={() => setOrderItemsInput(initialItemDetailsValue)}>clear</Button>
+                        </span>
+                        <span>
+                            <Button
+                                variant='outlined'
+                                className='me-2'
+                                type='button'
+                                onClick={closeDialog}
+                            >cancel</Button>
+                            <Button variant='contained' type='submit'>submit</Button>
                         </span>
                     </DialogActions>
                 </form>
+            </Dialog>
+
+            {/* Delivery Details */}
+            <Dialog
+                open={dialogs.deliveryDialog}
+                onClose={closeDialog}
+                maxWidth='md' fullWidth
+            >
+                <DialogTitle>Add Delivery Details</DialogTitle>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    changeDeliveryInfo(deliveryInput);
+                }}>
+                    <DialogContent>
+                        <table className="table mb-2">
+                            <tbody>
+                                <tr>
+                                    <td className={tdStyle}>Location</td>
+                                    <td className={tdStyle}>
+                                        {deliveryInput?.Location}
+                                    </td>
+                                    <td className={'border-0'}></td>
+                                    <td className={tdStyle}>Arrival Date</td>
+                                    <td className={tdStyle}>
+                                        {LocalDate(deliveryInput?.ArrivalDate)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Item Name</td>
+                                    <td className={tdStyle}>
+                                        {deliveryInput?.ItemName}
+                                    </td>
+                                    <td className={'border-0'}></td>
+                                    <td className={tdStyle}>Concern</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className={'cus-inpt p-2'}
+                                            value={deliveryInput?.Concern}
+                                            onChange={e => setDeliveryInput(pre => ({ ...pre, Concern: e.target.value }))}
+                                            placeholder=''
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Bill No</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            className={'cus-inpt p-2'}
+                                            value={deliveryInput?.BillNo}
+                                            onChange={e => setDeliveryInput(pre => ({ ...pre, BillNo: e.target.value }))}
+                                            placeholder=''
+                                        />
+                                    </td>
+                                    <td className={'border-0'}></td>
+                                    <td className={tdStyle}>Bill Date</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="date"
+                                            value={deliveryInput?.BillDate}
+                                            className='cus-inpt p-2'
+                                            onChange={e => setDeliveryInput(pre => ({ ...pre, BillDate: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Quantity</td>
+                                    <td className={tdStyle}>
+                                        {deliveryInput?.Quantity}
+                                    </td>
+                                    <td className={'border-0'}></td>
+                                    <td className={tdStyle}>Tonnage <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        {deliveryInput?.Weight + ' ' + deliveryInput?.Units}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Billed Rate</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="number"
+                                            value={deliveryInput?.BilledRate}
+                                            className='cus-inpt p-2'
+                                            onChange={e => setDeliveryInput(pre => ({ ...pre, BilledRate: e.target.value }))}
+                                        />
+
+                                    </td>
+                                    <td className={'border-0'}></td>
+                                    <td className={tdStyle}>Batch / Location </td>
+                                    <td className={tdStyle}>
+                                        {deliveryInput?.BatchLocation}
+                                        {/* <input
+                                            className={'cus-inpt p-2 '}
+                                            value={deliveryInput?.BatchLocation}
+                                            disabled
+                                            onChange={e => setDeliveryInput(pre => ({ ...pre, BatchLocation: e.target.value }))}
+                                            placeholder='location or batch'
+                                        /> */}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </DialogContent>
+                    <DialogActions className='d-flex justify-content-between'>
+                        <span>
+                            <Button variant='outlined' type='button' onClick={() => setOrderItemsInput(initialItemDetailsValue)}>clear</Button>
+                        </span>
+                        <span>
+                            <Button
+                                variant='outlined'
+                                className='me-2'
+                                type='button'
+                                onClick={closeDialog}
+                            >cancel</Button>
+                            <Button variant='contained' type='submit'>submit</Button>
+                        </span>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* Transporter Details */}
+            <Dialog
+                open={dialogs.transporterDialog}
+                onClose={closeDialog}
+                maxWidth='sm' fullWidth
+            >
+                <DialogTitle>Add Transporter Details</DialogTitle>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    changeTransporterInfo(transpoterInput);
+                }}>
+                    <DialogContent>
+                        <table className="table m-0">
+                            <tbody>
+
+                                <tr>
+                                    <td className={tdStyle + ' text-center bg-light'} colSpan={4}>
+                                        Loading Details
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Load</td>
+                                    <td className={tdStyle + ' p-0'}>
+                                        <input
+                                            type="number"
+                                            disabled
+                                            value={transpoterInput?.Loading_Load}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, Loading_Load: e.target.value }))}
+                                        />
+                                    </td>
+                                    <td className={tdStyle}>Empty</td>
+                                    <td className={tdStyle + ' p-0'}>
+                                        <input
+                                            type="number"
+                                            disabled
+                                            value={transpoterInput?.Loading_Empty}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, Loading_Empty: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle + ' text-center bg-light'} colSpan={4}>
+                                        Unloading Details
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Load</td>
+                                    <td className={tdStyle + ' p-0'}>
+                                        <input
+                                            type="number"
+                                            disabled
+                                            value={transpoterInput?.Unloading_Load}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, Unloading_Load: e.target.value }))}
+                                        />
+                                    </td>
+                                    <td className={tdStyle}>Empty</td>
+                                    <td className={tdStyle + ' p-0'}>
+                                        <input
+                                            type="number"
+                                            disabled
+                                            value={transpoterInput?.Unloading_Empty}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, Unloading_Empty: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle} colSpan={2}>EX SH</td>
+                                    <td className={tdStyle + ' p-0'} colSpan={2}>
+                                        <input
+                                            disabled
+                                            value={transpoterInput?.EX_SH}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, EX_SH: e.target.value }))}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle} colSpan={2}>Driver Name</td>
+                                    <td className={tdStyle + ' p-0'} colSpan={2}>
+                                        <input
+                                            value={transpoterInput?.DriverName}
+                                            onChange={e => setTransportInput(pre => ({ ...pre, DriverName: e.target.value }))}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle} colSpan={2}>Vehicle No</td>
+                                    <td className={tdStyle + ' p-0'} colSpan={2}>
+                                        <input
+                                            value={transpoterInput?.VehicleNo}
+                                            disabled
+                                            onChange={e => setTransportInput(pre => ({ ...pre, VehicleNo: e.target.value }))}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle} colSpan={2}>Phone Number</td>
+                                    <td className={tdStyle + ' p-0'} colSpan={2}>
+                                        <input
+                                            value={transpoterInput?.PhoneNumber}
+                                            onChange={(e) => {
+                                                const sanitizedValue = onlynum(e);
+                                                setTransportInput((pre) => ({
+                                                    ...pre,
+                                                    PhoneNumber: sanitizedValue,
+                                                }));
+                                            }}
+                                            className={inputStyle + ' border-0 bg-white'}
+                                            maxLength={10}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </DialogContent>
+                    <DialogActions className='d-flex justify-content-between'>
+                        <span>
+                            <Button variant='outlined' type='button' onClick={() => setTransportInput(initialTranspoterDetailsValue)}>clear</Button>
+                        </span>
+                        <span>
+                            <Button
+                                variant='outlined'
+                                className='me-2'
+                                type='button'
+                                onClick={closeDialog}
+                            >cancel</Button>
+                            <Button variant='contained' type='submit'>submit</Button>
+                        </span>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* import from Tripsheet */}
+            <Dialog
+                open={filters.tripSheetDialog}
+                onClose={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                fullScreen
+            >
+                <DialogTitle
+                    className="d-flex align-items-center"
+                >
+                    <span className="flex-grow-1">Import From Trip Sheet</span>
+                    <IconButton
+                        size="small" color="error"
+                        onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                    ><Close /></IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <form onSubmit={e => {
+                        e.preventDefault();
+                        searchTripData();
+                    }}>
+                        <div className="row">
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <input
+                                    type="date"
+                                    value={filters.Fromdate}
+                                    className="cus-inpt p-2"
+                                    required
+                                    max={filters.Todate}
+                                    onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                />
+                            </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <input
+                                    type="date"
+                                    value={filters.Todate}
+                                    className="cus-inpt p-2"
+                                    min={filters.Fromdate}
+                                    required
+                                    onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                                />
+                            </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                <Button
+                                    variant="outlined"
+                                    type="submit"
+                                    startIcon={<Search />}
+                                >Search</Button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div className="table-responsive">
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {['#', 'SNo', 'Date', 'Item', 'Rate', 'Quantity', 'From', 'To', 'Trip No', 'Challan No', 'Vehicle No', 'Branch'].map((o, i) => (
+                                        <th className="fa-13" key={i}>{o}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tripData.flatMap(trip =>
+                                    trip?.Products_List.map(product => ({
+                                        ...trip,
+                                        ...product,
+                                    }))
+                                ).filter(fil => {
+                                    return OrderItemsArray.some(odrItem => (
+                                        isEqualNumber(odrItem.ItemId, fil.Product_Id)
+                                    )) && !checkIsNumber(fil.arrivalOrderId)
+                                    // !fil?.ConvertedPurchaseOrders?.some(co => (
+                                    //     isEqualNumber(co.Trip_Id, fil.Trip_Id)
+                                    //     && isEqualNumber(co.Trip_Item_SNo, fil.Arrival_Id)
+                                    // ))
+                                }).map((trip, tripIndex) => (
+                                    <tr key={tripIndex}>
+                                        <td className='fa-12'>
+                                            {(() => {
+                                                const isChecked = DeliveryArray.findIndex(o =>
+                                                    isEqualNumber(o?.Trip_Id, trip.Trip_Id) &&
+                                                    isEqualNumber(o?.Trip_Item_SNo, trip.Arrival_Id)
+                                                ) !== -1;
+
+                                                return (
+                                                    <div>
+                                                        <input
+                                                            className="form-check-input shadow-none pointer"
+                                                            style={{ padding: '0.7em' }}
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {
+                                                                if (isChecked) changeTripItems(trip, true)
+                                                                else changeTripItems(trip)
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )
+                                            })()}
+                                        </td>
+                                        <td className='fa-12'>{tripIndex + 1}</td>
+                                        <td className='fa-12'>{trip?.Trip_Date ? LocalDate(trip.Trip_Date) : ''}</td>
+                                        <td className='fa-12'>{trip?.Product_Name}</td>
+                                        <td className='fa-12'>{trip?.Gst_Rate}</td>
+                                        <td className='fa-12'>{trip?.QTY}</td>
+                                        <td className='fa-12'>{trip?.FromLocation}</td>
+                                        <td className='fa-12'>{trip?.ToLocation}</td>
+                                        <td className='fa-12'>{trip?.Trip_No}</td>
+                                        <td className='fa-12'>{trip?.Challan_No}</td>
+                                        <td className='fa-12'>{trip?.Vehicle_No}</td>
+                                        <td className='fa-12'>{trip?.Branch_Name}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        size="small" color="error"
+                        onClick={() => setFilters(pre => ({ ...pre, tripSheetDialog: false }))}
+                    >close</Button>
+                </DialogActions>
             </Dialog>
         </>
     )
 }
 
-
-export default PurchaseOrderCreation;
+export default PurchaseOrderFormTemplate;

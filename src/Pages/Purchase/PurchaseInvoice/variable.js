@@ -1,4 +1,4 @@
-import { ISOString, isValidJSON } from "../../Components/functions";
+import { ISOString, isValidJSON } from "../../../Components/functions";
 
 const user = localStorage.getItem('user');
 const storage = isValidJSON(user) ? JSON.parse(user) : {};

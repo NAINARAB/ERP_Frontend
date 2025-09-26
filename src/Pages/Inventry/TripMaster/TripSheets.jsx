@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, Subraction, timeDuration, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, reactSelectFilterLogic, Subraction, timeDuration, toNumber } from "../../../Components/functions";
 import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
@@ -162,7 +162,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             label: name,
         }));
     }, [tripData]);
-    
+
     const filteredData = useMemo(() => {
         return tripData.filter(trip => {
             const hasFromGodownMatch = filters.FromGodown.length > 0
@@ -170,33 +170,33 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     filters.FromGodown.some(selected => selected.value === product.FromLocation)
                 )
                 : false;
-    
+
             const hasToGodownMatch = filters.ToGodown.length > 0
                 ? trip.Products_List.some(product =>
                     filters.ToGodown.some(selected => selected.value === product.ToLocation)
                 )
                 : false;
-    
+
             const hasItemMatch = filters.Items.length > 0
                 ? trip.Products_List.some(product =>
                     filters.Items.some(selected => selected.value === product.Product_Name)
                 )
                 : false;
-    
+
             const hasEmployeeMatch = filters.Staffs.length > 0
                 ? trip.Employees_Involved.some(staff =>
                     filters.Staffs.some(selected => selected.value === staff.Emp_Name)
                 )
                 : false;
-    
+
             const hasVoucherMatch = filters.VoucherType.length > 0
                 ? filters.VoucherType.some(selected => selected.value === trip.VoucherTypeGet)
                 : false;
-    
+
             return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch || hasVoucherMatch;
         });
     }, [tripData, filters]);
-    
+
 
     const statusColor = {
         NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
@@ -429,6 +429,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Staff"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -448,6 +449,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Items"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -467,6 +469,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select From Godown"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -486,6 +489,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select To Godown"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -505,6 +509,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Voucher"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

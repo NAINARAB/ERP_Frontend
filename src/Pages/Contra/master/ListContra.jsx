@@ -3,7 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton }
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import Select from "react-select";
@@ -262,6 +262,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                             isSearchable={true}
                                             placeholder={"Debit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -281,6 +282,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                             isSearchable={true}
                                             placeholder={"Credit Account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -305,7 +307,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                                         value: branchValue?.value || ''
                                                     }
                                                 });
-                                                
+
                                             }}
                                         >
                                             <option value={''}>ALL</option>
@@ -331,6 +333,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                             isSearchable={true}
                                             placeholder={"Voucher Type"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -346,7 +349,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                                 const statusValue = contraStatus.find(
                                                     s => isEqualNumber(s.value, e.target.value)
                                                 ) || { label: '', value: '' };
-                                                
+
                                                 setFilters({
                                                     ...filters,
                                                     status: {
@@ -381,6 +384,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                             isSearchable={true}
                                             placeholder={"Sales Person Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

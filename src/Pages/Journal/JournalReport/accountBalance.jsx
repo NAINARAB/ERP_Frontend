@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
-import { Addition, checkIsNumber, NumberFormat, Subraction, toNumber } from '../../../Components/functions';
+import { Addition, checkIsNumber, NumberFormat, reactSelectFilterLogic, Subraction, toNumber } from '../../../Components/functions';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -78,6 +78,7 @@ const AccountBalance = ({ loadingOn, loadingOff }) => {
                                 isSearchable
                                 styles={customSelectStyles}
                                 menuPortalTarget={document.body}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 

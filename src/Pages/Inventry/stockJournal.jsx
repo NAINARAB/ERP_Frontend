@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Addition, ISOString, isValidDate, trimText } from '../../Components/functions';
+import { Addition, ISOString, isValidDate, reactSelectFilterLogic, trimText } from '../../Components/functions';
 import FilterableTable, { createCol, ButtonActions } from '../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
@@ -253,7 +253,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
 
     const calculateDifference = (sourceQty, destQty) => {
         if (sourceQty === 0) return 0;
-    
+
         return ((sourceQty - destQty) / sourceQty) * 100;
     };
 
@@ -514,6 +514,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select From Godown"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -533,6 +534,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select To Godown"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -552,6 +554,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Staff"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -571,6 +574,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Source Items"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -590,6 +594,7 @@ const StockJournal = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Destination Items"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

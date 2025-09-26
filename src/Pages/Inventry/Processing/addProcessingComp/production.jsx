@@ -10,6 +10,7 @@ import {
     isEqualNumber,
     Multiplication,
     onlynum,
+    reactSelectFilterLogic,
     rid,
 } from "../../../../Components/functions";
 import { initialDestinationValue } from "./variables";
@@ -143,6 +144,8 @@ const ProductionOfProcessing = ({
                                         isSearchable
                                         placeholder="Select Item"
                                         maxMenuHeight={300}
+
+                                        filterOption={reactSelectFilterLogic}
                                     />
                                 </td>
 
@@ -207,6 +210,7 @@ const ProductionOfProcessing = ({
                                         isSearchable
                                         placeholder="Select Godown"
                                         maxMenuHeight={300}
+                                        filterOption={reactSelectFilterLogic}
                                     />
                                 </td>
 
@@ -221,9 +225,9 @@ const ProductionOfProcessing = ({
                                 </td>
 
                                 <td className="fa-13 px-1 py-0 p-0 vctr text-center">
-                                    <IconButton 
-                                        color="error" 
-                                        size="small" 
+                                    <IconButton
+                                        color="error"
+                                        size="small"
                                         onClick={() => setDestinationList((list) => list.filter((_, i) => i !== index))}
                                     >
                                         <Delete className="fa-20" />

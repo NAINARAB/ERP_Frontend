@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../Components/filterableTable2";
 import { fetchLink } from "../../Components/fetchComponent";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate } from "../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic } from "../../Components/functions";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt, Search } from '@mui/icons-material';
@@ -239,6 +239,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                                         isSearchable={true}
                                         placeholder={"Select Vendor"}
                                         maxMenuHeight={300}
+                                        filterOption={reactSelectFilterLogic}
                                     />
                                 </td>
                             </tr>

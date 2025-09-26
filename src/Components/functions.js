@@ -795,3 +795,12 @@ export const getSessionFiltersByPageId = (pageID) => {
 }
 
 export const clearFilters = () => sessionStorage.removeItem('filterValues');
+
+export const removeSplChar = (str) => String(str).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+export const reactSelectFilterLogic = (option, inputValue) => {
+    const normalizedLabel = removeSplChar(option.label);
+    const normalizedInput = removeSplChar(inputValue);
+
+    return normalizedLabel.includes(normalizedInput);
+};

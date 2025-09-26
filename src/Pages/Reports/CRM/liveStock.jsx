@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, isEqualNumber, NumberFormat, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, NumberFormat, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -62,6 +62,7 @@ const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff, Fromdate, Toda
                             isSearchable={true}
                             required
                             placeholder={"Select Retailer"}
+                            filterOption={reactSelectFilterLogic}
                         />
                     </div>
                 </>

@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum, toNumber } from '../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum, reactSelectFilterLogic, toNumber } from '../../Components/functions';
 import { Delete, Add, Save, ClearAll, Edit, Search, Close, Download } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
@@ -634,6 +634,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                                         styles={customSelectStyles}
                                                         isSearchable={true}
                                                         placeholder={"Select Staff"}
+                                                        filterOption={reactSelectFilterLogic}
                                                     />
                                                 </td>
                                                 <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
@@ -760,6 +761,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Party"}
                                             maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
                                         />
 
                                         <br />
@@ -1105,6 +1107,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Product"}
                                             maxMenuHeight={200}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

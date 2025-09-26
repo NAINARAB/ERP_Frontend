@@ -1,4 +1,4 @@
-import { NumberFormat, Addition } from '../../../Components/functions';
+import { NumberFormat, Addition, reactSelectFilterLogic } from '../../../Components/functions';
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
 import { useState, useEffect } from "react";
 import Select from "react-select";
@@ -87,6 +87,7 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) =>
                                 styles={customSelectStyles}
                                 isSearchable={true}
                                 placeholder={"Retailer Name"}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
                     </>

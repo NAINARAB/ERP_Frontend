@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { checkIsNumber, isEqualNumber, ISOString, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, reactSelectFilterLogic, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { Close, Search } from "@mui/icons-material";
 import { paymentBillInfoInitialValue, paymentCostingInfoInitialValue, stockJournalTypes } from "./variable";
 import { useEffect, useState } from "react";
@@ -315,6 +315,7 @@ const ExpencePayment = ({
                                     isSearchable={true}
                                     isMulti={true}
                                     closeMenuOnSelect={false}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -339,6 +340,7 @@ const ExpencePayment = ({
                                     styles={customSelectStyles}
                                     isSearchable={true}
                                     closeMenuOnSelect={false}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
                         </div>

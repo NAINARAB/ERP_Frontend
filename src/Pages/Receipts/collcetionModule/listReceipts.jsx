@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { getSessionUser, isEqualNumber, ISOString, isValidDate, Subraction, toArray } from "../../../Components/functions";
+import { getSessionUser, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, Subraction, toArray } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
@@ -502,6 +502,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Voucher"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -523,6 +524,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Retailer"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -544,6 +546,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Receipt Type"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -565,6 +568,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Collection Person"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -586,6 +590,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Payment Status"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -606,6 +611,7 @@ const ReceiptsListing = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Select Verify Status"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

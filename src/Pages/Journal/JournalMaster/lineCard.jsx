@@ -3,7 +3,7 @@ import { IconButton, Tooltip } from "@mui/material";
 import { Delete, PlaylistAdd } from "@mui/icons-material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { isEqualNumber, checkIsNumber, toArray } from "../../../Components/functions";
+import { isEqualNumber, checkIsNumber, toArray, reactSelectFilterLogic } from "../../../Components/functions";
 import InlineBillRefTable from "./journalBillReference";
 
 const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
@@ -40,9 +40,9 @@ const LineCard = memo(function LineCard({
                             )?.isSundryParty;
 
                             updateLine(
-                                entry.LineId, 
-                                { 
-                                    Acc_Id: !opt ? null : toNum(opt.value), 
+                                entry.LineId,
+                                {
+                                    Acc_Id: !opt ? null : toNum(opt.value),
                                     AccountGet: !opt ? "" : opt.label,
                                     isSundryParty: isSundryParty ? 1 : 0
                                 }
@@ -53,6 +53,7 @@ const LineCard = memo(function LineCard({
                         isSearchable
                         styles={customSelectStyles}
                         menuPortalTarget={document.body}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 

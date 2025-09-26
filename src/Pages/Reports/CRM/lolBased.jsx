@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, NumberFormat, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, NumberFormat, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -177,6 +177,7 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff, Fromdate, Todate }) => 
                                             isSearchable={true}
                                             required
                                             placeholder={"Select Retailer"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

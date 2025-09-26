@@ -171,7 +171,7 @@ const ArrivalList = ({ loadingOn, loadingOff }) => {
                         }}
                         loadingOff={loadingOff} loadingOn={loadingOn}
                     >
-                        H
+                        {/* H */}
                     </CreateArrival>
                 )}
             </>

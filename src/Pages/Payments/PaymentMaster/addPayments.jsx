@@ -3,7 +3,7 @@ import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue, getSessionUser, isArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray, toNumber, storageValue, getSessionUser, isArray, reactSelectFilterLogic } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
@@ -362,6 +362,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     menuPortalTarget={document.body}
                                     styles={customSelectStyles}
                                     isSearchable={true}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -410,6 +411,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     isSearchable={true}
                                     required
                                     placeholder={"Select Product"}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -431,6 +433,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     onChange={e => handleGroupSelect(e.value, e.label, 'debit')}
                                     styles={customSelectStyles}
                                     isSearchable={true}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -479,6 +482,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     isSearchable={true}
                                     required
                                     placeholder={"Select Product"}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -502,6 +506,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 

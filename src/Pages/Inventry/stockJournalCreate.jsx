@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM, getSessionUser, isEqualNumber, isGraterNumber, isValidObject } from "../../Components/functions"
+import { Addition, Division, ISOString, Multiplication, checkIsNumber, combineDateTime, extractHHMM, getSessionUser, isEqualNumber, isGraterNumber, isValidObject, reactSelectFilterLogic } from "../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
 import { fetchLink } from "../../Components/fetchComponent"
 import Select from 'react-select';
@@ -451,6 +451,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             styles={customSelectStyles}
                                                             isSearchable={true}
                                                             placeholder={"Select Staff"}
+                                                            filterOption={reactSelectFilterLogic}
                                                         />
                                                     </td>
                                                     <td className='fa-13 vctr p-0'>
@@ -595,6 +596,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                 isSearchable={true}
                                                 placeholder={"Select Voucher Type"}
                                                 isDisabled={isViewOnly}
+                                                filterOption={reactSelectFilterLogic}
                                             />
                                         </div>
 
@@ -743,6 +745,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'MATERIAL INWARD' || isViewOnly}
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
+                                                            filterOption={reactSelectFilterLogic}
                                                         />
 
                                                     </td>
@@ -901,6 +904,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                                                             placeholder={"Select Item"}
                                                             maxMenuHeight={300}
                                                             isDisabled={stockJorunalInfo.Stock_Journal_Bill_type === 'OTHER GODOWN' || isViewOnly}
+                                                            filterOption={reactSelectFilterLogic}
                                                         />
                                                     </td>
                                                     <td className='fa-13 px-1 py-0 vctr'>

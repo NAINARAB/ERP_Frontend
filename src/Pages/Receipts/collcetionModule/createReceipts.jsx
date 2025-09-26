@@ -3,6 +3,7 @@ import {
     Addition,
     checkIsNumber,
     ISOString,
+    reactSelectFilterLogic,
     RoundNumber,
     stringCompare,
     toNumber,
@@ -186,6 +187,7 @@ const CreateReceipts = ({ loadingOn, loadingOff }) => {
                                         setReceiptInfo(pre => ({ ...pre, retailer_id: value.value }))
                                     }}
                                     placeholder="Search by Retailer"
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
                         </div>

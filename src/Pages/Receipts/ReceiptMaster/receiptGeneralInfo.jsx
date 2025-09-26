@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { checkIsNumber, isEqualNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
 import { receiptTypes, transactionTypes } from "./variable";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -219,6 +219,7 @@ const ReceiptGeneralInfo = ({
                         onChange={e => handleGroupSelect(e.value, e.label, 'debit')}
                         styles={customSelectStyles}
                         isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 
@@ -254,6 +255,7 @@ const ReceiptGeneralInfo = ({
                         isSearchable={true}
                         required
                         placeholder={"Select Product"}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 
@@ -275,6 +277,7 @@ const ReceiptGeneralInfo = ({
                         menuPortalTarget={document.body}
                         styles={customSelectStyles}
                         isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 
@@ -310,6 +313,7 @@ const ReceiptGeneralInfo = ({
                         isSearchable={true}
                         required
                         placeholder={"Select Product"}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 
@@ -344,6 +348,7 @@ const ReceiptGeneralInfo = ({
                                 ]}
                                 styles={customSelectStyles}
                                 isSearchable={true}
+                                                        filterOption={reactSelectFilterLogic}
                             />
                         </div>
 

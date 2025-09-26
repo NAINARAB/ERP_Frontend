@@ -1,7 +1,7 @@
 import React from "react";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn"
-import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 
 const ManageSalesInvoiceGeneralInfo = ({
@@ -49,10 +49,11 @@ const ManageSalesInvoiceGeneralInfo = ({
                         isSearchable={true}
                         placeholder={"Select Vendor"}
                         maxMenuHeight={300}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 
-               
+                {/* voucher type */}
                 <div className="col-sm-4 p-2">
                     <label className='fa-13'>Voucher Type</label>
                     <Select
@@ -75,17 +76,15 @@ const ManageSalesInvoiceGeneralInfo = ({
                         required={true}
                         placeholder={"Select Voucher Type"}
                         maxMenuHeight={300}
-                    //   isDisabled={checkIsNumber(invoiceInfo?.Do_Id) || checkIsNumber(invoiceInfo?.Pre_Id)}
-
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
-                
 
                 {/* Date */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label className='fa-13'>Entry Date <RequiredStar /></label>
                     <input
-                        value={invoiceInfo?.Pre_Date || invoiceInfo?.Do_Date || ""}
+                        value={invoiceInfo?.Do_Date || ""}
                         type="date"
                         required
                         className={inputStyle}
@@ -156,6 +155,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                         isSearchable={true}
                         placeholder={"Select"}
                         maxMenuHeight={300}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 

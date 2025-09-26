@@ -1,441 +1,329 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import '../../common.css'
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
-import { isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
-import InvoiceBillTemplate from "../../Sales/SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Visibility } from "@mui/icons-material";
-import { convertedStatus } from "../../Sales/convertedStatus";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { useEffect, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
-import PurchaseOrderCreation from "./purchaseOrderCreation";
+import { fetchLink } from "../../../Components/fetchComponent";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FilterAlt, Search } from '@mui/icons-material';
+import { purchaseOrderDataSet, displayColumns } from "./filters";
+import { toast } from 'react-toastify';
+import PurchaseOrderPreviewTemplate from "../../DataEntry/purchaseOrderPreviewTemplate";
+import Select from 'react-select';
+import { customSelectStyles } from "../../../Components/tablecolumn";
 
+const useQuery = () => new URLSearchParams(useLocation().search);
 
-const PurchaseOrderList = ({ loadingOn, loadingOff }) => {
-    const storage = JSON.parse(localStorage.getItem('user'));
-    const [purchaseOrder, setPurchaseOrder] = useState([]);
-    const [retailers, setRetailers] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [screen, setScreen] = useState(true);
-    const [orderInfo, setOrderInfo] = useState({});
-    const [viewOrder, setViewOrder] = useState({});
-    const [reload, setReload] = useState(false)
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+    OrderStatus: "ITEMS PENDING",
+    vendorId: '',
+    vendor: '',
+};
+
+const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
+    const [purchaseOrderData, setPurchaseOrderData] = useState([]);
+    const [orderPreview, setOrderPreview] = useState({
+        OrderDetails: {},
+        OrderItemsArray: [],
+        DeliveryArray: [],
+        TranspoterArray: [],
+        StaffArray: [],
+        display: false,
+    });
+    const [vendorList, setVendorList] = useState([]);
+    const [products, setProducts] = useState([]);
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const stateDetails = location.state;
+    const query = useQuery();
 
     const [filters, setFilters] = useState({
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        Retailer_Id: '',
-        RetailerGet: 'ALL',
-        Created_by: '',
-        CreatedByGet: 'ALL',
-        Sales_Person_Id: '',
-        SalsePersonGet: 'ALL',
-        Cancel_status: 0
-    });
-
-    const [dialog, setDialog] = useState({
-        filters: false,
-        orderDetails: false,
+        ...defaultFilters,
+        FilterDialog: false,
+        deleteOrderDialog: false,
+        deleteOrderId: '',
+        refresh: false,
+        view: 'PURCHASE ORDERS'
     });
 
     useEffect(() => {
         fetchLink({
-            address: `purchase/purchaseOrder?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`
+            address: `masters/retailers/dropDown`
         }).then(data => {
             if (data.success) {
-                setPurchaseOrder(data?.data)
+                const retailerData = toArray(data?.data).sort(
+                    (a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)
+                );
+                setVendorList(retailerData);
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e));
 
-    }, [
-        filters.Fromdate,
-        filters?.Todate,
-        filters?.Retailer_Id,
-        filters?.Sales_Person_Id,
-        filters?.Created_by,
-        filters?.Cancel_status,
-        reload
-    ])
+        fetchLink({
+            address: `masters/products`
+        }).then(data => {
+            if (data.success) {
+                setProducts(data.data);
+            } else {
+                setProducts([]);
+            }
+        }).catch(e => console.error(e));
+    }, []);
 
     useEffect(() => {
-
+        if (loadingOn) loadingOn();
         fetchLink({
-            address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}`
+            address: `dataEntry/purchaseOrderEntry?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
         }).then(data => {
             if (data.success) {
-                setRetailers(data.data);
+                setPurchaseOrderData(data.data);
             }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setSalePerson(data.data)
-            }
-        }).catch(e => console.error(e))
-
-        fetchLink({
-            address: `masters/user/dropDown?Company_id=${storage?.Company_id}`
-        }).then(data => {
-            if (data.success) {
-                setUsers(data.data)
-            }
-        }).catch(e => console.error(e))
-
-    }, [])
-
-    const purchaseOrderColumn = [
-        {
-            Field_Name: 'Po_Id',
-            ColumnHeader: 'Order ID',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
-        {
-            Field_Name: 'Retailer_Name',
-            ColumnHeader: 'Customer',
-            Fied_Data: 'string',
-            isVisible: 1,
-        },
-        {
-            Field_Name: 'Po_Date',
-            ColumnHeader: 'Date',
-            Fied_Data: 'date',
-            isVisible: 1,
-            align: 'center',
-        },
-        // {
-        //     Field_Name: 'Products',
-        //     ColumnHeader: 'Products / Quantity',
-        //     isVisible: 1,
-        //     align: 'center',
-        //     isCustomCell: true,
-        //     Cell: ({ row }) => (
-        //         <>
-        //             <span>{row?.Products_List?.length ?? 0}</span> /&nbsp;
-        //             <span>{row?.Products_List?.reduce((sum, item) => sum += item?.Bill_Qty ?? 0, 0) ?? 0}</span>
-        //         </>
-        //     )
-        // },
-        {
-            Field_Name: 'Total_Before_Tax',
-            ColumnHeader: 'Before Tax',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Tax',
-            ColumnHeader: 'Tax',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            Field_Name: 'Total_Invoice_value',
-            ColumnHeader: 'Invoice Value',
-            Fied_Data: 'number',
-            isVisible: 1,
-            align: 'center',
-        },
-        {
-            ColumnHeader: 'Status',
-            isVisible: 1,
-            align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const convert = convertedStatus.find(status => status.id === Number(row?.isConverted));
-                return (
-                    <span className={'py-0 fw-bold px-2 rounded-4 fa-12 ' + convert?.color ?? 'bg-secondary text-white'}>
-                        {convert?.label ?? 'Undefined'}
-                    </span>
-                )
-            },
-        },
-        // {
-        //     Field_Name: 'Sales_Person_Name',
-        //     ColumnHeader: 'Sales Person',
-        //     Fied_Data: 'string',
-        //     isVisible: 1,
-        // },
-        {
-            Field_Name: 'Action',
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                return (
-                    <>
-                        <Tooltip title='View Order'>
-                            <IconButton
-                                onClick={() => {
-                                    setViewOrder({
-                                        orderDetails: row,
-                                        orderProducts: row?.Products_List ? row?.Products_List : [],
-                                    })
-                                }}
-                                color='primary' size="small"
-                            >
-                                <Visibility className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title='Edit'>
-                            <IconButton
-                                onClick={() => {
-                                    switchScreen();
-                                    setOrderInfo({ ...row, isEdit: true });
-                                }}
-                                size="small"
-                            >
-                                <Edit className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                    </>
-                )
-            },
-        },
-    ];
-
-    const ExpendableComponent = ({ row }) => {
-
-        return (
-            <>
-                <table className="table">
-                    <tbody>
-                        <tr>
-                            <td className="border p-2 bg-light">Branch</td>
-                            <td className="border p-2">{row.Branch_Name}</td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
-                            <td className="border p-2 bg-light">Round off</td>
-                            <td className="border p-2">{row.Round_off}</td>
-                        </tr>
-                        <tr>
-                            <td className="border p-2 bg-light">Invoice Type</td>
-                            <td className="border p-2">
-                                {isEqualNumber(row.GST_Inclusive, 1) && 'Inclusive'}
-                                {isEqualNumber(row.GST_Inclusive, 0) && 'Exclusive'}
-                            </td>
-                            <td className="border p-2 bg-light">Tax Type</td>
-                            <td className="border p-2">
-                                {isEqualNumber(row.IS_IGST, 1) && 'IGST'}
-                                {isEqualNumber(row.IS_IGST, 0) && 'GST'}
-                            </td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
-                        </tr>
-                        <tr>
-                            <td className="border p-2 bg-light">Narration</td>
-                            <td className="border p-2" colSpan={5}>{row.Narration}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </>
-        )
-    }
-
-    const switchScreen = () => {
-        setScreen(!screen)
-        setOrderInfo({});
-    }
-
-    const closeDialog = () => {
-        setDialog({
-            ...dialog,
-            filters: false,
-            orderDetails: false,
+        }).catch(e => console.error(e)).finally(() => {
+            if (loadingOff) loadingOff();
         });
-        setOrderInfo({});
-    }
+    }, [filters.refresh]);
+
+    useEffect(() => {
+        const queryFilters = {
+            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
+                ? query.get("Fromdate")
+                : defaultFilters.Fromdate,
+            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
+                ? query.get("Todate")
+                : defaultFilters.Todate,
+            OrderStatus: query.get("OrderStatus") || defaultFilters.OrderStatus,
+            vendorId: query.get("vendorId") || defaultFilters.vendorId,
+            vendor: query.get("vendor") || defaultFilters.vendor,
+        };
+        setFilters(prev => ({ ...prev, ...queryFilters }));
+    }, [location.search]);
+
+    useEffect(() => {
+        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+        if (Fromdate && Todate) {
+            updateQueryString({ Fromdate, Todate });
+        }
+    }, [stateDetails]);
+
+    const updateQueryString = (newFilters) => {
+        const params = new URLSearchParams();
+        Object.keys(newFilters).forEach(key => {
+            if (newFilters[key]) {
+                params.set(key, newFilters[key]);
+            }
+        });
+        navigate(`?${params.toString()}`, { replace: true });
+    };
+
+    const handleFilterChange = (valObj) => {
+        const updatedFilters = {
+            ...filters,
+            ...valObj
+        };
+        setFilters(updatedFilters);
+        updateQueryString(updatedFilters);
+    };
+
+    const deleteOrder = (OrderId) => {
+        if (!checkIsNumber(OrderId)) return;
+
+        fetchLink({
+            address: 'dataEntry/purchaseOrderEntry',
+            method: 'DELETE',
+            bodyData: { OrderId }
+        }).then(data => {
+            if (data.success) {
+                setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '', refresh: !prev.refresh }));
+                toast.success(data.message);
+            } else {
+                setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }));
+                toast.error(data.message);
+            }
+        }).catch(e => console.error(e));
+    };
+
+    const onCloseDialog = () => {
+        setOrderPreview({
+            OrderDetails: {},
+            OrderItemsArray: [],
+            DeliveryArray: [],
+            TranspoterArray: [],
+            display: false,
+        });
+    };
+
+    const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
+        navigate(page, { state: stateToTransfer });
+    };
 
     return (
         <>
-            <Card>
-                <div className="p-3 py-2 d-flex align-items-center justify-content-between">
-                    <h6 className="fa-18 m-0 p-0">{
-                        screen
-                            ? 'Purchase Orders'
-                            : isValidObject(orderInfo)
-                                ? 'Modify Pruchase Order'
-                                : 'Pruchase Order Creation'}
-                    </h6>
-                    <span>
-                        {screen && (
-                            <Tooltip title='Filters'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setDialog({ ...dialog, filters: true })}
-                                >
-                                    <FilterAlt />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        {screen && (
+            <FilterableTable
+                dataArray={purchaseOrderDataSet({
+                    data: checkIsNumber(filters.vendorId)
+                        ? purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
+                        : purchaseOrderData,
+                    status: filters.OrderStatus
+                })}
+                columns={displayColumns({
+                    OrderStatus: filters.OrderStatus,
+                    dialogs: setFilters,
+                    setOrderPreview,
+                    navigation: navigateToPageWithState,
+                    products: products,
+                    EditRights,
+                    DeleteRights,
+                    AddRights
+                })}
+                tableMaxHeight={650}
+                EnableSerialNumber
+                title={'Purchase Order - ' + filters.OrderStatus}
+                maxHeightOption
+                ExcelPrintOption
+                PDFPrintOption
+                ButtonArea={
+                    <>
+                        {AddRights && (
                             <Button
-                                variant='outlined'
-                                startIcon={<Add />}
-                                onClick={switchScreen}
-                            >
-                                {'New'}
-                            </Button>
+                                variant="outlined"
+                                onClick={() => navigate('create')}
+                            >Add</Button>
                         )}
-                    </span>
-                </div>
+                        <IconButton
+                            size="small"
+                            className="me-2"
+                            onClick={() => setFilters(prev => ({ ...prev, FilterDialog: true }))}
+                        ><FilterAlt /></IconButton>
+                    </>
+                }
+            />
 
-                <CardContent className="p-0 ">
-                    {screen ? (
-                        <FilterableTable
-                            dataArray={purchaseOrder}
-                            columns={purchaseOrderColumn}
-                            // EnableSerialNumber={true}
-                            isExpendable={true}
-                            tableMaxHeight={550}
-                            expandableComp={ExpendableComponent}
-                        />
-                    ) : (
-                        <PurchaseOrderCreation
-                            editValues={orderInfo}
-                            loadingOn={loadingOn}
-                            loadingOff={loadingOff}
-                            reload={() => {
-                                setReload(pre => !pre);
-                                setScreen(pre => !pre)
-                            }}
-                            switchScreen={switchScreen}
-                        />
-                    )}
-                </CardContent>
-            </Card>
-
-
-            {Object.keys(viewOrder).length > 0 && (
-                <InvoiceBillTemplate
-                    orderDetails={viewOrder?.orderDetails}
-                    orderProducts={viewOrder?.orderProducts}
-                    download={true}
-                    actionOpen={true}
-                    clearDetails={() => setViewOrder({})}
-                    TitleText={'Purchase Order'}
+            {orderPreview.display && (
+                <PurchaseOrderPreviewTemplate
+                    OrderDetails={orderPreview.OrderDetails}
+                    OrderItemsArray={orderPreview.OrderItemsArray}
+                    DeliveryArray={orderPreview.DeliveryArray}
+                    TranspoterArray={orderPreview.TranspoterArray}
+                    StaffArray={orderPreview.StaffArray}
+                    display={orderPreview.display}
+                    onCloseDialog={onCloseDialog}
                 />
             )}
 
-
             <Dialog
-                open={dialog.filters}
-                onClose={closeDialog}
-                fullWidth maxWidth='sm'
+                open={filters.FilterDialog}
+                onClose={() => setFilters(prev => ({ ...prev, FilterDialog: false }))}
+                maxWidth='sm'
+                fullWidth
             >
                 <DialogTitle>Filters</DialogTitle>
                 <DialogContent>
-                    <div className="table-responsive pb-4">
-                        <table className="table">
-                            <tbody>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Retailer</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Retailer_Id, label: filters?.RetailerGet }}
-                                            onChange={(e) => setFilters({ ...filters, Retailer_Id: e.value, RetailerGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Retailer Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Salse Person</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Sales_Person_Id, label: filters?.SalsePersonGet }}
-                                            onChange={(e) => setFilters({ ...filters, Sales_Person_Id: e.value, SalsePersonGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...salesPerson.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={{ value: filters?.Created_by, label: filters?.CreatedByGet }}
-                                            onChange={(e) => setFilters({ ...filters, Created_by: e.value, CreatedByGet: e.label })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...users.map(obj => ({ value: obj?.UserId, label: obj?.Name }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>From</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Fromdate}
-                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>To</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Todate}
-                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
-                                    <td>
-                                        <select
-                                            type="date"
-                                            value={filters.Cancel_status}
-                                            onChange={e => setFilters({ ...filters, Cancel_status: Number(e.target.value) })}
-                                            className="cus-inpt"
-                                        >
-                                            <option value={1}>Show</option>
-                                            <option value={0}>Hide</option>
-                                        </select>
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
+                    <table className="table m-0 border-0">
+                        <tbody>
+                            <tr>
+                                <td className="border-0 vctr">Vendor</td>
+                                <td className="border-0 vctr">
+                                    <Select
+                                        value={{ value: filters.vendorId, label: filters.vendor }}
+                                        onChange={e => handleFilterChange({
+                                            vendorId: e.value,
+                                            vendor: e.label
+                                        })}
+                                        options={[
+                                            { value: '', label: 'Search', isDisabled: true },
+                                            ...vendorList.map(obj => ({
+                                                value: obj?.Retailer_Id,
+                                                label: obj?.Retailer_Name
+                                            }))
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Select Vendor"}
+                                        maxMenuHeight={300}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="border-0 vctr">Fromdate</td>
+                                <td className="border-0 vctr">
+                                    <input
+                                        type="date"
+                                        onChange={e => handleFilterChange({ Fromdate: e.target.value })}
+                                        value={filters.Fromdate}
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="border-0 vctr">Todate</td>
+                                <td className="border-0 vctr">
+                                    <input
+                                        type="date"
+                                        onChange={e => handleFilterChange({ Todate: e.target.value })}
+                                        value={filters.Todate}
+                                        className="cus-inpt p-2"
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="border-0 vctr">Order Status</td>
+                                <td className="border-0 vctr">
+                                    <select
+                                        className="cus-inpt p-2"
+                                        value={filters.OrderStatus}
+                                        onChange={e => handleFilterChange({ OrderStatus: e.target.value })}
+                                    >
+                                        <optgroup label="ITEM BASED">
+                                            <option value={'ITEMS'}>ITEMS</option>
+                                            <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
+                                            <option value={'ITEMS ARRIVED'}>ITEMS - ARRIVED</option>
+                                        </optgroup>
+                                        <optgroup label="ORDER BASED">
+                                            <option value={'ORDERS'}>ORDERS</option>
+                                            <option value={'COMPLETED ORDERS'}>COMPLETED ORDERS</option>
+                                            <option value={'IN-COMPLETED ORDERS'}>IN-COMPLETED ORDERS</option>
+                                        </optgroup>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={closeDialog}>close</Button>
+                    <Button
+                        onClick={() => setFilters(prev => ({ ...prev, FilterDialog: false }))}
+                        variant="outlined"
+                    >Close</Button>
+                    <Button
+                        onClick={() => setFilters(prev => ({ ...prev, refresh: !prev.refresh }))}
+                        variant="outlined"
+                        startIcon={<Search />}
+                    >Search</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={filters.deleteOrderDialog}
+                onClose={() => setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }))}
+                maxWidth='sm'
+            >
+                <DialogTitle>Confirmation</DialogTitle>
+                <DialogContent>
+                    <h6>Do you want to delete the order permanently?</h6>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setFilters(prev => ({ ...prev, deleteOrderDialog: false, deleteOrderId: '' }))}
+                    >Cancel</Button>
+                    <Button color='error' variant='outlined' onClick={() => deleteOrder(filters.deleteOrderId)}>Delete</Button>
                 </DialogActions>
             </Dialog>
 
         </>
-    )
-}
+    );
+};
 
-export default PurchaseOrderList;
+export default PurchaseOrderDataEntry;

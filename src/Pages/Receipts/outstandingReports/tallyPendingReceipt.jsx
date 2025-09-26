@@ -3,7 +3,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, ISOString, LocalDate, NumberFormat, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, ISOString, LocalDate, NumberFormat, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { FilterAlt, Print, Search } from "@mui/icons-material";
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-toastify';
@@ -145,7 +145,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                     colSpan={6}
                                     className="fw-bold text-center fa-15"
                                 >
-                                    {filters.ledger.value ? filters.ledger.label : filters.broker.label } - Till {LocalDate(filters.reqDate).replaceAll('/', '-')}
+                                    {filters.ledger.value ? filters.ledger.label : filters.broker.label} - Till {LocalDate(filters.reqDate).replaceAll('/', '-')}
                                 </td>
                             </tr>
                             <tr>
@@ -209,6 +209,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Broker Name"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -240,6 +241,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Customer Name"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

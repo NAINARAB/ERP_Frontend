@@ -1,7 +1,7 @@
 import { Button, IconButton } from "@mui/material";
 import { useState } from "react";
 import { salesInvoiceStaffInfo } from "./variable";
-import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
@@ -74,6 +74,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                                     styles={customSelectStyles}
                                     isSearchable={true}
                                     placeholder={"Select Staff"}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </td>
                             <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>

@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { checkIsNumber, isEqualNumber, ISOString, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, reactSelectFilterLogic, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { Close, Search } from "@mui/icons-material";
 import { receiptBillInfoInitialValue, receiptCostingInfoInitialValue, stockJournalTypes } from "./variable";
 import { useEffect, useState } from "react";
@@ -27,7 +27,7 @@ const ExpenceReceipt = ({
     closeDialog,
     loadingOn,
     loadingOff,
-    receiptAdjesments= []
+    receiptAdjesments = []
 }) => {
 
     const [searchFilter, setSearchFilter] = useState({
@@ -257,6 +257,7 @@ const ExpenceReceipt = ({
                                     isSearchable={true}
                                     isMulti={true}
                                     closeMenuOnSelect={false}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -281,6 +282,7 @@ const ExpenceReceipt = ({
                                     styles={customSelectStyles}
                                     isSearchable={true}
                                     closeMenuOnSelect={false}
+                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
                         </div>

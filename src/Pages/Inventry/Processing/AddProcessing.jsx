@@ -3,6 +3,7 @@ import {
     Addition, Division, ISOString, Multiplication, checkIsNumber,
     formatSQLDateTimeObjectToInputDateTime,
     isEqualNumber, isGraterNumber, isValidObject,
+    reactSelectFilterLogic,
     toArray
 } from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
@@ -250,6 +251,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                             styles={customSelectStyles}
                                                             isSearchable={true}
                                                             placeholder={"Select Staff"}
+                                                            filterOption={reactSelectFilterLogic}
                                                         />
                                                     </td>
 

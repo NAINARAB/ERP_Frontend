@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, NumberFormat, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -237,7 +237,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 startIcon={<Add />}
                                 onClick={() => navigate('create')}
                             >
-                               NEW
+                                NEW
                             </Button>
                         )}
                         {AddRights && (
@@ -326,6 +326,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -344,6 +345,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Voucher Name"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -379,6 +381,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             isSearchable={true}
                                             placeholder={"Sales Person Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

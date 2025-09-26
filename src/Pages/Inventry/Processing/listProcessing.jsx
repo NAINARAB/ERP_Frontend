@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, setSessionFilters, Subraction, toArray } from '../../../Components/functions';
+import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, Subraction, toArray } from '../../../Components/functions';
 import FilterableTable, { formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { Edit, FilterAlt, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
@@ -389,6 +389,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                             isSearchable={true}
                                             placeholder={"Select Voucher"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -407,6 +408,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                             isSearchable={true}
                                             placeholder={"Select Branch"}
                                             maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -427,6 +429,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                             placeholder={"Select Items"}
                                             maxMenuHeight={300}
                                             closeMenuOnSelect={false}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, setSessionFilters, toArray } from "../../Components/functions";
+import { getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -417,6 +417,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Vendor Name"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -438,6 +439,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Cost Center Type"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -459,6 +461,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Cost Center Type"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -480,6 +483,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -498,6 +502,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
                                             menuPortalTarget={document.body}
                                             isSearchable={true}
                                             placeholder={"Cost Center Type"}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

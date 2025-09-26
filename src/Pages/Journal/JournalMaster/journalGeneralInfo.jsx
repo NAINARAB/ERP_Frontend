@@ -1,6 +1,7 @@
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
 import { journalStatus } from "./variable";
+import { reactSelectFilterLogic } from "../../../Components/functions";
 
 
 const JournalGeneralInfo = ({
@@ -70,6 +71,7 @@ const JournalGeneralInfo = ({
                         }}
                         styles={customSelectStyles}
                         isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
                     />
                 </div>
 

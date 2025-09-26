@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate, stringCompare, Subraction, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, stringCompare, Subraction, toArray } from "../../../Components/functions";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { ClearAll, FilterAlt, Search } from "@mui/icons-material";
@@ -332,6 +332,7 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
 
@@ -347,6 +348,7 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Debit account"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>
@@ -373,6 +375,7 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Retailer Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
 
@@ -388,6 +391,7 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                                             isSearchable={true}
                                             placeholder={"Credit Name"}
                                             menuPortalTarget={document.body}
+                                            filterOption={reactSelectFilterLogic}
                                         />
                                     </td>
                                 </tr>

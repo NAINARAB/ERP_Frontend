@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Card } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, checkIsNumber, ISOString, LocalDate, NumberFormat, onlynum, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, ISOString, LocalDate, NumberFormat, onlynum, reactSelectFilterLogic, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { paymentGeneralInfoInitialValue } from "../PaymentMaster/variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -97,6 +97,7 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                             isSearchable={true}
                             placeholder={"Select Leder Name"}
                             menuPortalTarget={document.body}
+                            filterOption={reactSelectFilterLogic}
                         />
                     </div>
                 </div>

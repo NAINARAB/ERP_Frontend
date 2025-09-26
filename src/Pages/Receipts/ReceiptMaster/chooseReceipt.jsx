@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogContent, DialogTitle, DialogActions, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, NumberFormat, Subraction, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, NumberFormat, reactSelectFilterLogic, Subraction, toArray } from "../../../Components/functions";
 import { receiptTypes } from "./variable";
 import { Close, Search, Done } from "@mui/icons-material";
 import Select from "react-select";
@@ -24,7 +24,7 @@ const ChooseReceiptComponent = ({
     closeDialog,
     loadingOn,
     loadingOff,
-    receiptAdjesments= []
+    receiptAdjesments = []
 }) => {
 
     const searchReceipts = (debitAccount, creditAccount, receiptType) => {
@@ -130,6 +130,7 @@ const ChooseReceiptComponent = ({
                                 isSearchable={true}
                                 required
                                 placeholder={"Select payment type"}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 
@@ -153,6 +154,7 @@ const ChooseReceiptComponent = ({
                                 isSearchable={true}
                                 required
                                 placeholder={"Select Debit Account"}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 
@@ -176,6 +178,7 @@ const ChooseReceiptComponent = ({
                                 isSearchable={true}
                                 required
                                 placeholder={"Select Credit Account"}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 
