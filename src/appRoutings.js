@@ -218,8 +218,12 @@ const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"
 const SalesReportBranch = lazy(() => import("./Pages/Sales/salesInvoiceReportBranch"))
 const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch"))
 
+const LrReport=lazy(()=>import("./Pages/Sales/lrReport"))
+
 
 const RoutingArray = [
+
+    {component:<LrReport/>,path:'/erp/sales/lrReport'},
     { component: <SalesOrderBranch />, path: '/erp/sales/salesOrderReport' },
     { component: <SalesReportBranch />, path: '/erp/sales/salesReportBranch' },
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
