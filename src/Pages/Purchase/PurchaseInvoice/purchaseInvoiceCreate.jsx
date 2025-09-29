@@ -301,7 +301,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
                     const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
 
-                    console.log(productDetails)
+                    // console.log(productDetails)
 
                     return Object.fromEntries(
                         Object.entries(itemsRowDetails).map(([key, value]) => {
@@ -606,7 +606,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     value={row?.Location_Id}
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Location_Id', e.target.value)}
-                                                    disabled={toNumber(row?.DeliveryId)}
+                                                    // disabled={toNumber(row?.DeliveryId)}
                                                 >
                                                     <option value="">select</option>
                                                     {baseData.godown.map((o, i) => (
