@@ -6,6 +6,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch } from "@mui/material";
 import { FilterAlt } from "@mui/icons-material";
+import ClosingStockLedgerProductDetails from "./productDetailsComp";
 
 
 const RetailerClosingWithLOL = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
@@ -143,6 +144,14 @@ const RetailerClosingWithLOL = ({ loadingOn, loadingOff, Fromdate, Todate }) => 
                                 col => createCol(col.column, 'string', col.displayName)
                             )
                         ]}
+                        isExpendable={true}
+                        expandableComp={({ row }) => (
+                            <ClosingStockLedgerProductDetails
+                                Retailer_Id={row?.Retailer_Id}
+                                Fromdate={Fromdate || ''}
+                                Todate={Todate || ''}
+                            />
+                        )}
                     />
                 )}
             />

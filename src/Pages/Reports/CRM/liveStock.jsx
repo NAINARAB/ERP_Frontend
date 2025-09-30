@@ -4,6 +4,7 @@ import { Addition, checkIsNumber, isEqualNumber, NumberFormat, reactSelectFilter
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
+import ClosingStockLedgerProductDetails from "./productDetailsComp";
 
 
 const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
@@ -75,6 +76,14 @@ const ClosingStockRetailerBasedReport = ({ loadingOn, loadingOff, Fromdate, Toda
                 createCol('updateDays', 'number', 'Update Days'),
                 createCol('liveStockValue', 'number', 'Stock Value'),
             ]}
+            isExpendable={true}
+            expandableComp={({ row }) => (
+                <ClosingStockLedgerProductDetails
+                    Retailer_Id={row?.Retailer_Id}
+                    Fromdate={Fromdate || ''}
+                    Todate={Todate || ''}
+                />
+            )}
         />
     )
 }

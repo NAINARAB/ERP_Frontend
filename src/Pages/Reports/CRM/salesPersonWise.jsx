@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Addition, checkIsNumber, getDaysBetween, groupData, isEqualNumber, ISOString, isValidDate, NumberFormat, toArray } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
-import { IconButton } from "@mui/material";
-import { Search } from "@mui/icons-material";
+import ClosingStockLedgerProductDetails from "./productDetailsComp";
 
 
 const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
@@ -78,51 +75,6 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff, Fromd
             headerFontSizePx={12}
             bodyFontSizePx={12}
             dataArray={groupedSalesPersonData}
-            ButtonArea={
-                <>
-                    {/* <div style={{ minWidth: '360px' }}>
-                        <Select
-                            value={filters.retailer}
-                            menuPortalTarget={document.body}
-                            onChange={e => setFilters(pre => ({ ...pre, retailer: e }))}
-                            options={[
-                                { value: '', label: 'ALL' },
-                                ...reportData.sort(
-                                    (a, b) => String(a?.Retailer_Name).localeCompare(String(b?.Retailer_Name))
-                                ).map(item => ({
-                                    value: item.Retailer_Id,
-                                    label: item.Retailer_Name
-                                }))
-                            ]}
-                            styles={customSelectStyles}
-                            isSearchable={true}
-                            required
-                            placeholder={"Select Retailer"}
-                        />
-                    </div> */}
-                    {/* <div className="d-flex align-items-center">
-                        <input
-                            type="date"
-                            value={filters.Fromdate}
-                            onChange={e => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
-                            className="cus-inpt p-2"
-                        />
-                        <span className="mx-1">{' to '}</span>
-                        <input
-                            type="date"
-                            value={filters.Todate}
-                            onChange={e => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
-                            className="cus-inpt p-2"
-                        />
-                        <span className="mx-1"></span>
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters(pre => ({ ...pre, reload: !pre.reload }))}
-                        ><Search /></IconButton>
-                    </div> */}
-                        {/* <span>Total: <span className="text-primary">{NumberFormat(sumValue)}</span></span> */}
-                </>
-            }
             columns={[
                 createCol('salesPerson', 'string', 'Sales/Delivery Person'),
                 createCol('entries', 'number', 'Party   '),
@@ -147,6 +99,14 @@ const SalesPersonWiseGroupedLedgerClosingStock = ({ loadingOn, loadingOff, Fromd
                         createCol('updateDays', 'number', 'Update Days'),
                         createCol('liveStockValue', 'number', 'Stock Value'),
                     ]}
+                    isExpendable={true}
+                    expandableComp={({ row }) => (
+                        <ClosingStockLedgerProductDetails
+                            Retailer_Id={row?.Retailer_Id}
+                            Fromdate={Fromdate || ''}
+                            Todate={Todate || ''}
+                        />
+                    )}
                 />
             )}
         />
