@@ -535,10 +535,10 @@ const saveSalesInvoice = () => {
                                         branches={baseData.branch}
                                         voucherType={baseData.voucherType}
                                         stockItemLedgerName={baseData.stockItemLedgerName}
-                                        onChangeRetailer={() => {
-                                            setInvoiceProduct([]);
-                                            setInvoiceExpences([]);
-                                        }}
+                                        // onChangeRetailer={() => {
+                                        //     // setInvoiceProduct([]);
+                                        //     // setInvoiceExpences([]);
+                                        // }}
                                     />
                                 </div>
                             </div>

@@ -354,7 +354,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             value={{ value: orderDetails?.Retailer_Id, label: orderDetails?.Retailer_Name }}
                                             onChange={(e) => {
                                                 setOrderDetails({ ...orderDetails, Retailer_Id: e.value, Retailer_Name: e.label });
-                                                setOrderProducts([]);
+                                                // setOrderProducts([]);
                                             }}
                                             options={[
                                                 { value: '', label: 'select', isDisabled: true },
