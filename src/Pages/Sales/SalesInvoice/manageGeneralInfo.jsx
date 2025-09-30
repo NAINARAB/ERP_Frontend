@@ -36,7 +36,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                 Retailer_Name: e.label
                             }));
 
-                            if (onChangeRetailer) onChangeRetailer();
+                            // if (onChangeRetailer) onChangeRetailer();
                         }}
                         options={[
                             { value: '', label: 'Search', isDisabled: true },

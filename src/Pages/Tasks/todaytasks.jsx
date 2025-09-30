@@ -91,6 +91,7 @@ const TodayTasks = () => {
         End_Time: '',
         Work_Status: 2,
         Work_Dt: ISOString(),
+        Process_Id:'',
         Det_string: []
     }
     const additionalTaskInitialValue = {
@@ -105,7 +106,9 @@ const TodayTasks = () => {
         Start_Time: '12:00',
         End_Time: '14:00',
         Work_Status: 3,
-        Work_Dt: ISOString()
+        Work_Dt: ISOString(),
+        Process_Id: 0,
+        Det_string: []
     }
     const [myTasks, setMyTasks] = useState([]);
     const [workedDetais, setWorkedDetais] = useState([]);
@@ -130,9 +133,12 @@ const TodayTasks = () => {
     const [additionalTaskInput, setAdditionalTaskInput] = useState(additionalTaskInitialValue)
     const [nonTimerInput, setNonTimerInput] = useState({
         ...initialWorkSaveValue,
+        Process_Id:0,
         Start_Time: '10:00',
         End_Time: '11:00',
     })
+
+    const [processDetails, setProcessDetails] = useState([]);
 
     useEffect(() => {
         fetchLink({
@@ -141,6 +147,18 @@ const TodayTasks = () => {
             setMyTasks(data.success ? data.data : [])
         }).catch(e => console.error(e))
     }, [reload, queryDate.myTaskDate, parseData?.UserId])
+
+
+    
+    useEffect(()=>{
+          fetchLink({
+            address:`taskManagement/processMaster/dropDown`
+          }).then(data=>{
+            setProcessDetails(data.success ? data.data :[])
+          }).catch(e => console.error(e))
+    },[reload])
+
+
 
     useEffect(() => {
         fetchLink({
@@ -387,6 +405,7 @@ const TodayTasks = () => {
                 AN_No: selectedTask?.AN_No,
                 Emp_Id: parseData?.UserId,
                 Work_Done: workInput?.Work_Done,
+                Process_Id: Number(workInput?.Process_Id) || 0,
                 Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
                 End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
                 Work_Status: workInput?.Work_Status,
@@ -399,6 +418,7 @@ const TodayTasks = () => {
                 setWorkDialog(false); setIsEdit(false)
                 setReload(!reload); setElapsedTime(0); setIsRunning(false); setStartTime(null);
             } else {
+                console.log(data.message)
                 toast.error(data.message)
             }
         }).catch(e => console.error(e))
@@ -418,7 +438,7 @@ const TodayTasks = () => {
                 Task_Id: selectedTask?.Task_Id,
                 AN_No: selectedTask?.AN_No,
                 Emp_Id: parseData?.UserId,
-
+                Process_Id: Number(nonTimerInput?.Process_Id) || 0,
                 Work_Dt: nonTimerInput?.Work_Dt,
                 Work_Done: nonTimerInput?.Work_Done,
                 Start_Time: nonTimerInput?.Start_Time,
@@ -448,7 +468,10 @@ const TodayTasks = () => {
         fetchLink({
             address: `taskManagement/task/work`,
             method: 'POST',
-            bodyData: additionalTaskInput
+            bodyData: {
+                ...additionalTaskInput,
+                Process_Id: Number(additionalTaskInput?.Process_Id)
+            }
         }).then(data => {
             if (data.success) {
                 toast.success(data.message);
@@ -596,6 +619,7 @@ const TodayTasks = () => {
                                                 End_Time: selObj?.End_Time,
                                                 Work_Status: selObj?.Work_Status,
                                                 Work_Dt: ISOString(selObj?.Work_Dt),
+                                                Process_Id: Number(selObj?.Process_Id),
                                                 Det_string: selObj?.Param_Dts
                                             })
                                         } else if (Number(selObj?.Work_Status) !== 3) {
@@ -614,6 +638,7 @@ const TodayTasks = () => {
                                                 End_Time: selObj?.End_Time ? selObj?.End_Time : '11:00',
                                                 Work_Status: selObj?.Work_Status ? selObj?.Work_Status : 2,
                                                 Work_Dt: selObj?.Work_Dt ? ISOString(selObj?.Work_Dt) : ISOString(),
+                                                Process_Id: Number(selObj?.Process_Id) ? Number(selObj?.Process_Id) : '',
                                                 Det_string: selObj?.Param_Dts ? selObj?.Param_Dts : [],
                                             })
                                         } else {
@@ -678,6 +703,7 @@ const TodayTasks = () => {
                                                     End_Time: selObj?.End_Time ? selObj?.End_Time : '11:00',
                                                     Work_Status: selObj?.Work_Status ? selObj?.Work_Status : 2,
                                                     Work_Dt: selObj?.Work_Dt ? ISOString(selObj?.Work_Dt) : ISOString(),
+                                                    Process_Id: Number(selObj?.Process_Id) ? Number(selObj?.Process_Id) : '',
                                                     Det_string: selObj?.Param_Dts ? selObj?.Param_Dts : [],
                                                 })
                                             } else {
@@ -696,6 +722,7 @@ const TodayTasks = () => {
                                                     End_Time: selObj?.End_Time ? selObj?.End_Time : '11:00',
                                                     Work_Status: selObj?.Work_Status ? selObj?.Work_Status : 2,
                                                     Work_Dt: selObj?.Work_Dt ? ISOString(selObj?.Work_Dt) : ISOString(),
+                                                    Process_Id: Number(selObj?.Process_Id) ? Number(selObj?.Process_Id) : '',
                                                     Det_string: selObj?.Param_Dts ? selObj?.Param_Dts : []
                                                 })
                                             }
@@ -849,6 +876,20 @@ const TodayTasks = () => {
                     saveWork()
                 }}>
                     <DialogContent>
+                      <label className="my-2">Process</label>
+<select
+    className="cus-inpt"
+    value={nonTimerInput.Process_Id}  // ✅ Corrected: nonTimerInput instead of workInput
+    onChange={e => setNonTimerInput({ ...nonTimerInput, Process_Id: e.target.value })}  // ✅ Corrected: setNonTimerInput instead of setWorkInput
+>
+    <option value="">Select Process</option>
+    {processDetails.map(process => (
+        <option key={process.Id} value={process.Id}>
+            {process.Process_Name}
+        </option>
+    ))}
+</select>
+
                         <label className="my-2">Work Status</label>
                         <select
                             className="cus-inpt"
@@ -956,6 +997,25 @@ const TodayTasks = () => {
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        Process
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <select
+                                            className="cus-inpt"
+                                            value={nonTimerInput.Process_Id || ''}
+                                            onChange={e => setNonTimerInput({ ...nonTimerInput, Process_Id: e.target.value })}
+                                        >
+                                            <option value="">Select Process</option>
+                                            {processDetails.map(process => (
+                                                <option key={process.Id} value={process.Id}>
+                                                    {process.Process_Name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td className="border-0 fa-14 pt-3">
                                         Work Summary
                                     </td>
@@ -1006,6 +1066,25 @@ const TodayTasks = () => {
                     <DialogContent className="table-responsive">
                         <table className="table">
                             <tbody>
+                                <tr>
+                                    <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
+                                        Process
+                                    </td>
+                                    <td className="border-0 fa-14">
+                                        <select
+                                            className="cus-inpt"
+                                            value={additionalTaskInput.Process_Id || ''}
+                                            onChange={e => setAdditionalTaskInput({ ...additionalTaskInput, Process_Id: e.target.value })}
+                                        >
+                                            <option value="">Select Process</option>
+                                            {processDetails.map(process => (
+                                                <option key={process.Id} value={process.Id}>
+                                                    {process.Process_Name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
                                         Completed Date
