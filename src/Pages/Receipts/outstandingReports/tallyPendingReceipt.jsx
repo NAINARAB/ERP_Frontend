@@ -149,7 +149,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                 </td>
                             </tr>
                             <tr>
-                                {['Sno', 'Date', 'Ref.No', 'Concern', 'Pending Amount', 'Overdue by days'].map(
+                                {['Sno', 'Date', 'Ref.No', 'Dr / Cr', 'Pending Amount', 'Overdue by days'].map(
                                     (row, rowIndex) => <th key={rowIndex}>{row}</th>
                                 )}
                             </tr>
@@ -166,7 +166,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                         <td>{rowIndex + 1}</td>
                                         <td>{row?.invoice_date ? formatDateToCustom(row?.invoice_date) : '-'}</td>
                                         <td>{row?.invoice_no}</td>
-                                        <td>{row?.Bill_Company}</td>
+                                        <td>{row?.accountSide}</td>
                                         <td>₹{NumberFormat(row?.Bal_Amount)}</td>
                                         <td className={row?.showDueDay ? '' : ' text-white '}>{row?.dueDays}</td>
                                     </tr>
@@ -282,6 +282,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                         >
                                             <option value="TALLY">TALLY</option>
                                             <option value="ERP">ERP</option>
+                                            <option value="JOURNAL">JOURNAL</option>
                                         </select>
                                     </td>
                                 </tr>
