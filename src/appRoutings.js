@@ -223,7 +223,12 @@ const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch
 const LrReport = lazy(() => import("./Pages/Sales/lrReport"))
 
 
+const ProcessMaster=lazy(()=>import("./Pages/Tasks/processMaster"))
+
+
 const RoutingArray = [
+
+     { component: <ProcessMaster />, path: '/taskManagement/master/processMaster' },
 
     { component: <LrReport />, path: '/erp/sales/lrReport' },
     { component: <SalesOrderBranch />, path: '/erp/sales/salesOrderReport' },

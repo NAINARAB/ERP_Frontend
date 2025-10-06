@@ -75,6 +75,48 @@ function addTimes(time1, time2) {
 }
 
 
+function arrayToXml(array) {
+    if (!array || !Array.isArray(array) || array.length === 0) {
+        return null;
+    }
+    
+    try {
+        let xml = '<DocumentElement>';
+        for (let obj of array) {
+      
+            if (obj && obj.Param_Id) {
+                xml += '<Data>';
+                xml += `<Task_Id>${obj?.Task_Id ? String(obj.Task_Id) : 0}</Task_Id>`;
+                xml += `<Param_Id>${String(obj.Param_Id)}</Param_Id>`;
+                xml += `<Default_Value>${obj?.Default_Value ? escapeXml(String(obj.Default_Value)) : ''}</Default_Value>`;
+                xml += `<Current_Value>${obj?.Current_Value ? escapeXml(String(obj.Current_Value)) : ''}</Current_Value>`;
+                xml += '</Data>';
+            }
+        }
+        xml += '</DocumentElement>';
+        
+        return xml === '<DocumentElement></DocumentElement>' ? null : xml;
+    } catch (error) {
+        console.error('Error generating XML:', error);
+        return null;
+    }
+}
+
+
+function escapeXml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe.replace(/[<>&'"]/g, function (c) {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+}
+
 const TodayTasks = () => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
@@ -91,7 +133,7 @@ const TodayTasks = () => {
         End_Time: '',
         Work_Status: 2,
         Work_Dt: ISOString(),
-        Process_Id:'',
+        Process_Id: 0,
         Det_string: []
     }
     const additionalTaskInitialValue = {
@@ -133,7 +175,7 @@ const TodayTasks = () => {
     const [additionalTaskInput, setAdditionalTaskInput] = useState(additionalTaskInitialValue)
     const [nonTimerInput, setNonTimerInput] = useState({
         ...initialWorkSaveValue,
-        Process_Id:0,
+        Process_Id: 0,
         Start_Time: '10:00',
         End_Time: '11:00',
     })
@@ -377,112 +419,126 @@ const TodayTasks = () => {
         setWorkDialog(true)
     }
 
-    function arrayToXml(array) {
-        let xml = '<DocumentElement>';
-        for (let obj of array) {
-            xml += '<Data>';
-            xml += `<Task_Id>${obj?.Task_Id ? String(obj?.Task_Id) : 0}</Task_Id>`;
-            xml += `<Param_Id>${obj?.Param_Id ? String(obj?.Param_Id) : 0}</Param_Id>`;
-            xml += `<Default_Value>${obj?.Default_Value ? String(obj?.Default_Value) : ''}</Default_Value>`;
-            xml += `<Current_Value>${obj?.Current_Value ? String(obj?.Current_Value) : ''}</Current_Value>`;
-            xml += '</Data>';
+const saveWork = () => {
+    console.log("isedut", isEdit);
+    
+  
+    const detStringXml = workInput?.Det_string && workInput.Det_string.length > 0 
+        ? arrayToXml(workInput.Det_string) 
+        : null;
+
+    fetchLink({
+        address: `taskManagement/task/work`,
+        method: 'POST',
+        bodyData: {
+            Mode: isEdit ? 2 : 1,
+            Work_Id: isEdit ? workInput?.Work_Id : 0,
+            Project_Id: selectedTask?.Project_Id,
+            Sch_Id: selectedTask?.Sch_Id,
+            Task_Levl_Id: selectedTask?.Task_Levl_Id,
+            Task_Id: selectedTask?.Task_Id,
+            AN_No: selectedTask?.AN_No,
+            Emp_Id: parseData?.UserId,
+            Work_Done: workInput?.Work_Done,
+            Process_Id: Number(workInput?.Process_Id) || 0,
+            Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
+            End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
+            Work_Status: workInput?.Work_Status,
+            Det_string: detStringXml 
         }
-        xml += '</DocumentElement>';
-        return xml;
-    }
+    }).then(data => {
+        if (data.success) {
+            setSelectedTask({});
+            toast.success(data.message);
+            setWorkDialog(false); 
+            setIsEdit(false);
+            setReload(!reload); 
+            setElapsedTime(0); 
+            setIsRunning(false); 
+            setStartTime(null);
+        } else {
+            console.log(data.message)
+            toast.error(data.message)
+        }
+    }).catch(e => console.error(e))
+}
 
-    const saveWork = () => {
-        fetchLink({
-            address: `taskManagement/task/work`,
-            method: 'POST',
-            bodyData: {
-                Mode: isEdit ? 2 : 1,
-                Work_Id: isEdit ? workInput?.Work_Id : 0,
-                Project_Id: selectedTask?.Project_Id,
-                Sch_Id: selectedTask?.Sch_Id,
-                Task_Levl_Id: selectedTask?.Task_Levl_Id,
-                Task_Id: selectedTask?.Task_Id,
-                AN_No: selectedTask?.AN_No,
-                Emp_Id: parseData?.UserId,
-                Work_Done: workInput?.Work_Done,
-                Process_Id: Number(workInput?.Process_Id) || 0,
-                Start_Time: isEdit ? workInput.Start_Time : millisecondsToTime(startTime),
-                End_Time: isEdit ? workInput.End_Time : addTimes(millisecondsToTime(startTime), formatTime(elapsedTime)),
-                Work_Status: workInput?.Work_Status,
-                Det_string: arrayToXml(workInput?.Det_string)
-            }
-        }).then(data => {
-            if (data.success) {
-                setSelectedTask({});
-                toast.success(data.message);
-                setWorkDialog(false); setIsEdit(false)
-                setReload(!reload); setElapsedTime(0); setIsRunning(false); setStartTime(null);
-            } else {
-                console.log(data.message)
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e))
-    }
+ const saveNonTimerBasedTask = (e) => {
+    e.preventDefault();
+    
 
-    const saveNonTimerBasedTask = (e) => {
-        e.preventDefault();
-        fetchLink({
-            address: `taskManagement/task/work`,
-            method: 'POST',
-            bodyData: {
-                Mode: isEdit ? 2 : 1,
-                Work_Id: isEdit ? nonTimerInput?.Work_Id : 0,
-                Project_Id: selectedTask?.Project_Id,
-                Sch_Id: selectedTask?.Sch_Id,
-                Task_Levl_Id: selectedTask?.Task_Levl_Id,
-                Task_Id: selectedTask?.Task_Id,
-                AN_No: selectedTask?.AN_No,
-                Emp_Id: parseData?.UserId,
-                Process_Id: Number(nonTimerInput?.Process_Id) || 0,
-                Work_Dt: nonTimerInput?.Work_Dt,
-                Work_Done: nonTimerInput?.Work_Done,
-                Start_Time: nonTimerInput?.Start_Time,
-                End_Time: nonTimerInput?.End_Time,
-                Work_Status: nonTimerInput?.Work_Status,
-                Det_string: arrayToXml(nonTimerInput?.Det_string)
-            }
-        }).then(data => {
-            if (data.success) {
-                setSelectedTask({});
-                toast.success(data.message);
-                setNonTimerWorkDialog(false);
-                setReload(!reload); setIsEdit(false); setStartTime(null);
-            } else {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e))
-    }
+    const detStringXml = nonTimerInput?.Det_string && nonTimerInput.Det_string.length > 0 
+        ? arrayToXml(nonTimerInput.Det_string) 
+        : null;
+
+    fetchLink({
+        address: `taskManagement/task/work`,
+        method: 'POST',
+        bodyData: {
+            Mode: isEdit ? 2 : 1,
+            Work_Id: isEdit ? nonTimerInput?.Work_Id : 0,
+            Project_Id: selectedTask?.Project_Id,
+            Sch_Id: selectedTask?.Sch_Id,
+            Task_Levl_Id: selectedTask?.Task_Levl_Id,
+            Task_Id: selectedTask?.Task_Id,
+            AN_No: selectedTask?.AN_No,
+            Emp_Id: parseData?.UserId,
+            Process_Id: Number(nonTimerInput?.Process_Id) || 0,
+            Work_Dt: nonTimerInput?.Work_Dt,
+            Work_Done: nonTimerInput?.Work_Done,
+            Start_Time: nonTimerInput?.Start_Time,
+            End_Time: nonTimerInput?.End_Time,
+            Work_Status: nonTimerInput?.Work_Status,
+            Det_string: detStringXml
+        }
+    }).then(data => {
+        if (data.success) {
+            setSelectedTask({});
+            toast.success(data.message);
+            setNonTimerWorkDialog(false);
+            setReload(!reload); 
+            setIsEdit(false); 
+            setStartTime(null);
+        } else {
+            toast.error(data.message)
+        }
+    }).catch(e => console.error(e))
+}
+
 
     const openUnAssignedTaskDialog = () => {
         setAdditionalTaskInput(additionalTaskInitialValue);
         setAdditionalTaskDialog(true);
     }
 
-    const saveUnAssignedTask = (e) => {
-        e.preventDefault();
-        fetchLink({
-            address: `taskManagement/task/work`,
-            method: 'POST',
-            bodyData: {
-                ...additionalTaskInput,
-                Process_Id: Number(additionalTaskInput?.Process_Id)
-            }
-        }).then(data => {
-            if (data.success) {
-                toast.success(data.message);
-                setAdditionalTaskDialog(false);
-                setReload(!reload); setIsEdit(false)
-            } else {
-                toast.error(data.message)
-            }
-        }).catch(e => console.error(e))
-    }
+ const saveUnAssignedTask = (e) => {
+    e.preventDefault();
+    
 
+    const detStringXml = additionalTaskInput?.Det_string && additionalTaskInput.Det_string.length > 0 
+        ? arrayToXml(additionalTaskInput.Det_string) 
+        : null;
+
+    fetchLink({
+        address: `taskManagement/task/work`,
+        method: 'POST',
+        bodyData: {
+            ...additionalTaskInput,
+            Mode: 1,
+            Process_Id: Number(additionalTaskInput?.Process_Id),
+            Det_string: detStringXml
+        }
+    }).then(data => {
+        if (data.success) {
+            toast.success(data.message);
+            setAdditionalTaskDialog(false);
+            setReload(!reload); 
+            setIsEdit(false)
+        } else {
+            toast.error(data.message)
+        }
+    }).catch(e => console.error(e))
+}
 
     return (
         <>
@@ -876,19 +932,19 @@ const TodayTasks = () => {
                     saveWork()
                 }}>
                     <DialogContent>
-                      <label className="my-2">Process</label>
-<select
-    className="cus-inpt"
-    value={nonTimerInput.Process_Id}  // ✅ Corrected: nonTimerInput instead of workInput
-    onChange={e => setNonTimerInput({ ...nonTimerInput, Process_Id: e.target.value })}  // ✅ Corrected: setNonTimerInput instead of setWorkInput
->
-    <option value="">Select Process</option>
-    {processDetails.map(process => (
-        <option key={process.Id} value={process.Id}>
-            {process.Process_Name}
-        </option>
-    ))}
-</select>
+                        <label className="my-2">Process</label>
+                        <select
+                            className="cus-inpt"
+                            value={workInput.Process_Id || ''}
+                            onChange={e => setWorkInput({ ...workInput, Process_Id: e.target.value })}
+                        >
+                            <option value="">Select Process</option>
+                            {processDetails.map(process => (
+                                <option key={process.Id} value={process.Id}>
+                                    {process.Process_Name}
+                                </option>
+                            ))}
+                        </select>
 
                         <label className="my-2">Work Status</label>
                         <select
@@ -1060,7 +1116,7 @@ const TodayTasks = () => {
 
             <Dialog
                 open={additionalTaskDialog} maxWidth="sm" fullWidth
-                onClose={() => setAdditionalTaskDialog(false)} >
+                onClose={() => { setAdditionalTaskDialog(false); setIsEdit(false) }} >
                 <DialogTitle>Additional Tasks</DialogTitle>
                 <form onSubmit={saveUnAssignedTask}>
                     <DialogContent className="table-responsive">
@@ -1155,7 +1211,7 @@ const TodayTasks = () => {
                     <DialogActions>
                         <Button
                             variant='outlined' color="error" type='button'
-                            onClick={() => setAdditionalTaskDialog(false)}>
+                            onClick={() => { setAdditionalTaskDialog(false); setIsEdit(false) }}>
                             cancel
                         </Button>
                         <Button
