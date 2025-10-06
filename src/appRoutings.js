@@ -35,8 +35,9 @@ const BrandMaster = lazy(() => import("./Pages/Masters/Brand"))
 const DistrictMaster = lazy(() => import("./Pages/Masters/DistrictMaster"))
 
 // Authorization
-const UserBased = lazy(() => import("./Pages/Authorization/userBased"))
-const UserTypeBased = lazy(() => import("./Pages/Authorization/userTypeBased"))
+const UserBased = lazy(() => import("./Pages/Authorization/userBased"));
+const UserTypeBased = lazy(() => import("./Pages/Authorization/userTypeBased"));
+const UserBasedBranch = lazy(() => import("./Pages/Authorization/userBasedBranch"))
 // const CompanyAuth = lazy(() => import("./Pages/Authorization/compAuth"))
 const MenuManagement = lazy(() => import("./Pages/Authorization/newMenuManagement"))
 
@@ -202,7 +203,8 @@ const ReportTemplateCreation = lazy(() => import("./Pages/Analytics/reportTempla
 const ReportTemplates = lazy(() => import("./Pages/Analytics/reportTemplates"))
 // const ClosingStockReports = lazy(() => import("./Pages/UserModule/retailer/closingStockReport"));
 // const RetailerClosingStock = lazy(() => import('./Pages/UserModule/retailer/closingStockRetailerBasedReport'))
-const CustomerClosingStockReport = lazy(() => import('./Pages/Reports/CRM/customerClosingStockReport'))
+const CustomerClosingStockReport = lazy(() => import('./Pages/Reports/CRM/customerClosingStockReport'));
+const ClosingStockReportTwo = lazy(() => import('./Pages/Reports/CRM/closingStockReport2'));
 
 // SubRouting
 // const ERP_MasterData = lazy(() => import('./Pages/SubMenu/ERP/masterData'))
@@ -218,12 +220,12 @@ const ActivityTracking = lazy(() => import("./Pages/UserModule/activityTracking"
 const SalesReportBranch = lazy(() => import("./Pages/Sales/salesInvoiceReportBranch"))
 const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch"))
 
-const LrReport=lazy(()=>import("./Pages/Sales/lrReport"))
+const LrReport = lazy(() => import("./Pages/Sales/lrReport"))
 
 
 const RoutingArray = [
 
-    {component:<LrReport/>,path:'/erp/sales/lrReport'},
+    { component: <LrReport />, path: '/erp/sales/lrReport' },
     { component: <SalesOrderBranch />, path: '/erp/sales/salesOrderReport' },
     { component: <SalesReportBranch />, path: '/erp/sales/salesReportBranch' },
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
@@ -374,8 +376,9 @@ const RoutingArray = [
 
     // ERP - CRM
     { component: <DisplayNavigations />, path: '/erp/crm' },
-    { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED
+    { component: <VisitedLogs />, path: '/erp/crm/visitLogs' },   // TO BE ADDED 
     { component: <CustomerClosingStockReport />, path: '/erp/crm/closingStock' },
+    { component: <ClosingStockReportTwo />, path: '/erp/crm/closingStockReport' },
 
     { component: <DisplayNavigations />, path: '/erp/reports' },
     { component: <CostCenterReports />, path: '/erp/reports/costCenter' },
@@ -424,6 +427,7 @@ const RoutingArray = [
     { component: <BranchInfo />, path: '/userControl/branch' },
     { component: <UserType />, path: '/userControl/userType' },
     { component: <UserBased />, path: '/userControl/userRights' },
+    { component: <UserBasedBranch />, path: '/userControl/userBasedBranchRights' },
     { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
     { component: <CustomerList />, path: '/userControl/customers' },
     { component: <EmployeeMaster />, path: '/userControl/employees' },
