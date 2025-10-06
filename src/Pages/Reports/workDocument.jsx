@@ -14,6 +14,7 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
     const [workedDetails, setWorkedDetails] = useState([]);
     const [users, setUsers] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [process,setProcess]=useState([])
 
     const { contextObj } = useContext(MyContext);
     const [filter, setFilter] = useState({
@@ -23,6 +24,8 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
         Emp_Name: parseData?.Name,
         Task_Id: '',
         Task_Name: 'Select Task',
+        Id:'',
+        Process_Name:'Select Process'
     });
     const printRef = useRef()
 
@@ -31,7 +34,7 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
             loadingOn();
         }
         fetchLink({
-            address: `taskManagement/task/work?Emp_Id=${filter?.Emp_Id}&from=${filter.startDate}&to=${filter.endDate}&Task_Id=${filter?.Task_Id}`
+            address: `taskManagement/task/work?Emp_Id=${filter?.Emp_Id}&from=${filter.startDate}&to=${filter.endDate}&Task_Id=${filter?.Task_Id}&Process_Id=${filter?.Id}`
         }).then(data => {
             if (data.success) {
                 const groupedData = data?.data?.reduce((acc, current) => {
@@ -61,6 +64,17 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
     }, [])
 
+
+
+    useEffect(()=>{
+        fetchLink({
+            address:`masters/processMaster`
+        }).then(data=>{
+            if(data.success){
+                setProcess(data.data)
+            }
+        }).catch(e=>console.error(e))
+    },[])
     useEffect(() => {
         if (Number(contextObj?.Print_Rights) === 1) {
             fetchLink({
@@ -265,7 +279,19 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
                                 isSearchable={true}
                                 placeholder={"Task Name"} />
                         </div>
-
+                        <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                            <label className="pb-2">Process </label>
+                            <Select
+                                value={{ value: filter?.Id, label: filter?.Process_Name }}
+                                onChange={(e) => setFilter({ ...filter, Id: e.value, Process_Name: e.label })}
+                                options={[
+                                    { value: '', label: 'All Process' },
+                                    ...process.map(obj => ({ value: obj.Id, label: obj.Process_Name }))
+                                ]}
+                                styles={customSelectStyles}
+                                isSearchable={true}
+                                placeholder={"Task Name"} />
+                        </div>
                         <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 d-flex align-items-end p-2">
                             <button className="btn btn-primary rounded-5 px-3" onClick={handlePrint}>Print PDF</button>
                         </div>
