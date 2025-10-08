@@ -26,8 +26,10 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/materialInward?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/materialInward`}
                     postApi='inventory/batchMaster/materialInward'
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -39,9 +41,11 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/consumption?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/consumption`}
                     postApi='inventory/batchMaster/consumption'
                     compareGodown={'godownId'}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -53,8 +57,10 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/production?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/production`}
                     postApi='inventory/batchMaster/production'
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -66,9 +72,11 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/godownTransfer?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/godownTransfer`}
                     postApi='inventory/batchMaster/godownTransfer'
                     compareGodown={'fromGodownId'}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -80,9 +88,11 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/sales?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/sales`}
                     postApi='inventory/batchMaster/sales'
                     compareGodown={'godownId'}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -94,8 +104,10 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/purchase?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`}
+                    api={`inventory/batchMaster/purchase`}
                     postApi='inventory/batchMaster/purchase'
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
                 />
             )
         },
@@ -104,7 +116,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
     return (
         <>
 
-            <div className="d-flex align-items-center flex-wrap mb-3">
+            {/* <div className="d-flex align-items-center flex-wrap mb-3">
                 <label htmlFor="from" className='me-1 fw-bold '>Fromdate: </label>
                 <input
                     type="date"
@@ -129,7 +141,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                         Todate: pre.FilterTodate ? pre.FilterTodate : pre.Todate
                     }))}
                 ><Search /></IconButton>
-            </div>
+            </div> */}
 
             <TabContext value={tabValue}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
