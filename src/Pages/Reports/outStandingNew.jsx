@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from "react";
 import {
   Button,
@@ -31,178 +33,147 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     filterMode: "include",
   });
   const [fileNoOptions, setFileNoOptions] = useState([]);
-  const [originalTillBilling, setOriginalTillBilling] = useState([]);
-  const [originalNoBilling, setOriginalNoBilling] = useState([]);
+  const [allOutstandingData, setAllOutstandingData] = useState([]);
   const [salesReceipts, setSalesReceipts] = useState([]);
   const [Total_Invoice_value, setTotal_Invoice_value] = useState(0);
   const [activeButton, setActiveButton] = useState("tillBilling");
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-  const [debtors, setDebtors] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const convertToPositive = (value) => {
     const numValue = Number(value || 0);
     return Math.abs(numValue);
   };
 
+
   const processData = (data) => {
+    if (!Array.isArray(data)) return [];
     return data.map((item) => ({
       ...item,
-      "Above 30 Pending Amt": convertToPositive(
-        item["Above 30 Pending Amt"]
-      ),
-      "Overall Outstanding Amt": convertToPositive(
-        item["Overall Outstanding Amt"]
-      ),
-      Total_Invoice_value: convertToPositive(item.Total_Invoice_value),
+      "Above 30 Pending Amt": convertToPositive(item["Above 30 Pending Amt"]),
+      "Overall Outstanding Amt": convertToPositive(item["Overall Outstanding Amt"]),
+      Total_Invoice_value: convertToPositive(item.Total_Invoice_value || 0),
     }));
   };
 
-  const calculateTotal = (arr) =>
-    arr.reduce(
-      (sum, item) =>
-        sum + convertToPositive(item.Total_Invoice_value || 0),
-      0
-    );
+  const calculateTotal = (arr) => {
+    if (!Array.isArray(arr)) return 0;
+    return arr.reduce((sum, item) => sum + (item.Total_Invoice_value || 0), 0);
+  };
 
-  const fetchFileNoOptions = async () => {
+
+  const fetchData = async () => {
     try {
-      const res = await fetchLink({
-        address: `receipt/outStandingAbove?reqDate=${encodeURIComponent(
-          getTodayDate()
-        )}`,
+      setIsLoading(true);
+      if (loadingOn) loadingOn();
+
+      const formattedDate = encodeURIComponent(filters.Fromdate);
+
+      // Single API call
+      const outstandingRes = await fetchLink({ 
+        address: `receipt/outStandingAbove?reqDate=${formattedDate}` 
       });
-      const data = Array.isArray(res) ? res : res?.data || [];
-      const processedData = processData(data);
-      const uniqueFileNos = [
-        ...new Set(
-          processedData.map((item) => item.File_No).filter(Boolean)
-        ),
-      ];
+      
+      console.log("outstandingRes", outstandingRes);
+      
+      const outstandingData = Array.isArray(outstandingRes) 
+        ? outstandingRes 
+        : outstandingRes?.data || [];
+
+
+      const processedData = processData(outstandingData);
+      setAllOutstandingData(processedData);
+
+    
+      const uniqueFileNos = [...new Set(processedData.map((item) => item.File_No).filter(Boolean))];
       setFileNoOptions(uniqueFileNos);
-    } catch (err) {
-      console.error("Error fetching File_No options:", err);
+
+  
+      const tillBillingData = processedData.filter(item => 
+        item.Billing === 'Till_Billing'
+      );
+      
+      setSalesReceipts(tillBillingData);
+      setTotal_Invoice_value(calculateTotal(tillBillingData));
+      setActiveButton("tillBilling");
+      
+    } catch (error) {
+     
+      setAllOutstandingData([]);
+      setSalesReceipts([]);
+      setTotal_Invoice_value(0);
+      setFileNoOptions([]);
+    } finally {
+      setIsLoading(false);
+      if (loadingOff) loadingOff();
     }
   };
 
-const fetchData = async () => {
-  try {
-    if (loadingOn) loadingOn();
 
-    const formattedDate = encodeURIComponent(filters.Fromdate);
+  useEffect(() => {
+    if (allOutstandingData.length === 0) return;
 
-    const debtorsRes = await fetchLink({ address: `payment/getDebtors` });
-    const debtorsArr = debtorsRes?.success ? debtorsRes.data : [];
+    let sourceData = [];
+    
 
-    if (debtorsArr.length === 0) {
-      setOriginalTillBilling([]);
-      setOriginalNoBilling([]);
-      setSalesReceipts([]);
-      setTotal_Invoice_value(0);
-      setDebtors([]);
-      return;
+    if (activeButton === "tillBilling") {
+      sourceData = allOutstandingData.filter(item => item.Billing === 'Till_Billing');
+    } else if (activeButton === "noBilling") {
+      sourceData = allOutstandingData.filter(item => item.Billing === 'No_Billing');
     }
 
-    setDebtors(debtorsArr);
 
-    const validRetailerIds = new Set(
-      debtorsArr.map((d) => String(d.Acc_Id))
-    );
-
-    const [tillRes, noBillRes] = await Promise.all([
-      fetchLink({ address: `receipt/outStandingAbove?reqDate=${formattedDate}` }),
-      fetchLink({ address: `receipt/outstandingOver?reqDate=${formattedDate}` }),
-    ]);
-
-    const tillArr = Array.isArray(tillRes) ? tillRes : tillRes?.data || [];
-    const noBillArr = Array.isArray(noBillRes) ? noBillRes : noBillRes?.data || [];
-
-    const filteredTillArr = tillArr.filter((item) =>
-      validRetailerIds.has(String(item.Retailer_Id))
-    );
-    
-    const filteredNoBillArr = noBillArr.filter((item) =>
-      validRetailerIds.has(String(item.Retailer_Id))
-    );
-
-
-    const processedTillArr = processData(filteredTillArr);
-    const processedNoBillArr = processData(filteredNoBillArr);
-
-
-
-    setOriginalTillBilling(processedTillArr);
-    setOriginalNoBilling(processedNoBillArr);
-    setActiveButton("tillBilling");
-    setSalesReceipts(processedTillArr);
-    setTotal_Invoice_value(calculateTotal(processedTillArr));
-    
-  } catch (error) {
-    console.error("Error fetching outstanding data:", error);
-    setOriginalTillBilling([]);
-    setOriginalNoBilling([]);
-    setSalesReceipts([]);
-    setTotal_Invoice_value(0);
-    setDebtors([]);
-  } finally {
-    if (loadingOff) loadingOff();
-  }
-};
-  useEffect(() => {
-    fetchFileNoOptions();
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    const sourceData =
-      activeButton === "tillBilling"
-        ? originalTillBilling
-        : originalNoBilling;
-
-    let filtered = [...sourceData];
-
+    let filtered = sourceData;
     if (filters.File_No.length > 0) {
       if (filters.filterMode === "include") {
-        filtered = sourceData.filter((row) =>
-          filters.File_No.includes(row.File_No)
-        );
-      } else if (filters.filterMode === "exclude") {
-        filtered = sourceData.filter(
-          (row) => !filters.File_No.includes(row.File_No)
-        );
+        filtered = sourceData.filter((row) => filters.File_No.includes(row.File_No));
+      } else {
+        filtered = sourceData.filter((row) => !filters.File_No.includes(row.File_No));
       }
     }
 
     setSalesReceipts(filtered);
     setTotal_Invoice_value(calculateTotal(filtered));
-  }, [filters, activeButton, originalTillBilling, originalNoBilling]);
+  }, [filters, activeButton, allOutstandingData]);
+
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
+  const handleButtonClick = (buttonType) => {
+    setActiveButton(buttonType);
+
+  };
+
+
+  const applyFilters = () => {
+    setFilterDialogOpen(false);
+  };
 
   return (
     <div>
       <FilterableTable
         title={
-          activeButton === "tillBilling"
-            ? "Till Billing"
-            : activeButton === "noBilling"
-            ? "OutStanding No Bill"
-            : "Outstanding"
+          activeButton === "tillBilling" ? "Till Billing" : "OutStanding No Bill"
         }
         ButtonArea={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex",gap: "8px" }}>
             <input
               type="date"
               value={filters.Fromdate || ""}
-              onChange={(e) =>
-                setFilters({ ...filters, Fromdate: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, Fromdate: e.target.value })}
               className="cus-inpt"
-              style={{ padding: "4px" }}
+              style={{ padding: "4px", minWidth: '150px' }}
             />
 
             <Button
               variant="outlined"
               color="secondary"
               onClick={() => setFilterDialogOpen(true)}
-              sx={{ height: 50 }}
+              sx={{ height: 40 }}
+              disabled={isLoading}
             >
               Filter
             </Button>
@@ -212,7 +183,8 @@ const fetchData = async () => {
                 color="primary"
                 size="medium"
                 onClick={fetchData}
-                sx={{ height: 50 }}
+                sx={{ height: 40 }}
+                disabled={isLoading}
               >
                 <SearchIcon />
               </IconButton>
@@ -221,8 +193,9 @@ const fetchData = async () => {
             <Button
               variant={activeButton === "tillBilling" ? "contained" : "outlined"}
               color="primary"
-              onClick={() => setActiveButton("tillBilling")}
-              sx={{ minWidth: 150, height: 40 }}
+              onClick={() => handleButtonClick("tillBilling")}
+              sx={{ minWidth: 120, height: 40 }}
+              disabled={isLoading}
             >
               Till Billing
             </Button>
@@ -230,37 +203,35 @@ const fetchData = async () => {
             <Button
               variant={activeButton === "noBilling" ? "contained" : "outlined"}
               color="primary"
-              onClick={() => setActiveButton("noBilling")}
-              sx={{ minWidth: 150, height: 40 }}
+              onClick={() => handleButtonClick("noBilling")}
+              sx={{ minWidth: 120, height: 40 }}
+              disabled={isLoading}
             >
               No Billing
             </Button>
 
             {Number(Total_Invoice_value) > 0 && (
               <h6 className="m-0 text-end text-muted px-3">
-                Total: {Math.abs(Total_Invoice_value)}
+                Total: {Math.round(Total_Invoice_value).toLocaleString()}
               </h6>
             )}
+
           </div>
         }
         EnableSerialNumber
-        dataArray={Array.isArray(salesReceipts) ? salesReceipts : []}
+        dataArray={salesReceipts}
         headerFontSizePx={14}
         bodyFontSizePx={13}
         ExcelPrintOption={true}
         columns={[
           createCol("Retailer_Name", "string", "Retailer Name"),
-          createCol("Ref_Owners", "string", "Ref_Owners"),
-          createCol("Ref_Brokers", "string", "Ref_Brokers"),
+          createCol("Ref_Owners", "string", "Ref Owners"),
+          createCol("Ref_Brokers", "string", "Ref Brokers"),
           createCol("QPay", "number", "QPay"),
-          createCol("Above 30 Pending Amt", "number", "Above 30 Pending Amt"),
-          createCol("Sum of Nos", "number", "Sum of Nos"),
-          createCol("Max of Overdue", "number", "Max of Overdue"),
-          createCol(
-            "Overall Outstanding Amt",
-            "number",
-            "Overall Outstanding Amt"
-          ),
+          createCol("Above_30_Days_Pending_Amt", "number", "Above 30 Pending Amt"),
+          createCol("Total_Pending_Bills", "number", "No of Bills"),
+          createCol("Overall_Outstanding_Amt", "number", "Overall Outstanding Amt"),
+          createCol("Billing", "string", "Billing Type"),
         ]}
         isExpendable={false}
         expandableComp={({ row }) => (
@@ -269,9 +240,9 @@ const fetchData = async () => {
               disablePagination
               headerFontSizePx={13}
               bodyFontSizePx={12}
-              dataArray={Array.isArray(row?.Receipts) ? row?.Receipts : []}
+              dataArray={Array.isArray(row?.Receipts) ? row.Receipts : []}
               columns={[
-                createCol("Do_Inv_No", "string", "Delivery Invoice Number"),
+                createCol("Do_Inv_No", "string", "Delivery Invoice"),
                 createCol("Do_Date", "date", "Delivery Date"),
                 createCol("collected_amount", "number", "Receipt Amount"),
                 createCol("total_receipt_amount", "number", "Total Receipt"),
@@ -280,11 +251,9 @@ const fetchData = async () => {
                   isVisible: 1,
                   ColumnHeader: "Pending Amount",
                   isCustomCell: true,
-                  Cell: ({ row }) =>
-                    convertToPositive(
-                      Number(row?.bill_amount || 0) -
-                        Number(row?.total_receipt_amount || 0)
-                    ),
+                  Cell: ({ row }) => convertToPositive(
+                    Number(row?.bill_amount || 0) - Number(row?.total_receipt_amount || 0)
+                  ),
                 },
               ]}
             />
@@ -292,41 +261,31 @@ const fetchData = async () => {
         )}
       />
 
-      <Dialog
-        open={filterDialogOpen}
-        onClose={() => setFilterDialogOpen(false)}
-      >
+      <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)}>
         <DialogTitle>File Name Filter</DialogTitle>
-        <DialogContent dividers sx={{ minWidth: 500 }}>
+        <DialogContent dividers sx={{ minWidth: 400 }}>
           <div style={{ marginBottom: "20px" }}>
-            <InputLabel id="file-no-label">File Nos</InputLabel>
+            <InputLabel>File Nos</InputLabel>
             <Select
-              labelId="file-no-label"
               multiple
               fullWidth
               value={filters.File_No}
-              onChange={(e) =>
-                setFilters({
-                  ...filters,
-                  File_No:
-                    typeof e.target.value === "string"
-                      ? e.target.value.split(",")
-                      : e.target.value,
-                })
-              }
+              onChange={(e) => setFilters({
+                ...filters,
+                File_No: typeof e.target.value === "string" ? e.target.value.split(",") : e.target.value,
+              })}
               renderValue={(selected) => (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                   {selected.map((value) => (
                     <Chip
                       key={value}
                       label={value}
-                      onDelete={() =>
-                        setFilters({
-                          ...filters,
-                          File_No: filters.File_No.filter((f) => f !== value),
-                        })
-                      }
-                      deleteIcon={<CloseIcon />}
+                      size="small"
+                      onDelete={() => setFilters({
+                        ...filters,
+                        File_No: filters.File_No.filter((f) => f !== value),
+                      })}
+                      onMouseDown={(e) => e.stopPropagation()}
                     />
                   ))}
                 </div>
@@ -341,37 +300,29 @@ const fetchData = async () => {
             </Select>
           </div>
 
-          <div style={{ marginBottom: "10px" }}>
-            <InputLabel id="filter-mode-label">Filter Mode</InputLabel>
+          <div>
+            <InputLabel>Filter Mode</InputLabel>
             <Select
-              labelId="filter-mode-label"
               fullWidth
               value={filters.filterMode}
-              onChange={(e) =>
-                setFilters({ ...filters, filterMode: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, filterMode: e.target.value })}
             >
-              <MenuItem value="include">Include</MenuItem>
-              <MenuItem value="exclude">Exclude</MenuItem>
+              <MenuItem value="include">Include Selected</MenuItem>
+              <MenuItem value="exclude">Exclude Selected</MenuItem>
             </Select>
           </div>
         </DialogContent>
 
-        <DialogActions sx={{ justifyContent: "space-between" }}>
+        <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
           <Button
             onClick={() => setFilters({ ...filters, File_No: [] })}
             color="secondary"
             variant="outlined"
           >
-            Clear Filter
+            Clear All
           </Button>
-
-          <Button
-            onClick={() => setFilterDialogOpen(false)}
-            variant="contained"
-            color="primary"
-          >
-            Apply Filter
+          <Button onClick={applyFilters} variant="contained" color="primary">
+            Apply
           </Button>
         </DialogActions>
       </Dialog>
