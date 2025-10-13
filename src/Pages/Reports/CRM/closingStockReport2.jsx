@@ -1,17 +1,83 @@
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
-import { filterableText, isEqualNumber, ISOString, LocalDate, NumberFormat } from '../../../Components/functions';
+import { filterableText, isEqualNumber, ISOString, LocalDate, NumberFormat, stringCompare } from '../../../Components/functions';
 import { useEffect, useMemo, useState } from 'react';
 import { Autocomplete, IconButton, Tooltip, TextField, Checkbox, Dialog, DialogContent, DialogTitle, DialogActions, Button, Box } from '@mui/material';
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, FileDownload, SettingsOutlined, Search } from '@mui/icons-material';
 import { mkConfig, generateCsv, download } from 'export-to-csv';
 import { fetchLink } from '../../../Components/fetchComponent';
+import * as XLSX from 'xlsx';
+
+// Gets only the columns currently visible in the table, in the shown order
+export function getVisibleColumns(table) {
+    return table.getVisibleLeafColumns();
+}
+
+// Choose which rows to export: 'currentPage' (after pagination) or 'all' (before pagination)
+export function getRows(table, scope) {
+    const rm = scope === 'currentPage' ? table.getRowModel() : table.getPrePaginationRowModel();
+
+    // If grouping is enabled, skip grouped/aggregated/placeholder rows to keep leaf rows only
+    const rows = (rm.flatRows ?? rm.rows).filter(
+        (r) => !(r.getIsGrouped?.() || r.getIsAggregated?.() || r.getIsPlaceholder?.())
+    );
+    return rows;
+}
+
+// Convert rows/columns to a 2D array (headers + data)
+export function rowsToAoA(rows, columns) {
+    const header = columns.map((col) => {
+        const h = col.columnDef?.header ?? col.id ?? '';
+        return typeof h === 'string' ? h : String(h);
+    });
+
+    const data = rows.map((row) =>
+        columns.map((col) => {
+            // Try visible cell value first (respects accessor & computed values)
+            const cell = row.getVisibleCells?.().find((c) => c.column.id === col.id);
+            if (cell && typeof cell.getValue === 'function') {
+                return cell.getValue();
+            }
+            // Fallbacks
+            if (typeof row.getValue === 'function') {
+                return row.getValue(col.id);
+            }
+            const acc = col.columnDef?.accessorFn;
+            return acc ? acc(row.original) : row.original?.[col.accessorKey] ?? '';
+        })
+    );
+
+    return [header, ...data];
+}
+
+export function exportTableToXlsx(table, opts = {}) {
+    const filename = (opts.filename ?? 'table_export') + '.xlsx';
+    const scope = opts.scope ?? 'all';
+
+    const columns = getVisibleColumns(table);
+    const rows = getRows(table, scope);
+    const aoa = rowsToAoA(rows, columns);
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+
+    // Simple auto-width for columns
+    const colWidths = aoa[0].map((_, ci) =>
+        Math.max(...aoa.map((row) => String(row?.[ci] ?? '').length)) + 2
+    );
+    ws['!cols'] = colWidths.map((wch) => ({ wch }));
+
+    XLSX.writeFile(wb, filename);
+}
+
+
 
 const formatString = (val, dataType) => {
     switch (dataType) {
         case 'number':
-            return NumberFormat(val)
+            return val ? NumberFormat(val) : '';
         case 'date':
-            return LocalDate(val);
+            return val ? LocalDate(val) : '';
         case 'string':
             return val;
         default:
@@ -106,6 +172,12 @@ const reportColumn = [
         Column_Data_Type: 'string',
         Order_By: 9
     },
+    {
+        Column_Name: 'Last Sales',
+        accessColumnName: 'lastSalesDate',
+        Column_Data_Type: 'date',
+        Order_By: 10
+    },
 ]
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -145,13 +217,11 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
     const dispColmn = useMemo(() => {
         const displayColumns = [...columns].sort((a, b) => (a.Order_By && b.Order_By) ? a.Order_By - b.Order_By : b.Order_By - a.Order_By)
 
-        return displayColumns.filter(column =>
-            !Boolean(Number(column?.IS_Default)) && !Boolean(Number(column?.IS_Join_Key))
-        ).map(column => ({
+        return displayColumns.map(column => ({
             header: column?.Column_Name?.replace(/_/g, ' '),
             accessorKey: column?.accessColumnName,
             sortable: true,
-            // size: 150,
+            size: stringCompare(column?.accessColumnName, 'Retailer_Name') || stringCompare(column?.accessColumnName, 'Item_Name') ? 190 : 110,
             // ...aggregations(column?.Column_Data_Type, column?.Column_Name),
             aggregationFn: aggregationValues[column?.Column_Name] ? aggregationValues[column?.Column_Name] : '',
             AggregatedCell: ({ cell }) => (
@@ -174,11 +244,11 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
         applyFilters();
     }, [filters]);
 
-    const handleExportRows = (rows) => {
-        const rowData = rows.map((row) => row.original);
-        const csv = generateCsv(csvConfig)(rowData);
-        download(csvConfig)(csv);
-    };
+    // const handleExportRows = (rows) => {
+    //     const rowData = rows.map((row) => row.original);
+    //     const csv = generateCsv(csvConfig)(rowData);
+    //     download(csvConfig)(csv);
+    // };
 
     const table = useMaterialReactTable({
         columns: dispColmn,
@@ -210,10 +280,10 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
             sx: {
                 fontWeight: 'normal',
             },
-            className: ' border text-center'
+            className: ' border'
         },
         muiTableBodyCellProps: {
-            className: ' border-end text-center'
+            className: ' border-end'
         },
         renderTopToolbarCustomActions: ({ table }) => (
             <Box
@@ -268,7 +338,7 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
                             <Search color='primary' />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title='Excel Download'>
+                    {/* <Tooltip title='Excel Download'>
                         <span>
                             <IconButton
                                 disabled={table.getPrePaginationRowModel().rows.length === 0}
@@ -278,6 +348,17 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
                                 size='small'
                             >
                                 <FileDownload color='primary' />
+                            </IconButton>
+                        </span>
+                    </Tooltip> */}
+                    <Tooltip title="Excel Download (Current page only)">
+                        <span>
+                            <IconButton
+                                size="small"
+                                disabled={table.getRowModel().rows.length === 0}
+                                onClick={() => exportTableToXlsx(table, { scope: 'currentPage', filename: 'my_data_page' })}
+                            >
+                                <FileDownload color="primary" />
                             </IconButton>
                         </span>
                     </Tooltip>
@@ -462,18 +543,16 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
             <Dialog
                 open={dialogs.aggregations}
                 onClose={() => setDialogs(pre => ({ ...pre, aggregations: false }))}
-                fullWidth maxWidth='lg'
+                fullWidth maxWidth='sm'
             >
                 <DialogTitle>Aggregations</DialogTitle>
                 <DialogContent>
-                    <div className="row" style={{ minHeight: '30dvh' }}>
+                    <div className="row" >
                         {[...columns].filter(column => (
-                            isEqualNumber(column?.IS_Default, 0)
-                            && isEqualNumber(column?.IS_Join_Key, 0)
-                            && (column.Column_Data_Type === 'number'
-                                || column.Column_Data_Type === 'string')
+                            column.Column_Data_Type === 'number'
+                            // || column.Column_Data_Type === 'string'
                         )).map((o, i) => (
-                            <div className="col-xxl-3 col-lg-4 col-md-6 p-2" key={i}>
+                            <div className="col-md-6 p-2" key={i}>
                                 <label>{o?.Column_Name?.replace(/_/g, ' ')}</label>
                                 <select
                                     className='cus-inpt'
@@ -483,15 +562,15 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
                                     {
                                         [
                                             { label: 'Select Aggregation', value: '' },
-                                            { label: 'count', value: 'count' },
-                                            { label: 'extent', value: 'extent' },
-                                            { label: 'max', value: 'max' },
-                                            { label: 'min', value: 'min' },
+                                            // { label: 'count', value: 'count' },
+                                            // { label: 'extent', value: 'extent' },
+                                            // { label: 'max', value: 'max' },
+                                            // { label: 'min', value: 'min' },
                                             { label: 'mean', value: 'mean' },
-                                            { label: 'median', value: 'median' },
-                                            { label: 'uniqueCount', value: 'uniqueCount' },
+                                            // { label: 'median', value: 'median' },
+                                            // { label: 'uniqueCount', value: 'uniqueCount' },
                                             { label: 'sum', value: 'sum' },
-                                            { label: 'unique', value: 'unique' },
+                                            // { label: 'unique', value: 'unique' },
                                         ].map((o, i) => (
                                             <option value={o.value} key={i}>{o.label}</option>
                                         ))
