@@ -1,5 +1,5 @@
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
-import { isEqualNumber, ISOString, LocalDate, NumberFormat } from '../../../Components/functions';
+import { filterableText, isEqualNumber, ISOString, LocalDate, NumberFormat } from '../../../Components/functions';
 import { useEffect, useMemo, useState } from 'react';
 import { Autocomplete, IconButton, Tooltip, TextField, Checkbox, Dialog, DialogContent, DialogTitle, DialogActions, Button, Box } from '@mui/material';
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, FileDownload, SettingsOutlined, Search } from '@mui/icons-material';
@@ -269,15 +269,17 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
                         </IconButton>
                     </Tooltip>
                     <Tooltip title='Excel Download'>
-                        <IconButton
-                            disabled={table.getPrePaginationRowModel().rows.length === 0}
-                            onClick={() =>
-                                handleExportRows(table.getPrePaginationRowModel().rows)
-                            }
-                            size='small'
-                        >
-                            <FileDownload color='primary' />
-                        </IconButton>
+                        <span>
+                            <IconButton
+                                disabled={table.getPrePaginationRowModel().rows.length === 0}
+                                onClick={() =>
+                                    handleExportRows(table.getPrePaginationRowModel().rows)
+                                }
+                                size='small'
+                            >
+                                <FileDownload color='primary' />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                     <Tooltip title='Aggregation'>
                         <IconButton
@@ -326,7 +328,12 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
                         return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
                     });
                 } else if (Array.isArray(filters[column.accessColumnName])) {
-                    filtered = filters[column.accessColumnName]?.length > 0 ? filtered.filter(item => filters[column.accessColumnName].includes(item[column.accessColumnName].toLowerCase().trim())) : filtered
+                    filtered = filters[column.accessColumnName]?.length > 0
+                        ? filtered.filter(item =>
+                            filters[column.accessColumnName].includes(
+                                filterableText(item[column.accessColumnName])
+                            )
+                        ) : filtered
                 }
             }
         }
