@@ -1309,6 +1309,9 @@ import listPlugin from '@fullcalendar/list';
 import { Card, CardContent } from '@mui/material';
 import { ISOString } from '../../Components/functions'
 import { fetchLink } from "../../Components/fetchComponent";
+import Select from 'react-select';
+
+import { customSelectStyles } from "../../Components/tablecolumn";
 
 
 const statusColor = (id) => {
@@ -1488,7 +1491,7 @@ const TodayTasks = () => {
 
 
     useEffect(() => {
-        if (parseData?.UserTypeId == 0) {
+        if (parseData?.UserTypeId == 0 || parseData?.UserTypeId ==1) {
     
             fetchLink({
                 address: `masters/Employeedetails/dropDown?Company_id=${parseData?.Company_id}` 
@@ -1974,49 +1977,37 @@ const TodayTasks = () => {
                     <div className="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
                         <div>
                             <h5 className="mb-0">Task Management Dashboard</h5>
+                            
                         </div>
                         
             
-                        {parseData?.UserTypeId == 0 && (
-                            <div className="d-flex align-items-center">
-                                <span className="me-2 fw-bold">Currently Viewing:</span>
-                                <div className="dropdown">
-                                    <button 
-                                        className="btn btn-outline-primary dropdown-toggle"
-                                        type="button"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                    >
-                                      {selectedEmployee 
-  ? `${selectedEmployee.Name})`
-  : parseData?.UserName || 'Select Employee'}
-                                    </button>
-                                    <ul className="dropdown-menu">
-                                        <li>
-                                            <button 
-                                                className="dropdown-item"
-                                                onClick={() => handleEmployeeSelect(null)}
-                                            >
-                                                <strong>My View ({parseData?.UserName})</strong>
-                                            </button>
-                                        </li>
-                                        <li><hr className="dropdown-divider" /></li>
-                                 {employees.map((emp, index) => (
-  <li key={index}>
-    <button 
-      className="dropdown-item"
-      onClick={() => handleEmployeeSelect(emp)}
-    >
-      {emp.Name}
-    </button>
-  </li>
-))}
 
+{(parseData?.UserTypeId == 0 || parseData?.UserTypeId==1) && (
+  <div className="d-flex align-items-center">
+      <span className="me-2 fw-bold">Currently Viewing:</span>
+  <Select
+    value={{
+      value: selectedEmployee?.UserId || null,
+      label: selectedEmployee?.Name || `My View (${parseData?.UserName})`
+    }}
+    onChange={(e) =>
+      handleEmployeeSelect(
+        e.value ? employees.find(emp => emp.UserId == e.value) : null
+      )
+    }
+    options={[
+      { value: null, label: `My View (${parseData?.UserName})` },
+      ...employees.map(emp => ({ value: emp.UserId, label: emp.Name }))
+    ]}
+    styles={customSelectStyles}
+    isSearchable={true}
+    placeholder="Select Employee"
+     isClearable={false}  
+  />
+</div>
 
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
+)}
+
                     </div>
 
                     <div className="d-lg-flex">
@@ -2192,47 +2183,56 @@ const TodayTasks = () => {
                         </div>
                     </div>
 
-                    <div className="table-responsive mt-3">
-                        <div className="d-flex justify-content-between border align-items-center p-2 rounded-3 mb-3" onClick={openUnAssignedTaskDialog}>
-                            <span className="ps-2">Work Done At: {new Date(queryDate?.executedTaskDate).toLocaleDateString('en-IN')}</span>
-                            <button className="btn btn-primary fa-14"> Add Additional Work Details</button>
-                        </div>
+                <div className="table-responsive mt-3">
+    <div className="d-flex justify-content-between border align-items-center p-2 rounded-3 mb-3" onClick={openUnAssignedTaskDialog}>
+        <span className="ps-2">Work Done At: {new Date(queryDate?.executedTaskDate).toLocaleDateString('en-IN')}</span>
+        <button className="btn btn-primary fa-14"> Add Additional Work Details</button>
+    </div>
 
-                        <table className="table mb-1">
-                            <thead>
-                                <tr>
-                                    <th className="fa-13 border">SNo</th>
-                                    <th className="fa-13 border">Task</th>
-                                    <th className="fa-13 border">Timer Based</th>
-                                    <th className="fa-13 border">Start - End</th>
-                                    <th className="fa-13 border">Total Minutes</th>
-                                    <th className="fa-13 border">Status</th>
-                                    <th className="fa-13 border">Discription</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {workedDetais.map((o, i) => (
-                                    <tr key={i}>
-                                        <td className="fa-13 border">{i + 1}</td>
-                                        <td className="fa-13 border">{o?.Task_Name}</td>
-                                        <td className="fa-13 border text-center">
-                                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(Number(o?.Timer_Based) === 1 ? 3 : 1)}`}>
-                                                {Number(o?.Timer_Based) === 1 ? 'Yes' : 'No'}
-                                            </span>
-                                        </td>
-                                        <td className="fa-13 border text-center">{o?.Start_Time} - {o?.End_Time}</td>
-                                        <td className="fa-13 border text-center">{o?.Tot_Minutes}</td>
-                                        <td className="fa-13 border text-center">
-                                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Status)}`}>
-                                                {o?.WorkStatus}
-                                            </span>
-                                        </td>
-                                        <td className="fa-13 border">{o?.Work_Done}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+    <table className="table mb-1">
+        <thead>
+            <tr>
+                <th className="fa-13 border">SNo</th>
+                <th className="fa-13 border">Task</th>
+                <th className="fa-13 border">Timer Based</th>
+                <th className="fa-13 border">Start - End</th>
+                <th className="fa-13 border">Total Minutes</th>
+                <th className="fa-13 border">Status</th>
+                <th className="fa-13 border">Discription</th>
+            </tr>
+        </thead>
+        <tbody>
+            {workedDetais
+                .filter((item, index, self) => 
+                    // Remove duplicates based on unique combination
+                    index === self.findIndex(t => 
+                        t.Task_Name === item.Task_Name && 
+                        t.Start_Time === item.Start_Time && 
+                        t.End_Time === item.End_Time
+                    )
+                )
+                .map((o, i) => (
+                    <tr key={`${o.Task_Id}_${o.Start_Time}_${o.End_Time}`}>
+                        <td className="fa-13 border">{i + 1}</td>
+                        <td className="fa-13 border">{o?.Task_Name}</td>
+                        <td className="fa-13 border text-center">
+                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(Number(o?.Timer_Based) === 1 ? 3 : 1)}`}>
+                                {Number(o?.Timer_Based) === 1 ? 'Yes' : 'No'}
+                            </span>
+                        </td>
+                        <td className="fa-13 border text-center">{o?.Start_Time} - {o?.End_Time}</td>
+                        <td className="fa-13 border text-center">{o?.Tot_Minutes}</td>
+                        <td className="fa-13 border text-center">
+                            <span className={`badge rounded-4 px-3 fw-bold text-white ${statusColor(o?.Work_Status)}`}>
+                                {o?.WorkStatus}
+                            </span>
+                        </td>
+                        <td className="fa-13 border">{o?.Work_Done}</td>
+                    </tr>
+                ))}
+        </tbody>
+    </table>
+</div>
 
                     <TabContext value={tabValue}>
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'none' }}>
@@ -2243,17 +2243,17 @@ const TodayTasks = () => {
                         </Box>
 
                         <TabPanel value={'1'} sx={{ p: 0, pt: 2 }}>
-                            {/* Content for tab 1 */}
+                       
                         </TabPanel>
 
                         <TabPanel value={'2'} sx={{ p: 0, pt: 2 }}>
-                            {/* Content for tab 2 */}
+                  
                         </TabPanel>
                     </TabContext>
                 </CardContent>
             </Card>
 
-            {/* All your existing Dialog components remain the same */}
+       
             <Dialog
                 open={dialog}
                 onClose={() => { setDialog(false); setSelectedTask({}) }}>

@@ -226,7 +226,12 @@ const LrReport = lazy(() => import("./Pages/Sales/lrReport"))
 const ProcessMaster=lazy(()=>import("./Pages/Tasks/processMaster"))
 
 
+
+const BankDetails=lazy(()=>import("./Pages/BankDetails/bank"))
 const RoutingArray = [
+
+    {component:<DisplayNavigations/>, path: '/bank'},
+    {component:<BankDetails/>,path:'/bank/bankList'},
 
      { component: <ProcessMaster />, path: '/taskManagement/master/processMaster' },
 
