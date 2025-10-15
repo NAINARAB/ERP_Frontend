@@ -1,6 +1,6 @@
 {
   "name": "erp",
-  "version": "3.20.9",
+  "version": "3.20.10",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.4",
