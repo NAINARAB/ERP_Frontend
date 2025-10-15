@@ -229,7 +229,7 @@ const NewDeliveryOrder = ({
             .catch((e) => console.error(e));
 
         fetchLink({
-            address: `purchase/voucherType`,
+            address: `masters/voucher?module=SALES`,
         })
             .then((data) => {
                 if (data.success) {

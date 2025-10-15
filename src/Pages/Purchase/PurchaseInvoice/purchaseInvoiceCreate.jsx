@@ -134,7 +134,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `masters/products` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher?module=PURCHASE_INVOICE` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=PURCHASE_INVOICE` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `dataEntry/costCenter` }),

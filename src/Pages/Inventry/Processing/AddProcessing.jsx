@@ -50,7 +50,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products/allProducts` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher?module=PROCESSING` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),

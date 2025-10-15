@@ -1,6 +1,6 @@
-import { getSessionUser, ISOString } from "../../../../Components/functions";
+import { checkIsNumber, getSessionUser, ISOString, toNumber } from "../../../../Components/functions";
 
-const { user } = getSessionUser();
+const userDetails = getSessionUser().user;
 
 export const initialStockJournalInfoValues = {
     PR_Id: '',
@@ -22,8 +22,8 @@ export const initialStockJournalInfoValues = {
     Total_Reading: '',
     Narration: '',
     PR_Status: 'NEW',
-    Created_By: user?.name,
-    Updated_By: user?.name,
+    Created_By: toNumber(userDetails?.UserId),
+    Updated_By: toNumber(userDetails?.UserId),
 }
 
 export const initialSoruceValue = {

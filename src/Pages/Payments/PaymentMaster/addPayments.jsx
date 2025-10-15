@@ -70,7 +70,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 ] = await Promise.all([
                     fetchLink({ address: `payment/accounts` }),
                     fetchLink({ address: `payment/accountGroup` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher?module=PAYMENT` }),
                     fetchLink({ address: `masters/defaultBanks` }),
                 ]);
 

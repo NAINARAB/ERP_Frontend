@@ -113,7 +113,7 @@ const StockJournalCreate = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` })
                 ]);

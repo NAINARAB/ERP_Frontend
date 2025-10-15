@@ -90,7 +90,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher?module=SALES` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),

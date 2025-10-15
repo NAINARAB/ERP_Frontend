@@ -81,7 +81,7 @@ const TallyStockJournalList = ({ loadingOn, loadingOff }) => {
                 ] = await Promise.all([
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `purchase/voucherType` }),
+                    fetchLink({ address: `masters/voucher` }),
                     // fetchLink({ address: `masters/uom` }),
                 ]);
 
