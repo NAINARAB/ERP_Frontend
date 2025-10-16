@@ -5,7 +5,8 @@ import { Edit, Delete } from "@mui/icons-material";
 import FilterableTable, { createCol } from '../../Components/filterableTable2';
 import { fetchLink } from '../../Components/fetchComponent';
 import { toast } from 'react-toastify';
-
+import { customSelectStyles } from "../../Components/tablecolumn";
+import FilterDialog from "../../Components/tableComp/FilterDialog";
 const Bank = ({ loadingOn, loadingOff }) => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -14,7 +15,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
   const [filters, setFilters] = useState({ fromDate: today, toDate: today, FilterDialog: false });
   const [accountNo, setAccountNo] = useState('002700150950519');
 
- 
   const fetchBankStatement = async () => {
     try {
       setLoading(true);
@@ -33,12 +33,13 @@ const Bank = ({ loadingOn, loadingOff }) => {
       console.error(err);
       toast.error('Error fetching bank statement');
     } finally {
-      setLoading(false);
+      // setLoading(false);
+          setFilters(prev => ({ ...prev, FilterDialog: false }));
       if (loadingOff) loadingOff();
     }
   };
 
-  // Sync statement
+
   const syncStatement = async () => {
     try {
       if (loadingOn) loadingOn();
@@ -66,7 +67,10 @@ const Bank = ({ loadingOn, loadingOff }) => {
       console.error(err);
       toast.error('Error during sync');
     } finally {
-      if (loadingOff) loadingOff();
+      if (loadingOff){
+loadingOff();
+    setFilters(prev => ({ ...prev, FilterDialog: false }));
+      } 
     }
   };
 
@@ -136,14 +140,14 @@ const Bank = ({ loadingOn, loadingOff }) => {
             type="date"
             value={filters.fromDate}
             onChange={e => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
+               styles={customSelectStyles}
           />
           <TextField
             label="To Date"
             type="date"
             value={filters.toDate}
             onChange={e => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
+               styles={customSelectStyles}
           />
         </DialogContent>
         <DialogActions>
