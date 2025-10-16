@@ -52,7 +52,7 @@ const ReportCalendar = () => {
             if (data.success) {
                 setWorkedDetais(data.data);
                 
-                // Group process data by date for process view
+             
                 if (viewMode === 'process') {
                     const grouped = groupProcessDataByDate(data.data);
                     setGroupedProcessData(grouped);
@@ -61,7 +61,7 @@ const ReportCalendar = () => {
         }).catch(e => console.error(e))    
     }, [filters, viewMode])
 
-    // Group process data by date and calculate cumulative information
+
     const groupProcessDataByDate = (data) => {
         const grouped = {};
         
@@ -80,7 +80,7 @@ const ReportCalendar = () => {
                 };
             }
             
-            // Add process information
+         
             if (item.Process_Name) {
                 if (!grouped[date].processCount[item.Process_Name]) {
                     grouped[date].processCount[item.Process_Name] = 0;
@@ -88,14 +88,14 @@ const ReportCalendar = () => {
                 grouped[date].processCount[item.Process_Name]++;
             }
             
-            // Add to processes list
+     
             grouped[date].processes.push(item);
             
-            // Calculate totals
+        
             grouped[date].totalMinutes += parseInt(item.Tot_Minutes) || 0;
             grouped[date].totalTasks++;
             
-            // Add employee details
+          
             if (item.EmployeeName && item.Emp_Id) {
                 grouped[date].employees.add(item.EmployeeName);
                 
@@ -114,7 +114,7 @@ const ReportCalendar = () => {
             }
         });
         
-        // Convert to array and calculate additional metrics
+ 
         return Object.values(grouped).map(day => ({
             ...day,
             employeeCount: day.employees.size,
@@ -217,7 +217,7 @@ const ReportCalendar = () => {
         }
     }
 
-    // Get filtered tasks based on selected employee
+   
     const getFilteredTasks = () => {
         if (!selectedProcessDay || !selectedProcessDay.processes) {
             return [];
@@ -231,6 +231,19 @@ const ReportCalendar = () => {
             return task.Emp_Id && task.Emp_Id.toString() === selectedEmployee.toString();
         });
     }
+
+    function formatMinutesToHours(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+const totalMinutes = getFilteredTasks().reduce(
+  (total, task) => total + (parseInt(task.Tot_Minutes) || 0),
+  0
+);
 
     return (
         <>
@@ -355,7 +368,7 @@ const ReportCalendar = () => {
                 />
             </div>
 
-            {/* Task Details Dialog */}
+        
             <Dialog
                 open={dialog} maxWidth="sm" fullWidth
                 onClose={() => { setDialog(false); setSelectedTask({}) }}>
@@ -440,7 +453,7 @@ const ReportCalendar = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Process Day Details Dialog */}
+          
             <Dialog
                 open={processDayDialog} maxWidth="lg" fullWidth
                 onClose={() => { setProcessDayDialog(false); setSelectedProcessDay({}); setSelectedEmployee(''); }}>
@@ -485,7 +498,7 @@ const ReportCalendar = () => {
                         </div>
                     </div>
 
-                    {/* Summary Statistics */}
+                  
                     <div className="row mb-3">
                         <div className="col-md-3">
                             <div className="card bg-light">
@@ -500,7 +513,8 @@ const ReportCalendar = () => {
                                 <div className="card-body text-center p-2">
                                     <h6 className="card-title mb-1">Total Duration</h6>
                                     <p className="card-text h4 text-success mb-0">
-                                        {getFilteredTasks().reduce((total, task) => total + (parseInt(task.Tot_Minutes) || 0), 0)}m
+                                        {/* {getFilteredTasks().reduce((total, task) => total + (parseInt(task.Tot_Minutes) || 0), 0)}m */}
+                                         {formatMinutesToHours(totalMinutes)}
                                     </p>
                                 </div>
                             </div>
@@ -527,7 +541,7 @@ const ReportCalendar = () => {
                         </div>
                     </div>
 
-                    {/* Detailed Tasks Table */}
+               
                     <div className="table-responsive pb-0">
                         <table className="table table-bordered mb-0">
                             <thead className="bg-light">
