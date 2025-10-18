@@ -87,7 +87,8 @@ const ChooseBatch = ({
 
     const handleInputChange = (row, value) => {
         setInputs(prev => {
-            const newInputs = [...prev].filter(item => String(item?.id)?.length === 0);
+            const newInputs = [...prev].filter(item => String(item?.id).length > 0);
+
             const index = newInputs.findIndex(
                 item => (
                     isEqualNumber(item.uniquId, row.uniquId)
