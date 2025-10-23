@@ -73,6 +73,21 @@ export const DaysBetween = (StartDate, EndDate) => {
     return Math.round((end - start) / oneDay) + 1;
 }
 
+export const DaysBetweenCount = (start, end) => {
+    if (!start || !end) return '';
+
+    const StartDate = typeof start === 'string' ? new Date(start) : start;
+    const EndDate = typeof end === 'string' ? new Date(end) : end;
+
+    const oneDay = 1000 * 60 * 60 * 24;
+
+    const startUTC = Date.UTC(StartDate.getFullYear(), StartDate.getMonth(), StartDate.getDate());
+    const endUTC = Date.UTC(EndDate.getFullYear(), EndDate.getMonth(), EndDate.getDate());
+
+    return Math.round((endUTC - startUTC) / oneDay) + 1;
+};
+
+
 export const getDaysInPreviousMonths = (months) => {
     const today = new Date();
     let currentMonth = today.getMonth();

@@ -376,7 +376,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             value={orderDetails.VoucherType}
                                         >
                                             <option value='' disabled>select voucher</option>
-                                            {baseData.voucherType?.filter(vou => vou.Type === 'SALES').map((vou, ind) => (
+                                            {baseData.voucherType?.map((vou, ind) => (
                                                 <option value={vou.Vocher_Type_Id} key={ind}>{vou.Voucher_Type}</option>
                                             ))}
                                         </select>

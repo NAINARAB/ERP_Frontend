@@ -1,5 +1,5 @@
-import FilterableTable, { createCol, formatString } from "../../../Components/filterableTable2"
-import { Addition, checkIsNumber, NumberFormat } from "../../../Components/functions";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2"
+import { Addition, NumberFormat, RoundNumber } from "../../../Components/functions";
 
 
 const ProcessingView = ({ dataArray, ButtonArea }) => {
@@ -19,16 +19,49 @@ const ProcessingView = ({ dataArray, ButtonArea }) => {
             title="PRODUCTIONS"
             maxHeightOption
             EnableSerialNumber
-            columns={
-                [...[
-                    { col: 'Process_date', type: 'date', title: 'Date' },
-                    { col: 'PR_Inv_Id', type: 'string', title: 'Vch.No' },
-                    { col: 'VoucherTypeGet', type: 'string', title: 'Voucher' },
-                    { col: 'StartDateTime', type: 'time', title: 'Start' },
-                    { col: 'EndDateTime', type: 'time', title: 'End' },
-                    { col: 'BranchName', type: 'string', title: 'Branch' },
-                    { col: 'GodownNameGet', type: 'string', title: 'Location' },
-                ].map(col => createCol(col.col, col.type, col.title)),
+            columns={[
+                createCol('Process_date', 'date', 'Date'),
+                createCol('PR_Inv_Id', 'string', 'Vch.No'),
+                {
+                    isVisible: 1,
+                    ColumnHeader: 'Consumption',
+                    isCustomCell: true,
+                    Cell: ({ row }) => {
+
+                        const sourceMaxQty = row?.SourceDetails?.reduce((acc, source) => {
+                            if (acc?.Sour_Qty >= source?.Sour_Qty) return acc;
+                            return source;
+                        }, {});
+
+                        return sourceMaxQty?.Product_Name && (
+                            <>
+                                <span>{sourceMaxQty?.Product_Name}</span>
+                                <span className="px-2">-</span>
+                                <span className="px-2 py-1 bg-light border fw-bold rounded-3">{sourceMaxQty?.Sour_Qty}</span>
+                            </>
+                        );
+                    }
+                },
+                {
+                    isVisible: 1,
+                    ColumnHeader: 'Production',
+                    isCustomCell: true,
+                    Cell: ({ row }) => {
+
+                        const destinationMaxQty = row?.DestinationDetails?.reduce((acc, destination) => {
+                            if (acc?.Dest_Qty >= destination?.Dest_Qty) return acc;
+                            return destination;
+                        }, {});
+
+                        return destinationMaxQty?.Product_Name && (
+                            <>
+                                <span>{destinationMaxQty?.Product_Name}</span>
+                                <span className="px-2">-</span>
+                                <span className="px-2 py-1 bg-light border fw-bold rounded-3">{destinationMaxQty?.Dest_Qty}</span>
+                            </>
+                        );
+                    }
+                },
                 {
                     isVisible: 1,
                     ColumnHeader: 'Difference (%)',
@@ -36,11 +69,16 @@ const ProcessingView = ({ dataArray, ButtonArea }) => {
                     Cell: ({ row }) => {
                         const sourceQtySum = row?.SourceDetails?.reduce((acc, source) => Addition(acc, source.Sour_Qty), 0);
                         const destinationQtySum = row?.DestinationDetails?.reduce((acc, destination) => Addition(acc, destination.Dest_Qty), 0);
-                        return NumberFormat(calculateDifference(sourceQtySum, destinationQtySum));
+                        const diffPercentage = sourceQtySum !== 0
+                            ? ((destinationQtySum - sourceQtySum) / sourceQtySum) * 100
+                            : 0;
+                        return RoundNumber(diffPercentage);
+                        // return NumberFormat(calculateDifference(sourceQtySum, destinationQtySum));
                     }
                 },
-                ]
-            }
+                createCol('VoucherTypeGet', 'string', 'Voucher'),
+                createCol('GodownNameGet', 'string', 'Location')
+            ]}
             isExpendable={true}
             expandableComp={({ row }) => (
                 <div className="row">
@@ -55,9 +93,6 @@ const ProcessingView = ({ dataArray, ButtonArea }) => {
                                 createCol('Product_Name', 'string', 'Item'),
                                 createCol('Godown_Name', 'string', 'Godown'),
                                 createCol('Sour_Qty', 'number', 'QTY'),
-                                // createCol('Sour_Unit', 'string', 'Unit'),
-                                // createCol('Sour_Rate', 'number', 'Rate'),
-                                // createCol('Sour_Amt', 'number', 'Amount'),
                             ]}
                             disablePagination
                         />
@@ -73,9 +108,6 @@ const ProcessingView = ({ dataArray, ButtonArea }) => {
                                 createCol('Product_Name', 'string', 'Item'),
                                 createCol('Godown_Name', 'string', 'Godown'),
                                 createCol('Dest_Qty', 'number', 'QTY'),
-                                // createCol('Dest_Unit', 'string', 'Unit'),
-                                // createCol('Dest_Rate', 'number', 'Rate'),
-                                // createCol('Dest_Amt', 'number', 'Amount'),
                             ]}
                             disablePagination
                         />

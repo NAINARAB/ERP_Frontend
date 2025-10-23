@@ -81,7 +81,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
         ...defaultFiltes,
         filterDialog: false,
         refresh: false,
-        view: 'report',
+        view: 'listing',
         pagination: false,
     })
 
@@ -234,15 +234,15 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                 value={filters.view} className="cus-inpt p-1 py-2 mx-1 w-auto"
                 onChange={e => setFilters(pre => ({ ...pre, view: e.target.value }))}
             >
-                <option value="report">Report</option>
                 <option value="listing">Listing</option>
+                <option value="report">Report</option>
             </select>
         </>
     )
 
     return (
         <>
-            {filters.view === 'report' && (
+            {filters.view === 'listing' && (
                 <FilterableTable
                     headerFontSizePx={11}
                     bodyFontSizePx={11}
@@ -308,7 +308,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                 />
             )}
 
-            {filters.view === 'listing' && (
+            {filters.view === 'report' && (
                 <ProcessingView dataArray={filteredData} ButtonArea={<ButtonArea />} />
             )}
 

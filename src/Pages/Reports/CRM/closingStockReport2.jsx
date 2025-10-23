@@ -1,5 +1,5 @@
 import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
-import { filterableText, isEqualNumber, ISOString, LocalDate, NumberFormat, stringCompare } from '../../../Components/functions';
+import { DaysBetweenCount, filterableText, ISOString, LocalDate, NumberFormat, stringCompare, Subraction, toArray, toNumber } from '../../../Components/functions';
 import { useEffect, useMemo, useState } from 'react';
 import { Autocomplete, IconButton, Tooltip, TextField, Checkbox, Dialog, DialogContent, DialogTitle, DialogActions, Button, Box } from '@mui/material';
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, FileDownload, SettingsOutlined, Search } from '@mui/icons-material';
@@ -70,12 +70,10 @@ export function exportTableToXlsx(table, opts = {}) {
     XLSX.writeFile(wb, filename);
 }
 
-
-
 const formatString = (val, dataType) => {
     switch (dataType) {
         case 'number':
-            return val ? NumberFormat(val) : '';
+            return toNumber(val) > 0 ? NumberFormat(val) : 0;
         case 'date':
             return val ? LocalDate(val) : '';
         case 'string':
@@ -111,73 +109,74 @@ const getFun = (dataType) => {
     }
 }
 
-const csvConfig = mkConfig({
-    fieldSeparator: ',',
-    decimalSeparator: '.',
-    useKeysAsHeaders: true,
-});
-
 const reportColumn = [
     {
         Column_Name: 'Retailer',
         accessColumnName: 'Retailer_Name',
         Column_Data_Type: 'string',
-        Order_By: 1
+        Order_By: 1,
     },
     {
         Column_Name: 'Product',
         accessColumnName: 'Item_Name',
         Column_Data_Type: 'string',
-        Order_By: 2
+        Order_By: 2,
     },
     {
         Column_Name: 'Worth',
         accessColumnName: 'StockValueOfItem',
         Column_Data_Type: 'number',
-        Order_By: 3
+        Order_By: 3,
     },
     {
         Column_Name: 'Update Date',
         accessColumnName: 'ST_Date',
         Column_Data_Type: 'date',
-        Order_By: 4
-    },
-    {
-        Column_Name: 'Entry Date',
-        accessColumnName: 'Do_Date',
-        Column_Data_Type: 'date',
-        Order_By: 5
+        Order_By: 4,
     },
     {
         Column_Name: 'Update Qty',
         accessColumnName: 'ST_Qty',
         Column_Data_Type: 'number',
-        Order_By: 6
+        Order_By: 6,
+    },
+    {
+        Column_Name: 'Entry Date',
+        accessColumnName: 'Do_Date',
+        Column_Data_Type: 'date',
+        Order_By: 5,
     },
     {
         Column_Name: 'Entry Qty',
         accessColumnName: 'Bill_Qty',
         Column_Data_Type: 'number',
-        Order_By: 7
+        Order_By: 7,
+    },
+    {
+        Column_Name: 'Stock Days',
+        accessColumnName: 'stockDays',
+        Column_Data_Type: 'number',
+        Order_By: 8,
+    },
+    {
+        Column_Name: 'Sold Qty',
+        accessColumnName: 'soldQuantity',
+        Column_Data_Type: 'number',
+        Order_By: 9,
     },
     {
         Column_Name: 'Closing By',
         accessColumnName: 'ClosingStockBy',
         Column_Data_Type: 'string',
-        Order_By: 8
+        Order_By: 10,
     },
-    {
-        Column_Name: 'Delivered By',
-        accessColumnName: 'DeliveredBy',
-        Column_Data_Type: 'string',
-        Order_By: 9
-    },
-    {
-        Column_Name: 'Last Sales',
-        accessColumnName: 'lastSalesDate',
-        Column_Data_Type: 'date',
-        Order_By: 10
-    },
+    // {
+    //     Column_Name: 'Delivered By',
+    //     accessColumnName: 'DeliveredBy',
+    //     Column_Data_Type: 'string',
+    //     Order_By: 9,
+    //     isVisible: false
+    // },
 ]
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -206,16 +205,37 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
         setDataArray([]);
 
         fetchLink({
-            address: `reports/customerClosingStock/itemWithRetailer?Fromdate=${apiFilters.Fromdate}&Todate=${apiFilters.Todate}`,
+            address: `
+            reports/customerClosingStock/itemWithRetailer?
+            Fromdate=${apiFilters.Fromdate}&
+            Todate=${apiFilters.Todate}`,
             loadingOn, loadingOff
         }).then(data => {
-            if (data?.success) setDataArray(data?.data);
+            if (data?.success) {
+                const calcStockDays = toArray(data?.data).map(row => {
+                    const Do_Date = row?.Do_Date ? ISOString(row?.Do_Date) : '';
+                    const ST_Date = row?.ST_Date ? ISOString(row?.ST_Date) : ''; 
+
+                    return {
+                        ...row,
+                        Do_Date, ST_Date,
+                        stockDays: (Do_Date && ST_Date)
+                            ? DaysBetweenCount(Do_Date, ST_Date)
+                            : '',
+                        soldQuantity: toNumber(Subraction(row?.Bill_Qty, row?.ST_Qty)),
+                    }
+                });
+                setDataArray(calcStockDays)
+            } else {
+                setDataArray([]);
+            }
         }).catch(e => console.log(e));
 
     }, [apiFilters.search])
 
     const dispColmn = useMemo(() => {
-        const displayColumns = [...columns].sort((a, b) => (a.Order_By && b.Order_By) ? a.Order_By - b.Order_By : b.Order_By - a.Order_By)
+        const displayColumns = [...columns]
+        // .sort((a, b) => (a.Order_By && b.Order_By) ? a.Order_By - b.Order_By : b.Order_By - a.Order_By)
 
         return displayColumns.map(column => ({
             header: column?.Column_Name?.replace(/_/g, ' '),
@@ -243,12 +263,6 @@ const ClosingStockReportTwo = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         applyFilters();
     }, [filters]);
-
-    // const handleExportRows = (rows) => {
-    //     const rowData = rows.map((row) => row.original);
-    //     const csv = generateCsv(csvConfig)(rowData);
-    //     download(csvConfig)(csv);
-    // };
 
     const table = useMaterialReactTable({
         columns: dispColmn,
