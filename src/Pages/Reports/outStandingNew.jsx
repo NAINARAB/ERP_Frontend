@@ -15,11 +15,13 @@ import {
   Checkbox,
   Chip,
   ListItemText,
+  Sync
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import { toast } from 'react-toastify';
 
 function OutStandingNew({ loadingOn, loadingOff }) {
   const getTodayDate = () => {
@@ -69,12 +71,12 @@ function OutStandingNew({ loadingOn, loadingOff }) {
 
       const formattedDate = encodeURIComponent(filters.Fromdate);
 
-      // Single API call
+      
       const outstandingRes = await fetchLink({ 
         address: `receipt/outStandingAbove?reqDate=${formattedDate}` 
       });
       
-      console.log("outstandingRes", outstandingRes);
+  
       
       const outstandingData = Array.isArray(outstandingRes) 
         ? outstandingRes 
@@ -152,6 +154,21 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     setFilterDialogOpen(false);
   };
 
+      const syncLOS = () => {
+          if (loadingOn) loadingOn();
+         
+          fetchLink({
+              address: `reports/syncPosPending`,
+              method: 'POST',
+              bodyData:allOutstandingData
+          }).then(data => {
+              if (data.success) toast.success(data.message);
+              else toast.error(data.message);
+          }).catch(e => console.error(e)).finally(() => {
+              if (loadingOff) loadingOff();
+          })
+      }
+
   return (
     <div>
       <FilterableTable
@@ -177,6 +194,15 @@ function OutStandingNew({ loadingOn, loadingOff }) {
             >
               Filter
             </Button>
+ <Button
+      variant="contained"
+      color="success"
+      onClick={syncLOS}
+      sx={{ height: 40, minWidth: 100 }}
+      disabled={isLoading}
+    >
+      Sync
+    </Button>
 
             <Tooltip title="Search">
               <IconButton
