@@ -1054,7 +1054,7 @@ const ReportCalendar = () => {
             return groupedProcessData.map(day => {
                 const validDate = safeDateToISOString(day.date);
                 return {
-                    // title: `${day.assignedTasks}A/${day.completedTasks}C | ${day.totalMinutes}m | ${day.employeeCount} emp`,
+                    title: `${day.assignedTasks}A/${day.completedTasks}C | ${day.totalMinutes}m | ${day.employeeCount} emp`,
                     start: validDate,
                     allDay: true,
                     objectData: day,
@@ -1486,7 +1486,7 @@ const ReportCalendar = () => {
                     </div>
 
             
-                    <div className="row mb-3">
+                    {/* <div className="row mb-3">
                         <div className="col-md-3">
                             <div className="card bg-light">
                                 <div className="card-body text-center p-2">
@@ -1525,8 +1525,85 @@ const ReportCalendar = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
+<div className="row mb-3">
+    <div className="col-md-4">
+        <div className="card bg-light">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1">Total Tasks</h6>
+                <p className="card-text h4 text-primary mb-0">{getFilteredTasks().length}</p>
+            </div>
+        </div>
+    </div>
+    <div className="col-md-4">
+        <div className="card bg-light">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1">Assigned Tasks</h6>
+                <p className="card-text h4 text-success mb-0">
+                    {getFilteredTasks().filter(task => task.workType === 'assigned').length}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div className="col-md-4">
+        <div className="card bg-light">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1">Completed Tasks</h6>
+                <p className="card-text h4 text-danger mb-0">
+                    {getFilteredTasks().filter(task => task.workType === 'completed').length}
+                </p>
+            </div>
+        </div>
+    </div>
+    {/* <div className="col-md-3">
+        <div className="card bg-light">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1">Total Duration</h6>
+                <p className="card-text h4 text-info mb-0">
+                    {formatMinutesToHours(totalMinutes)}
+                </p>
+            </div>
+        </div>
+    </div> */}
+</div>
 
+
+<div className="row mb-3">
+    <div className="col-md-6">
+        <div className="card bg-success bg-opacity-10">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1 text-success">Assigned Duration</h6>
+                <p className="card-text h4 text-success mb-0">
+                    {formatMinutesToHours(
+                        getFilteredTasks()
+                            .filter(task => task.workType === 'assigned')
+                            .reduce((total, task) => total + (parseInt(task.Tot_Minutes) || 60), 0)
+                    )}
+                </p>
+                <small className="text-muted">
+                    {getFilteredTasks().filter(task => task.workType === 'assigned').length} tasks
+                </small>
+            </div>
+        </div>
+    </div>
+    <div className="col-md-6">
+        <div className="card bg-danger bg-opacity-10">
+            <div className="card-body text-center p-2">
+                <h6 className="card-title mb-1 text-danger">Completed Duration</h6>
+                <p className="card-text h4 text-danger mb-0">
+                    {formatMinutesToHours(
+                        getFilteredTasks()
+                            .filter(task => task.workType === 'completed')
+                            .reduce((total, task) => total + (parseInt(task.Tot_Minutes) || 0), 0)
+                    )}
+                </p>
+                <small className="text-muted">
+                    {getFilteredTasks().filter(task => task.workType === 'completed').length} tasks
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
          
                     <div className="table-responsive pb-0">
                         <table className="table table-bordered mb-0">
