@@ -341,15 +341,17 @@
 
 
 
-
 import React, { useEffect, useState, useContext, useRef } from "react";
+import {  ChatBubbleOutline } from "@mui/icons-material";
 import {
   Card,
   CardContent,
-  Paper
-
+  Paper,
+  Modal,
+  Box,
+  Typography,
+  IconButton
 } from "@mui/material";
-
 import Select from "react-select";
 import { useReactToPrint } from "react-to-print";
 import { MyContext } from "../../Components/context/contextProvider";
@@ -380,20 +382,83 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
 
   const [workedDetails, setWorkedDetails] = useState({});
   const [users, setUsers] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  const [allTasks, setAllTasks] = useState([]); // store all tasks
+  const [tasks, setTasks] = useState([]); // filtered tasks for dropdown based on current data
   const [process, setProcess] = useState([]);
   const [project, setProject] = useState([]);
-//   const [openFilterDialog, setOpenFilterDialog] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState(initialFilter);
+  const [openPopup, setOpenPopup] = useState(false);
+  const [popupData, setPopupData] = useState({ title: "", details: [] });
+const [expandAll, setExpandAll] = useState(false);
+
+ const handleOpenPopup = (title, details) => {
+    setPopupData({ title, details });
+    setOpenPopup(true);
+  };
+  const handleClosePopup = () => setOpenPopup(false);
 
 
 
   useEffect(() => {
+    if (Object.keys(workedDetails).length > 0) {
+      const allWorkEntries = Object.values(workedDetails).flat();
+      const uniqueTasks = allWorkEntries.reduce((acc, current) => {
+        if (!acc.some(task => task.Task_Id === current.Task_Id)) {
+          acc.push({
+            Task_Id: current.Task_Id,
+            Task_Name: current.Task_Name,
+            Project_Id: current.Project_Id,
+            Process_Id: current.Process_Id
+          });
+        }
+        return acc;
+      }, []);
+      setTasks(uniqueTasks);
+    } else setTasks([]);
+  }, [workedDetails]);
+
+
+  useEffect(() => {
+    if (Object.keys(workedDetails).length > 0) {
+
+      const allWorkEntries = Object.values(workedDetails).flat();
+      const uniqueTasks = allWorkEntries.reduce((acc, current) => {
+        if (!acc.some(task => task.Task_Id === current.Task_Id)) {
+          acc.push({
+            Task_Id: current.Task_Id,
+            Task_Name: current.Task_Name,
+            Project_Id: current.Project_Id,
+            Process_Id: current.Process_Id
+          });
+        }
+        return acc;
+      }, []);
+      
+      setTasks(uniqueTasks);
+    } else {
+
+      setTasks([]);
+    }
+  }, [workedDetails]);
+
+
+
+
+    useEffect(() => {
+    let filtered = [...allTasks];
+    if (appliedFilter.Project_Id) filtered = filtered.filter(t => t.Project_Id === appliedFilter.Project_Id);
+    if (appliedFilter.Id) filtered = filtered.filter(t => t.Process_Id === appliedFilter.Id);
+    if (!filtered.some(t => t.Task_Id === appliedFilter.Task_Id)) {
+      setAppliedFilter(prev => ({ ...prev, Task_Id: "", Task_Name: "Select Task" }));
+    }
+  }, [appliedFilter.Project_Id, appliedFilter.Id, allTasks]);
+
+    useEffect(() => {
     if (loadingOn) loadingOn();
     fetchLink({
       address: `taskManagement/task/work?Emp_Id=${appliedFilter?.Emp_Id}&from=${appliedFilter.startDate}&to=${appliedFilter.endDate}&Task_Id=${appliedFilter?.Task_Id}&Process_Id=${appliedFilter?.Id}&Project_Id=${appliedFilter?.Project_Id}`,
     })
-      .then((data) => {
+      .then(data => {
         if (data.success) {
           const groupedData = data?.data?.reduce((acc, current) => {
             const workDate = ISOString(current?.Work_Dt);
@@ -402,16 +467,21 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
             return acc;
           }, {});
           setWorkedDetails(groupedData);
-        }
+        } else setWorkedDetails({});
       })
       .catch(console.error)
       .finally(() => loadingOff && loadingOff());
   }, [appliedFilter]);
 
 
+
   useEffect(() => {
     fetchLink({ address: `taskManagement/task/assignEmployee/task/dropDown` })
-      .then((data) => data.success && setTasks(data.data))
+      .then((data) => {
+        if (data.success) {
+          setAllTasks(data.data);
+        }
+      })
       .catch(console.error);
 
     fetchLink({
@@ -426,7 +496,7 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
 
     if (Number(contextObj?.Print_Rights) === 1) {
       fetchLink({
-        address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}`,
+        address: `masters/users/employee/dropDown?Company_id=${parseData?.Company_id}&User_Id=${parseData?.UserId}`,
       })
         .then((data) => {
           if (data.success) {
@@ -438,7 +508,6 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
         .catch(console.error);
     }
   }, [contextObj?.Print_Rights, parseData?.Company_id]);
-
 
   const formatTime24 = (time24) => {
     if (!time24) return "-";
@@ -460,116 +529,109 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
   };
 
 
-
   const CardAndTableComp = () => {
-        return (
-            <div className="px-2">
-                {Object.keys(workedDetails).map(workDate => (
-                    <div key={workDate} className="cus-card pb-0">
-                        <h6 className="p-3 mb-0 bg-light">
-                            Date:
-                            {LocalDate(workDate)}
-                            {" ( " + workedDetails[workDate]?.length + " Tasks )"}
-                        </h6>
+    return (
+      <div className="px-2">
+        {Object.keys(dataArray).map(workDate => (
+          <div key={workDate} className="cus-card pb-0">
+            <h6 className="p-3 mb-0 bg-light">
+              Date:
+              {LocalDate(workDate)}
+              {" ( " + dataArray[workDate]?.length + " Tasks )"}
+            </h6>
 
-                        <hr className="m-0" />
+            <hr className="m-0" />
 
-                        <div className="table-responsive day-abstract-table">
-                            <table className="table">
-                                <tbody>
-                                    {workedDetails[workDate].map((taskDetail, oi) => (
-                                        <tr key={oi}>
-
-                                            <td style={{ verticalAlign: 'middle' }}><FiberManualRecord className='fa-in text-primary' /> {taskDetail.Task_Name}</td>
-                                            <td style={{ verticalAlign: 'middle' }}><AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes</td>
-                                            <td className="fa-14 " style={{ verticalAlign: 'middle' }}>
-                                                {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
-                                            </td>
-                                            <td style={{ verticalAlign: 'middle' }}>
-                                                <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
-                                                    {taskDetail?.WorkStatus}
-                                                </span>
-                                            </td>
-                                            <td style={{ verticalAlign: 'middle' }}>
-                                                <p className="mb-0 fa-14 text-muted">
-                                                    <SmsOutlined className="fa-in" />
-                                                    <span>&emsp;{taskDetail.Work_Done}</span>
-                                                </p>
-                                            </td>
-                                            <td style={{ verticalAlign: 'middle' }}>
-                                                {taskDetail?.Work_Param?.length > 0 && (
-                                                    <div className="cus-card p-2 m-0">
-                                                        {taskDetail?.Work_Param?.map((o, i) => (
-                                                            <p className="mb-0 fa-14 d-flex" key={i}>
-                                                                <span className="flex-grow-1">{o?.Paramet_Name}:</span>
-                                                                <span className="text-primary">
-                                                                    {
-                                                                        (isNaN(o?.Current_Value) || (o?.Paramet_Data_Type) !== 'number')
-                                                                            ? o?.Current_Value
-                                                                            : Number(o?.Current_Value).toLocaleString('en-IN')
-                                                                    }
-                                                                </span>
-                                                            </p>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="row mb-2 px-3 day-abstract-card d-none">
-
-                            {workedDetails[workDate].map(taskDetail => (
-
-                                <div key={taskDetail.Work_Id} className="col-xl-3 col-lg-4 col-md-6 p-2 py-0">
-                                    <div className="cus-card shadow-sm p-3">
-
-                                        <p className="mb-2 fa-15 fw-bold text-secondary">
-                                            {taskDetail.Task_Name + " "}
-                                        </p>
-
-                                        <p className="mb-2 fa-14 text-secondary">
-                                            {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
-                                            <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
-                                                {taskDetail?.WorkStatus}
-                                            </span>
-                                        </p>
-
-                                        <p className="mb-2 fa-14 text-secondary">
-                                            <AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes
-                                        </p>
-
-                                        <p className="mb-0 fa-14 text-muted">
-                                            <span className="fw-bold">Summary : </span><br />
-                                            <span>&emsp;{taskDetail.Work_Done}</span>
-                                        </p>
-
-                                        {taskDetail?.Work_Param?.length > 0 && (
-                                            <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Work_Param?.length} )</p>
-                                        )}
-
-                                        {taskDetail?.Work_Param?.length > 0 && <hr className="m-0" />}
-
-                                        {taskDetail?.Work_Param?.map((o, i) => (
-                                            <p className="mb-0 fa-14 d-flex flex-wrap" key={i}>
-                                                <span className="flex-grow-1">{o?.Paramet_Name}:</span>
-                                                <span> {o?.Current_Value}</span>
-                                            </p>
-                                        ))}
-
-                                    </div>
-                                </div>
+            <div className="table-responsive day-abstract-table">
+              <table className="table">
+                <tbody>
+                  {dataArray[workDate].map((taskDetail, oi) => (
+                    <tr key={oi}>
+                      <td style={{ verticalAlign: 'middle' }}><FiberManualRecord className='fa-in text-primary' /> {taskDetail.Task_Name}</td>
+                      <td style={{ verticalAlign: 'middle' }}><AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes</td>
+                      <td className="fa-14 " style={{ verticalAlign: 'middle' }}>
+                        {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
+                      </td>
+                      <td style={{ verticalAlign: 'middle' }}>
+                        <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
+                          {taskDetail?.WorkStatus}
+                        </span>
+                      </td>
+                      <td style={{ verticalAlign: 'middle' }}>
+                        <p className="mb-0 fa-14 text-muted">
+                          <SmsOutlined className="fa-in" />
+                          <span>&emsp;{taskDetail.Work_Done}</span>
+                        </p>
+                      </td>
+                      <td style={{ verticalAlign: 'middle' }}>
+                        {taskDetail?.Work_Param?.length > 0 && (
+                          <div className="cus-card p-2 m-0">
+                            {taskDetail?.Work_Param?.map((o, i) => (
+                              <p className="mb-0 fa-14 d-flex" key={i}>
+                                <span className="flex-grow-1">{o?.Paramet_Name}:</span>
+                                <span className="text-primary">
+                                  {
+                                    (isNaN(o?.Current_Value) || (o?.Paramet_Data_Type) !== 'number')
+                                      ? o?.Current_Value
+                                      : Number(o?.Current_Value).toLocaleString('en-IN')
+                                  }
+                                </span>
+                              </p>
                             ))}
-                        </div>
-
-                    </div>
-                ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-        )
-    }
+
+            <div className="row mb-2 px-3 day-abstract-card d-none">
+              {dataArray[workDate].map(taskDetail => (
+                <div key={taskDetail.Work_Id} className="col-xl-3 col-lg-4 col-md-6 p-2 py-0">
+                  <div className="cus-card shadow-sm p-3">
+                    <p className="mb-2 fa-15 fw-bold text-secondary">
+                      {taskDetail.Task_Name + " "}
+                    </p>
+
+                    <p className="mb-2 fa-14 text-secondary">
+                      {formatTime24(taskDetail.Start_Time) + " - " + formatTime24(taskDetail.End_Time)}
+                      <span className={`badge fa-10 ms-2 p-1 ${getColor(taskDetail?.Work_Status)}`}>
+                        {taskDetail?.WorkStatus}
+                      </span>
+                    </p>
+
+                    <p className="mb-2 fa-14 text-secondary">
+                      <AccessTime className="fa-15" /> {taskDetail.Tot_Minutes} Minutes
+                    </p>
+
+                    <p className="mb-0 fa-14 text-muted">
+                      <span className="fw-bold">Summary : </span><br />
+                      <span>&emsp;{taskDetail.Work_Done}</span>
+                    </p>
+
+                    {taskDetail?.Work_Param?.length > 0 && (
+                      <p className="mb-1 text-secondary fa-14 fw-bold">Parameters ( {taskDetail?.Work_Param?.length} )</p>
+                    )}
+
+                    {taskDetail?.Work_Param?.length > 0 && <hr className="m-0" />}
+
+                    {taskDetail?.Work_Param?.map((o, i) => (
+                      <p className="mb-0 fa-14 d-flex flex-wrap" key={i}>
+                        <span className="flex-grow-1">{o?.Paramet_Name}:</span>
+                        <span> {o?.Current_Value}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   const dataArray = Object.keys(workedDetails || {}).flatMap((workDate) =>
     workedDetails[workDate].map((task) => ({
@@ -578,232 +640,341 @@ const EmployeeDayAbstract = ({ loadingOn, loadingOff }) => {
     }))
   );
 
-    function formatMinutesToHours(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+  function formatMinutesToHours(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   }
-  return `${minutes}m`;
-}
 
+
+  const WorkDetailsExpandable = ({ row }) => {
+  return (
+    <div className="p-2">
+      {row.Work_Done && (
+        <div className="mb-2">
+          <strong>Comments:</strong>
+          <p className="mb-0">{row.Work_Done}</p>
+        </div>
+      )}
+
+      {row.Work_Param?.length > 0 && (
+        <div>
+          <strong>Parameters:</strong>
+          <div className="cus-card p-2 mt-1">
+            {row.Work_Param.map((param, i) => (
+              <p key={i} className="mb-0 d-flex justify-content-between">
+                <span>{param.Paramet_Name}:</span>
+                <span className="text-primary">
+                  {isNaN(param.Current_Value) || param.Paramet_Data_Type !== "number"
+                    ? param.Current_Value
+                    : Number(param.Current_Value).toLocaleString("en-IN")}
+                </span>
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 
   return (
     <>
-     <Card component={Paper} variant="elevation">
+      <Card component={Paper} variant="elevation">
+        <div className="row align-items-center justify-content-between px-3 pt-3">
+          <div className="col">
+            <h5 className="mb-0 fw-bold">Work Abstract</h5>
+          </div>
 
-  <div className="row align-items-center justify-content-between px-3 pt-3">
-    <div className="col">
-      <h5 className="mb-0 fw-bold">Work Abstract</h5>
-    </div>
-
-    <div className="col-auto d-flex align-items-center gap-2">
+      
+     <div className="col-auto d-flex align-items-center gap-2">
  
     
+<button className="btn btn-primary rounded-5 px-3" onClick={handlePrint}>
+  Print PDF
+</button>
 
-      <button
-        className="btn btn-primary rounded-5 px-3"
-        onClick={handlePrint}
-      >
-        Print PDF
-      </button>
     </div>
-  </div>
 
+          
+        </div>
 
-  <CardContent className="pt-2" style={{ minHeight: "500px" }}>
-  <div className="row">
+        <CardContent className="pt-2" style={{ minHeight: "500px" }}>
+          <div className="row">
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+              <label className="pb-2">Project</label>
+              <Select
+                value={{ value: appliedFilter.Project_Id, label: appliedFilter.Project_Name }}
+                onChange={(e) =>
+                  setAppliedFilter({ ...appliedFilter, Project_Id: e.value, Project_Name: e.label })
+                }
+                options={[
+                  { value: "", label: "All Project" },
+                  ...project.map((p) => ({ value: p.Project_Id, label: p.Project_Name })),
+                ]}
+                styles={customSelectStyles}
+                isSearchable
+                placeholder="Project Name"
+                menuPortalTarget={document.body}
+              />
+            </div>
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+              <label className="pb-2">From:</label>
+              <input
+                type="date"
+                className="cus-inpt"
+                value={appliedFilter.startDate}
+                onChange={(e) =>
+                  setAppliedFilter({ ...appliedFilter, startDate: e.target.value })
+                }
+              />
+            </div>
 
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">From:</label>
-    <input
-      type="date"
-      className="cus-inpt"
-      value={appliedFilter.startDate}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, startDate: e.target.value })
-      }
-    />
-  </div>
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+              <label className="pb-2">To:</label>
+              <input
+                type="date"
+                className="cus-inpt"
+                value={appliedFilter.endDate}
+                onChange={(e) =>
+                  setAppliedFilter({ ...appliedFilter, endDate: e.target.value })
+                }
+              />
+            </div>
+            
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+               <label className="pb-2">Task</label>
+              <Select
+                value={{ value: appliedFilter.Task_Id, label: appliedFilter.Task_Name }}
+                onChange={(e) => setAppliedFilter({ ...appliedFilter, Task_Id: e.value, Task_Name: e.label })}
+                options={[
+                  { value: "", label: "All Task" }, 
+                  ...tasks.map((t) => ({ 
+                    value: t.Task_Id, 
+                    label: t.Task_Name 
+                  }))
+                ]}
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                isSearchable
+                placeholder="Task Name"
+              />
+            </div>
 
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">To:</label>
-    <input
-      type="date"
-      className="cus-inpt"
-      value={appliedFilter.endDate}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, endDate: e.target.value })
-      }
-    />
-  </div>
+            
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+              <label className="pb-2">Process</label>
+              <Select
+                value={{ value: appliedFilter.Id, label: appliedFilter.Process_Name }}
+                onChange={(e) =>
+                  setAppliedFilter({ ...appliedFilter, Id: e.value, Process_Name: e.label })
+                }
+                options={[
+                  { value: "", label: "All Process" },
+                  ...process.map((p) => ({ value: p.Id, label: p.Process_Name })),
+                ]}
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                isSearchable
+                placeholder="Process Name"
+              />
+            </div>
 
+           
 
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">User</label>
-    <Select
-      value={{ value: appliedFilter.Emp_Id, label: appliedFilter.Emp_Name }}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, Emp_Id: e.value, Emp_Name: e.label })
-      }
-      options={[
-        { value: parseData.UserId, label: parseData.Name },
-        { value: "", label: "ALL EMPLOYEE" },
-        ...users.map((u) => ({ value: u.UserId, label: u.Name })),
-      ]}
-      styles={customSelectStyles}
-      isDisabled={Number(contextObj?.Print_Rights) === 0}
-      isSearchable
-      placeholder="User Name"
-    />
-  </div>
+            <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
+              <label className="pb-2">User</label>
+              <Select
+                value={{ value: appliedFilter.Emp_Id, label: appliedFilter.Emp_Name }}
+                onChange={(e) =>
+                  setAppliedFilter({ ...appliedFilter, Emp_Id: e.value, Emp_Name: e.label })
+                }
+                options={[
+                  { value: parseData.UserId, label: parseData.Name },
+                  { value: "", label: "ALL EMPLOYEE" },
+                  ...users.map((u) => ({ value: u.UserId, label: u.Name })),
+                ]}
+                styles={customSelectStyles}
+                isDisabled={Number(contextObj?.Print_Rights) === 0}
+                isSearchable
+                placeholder="User Name"
+              />
+            </div>
+          </div>
+<div style={{ display: "none" }} ref={printRef}>
+  <h5>Work Abstract Of {appliedFilter.Emp_Name}</h5>
+  <p className="mb-2">
+    From {LocalDate(appliedFilter.startDate)} &nbsp; - To: {LocalDate(appliedFilter.endDate)}
+  </p>
 
-
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">Project</label>
-    <Select
-      value={{ value: appliedFilter.Project_Id, label: appliedFilter.Project_Name }}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, Project_Id: e.value, Project_Name: e.label })
-      }
-      options={[
-        { value: "", label: "All Project" },
-        ...project.map((p) => ({ value: p.Project_Id, label: p.Project_Name })),
-      ]}
-      styles={customSelectStyles}
-      isSearchable
-      placeholder="Project Name"
-      menuPortalTarget={document.body}
-    />
-  </div>
-
-
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">Process</label>
-    <Select
-      value={{ value: appliedFilter.Id, label: appliedFilter.Process_Name }}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, Id: e.value, Process_Name: e.label })
-      }
-      options={[
-        { value: "", label: "All Process" },
-        ...process.map((p) => ({ value: p.Id, label: p.Process_Name })),
-      ]}
-      styles={customSelectStyles}
-      menuPortalTarget={document.body}
-      isSearchable
-      placeholder="Process Name"
-    />
-  </div>
-
-
-  <div className="col-xxl-2 col-lg-3 col-md-3 col-sm-6 p-2">
-    <label className="pb-2">Task</label>
-    <Select
-      value={{ value: appliedFilter.Task_Id, label: appliedFilter.Task_Name }}
-      onChange={(e) =>
-        setAppliedFilter({ ...appliedFilter, Task_Id: e.value, Task_Name: e.label })
-      }
-      options={[
-        { value: "", label: "All Task" },
-        ...tasks.map((t) => ({ value: t.Task_Id, label: t.Task_Name })),
-      ]}
-      styles={customSelectStyles}
-      isSearchable
-      placeholder="Task Name"
-    />
-  </div>
+  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <thead>
+      <tr>
+        <th>Project</th>
+        <th>Date</th>
+        <th>Task</th>
+        <th>Sub Task</th>
+        <th>Staff</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {dataArray.map((row, idx) => (
+        <tr key={idx} style={{ borderBottom: "1px solid #ccc" }}>
+          <td>{row.Project_Name}</td>
+          <td>{LocalDate(row.Work_Date)}</td>
+          <td>{row.Task_Name}</td>
+          <td>{row.Sub_Task_Name}</td>
+          <td>{row.EmployeeName}</td>
+          <td>{row.WorkStatus || "-"}</td>
+          <td>
+            {row.Tot_Minutes ? `${row.Tot_Minutes} min (${formatMinutesToHours(row.Tot_Minutes)})` : "-"}
+          </td>
+          <td>{formatTime24(row.Start_Time)} - {formatTime24(row.End_Time)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
 </div>
 
-     <div className="d-none px-3">
-                         <div className="px-3" ref={printRef}>
-                             <h5>Work Abstract Of {appliedFilter.Emp_Name} </h5>
-                             <p className="mb-0">
-                                From {LocalDate(appliedFilter.startDate)}
-                                 &nbsp; - To: {LocalDate(appliedFilter.endDate)}
-                            </p>
-                          <CardAndTableComp />
-                        </div>
-                     </div>
 
-    <FilterableTable
-      title="Work Abstract"
-      dataArray={dataArray}
-      EnableSerialNumber
-      columns={[
-          createCol("Project_Name", "string", "Project_Name"),
-        createCol("Work_Date", "date", "Date"),
-        createCol("Task_Name", "string", "Task"),
-        createCol("Sub_Task_Name", "string", "Sub Task"),
-        createCol("EmployeeName", "string", "Staff"),
-        createCol("Work_Done", "string", "Comments"),
-        {
-          ColumnHeader: "Status",
-          isVisible: 1,
-          align: "center",
-          isCustomCell: true,
-          Cell: ({ row }) => (
-            <span className={`badge fa-10 p-1 ${getColor(row?.Work_Status)}`}>
-              {row?.WorkStatus || "-"}
-            </span>
-          ),
-        },
-      {
-  ColumnHeader: "Duration",
-  isVisible: 1,
-  align: "center",
-  isCustomCell: true,
-  Cell: ({ row }) => (
-    <div style={{ width: '100px', wordWrap: 'break-word', textAlign: 'center' }}>
-      <span>{row?.Tot_Minutes ? `${row.Tot_Minutes} min` : "-"}</span>
-      <br />
-      <span>({row?.Tot_Minutes ? formatMinutesToHours(row?.Tot_Minutes) : "-"})</span>
-    </div>
-  ),
-}
-,
-        {
-          ColumnHeader: "Time",
-          isVisible: 1,
-          align: "center",
-          isCustomCell: true,
-          Cell: ({ row }) => (
-            <span>
-              {formatTime24(row?.Start_Time)} - {formatTime24(row?.End_Time)}
-            </span>
-          ),
-        },
-        {
-          ColumnHeader: "Parameters",
-          isVisible: 1,
-          isCustomCell: true,
-          Cell: ({ row }) =>
-            row?.Work_Param?.length > 0 ? (
-              <div className="text-start">
-                {row.Work_Param.map((param, i) => (
-                  <div key={i} className="d-flex justify-content-between small">
-                    <span>{param.Paramet_Name}:</span>
-                    <span className="text-primary">
-                      {isNaN(param.Current_Value) ||
-                      param.Paramet_Data_Type !== "number"
-                        ? param.Current_Value
-                        : Number(param.Current_Value).toLocaleString("en-IN")}
-                    </span>
+
+          <FilterableTable
+            title="Work Abstract"
+            dataArray={dataArray}
+            EnableSerialNumber
+             isExpendable={true}
+              expandAllRows={expandAll} // <-- pass the toggle state here
+            columns={[
+              createCol("Project_Name", "string", "Project_Name"),
+              createCol("Work_Date", "date", "Date"),
+              createCol("Task_Name", "string", "Task"),
+              createCol("Sub_Task_Name", "string", "Sub Task"),
+              createCol("EmployeeName", "string", "Staff"),
+              // createCol("Work_Done", "string", "Comments"),
+              // {
+              //   ColumnHeader: "Comments",
+              //   isVisible: 1,
+              //   align: "center",
+              //   isCustomCell: true,
+              //   Cell: ({ row }) => (
+              //     <IconButton onClick={() => handleOpenPopup("Comments", [{ label: "Comment", value: row.Work_Done }])}>
+              //       <SmsOutlined style={{ color: row.Work_Done ? "blue" : "gray" }} />
+              //     </IconButton>
+              //   ),
+              // },
+              {
+                ColumnHeader: "Status",
+                isVisible: 1,
+                align: "center",
+                isCustomCell: true,
+                Cell: ({ row }) => (
+                  <span className={`badge fa-10 p-1 ${getColor(row?.Work_Status)}`}>
+                    {row?.WorkStatus || "-"}
+                  </span>
+                ),
+              },
+              {
+                ColumnHeader: "Duration",
+                isVisible: 1,
+                align: "center",
+                isCustomCell: true,
+                Cell: ({ row }) => (
+                  <div style={{ width: '100px', wordWrap: 'break-word', textAlign: 'center' }}>
+                    <span>{row?.Tot_Minutes ? `${row.Tot_Minutes} min` : "-"}</span>
+                    <br />
+                    <span>({row?.Tot_Minutes ? formatMinutesToHours(row?.Tot_Minutes) : "-"})</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              "-"
-            ),
-        },
-      ]}
-    />
-  </CardContent>
-</Card>
+                ),
+              },
+              {
+                ColumnHeader: "Time",
+                isVisible: 1,
+                align: "center",
+                isCustomCell: true,
+                Cell: ({ row }) => (
+                  <span>
+                    {formatTime24(row?.Start_Time)} - {formatTime24(row?.End_Time)}
+                  </span>
+                ),
+              },
+              // {
+              //   ColumnHeader: "Parameters",
+              //   isVisible: 1,
+              //   isCustomCell: true,
+              //   Cell: ({ row }) =>
+              //     row?.Work_Param?.length > 0 ? (
+              //       <div className="text-start">
+              //         {row.Work_Param.map((param, i) => (
+              //           <div key={i} className="d-flex justify-content-between small">
+              //             <span>{param.Paramet_Name}:</span>
+              //             <span className="text-primary">
+              //               {isNaN(param.Current_Value) ||
+              //               param.Paramet_Data_Type !== "number"
+              //                 ? param.Current_Value
+              //                 : Number(param.Current_Value).toLocaleString("en-IN")}
+              //             </span>
+              //           </div>
+              //         ))}
+              //       </div>
+              //     ) : (
+              //       "-"
+              //     ),
+              // },
+              // {
+              //   ColumnHeader: "Parameters",
+              //   isVisible: 1,
+              //   align: "center",
+              //   isCustomCell: true,
+              //   Cell: ({ row }) =>
+              //     row?.Work_Param?.length > 0 ? (
+              //       <IconButton onClick={() => handleOpenPopup("Parameters", row.Work_Param)}>
+              //         <ChatBubbleOutline style={{ color: "green" }} />
+              //       </IconButton>
+              //     ) : "-",
+              // },
+            ]}
+             expandableComp={(props) => <WorkDetailsExpandable {...props} />}
+          />
 
 
-   
+           <Modal open={openPopup} onClose={handleClosePopup}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 400,
+                bgcolor: "background.paper",
+                boxShadow: 24,
+                p: 3,
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="h6" mb={2}>
+                {popupData.title} Details
+              </Typography>
+              {popupData.details.length > 0 ? (
+                popupData.details.map((item, i) => (
+                  <Box key={i} className="mb-1">
+                    <strong>{item.Paramet_Name || item.label}:</strong>{" "}
+                    {item.Current_Value || item.value || "-"}
+                  </Box>
+                ))
+              ) : (
+                <Typography>No data available</Typography>
+              )}
+            </Box>
+          </Modal>
+        </CardContent>
+      </Card>
     </>
   );
 };
