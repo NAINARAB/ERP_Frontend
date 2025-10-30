@@ -219,7 +219,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
 
             } else {
 
-                toast.error("Please fill the values correctly");
+                toast.error(response.message);
             }
         } catch (error) {
             toast.error("Error during task assignment/update: " + error.message);
