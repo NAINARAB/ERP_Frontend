@@ -221,13 +221,10 @@ const SalesReportBranch = lazy(() => import("./Pages/Sales/salesInvoiceReportBra
 const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch"))
 
 const LrReport = lazy(() => import("./Pages/Sales/lrReport"))
-
-
 const ProcessMaster = lazy(() => import("./Pages/Tasks/processMaster"))
-
-
-
 const BankDetails = lazy(() => import("./Pages/BankDetails/bank"))
+const AccountMasterSales = lazy(()=> import("./Pages/Masters/AccountMasterSales"))
+
 const RoutingArray = [
 
     // { component: <DisplayNavigations />, path: '/bank' },
@@ -294,6 +291,7 @@ const RoutingArray = [
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
     { component: <ExpenseReport />, path: '/erp/master/ExpenseReport' },
     { component: <CostCenterMap />, path: '/erp/master/CostCenterMap' },
+    { component: <AccountMasterSales />, path: '/erp/master/AccountMasterSales'},
 
     //ERP - BATCH MANAGEMENT
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
