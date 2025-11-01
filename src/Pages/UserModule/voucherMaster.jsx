@@ -361,6 +361,7 @@ function VoucherMaster({ loadingOn, loadingOff }) {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.UserId;
+    const [tallySync, setTallySync] = useState(false);
 
     // Use state for typeOptions
     const [typeOptions, setTypeOptions] = useState([]);
@@ -378,13 +379,13 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             .then((res) => {
                 if (res?.success) {
                     setVoucherData(res.data || []);
-                    
+
                     // Extract all unique types from the fetched data and add to typeOptions
                     const typesFromData = res.data
                         .map(item => item?.Type)
                         .filter(Boolean)
                         .filter(type => !typeOptions.includes(type));
-                    
+
                     if (typesFromData.length > 0) {
                         setTypeOptions(prev => Array.from(new Set([...prev, ...typesFromData])));
                     }
@@ -399,7 +400,10 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             .catch(console.error);
     }, [reload]);
 
-    const resetForm = () => setForm(EMPTY_FORM);
+    const resetForm = () => {
+        setForm(EMPTY_FORM);
+        setTallySync(false);
+    };
 
     const openCreate = () => {
         setFormMode("create");
@@ -408,7 +412,6 @@ function VoucherMaster({ loadingOn, loadingOff }) {
     };
 
     const openEdit = (row) => {
-        // Add missing type to options if it doesn't exist
         if (row?.Type && !typeOptions.includes(row.Type)) {
             setTypeOptions((prev) => [...prev, row.Type]);
         }
@@ -420,6 +423,10 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             Branch_Id: row?.Branch_Id || "",
             Type: row?.Type || "",
         });
+
+        // ✅ Convert DB value (0/1 or "0"/"1") to boolean
+        setTallySync(Number(row?.tallySync) === 0);
+
         setFormMode("edit");
         setIsFormOpen(true);
     };
@@ -459,9 +466,11 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 address: `masters/voucher`,
                 method: "PUT",
                 bodyData: {
-                    Vocher_Type_Id: form.id, 
+                    Vocher_Type_Id: form.id,
                     ...bodyData,
                     Alter_By: userId,
+                    tallySync: tallySync,
+
                 },
             }
             : {
@@ -470,6 +479,8 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 bodyData: {
                     ...bodyData,
                     Created_By: userId,
+                    tallySync: tallySync,
+
                 },
             };
 
@@ -477,12 +488,14 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             const res = await fetchLink(payload, loadingOn, loadingOff);
             if (res?.success) {
                 toast.success(res.message || (isEdit ? "Updated!" : "Created!"));
-                
+
+                // setTallySync(false);
+
                 // Add the new type to typeOptions if it's a new type
                 if (!isEdit && form.Type && !typeOptions.includes(form.Type)) {
                     setTypeOptions(prev => [...prev, form.Type]);
                 }
-                
+
                 setIsFormOpen(false);
                 resetForm();
                 setReload((r) => !r);
@@ -548,6 +561,9 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                         createCol("Type", "string", "Type"),
                         createCol("BranchName", "string", "Branch Name"),
                         createCol("Voucher_Code", "string", "Voucher Code"),
+                        createCol("Tally Sync", "string", "Tally Sync", (row) =>
+                            row?.tallySync == 0 ? "Yes" : "No"
+                        ),
                         {
                             ColumnHeader: "Actions",
                             isVisible: 1,
@@ -624,6 +640,18 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                                 <option key={name} value={name}>{name}</option>
                             ))}
                         </select>
+                    </div>
+                    <div className="p-2">
+                        <label className="mr-2, me-2">Tally Sync:</label>
+                        <label className="mr-2">
+                            <input
+                                type="checkbox"
+                                checked={tallySync}
+                                onChange={(e) => setTallySync(e.target.checked)}
+                                className="me-2"
+                            />{" "}
+                            {tallySync ? "Yes" : "No"}
+                        </label>
                     </div>
                 </DialogContent>
                 <DialogActions>
