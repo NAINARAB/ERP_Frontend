@@ -23,9 +23,9 @@ export const isValidObject = (obj) => {
 
 export const storageValue = isValidObject(getSessionUser().user) ? getSessionUser().user : {};
 
-export const toArray = (array) => Array.isArray(array) ? array : [];
-
 export const isArray = (array) => Array.isArray(array);
+
+export const toArray = (array) => isArray(array) ? array : [];
 
 export const encryptPasswordFun = (str) => {
     return CryptoJS.AES.encrypt(str, encryptionKey).toString();
@@ -741,7 +741,7 @@ export const getUniqueData = (arr = [], key = '', returnObjectKeys = []) => {
 };
 
 export const setSessionFilters = (obj = {}) => {
-    if (!isValidObject(obj)) { return };
+    if (!isValidObject(obj)) return;
     const newSessionValue = JSON.stringify(obj);
     sessionStorage.setItem('filterValues', newSessionValue);
 }
