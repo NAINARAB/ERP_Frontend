@@ -1297,6 +1297,15 @@
 // export default TodayTasks;
 
 
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
 import { Tab, Box, Dialog, DialogTitle, DialogContent, DialogActions, Button, CardHeader } from '@mui/material';
 import { TabPanel, TabList, TabContext } from '@mui/lab';
@@ -1312,6 +1321,7 @@ import { fetchLink } from "../../Components/fetchComponent";
 import Select from 'react-select';
 
 import { customSelectStyles } from "../../Components/tablecolumn";
+import { json } from "react-router-dom";
 
 
 const statusColor = (id) => {
@@ -2407,6 +2417,7 @@ const TodayTasks = () => {
     <td className="border-0 fa-14" style={{ verticalAlign: 'middle', width: '30%' }}>
         Project Name
     </td>
+
     <td className="border-0 fa-14" style={{ width: '70%' }}>
         <div className="cus-inpt w-100" style={{ 
             padding: '8px 12px', 
