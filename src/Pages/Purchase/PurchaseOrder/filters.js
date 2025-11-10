@@ -44,7 +44,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                             isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
-                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice),
+                            Discount: item?.Discount,
+                            QualityCondition: item?.QualityCondition,
+                            PaymentDays: item?.PaymentDays,
                         }
                     }));
 
@@ -95,7 +98,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                             isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
-                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice),
+                            Discount: item?.Discount,
+                            QualityCondition: item?.QualityCondition,
+                            PaymentDays: item?.PaymentDays,
                         }
                     }));
 
@@ -142,7 +148,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                             isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
-                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice),
+                            Discount: item?.Discount,
+                            QualityCondition: item?.QualityCondition,
+                            PaymentDays: item?.PaymentDays,
                         }
                     }));
 
@@ -186,7 +195,10 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Ledger_Name: item.Ledger_Name,
                             Party_District: item.Party_District,
                             isConvertableArrivalExist: toNumber(item?.isConvertableArrivalExist),
-                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice)
+                            IsConvertedAsInvoice: toNumber(item?.IsConvertedAsInvoice),
+                            Discount: item?.Discount,
+                            QualityCondition: item?.QualityCondition,
+                            PaymentDays: item?.PaymentDays,
                         }
                     }));
 
@@ -271,11 +283,11 @@ const createCol = (field, type, ColumnHeader) => {
 //     return Quantity;
 // }
 
-export const displayColumns = ({ 
-    OrderStatus = 'ITEMS', 
-    dialogs, 
-    setOrderPreview, 
-    navigation, 
+export const displayColumns = ({
+    OrderStatus = 'ITEMS',
+    dialogs,
+    setOrderPreview,
+    navigation,
     products,
     EditRights,
     DeleteRights,
@@ -372,7 +384,10 @@ export const displayColumns = ({
                                                         Po_Inv_Date: ISOString(),
                                                         Po_Entry_Date: OrderDetails?.LoadingDate ? ISOString(OrderDetails?.LoadingDate) : ISOString(),
                                                         Retailer_Id: OrderDetails?.PartyId,
-                                                        Retailer_Name: OrderDetails?.PartyName
+                                                        Retailer_Name: OrderDetails?.PartyName,
+                                                        Discount: OrderDetails?.Discount,
+                                                        QualityCondition: OrderDetails?.QualityCondition,
+                                                        PaymentDays: OrderDetails?.PaymentDays
                                                     },
                                                     orderInfo: DeliveryDetails.filter(
                                                         fil => toNumber(fil.pendingInvoiceWeight) > 0
@@ -452,7 +467,10 @@ export const displayColumns = ({
                     </span>
                 )
             }
-        }, OrderPO_ID = createCol('PO_ID', 'string', 'Order ID')
+        }, OrderPO_ID = createCol('PO_ID', 'string', 'Order ID'),
+        Discount = createCol('Discount', 'number', 'Discount'),
+        QualityCondition = createCol('QualityCondition', 'string', 'Quality'),
+        PaymentDays = createCol('PaymentDays', 'number', 'Pay-Days')
 
     // Item Based Cells
     const
@@ -633,7 +651,7 @@ export const displayColumns = ({
         case 'COMPLETED ORDERS':
         case 'IN-COMPLETED ORDERS':
             return [
-                OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, OwnerName, Remarks, GeneralStatus, OrderActions,
+                OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, Discount, QualityCondition, PaymentDays, Remarks, GeneralStatus, OrderActions,
             ]
         case 'ORDERS PENDING':
         case 'ORDERS ARRIVED':

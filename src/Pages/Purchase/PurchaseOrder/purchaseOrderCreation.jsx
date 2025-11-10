@@ -633,11 +633,9 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
-                                </div>
 
-                                <div className="d-flex flex-wrap bg-white">
-                                    <span className='flex-grow-1 p-2'>
-                                        <h6>Party Name</h6>
+                                    <div className="col-md-9 p-2">
+                                        <label>Party Name</label>
                                         <Select
                                             value={{ value: OrderDetails.PartyId, label: OrderDetails.PartyName }}
                                             onChange={e => {
@@ -665,35 +663,72 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             maxMenuHeight={200}
                                             filterOption={reactSelectFilterLogic}
                                         />
+                                    </div>
 
-                                        <br />
-
-                                        <h6>Party Address</h6>
+                                    <div className="col-md-4 p-2">
+                                        <label>Party Address</label>
                                         <textarea
                                             className={inputStyle + ' mb-2'}
-                                            rows={3}
                                             value={OrderDetails.PartyAddress}
                                             onChange={e => setOrderDetails(pre => ({ ...pre, PartyAddress: e.target.value }))}
                                         />
-                                    </span>
+                                    </div>
 
-                                    <span className='p-2'>
-                                        <h6>Payment Condition</h6>
+                                    <div className="col-md-4 p-2">
+                                        <label>Payment Condition</label>
                                         <textarea
                                             className={inputStyle}
                                             rows={2}
                                             value={OrderDetails.PaymentCondition}
                                             onChange={e => setOrderDetails(pre => ({ ...pre, PaymentCondition: e.target.value }))}
                                         />
-                                        <h6>Remarks</h6>
+                                    </div>
+
+                                    <div className="col-md-4 p-2">
+                                        <label>Remarks</label>
                                         <textarea
                                             className={inputStyle}
                                             rows={2}
                                             value={OrderDetails.Remarks}
                                             onChange={e => setOrderDetails(pre => ({ ...pre, Remarks: e.target.value }))}
                                         />
-                                    </span>
+                                    </div>
+
+                                    <div className="col-md-4 p-2">
+                                        <label>Discount (% or Amount)</label>
+                                        <input
+                                            type="number"
+                                            className={inputStyle}
+                                            value={OrderDetails.Discount}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, Discount: e.target.value }))}
+                                            placeholder='ex: 10%, 20% || 250, 300'
+                                        />
+                                    </div>
+
+                                    <div className="col-md-4 p-2">
+                                        <label>Quality Condition</label>
+                                        <input
+                                            className={inputStyle}
+                                            value={OrderDetails.QualityCondition}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, QualityCondition: e.target.value }))}
+                                            placeholder='discribe the quality'
+                                            maxLength={150}
+                                        />
+                                    </div>
+
+                                    <div className="col-md-4 p-2">
+                                        <label>Payment Days (in count)</label>
+                                        <input
+                                            type="number"
+                                            className={inputStyle}
+                                            value={OrderDetails.PaymentDays}
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, PaymentDays: e.target.value }))}
+                                            placeholder='ex: 30, 12'
+                                        />
+                                    </div>
+
                                 </div>
+
                             </div>
                         </div>
 
@@ -706,7 +741,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                             <table className="table m-0">
                                 <thead>
                                     <tr>
-                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={6}>
+                                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={4}>
                                             ORDER ITEMS
                                         </td>
                                         <td className={tdStyle + ' text-end bg-light p-0'}>
@@ -725,8 +760,8 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             Rate <br />
                                             Deliver/Spot
                                         </th>
-                                        <th className={tdStyle + ' text-center'}>Discount</th>
-                                        <th className={tdStyle + ' text-center'}>Quality Condition</th>
+                                        {/* <th className={tdStyle + ' text-center'}>Discount</th>
+                                        <th className={tdStyle + ' text-center'}>Quality Condition</th> */}
                                         <th className={tdStyle + ' text-center'}>Action</th>
                                     </tr>
                                 </thead>
@@ -738,8 +773,8 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             <td className={tdStyle}>{o?.ItemName}</td>
                                             <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
                                             <td className={tdStyle}>{o?.Rate}</td>
-                                            <td className={tdStyle}>{o?.Discount}</td>
-                                            <td className={tdStyle}>{o?.QualityCondition}</td>
+                                            {/* <td className={tdStyle}>{o?.Discount}</td>
+                                            <td className={tdStyle}>{o?.QualityCondition}</td> */}
                                             <td className={tdStyle + ' p-0 text-center'}>
                                                 <IconButton
                                                     onClick={() => {
@@ -1072,7 +1107,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                         />
                                     </td>
                                 </tr>
-                                <tr>
+                                {/* <tr>
                                     <td className={tdStyle}>Discount</td>
                                     <td className={tdStyle}>
                                         <input
@@ -1094,7 +1129,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             onChange={e => setOrderItemsInput(pre => ({ ...pre, QualityCondition: e.target.value }))}
                                         />
                                     </td>
-                                </tr>
+                                </tr> */}
                             </tbody>
                         </table>
                     </DialogContent>

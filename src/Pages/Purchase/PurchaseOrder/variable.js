@@ -19,6 +19,9 @@ export const initialOrderDetailsValue = {
     PaymentCondition: '',
     Remarks: '',
     OrderStatus: 'New Order',
+    Discount: 0,
+    QualityCondition: '',
+    PaymentDays: 0,
     CreatedBy: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
 }
 

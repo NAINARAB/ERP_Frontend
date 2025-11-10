@@ -18,8 +18,8 @@ const PurchaseInvoiceGeneralInfo = ({
         <>
             <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
                 <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
-
                     <div className="row">
+
                         <div className="col-sm-8 p-2">
                             <label className='fa-13'>Vendor</label>
                             <Select
@@ -161,6 +161,39 @@ const PurchaseInvoiceGeneralInfo = ({
                                 placeholder={"Select"}
                                 maxMenuHeight={300}
                                 filterOption={reactSelectFilterLogic}
+                            />
+                        </div>
+
+                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                            <label className='fa-13'>Discount (% or Amount)</label>
+                            <input
+                                type="number"
+                                className={inputStyle}
+                                value={invoiceDetails.Discount}
+                                onChange={e => setInvoiceDetails(pre => ({ ...pre, Discount: e.target.value }))}
+                                placeholder='ex: 10%, 20% || 250, 300'
+                            />
+                        </div>
+
+                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                            <label className='fa-13'>Quality Condition</label>
+                            <input
+                                className={inputStyle}
+                                value={invoiceDetails.QualityCondition}
+                                onChange={e => setInvoiceDetails(pre => ({ ...pre, QualityCondition: e.target.value }))}
+                                placeholder='discribe the quality'
+                                maxLength={150}
+                            />
+                        </div>
+
+                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                            <label className='fa-13'>Payment Days (in count)</label>
+                            <input
+                                type="number"
+                                className={inputStyle}
+                                value={invoiceDetails.PaymentDays}
+                                onChange={e => setInvoiceDetails(pre => ({ ...pre, PaymentDays: e.target.value }))}
+                                placeholder='ex: 30, 12'
                             />
                         </div>
 

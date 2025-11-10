@@ -34,6 +34,9 @@ export const initialInvoiceValue = {
     Alter_Id: '',
     Approved_By: '',
     Approve_Status: '',
+    Discount: 0,
+    QualityCondition: '',
+    PaymentDays: 0,
 }
 
 export const itemsRowDetails = {
