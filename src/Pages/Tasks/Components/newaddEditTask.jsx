@@ -549,7 +549,7 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
                 }}>
                     <DialogContent>
                         <div className="row">
-                            <div className="col-md-4 p-2">
+                            {/* <div className="col-md-4 p-2">
                                 <label>Task Group <RequiredStar /></label>
                                 {Task_Type_Id ? (
                                     <div>
@@ -560,9 +560,9 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
                                             readOnly
                                         />
                                         {/* Remove the hidden input as it's causing conflicts */}
-                                    </div>
-                                ) : (
-                                    <select
+                                    {/* </div> */}
+                                {/* ) : ( */}
+                                    {/* <select
                                         value={inputValue.Task_Group_Id}
                                         className="cus-inpt"
                                         required
@@ -574,9 +574,9 @@ const TaskMasterMgt = ({ row, children, openAction, reload, onCloseFun, loadingO
                                                 {o.Task_Type}
                                             </option>
                                         ))}
-                                    </select>
-                                )}
-                            </div>
+                                    </select> */}
+                                {/* )} */}
+                            {/* </div>  */}
                             <div className="col-md-4 p-2">
                                 <label>Task Name <RequiredStar /></label>
                                 <input

@@ -483,6 +483,7 @@ const ActiveProjects = () => {
             ProjectName: project.Project_Name,
             Est_StartDate: project.Est_Start_Dt ? new Date(project.Est_Start_Dt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             Est_EndDate: project.Est_End_Dt ? new Date(project.Est_End_Dt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            Day_Duration:"",
             Task_Type: "",
             Task_Type_Id: "",
             Status: "1"
@@ -498,6 +499,7 @@ const ActiveProjects = () => {
             ProjectName: taskType.Project_Name,
             Est_StartDate: taskType.Est_StartTime ? new Date(taskType.Est_StartTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             Est_EndDate: taskType.Est_EndTime ? new Date(taskType.Est_EndTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            Day_Duration:taskType.Day_Duration,
             Task_Type: taskType.Task_Type,
             Task_Type_Id: taskType.Task_Type_Id,
             Status: taskType.Status?.toString() || "1"
@@ -531,10 +533,11 @@ const ActiveProjects = () => {
                 bodyData: {
                     Mode: 1,
                     Task_Type: taskTypeData.Task_Type,
-                    Project_Id: parseInt(taskTypeData.ProjectId),
+                    Project_Id: parseInt(taskTypeData.ProjectId)|| parseInt(taskTypeData.Project_Id),
                     Est_StartTime: taskTypeData.Est_StartDate,
                     Est_EndTime: taskTypeData.Est_EndDate,
-                    Status: parseInt(taskTypeData.Status)
+                    Status: parseInt(taskTypeData.Status),
+                    Day_Duration:parseInt(taskTypeData.Day_Duration)
                 },
             });
             if (data.success) {
@@ -551,7 +554,9 @@ const ActiveProjects = () => {
     };
 
     const handleUpdate = async (updatedTaskType) => {
+        console.log("updatedTaskyTyupe",updatedTaskType)
         try {
+         
             const data = await fetchLink({
                 address: `masters/taskType`,
                 method: "PUT",
@@ -560,13 +565,17 @@ const ActiveProjects = () => {
                     Mode: 2,
                     Task_Type_Id: parseInt(updatedTaskType.Task_Type_Id),
                     Task_Type: updatedTaskType.Task_Type,
-                    Project_Id: parseInt(updatedTaskType.ProjectId),
+                    Project_Id: parseInt(updatedTaskType.Project_Id),
                     Est_StartTime: updatedTaskType.Est_StartDate,
                     Est_EndTime: updatedTaskType.Est_EndDate,
-                    Status: parseInt(updatedTaskType.Status)
+                    Status: parseInt(updatedTaskType.Status),
+                    Day_Duration:parseInt(updatedTaskType.Day_Duration)
                 },
+                
             });
+         
             if (data.success) {
+                 
                 setReload(!reload);
                 toast.success("Task type updated successfully!");
                 setTaskModuleDialog(false);
@@ -709,7 +718,7 @@ const ActiveProjects = () => {
         );
     };
 
-    // Define main columns
+
     const columns = [
         createCol("Project_Name", "string", "Project", "left", "center", 1),
         createCol("Project_Head_Name", "string", "Head", "left", "center", 1),
