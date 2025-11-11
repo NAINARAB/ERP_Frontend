@@ -125,7 +125,7 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="fa-13 text-center">{detail.Ord_By || 'N/A'}</TableCell>
-                                                {Number(contextObj?.Edit_Rights) === 1 && (
+                                                {/* {Number(contextObj?.Edit_Rights) === 1 && ( */}
                                                 <TableCell className="fa-13 text-center">
                                                     
                                                     <IconButton size="small" onClick={() => handleEditClick(detail)}>
@@ -133,7 +133,7 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                                                         Edit
                                                     </IconButton>
                                                 </TableCell>
-                                                )}
+                                                {/* )} */}
                                             </TableRow>
                                         ))
                                     )}

@@ -817,7 +817,7 @@ const [expandAll, setExpandAll] = useState(false);
         <th>Project</th>
         <th>Date</th>
         <th>Task</th>
-        <th>Sub Task</th>
+        {/* <th>Sub Task</th> */}
         <th>Staff</th>
         <th>Status</th>
         <th>Duration</th>
@@ -830,7 +830,7 @@ const [expandAll, setExpandAll] = useState(false);
           <td>{row.Project_Name}</td>
           <td>{LocalDate(row.Work_Date)}</td>
           <td>{row.Task_Name}</td>
-          <td>{row.Sub_Task_Name}</td>
+          {/* <td>{row.Sub_Task_Name}</td> */}
           <td>{row.EmployeeName}</td>
           <td>{row.WorkStatus || "-"}</td>
           <td>
@@ -855,7 +855,7 @@ const [expandAll, setExpandAll] = useState(false);
               createCol("Project_Name", "string", "Project_Name"),
               createCol("Work_Date", "date", "Date"),
               createCol("Task_Name", "string", "Task"),
-              createCol("Sub_Task_Name", "string", "Sub Task"),
+              // createCol("Sub_Task_Name", "string", "Sub Task"),
               createCol("EmployeeName", "string", "Staff"),
               // createCol("Work_Done", "string", "Comments"),
               // {

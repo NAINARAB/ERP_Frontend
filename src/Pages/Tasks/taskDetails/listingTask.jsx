@@ -717,7 +717,7 @@ import {
 	IconButton,
 	Chip,
 	TableBody,
-		Typography,
+	Typography,
 	Box
 } from '@mui/material';
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
@@ -817,7 +817,7 @@ const fetchTasks = useCallback(async () => {
     try {
 	
         const data = await fetchLink({ 
-            address: `taskManagement/tasks/dropdown?Company_id=${companyId}&Task_Group_Id=${selectedProject.Task_Type_Id}`
+            address: `taskManagement/tasks/dropdown?Company_id=${companyId}`
         });
         if (data.success) {
             setTasks(data.data);
@@ -887,6 +887,7 @@ const fetchData = useCallback(async () => {
 			toast.error("Please select a task and schedule type before saving.");
 			return;
 		}
+		console.log("taskScheduleInput.Task_Est_End_Date",selectedProject?.Task_Type_Id)
 
 		const requestData = {
 			entryBy: entryBy,
@@ -894,7 +895,10 @@ const fetchData = useCallback(async () => {
 			Sch_Type_Id: taskScheduleInput.Sch_Type_Id,
 			Sch_Est_Start_Date: taskScheduleInput.Task_Est_Start_Date,
 			Sch_Est_End_Date: taskScheduleInput.Task_Est_End_Date,
-			tasks: [taskScheduleInput]
+			 tasks: [{
+        ...taskScheduleInput,
+        Task_Group_Id: selectedProject?.Task_Type_Id 
+    }]
 		};
 
 		try {
@@ -1091,261 +1095,220 @@ const fetchData = useCallback(async () => {
 					</div>
 				</DialogTitle>
 
-				<Box sx={{ width: '100%', typography: 'body1' }}>
-					{taskData.map((schedule, index) => {
-						const scheduleTypes = (schedule.SchTypes);
-						// const overallSchTypes = JSON.parse(schedule.OverallSchTypes)
+	<Box sx={{ width: '100%', typography: 'body1' }}>
+    {taskData.map((schedule, index) => {
+        const scheduleTypes = schedule.SchTypes || [];
+        
+        return (
+            <TabContext value={selectedTab} key={index}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList onChange={handleTabChange} aria-label="Schedule Types">
+                        {Array.isArray(scheduleTypes) && scheduleTypes.length > 0 ? (
+                            scheduleTypes.map((sch, schIndex) => (
+                                <Tab
+                                    key={`${sch.SchTypeId || schIndex}-${schIndex}`}
+                                    label={sch.SchType || 'No SchType'}
+                                    value={(sch.SchTypeId || schIndex).toString()}
+                                    id={`tab-${sch.SchTypeId || schIndex}`}
+                                    aria-controls={`tabpanel-${sch.SchTypeId || schIndex}`}
+                                />
+                            ))
+                        ) : (
+                            <Typography variant="body2" color="textSecondary" sx={{ padding: 2 }}>
+                                No Schedule Types Available
+                            </Typography>
+                        )}
+                    </TabList>
+                </Box>
 
-
-						return (
-							<TabContext value={selectedTab} key={index}>
-								<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-									<TabList onChange={handleTabChange} aria-label="Schedule Types">
-										
-										{Array.isArray(scheduleTypes) && scheduleTypes.length > 0 ? (
-											scheduleTypes.map((sch, index) => (
-												<Tab
-													key={`${sch.SchTypeId || 'index'}-${index}`}
-													label={sch.SchType || 'No SchType'}
-													value={(sch.SchTypeId || index).toString()}
-													id={`tab-${sch.SchTypeId || index}`}
-													aria-controls={`tabpanel-${sch.SchTypeId || index}`}
-												/>
-											))
-										) : (
-											<Typography variant="body2" color="textSecondary" sx={{ padding: 2 }}>
-												No Details Available for {scheduleTypes}
-											</Typography>
-										)}
-									</TabList>
-								</Box>
-
-
-
-
-								{Array.isArray(scheduleTypes) && scheduleTypes.map((sch, index) => (
-									<TabPanel
-										key={`${sch.SchTypeId || 'index'}-${index}`}
-										value={(sch.SchTypeId || index).toString()}
-										id={`tabpanel-${sch.SchTypeId || index}`}
-										aria-labelledby={`tab-${sch.SchTypeId || index}`}
-									>
-										<Box sx={{ marginBottom: 2, padding: 2, backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-											{Array.isArray(sch.TaskCountsInSchType) && sch.TaskCountsInSchType.length > 0 ? (
-												sch.TaskCountsInSchType.map((count, index) => (
-													<Typography key={index} variant="body1" display="flex" justifyContent="space-between" alignItems="center">
-														<Box>
-															Schedule Type: <strong>{sch.SchType}</strong>
-														</Box>
-														{/* <Box textAlign="right">
-															Total Tasks: <strong>{count.TotalTasks}</strong> / Completed Tasks: <strong>{count.CompletedTasks}</strong>
-														</Box> */}
-													</Typography>
-												))
-											) : (
-												<Typography variant="body2" color="textSecondary">
-													No tasks counted for this schedule type.
-												</Typography>
-											)}
-										</Box>
-
-									{Array.isArray(sch.TaskTypeGroups) && sch.TaskTypeGroups.length > 0 ? (
-  sch.TaskTypeGroups.map((taskType) => (
-    <Box key={taskType.Task_Type_Id} sx={{ mb: 3 }}>
-    
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        backgroundColor: '#f0f4ff',
-        p: 1,
-        borderRadius: 1,
-        mb: 1
-      }}>
-        <Typography variant="h6" fontWeight="bold">
-          {taskType.Task_Type || 'Default Task Type'}
-        </Typography>
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography variant="body2" fontWeight="bold">
-            Completed Task / Total Task
-          </Typography>
-          {Array.isArray(taskType.TaskMetrics) && taskType.TaskMetrics.length > 0 ? (
-            taskType.TaskMetrics.map((tasks, index) => (
-              <Typography key={index} variant="h6">
-                {tasks.CompletedTasks} / {tasks?.TotalTasks}
-              </Typography>
-            ))
-          ) : (
-            <Typography variant="body2" color="textSecondary">
-              No metrics available
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-
-      {Array.isArray(taskType.Tasks) && taskType.Tasks.length > 0 ? (
-        <TableContainer sx={{ maxHeight: '60vh', border: '1px solid #e0e0e0', borderRadius: 1 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Task Name</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Description</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Schedule Type</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Assigned Employees</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Assign</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
-                <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Details</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {taskType.Tasks.map((taskItem) => (
-                <TableRow 
-                  key={taskItem.Task_Id} 
-                  sx={{ 
-                    backgroundColor: '#BBE6F6',
-                    '&:hover': {
-                      backgroundColor: '#a8dff0'
-                    }
-                  }}
-                >
-     
-                  <TableCell>
-                    <Typography fontWeight="bold">
-                      {taskItem?.Task_Name || 'DEFAULT TASK'}
-                    </Typography>
-                  </TableCell>
-
-          
-                  <TableCell>
-                    <Typography variant="body2">
-                      {taskItem.Task_Desc || 'No description'}
-                    </Typography>
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography>{sch.SchType}</Typography>
-                      <IconButton 
-                        onClick={() => handleTaskEdit(taskItem)} 
-                        size="small"
-                        sx={{ color: '#1976d2' }}
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-
-            
-                  <TableCell>
-                    {Array.isArray(taskItem.AssignedEmployees) && taskItem.AssignedEmployees.length > 0 ? (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {taskItem.AssignedEmployees.map((employee, empIndex) => (
-                          <Chip
-                            key={empIndex}
-                            label={employee.Name}
-                            variant="outlined"
-                            size="small"
-                            sx={{ 
-                              margin: '1px', 
-                              color: 'green',
-                              borderColor: 'green'
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="textSecondary" fontStyle="italic">
-                        No Employees Assigned
-                      </Typography>
-                    )}
-                  </TableCell>
-
-      
-                  <TableCell>
-                    <IconButton 
-                      onClick={() => handleSelectedTask(taskItem)}
-                      sx={{ color: '#2e7d32' }}
+                {Array.isArray(scheduleTypes) && scheduleTypes.map((sch, schIndex) => (
+                    <TabPanel
+                        key={`${sch.SchTypeId || schIndex}-${schIndex}`}
+                        value={(sch.SchTypeId || schIndex).toString()}
+                        id={`tabpanel-${sch.SchTypeId || schIndex}`}
+                        aria-labelledby={`tab-${sch.SchTypeId || schIndex}`}
                     >
-                      <LibraryAddIcon />
-                    </IconButton>
-                  </TableCell>
+                        {/* Schedule Type Header with Task Counts */}
+                        <Box sx={{ marginBottom: 2, padding: 2, backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                            <Typography variant="body1" display="flex" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                    Schedule Type: <strong>{sch.SchType}</strong>
+                                </Box>
+                                {sch.TaskCountsInSchType ? (
+                                    <Box textAlign="right">
+                                        {(() => {
+                                            try {
+                                                const taskCounts = JSON.parse(sch.TaskCountsInSchType);
+                                                if (Array.isArray(taskCounts) && taskCounts.length > 0) {
+                                                    return (
+                                                        <>
+                                                            Total Tasks: <strong>{taskCounts[0]?.TotalTasks || 0}</strong> / 
+                                                            Completed Tasks: <strong>{taskCounts[0]?.CompletedTasks || 0}</strong>
+                                                        </>
+                                                    );
+                                                }
+                                            } catch (e) {
+                                                console.error('Error parsing TaskCountsInSchType:', e);
+                                            }
+                                            return 'No task counts available';
+                                        })()}
+                                    </Box>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">
+                                        No task counts available
+                                    </Typography>
+                                )}
+                            </Typography>
+                        </Box>
 
-  
-                  <TableCell>
-                    <Chip 
-                      label={taskItem.TaskSchStatus || 'New'} 
-                      color={
-                        taskItem.TaskSchStatus === 'Completed' ? 'success' : 
-                        taskItem.TaskSchStatus === 'In Progress' ? 'warning' : 'default'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
+                        {/* Tasks List - Handle cases where Tasks array might be missing */}
+                        {Array.isArray(sch.Tasks) && sch.Tasks.length > 0 ? (
+                            <TableContainer sx={{ maxHeight: '60vh', border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                                <Table stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Task Name</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Description</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Task Type</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Assigned Employees</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Assign</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
+                                            <TableCell sx={{ backgroundColor: '#2C3E50', color: 'white', fontWeight: 'bold' }}>Details</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {sch.Tasks.map((taskItem) => (
+                                            <TableRow 
+                                                key={`${taskItem.Task_Id}-${taskItem.Task_Levl_Id}-${taskItem.A_Id}`} 
+                                                sx={{ 
+                                                    backgroundColor: '#BBE6F6',
+                                                    '&:hover': {
+                                                        backgroundColor: '#a8dff0'
+                                                    }
+                                                }}
+                                            >
+                                                {/* Task Name */}
+                                                <TableCell>
+                                                    <Typography fontWeight="bold">
+                                                        {taskItem?.Task_Name || 'DEFAULT TASK'}
+                                                    </Typography>
+                                                </TableCell>
 
-                  {
-				//   Number(contextObj?.Edit_Rights) === 1
-				//    && 
-				   (
-                    <TableCell>
-                      <IconButton 
-                        onClick={() => handleEditTask(taskItem)}
-                        sx={{ color: '#ed6c02' }}
-                      >
-                        <Edit />
-                      </IconButton>
-                    </TableCell>
-                  )}
+                                                {/* Task Description */}
+                                                <TableCell>
+                                                    <Typography variant="body2">
+                                                        {taskItem.Task_Desc || 'No description'}
+                                                    </Typography>
+                                                </TableCell>
 
-                  <TableCell>
-                    <IconButton 
-                      onClick={() => handleviewTaskDetail(taskItem)}
-                      sx={{ color: '#1976d2' }}
-                    >
-                      <ViewHeadlineSharpIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Box sx={{ 
-          textAlign: 'center', 
-          p: 3, 
-          backgroundColor: '#f5f5f5', 
-          borderRadius: 1 
-        }}>
-          <Typography variant="body2" color="textSecondary">
-            No tasks available for this task type.
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  ))
-) : (
-  <Box sx={{ 
-    textAlign: 'center', 
-    p: 3, 
-    backgroundColor: '#f5f5f5', 
-    borderRadius: 1 
-  }}>
-    <Typography variant="body2" color="textSecondary">
-      No task type groups found for this schedule type.
-    </Typography>
-  </Box>
-)}
-									</TabPanel>
-								))}
+                                                {/* Task Type */}
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Typography>{taskItem.Task_Type || 'No Type'}</Typography>
+                                                        <IconButton 
+                                                            onClick={() => handleTaskEdit(taskItem)} 
+                                                            size="small"
+                                                            sx={{ color: '#1976d2' }}
+                                                        >
+                                                            <Edit fontSize="small" />
+                                                        </IconButton>
+                                                    </Box>
+                                                </TableCell>
 
-							</TabContext>
-						)
+                                                <TableCell>
+                                                    {taskItem.AssignedEmployees && Array.isArray(taskItem.AssignedEmployees) && taskItem.AssignedEmployees.length > 0 ? (
+                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                            {taskItem.AssignedEmployees.map((employee, empIndex) => (
+                                                                <Chip
+                                                                    key={empIndex}
+                                                                    label={employee.Name}
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    sx={{ 
+                                                                        margin: '1px', 
+                                                                        color: 'green',
+                                                                        borderColor: 'green'
+                                                                    }}
+                                                                />
+                                                            ))}
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="body2" color="textSecondary" fontStyle="italic">
+                                                            No Employees Assigned
+                                                        </Typography>
+                                                    )}
+                                                </TableCell>
 
-					})}
-				</Box>
+                                                {/* Assign Button */}
+                                                <TableCell>
+                                                    <IconButton 
+                                                        onClick={() => handleSelectedTask(taskItem)}
+                                                        sx={{ color: '#2e7d32' }}
+                                                    >
+                                                        <LibraryAddIcon />
+                                                    </IconButton>
+                                                </TableCell>
 
+                                                {/* Status */}
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={taskItem.TaskSchStatus || 'New'} 
+                                                        color={
+                                                            taskItem.TaskSchStatus === 'Completed' ? 'success' : 
+                                                            taskItem.TaskSchStatus === 'In Progress' ? 'warning' : 'default'
+                                                        }
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+
+                                           
+                                                <TableCell>
+                                                    <IconButton 
+                                                        onClick={() => handleEditTask(taskItem)}
+                                                        sx={{ color: '#ed6c02' }}
+                                                    >
+                                                        <Edit />
+                                                    </IconButton>
+                                                </TableCell>
+
+
+                                                <TableCell>
+                                                    <IconButton 
+                                                        onClick={() => handleviewTaskDetail(taskItem)}
+                                                        sx={{ color: '#1976d2' }}
+                                                    >
+                                                        <ViewHeadlineSharpIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <Box sx={{ 
+                                textAlign: 'center', 
+                                p: 3, 
+                                backgroundColor: '#f5f5f5', 
+                                borderRadius: 1,
+                                border: '1px dashed #ccc'
+                            }}>
+                                <Typography variant="h6" color="textSecondary" gutterBottom>
+                                    No Tasks Available
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                    There are no tasks assigned to the <strong>{sch.SchType}</strong> schedule type.
+                                </Typography>
+                               
+                            </Box>
+                        )}
+                    </TabPanel>
+                ))}
+            </TabContext>
+        );
+    })}
+</Box>
 
 
 				<DialogActions sx={{ marginTop: 'auto ', position: 'sticky', bottom: 0 }}>
@@ -1386,36 +1349,31 @@ const fetchData = useCallback(async () => {
 							
 						</div>
 					</div>
-			<div style={{ padding: '1px', display: 'flex' }}>
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-        <label htmlFor="task-select" style={{ marginRight: '8px' }}>Select Task</label>
-        <select
-            id="task-select"
-            value={taskScheduleInput.Task_Id || ''}
-            className="cus-inpt"
-            required
-            onChange={e => handleTaskChange({ value: e.target.value })}
-            style={{ flex: 1, marginRight: '8px' }}
-            disabled={isLoading || taskOptions.length === 0}
-        >
-            <option value="" disabled>- select -</option>
-            {isLoading ? (
-                <option value="" disabled>Loading tasks...</option>
-            ) : taskOptions.length === 0 ? (
-                <option value="" disabled>No tasks available</option>
-            ) : (
-                taskOptions.map((option, index) => (
-                    <option key={index} value={option.value}>
-                        {option.label}
-                    </option>
-                ))
-            )}
-        </select>
-        <IconButton onClick={() => setIsDialogOpen(true)}>
-            <Button variant="contained" color="primary">Create New</Button>
-        </IconButton>
-    </div>
-</div>
+
+	<div style={{ padding: '1px', display: 'flex' }}>
+ 						<div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+							<label htmlFor="task-select" style={{ marginRight: '8px' }}>Select Task</label>
+ 							<select
+								id="task-select"
+								value={taskScheduleInput.Task_Id || ''}
+								className="cus-inpt"
+								required
+								onChange={e => handleTaskChange({ value: e.target.value })}
+								style={{ flex: 1, marginRight: '8px' }}
+							>
+								<option value="" disabled>- select -</option>
+								{taskOptions.map((option, index) => (
+									<option key={index} value={option.value}>
+										{option.label}
+									</option>
+								))}
+							</select>
+							<IconButton onClick={() => setIsDialogOpen(true)}>
+								<Button variant="contained" color="primary">Create New</Button>
+							</IconButton>
+						</div>
+					</div>
+
 					<div style={{ padding: '1px', display: 'flex' }}>
 						<div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
 							<label style={{ marginRight: '8px' }}>Sch_Type</label>

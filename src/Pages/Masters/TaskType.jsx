@@ -138,6 +138,7 @@ const TaskType = () => {
     const taskTypeColumns = [
         { id: "index", label: "Id No", sort: false },
         { id: "Task_Type", label: "Task Type", sort: true },
+         { id: "Project_Name", label: "Project_Name", sort: true },
         { id: "actions", label: "Actions", sort: false },
     ];
 
@@ -188,6 +189,7 @@ const TaskType = () => {
                                     <TableRow key={obj.Task_Type_Id}>
                                         <TableCell sx={{ padding: '4px 8px' }}>{index + 1}</TableCell>
                                         <TableCell sx={{ padding: '4px 8px' }}>{obj.Task_Type}</TableCell>
+                                         <TableCell sx={{ padding: '4px 8px' }}>{obj.Project_Name}</TableCell>
                                         <TableCell sx={{ padding: '4px 8px' }}>
                                             <IconButton onClick={() => handleOpenEditDialog(obj)} size="small">
                                                 <Edit />
@@ -216,8 +218,8 @@ const TaskType = () => {
             <Dialog
                 open={openDeleteDialog}
                 onClose={handleCloseDeleteDialog}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
+                // aria-labelledby="alert-dialog-title"
+                // aria-describedby="alert-dialog-description"
             >
                 <DialogTitle className="bg-primary text-white mb-4 px-3 py-2">{"Confirmation"}</DialogTitle>
                 <DialogContent className="p-4">
