@@ -32,6 +32,7 @@ const PaymentDue = ({ loadingOn, loadingOff }) => {
                 headerFontSizePx={13}
                 bodyFontSizePx={12}
                 EnableSerialNumber={true}
+                ExcelPrintOption
                 dataArray={filteredData}
                 columns={[
                     createCol('voucherTypeGet', 'string', 'VoucherType'),
