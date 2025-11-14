@@ -226,8 +226,14 @@ const ProcessMaster = lazy(() => import("./Pages/Tasks/processMaster"))
 const BankDetails = lazy(() => import("./Pages/BankDetails/bank"))
 const AccountMasterSales = lazy(()=> import("./Pages/Masters/AccountMasterSales"))
 
+
+const ReportTemplatesMobile = lazy(()=> import("./Pages/Analytics/reportTemplatesMobile"))
+const ReportsTemplateMobCreation = lazy(()=> import("./Pages/Analytics/reportsTemplateMobCreation"))
 const RoutingArray = [
 
+
+    { component: <ReportTemplatesMobile />, path: '/analytics/templates-mobile'},
+    { component: <ReportsTemplateMobCreation />, path:'/analytics/templates-mobile/create'},
     // { component: <DisplayNavigations />, path: '/bank' },
     { component: <BankDetails />, path: '/erp/bankReports/bankList' },
 
