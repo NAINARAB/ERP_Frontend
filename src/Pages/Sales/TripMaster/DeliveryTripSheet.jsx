@@ -30,6 +30,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         refresh: false,
         printPreviewDialog: false,
         shortPreviewDialog: false,
+        ItemPreviewDialog:false,
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
@@ -329,6 +330,14 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             },
                                         }),
 
+                                    },
+                                    {
+                                        name: 'Item Short Preview',
+                                        icon:<Visibility className="fa-14"/>,
+                                        onclick:()=>{
+                                            setFilters(pre=>({ ...pre,ItemPreviewDialog:true}));
+                                            setSelectedRow(row);
+                                        }
                                     },
                                     {
                                         name: 'Short Preview',
@@ -840,8 +849,73 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+    <Dialog
+    open={filters?.ItemPreviewDialog}
+    onClose={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))}
+    maxWidth="md"
+    fullWidth
+>
+    <DialogTitle>Products Summary</DialogTitle>
+    <DialogContent>
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd' }}>
+            <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Product Name</th>
+                    <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>Total Quantity</th>
+                  
+                </tr>
+            </thead>
+            <tbody>
+                {(() => {
+                
+                    const productMap = new Map();
+                    
+                    selectedRow?.Product_Array?.forEach(delivery => {
+                        delivery.Products_List?.forEach(product => {
+                            const key = product.Item_Id;
+                            if (productMap.has(key)) {
+                                const existing = productMap.get(key);
+                                productMap.set(key, {
+                                    ...existing,
+                                    totalQty: existing.totalQty + (product.Act_Qty || product.Bill_Qty || 0)
+                                });
+                            } else {
+                                productMap.set(key, {
+                                    productName: product.Product_Name,
+                                    totalQty: product.Act_Qty || product.Bill_Qty || 0,
+                                    unit: product.Unit_Name,
+                                    itemId: product.Item_Id
+                                });
+                            }
+                        });
+                    });
 
+                
+                    const groupedProducts = Array.from(productMap.values());
+                    
+                    return groupedProducts.map((product, index) => (
+                        <tr key={index}>
+                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{product.productName}</td>
+                            <td style={{ padding: '10px', textAlign: 'right', border: '1px solid #ddd' }}>{product.totalQty}</td>
+                         
+                        </tr>
+                    ));
+                })()}
+            </tbody>
+        </table>
 
+        {(!selectedRow?.Product_Array || selectedRow.Product_Array.length === 0) && (
+            <p style={{ textAlign: 'center', padding: '20px' }}>
+                No product data available
+            </p>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))} color="primary">
+            Close
+        </Button>
+    </DialogActions>
+</Dialog>
             <Dialog open={deleteDialog} onClose={closeDeleteDialog} fullWidth maxWidth="sm">
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>
