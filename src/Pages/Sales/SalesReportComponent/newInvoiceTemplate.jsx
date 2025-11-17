@@ -202,7 +202,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                     <h3 className='text-center mb-2'>{TitleText ?? 'Invoice Details'}</h3>
 
                     {/* General Info */}
-                    <div className="row">
+                  <div className="row">
                         <div className="col-6 p-0 border border-bottom-0 border-end-0"> {/* Company Info */}
                             <div className="border-bottom p-2">
                                 <p className='m-0 fa-17'>{companyInfo?.Company_Name}</p>
@@ -218,8 +218,8 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                 <p className='m-0 fa-15'>{retailerInfo?.Retailer_Name}</p>
                                 <p className='m-0 fa-14'>{retailerInfo?.Mobile_No + ' - ' + retailerInfo?.Reatailer_Address}</p>
                                 <p className='m-0 fa-14'>{retailerInfo?.Reatailer_City} - {retailerInfo?.PinCode}</p>
-                                <p className='m-0 fa-14'>GSTIN / UIN: {companyInfo?.Gstno}</p>
-                                <p className='m-0 fa-14'>State Name: {companyInfo?.StateGet}</p>
+                                <p className='m-0 fa-14'>GSTIN / UIN: {retailerInfo?.Gstno}</p>
+                                <p className='m-0 fa-14'>State Name: {retailerInfo?.StateGet}</p>
                                 <p className='m-0 fa-14'>Code: </p>
                             </div>
                         </div>
