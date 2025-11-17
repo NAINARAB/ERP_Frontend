@@ -241,6 +241,7 @@ const EmployeeAbstract = ({ loadingOn, loadingOff }) => {
                 <h6 className="mt-2 mb-3 ps-3">Tasks ( {empData?.AssignedTasks?.length || 0} )</h6>
                 <FilterableTable
                     columns={[
+                        { Field_Name: "Project_Name", Fied_Data: "string", isVisible: 1, OrderBy: 1 },
                         { Field_Name: "Task_Name", Fied_Data: "string", isVisible: 1, OrderBy: 1 },
                         { Field_Name: "Task_Desc", ColumnHeader: 'Description', Fied_Data: "string", isVisible: 1, OrderBy: 2 },
                         { Field_Name: "Est_Start_Dt", ColumnHeader: 'From Date', Fied_Data: "date", isVisible: 1, OrderBy: 3 },
