@@ -639,6 +639,7 @@
 
 
 
+
 import React, { useEffect, useState } from "react";
 import { 
     Dialog, 
@@ -659,6 +660,7 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
         Project_Id: "",
         ProjectName: "",
         Day_Duration: "",
+        Hours_Duration:"",
         Status: "1"
     });
 
@@ -702,6 +704,7 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
                 Project_Id: existingTaskType.ProjectId?.toString() || existingTaskType.Project_Id?.toString(),
                 ProjectName: project ? project.Project_Name : existingTaskType.ProjectName || "",
                 Day_Duration: existingTaskType.Day_Duration?.toString() || "",
+                Hours_Duration:existingTaskType.Hours_Duration?.toString() || "",
                 Status: existingTaskType.Status?.toString() || "1"
             };
         
@@ -713,51 +716,55 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
                 Project_Id: "",
                 ProjectName: "",
                 Day_Duration: "",
+                Hours_Duration:"",
                 Status: "1"
             });
         }
     }, [existingTaskType, open, projects]); 
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        if (!inputValue.Task_Type.trim()) {
-            toast.error("Please enter a Task Type");
-            return;
-        }
-        
-        if (!inputValue.Project_Id) {
-            toast.error("Please select a Project");
-            return;
-        }
+const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!inputValue.Task_Type.trim()) {
+        toast.error("Please enter a Task Type");
+        return;
+    }
+    
+    if (!inputValue.Project_Id) {
+        toast.error("Please select a Project");
+        return;
+    }
 
-        if (!inputValue.Day_Duration || parseInt(inputValue.Day_Duration) < 1) {
-            toast.error("Please enter a valid number of days");
-            return;
-        }
-        console.log("inputvalue",inputValue)
+    if (!inputValue.Day_Duration || parseInt(inputValue.Day_Duration) < 1) {
+        toast.error("Please enter a valid number of days");
+        return;
+    }
+    
+    if (!inputValue.Hours_Duration || parseInt(inputValue.Hours_Duration) < 1) {
+        toast.error("Please enter a valid number of hours");
+        return;
+    }
 
-        const submitData = {
-            ...inputValue,
-            Project_Id: parseInt(inputValue.Project_Id), 
-            Day_Duration: inputValue.Day_Duration,
-            Status: parseInt(inputValue.Status),
-            // Add current date automatically
-            Created_Date: new Date().toISOString().split('T')[0],
-            // You can also calculate estimated dates based on days duration if needed
-            Est_StartDate: new Date().toISOString().split('T')[0],
-            Est_EndDate: new Date(Date.now() + (inputValue.Day_Duration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
-        };
-
-
-
-        if (existingTaskType && existingTaskType.Task_Type_Id) {
-            onUpdate(submitData); 
-        } else {
-            onCreate(submitData);
-        }
-        onClose();
+    const submitData = {
+        ...inputValue,
+        Project_Id: parseInt(inputValue.Project_Id), 
+        Day_Duration: parseInt(inputValue.Day_Duration), 
+        Hours_Duration: parseInt(inputValue.Hours_Duration), 
+        Status: parseInt(inputValue.Status),
+        Created_Date: new Date().toISOString().split('T')[0],
+        Est_StartDate: inputValue.Est_StartDate || new Date().toISOString().split('T')[0],
+        Est_EndDate: inputValue.Est_EndDate || new Date(Date.now() + (inputValue.Day_Duration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
     };
+
+ 
+
+    if (existingTaskType && existingTaskType.Task_Type_Id) {
+        onUpdate(submitData); 
+    } else {
+        onCreate(submitData);
+    }
+    onClose();
+};
 
     const handleProjectChange = (e) => {
         const selectedProjectId = e.target.value;
@@ -777,6 +784,7 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
             Project_Id: "",
             ProjectName: "",
             Day_Duration: "",
+            Hours_Duration:"",
             Status: "1"
         });
         onClose();
@@ -787,6 +795,14 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
         setInputValue(prev => ({
             ...prev,
             Day_Duration: value
+        }));
+    };
+
+    const handleHoursChange = (e) => {
+        const { value } = e.target;
+        setInputValue(prev => ({
+            ...prev,
+            Hours_Duration: value 
         }));
     };
 
@@ -853,6 +869,19 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
                             required
                             min="1"
                             placeholder="Enter number of days"
+                            style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
+                        />
+                    </div>
+                     <div className="p-2">
+                        <label>Hours Duration</label>
+                        <input
+                            type="number"
+                            value={inputValue.Hours_Duration || ""}
+                            onChange={handleHoursChange}
+                            className="cus-inpt"
+                            required
+                            min="1"
+                            placeholder="Enter number of hours"
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
                         />
                     </div>

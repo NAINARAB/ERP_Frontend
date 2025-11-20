@@ -33,7 +33,7 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
             loadingOff,
         })
             .then((data) => {
-                console.log("API Response:", data); // Debug log
+             
                 if (data && data.success) {
                     setReturnSales(Array.isArray(data.data) ? data.data : []);
                 } else {
@@ -50,9 +50,6 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         fetchReturnSales();
     }, []);
 
-    useEffect(() => {
-        console.log("Return Sales State:", returnSales); 
-    }, [returnSales]);
 
     const closeDialog = () => {
         setDialog({ ...dialog, filters: false });
@@ -69,7 +66,6 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
 
     return (
         <>
-   
             <FilterableTable
                 title="Return Sales"
                 dataArray={returnSales}
@@ -78,22 +74,22 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     createCol("Ret_Date", "date", "Ret.Date"),
                     createCol("Delivery_Order_Id", "string", "DelOrd.ID"),
                     // createCol("Re_St_Id", "string", "Return Stock ID"),
-                    createCol("Godown_Name", "string", "Godown"),
+                    createCol("Godown_Name", "number", "Godown"),
                     createCol("Product_Name", "string", "Prod.Name"),
-                    createCol("Bill_Qty", "number", "Bill.Qty"),
-                    createCol("Act_Qty", "number", "Act.Qty"),
-                    createCol("Free_Qty", "number", "Free.Qty"),
-                    createCol("Total_Qty", "number", "Total.Qty"),
+                    createCol("Bill_Qty", "number", "Bill Qty"),
+                    createCol("Act_Qty", "number", "Actual Qty"),
+                    createCol("Free_Qty", "number", "Free Qty"),
+                    createCol("Total_Qty", "number", "Total Qty"),
                     createCol("Unit_Name", "string", "Unit"),
-                    createCol("Taxable_Rate", "number", "Tax.Rate"),
-                    createCol("Item_Rate", "number", "Item.Rate"),
+                    createCol("Taxable_Rate", "number", "Taxable Rate"),
+                    createCol("Item_Rate", "number", "Item Rate"),
                     createCol("Amount", "number", "Amount"),
-                    createCol("Taxable_Amount", "number", "Taxable.Amo"),
-                    createCol("Tax_Rate", "number", "Tax.Rate%"),
-                    createCol("Cgst_Amo", "number", "CGST "),
-                    createCol("Sgst_Amo", "number", "SGST "),
-                    createCol("Igst_Amo", "number", "IGST "),
-                    createCol("Final_Amo", "number", "Final"),
+                    createCol("Taxable_Amount", "number", "Taxable Amount"),
+                    createCol("Tax_Rate", "number", "Tax Rate %"),
+                    createCol("Cgst_Amo", "number", "CGST Amount"),
+                    createCol("Sgst_Amo", "number", "SGST Amount"),
+                    createCol("Igst_Amo", "number", "IGST Amount"),
+                    createCol("Final_Amo", "number", "Final Amount"),
                     createCol("HSN_Code", "string", "HSN Code"),
                 ]}
                 ButtonArea={
