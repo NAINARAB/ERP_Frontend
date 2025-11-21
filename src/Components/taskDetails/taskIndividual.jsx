@@ -10,7 +10,9 @@ import {
     TableRow,
     TableCell,
     IconButton,
-    CircularProgress, // Import CircularProgress for loading spinner
+    CircularProgress,
+    Box,
+    Typography 
 } from '@mui/material';
 import { CalendarMonth, QueryBuilder, Edit } from "@mui/icons-material";
 import TaskAssign from '../taskAssign/addEditTaskAssign';
@@ -18,17 +20,16 @@ import TaskAssign from '../taskAssign/addEditTaskAssign';
 function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
     const [selectedTask, setSelectedTask] = useState(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-    const [loading, setLoading] = useState(true); // Loading state to handle loading spinner
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (open) {
             setSelectedTask(null);
-            setLoading(true); // Start loading when the dialog opens
+            setLoading(true); 
 
-            // Simulate loading delay (you would replace this with actual data fetching logic)
             setTimeout(() => {
-                setLoading(false); // Set loading to false once data is loaded
-            }, 500); // Example loading time of 2 seconds
+                setLoading(false);
+            }, 500); 
         }
     }, [open]);
 
@@ -55,19 +56,27 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
 
     return (
         <>
-            <Dialog open={open} maxWidth="lg">
+            <Dialog open={open} maxWidth="lg" fullWidth>
                 <DialogTitle>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>Details</span>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" component="span">
+                            Details
+                        </Typography>
                         <button className='btn btn-light' onClick={onClose}>Close</button>
-                    </div>
+                    </Box>
                 </DialogTitle>
 
                 <DialogContent>
                     {loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', width: '500px' }}>
-                            <CircularProgress /> {/* Single circular spinner in the center */}
-                        </div>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            height: '300px', 
+                            width: '100%' 
+                        }}>
+                            <CircularProgress /> 
+                        </Box>
                     ) : (
                         <TableContainer>
                             <Table>
@@ -87,46 +96,116 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
 
                                 <TableBody>
                                     {taskDetails.length === 0 ? (
-                                        // Display a "No data found" message if there are no tasks
                                         <TableRow>
-                                            <TableCell colSpan={9} className="fa-14 text-center" style={{ textAlign: 'center' }}>
-                                                No data found
+                                            <TableCell colSpan={9} className="fa-14 text-center">
+                                                <Typography component="span">
+                                                    No data found
+                                                </Typography>
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        // Map over taskDetails if available and display rows
                                         taskDetails.map((detail, index) => (
                                             <TableRow key={index}>
-                                                <TableCell className="fa-13 text-center">{detail.EmployeeName || 'N/A'}</TableCell>
-                                                <TableCell className="fa-13 text-center">{detail.AssignedUser || 'N/A'}</TableCell>
-                                                <TableCell className="fa-14 text-center">
-                                                    <span className="badge rounded-4 px-3 bg-light text-primary">
-                                                        <CalendarMonth className="fa-18 me-2" />
-                                                        {formatDate(detail.Est_Start_Dt)} - {formatDate(detail.Est_End_Dt)}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="fa-14 text-center">
-                                                    <span className="badge rounded-4 px-3 bg-light text-primary">
-                                                        <QueryBuilder className="fa-18 me-2" />
-                                                        {detail.Sch_Time || 'N/A'} - {detail.EN_Time || 'N/A'}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="fa-13 text-center">{detail.Sch_Period || 'N/A'}</TableCell>
-                                                <TableCell className="fa-14 text-center">
-                                                    <span className={`badge rounded-4 px-3 fw-bold text-white ${Number(detail.Timer_Based) ? 'bg-success' : 'bg-warning'}`}>
-                                                        {Number(detail.Timer_Based) ? "Yes" : "No"}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="fa-14 text-center">
-                                                    <span className={`badge rounded-4 px-3 fw-bold text-white ${Number(detail.Invovled_Stat) ? 'bg-success' : 'bg-danger'}`}>
-                                                        {Number(detail.Invovled_Stat) ? "IN" : "OUT"}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="fa-13 text-center">{detail.Ord_By || 'N/A'}</TableCell>
                                                 <TableCell className="fa-13 text-center">
-                                                    <IconButton size="small" onClick={() => handleEditClick(detail)}>
-                                                        <Edit className="fa-18" />
-                                                        Edit
+                                                    <Typography component="span">
+                                                        {detail.EmployeeName || 'N/A'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell className="fa-13 text-center">
+                                                    <Typography component="span">
+                                                        {detail.AssignedUser || 'N/A'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell className="fa-14 text-center">
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            px: 2,
+                                                            py: 1,
+                                                            backgroundColor: 'grey.100',
+                                                            color: 'primary.main',
+                                                            borderRadius: 4,
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        <CalendarMonth sx={{ fontSize: '18px', mr: 1 }} />
+                                                        {formatDate(detail.Est_Start_Dt)} - {formatDate(detail.Est_End_Dt)}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell className="fa-14 text-center">
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            px: 2,
+                                                            py: 1,
+                                                            backgroundColor: 'grey.100',
+                                                            color: 'primary.main',
+                                                            borderRadius: 4,
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        <QueryBuilder sx={{ fontSize: '18px', mr: 1 }} />
+                                                        {detail.Sch_Time || 'N/A'} - {detail.EN_Time || 'N/A'}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell className="fa-13 text-center">
+                                                    <Typography component="span">
+                                                        {detail.Sch_Period || 'N/A'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell className="fa-14 text-center">
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-block',
+                                                            px: 2,
+                                                            py: 1,
+                                                            borderRadius: 4,
+                                                            fontWeight: 'bold',
+                                                            color: 'white',
+                                                            backgroundColor: Number(detail.Timer_Based) ? 'success.main' : 'warning.main',
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        {Number(detail.Timer_Based) ? "Yes" : "No"}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell className="fa-14 text-center">
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-block',
+                                                            px: 2,
+                                                            py: 1,
+                                                            borderRadius: 4,
+                                                            fontWeight: 'bold',
+                                                            color: 'white',
+                                                            backgroundColor: Number(detail.Invovled_Stat) ? 'success.main' : 'error.main',
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        {Number(detail.Invovled_Stat) ? "IN" : "OUT"}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell className="fa-13 text-center">
+                                                    <Typography component="span">
+                                                        {detail.Ord_By || 'N/A'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell className="fa-13 text-center">
+                                                    <IconButton 
+                                                        size="small" 
+                                                        onClick={() => handleEditClick(detail)}
+                                                        sx={{ display: 'flex', flexDirection: 'column', fontSize: '12px' }}
+                                                    >
+                                                        <Edit sx={{ fontSize: '18px' }} />
+                                                        <Typography component="span" sx={{ fontSize: '12px' }}>
+                                                            Edit
+                                                        </Typography>
                                                     </IconButton>
                                                 </TableCell>
                                             </TableRow>
@@ -139,7 +218,7 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                 </DialogContent>
             </Dialog>
 
-            {assignDialogOpen &&
+            {assignDialogOpen && (
                 <TaskAssign
                     open={assignDialogOpen}
                     projectId={selectedTask?.Project_Id}
@@ -150,7 +229,7 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                         onClose();
                     }}
                 />
-            }
+            )}
         </>
     );
 }

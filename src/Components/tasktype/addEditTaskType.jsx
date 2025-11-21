@@ -638,16 +638,13 @@
 
 
 
-
-
 import React, { useEffect, useState } from "react";
 import { 
     Dialog, 
     DialogActions, 
     DialogContent, 
     DialogTitle,
-    Button,
-    TextField
+    Button
 } from "@mui/material";
 import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from 'react-toastify';
@@ -660,8 +657,10 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
         Project_Id: "",
         ProjectName: "",
         Day_Duration: "",
-        Hours_Duration:"",
-        Status: "1"
+        Hours_Duration: "",
+        Status: "1",
+        Est_StartDate: "",
+        Est_EndDate: ""
     });
 
     const [projects, setProjects] = useState([]);
@@ -696,75 +695,80 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
     useEffect(() => {
         if (existingTaskType && open && projects.length > 0) {
             const project = projects.find(proj => 
-                proj.Project_Id.toString() == existingTaskType.ProjectId?.toString()
+                proj.Project_Id.toString() === existingTaskType.ProjectId?.toString()
             );
             
+            // Ensure all values have proper fallbacks to empty strings
             const formattedData = {
-                ...existingTaskType,
-                Project_Id: existingTaskType.ProjectId?.toString() || existingTaskType.Project_Id?.toString(),
+                Task_Type: existingTaskType.Task_Type || "",
+                Task_Type_Id: existingTaskType.Task_Type_Id || "",
+                Project_Id: existingTaskType.ProjectId?.toString() || existingTaskType.Project_Id?.toString() || "",
                 ProjectName: project ? project.Project_Name : existingTaskType.ProjectName || "",
                 Day_Duration: existingTaskType.Day_Duration?.toString() || "",
-                Hours_Duration:existingTaskType.Hours_Duration?.toString() || "",
-                Status: existingTaskType.Status?.toString() || "1"
+                Hours_Duration: existingTaskType.Hours_Duration?.toString() || "",
+                Status: existingTaskType.Status?.toString() || "1",
+                Est_StartDate: existingTaskType.Est_StartDate || "",
+                Est_EndDate: existingTaskType.Est_EndDate || ""
             };
         
             setInputValue(formattedData);
         } else if (!existingTaskType && open) {
+            // Reset to initial empty values
             setInputValue({ 
                 Task_Type: "", 
                 Task_Type_Id: "",
                 Project_Id: "",
                 ProjectName: "",
                 Day_Duration: "",
-                Hours_Duration:"",
-                Status: "1"
+                Hours_Duration: "",
+                Status: "1",
+                Est_StartDate: "",
+                Est_EndDate: ""
             });
         }
     }, [existingTaskType, open, projects]); 
 
-const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!inputValue.Task_Type.trim()) {
-        toast.error("Please enter a Task Type");
-        return;
-    }
-    
-    if (!inputValue.Project_Id) {
-        toast.error("Please select a Project");
-        return;
-    }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        if (!inputValue.Task_Type.trim()) {
+            toast.error("Please enter a Task Type");
+            return;
+        }
+        
+        if (!inputValue.Project_Id) {
+            toast.error("Please select a Project");
+            return;
+        }
 
-    if (!inputValue.Day_Duration || parseInt(inputValue.Day_Duration) < 1) {
-        toast.error("Please enter a valid number of days");
-        return;
-    }
-    
-    if (!inputValue.Hours_Duration || parseInt(inputValue.Hours_Duration) < 1) {
-        toast.error("Please enter a valid number of hours");
-        return;
-    }
+        if (!inputValue.Day_Duration || parseInt(inputValue.Day_Duration) < 1) {
+            toast.error("Please enter a valid number of days");
+            return;
+        }
+        
+        if (!inputValue.Hours_Duration || parseInt(inputValue.Hours_Duration) < 1) {
+            toast.error("Please enter a valid number of hours");
+            return;
+        }
 
-    const submitData = {
-        ...inputValue,
-        Project_Id: parseInt(inputValue.Project_Id), 
-        Day_Duration: parseInt(inputValue.Day_Duration), 
-        Hours_Duration: parseInt(inputValue.Hours_Duration), 
-        Status: parseInt(inputValue.Status),
-        Created_Date: new Date().toISOString().split('T')[0],
-        Est_StartDate: inputValue.Est_StartDate || new Date().toISOString().split('T')[0],
-        Est_EndDate: inputValue.Est_EndDate || new Date(Date.now() + (inputValue.Day_Duration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+        const submitData = {
+            ...inputValue,
+            Project_Id: parseInt(inputValue.Project_Id), 
+            Day_Duration: parseInt(inputValue.Day_Duration), 
+            Hours_Duration: parseInt(inputValue.Hours_Duration), 
+            Status: parseInt(inputValue.Status),
+            Created_Date: new Date().toISOString().split('T')[0],
+            Est_StartDate: inputValue.Est_StartDate || new Date().toISOString().split('T')[0],
+            Est_EndDate: inputValue.Est_EndDate || new Date(Date.now() + (inputValue.Day_Duration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+        };
+
+        if (existingTaskType && existingTaskType.Task_Type_Id) {
+            onUpdate(submitData); 
+        } else {
+            onCreate(submitData);
+        }
+        onClose();
     };
-
- 
-
-    if (existingTaskType && existingTaskType.Task_Type_Id) {
-        onUpdate(submitData); 
-    } else {
-        onCreate(submitData);
-    }
-    onClose();
-};
 
     const handleProjectChange = (e) => {
         const selectedProjectId = e.target.value;
@@ -784,8 +788,10 @@ const handleSubmit = (e) => {
             Project_Id: "",
             ProjectName: "",
             Day_Duration: "",
-            Hours_Duration:"",
-            Status: "1"
+            Hours_Duration: "",
+            Status: "1",
+            Est_StartDate: "",
+            Est_EndDate: ""
         });
         onClose();
     };
@@ -823,14 +829,14 @@ const handleSubmit = (e) => {
                     <div className="p-2">
                         <label>Project</label>
                         <select
-                            value={inputValue.Project_Id || ""}
+                            value={inputValue.Project_Id} // Now always defined
                             onChange={handleProjectChange}
                             className="cus-inpt"
                             required
                             disabled={isProjectDisabled}
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
                         >
-                            <option value="" disabled>
+                            <option value="">
                                 {loading ? "Loading projects..." : "Select Project"}
                             </option>
                             {projects.map((project) => (
@@ -846,7 +852,7 @@ const handleSubmit = (e) => {
                         <label>Task Type</label>
                         <input
                             type="text"
-                            value={inputValue.Task_Type}
+                            value={inputValue.Task_Type} // Now always defined
                             onChange={e => setInputValue({
                                 ...inputValue,
                                 Task_Type: e.target.value
@@ -863,7 +869,7 @@ const handleSubmit = (e) => {
                         <label>Number Of Days</label>
                         <input
                             type="number"
-                            value={inputValue.Day_Duration || ""}
+                            value={inputValue.Day_Duration} // Now always defined
                             onChange={handleDaysChange}
                             className="cus-inpt"
                             required
@@ -872,11 +878,12 @@ const handleSubmit = (e) => {
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
                         />
                     </div>
-                     <div className="p-2">
+                    
+                    <div className="p-2">
                         <label>Hours Duration</label>
                         <input
                             type="number"
-                            value={inputValue.Hours_Duration || ""}
+                            value={inputValue.Hours_Duration} // Now always defined
                             onChange={handleHoursChange}
                             className="cus-inpt"
                             required
@@ -885,11 +892,12 @@ const handleSubmit = (e) => {
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
                         />
                     </div>
+                   
                    <div className="p-2">
                          <label>Estimated Start Date</label>
                          <input
                             type="date"
-                            value={inputValue.Est_StartDate}
+                            value={inputValue.Est_StartDate} // Now always defined
                             onChange={e => setInputValue({
                                 ...inputValue,
                                 Est_StartDate: e.target.value
@@ -905,7 +913,7 @@ const handleSubmit = (e) => {
                         <label>Estimated End Date</label>
                         <input
                             type="date"
-                            value={inputValue.Est_EndDate}
+                            value={inputValue.Est_EndDate} // Now always defined
                             onChange={e => setInputValue({
                                 ...inputValue,
                                 Est_EndDate: e.target.value
@@ -921,14 +929,14 @@ const handleSubmit = (e) => {
                         <label>Status</label>
                         <select
                             className="cus-inpt"
-                            value={inputValue.Status}
+                            value={inputValue.Status} // Now always defined
                             onChange={e => setInputValue({
                                 ...inputValue,
                                 Status: e.target.value
                             })}
                             required
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}>
-                            <option value="" disabled>Select Status</option>
+                            <option value="">Select Status</option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                             <option value="2">Pending</option>

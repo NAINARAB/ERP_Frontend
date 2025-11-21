@@ -363,7 +363,7 @@
 
 import React, { useState, useEffect, useContext } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Button, Box, Typography, Chip } from '@mui/material';
-import { Edit, Delete, Launch, People, Add } from '@mui/icons-material';
+import { Edit, Delete, Launch, People, Add, Clear } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { MyContext } from "../../Components/context/contextProvider";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -390,6 +390,7 @@ const WorkDetails = ({
     contextObj
 }) => {
     const [workData, setWorkData] = useState([]);
+    const [filteredWorkData, setFilteredWorkData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [nonTimerWorkDialog, setNonTimerWorkDialog] = useState(false);
     const [selectedWork, setSelectedWork] = useState(null);
@@ -404,6 +405,10 @@ const WorkDetails = ({
     });
     const [processDetails, setProcessDetails] = useState([]);
     const [isEdit, setIsEdit] = useState(false);
+    const [dateFilter, setDateFilter] = useState({
+        fromDate: '',
+        toDate: ''
+    });
 
     const initialWorkSaveValue = {
         Work_Dt: '',
@@ -421,6 +426,11 @@ const WorkDetails = ({
             fetchProcessDetails();
         }
     }, [open, projectId]);
+
+    useEffect(() => {
+
+        applyDateFilter();
+    }, [workData, dateFilter]);
 
     const fetchWorkDetails = async () => {
         setLoading(true);
@@ -462,6 +472,48 @@ const WorkDetails = ({
         if (!dateStr) return '';
         const date = new Date(dateStr);
         return date.toISOString().split('T')[0];
+    };
+
+    const applyDateFilter = () => {
+        if (!dateFilter.fromDate && !dateFilter.toDate) {
+            setFilteredWorkData(workData);
+            return;
+        }
+
+        const filtered = workData.filter(work => {
+            const workDate = new Date(work.Work_Dt);
+            let fromCondition = true;
+            let toCondition = true;
+
+            if (dateFilter.fromDate) {
+                const fromDate = new Date(dateFilter.fromDate);
+                fromCondition = workDate >= fromDate;
+            }
+
+            if (dateFilter.toDate) {
+                const toDate = new Date(dateFilter.toDate);
+                toDate.setHours(23, 59, 59, 999); // Include entire end date
+                toCondition = workDate <= toDate;
+            }
+
+            return fromCondition && toCondition;
+        });
+
+        setFilteredWorkData(filtered);
+    };
+
+    const handleDateFilterChange = (field, value) => {
+        setDateFilter(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const clearDateFilter = () => {
+        setDateFilter({
+            fromDate: '',
+            toDate: ''
+        });
     };
 
     const handleEditWork = (work) => {
@@ -540,8 +592,6 @@ const WorkDetails = ({
                 Additional_Task: selectedWork?.Task_Name || ''
             };
 
- 
-
             const data = await fetchLink({
                 address: `taskManagement/task/work`,
                 method: "PUT",
@@ -586,19 +636,39 @@ const WorkDetails = ({
             Cell: ({ row }) => row.End_Time ? (row.End_Time) : "N/A"
         },
         {
-            Field_Name: "Total_Hours",
-            ColumnHeader: "Hours Worked",
-            isVisible: 1,
-            align: "center",
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Chip 
-                    label={`${row.Total_Hours || 0}h`} 
-                    color="primary"
-                    size="small"
-                />
-            )
-        },
+    Field_Name: "Total_Hours",
+    ColumnHeader: "Hours Worked",
+    isVisible: 1,
+    align: "center",
+    isCustomCell: true,
+    Cell: ({ row }) => {
+        const totalMinutes = row.Tot_Minutes || 0;
+        
+        // Convert minutes to hours and minutes
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        // Format the display
+        let displayText = '';
+        if (hours > 0 && minutes > 0) {
+            displayText = `${hours}h ${minutes}m`;
+        } else if (hours > 0) {
+            displayText = `${hours}h`;
+        } else if (minutes > 0) {
+            displayText = `${minutes}m`;
+        } else {
+            displayText = '0h';
+        }
+        
+        return (
+            <Chip 
+                label={displayText} 
+                color="primary"
+                size="small"
+            />
+        );
+    }
+},
         {
             Field_Name: "Status",
             ColumnHeader: "Status",
@@ -647,8 +717,47 @@ const WorkDetails = ({
                 maxWidth="lg" 
                 fullWidth
             >
-                <DialogTitle className="bg-primary text-white mb-2 px-3 py-2">
-                    Work Details - {projectName}
+                <DialogTitle className="bg-primary text-white mb-2 px-3 py-2 d-flex justify-content-between align-items-center">
+                    <span>Work Details - {projectName}</span>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {/* Date Filter Section */}
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', backgroundColor: 'white', padding: '4px 8px', borderRadius: '4px' }}>
+                            <Typography variant="body2" sx={{ color: 'black', fontWeight: 'bold' }}>
+                                Filter:
+                            </Typography>
+                            <input
+                                type="date"
+                                value={dateFilter.fromDate}
+                                onChange={(e) => handleDateFilterChange('fromDate', e.target.value)}
+                                className="cus-inpt"
+                                style={{ width: '140px', fontSize: '12px' }}
+                                placeholder="From Date"
+                            />
+                            <Typography variant="body2" sx={{ color: 'black' }}>
+                                to
+                            </Typography>
+                            <input
+                                type="date"
+                                value={dateFilter.toDate}
+                                onChange={(e) => handleDateFilterChange('toDate', e.target.value)}
+                                className="cus-inpt"
+                                style={{ width: '140px', fontSize: '12px' }}
+                                placeholder="To Date"
+                                min={dateFilter.fromDate}
+                            />
+                            {(dateFilter.fromDate || dateFilter.toDate) && (
+                                <Tooltip title="Clear Filter">
+                                    <IconButton 
+                                        size="small" 
+                                        onClick={clearDateFilter}
+                                        sx={{ color: 'black' }}
+                                    >
+                                        <Clear fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                        </Box>
+                    </Box>
                 </DialogTitle>
                 
                 <DialogContent className="p-4">
@@ -656,10 +765,10 @@ const WorkDetails = ({
                         <Typography variant="body1" align="center">
                             Loading work details...
                         </Typography>
-                    ) : workData.length > 0 ? (
+                    ) : filteredWorkData.length > 0 ? (
                         <FilterableTable
-                            title={`Work Details (${workData.length} records)`}
-                            dataArray={workData}
+                            title={`Work Details (${filteredWorkData.length} records)`}
+                            dataArray={filteredWorkData}
                             EnableSerialNumber={true}
                             columns={workDetailsColumns}
                             ButtonArea={null}
@@ -668,7 +777,9 @@ const WorkDetails = ({
                         />
                     ) : (
                         <Typography variant="body1" align="center" color="textSecondary">
-                            No work details found for this project.
+                            {workData.length === 0 
+                                ? "No work details found for this project." 
+                                : "No work details found for the selected date range."}
                         </Typography>
                     )}
                 </DialogContent>
