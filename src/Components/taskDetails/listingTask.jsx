@@ -20,7 +20,7 @@ import { fetchLink } from '../../Components/fetchComponent';
 import TaskMasterMgt from '../../Pages/Tasks/Components/newaddEditTask';
 import TaskAssign from '../taskAssign/addEditTaskAssign';
 import { toast } from 'react-toastify';
-import ViewHeadlineSharpIcon from '@mui/icons-material/ViewHeadlineSharp';
+import ViewHeadlineIcon from '@mui/icons-material/ViewHeadline';
 import { Edit } from "@mui/icons-material";
 import TaskIndividual from './taskIndividual';
 
@@ -358,7 +358,7 @@ function ListingTask({ dialogOpen, setDialogOpen, projectid, reload, onReload })
                                             </TableCell>
                                             <TableCell>
                                                 <IconButton onClick={() => handleviewTaskDetail(task)}>
-                                                    <ViewHeadlineSharpIcon />
+                                                    <ViewHeadlineIcon />
                                                 </IconButton>
                                             </TableCell>
                                         </TableRow>
