@@ -80,6 +80,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "baseline-browser-mapping": "^2.8.30",
     "webpack-bundle-analyzer": "^4.10.2"
   }
 }
