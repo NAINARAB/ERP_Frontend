@@ -360,7 +360,6 @@
 
 
 
-
 import React, { useState, useEffect, useContext } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Button, Box, Typography, Chip } from '@mui/material';
 import { Edit, Delete, Launch, People, Add, Clear } from '@mui/icons-material';
@@ -435,6 +434,7 @@ const WorkDetails = ({
     const fetchWorkDetails = async () => {
         setLoading(true);
         try {
+          
             const data = await fetchLink({
                 address: `taskManagement/workDetailsTask?Project_Id=${projectId}&Task_Id=${taskId}`
             });
@@ -492,7 +492,7 @@ const WorkDetails = ({
 
             if (dateFilter.toDate) {
                 const toDate = new Date(dateFilter.toDate);
-                toDate.setHours(23, 59, 59, 999); // Include entire end date
+                toDate.setHours(23, 59, 59, 999);
                 toCondition = workDate <= toDate;
             }
 
@@ -569,9 +569,9 @@ const WorkDetails = ({
         e.preventDefault();
         
         try {
-            // Prepare payload according to stored procedure requirements
+         
             const payload = {
-                Mode: isEdit ? 2 : 1, // 1 for create, 2 for update
+                Mode: isEdit ? 2 : 1, 
                 Work_Id: isEdit ? selectedWork.Work_Id : 0,
                 Project_Id: projectId,
                 Sch_Id: selectedWork?.Sch_Id || "1",
@@ -1248,6 +1248,22 @@ const ActiveProjects = () => {
             Cell: ({ row }) => row.Hours_Duration ? row.Hours_Duration : "-"
         },
         {
+        Field_Name: "Total_Worked_Minutes",
+        ColumnHeader: "Total Worked Hours",
+        isVisible: 1,
+        align: "center", 
+        isCustomCell: true,
+        Cell: ({ row }) => row.Total_Worked_Hours ? row.Total_Worked_Hours : "-"
+    },
+      {
+        Field_Name: "Remainging Hours",
+        ColumnHeader: "Remaining Hours",
+        isVisible: 1,
+        align: "center", 
+        isCustomCell: true,
+        Cell: ({ row }) => row.Remaining_Time ? row.Remaining_Time : "-"
+    },
+        {
             Field_Name: "Est_StartTime",
             ColumnHeader: "Start Date",
             isVisible: 1,
@@ -1255,6 +1271,7 @@ const ActiveProjects = () => {
             isCustomCell: true,
             Cell: ({ row }) => row.Est_StartTime ? row.Est_StartTime.split('T')[0] : "N/A"
         },
+        
         {
             Field_Name: "Est_EndTime",
             ColumnHeader: "End Date",
