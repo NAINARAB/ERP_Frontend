@@ -4,7 +4,7 @@
 .package-lock.json
 .env
 .prettierrc.js
-
+package-lock.json
 # testing
 /coverage
 
