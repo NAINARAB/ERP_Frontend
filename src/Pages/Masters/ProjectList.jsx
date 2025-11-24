@@ -1,366 +1,4 @@
-// import React, { useState, useEffect, useContext } from "react";
-// import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-// import { Edit, Delete, Launch, People, Search as SearchIcon } from '@mui/icons-material';
-// import { toast } from 'react-toastify';
-// import { MyContext } from "../../Components/context/contextProvider";
-// import { fetchLink } from "../../Components/fetchComponent";
-// import ProjectForm from "../ProjectList/addEditProject";
-// import EmployeeManagementDialog from "../employeeManagement/employeeManagement";
-// import DataTable from "react-data-table-component";
-// import ListingTask from "../Tasks/taskDetails/listingTask";
-
-// const ActiveProjects = () => {
-//     const [reload, setReload] = useState(false);
-//     const [projects, setProjects] = useState([]);
-//     const [projectAlldata, setProjectAlldata] = useState([]);
-//     const { contextObj } = useContext(MyContext);
-//     const [dialogOpen, setDialogOpen] = useState(false);
-//     const [selectedProject, setSelectedProject] = useState(null);
-//     const [isEdit, setIsEdit] = useState(false);
-//     const [projectId, setProjectId] = useState(0);
-//     const [deleteDialog, setDeleteDialog] = useState(false);
-//     const [projectToDelete, setProjectToDelete] = useState(null);
-//     const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
-//     const [listingTaskDialogOpen, setListingTaskDialogOpen] = useState(false);
-//     const [filterInput, setFilterInput] = useState('');
-//     const [reloadFlag, setReloadFlag] = useState(false);
-
-//     const parseData = JSON.parse(localStorage.getItem("user"));
-
-//     useEffect(() => {
-//         fetchProjects();
-//         fetchProjectData();
-//     }, [parseData?.Company_id, reload]);
-
-//     const handleReloadProjects = () => {
-//         setReload(prev => !prev);  
-//         setReloadFlag(prev => !prev); 
-//     };
-    
-//     const fetchProjects = async () => {
-//         try {
-//             const data = await fetchLink({
-//                 address: `taskManagement/project/newProjectAbstract?Company_id=${parseData?.Company_id}`
-//             });
-//             setProjects(data.success ? data.data : []);
-//         } catch (e) {
-//             console.error(e);
-//             setProjects([]);
-//         }
-//     };
-
-//     const fetchProjectData = async () => {
-//         try {
-//             const data = await fetchLink({
-//                 address: `taskManagement/project?Company_id=${parseData?.Company_id}`
-//             });
-//             setProjectAlldata(data.success ? data.data : []);
-//         } catch (e) {
-//             console.error(e);
-//             setProjectAlldata([]);
-//         }
-//     };
-
-//     const deleteFun = () => {
-//         if (projectToDelete) {
-//             fetchLink({
-//                 address: `taskManagement/project`,
-//                 method: 'DELETE',
-//                 bodyData: { Project_Id: projectToDelete?.Project_Id },
-//             }).then(data => {
-//                 if (data.success) {
-//                     setReload(!reload);
-//                     toast.success(data.message);
-//                 } else {
-//                     toast.error(data.message);
-//                 }
-//             }).catch(e => console.error('Fetch Error:', e));
-//         }
-//         setDeleteDialog(false);
-//     };
-
-//     const calcPercentage = (task, completed) => (Number(task) === 0 ? 0 : ((Number(completed) / Number(task)) * 100).toFixed(0));
-
-//     const columns = [
-//         { name: 'Project', selector: row => row.Project_Name, sortable: true, width: '250px' },
-//         { name: 'Head', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Project_Head_Name, sortable: true },
-//         { name: 'Status', selector: row => projectAlldata.find(p => p.Project_Id === row.Project_Id)?.Status, sortable: true },
-//         { name: 'End Date', selector: row => row.Est_End_Dt ? new Date(row.Est_End_Dt).toLocaleDateString('en-IN') : "N/A", sortable: true },
-//         { name: 'Progress', selector: row => `${calcPercentage(row.TodayTaskcounts, row.CompletedTasks)}%`, sortable: true },
-//         {
-//             name: 'Task Details', cell: row => (
-//                 <>
-//                     <IconButton onClick={() => handleOpenListingTaskDialog(row)}>
-//                         <Launch />
-//                     </IconButton>
-//                     {row.CompletedTasks} / {row.TodayTaskcounts}
-//                 </>
-//             )
-//         },
-      
-//         { name: 'Task Count',  selector: row => row?.TodayTaskcounts, sortable: true, sortable: true },
-      
-//         { name: 'Assigned', selector: row => row.TasksAssignedToEmployee },
-//         {
-//             name: 'Employees', cell: row => (
-//                 <>
-//                     {Number(contextObj?.Add_Rights) === 1 && (
-//                         <IconButton onClick={() => handleOpenEmployeeDialog(row.Project_Id)}>
-//                             <People />
-//                         </IconButton>
-//                     )}
-//                     {row.EmployeesInvolved}
-//                 </>
-//             )
-//         },
-//         {
-//             name: 'Actions', cell: row => (
-//                 <>
-//                     {Number(contextObj?.Edit_Rights) === 1 && (
-//                         <IconButton onClick={() => handleOpenEditDialog(row)}><Edit /></IconButton>
-//                     )}
-//                 </>
-//             )
-//         },
-//     ];
-
-//     const filteredProjects = projects.filter(project => {
-//         const projectHead = projectAlldata.find(p => p.Project_Id === project.Project_Id)?.Project_Head_Name || "";
-//         const status = projectAlldata.find(p => p.Project_Id === project.Project_Id)?.Status || "";
-//         return (
-//             project.Project_Name.toLowerCase().includes(filterInput.toLowerCase()) ||
-//             projectHead.toLowerCase().includes(filterInput.toLowerCase()) ||
-//             status.toLowerCase().includes(filterInput.toLowerCase())
-//         );
-//     });
-
-//     const handleOpenCreateDialog = () => {
-//         setSelectedProject(null);
-//         setIsEdit(false);
-//         setDialogOpen(true);
-//     };
-
-//     const handleOpenEditDialog = project => {
-//         setSelectedProject(project);
-//         setIsEdit(true);
-//         setDialogOpen(true);
-//     };
-
-//     const handleOpenDeleteDialog = project => {
-//         setProjectToDelete(project);
-//         setDeleteDialog(true);
-//     };
-
-//     const handleOpenListingTaskDialog = project => {
-//         setSelectedProject(project);
-//         setProjectId(project.Project_Id);
-//         setListingTaskDialogOpen(true);
-//     };
-
-//     const handleCloseDialogs = () => {
-//         setDialogOpen(false);
-//         setListingTaskDialogOpen(false);
-//         setSelectedProject(null);
-//         setProjectToDelete(null);
-//         setDeleteDialog(false);
-//     };
-
-//     const handleOpenEmployeeDialog = projectId => {
-//         setProjectId(projectId);
-//         setEmployeeDialogOpen(true);
-//     };
-
-//     return (
-//         <>
-//             <div className="fw-bold d-flex align-items-center justify-content-between mt-0 ">
-//                 <span style={{ marginLeft: '20px' }}>Projects</span>
-//                 <div className="mb-1" style={{ display: 'flex', alignItems: 'center' }}>
-//                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-//                         <SearchIcon style={{ position: 'absolute', left: 15, color: '#aaa' }} />
-//                         <input
-//                             type="text"
-//                             placeholder="Search"
-//                             onChange={e => setFilterInput(e.target.value)}
-//                             style={{
-//                                 paddingLeft: 35,
-//                                 marginRight: 10,
-//                                 margin: 10,
-//                                 borderRadius: 4,
-//                                 border: '1px solid black'
-//                             }}
-//                         />
-//                     </div>
-//                     {Number(contextObj?.Add_Rights) === 1 && (
-//                         <button onClick={handleOpenCreateDialog} className="btn btn-primary fa-13 shadow">
-//                             Create Project
-//                         </button>
-//                     )}
-//                 </div>
-//             </div>
-
-//             <div className="card-body p-0 table-container">
-//                 <DataTable
-//                     columns={columns}
-//                     data={filteredProjects}
-//                     pagination
-//                     highlightOnHover
-//                     fixedHeader
-//                     paginationPerPage={15}
-//                     responsive
-//                     persistTableHead
-//                     customStyles={{
-//                         headCells: {
-//                             style: {
-//                                 fontSize: '16px',
-//                                 fontWeight: 'bold',
-//                                 padding: '10px',
-//                                 backgroundColor: '#2c3e50',
-//                                 color: '#ecf0f1',
-//                                 position: 'sticky',
-//                                 top: 0,
-//                                 zIndex: 2,
-//                             },
-//                         },
-//                         cells: {
-//                             style: {
-//                                 padding: '8px',
-//                                 fontSize: '14px',
-//                                 backgroundColor: '#f9f9f9',
-//                                 color: '#2c3e50',
-//                             },
-//                         },
-//                         rows: {
-//                             style: {
-//                                 borderBottom: '1px solid #ddd',
-//                             },
-//                         },
-//                     }}
-//                     style={{
-//                         overflowY: 'auto',
-//                         maxHeight: 'calc(100vh - 200px)',
-//                     }}
-//                 />
-
-
-
-//                 <Dialog
-//                     open={deleteDialog}
-//                     onClose={handleCloseDialogs}
-//                     aria-labelledby="delete-dialog-title"
-//                     aria-describedby="delete-dialog-description">
-//                     <DialogTitle className="bg-danger text-white mb-2 px-3 py-2" style={{ fontSize: '18px' }}>
-//                         Confirm Deletion
-//                     </DialogTitle>
-//                     <DialogContent className="p-4" style={{ fontSize: '16px' }}>
-//                         Are you sure you want to delete the project
-//                         <span className="text-primary">{" " + projectToDelete?.Project_Name + " "}</span>?
-//                     </DialogContent>
-//                     <DialogActions>
-//                         <button
-//                             onClick={() => setDeleteDialog(false)}
-//                             className="btn btn-secondary fa-13 shadow"
-//                             style={{
-//                                 background: '#95a5a6',
-//                                 color: 'white',
-//                                 borderRadius: '25px',
-//                                 padding: '8px 15px',
-//                                 cursor: 'pointer',
-//                             }}
-//                         >
-//                             Cancel
-//                         </button>
-//                         <button
-//                             onClick={deleteFun}
-//                             className="btn btn-danger fa-13 shadow"
-//                             style={{
-//                                 background: '#e74c3c',
-//                                 color: 'white',
-//                                 borderRadius: '25px',
-//                                 padding: '8px 15px',
-//                                 cursor: 'pointer',
-//                             }}
-//                         >
-//                             Delete
-//                         </button>
-//                     </DialogActions>
-//                 </Dialog>
-
-
-//             </div>
-
-//             <ListingTask
-//                 onClose={handleCloseDialogs}
-//                 dialogOpen={listingTaskDialogOpen}
-//                 setDialogOpen={setListingTaskDialogOpen}
-//                 isEdit={false}
-//                 parseData={parseData}
-//                 projectid={projectId}
-//                 onReload={handleReloadProjects}
-//                 selectedProject={selectedProject}
-//                 reload={reload}  
-              
-//             />
-
-//             <ProjectForm
-//                 open={dialogOpen}
-//                 onClose={handleCloseDialogs}
-//                 inputValue={selectedProject}
-//                 isEdit={isEdit}
-//                 setReload={handleReloadProjects}
-//                 projectData={projectId}
-//             />
-
-//             <EmployeeManagementDialog
-//                 open={employeeDialogOpen}
-//                 onClose={() => setEmployeeDialogOpen(false)}
-//                 projectId={projectId}
-//                 onReload={handleReloadProjects}
-//             />
-
-//             <Dialog
-//                 open={deleteDialog}
-//                 onClose={handleCloseDialogs}
-//                 aria-labelledby="delete-dialog-title"
-//                 aria-describedby="delete-dialog-description">
-//                 <DialogTitle className="bg-primary text-white mb-2 px-3 py-2">Confirmation</DialogTitle>
-//                 <DialogContent className="p-4">
-//                     Do you want to delete the project
-//                     <span className="text-primary">{" " + projectToDelete?.Project_Name + " "}</span>?
-//                 </DialogContent>
-//                 <DialogActions>
-//                     <button onClick={() => setDeleteDialog(false)} className="btn btn-secondary fa-13 shadow">
-//                         Cancel
-//                     </button>
-//                     <button onClick={deleteFun} className="btn btn-danger fa-13 shadow">
-//                         Delete
-//                     </button>
-//                 </DialogActions>
-//             </Dialog>
-//         </>
-//     );
-// };
-
-// export default ActiveProjects;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Button, Box, Typography, Chip } from '@mui/material';
 import { Edit, Delete, Launch, People, Add, Clear } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -370,19 +8,12 @@ import ProjectForm from "../ProjectList/addEditProject";
 import EmployeeManagementDialog from "../employeeManagement/employeeManagement";
 import ListingTask from "../Tasks/taskDetails/listingTask";
 import AddEditTaskType from "../../Components/tasktype/addEditTaskType";
-import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import FilterableTable, { createCol } from "../../Components/filterableTable2"
 
-
-
-
-
-
-
-
-const WorkDetails = ({ 
-    open, 
-    onClose, 
-    projectId, 
+const WorkDetails = ({
+    open,
+    onClose,
+    projectId,
     projectName,
     parseData,
     taskId,
@@ -434,11 +65,11 @@ const WorkDetails = ({
     const fetchWorkDetails = async () => {
         setLoading(true);
         try {
-          
+
             const data = await fetchLink({
                 address: `taskManagement/workDetailsTask?Project_Id=${projectId}&Task_Id=${taskId}`
             });
-            
+
             if (data.success) {
                 setWorkData(data.data || []);
             } else {
@@ -534,19 +165,19 @@ const WorkDetails = ({
     const handleNonTimerInputChange = (e, param) => {
         const { value } = e.target;
         setNonTimerInput(prev => {
-            const existingIndex = prev.Det_string.findIndex(item => 
+            const existingIndex = prev.Det_string.findIndex(item =>
                 Number(item.Param_Id) === Number(param.Param_Id)
             );
-            
+
             if (existingIndex >= 0) {
                 const updatedDetString = [...prev.Det_string];
                 updatedDetString[existingIndex] = {
                     ...updatedDetString[existingIndex],
                     Current_Value: value
                 };
-                return { 
-                    ...prev, 
-                    Det_string: updatedDetString 
+                return {
+                    ...prev,
+                    Det_string: updatedDetString
                 };
             } else {
                 return {
@@ -567,11 +198,11 @@ const WorkDetails = ({
 
     const saveNonTimerBasedTask = async (e) => {
         e.preventDefault();
-        
+
         try {
-         
+
             const payload = {
-                Mode: isEdit ? 2 : 1, 
+                Mode: isEdit ? 2 : 1,
                 Work_Id: isEdit ? selectedWork.Work_Id : 0,
                 Project_Id: projectId,
                 Sch_Id: selectedWork?.Sch_Id || "1",
@@ -605,7 +236,7 @@ const WorkDetails = ({
                 setNonTimerInput(initialWorkSaveValue);
                 setIsEdit(false);
                 setSelectedWork(null);
-                fetchWorkDetails(); 
+                fetchWorkDetails();
             } else {
                 toast.error(`Failed to ${isEdit ? 'update' : 'save'} work: ${data.message}`);
             }
@@ -636,39 +267,39 @@ const WorkDetails = ({
             Cell: ({ row }) => row.End_Time ? (row.End_Time) : "N/A"
         },
         {
-    Field_Name: "Total_Hours",
-    ColumnHeader: "Hours Worked",
-    isVisible: 1,
-    align: "center",
-    isCustomCell: true,
-    Cell: ({ row }) => {
-        const totalMinutes = row.Tot_Minutes || 0;
-        
-        // Convert minutes to hours and minutes
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        
-        // Format the display
-        let displayText = '';
-        if (hours > 0 && minutes > 0) {
-            displayText = `${hours}h ${minutes}m`;
-        } else if (hours > 0) {
-            displayText = `${hours}h`;
-        } else if (minutes > 0) {
-            displayText = `${minutes}m`;
-        } else {
-            displayText = '0h';
-        }
-        
-        return (
-            <Chip 
-                label={displayText} 
-                color="primary"
-                size="small"
-            />
-        );
-    }
-},
+            Field_Name: "Total_Hours",
+            ColumnHeader: "Hours Worked",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => {
+                const totalMinutes = row.Tot_Minutes || 0;
+
+                // Convert minutes to hours and minutes
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+
+                // Format the display
+                let displayText = '';
+                if (hours > 0 && minutes > 0) {
+                    displayText = `${hours}h ${minutes}m`;
+                } else if (hours > 0) {
+                    displayText = `${hours}h`;
+                } else if (minutes > 0) {
+                    displayText = `${minutes}m`;
+                } else {
+                    displayText = '0h';
+                }
+
+                return (
+                    <Chip
+                        label={displayText}
+                        color="primary"
+                        size="small"
+                    />
+                );
+            }
+        },
         {
             Field_Name: "Status",
             ColumnHeader: "Status",
@@ -678,7 +309,7 @@ const WorkDetails = ({
             Cell: ({ row }) => {
                 const status = row.Work_Status === 3 || row.WorkStatus === 'COMPLETED' ? 'COMPLETED' : 'PENDING';
                 return (
-                    <Chip 
+                    <Chip
                         label={status}
                         color={status === 'COMPLETED' ? "success" : "warning"}
                         size="small"
@@ -696,8 +327,8 @@ const WorkDetails = ({
                 <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                     {Number(contextObj?.Edit_Rights) === 1 && (
                         <Tooltip title="Edit Work">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 onClick={() => handleEditWork(row)}
                             >
                                 <Edit fontSize="small" />
@@ -711,10 +342,10 @@ const WorkDetails = ({
 
     return (
         <>
-            <Dialog 
-                open={open} 
-                onClose={onClose} 
-                maxWidth="lg" 
+            <Dialog
+                open={open}
+                onClose={onClose}
+                maxWidth="lg"
                 fullWidth
             >
                 <DialogTitle className="bg-primary text-white mb-2 px-3 py-2 d-flex justify-content-between align-items-center">
@@ -747,8 +378,8 @@ const WorkDetails = ({
                             />
                             {(dateFilter.fromDate || dateFilter.toDate) && (
                                 <Tooltip title="Clear Filter">
-                                    <IconButton 
-                                        size="small" 
+                                    <IconButton
+                                        size="small"
                                         onClick={clearDateFilter}
                                         sx={{ color: 'black' }}
                                     >
@@ -759,7 +390,7 @@ const WorkDetails = ({
                         </Box>
                     </Box>
                 </DialogTitle>
-                
+
                 <DialogContent className="p-4">
                     {loading ? (
                         <Typography variant="body1" align="center">
@@ -777,13 +408,13 @@ const WorkDetails = ({
                         />
                     ) : (
                         <Typography variant="body1" align="center" color="textSecondary">
-                            {workData.length === 0 
-                                ? "No work details found for this project." 
+                            {workData.length === 0
+                                ? "No work details found for this project."
                                 : "No work details found for the selected date range."}
                         </Typography>
                     )}
                 </DialogContent>
-                
+
                 <DialogActions>
                     <Button onClick={onClose} variant="contained" color="secondary">
                         Close
@@ -792,15 +423,15 @@ const WorkDetails = ({
             </Dialog>
 
             <Dialog
-                open={nonTimerWorkDialog} 
-                maxWidth="sm" 
+                open={nonTimerWorkDialog}
+                maxWidth="sm"
                 fullWidth
-                onClose={() => { 
-                    setNonTimerWorkDialog(false); 
-                    setNonTimerInput(initialWorkSaveValue); 
+                onClose={() => {
+                    setNonTimerWorkDialog(false);
+                    setNonTimerInput(initialWorkSaveValue);
                     setIsEdit(false);
                     setSelectedWork(null);
-                }} 
+                }}
             >
                 <DialogTitle>{isEdit ? 'Edit' : 'Save'} Task Progress</DialogTitle>
 
@@ -813,10 +444,10 @@ const WorkDetails = ({
                                         Project Name
                                     </td>
                                     <td className="border-0 fa-14" style={{ width: '70%' }}>
-                                        <div className="cus-inpt w-100" style={{ 
-                                            padding: '8px 12px', 
-                                            border: '1px solid #ccc', 
-                                            borderRadius: '4px', 
+                                        <div className="cus-inpt w-100" style={{
+                                            padding: '8px 12px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
                                             backgroundColor: '#f5f5f5',
                                             minHeight: '38px'
                                         }}>
@@ -830,10 +461,10 @@ const WorkDetails = ({
                                         Task Name
                                     </td>
                                     <td className="border-0 fa-14">
-                                        <div className="cus-inpt w-100" style={{ 
-                                            padding: '8px 12px', 
-                                            border: '1px solid #ccc', 
-                                            borderRadius: '4px', 
+                                        <div className="cus-inpt w-100" style={{
+                                            padding: '8px 12px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
                                             backgroundColor: '#f5f5f5',
                                             minHeight: '38px'
                                         }}>
@@ -841,7 +472,7 @@ const WorkDetails = ({
                                         </div>
                                     </td>
                                 </tr>
-                                
+
                                 <tr>
                                     <td className="border-0 fa-14" style={{ verticalAlign: 'middle' }}>
                                         Work Date
@@ -851,8 +482,8 @@ const WorkDetails = ({
                                             type="date"
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Dt: e.target.value })}
                                             value={ISOString(nonTimerInput?.Work_Dt)}
-                                            className="cus-inpt w-100" 
-                                            required 
+                                            className="cus-inpt w-100"
+                                            required
                                         />
                                     </td>
                                 </tr>
@@ -865,8 +496,8 @@ const WorkDetails = ({
                                             type="time"
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, Start_Time: e.target.value })}
                                             value={nonTimerInput?.Start_Time}
-                                            className="cus-inpt w-100" 
-                                            required 
+                                            className="cus-inpt w-100"
+                                            required
                                         />
                                     </td>
                                 </tr>
@@ -879,9 +510,9 @@ const WorkDetails = ({
                                             type="time"
                                             min={nonTimerInput?.Start_Time}
                                             onChange={e => setNonTimerInput({ ...nonTimerInput, End_Time: e.target.value })}
-                                            value={nonTimerInput?.End_Time} 
+                                            value={nonTimerInput?.End_Time}
                                             required
-                                            className="cus-inpt w-100" 
+                                            className="cus-inpt w-100"
                                         />
                                     </td>
                                 </tr>
@@ -926,10 +557,10 @@ const WorkDetails = ({
                                     <td className="border-0 fa-14">
                                         <textarea
                                             rows="4"
-                                            className="cus-inpt w-100" 
+                                            className="cus-inpt w-100"
                                             required
                                             value={nonTimerInput?.Work_Done}
-                                            onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Done: e.target.value })} 
+                                            onChange={e => setNonTimerInput({ ...nonTimerInput, Work_Done: e.target.value })}
                                         />
                                     </td>
                                 </tr>
@@ -954,12 +585,12 @@ const WorkDetails = ({
                     </DialogContent>
                     <DialogActions>
                         <Button
-                            variant='outlined' 
-                            color="error" 
+                            variant='outlined'
+                            color="error"
                             type='button'
-                            onClick={() => { 
-                                setNonTimerWorkDialog(false); 
-                                setNonTimerInput(initialWorkSaveValue); 
+                            onClick={() => {
+                                setNonTimerWorkDialog(false);
+                                setNonTimerInput(initialWorkSaveValue);
                                 setIsEdit(false);
                                 setSelectedWork(null);
                             }}
@@ -967,8 +598,8 @@ const WorkDetails = ({
                             Cancel
                         </Button>
                         <Button
-                            variant='contained' 
-                            color='success' 
+                            variant='contained'
+                            color='success'
                             type='submit'
                         >
                             {isEdit ? 'Update' : 'Save'}
@@ -979,21 +610,6 @@ const WorkDetails = ({
         </>
     );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const ActiveProjects = () => {
     const [reload, setReload] = useState(false);
@@ -1012,7 +628,7 @@ const ActiveProjects = () => {
     const [module, setModule] = useState([]);
     const [isEditTaskType, setIsEditTaskType] = useState(false);
     const [workDetailsDialog, setWorkDetailsDialog] = useState(false);
-    const [taskId,setTaskId]=useState(0)
+    const [taskId, setTaskId] = useState(0)
     const parseData = JSON.parse(localStorage.getItem("user"));
 
     useEffect(() => {
@@ -1027,7 +643,7 @@ const ActiveProjects = () => {
     const fetchProjects = async () => {
         try {
             let EmpId = "";
-            
+
             if (parseData?.UserType == "ADMIN" || parseData?.UserTypeId == 0 || parseData?.UserTypeId == 1) {
                 EmpId = "";
             } else {
@@ -1037,7 +653,7 @@ const ActiveProjects = () => {
             const data = await fetchLink({
                 address: `taskManagement/project/newProjectAbstract?Company_id=${parseData?.Company_id}&EmpId=${EmpId}`
             });
-            
+
             setProjects(data.success ? data.data : []);
         } catch (e) {
             console.error(e);
@@ -1114,8 +730,8 @@ const ActiveProjects = () => {
             ProjectName: project.Project_Name,
             Est_StartDate: project.Est_Start_Dt ? new Date(project.Est_Start_Dt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             Est_EndDate: project.Est_End_Dt ? new Date(project.Est_End_Dt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            Day_Duration:"",
-            Time_Duration:"",
+            Day_Duration: "",
+            Time_Duration: "",
             Task_Type: "",
             Task_Type_Id: "",
             Status: "1"
@@ -1203,7 +819,7 @@ const ActiveProjects = () => {
                     Est_EndDate: updatedTaskType.Est_EndDate,
                     Status: parseInt(updatedTaskType.Status),
                     Day_Duration: parseInt(updatedTaskType.Day_Duration) || 0,
-                    Hours_Duration: parseInt(updatedTaskType.Hours_Duration) || 0 
+                    Hours_Duration: parseInt(updatedTaskType.Hours_Duration) || 0
                 },
             });
             if (data.success) {
@@ -1229,13 +845,13 @@ const ActiveProjects = () => {
         };
     });
 
-    const innerColumns = [   
+    const innerColumns = [
         createCol("Task_Type", "string", "Task Type", "left", "center", 1),
         {
             Field_Name: "Days",
             ColumnHeader: "Days",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
             Cell: ({ row }) => row.Day_Duration ? row.Day_Duration : "-"
         },
@@ -1243,40 +859,40 @@ const ActiveProjects = () => {
             Field_Name: "Hours",
             ColumnHeader: "Hours",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
             Cell: ({ row }) => row.Hours_Duration ? row.Hours_Duration : "-"
         },
         {
-        Field_Name: "Total_Worked_Minutes",
-        ColumnHeader: "Total Worked Hours",
-        isVisible: 1,
-        align: "center", 
-        isCustomCell: true,
-        Cell: ({ row }) => row.Total_Worked_Hours ? row.Total_Worked_Hours : "-"
-    },
-      {
-        Field_Name: "Remainging Hours",
-        ColumnHeader: "Remaining Hours",
-        isVisible: 1,
-        align: "center", 
-        isCustomCell: true,
-        Cell: ({ row }) => row.Remaining_Time ? row.Remaining_Time : "-"
-    },
+            Field_Name: "Total_Worked_Minutes",
+            ColumnHeader: "Total Worked Hours",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => row.Total_Worked_Hours ? row.Total_Worked_Hours : "-"
+        },
+        {
+            Field_Name: "Remainging Hours",
+            ColumnHeader: "Remaining Hours",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => row.Remaining_Time ? row.Remaining_Time : "-"
+        },
         {
             Field_Name: "Est_StartTime",
             ColumnHeader: "Start Date",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
             Cell: ({ row }) => row.Est_StartTime ? row.Est_StartTime.split('T')[0] : "N/A"
         },
-        
+
         {
             Field_Name: "Est_EndTime",
             ColumnHeader: "End Date",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
             Cell: ({ row }) => row.Est_EndTime ? row.Est_EndTime.split('T')[0] : "N/A"
         },
@@ -1287,8 +903,8 @@ const ActiveProjects = () => {
             align: "center",
             isCustomCell: true,
             Cell: ({ row }) => (
-                <Chip 
-                    label={row.Status === 1 ? "Active" : "Inactive"} 
+                <Chip
+                    label={row.Status === 1 ? "Active" : "Inactive"}
                     color={row.Status === 1 ? "success" : "default"}
                     size="small"
                 />
@@ -1298,14 +914,14 @@ const ActiveProjects = () => {
             Field_Name: "View Task",
             ColumnHeader: "View Task",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
-            Cell: ({ row }) => ( 
+            Cell: ({ row }) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                     <Tooltip title="View Task Details">
-                        <IconButton 
-                            size="small" 
-                            onClick={() => handleOpenListingTaskDialog({...row, Project_Name: row.Project_Name || "Task"})}
+                        <IconButton
+                            size="small"
+                            onClick={() => handleOpenListingTaskDialog({ ...row, Project_Name: row.Project_Name || "Task" })}
                         >
                             <Launch fontSize="small" />
                         </IconButton>
@@ -1317,14 +933,14 @@ const ActiveProjects = () => {
             Field_Name: "Work Details",
             ColumnHeader: "Work Details",
             isVisible: 1,
-            align: "center", 
+            align: "center",
             isCustomCell: true,
-            Cell: ({ row }) => ( 
+            Cell: ({ row }) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                     <Tooltip title="View Work Details">
-                        <IconButton 
-                            size="small" 
-                            onClick={() => handleWorkDetailsDialog({...row, Project_Name: row.Project_Name || "Task"})}
+                        <IconButton
+                            size="small"
+                            onClick={() => handleWorkDetailsDialog({ ...row, Project_Name: row.Project_Name || "Task" })}
                         >
                             <Launch fontSize="small" />
                         </IconButton>
@@ -1342,8 +958,8 @@ const ActiveProjects = () => {
                 <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                     {Number(contextObj?.Edit_Rights) === 1 && (
                         <Tooltip title="Edit Task Type">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 onClick={() => handleEditTaskType(row)}
                             >
                                 <Edit fontSize="small" />
@@ -1371,14 +987,14 @@ const ActiveProjects = () => {
                     <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 'bold' }}>
                         Modules for {row.Project_Name}
                     </Typography>
-                    { (
+                    {(
                         <Button
                             variant="outlined"
                             size="small"
                             startIcon={<Add />}
                             onClick={() => {
                                 handleModuleAdd(row);
-                                setIsExpanded(true); 
+                                setIsExpanded(true);
                             }}
                             sx={{ textTransform: 'none' }}
                         >
@@ -1386,7 +1002,7 @@ const ActiveProjects = () => {
                         </Button>
                     )}
                 </Box>
-                
+
                 <FilterableTable
                     title="Modules"
                     dataArray={taskTypes}
@@ -1443,8 +1059,8 @@ const ActiveProjects = () => {
                     <Typography variant="h6" fontWeight="bold">
                         {row.CompletedTasks || 0} / {row.TodayTaskcounts || 0}
                         <Tooltip title="View Task Details">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 onClick={() => handleOpenListingTaskDialog(row)}
                                 sx={{ mt: 0.5 }}
                             >
@@ -1467,8 +1083,8 @@ const ActiveProjects = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                     {Number(contextObj?.Add_Rights) === 1 && (
                         <Tooltip title="Manage Employees">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 onClick={() => handleOpenEmployeeDialog(row.Project_Id)}
                             >
                                 <People fontSize="small" />
@@ -1491,8 +1107,8 @@ const ActiveProjects = () => {
                 <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                     {Number(contextObj?.Edit_Rights) === 1 && (
                         <Tooltip title="Edit Project">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 onClick={() => handleOpenEditDialog(row)}
                             >
                                 <Edit fontSize="small" />
@@ -1501,8 +1117,8 @@ const ActiveProjects = () => {
                     )}
                     {Number(contextObj?.Edit_Rights) === 1 && (
                         <Tooltip title="Delete Project">
-                            <IconButton 
-                                size="small" 
+                            <IconButton
+                                size="small"
                                 color="error"
                                 onClick={() => handleOpenDeleteDialog(row)}
                             >
@@ -1540,7 +1156,7 @@ const ActiveProjects = () => {
                 expandableComp={(props) => <ExpandableComponent {...props} />}
             />
 
-          
+
             <WorkDetails
                 open={workDetailsDialog}
                 onClose={() => setWorkDetailsDialog(false)}
