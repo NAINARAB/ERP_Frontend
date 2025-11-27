@@ -732,7 +732,7 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
         e.preventDefault();
         
         if (!inputValue.Task_Type.trim()) {
-            toast.error("Please enter a Task Type");
+            toast.error("Please enter a Task Group");
             return;
         }
         
@@ -821,7 +821,7 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
             fullWidth
             maxWidth="sm">
             <DialogTitle className="bg-primary text-white mb-2 px-3 py-2">
-                {existingTaskType && existingTaskType.Task_Type_Id ? "UPDATE TASK TYPE" : "CREATE TASK TYPE"}
+                {existingTaskType && existingTaskType.Task_Type_Id ? "UPDATE TASK GROUP" : "CREATE TASK GROUP"}
             </DialogTitle>
             <form onSubmit={handleSubmit}>
                 <DialogContent>
@@ -849,17 +849,17 @@ const AddEditTaskType = ({ open, onClose, existingTaskType, onCreate, onUpdate }
 
                     {/* Task Type Input */}
                     <div className="p-2">
-                        <label>Task Type</label>
+                        <label>Task Group</label>
                         <input
                             type="text"
-                            value={inputValue.Task_Type} // Now always defined
+                            value={inputValue.Task_Type}
                             onChange={e => setInputValue({
                                 ...inputValue,
                                 Task_Type: e.target.value
                             })}
                             className="cus-inpt"
                             required
-                            placeholder="Enter task type (e.g., Development, Testing)"
+                            placeholder="Enter task group (e.g., Development, Testing)"
                             style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
                         />
                     </div>
