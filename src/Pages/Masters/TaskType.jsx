@@ -97,14 +97,14 @@ const TaskType = () => {
             });
             if (data.success) {
                 setReload(!reload);
-                toast.success("Task type created successfully!");
+                toast.success("Task group created successfully!");
                 setOpenNewDialog(false);
             } else {
-                toast.error("Failed to create task type: " + data.message);
+                toast.error("Failed to create task group: " + data.message);
             }
         } catch (error) {
             console.error(error);
-            toast.error("Error creating task type.");
+            toast.error("Error creating task group.");
         }
     };
 
@@ -118,14 +118,14 @@ const TaskType = () => {
             });
             if (data.success) {
                 setReload(!reload);
-                toast.success("Task type updated successfully!");
+                toast.success("Task group updated successfully!");
                 setOpenNewDialog(false);
             } else {
-                toast.error("Failed to update task type: " + data.message);
+                toast.error("Failed to update task group: " + data.message);
             }
         } catch (error) {
             console.error(error);
-            toast.error("Error updating task type.");
+            toast.error("Error updating task group.");
         }
     };
 
@@ -137,7 +137,7 @@ const TaskType = () => {
 
     const taskTypeColumns = [
         { id: "index", label: "Id No", sort: false },
-        { id: "Task_Type", label: "Task Type", sort: true },
+        { id: "Task_Type", label: "Task Group", sort: true },
          { id: "Project_Name", label: "Project_Name", sort: true },
         { id: "actions", label: "Actions", sort: false },
     ];
@@ -152,12 +152,12 @@ const TaskType = () => {
         <Fragment>
             <div className="card">
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
-                    Task Types
+                    Task Groups
                     <Button
                         className="rounded-5 px-3 py-1 fa-13 shadow"
                         onClick={handleOpenCreateDialog}
                     >
-                        Create Task Type
+                        Create Task Group
                     </Button>
                 </div>
 
@@ -223,7 +223,7 @@ const TaskType = () => {
             >
                 <DialogTitle className="bg-primary text-white mb-4 px-3 py-2">{"Confirmation"}</DialogTitle>
                 <DialogContent className="p-4">
-                    Do you want to delete the Task Type
+                    Do you want to delete the Task Group
                     <span className="text-primary">{" " + selectedTaskType?.Task_Type + " "}</span>?
                 </DialogContent>
                 <DialogActions>

@@ -75,6 +75,7 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     createCol("Delivery_Order_Id", "string", "DelOrd.ID"),
                     // createCol("Re_St_Id", "string", "Return Stock ID"),
                     createCol("Godown_Name", "number", "Godown"),
+                    createCol("Godown_Name", "number", "Godown"),
                     createCol("Product_Name", "string", "Prod.Name"),
                     createCol("Bill_Qty", "number", "Bill Qty"),
                     createCol("Act_Qty", "number", "Actual Qty"),

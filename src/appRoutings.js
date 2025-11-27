@@ -232,8 +232,12 @@ const ReportsTemplateMobCreation = lazy(()=> import("./Pages/Analytics/reportsTe
 
 const ReturnSales = lazy(() => import("./Pages/Reports/returnSales"))
 
-const RoutingArray = [
+const ProjectSchedule = lazy(() => import("./Pages/Tasks/projectSchedules"))
 
+const RoutingArray = [
+    {component :<ProjectSchedule/>,path:'/taskManagement/master/projectSchedules'},
+    
+    {component:<ReturnSales/>,path:'/erp/reports/returnSales'},
     {component:<ReturnSales/>,path:'/erp/reports/returnSales'},
 
     { component: <ReportTemplatesMobile />, path: '/analytics/templates-mobile'},

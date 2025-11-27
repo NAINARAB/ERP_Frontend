@@ -9,6 +9,7 @@ import EmployeeManagementDialog from "../employeeManagement/employeeManagement";
 import ListingTask from "../Tasks/taskDetails/listingTask";
 import AddEditTaskType from "../../Components/tasktype/addEditTaskType";
 import FilterableTable, { createCol } from "../../Components/filterableTable2"
+import { json } from "react-router-dom";
 
 const WorkDetails = ({
     open,
@@ -846,7 +847,7 @@ const ActiveProjects = () => {
     });
 
     const innerColumns = [
-        createCol("Task_Type", "string", "Task Type", "left", "center", 1),
+        createCol("Task_Type", "string", "Task Group", "left", "center", 1),
         {
             Field_Name: "Days",
             ColumnHeader: "Days",
@@ -998,7 +999,7 @@ const ActiveProjects = () => {
                             }}
                             sx={{ textTransform: 'none' }}
                         >
-                            Add Task Type
+                            Add Task Group
                         </Button>
                     )}
                 </Box>
@@ -1019,7 +1020,6 @@ const ActiveProjects = () => {
     const columns = [
         createCol("Project_Name", "string", "Project", "left", "center", 1),
         createCol("Project_Head_Name", "string", "Head", "left", "center", 1),
-        createCol("Status_Text", "string", "Status", "left", "center", 1),
         {
             Field_Name: "Est_Start_Dt",
             ColumnHeader: "Start Date",
@@ -1048,6 +1048,7 @@ const ActiveProjects = () => {
                 </Typography>
             )
         },
+        
         {
             Field_Name: "Task_Details",
             ColumnHeader: "Task Details",
@@ -1057,7 +1058,9 @@ const ActiveProjects = () => {
             Cell: ({ row }) => (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                     <Typography variant="h6" fontWeight="bold">
-                        {row.CompletedTasks || 0} / {row.TodayTaskcounts || 0}
+                  
+                        {/* {row.CompletedTasks || 0} / {row.TodayTaskcounts || 0} */}
+                        {row.TaskGroupCount}
                         <Tooltip title="View Task Details">
                             <IconButton
                                 size="small"
@@ -1068,7 +1071,8 @@ const ActiveProjects = () => {
                         </Tooltip>
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
-                        Completed / Total
+                        {/* Completed / */}
+                         Total
                     </Typography>
                 </Box>
             )
@@ -1133,6 +1137,7 @@ const ActiveProjects = () => {
 
     return (
         <>
+       
             <FilterableTable
                 title="Active Projects"
                 dataArray={tableData}
