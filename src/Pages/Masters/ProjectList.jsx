@@ -9,7 +9,7 @@ import EmployeeManagementDialog from "../employeeManagement/employeeManagement";
 import ListingTask from "../Tasks/taskDetails/listingTask";
 import AddEditTaskType from "../../Components/tasktype/addEditTaskType";
 import FilterableTable, { createCol } from "../../Components/filterableTable2"
-import { json } from "react-router-dom";
+
 
 const WorkDetails = ({
     open,
@@ -837,12 +837,13 @@ const ActiveProjects = () => {
     };
 
     const tableData = projects.map(project => {
+        console.log("projecr", project)
         const projectData = projectAlldata.find(p => p.Project_Id === project.Project_Id);
         return {
             ...project,
-            Project_Head_Name: projectData?.Project_Head_Name || "N/A",
-            Status_Text: projectData?.Status || project.Status || "N/A",
-            Progress_Percentage: calcPercentage(project.TodayTaskcounts, project.CompletedTasks)
+            Project_Head_Name: projectData?.Project_Head_Name || "-",
+            Status_Text: projectData?.Status || project.Status || "-",
+            Progress_Percentage: calcPercentage(project.SchedulesCount, project.SchedulesCompletedCount)
         };
     });
 
@@ -896,6 +897,43 @@ const ActiveProjects = () => {
             align: "center",
             isCustomCell: true,
             Cell: ({ row }) => row.Est_EndTime ? row.Est_EndTime.split('T')[0] : "N/A"
+        },
+        {
+            Field_Name: "TotalTasks",
+            ColumnHeader: "TotalTasks",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => row.TotalTasks ? row.TotalTasks : "0"
+        },
+        {
+            Field_Name: "CompletedTasks",
+            ColumnHeader: "CompletedTasks",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => row.CompletedTasks ? row.CompletedTasks : "0"
+        },
+        {
+            Field_Name: "Percentage",
+            ColumnHeader: "Percentage",
+            isVisible: 1,
+            align: "center",
+            isCustomCell: true,
+            Cell: ({ row }) => {
+
+
+
+
+                const percentage = row.CompletionPercentage ||
+                    row.completionPercentage ||
+                    row.percentage ||
+                    row.Percentage ||
+                    row.original?.CompletionPercentage ||
+                    0;
+
+                return percentage + "%";
+            }
         },
         {
             Field_Name: "Status",
@@ -982,6 +1020,9 @@ const ActiveProjects = () => {
 
         if (!isExpanded) return null;
 
+
+
+
         return (
             <Box sx={{ padding: 2, backgroundColor: '#f8f9fa', margin: 1, borderRadius: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -1048,19 +1089,19 @@ const ActiveProjects = () => {
                 </Typography>
             )
         },
-        
+
         {
             Field_Name: "Task_Details",
-            ColumnHeader: "Task Details",
+            ColumnHeader: "Task Group",
             isVisible: 1,
             align: "center",
             isCustomCell: true,
             Cell: ({ row }) => (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                     <Typography variant="h6" fontWeight="bold">
-                  
-                        {/* {row.CompletedTasks || 0} / {row.TodayTaskcounts || 0} */}
-                        {row.TaskGroupCount}
+
+                        {row.TaskGroupCount || 0} / {row.CompletedTaskGroupCount || 0}
+
                         <Tooltip title="View Task Details">
                             <IconButton
                                 size="small"
@@ -1071,8 +1112,7 @@ const ActiveProjects = () => {
                         </Tooltip>
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
-                        {/* Completed / */}
-                         Total
+                        Total / Completed
                     </Typography>
                 </Box>
             )
@@ -1137,7 +1177,7 @@ const ActiveProjects = () => {
 
     return (
         <>
-       
+
             <FilterableTable
                 title="Active Projects"
                 dataArray={tableData}

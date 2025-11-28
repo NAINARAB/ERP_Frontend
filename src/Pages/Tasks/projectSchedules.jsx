@@ -23,7 +23,9 @@ const taskInitialState = {
     Task_Est_End_Date: "",
     sch_Project_Id: "",
     Project_Name: "",
-    Type_Task_Id:""
+    Type_Task_Id: "",
+    Task_Sch_Status_Id: "",
+    Task_Sch_Status: ""
 };
 
 function ProjectSchedules() {
@@ -60,13 +62,13 @@ function ProjectSchedules() {
             .catch((e) => console.error(e));
     };
 
-    // Function to fetch task types based on project ID
+
     const fetchTaskTypes = (projectId) => {
         if (!projectId) {
             setTaskTypes([]);
             return;
         }
-        
+
         setLoadingTaskTypes(true);
         fetchLink({ address: `taskManagement/taskType/dropdown?Project_Id=${projectId}` })
             .then((data) => {
@@ -153,112 +155,115 @@ function ProjectSchedules() {
         setEditUser(true);
     };
 
-   const editProjectTask = (row) => {
- 
-    
-    const formatDateForInput = (dateString) => {
-        if (!dateString) return "";
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
-        if (dateString.includes('T')) {
-            return dateString.split('T')[0];
+    const editProjectTask = (row) => {
+
+
+        const formatDateForInput = (dateString) => {
+            if (!dateString) return "";
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+            if (dateString.includes('T')) {
+                return dateString.split('T')[0];
+            }
+            return dateString;
+        };
+
+        const formatTimeForInput = (timeString) => {
+            if (!timeString) return "";
+            if (/^\d{2}:\d{2}$/.test(timeString)) return timeString;
+            if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+                return timeString.split(':').slice(0, 2).join(':');
+            }
+            return timeString;
+        };
+
+        setTaskInputValue({
+            Id: row.Task_Id,
+            Levl_Id: row.Levl_Id,
+            Task_Name: row.Task_Name || "",
+            Project_Name: row.Project_Name || "",
+            Sch_Id: row.Sch_Id || "",
+            sch_Project_Id: row.Sch_Project_Id || "",
+            Sch_Type_Id: row.Sch_Type_Id || "",
+            Task_Type: row.Task_Type || "",
+            Task_Levl_Id: row.Task_Levl_Id || "",
+            Task_Id: row.Task_Id || "",
+            Task_Sch_Status: row.Task_Sch_Status || "",
+            Type_Task_Id: row.Type_Task_Id || "", // Make sure this is set
+            Task_Sch_Duaration: formatTimeForInput(row.Task_Sch_Duaration) || "",
+            Task_Start_Time: formatTimeForInput(row.Task_Start_Time) || "",
+            Task_End_Time: formatTimeForInput(row.Task_End_Time) || "",
+            Task_Est_Start_Date: formatDateForInput(row.Task_Est_Start_Date) || "",
+            Task_Est_End_Date: formatDateForInput(row.Task_Est_End_Date) || "",
+            Task_Sch_Status: row.Task_Sch_Status
+        });
+
+        if (row.Sch_Project_Id) {
+            fetchTaskTypes(row.Sch_Project_Id);
         }
-        return dateString;
+
+        setEditTaskDialog(true);
     };
 
-    const formatTimeForInput = (timeString) => {
-        if (!timeString) return "";
-        if (/^\d{2}:\d{2}$/.test(timeString)) return timeString;
-        if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
-            return timeString.split(':').slice(0, 2).join(':');
-        }
-        return timeString;
-    };
-
-    setTaskInputValue({
-        Id: row.Task_Id,
-        Levl_Id: row.Levl_Id,
-        Task_Name: row.Task_Name || "",
-        Project_Name: row.Project_Name || "",
-        Sch_Id: row.Sch_Id || "",
-        sch_Project_Id: row.Sch_Project_Id || "",
-        Sch_Type_Id: row.Sch_Type_Id || "",
-        Task_Type: row.Task_Type || "",
-        Task_Levl_Id: row.Task_Levl_Id || "",
-        Task_Id: row.Task_Id || "",
-        Task_Sch_Status: row.Task_Sch_Status || "",
-        Type_Task_Id: row.Type_Task_Id || "", // Make sure this is set
-        Task_Sch_Duaration: formatTimeForInput(row.Task_Sch_Duaration) || "",
-        Task_Start_Time: formatTimeForInput(row.Task_Start_Time) || "",
-        Task_End_Time: formatTimeForInput(row.Task_End_Time) || "",
-        Task_Est_Start_Date: formatDateForInput(row.Task_Est_Start_Date) || "",
-        Task_Est_End_Date: formatDateForInput(row.Task_Est_End_Date) || "",
-    });
-
-    if (row.Sch_Project_Id) {
-        fetchTaskTypes(row.Sch_Project_Id);
-    }
-    
-    setEditTaskDialog(true);
-};
-
- const handleTaskEdit = () => {
-    const { 
-        Id, 
-        Task_Name, 
-        Task_Type, 
-        Levl_Id, 
-        Sch_Id, 
-        Type_Task_Id, 
-        Sch_Type_Id, 
-        Task_Levl_Id, 
-        Task_Sch_Duaration, 
-        Task_Start_Time, 
-        Task_End_Time, 
-        Task_Est_Start_Date, 
-        Task_Est_End_Date, 
-        sch_Project_Id 
-    } = taskInputValue;
-    
- 
-    
-    if (!Task_Name || !Type_Task_Id || !sch_Project_Id) {
-        toast.error("Please fill all required fields");
-        return;
-    }
-
-    fetchLink({
-        address: `taskManagement/task/updateTask`,
-        method: "PUT",
-        bodyData: {
+    const handleTaskEdit = () => {
+        const {
             Id,
             Task_Name,
-            Levl_Id,
             Task_Type,
+            Levl_Id,
             Sch_Id,
+            Type_Task_Id,
             Sch_Type_Id,
-            Type_Task_Id: Type_Task_Id, // This will now be the ID
             Task_Levl_Id,
             Task_Sch_Duaration,
             Task_Start_Time,
             Task_End_Time,
             Task_Est_Start_Date,
             Task_Est_End_Date,
-            sch_Project_Id
+            sch_Project_Id,
+            Task_Sch_Status
+        } = taskInputValue;
+
+
+
+        if (!Task_Name || !Type_Task_Id || !sch_Project_Id) {
+            toast.error("Please fill all required fields");
+            return;
         }
-    })
-        .then((data) => {
-            if (data.success) {
-                toast.success("Task updated successfully!");
-                setReload(!reload);
-                setEditTaskDialog(false);
-                setTaskInputValue(taskInitialState);
-                setTaskTypes([]); 
-            } else {
-                toast.error("Failed to update task: " + data.message);
+
+        fetchLink({
+            address: `taskManagement/task/updateTask`,
+            method: "PUT",
+            bodyData: {
+                Id,
+                Task_Name,
+                Levl_Id,
+                Task_Type,
+                Sch_Id,
+                Sch_Type_Id,
+                Type_Task_Id: Type_Task_Id,
+                Task_Levl_Id,
+                Task_Sch_Duaration,
+                Task_Start_Time,
+                Task_End_Time,
+                Task_Est_Start_Date,
+                Task_Est_End_Date,
+                sch_Project_Id,
+                Task_Sch_Status
             }
         })
-        .catch((e) => console.error(e));
-};
+            .then((data) => {
+                if (data.success) {
+                    toast.success("Task updated successfully!");
+                    setReload(!reload);
+                    setEditTaskDialog(false);
+                    setTaskInputValue(taskInitialState);
+                    setTaskTypes([]);
+                } else {
+                    toast.error("Failed to update task: " + data.message);
+                }
+            })
+            .catch((e) => console.error(e));
+    };
 
     const handleEdit = () => {
         const { Id, process } = inputValue;
@@ -288,12 +293,12 @@ function ProjectSchedules() {
     const handleProjectChange = (e) => {
         const selectedProjectId = e.target.value;
         const selectedProject = projects.find(p => p.Project_Id == selectedProjectId);
-        
+
         setTaskInputValue({
             ...taskInputValue,
             sch_Project_Id: selectedProjectId,
             Project_Name: selectedProject?.Project_Name || "",
-            Task_Type: "" 
+            Task_Type: ""
         });
 
         fetchTaskTypes(selectedProjectId);
@@ -318,7 +323,7 @@ function ProjectSchedules() {
                     dataArray={process}
                     EnableSerialNumber={true}
                     maxHeightOption
-                    
+
                     columns={[
                         createCol("Project_Name", "string", "Project_Name"),
                         createCol("Project_Desc", "string", "Project_Desc"),
@@ -331,16 +336,16 @@ function ProjectSchedules() {
                                     <IconButton onClick={() => editRow(row)} size="small">
                                         <Edit className="fa-in" />
                                     </IconButton>
-                                    <IconButton
+                                    {/* <IconButton
                                         onClick={() => {
                                             setOpen(true);
                                             setInputValue({ Id: row.Id });
                                         }}
                                         size="small"
                                         color="error"
-                                    >
-                                        <Delete className="fa-in" />
-                                    </IconButton>
+                                    > */}
+                                    {/* <Delete className="fa-in" /> */}
+                                    {/* </IconButton> */}
                                 </td>
                             )
                         }
@@ -353,9 +358,9 @@ function ProjectSchedules() {
                             dataArray={(row?.Tasks)}
                             EnableSerialNumber
                             columns={[
-                                createCol('Task_Name', 'string','Task_Name'),
+                                createCol('Task_Name', 'string', 'Task_Name'),
                                 createCol('Task_Type', 'string', 'Task_Type'),
-                                createCol('Project_Name','string','Project_Name'),
+                                createCol('Project_Name', 'string', 'Project_Name'),
                                 createCol('Task_Sch_Duaration', 'number', 'Task_Sch_Duaration'),
                                 createCol('Task_Start_Time', 'string', 'Task_Start_Time'),
                                 createCol('Task_End_Time', 'string', 'Task_End_Time'),
@@ -370,7 +375,7 @@ function ProjectSchedules() {
                                             <IconButton onClick={() => editProjectTask(row)} size="small">
                                                 <Edit className="fa-in" />
                                             </IconButton>
-                                            <IconButton
+                                            {/* <IconButton
                                                 onClick={() => {
                                                     setOpen(true);
                                                     setInputValue({ Id: row.Id });
@@ -379,7 +384,7 @@ function ProjectSchedules() {
                                                 color="error"
                                             >
                                                 <Delete className="fa-in" />
-                                            </IconButton>
+                                            </IconButton> */}
                                         </td>
                                     )
                                 }
@@ -413,7 +418,7 @@ function ProjectSchedules() {
                 </DialogActions>
             </Dialog>
 
-          
+
             <Dialog
                 open={editUser}
                 onClose={() => {
@@ -445,13 +450,13 @@ function ProjectSchedules() {
                 </DialogActions>
             </Dialog>
 
-  
-           <Dialog
+
+            <Dialog
                 open={editTaskDialog}
                 onClose={() => {
                     setEditTaskDialog(false);
                     setTaskInputValue(taskInitialState);
-                    setTaskTypes([]); 
+                    setTaskTypes([]);
                 }}
                 maxWidth="md"
                 fullWidth
@@ -482,46 +487,46 @@ function ProjectSchedules() {
                             </Select>
                         </FormControl>
 
-               <FormControl fullWidth>
-    <label>Task Type</label>
-    <Select
-        value={taskInputValue.Type_Task_Id || ""}
-        displayEmpty
-        onChange={(e) => {
-            const selectedTaskTypeId = e.target.value;
-            const selectedTaskType = taskTypes.find(t => 
-                t.Task_Type_Id == selectedTaskTypeId || 
-                t.TaskType_Id == selectedTaskTypeId
-            );
-            
-            setTaskInputValue({ 
-                ...taskInputValue, 
-                Type_Task_Id: selectedTaskTypeId,
-                Task_Type: selectedTaskType ? (selectedTaskType.Task_Type || selectedTaskType.Name) : ""
-            });
-        }}
-        disabled={loadingTaskTypes || !taskInputValue.sch_Project_Id}
-    >
-        <MenuItem value="">
-            <em>
-                {loadingTaskTypes 
-                    ? "Loading task types..." 
-                    : !taskInputValue.sch_Project_Id 
-                        ? "Select a project first" 
-                        : "Select Task Type"
-                }
-            </em>
-        </MenuItem>
-        {taskTypes.map((taskType) => (
-            <MenuItem 
-                key={taskType.Task_Type_Id || taskType.TaskType_Id} 
-                value={taskType.Task_Type_Id || taskType.TaskType_Id}
-            >
-                {taskType.Task_Type || taskType.Name}
-            </MenuItem>
-        ))}
-    </Select>
-</FormControl>
+                        <FormControl fullWidth>
+                            <label>Task Type</label>
+                            <Select
+                                value={taskInputValue.Type_Task_Id || ""}
+                                displayEmpty
+                                onChange={(e) => {
+                                    const selectedTaskTypeId = e.target.value;
+                                    const selectedTaskType = taskTypes.find(t =>
+                                        t.Task_Type_Id == selectedTaskTypeId ||
+                                        t.TaskType_Id == selectedTaskTypeId
+                                    );
+
+                                    setTaskInputValue({
+                                        ...taskInputValue,
+                                        Type_Task_Id: selectedTaskTypeId,
+                                        Task_Type: selectedTaskType ? (selectedTaskType.Task_Type || selectedTaskType.Name) : ""
+                                    });
+                                }}
+                                disabled={loadingTaskTypes || !taskInputValue.sch_Project_Id}
+                            >
+                                <MenuItem value="">
+                                    <em>
+                                        {loadingTaskTypes
+                                            ? "Loading task types..."
+                                            : !taskInputValue.sch_Project_Id
+                                                ? "Select a project first"
+                                                : "Select Task Type"
+                                        }
+                                    </em>
+                                </MenuItem>
+                                {taskTypes.map((taskType) => (
+                                    <MenuItem
+                                        key={taskType.Task_Type_Id || taskType.TaskType_Id}
+                                        value={taskType.Task_Type_Id || taskType.TaskType_Id}
+                                    >
+                                        {taskType.Task_Type || taskType.Name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
                         <div>
                             <label>Task Name</label>
@@ -585,6 +590,21 @@ function ProjectSchedules() {
                                     className="cus-inpt"
                                 />
                             </div>
+                        </div>
+                        <div className="col-md-6">
+                            <label>Task_Sch_Status</label>
+                            <Select
+                                value={taskInputValue.Task_Sch_Status !== undefined && taskInputValue.Task_Sch_Status !== null ? taskInputValue.Task_Sch_Status.toString() : ""}
+                                onChange={(e) => setTaskInputValue({ ...taskInputValue, Task_Sch_Status: e.target.value })}
+                                displayEmpty
+                                size="small"
+                            >
+                                <MenuItem value="">
+                                    <em>Select Status</em>
+                                </MenuItem>
+                                <MenuItem value="0">Completed</MenuItem>
+                                <MenuItem value="1">Progress</MenuItem>
+                            </Select>
                         </div>
                     </div>
                 </DialogContent>
