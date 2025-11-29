@@ -1206,13 +1206,13 @@ const fetchData = useCallback(async () => {
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <Typography>{taskItem.Task_Type || 'No Type'}</Typography>
-                                                        <IconButton 
+                                                        {/* <IconButton 
                                                             onClick={() => handleTaskEdit(taskItem)} 
                                                             size="small"
                                                             sx={{ color: '#1976d2' }}
-                                                        >
-                                                            <Edit fontSize="small" />
-                                                        </IconButton>
+                                                        > */}
+                                                            {/* <Edit fontSize="small" /> */}
+                                                        {/* </IconButton> */}
                                                     </Box>
                                                 </TableCell>
 
