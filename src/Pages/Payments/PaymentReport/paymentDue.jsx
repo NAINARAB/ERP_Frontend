@@ -65,12 +65,26 @@ const PaymentDue = ({ loadingOn, loadingOff }) => {
                 createCol('dueAmount', 'number', 'Pending')
             ]
         }
+        if (reportType === 'printFormat') {
+            return [
+                createCol('dueDate', 'date', 'Due Date'),
+                createCol('retailerName', 'string', 'Vendor'),
+                createCol('itemName', 'string', 'Item Name'),
+                createCol('billQuantity', 'number', 'Bill Qty'),
+                createCol('rate', 'number', 'Rate'),
+                createCol('invoiceValue', 'number', 'Invoice Value'),
+                createCol('discount', 'number', 'Discount %'),
+                createCol('totalReference', 'number', 'Paid'),
+                createCol('dueAmount', 'number', 'Pending'),
+                createCol('qualityCondition', 'string', 'Remarks')
+            ]
+        }
     }, [reportType, filteredData]);
 
     const displayData = useMemo(() => {
         if (reportType === 'withoutProduct') return filteredData;
 
-        if (reportType === 'withProduct') {
+        if (reportType === 'withProduct' || reportType === 'printFormat') {
             const withoutProduct = [];
 
             filteredData.forEach(row => {
@@ -124,7 +138,7 @@ const PaymentDue = ({ loadingOn, loadingOff }) => {
                 title="Payment Due"
                 headerFontSizePx={13}
                 bodyFontSizePx={12}
-                EnableSerialNumber={true}
+                EnableSerialNumber={reportType !== 'printFormat'}
                 ExcelPrintOption
                 dataArray={displayData}
                 columns={columns}
@@ -138,6 +152,7 @@ const PaymentDue = ({ loadingOn, loadingOff }) => {
                         >
                             <option value="withoutProduct">Report 1</option>
                             <option value="withProduct">Report 2</option>
+                            <option value="printFormat">Report 3</option>
                         </select>
                         <input
                             type="text"
