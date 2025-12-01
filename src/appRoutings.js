@@ -224,24 +224,23 @@ const SalesOrderBranch = lazy(() => import("./Pages/Sales/salesOrderReportBranch
 const LrReport = lazy(() => import("./Pages/Sales/lrReport"))
 const ProcessMaster = lazy(() => import("./Pages/Tasks/processMaster"))
 const BankDetails = lazy(() => import("./Pages/BankDetails/bank"))
-const AccountMasterSales = lazy(()=> import("./Pages/Masters/AccountMasterSales"))
+const AccountMasterSales = lazy(() => import("./Pages/Masters/AccountMasterSales"))
 
 
-const ReportTemplatesMobile = lazy(()=> import("./Pages/Analytics/reportTemplatesMobile"))
-const ReportsTemplateMobCreation = lazy(()=> import("./Pages/Analytics/reportsTemplateMobCreation"))
+const ReportTemplatesMobile = lazy(() => import("./Pages/Analytics/reportTemplatesMobile"))
+const ReportsTemplateMobCreation = lazy(() => import("./Pages/Analytics/reportsTemplateMobCreation"))
 
 const ReturnSales = lazy(() => import("./Pages/Reports/returnSales"))
 
 const ProjectSchedule = lazy(() => import("./Pages/Tasks/projectSchedules"))
 
 const RoutingArray = [
-    {component :<ProjectSchedule/>,path:'/taskManagement/master/projectSchedules'},
-    
-    {component:<ReturnSales/>,path:'/erp/reports/returnSales'},
-    {component:<ReturnSales/>,path:'/erp/reports/returnSales'},
+    { component: <ProjectSchedule />, path: '/taskManagement/master/projectSchedules' },
 
-    { component: <ReportTemplatesMobile />, path: '/analytics/templates-mobile'},
-    { component: <ReportsTemplateMobCreation />, path:'/analytics/templates-mobile/create'},
+    { component: <ReturnSales />, path: '/erp/reports/returnSales' },
+
+    { component: <ReportTemplatesMobile />, path: '/analytics/templates-mobile' },
+    { component: <ReportsTemplateMobCreation />, path: '/analytics/templates-mobile/create' },
     // { component: <DisplayNavigations />, path: '/bank' },
     { component: <BankDetails />, path: '/erp/bankReports/bankList' },
 
@@ -306,7 +305,7 @@ const RoutingArray = [
     { component: <ProductGroup />, path: '/erp/master/productGroup' },
     { component: <ExpenseReport />, path: '/erp/master/ExpenseReport' },
     { component: <CostCenterMap />, path: '/erp/master/CostCenterMap' },
-    { component: <AccountMasterSales />, path: '/erp/master/AccountMasterSales'},
+    { component: <AccountMasterSales />, path: '/erp/master/AccountMasterSales' },
 
     //ERP - BATCH MANAGEMENT
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },

@@ -7,6 +7,10 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
 } from "@mui/material";
 import { FilterAlt, Search } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -19,30 +23,53 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
     const defaultFilters = {
         Fromdate: new Date().toISOString().split('T')[0],
         Todate: new Date().toISOString().split('T')[0],
+        Retailer_Id: ""
     };
 
     const navigate = useNavigate();
     const [returnSales, setReturnSales] = useState([]);
+    const [retailers, setRetailers] = useState([]); // State for retailer dropdown
     const [filters, setFilters] = useState(defaultFilters);
     const [dialog, setDialog] = useState({ filters: false });
 
+    // Extract unique retailers from return sales data
+    const extractRetailers = (data) => {
+        if (!Array.isArray(data)) return [];
+
+        const retailerMap = new Map();
+        data.forEach(item => {
+            if (item.Retailer_Id && item.Retailer_Name) {
+                retailerMap.set(item.Retailer_Id, {
+                    id: item.Retailer_Id,
+                    name: item.Retailer_Name
+                });
+            }
+        });
+
+        return Array.from(retailerMap.values());
+    };
+
     const fetchReturnSales = () => {
         fetchLink({
-            address: `reports/returnReports?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
+            address: `reports/returnReports?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}&Retailer_Id=${filters.Retailer_Id}`,
             loadingOn,
             loadingOff,
         })
             .then((data) => {
-             
                 if (data && data.success) {
-                    setReturnSales(Array.isArray(data.data) ? data.data : []);
+                    const salesData = Array.isArray(data.data) ? data.data : [];
+                    setReturnSales(salesData);
+                    // Extract retailers from the fetched data
+                    setRetailers(extractRetailers(salesData));
                 } else {
                     setReturnSales([]);
+                    setRetailers([]);
                 }
             })
             .catch((e) => {
                 console.error("Fetch error:", e);
                 setReturnSales([]);
+                setRetailers([]);
             });
     };
 
@@ -50,12 +77,10 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         fetchReturnSales();
     }, []);
 
-
     const closeDialog = () => {
         setDialog({ ...dialog, filters: false });
     };
 
-   
     const totals = returnSales.reduce((acc, item) => {
         return {
             totalAmount: acc.totalAmount + (toNumber(item.Amount) || 0),
@@ -73,9 +98,8 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 columns={[
                     createCol("Ret_Date", "date", "Ret.Date"),
                     createCol("Delivery_Order_Id", "string", "DelOrd.ID"),
-                    // createCol("Re_St_Id", "string", "Return Stock ID"),
-                    createCol("Godown_Name", "number", "Godown"),
-                    createCol("Godown_Name", "number", "Godown"),
+                    createCol("Retailer_Name", "string", "Retailer"),
+                    createCol("Do_Inv_No", "string", "Do_Inv_No"),
                     createCol("Product_Name", "string", "Prod.Name"),
                     createCol("Bill_Qty", "number", "Bill Qty"),
                     createCol("Act_Qty", "number", "Actual Qty"),
@@ -95,7 +119,6 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 ]}
                 ButtonArea={
                     <>
-                     
                         <Tooltip title="Filters">
                             <IconButton
                                 size="small"
@@ -125,7 +148,7 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                         <table className="table">
                             <tbody>
                                 <tr>
-                                    <td style={{ verticalAlign: "middle" }}>From Date</td>
+                                    <td style={{ verticalAlign: "middle", width: "30%" }}>From Date</td>
                                     <td>
                                         <input
                                             type="date"
@@ -148,6 +171,28 @@ const ReturnSales = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                             }
                                             className="cus-inpt"
                                         />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Retailer</td>
+                                    <td>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Select Retailer</InputLabel>
+                                            <Select
+                                                value={filters.Retailer_Id}
+                                                onChange={(e) =>
+                                                    setFilters({ ...filters, Retailer_Id: e.target.value })
+                                                }
+                                                label="Select Retailer"
+                                            >
+                                                <MenuItem value="">All Retailers</MenuItem>
+                                                {retailers.map((retailer) => (
+                                                    <MenuItem key={retailer.id} value={retailer.id}>
+                                                        {retailer.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
                                     </td>
                                 </tr>
                             </tbody>
