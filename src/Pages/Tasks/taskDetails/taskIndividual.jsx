@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -26,9 +26,9 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
     useEffect(() => {
         if (open) {
             setSelectedTask(null);
-            setLoading(true); 
+            setLoading(true);
 
-    
+
             setTimeout(() => {
                 setLoading(false);
             }, 500);
@@ -61,14 +61,14 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                 <DialogTitle>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Details</span>
-                        <Button variant="contained" color="primary"  onClick={onClose}>Close</Button>
+                        <Button variant="contained" color="primary" onClick={onClose}>Close</Button>
                     </div>
                 </DialogTitle>
 
                 <DialogContent>
                     {loading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', width: '500px' }}>
-                            <CircularProgress /> 
+                            <CircularProgress />
                         </div>
                     ) : (
                         <TableContainer>
@@ -89,14 +89,14 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
 
                                 <TableBody>
                                     {taskDetails.length === 0 ? (
-                                       
+
                                         <TableRow>
                                             <TableCell colSpan={9} className="fa-14 text-center" style={{ textAlign: 'center' }}>
                                                 No data found
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                     
+
                                         taskDetails.map((detail, index) => (
                                             <TableRow key={index}>
                                                 <TableCell className="fa-13 text-center">{detail.EmployeeName || 'N/A'}</TableCell>
@@ -127,7 +127,7 @@ function TaskIndividual({ open, onClose, taskDetails, closeDialogTask }) {
                                                 <TableCell className="fa-13 text-center">{detail.Ord_By || 'N/A'}</TableCell>
                                                 {/* {Number(contextObj?.Edit_Rights) === 1 && ( */}
                                                 <TableCell className="fa-13 text-center">
-                                                    
+
                                                     <IconButton size="small" onClick={() => handleEditClick(detail)}>
                                                         <Edit className="fa-18" />
                                                         Edit

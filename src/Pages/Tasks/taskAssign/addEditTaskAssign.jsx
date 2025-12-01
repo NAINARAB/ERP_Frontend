@@ -6,15 +6,15 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify';
 
-const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editData }) => {
+const TaskAssign = ({ open, onClose, projectId, taskId, reload, onReload, editData }) => {
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
- 
+
     const [usersDropdown, setUsersDropdown] = useState([]);
     const [loading, setLoading] = useState(false);
     // const [schType, setSchType] = useState([]);
     const [selectedSch, setSelectedSch] = useState([])
-    const intitalVlaue={
+    const intitalVlaue = {
         AN_No: '',
         Project_Id: projectId,
         Sch_Id: taskId,
@@ -32,29 +32,28 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
         Invovled_Stat: true,
         EmpGet: '- Select -',
         Is_Repitative: false,
-        RepeatDays: { Mon: false, Tue: false, Wed: false, Thu: false, Fri: false, Sat: false, Sun: false }
+        RepeatDays: { Mon: false, Tue: false, Wed: false, Thu: false, Fri: false, Sat: false, Sun: false },
+        Sch_Task_Status: ''
     }
 
     const [assignEmpInpt, setAssignEmpInpt] = useState(intitalVlaue);
-    
-    useEffect(() => {
- 
 
+    useEffect(() => {
         if (open) fetchData();
     }, [projectId, open, reload]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const userResponse =  await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
-            const schTypeResponse =  await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
+            const userResponse = await fetchLink({ address: `masters/Employeedetails/getusersproject?Project_Id=${projectId}` });
+            const schTypeResponse = await fetchLink({ address: `taskManagement/project/schedule/newscheduleType` });
 
 
             if (userResponse.success) setUsersDropdown(userResponse.data || []);
             if (schTypeResponse.success) {
-            
-   }
-            
+
+            }
+
         } catch (error) {
             toast.error("Failed to fetch data.");
         } finally {
@@ -62,12 +61,12 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
         }
     };
     useEffect(() => {
- 
+
         const fetchSelectedData = async () => {
             setLoading(true);
             try {
                 if (editData) {
-                    const selectedSchType =  await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.Sch_Id}&Task_Id=${taskId.Task_Id}` });
+                    const selectedSchType = await fetchLink({ address: `masters/employeedetails/selectedTaskDetails?projectId=${projectId}&Sch_Id=${taskId.Sch_Id}&Task_Id=${taskId.Task_Id}` });
 
                     const selectedSchId = selectedSchType.data[0]?.Sch_Type_Id;
                     const selectedSchName = selectedSchType.data[0]?.Sch_Name;
@@ -103,7 +102,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
         };
 
         if (open) fetchSelectedData();
-    }, [open, editData, reload,projectId]);
+    }, [open, editData, reload, projectId]);
 
     useEffect(() => {
         if (editData) {
@@ -132,6 +131,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                     Sat: !!editData.Is_Rep_Saturday,
                     Sun: !!editData.Is_Rep_Sunday,
                 },
+                Sch_Task_Status: editData.Sch_Task_Status
             }));
         }
     }, [editData]);
@@ -203,6 +203,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                     Invovled_Stat: assignEmpInpt.Invovled_Stat ? 1 : 0,
                     Is_Repitative: assignEmpInpt.Is_Repitative ? 1 : 0,
                     RepeatDays: assignEmpInpt.Is_Repitative ? assignEmpInpt.RepeatDays : '',
+                    Sch_Task_Status: assignEmpInpt.Sch_Task_Status ? 1 : 0,
                     ...repeatDaysMapped,
                 }
 
@@ -212,10 +213,10 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                 toast.success(`Task ${editData ? 'updated' : 'assigned'} successfully!`);
                 setAssignEmpInpt({});
                 if (onReload) {
-                    onReload();  
+                    onReload();
                 }
                 onClose();
-        
+
 
             } else {
 
@@ -236,7 +237,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                 <DialogTitle>{editData ? 'Edit Task' : 'Employee Assign'}</DialogTitle>
                 <form onSubmit={handleSubmit}>
                     <DialogContent className="table-responsive">
-                           {loading && <div>Loading...</div>}
+                        {loading && <div>Loading...</div>}
                         <table className="table" style={{ tableLayout: 'fixed' }}>
                             <tbody>
                                 <tr>
@@ -259,7 +260,7 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                                     <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
                                         Sch_Type
                                     </td>
-                                    
+
                                     <td className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
                                         <Select
                                             value={selectedSch ? { value: selectedSch.value, label: `${selectedSch.label}` } : null}
@@ -338,8 +339,36 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                                         />
                                     </td>
                                 </tr>
+                                <tr>
+                                    {editData && (
+                                        <>
+                                            <td className="border-bottom-0 fa-15" style={{ verticalAlign: 'middle', paddingRight: '1em' }}>
+                                                Status
+                                            </td>
+                                            <div className="border-bottom-0 fa-15" style={{ paddingLeft: '1em' }}>
+                                                <select
+                                                    className="form-select shadow-none"
+                                                    value={assignEmpInpt?.Sch_Task_Status?.toString() || "1"}
+                                                    onChange={(e) =>
+                                                        setAssignEmpInpt({
+                                                            ...assignEmpInpt,
+                                                            Sch_Task_Status: parseInt(e.target.value)
+                                                        })
+                                                    }
+                                                    style={{
+                                                        marginRight: '0.5em',
+                                                        width: '150px',
+                                                        padding: '0.25rem 0.5rem'
+                                                    }}
+                                                >
+                                                    <option value="1">In Progress</option>
+                                                    <option value="0">Completed</option>
+                                                </select>
 
-                                {/* Timer Based & Involved Status */}
+                                            </div>
+                                        </>
+                                    )}
+                                </tr>
                                 <tr>
                                     <td className="border-bottom-0 fa-15 text-start" style={{ paddingRight: '1em' }}>
                                         <div style={{ display: 'inline-flex', marginRight: '1em' }}>
@@ -372,6 +401,10 @@ const TaskAssign = ({ open, onClose, projectId, taskId, reload,onReload, editDat
                                                 <label className="form-check-label p-1 ps-2">Involved Status</label>
                                             </div>
                                         )}
+
+
+
+
                                     </td>
                                 </tr>
                                 <tr>
