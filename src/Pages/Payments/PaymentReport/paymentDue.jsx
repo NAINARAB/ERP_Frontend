@@ -68,6 +68,7 @@ const PaymentDue = ({ loadingOn, loadingOff }) => {
         if (reportType === 'printFormat') {
             return [
                 createCol('dueDate', 'date', 'Due Date'),
+                createCol('companyName', 'string', 'Company'),
                 createCol('retailerName', 'string', 'Vendor'),
                 createCol('itemName', 'string', 'Item Name'),
                 createCol('billQuantity', 'number', 'Bill Qty'),

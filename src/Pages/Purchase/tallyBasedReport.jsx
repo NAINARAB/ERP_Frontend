@@ -5,7 +5,7 @@ import { checkIsNumber, getPreviousDate, ISOString } from "../../Components/func
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import { FilterAlt } from '@mui/icons-material';
-import { purchaseOrderDataSet, displayColumns } from "../DataEntry/purchaseOrderDataArray";
+import { purchaseOrderDataSet, displayColumns } from './PurchaseOrder/filters'
 import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "../DataEntry/purchaseOrderPreviewTemplate";
 

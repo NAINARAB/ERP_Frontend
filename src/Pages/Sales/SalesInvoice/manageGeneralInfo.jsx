@@ -159,6 +159,15 @@ const ManageSalesInvoiceGeneralInfo = ({
                     />
                 </div>
 
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Purchase Ref</label>
+                    <input
+                        value={invoiceInfo?.Ref_Inv_Number}
+                        className={inputStyle}
+                        onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Number: String(e.target.value).trim() }))}
+                    />
+                </div>
+
                 {/* STATUS */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label className='fa-13'>Status</label>
