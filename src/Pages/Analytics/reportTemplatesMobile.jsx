@@ -102,7 +102,7 @@ useEffect(() => {
               IS_Join_Key: d?.IS_Join_Key ?? 0,
               Order_By: d?.Order_By ?? d?.OrderBy ?? '',
               Type: d?.Type ?? '',
-              Level:d?.Level ?? '',
+              FilterLevel:d?.FilterLevel ?? '',
               List_Type: d?.List_Type ?? null,
               List_Type_Display: d?.List_Type_Display ?? '—' 
             });
@@ -467,7 +467,7 @@ const handleEdit = async (row) => {
       <table className="table">
         <thead>
           <tr>
-            {['SNo', 'Table', 'Column', 'Type', 'List Type','Level'].map(h => (
+            {['SNo', 'Table', 'Column', 'Type', 'List Type','FilterLevel'].map(h => (
               <th key={h} className="border fa-14 text-center" style={{ backgroundColor: '#EDF0F7' }}>{h}</th>
             ))}
           </tr>
@@ -499,7 +499,7 @@ const handleEdit = async (row) => {
                       col?.List_Type === '2,1' ? 'Avg, Sum' : 
                       '—')}
                   </td>
-                    <td className="border fa-13 vctr">{col?.Level ?? '-'}</td>
+                    <td className="border fa-13 vctr">{col?.FilterLevel ?? '-'}</td>
                 </tr>
               ))}
             </React.Fragment>
