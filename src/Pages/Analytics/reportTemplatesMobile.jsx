@@ -102,6 +102,7 @@ useEffect(() => {
               IS_Join_Key: d?.IS_Join_Key ?? 0,
               Order_By: d?.Order_By ?? d?.OrderBy ?? '',
               Type: d?.Type ?? '',
+              Level:d?.Level ?? '',
               List_Type: d?.List_Type ?? null,
               List_Type_Display: d?.List_Type_Display ?? '—' 
             });
@@ -148,28 +149,142 @@ useEffect(() => {
     setOpenPreFilterDialog(true);
   };
 
+// const handleEdit = async (row) => {
+//   const Mob_Rpt_Id = row?.Mob_Rpt_Id ?? row?.Report_Type_Id;
+
+//   try {
+   
+//     const res = await fetchLink({
+//       address: `reports/templateMobile?Mob_Rpt_Id=${Mob_Rpt_Id}`,
+//       method: 'GET'
+//     });
+
+//     if (res?.success) {
+//       const { reportName, details } = res.data;
+      
+//       const tablesMap = {};
+
+//       details.forEach(d => {
+//         const tableId = d.Table_Id;
+//         if (!tablesMap[tableId]) {
+//           tablesMap[tableId] = {
+//             Table_Id: tableId,
+//             Table_Name: d.Table_Name,
+//             AliasName: d.Table_Accronym || d.Table_Name,
+//             columns: []
+//           };
+//         }
+        
+//         tablesMap[tableId].columns.push({
+//           Column_Name: d.Column_Name,
+//           Column_Data_Type: d.Column_Data_Type,
+//           IS_Default: d.IS_Default,
+//           IS_Join_Key: d.IS_Join_Key,
+//           Type: d.Type,
+//           List_Type: d.List_Type,
+//           // Add empty options array for dropdown columns
+//           options: d.List_Type === 1 || d.List_Type === '1' ? [] : undefined
+//         });
+//       });
+
+//       const tablesList = Object.values(tablesMap);
+
+//       // Now fetch dropdown values for columns that have List_Type = 1
+//       const dropdownPromises = [];
+
+//       tablesList.forEach(table => {
+//         table.columns.forEach(column => {
+//           if (column.List_Type === 1 || column.List_Type === '1') {
+//             // Fetch dropdown options for this column
+//             const dropdownPromise = fetchLink({
+//               address: `reports/mobileReportDropdowns?reportName=${encodeURIComponent(reportName)}`,
+//               method: 'GET'
+//             }).then(dropdownData => {
+//               if (dropdownData?.success) {
+//                 // Find the dropdown data for this specific column
+//                 const columnDropdown = dropdownData.data.find(item => 
+//                   item.columnName === column.Column_Name && 
+//                   item.tableName === table.Table_Name
+//                 );
+                
+//                 if (columnDropdown && columnDropdown.options) {
+//                   column.options = columnDropdown.options;
+//                 }
+//               }
+//               return column;
+//             }).catch(error => {
+//               console.error(`Error fetching dropdown for ${column.Column_Name}:`, error);
+//               return column;
+//             });
+
+//             dropdownPromises.push(dropdownPromise);
+//           }
+//         });
+//       });
+
+//       // Wait for all dropdown data to be fetched
+//       if (dropdownPromises.length > 0) {
+//         await Promise.all(dropdownPromises);
+//       }
+
+//       // Navigate to create page with all data including dropdown options
+//       nav('create', {
+//         state: {
+//           ReportState: {
+//             Report_Type_Id: Mob_Rpt_Id,
+//             reportName,
+//             tables: tablesList,
+//             createdBy: row?.CreatedBy ?? row?.CreatedByGet
+//           }
+//         }
+//       });
+//     } else {
+//       toast.error('Failed to load data');
+//     }
+//   } catch (err) {
+//     toast.error('Error fetching template');
+//     console.error(err);
+//   }
+// };
+
 const handleEdit = async (row) => {
   const Mob_Rpt_Id = row?.Mob_Rpt_Id ?? row?.Report_Type_Id;
 
   try {
+ 
+    const allTablesRes = await fetchLink({
+      address: `reports/tablesAndColumnsMobile`,
+      method: 'GET'
+    });
+    
    
-    const res = await fetchLink({
+    const templateRes = await fetchLink({
       address: `reports/templateMobile?Mob_Rpt_Id=${Mob_Rpt_Id}`,
       method: 'GET'
     });
 
-    if (res?.success) {
-      const { reportName, details } = res.data;
+    if (templateRes?.success && allTablesRes?.success) {
+      const { reportName, details } = templateRes.data;
+      const allTables = allTablesRes.data || [];
+      
+
+      const allColumnsByTable = {};
+      allTables.forEach(table => {
+        allColumnsByTable[table.Table_Id] = table.Columns || [];
+      });
       
       const tablesMap = {};
 
+    
       details.forEach(d => {
         const tableId = d.Table_Id;
         if (!tablesMap[tableId]) {
+  
+          const tableInfo = allTables.find(t => String(t.Table_Id) === String(tableId));
           tablesMap[tableId] = {
             Table_Id: tableId,
-            Table_Name: d.Table_Name,
-            AliasName: d.Table_Accronym || d.Table_Name,
+            Table_Name: tableInfo?.Table_Name || d.Table_Name,
+            AliasName: tableInfo?.AliasName || d.Table_Accronym || d.Table_Name || tableInfo?.Table_Name,
             columns: []
           };
         }
@@ -180,27 +295,48 @@ const handleEdit = async (row) => {
           IS_Default: d.IS_Default,
           IS_Join_Key: d.IS_Join_Key,
           Type: d.Type,
-          List_Type: d.List_Type,
-          // Add empty options array for dropdown columns
-          options: d.List_Type === 1 || d.List_Type === '1' ? [] : undefined
+          List_Type: d.List_Type
+        });
+      });
+
+      Object.keys(tablesMap).forEach(tableId => {
+        const table = tablesMap[tableId];
+        const allColumnsForTable = allColumnsByTable[tableId] || [];
+        
+        const existingColumnNames = new Set(
+          table.columns.map(col => col.Column_Name)
+        );
+        
+  
+        allColumnsForTable.forEach(col => {
+          if (!existingColumnNames.has(col.Column_Name)) {
+            table.columns.push({
+              Column_Name: col.Column_Name,
+              Column_Data_Type: col.Column_Data_Type,
+              IS_Default: col.IS_Default || 0,
+              IS_Join_Key: col.IS_Join_Key || 0,
+              Type: null,
+              List_Type: null 
+            });
+          }
         });
       });
 
       const tablesList = Object.values(tablesMap);
 
-      // Now fetch dropdown values for columns that have List_Type = 1
+
       const dropdownPromises = [];
 
       tablesList.forEach(table => {
         table.columns.forEach(column => {
           if (column.List_Type === 1 || column.List_Type === '1') {
-            // Fetch dropdown options for this column
+
             const dropdownPromise = fetchLink({
               address: `reports/mobileReportDropdowns?reportName=${encodeURIComponent(reportName)}`,
               method: 'GET'
             }).then(dropdownData => {
               if (dropdownData?.success) {
-                // Find the dropdown data for this specific column
+                
                 const columnDropdown = dropdownData.data.find(item => 
                   item.columnName === column.Column_Name && 
                   item.tableName === table.Table_Name
@@ -221,12 +357,12 @@ const handleEdit = async (row) => {
         });
       });
 
-      // Wait for all dropdown data to be fetched
+   
       if (dropdownPromises.length > 0) {
         await Promise.all(dropdownPromises);
       }
 
-      // Navigate to create page with all data including dropdown options
+    
       nav('create', {
         state: {
           ReportState: {
@@ -245,8 +381,6 @@ const handleEdit = async (row) => {
     console.error(err);
   }
 };
-
-
 
   const handleDelete = (row) => {
     setSelectedTemplate({
@@ -333,7 +467,7 @@ const handleEdit = async (row) => {
       <table className="table">
         <thead>
           <tr>
-            {['SNo', 'Table', 'Column', 'Type', 'List Type'].map(h => (
+            {['SNo', 'Table', 'Column', 'Type', 'List Type','Level'].map(h => (
               <th key={h} className="border fa-14 text-center" style={{ backgroundColor: '#EDF0F7' }}>{h}</th>
             ))}
           </tr>
@@ -365,6 +499,7 @@ const handleEdit = async (row) => {
                       col?.List_Type === '2,1' ? 'Avg, Sum' : 
                       '—')}
                   </td>
+                    <td className="border fa-13 vctr">{col?.Level ?? '-'}</td>
                 </tr>
               ))}
             </React.Fragment>
