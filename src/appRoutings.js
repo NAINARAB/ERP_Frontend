@@ -112,6 +112,8 @@ const PartySalesReport = lazy(() => import("./Pages/Sales/partyWiseReport"))
 const SalesInvoiceList = lazy(() => import("./Pages/Sales/SalesInvoice/salesInvoiceList"))
 const SalesInvoiceCreation = lazy(() => import("./Pages/Sales/SalesInvoice/salesInvoiceCreation"))
 const PreSaleorder = lazy(() => import("./Pages/Sales/PreSaleOrder/orderList"));
+// sales LR Report
+const SalesInvoiceListLRReport = lazy(() => import("./Pages/Sales/LRReport/listSales"))
 
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
@@ -246,7 +248,6 @@ const RoutingArray = [
 
     { component: <ProcessMaster />, path: '/taskManagement/master/processMaster' },
 
-    { component: <LrReport />, path: '/erp/sales/lrReport' },
     { component: <SalesOrderBranch />, path: '/erp/sales/salesOrderReport' },
     { component: <SalesReportBranch />, path: '/erp/sales/salesReportBranch' },
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
@@ -338,6 +339,9 @@ const RoutingArray = [
     { component: <SalesInvoiceList />, path: '/erp/sales/invoice' },
     { component: <SalesInvoiceCreation />, path: '/erp/sales/invoice/create' },
     { component: <PreSaleorder />, path: '/erp/sales/PreSaleorder' },
+    // { component: <LrReport />, path: '/erp/sales/lrReport' },
+    { component: <SalesInvoiceListLRReport />, path: '/erp/sales/lrReport' },
+
     // ERP - purchase
     { component: <DisplayNavigations />, path: '/erp/purchase' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },

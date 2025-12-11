@@ -1,7 +1,6 @@
-import React from "react";
 import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn"
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import { isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 
 const ManageSalesInvoiceGeneralInfo = ({

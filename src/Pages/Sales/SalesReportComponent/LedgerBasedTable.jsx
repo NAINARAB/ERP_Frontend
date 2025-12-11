@@ -5,6 +5,7 @@ import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogCont
 import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt, ToggleOn, ToggleOff } from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
+
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
@@ -59,22 +60,20 @@ const GroupSalesDetails = ({ row, Fromdate, Todate, DB }) => {
         fetchLink({
             address: `reports/salesReport/ledger/groupSales?Fromdate=${Fromdate}&Todate=${Todate}&Ledger_Id=${ledgerIds}`,
             headers: { Db: DB }
-        })
-            .then(({ success, data, others }) => {
-                if (cancelled) return;
-                if (success) {
-                    const { dataTypeInfo } = others || {};
-                    setSalesData(data || []);
-                    setDataTypes(prev => ({ ...prev, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }));
-                } else {
-                    setSalesData([]);
-                }
-            })
-            .catch(console.error)
+        }).then(({ success, data, others }) => {
+            if (cancelled) return;
+            if (success) {
+                const { dataTypeInfo } = others || {};
+                setSalesData(data || []);
+                setDataTypes(prev => ({ ...prev, salesInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }));
+            } else {
+                setSalesData([]);
+            }
+        }).catch(console.error)
             .finally(() => { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
-    }, [ledgerIds, Fromdate, Todate, DB]); 
+    }, [ledgerIds, Fromdate, Todate, DB]);
 
     return (
         loading
@@ -84,9 +83,6 @@ const GroupSalesDetails = ({ row, Fromdate, Todate, DB }) => {
 }
 
 const GroupedExpandDetails = ({ row, groupBy, DB, Fromdate, Todate, DisplayColumn, showGroupSalesDetails }) => {
-
-    console.log({ row, showGroupSalesDetails, groupBy });
-
     return groupBy ? (
         showGroupSalesDetails ? (
             <GroupSalesDetails
@@ -491,97 +487,3 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
 }
 
 export default LedgerBasedSalesReport;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const ledgerAndTransactionExport = (excludeDetails, transactions) => {
-//     const wb = XLSX.utils.book_new();
-
-//     const excludeDetailsSheet = XLSX.utils.json_to_sheet(excludeDetails);
-//     XLSX.utils.book_append_sheet(wb, excludeDetailsSheet, 'Sheet1');
-
-//     const transactionsSheet = XLSX.utils.json_to_sheet(transactions);
-//     XLSX.utils.book_append_sheet(wb, transactionsSheet, 'Sheet2');
-
-//     XLSX.writeFile(wb, 'exported_data.xlsx');
-// };
-
-
-// {
-//     Field_Name: "Excel_Export",
-//     Fied_Data: "string",
-//     isVisible: 1,
-//     OrderBy: 1,
-//     isCustomCell: true,
-//     Cell: ({ row }) => {
-//         const excludeDetails = Object.fromEntries(
-//             Object.entries(row).filter(([key]) => key !== 'LedgerSales' && DisplayColumn.find(colKey => colKey === key))
-//         );
-//         return (
-//             <>
-//                 <IconButton
-//                     size="small"
-//                     onClick={() => {
-//                         ledgerAndTransactionExport([excludeDetails], row.LedgerSales);
-//                     }}
-//                 >
-//                     <Download />
-//                 </IconButton>
-//             </>
-//         )
-//     }
-// },
-
-
-
-
-
-// const columnsInitialValue = [
-//     { Field_Name: "Ledger_Name", Fied_Data: "string", isVisible: 1, isDefault: 1, OrderBy: 4 },
-//     { Field_Name: "Total_Qty", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 5 },
-//     { Field_Name: "ALL_Avg_M2", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 3, ColumnHeader: 'M2' },
-//     { Field_Name: "ALL_Avg_M3", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: 6, ColumnHeader: 'M3' },
-//     { Field_Name: "ALL_Avg_M6", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 2, ColumnHeader: 'M6' },
-//     { Field_Name: "ALL_Avg_M9", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: 7, ColumnHeader: 'M9' },
-//     { Field_Name: "ALL_Avg_One_Year", Fied_Data: "number", isVisible: 1, isDefault: 0, OrderBy: 1, ColumnHeader: 'Y1' },
-//     { Field_Name: "Q_Pay_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Freq_Days", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Ledger_Alias", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Actual_Party_Name_with_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Name", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Location", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Nature", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Group", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Ref_Brokers", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Ref_Owners", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Mobile_1", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_Mobile_2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Party_District", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "File_No", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Payment_Mode", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "A2", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "A3", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "A4", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "M2_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "M3_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "M6_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "M9_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Y_Avg_Amo", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Q_Pay_Group", Fied_Data: "string", isVisible: 0, isDefault: 0, OrderBy: null },
-//     { Field_Name: "Ledger_Tally_Id", Fied_Data: "number", isVisible: 0, isDefault: 0, OrderBy: null }
-// ].sort((a, b) => a.OrderBy - b.OrderBy);
