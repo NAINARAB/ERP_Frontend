@@ -348,7 +348,7 @@ const ReceiptGeneralInfo = ({
                                 ]}
                                 styles={customSelectStyles}
                                 isSearchable={true}
-                                                        filterOption={reactSelectFilterLogic}
+                                filterOption={reactSelectFilterLogic}
                             />
                         </div>
 

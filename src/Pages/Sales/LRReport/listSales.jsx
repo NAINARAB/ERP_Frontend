@@ -104,7 +104,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             method: 'POST',
             bodyData: {
                 Do_Id: filters.selectedInvoice?.Do_Id,
-                involvedStaffs: filters.selectedInvoice?.involvedStaffs
+                involvedStaffs: filters.selectedInvoice?.involvedStaffs,
+                staffInvolvedStatus: toNumber(filters.selectedInvoice?.staffInvolvedStatus)
             },
             loadingOn, loadingOff
         })).then(data => {
@@ -327,6 +328,22 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                     </div>
                                 )
                             })}
+                            <div className="col-lg-4 col-md-6 p-2 d-flex align-items-end">
+                                <input
+                                    className="form-check-input shadow-none pointer mx-2"
+                                    style={{ padding: '0.7em' }}
+                                    type="checkbox"
+                                    id="removeFromList"
+                                    checked={isEqualNumber(filters.selectedInvoice?.staffInvolvedStatus, 1)}
+                                    onChange={() => {
+                                        if (isEqualNumber(filters.selectedInvoice?.staffInvolvedStatus, 1))
+                                            setFilters(pre => ({ ...pre, selectedInvoice: { ...pre.selectedInvoice, staffInvolvedStatus: 0 } }))
+                                        else
+                                            setFilters(pre => ({ ...pre, selectedInvoice: { ...pre.selectedInvoice, staffInvolvedStatus: 1 } }))
+                                    }}
+                                />
+                                <label htmlFor="removeFromList" className="fw-bold">Remove invoice from this page</label>
+                            </div>
                         </div>
                     </DialogContent>
                     <DialogActions>
