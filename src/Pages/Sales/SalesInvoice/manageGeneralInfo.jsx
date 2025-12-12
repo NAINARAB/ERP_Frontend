@@ -1,7 +1,9 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
+import { retailerDeliveryAddressInfo } from "./variable";
+import { useMemo } from "react";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -10,11 +12,41 @@ const ManageSalesInvoiceGeneralInfo = ({
     voucherType = [],
     branches = [],
     onChangeRetailer,
-    stockItemLedgerName = []
+    stockItemLedgerName = [],
+    retailerDeliveryAddress = retailerDeliveryAddressInfo,
+    setRetailerDeliveryAddress
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
+
+    const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
+
+    const retailerDetails = useMemo(() => {
+        return retailers.find(ret => isEqualNumber(ret.Retailer_Id, invoiceInfo?.Retailer_Id)) || {};
+    }, [invoiceInfo?.Retailer_Id])
+
+    const onChangeRetailerAddress = (column, value) => {
+
+        const retailerAddress = retailerDetails?.deliveryAddresses.find(add => add[column] === value);
+
+        if (retailerAddress) {
+            setRetailerDeliveryAddress(pre => ({
+                ...pre,
+                deliveryName: retailerAddress?.deliveryName,
+                phoneNumber: retailerAddress?.phoneNumber,
+                cityName: retailerAddress?.cityName,
+                deliveryAddress: retailerAddress?.deliveryAddress,
+                id: retailerAddress.id
+            }))
+        } else {
+            setRetailerDeliveryAddress(pre => ({
+                ...pre,
+                [column]: value,
+                id: null
+            }))
+        }
+    }
 
     return (
         <>
@@ -34,7 +66,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                 Retailer_Id: e.value,
                                 Retailer_Name: e.label
                             }));
-
+                            setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
                             // if (onChangeRetailer) onChangeRetailer();
                         }}
                         options={[
@@ -78,6 +110,86 @@ const ManageSalesInvoiceGeneralInfo = ({
                         filterOption={reactSelectFilterLogic}
                     />
                 </div>
+
+                {/* retailer address - start */}
+
+                {/* delivery name */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label htmlFor="nameInput">Mailing Name</label>
+                    <input
+                        id="nameInput"
+                        list="deliveryName"
+                        value={retailerDeliveryAddress?.deliveryName || ""}
+                        className={inputStyle}
+                        placeholder="ex: Party name / Other"
+                        onChange={e => onChangeRetailerAddress('deliveryName', e.target.value)}
+                        disabled={!validRetailer}
+                    />
+                    <datalist id="deliveryName">
+                        {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                            <option key={i} value={addr?.deliveryName}>{addr?.deliveryName}</option>
+                        ))}
+                    </datalist>
+                </div>
+
+                {/* delivery name */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label htmlFor="phoneInput">Phone Number</label>
+                    <input
+                        id="phoneInput"
+                        list="phoneNumber"
+                        value={retailerDeliveryAddress?.phoneNumber || ""}
+                        className={inputStyle}
+                        placeholder="ex: 9876543210"
+                        onChange={e => onChangeRetailerAddress('phoneNumber', e.target.value)}
+                        disabled={!validRetailer}
+                    />
+                    <datalist id="phoneNumber">
+                        {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                            <option key={i} value={addr?.phoneNumber}>{addr?.phoneNumber}</option>
+                        ))}
+                    </datalist>
+                </div>
+
+                {/* City name */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label htmlFor="cityInput">City Name</label>
+                    <input
+                        id="cityInput"
+                        list="cityName"
+                        value={retailerDeliveryAddress?.cityName || ""}
+                        className={inputStyle}
+                        placeholder="ex: Madurai"
+                        onChange={e => onChangeRetailerAddress('cityName', e.target.value)}
+                        disabled={!validRetailer}
+                    />
+                    <datalist id="cityName">
+                        {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                            <option key={i} value={addr?.cityName}>{addr?.cityName}</option>
+                        ))}
+                    </datalist>
+                </div>
+
+                {/* address name */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label htmlFor="addressInput">Address</label>
+                    <input
+                        id="addressInput"
+                        list="deliveryAddress"
+                        value={retailerDeliveryAddress?.deliveryAddress || ""}
+                        className={inputStyle}
+                        placeholder="ex: 123, ABC Street"
+                        onChange={e => onChangeRetailerAddress('deliveryAddress', e.target.value)}
+                        disabled={!validRetailer}
+                    />
+                    <datalist id="deliveryAddress">
+                        {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                            <option key={i} value={addr?.deliveryAddress}>{addr?.deliveryAddress}</option>
+                        ))}
+                    </datalist>
+                </div>
+
+                {/* retailer address - end */}
 
                 {/* Date */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">

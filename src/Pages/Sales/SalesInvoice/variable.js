@@ -7,7 +7,7 @@ export const salesInvoiceGeneralInfo = {
     Do_No: '',
     Do_Year: '',
     Do_Inv_No: '',
-    
+
     Voucher_Type: '',
     Do_Date: ISOString(),
     Retailer_Id: '',
@@ -30,8 +30,9 @@ export const salesInvoiceGeneralInfo = {
     Total_Tax: 0,
     Total_Invoice_value: 0,
     Stock_Item_Ledger_Name: '',
-    
-    Ref_Inv_Number: '',
+
+    Ref_Inv_Number: '', // purchase invoice reference number
+    deliveryAddressId: null, // retailer delivery address id
 
     // Delivery_Status: '',
     // Delivery_Time: '',
@@ -51,6 +52,14 @@ export const salesInvoiceGeneralInfo = {
     Alterd_on: '',
 }
 
+export const retailerDeliveryAddressInfo = {
+    id: null,
+    retailerId: null,
+    deliveryName: '',
+    phoneNumber: '',
+    cityName: '',
+    deliveryAddress: ''
+}
 
 export const salesInvoiceDetailsInfo = {
     DO_St_Id: '',
@@ -74,12 +83,12 @@ export const salesInvoiceDetailsInfo = {
     Item_Rate: '',              // From front-end
     Taxable_Rate: '',
     Amount: '',                 // From front-end
-    
+
     Unit_Id: '',                // From front-end
     Unit_Name: '',
     Act_unit_Id: '',
     Alt_Act_Unit_Id: '',
-    
+
     Taxable_Amount: '',
     Tax_Rate: '',
 
@@ -94,7 +103,6 @@ export const salesInvoiceDetailsInfo = {
     Created_on: '',
 }
 
-
 export const salesInvoiceExpencesInfo = {
     Id: '',
     Do_Id: '',
@@ -108,7 +116,6 @@ export const salesInvoiceExpencesInfo = {
     Igst_Amo: 0,
     Expence_Value: 0
 }
-
 
 export const salesInvoiceStaffInfo = {
     Id: '',

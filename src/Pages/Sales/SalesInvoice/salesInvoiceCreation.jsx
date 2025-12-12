@@ -2,20 +2,18 @@ import { useState, useEffect } from "react";
 import { Button, IconButton, CardContent, Card } from "@mui/material";
 import { toast } from 'react-toastify';
 import {
-    isEqualNumber, isValidObject, ISOString, getUniqueData,
-    Addition,
-    getSessionUser,
-    checkIsNumber,
-    toNumber,
-    toArray,
-    stringCompare
+    isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
+    checkIsNumber, toNumber, toArray, stringCompare
 } from "../../../Components/functions";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
-import { salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo, salesInvoiceStaffInfo } from './variable';
+import { 
+    salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo, 
+    salesInvoiceStaffInfo, retailerDeliveryAddressInfo 
+} from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
 import SalesInvoiceTaxDetails from "./taxDetails";
@@ -53,7 +51,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         importFromSaleOrder: false,
     })
 
-    const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo)
+    const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
+    const [retailerDeliveryAddress, setRetailerDeliveryAddress] = useState(retailerDeliveryAddressInfo);
     const [invoiceProducts, setInvoiceProduct] = useState([]);
     const [invoiceExpences, setInvoiceExpences] = useState([]);
     const [staffArray, setStaffArray] = useState([]);
@@ -286,6 +285,27 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }
     }, [editValues])
 
+    useEffect(() => {
+        if (checkIsNumber(editValues?.Retailer_Id) && !isEqualNumber(editValues?.Retailer_Id, 0)) {
+            const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, editValues?.Retailer_Id)) || {};
+            const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(
+                addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
+            ) ?? null;
+
+            if (retailerAddress) {
+
+                setRetailerDeliveryAddress({
+                    deliveryName: retailerAddress?.deliveryName,
+                    phoneNumber: retailerAddress?.phoneNumber,
+                    cityName: retailerAddress?.cityName,
+                    deliveryAddress: retailerAddress?.deliveryAddress,
+                    id: retailerAddress.id
+                })
+            }
+
+        }
+    }, [editValues, baseData.retailers])
+
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
 
@@ -294,6 +314,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...invoiceInfo,
+
+                delivery_id: retailerDeliveryAddress?.id,
+                deliveryName: retailerDeliveryAddress?.deliveryName,
+                phoneNumber: retailerDeliveryAddress?.phoneNumber,
+                cityName: retailerDeliveryAddress?.cityName,
+                deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
+
                 Product_Array: invoiceProducts,
                 Staffs_Array: staffArray,
                 Expence_Array: invoiceExpences
@@ -375,6 +402,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                         setInvoiceProduct([]);
                                         setInvoiceExpences([]);
                                     }}
+                                    retailerDeliveryAddress={retailerDeliveryAddress}
+                                    setRetailerDeliveryAddress={setRetailerDeliveryAddress}
                                 />
                             </div>
                         </div>
