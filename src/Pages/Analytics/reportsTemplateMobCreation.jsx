@@ -1032,14 +1032,13 @@
 
 
 
-
-import React, { useContext, useEffect, useState } from 'react';
+import  { useContext, useEffect, useState } from 'react';
 import {
   Card, CardContent, Button, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions,
-  Box, IconButton, Grid, Typography
+  Box, Grid, Typography
 } from '@mui/material';
 import { ArrowBackIosNewOutlined, KeyboardArrowLeft, RemoveRedEyeOutlined, Save } from '@mui/icons-material';
-import { isValidObject, Subraction, isEqualNumber } from '../../Components/functions';
+import { isValidObject, isEqualNumber } from '../../Components/functions';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MyContext } from '../../Components/context/contextProvider';
@@ -1060,7 +1059,7 @@ const ReportsTemplateMobCreation = () => {
     createdBy: storage?.UserId
   };
 
-  const[showDropdown,setShowDropdown]=useState([])
+  // const[showDropdown,setShowDropdown]=useState([])
   const [inputValues, setInputValues] = useState(initialValue);
   const [reportTables, setReportTables] = useState([]);
   const[existingReportName,setExistingReportName]=useState([])
@@ -1086,7 +1085,6 @@ const ReportsTemplateMobCreation = () => {
   const [selectedListTypes, setSelectedListTypes] = useState([]); 
   const [openConfigPreview, setOpenConfigPreview] = useState(false);
 
-
   const losTables = reportTables.filter(table => 
     table.Table_Name?.toLowerCase().includes('los') || 
     table.AliasName?.toLowerCase().includes('los')
@@ -1109,7 +1107,7 @@ const ReportsTemplateMobCreation = () => {
         const uniqueReportNames = [...new Set(reports.map(report => report.Report_Name).filter(name => name))];
         setExistingReportName(uniqueReportNames);
         
-        // Convert to react-select format
+       
         const options = uniqueReportNames.map(name => ({
           value: name,
           label: name
@@ -1137,7 +1135,7 @@ const ReportsTemplateMobCreation = () => {
         createdBy: stateValue?.createdBy ?? storage?.UserId
       }));
       
-      // If editing and report name exists but not in options, add it
+    
       if (reportName && !reportOptions.some(opt => opt.value === reportName)) {
         const newOption = { value: reportName, label: reportName };
         setReportOptions(prev => [...prev, newOption]);
@@ -1295,35 +1293,118 @@ const ReportsTemplateMobCreation = () => {
     return [];
   };
 
-  const isColumnUsedInOtherSlot = (tableId, columnName, currentSlotIdx, level, currentType) => {
-    let currentLevelSlots;
-    if (level === 'level1') {
-      currentLevelSlots = filterSlotsLevel1;
-    } else if (level === 'level2') {
-      currentLevelSlots = filterSlotsLevel2;
-    } else {
-      currentLevelSlots = groupFilterSlots;
-    }
-    
-    const usedInSameLevel = currentLevelSlots.some((s, idx) => {
-      if (!s.enabled) return false;
-      if (idx === currentSlotIdx) return false;
-      return String(s.tableId) === String(tableId) && String(s.columnName) === String(columnName);
-    });
 
-    const otherLevelSlots = [
-      ...(level === 'level1' ? [] : filterSlotsLevel1),
-      ...(level === 'level2' ? [] : filterSlotsLevel2),
-      ...(level === 'group' ? [] : groupFilterSlots)
-    ];
+  // const getAllUsedColumns = () => {
+  //   const usedColumns = new Set();
     
-    const usedInOtherLevel = otherLevelSlots.some(s => {
-      if (!s.enabled) return false;
-      return String(s.tableId) === String(tableId) && String(s.columnName) === String(columnName);
-    });
+    
+  //   filterSlotsLevel1.forEach(slot => {
+  //     if (slot.enabled && slot.tableId && slot.columnName) {
+  //       const key = `${slot.tableId}_${slot.columnName}`;
+  //       usedColumns.add(key);
+  //     }
+  //   });
+    
 
-    return usedInSameLevel || usedInOtherLevel;
-  };
+  //   filterSlotsLevel2.forEach(slot => {
+  //     if (slot.enabled && slot.tableId && slot.columnName) {
+  //       const key = `${slot.tableId}_${slot.columnName}`;
+  //       usedColumns.add(key);
+  //     }
+  //   });
+    
+  //   // Check Group filters
+  //   groupFilterSlots.forEach(slot => {
+  //     if (slot.enabled && slot.tableId && slot.columnName) {
+  //       const key = `${slot.tableId}_${slot.columnName}`;
+  //       usedColumns.add(key);
+  //     }
+  //   });
+    
+  //   return usedColumns;
+  // };
+
+// const isColumnUsedInOtherSlot = (tableId, columnName, currentSlotIdx, level, currentType) => {
+//   if (!tableId || !columnName) return false;
+  
+//   // For Group Filter, always return false (no restrictions)
+//   if (level === 'group') return false;
+  
+//   // For Level 1: check other Level 1 slots and Level 2
+//   if (level === 'level1') {
+//     const usedInOtherLevel1 = filterSlotsLevel1.some((s, idx) => {
+//       if (!s.enabled || !s.tableId || !s.columnName) return false;
+//       if (idx === currentSlotIdx) return false;
+//       return String(s.tableId) === String(tableId) && 
+//              String(s.columnName) === String(columnName);
+//     });
+    
+//     const usedInLevel2 = filterSlotsLevel2.some(s => {
+//       if (!s.enabled || !s.tableId || !s.columnName) return false;
+//       return String(s.tableId) === String(tableId) && 
+//              String(s.columnName) === String(columnName);
+//     });
+    
+//     return usedInOtherLevel1 || usedInLevel2;
+//   }
+  
+//   // For Level 2: check other Level 2 slots and Level 1
+//   if (level === 'level2') {
+//     const usedInOtherLevel2 = filterSlotsLevel2.some((s, idx) => {
+//       if (!s.enabled || !s.tableId || !s.columnName) return false;
+//       if (idx === currentSlotIdx) return false;
+//       return String(s.tableId) === String(tableId) && 
+//              String(s.columnName) === String(columnName);
+//     });
+    
+//     const usedInLevel1 = filterSlotsLevel1.some(s => {
+//       if (!s.enabled || !s.tableId || !s.columnName) return false;
+//       return String(s.tableId) === String(tableId) && 
+//              String(s.columnName) === String(columnName);
+//     });
+    
+//     return usedInOtherLevel2 || usedInLevel1;
+//   }
+  
+//   return false;
+// };
+
+
+  // const getAvailableColumnsForSlot = (tableId, currentSlotIdx, level) => {
+  //   if (!tableId) return [];
+    
+  //   const allColumns = getColumnsForTableId(tableId);
+  //   const availableColumns = [];
+    
+  //   allColumns.forEach(column => {
+  //     const isUsed = isColumnUsedInOtherSlot(tableId, column.Column_Name, currentSlotIdx, level);
+  //     const isCurrentlySelected = (() => {
+  //       if (level === 'level1') {
+  //         return filterSlotsLevel1[currentSlotIdx]?.columnName === column.Column_Name;
+  //       } else if (level === 'level2') {
+  //         return filterSlotsLevel2[currentSlotIdx]?.columnName === column.Column_Name;
+  //       } else if (level === 'group') {
+  //         return groupFilterSlots[currentSlotIdx]?.columnName === column.Column_Name;
+  //       }
+  //       return false;
+  //     })();
+      
+  //     // Column is available if it's not used elsewhere OR it's currently selected in this slot
+  //     if (!isUsed || isCurrentlySelected) {
+  //       availableColumns.push({
+  //         ...column,
+  //         isDisabled: false
+  //       });
+  //     } else {
+  //       availableColumns.push({
+  //         ...column,
+  //         isDisabled: true
+  //       });
+  //     }
+  //   });
+    
+  //   return availableColumns;
+  // };
 
   const handleFilterToggle = (idx, level) => {
     if (level === 'level1') {
@@ -1437,7 +1518,71 @@ const ReportsTemplateMobCreation = () => {
     return { details, groupFilterDetails };
   };
 
+// Update validation function to allow same column in different filter levels
+const validateNoDuplicateColumns = () => {
+  // Only check for duplicates within the same level
+  // Group Filter can use the same columns as Level 1/2
+  
+  // Check Level 1 for duplicates within Level 1 only
+  const level1Slots = filterSlotsLevel1.filter(s => s.enabled && s.tableId && s.columnName);
+  const level1Set = new Set();
+  for (const slot of level1Slots) {
+    const key = `${slot.tableId}_${slot.columnName}`;
+    if (level1Set.has(key)) {
+      const tableMeta = reportTables.find(t => String(t.Table_Id) === String(slot.tableId));
+      const tableName = tableMeta ? (tableMeta.AliasName || tableMeta.Table_Name) : `Table ${slot.tableId}`;
+      return {
+        isValid: false,
+        message: `Column "${slot.columnName}" from "${tableName}" is used in multiple Level 1 filters`
+      };
+    }
+    level1Set.add(key);
+  }
+  
+  // Check Level 2 for duplicates within Level 2 only
+  const level2Slots = filterSlotsLevel2.filter(s => s.enabled && s.tableId && s.columnName);
+  const level2Set = new Set();
+  for (const slot of level2Slots) {
+    const key = `${slot.tableId}_${slot.columnName}`;
+    if (level2Set.has(key)) {
+      const tableMeta = reportTables.find(t => String(t.Table_Id) === String(slot.tableId));
+      const tableName = tableMeta ? (tableMeta.AliasName || tableMeta.Table_Name) : `Table ${slot.tableId}`;
+      return {
+        isValid: false,
+        message: `Column "${slot.columnName}" from "${tableName}" is used in multiple Level 2 filters`
+      };
+    }
+    level2Set.add(key);
+  }
+  
+
+  for (const slot1 of level1Slots) {
+    for (const slot2 of level2Slots) {
+      if (String(slot1.tableId) === String(slot2.tableId) && 
+          String(slot1.columnName) === String(slot2.columnName)) {
+        const tableMeta = reportTables.find(t => String(t.Table_Id) === String(slot1.tableId));
+        const tableName = tableMeta ? (tableMeta.AliasName || tableMeta.Table_Name) : `Table ${slot1.tableId}`;
+        return {
+          isValid: false,
+          message: `Column "${slot1.columnName}" from "${tableName}" cannot be used in both Level 1 and Level 2 filters`
+        };
+      }
+    }
+  }
+  
+
+  
+  return { isValid: true };
+};
+
   const saveTemplate = async () => {
+   
+    const validation = validateNoDuplicateColumns();
+    if (!validation.isValid) {
+      toast.error(validation.message);
+      return;
+    }
+    
     const { details, groupFilterDetails } = buildDetails();
 
     
@@ -1587,69 +1732,117 @@ const ReportsTemplateMobCreation = () => {
                     )}
                   </Box>
                   
-                  <Box>
-                    <Typography variant="caption" color="textSecondary" sx={{ mb: 0.5, display: 'block' }}>
-                      Column
-                    </Typography>
-                    <select
-                      className="cus-inpt"
-                      value={slot.columnName ?? ''}
-                      disabled={!slot.tableId}
-                      onChange={(e) => {
-                        const val = e.target.value || null;
-                        
-                        if (val && isColumnUsedInOtherSlot(slot.tableId, val, idx, level, slot.type)) {
-                          toast.error('Column already assigned to another filter slot. Choose a different column.');
-                          return;
-                        }
-                        
-                        if (level === 'level1') {
-                          setFilterSlotsLevel1(prev => {
-                            const arr = [...prev];
-                            arr[idx] = { ...arr[idx], columnName: val };
-                            return arr;
-                          });
-                        } else if (level === 'level2') {
-                          setFilterSlotsLevel2(prev => {
-                            const arr = [...prev];
-                            arr[idx] = { ...arr[idx], columnName: val };
-                            return arr;
-                          });
-                        } else {
-                          setGroupFilterSlots(prev => {
-                            const arr = [...prev];
-                            arr[idx] = { ...arr[idx], columnName: val };
-                            return arr;
-                          });
-                        }
-                      }}
-                      style={{ width: '100%' }}
-                    >
-                      <option value="">Select column</option>
-                      {slot.tableId && getColumnsForTableId(slot.tableId).map((c, ci) => {
-                        const isUsedInOtherSlot = isColumnUsedInOtherSlot(slot.tableId, c.Column_Name, idx, level, slot.type);
-                        const isCurrentlySelected = slot.columnName === c.Column_Name;
-                        const isSelectable = isCurrentlySelected || !isUsedInOtherSlot;
-                        
-                        return (
-                          <option 
-                            key={ci} 
-                            value={c.Column_Name} 
-                            disabled={!isSelectable} 
-                            style={{ 
-                              color: !isSelectable ? '#999' : 'inherit',
-                              backgroundColor: !isSelectable ? '#f5f5f5' : 'inherit',
-                              fontStyle: !isSelectable ? 'italic' : 'normal'
-                            }}
-                          >
-                            {c.Column_Name} 
-                            {c.Column_Data_Type ? ` (${c.Column_Data_Type})` : ''}
-                            {isUsedInOtherSlot && !isCurrentlySelected ? ' (Already used)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </Box>
+         <Box>
+  <Typography variant="caption" color="textSecondary" sx={{ mb: 0.5, display: 'block' }}>
+    Column
+  </Typography>
+  <select
+    className="cus-inpt"
+    value={slot.columnName ?? ''}
+    disabled={!slot.tableId}
+    onChange={(e) => {
+      const val = e.target.value || null;
+      
+      if (level === 'level1') {
+        setFilterSlotsLevel1(prev => {
+          const arr = [...prev];
+          arr[idx] = { ...arr[idx], columnName: val };
+          return arr;
+        });
+      } else if (level === 'level2') {
+        setFilterSlotsLevel2(prev => {
+          const arr = [...prev];
+          arr[idx] = { ...arr[idx], columnName: val };
+          return arr;
+        });
+      } else {
+        setGroupFilterSlots(prev => {
+          const arr = [...prev];
+          arr[idx] = { ...arr[idx], columnName: val };
+          return arr;
+        });
+      }
+    }}
+    style={{ width: '100%' }}
+  >
+    <option value="">Select column</option>
+    {slot.tableId && getColumnsForTableId(slot.tableId).map((c, ci) => {
+      // For Group Filter: ALL columns are enabled regardless of whether they're used in Level 1/2
+      // For Level 1/2: Check if column is used in other slots of the same level
+      let isDisabled = false;
+      let disabledReason = '';
+      
+      if (level === 'group') {
+        // In Group Filter, NO columns are disabled
+        isDisabled = false;
+      } else if (level === 'level1') {
+        // Check if column is used in other Level 1 slots
+        const usedInOtherLevel1 = filterSlotsLevel1.some((s, slotIdx) => {
+          if (!s.enabled || !s.tableId || !s.columnName) return false;
+          if (slotIdx === idx) return false; // Exclude current slot
+          return String(s.tableId) === String(slot.tableId) && 
+                 String(s.columnName) === String(c.Column_Name);
+        });
+        
+        // Check if column is used in Level 2
+        const usedInLevel2 = filterSlotsLevel2.some(s => {
+          if (!s.enabled || !s.tableId || !s.columnName) return false;
+          return String(s.tableId) === String(slot.tableId) && 
+                 String(s.columnName) === String(c.Column_Name);
+        });
+        
+        isDisabled = usedInOtherLevel1 || usedInLevel2;
+        if (usedInOtherLevel1) disabledReason = ' (Used in another Level 1 filter)';
+        else if (usedInLevel2) disabledReason = ' (Used in Level 2 filter)';
+      } else if (level === 'level2') {
+        // Check if column is used in other Level 2 slots
+        const usedInOtherLevel2 = filterSlotsLevel2.some((s, slotIdx) => {
+          if (!s.enabled || !s.tableId || !s.columnName) return false;
+          if (slotIdx === idx) return false; // Exclude current slot
+          return String(s.tableId) === String(slot.tableId) && 
+                 String(s.columnName) === String(c.Column_Name);
+        });
+        
+        // Check if column is used in Level 1
+        const usedInLevel1 = filterSlotsLevel1.some(s => {
+          if (!s.enabled || !s.tableId || !s.columnName) return false;
+          return String(s.tableId) === String(slot.tableId) && 
+                 String(s.columnName) === String(c.Column_Name);
+        });
+        
+        isDisabled = usedInOtherLevel2 || usedInLevel1;
+        if (usedInOtherLevel2) disabledReason = ' (Used in another Level 2 filter)';
+        else if (usedInLevel1) disabledReason = ' (Used in Level 1 filter)';
+      }
+      
+      const isCurrentlySelected = slot.columnName === c.Column_Name;
+      // If it's currently selected, always enable it (so you can keep your selection)
+      const shouldDisable = !isCurrentlySelected && isDisabled;
+      
+      return (
+        <option 
+          key={ci} 
+          value={c.Column_Name} 
+          disabled={shouldDisable} 
+          style={{ 
+            color: shouldDisable ? '#999' : 'inherit',
+            backgroundColor: shouldDisable ? '#f5f5f5' : 'inherit',
+            fontStyle: shouldDisable ? 'italic' : 'normal'
+          }}
+        >
+          {c.Column_Name} 
+          {c.Column_Data_Type ? ` (${c.Column_Data_Type})` : ''}
+          {shouldDisable ? disabledReason : ''}
+        </option>
+      );
+    })}
+  </select>
+  {level === 'group' && (
+    <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+      Note: All columns are enabled in Group Filter, even if used in Level 1/2 filters.
+    </Typography>
+  )}
+</Box>
                 </Box>
               ) : (
                 <Box sx={{ 
@@ -1712,7 +1905,7 @@ const ReportsTemplateMobCreation = () => {
               }
               formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
               onCreateOption={(inputValue) => {
-                // Check if it already exists
+               
                 const alreadyExists = reportOptions.some(opt => 
                   opt.value.toLowerCase() === inputValue.toLowerCase()
                 );
@@ -1722,12 +1915,12 @@ const ReportsTemplateMobCreation = () => {
                     value: inputValue,
                     label: inputValue,
                   };
-                  // Add to options
+                 
                   setReportOptions(prev => [...prev, newOption]);
                   setExistingReportName(prev => [...prev, inputValue]);
                 }
                 
-                // Set the value
+               
                 setInputValues({ ...inputValues, reportName: inputValue });
               }}
               styles={{
