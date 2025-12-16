@@ -177,10 +177,15 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         if (!saveStatus) return;
         const method =
             journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
+        const entryLineNums = new Set(
+            journalEntriesInfo.map(e => e.LineNum)
+        );
         const bodyData = {
             ...journalGeneralInfo,
             Entries: journalEntriesInfo,
-            BillReferences: journalBillReference
+            BillReferences: journalBillReference.filter(ref =>
+                entryLineNums.has(ref.LineNum)
+            )
         };
 
         fetchLink({
