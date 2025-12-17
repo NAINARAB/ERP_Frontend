@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { isEqualNumber, LocalDate, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, LocalDate, toArray, toNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { Autocomplete, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField } from "@mui/material";
@@ -12,11 +12,20 @@ import { toast } from "react-toastify";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
+const multipleStaffUpdateInitialValues = {
+    CostCategory: { label: '', value: '' },
+    Do_Id: [],
+    involvedStaffs: [],
+};
+
 const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const [salesInvoices, setSalesInvoices] = useState([]);
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
+
+    const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(multipleStaffUpdateInitialValues);
+
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
     const dataArray = filteredData.length > 0 ? filteredData : salesInvoices;
@@ -25,6 +34,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         assignDialog: false,
         filterDialog: false,
         selectedInvoice: null,
+        multipleStaffUpdateDialog: false,
         fetchTrigger: 0
     });
     const columns = [
@@ -56,7 +66,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             costType => uniqueInvolvedCost.includes(
                 toNumber(costType.Cost_Category_Id)
             )
-        ).map(costType => {
+        ).filter(costType => !['Broker', 'Transport'].some(keyword =>
+            String(costType?.Cost_Category).includes(keyword)
+        )).map(costType => {
             return {
                 isVisible: 1,
                 ColumnHeader: costType.Cost_Category,
@@ -80,8 +92,12 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const onCloseFilterDialog = () => setFilters(prev => ({ ...prev, filterDialog: false }));
 
-    const onChangeEmployee = (invoice, selectedOptions, costType) => {
+    const onCloseMultipleUpdateCostCategoryDialog = () => {
+        setMultipleCostCenterUpdateValues(multipleStaffUpdateInitialValues);
+        setFilters(prev => ({ ...prev, multipleStaffUpdateDialog: false }));
+    };
 
+    const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters(prev => {
             const updatedInvolvedStaffs = toArray(prev.selectedInvoice?.involvedStaffs).filter(
                 emp => !isEqualNumber(emp.Emp_Type_Id, costType.Cost_Category_Id)
@@ -112,6 +128,27 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             if (data.success) {
                 toast.success(data.message);
                 onCloseAssignDialog();
+                fetchSalesInvoices();
+            } else {
+                toast.error(data.message);
+            }
+        }).catch(e => console.log(e));
+    }
+
+    const postMultipleCostCenterUpdate = async () => {
+        fetchLink(({
+            address: 'sales/salesInvoice/lrReport/multiple',
+            method: 'POST',
+            bodyData: {
+                CostCategory: toNumber(multipleCostCenterUpdateValues.CostCategory.value),
+                Do_Id: multipleCostCenterUpdateValues.Do_Id,
+                involvedStaffs: multipleCostCenterUpdateValues.involvedStaffs.map(option => toNumber(option.value)),
+            },
+            loadingOn, loadingOff
+        })).then(data => {
+            if (data.success) {
+                toast.success(data.message);
+                onCloseMultipleUpdateCostCategoryDialog();
                 fetchSalesInvoices();
             } else {
                 toast.error(data.message);
@@ -231,11 +268,48 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
+    const saveMultipleInvoiceValidation = useMemo(() => {
+        const validDoId = multipleCostCenterUpdateValues.Do_Id.length > 0;
+        const validCostCenterId = multipleCostCenterUpdateValues.involvedStaffs.length > 0;
+        const validCostCategory =
+            checkIsNumber(multipleCostCenterUpdateValues.CostCategory.value)
+            && !isEqualNumber(multipleCostCenterUpdateValues.CostCategory.value, 0);
+
+        return validDoId && validCostCenterId && validCostCategory;
+    }, [multipleCostCenterUpdateValues])
+
+
     return (
         <>
             <FilterableTable
                 title={"Sales Invoice: " + LocalDate(filters.reqDate)}
                 columns={[
+                    {
+                        Field_Name: 'Select',
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const isSelected = multipleCostCenterUpdateValues.Do_Id.includes(toNumber(row.Do_Id));
+                            return (
+                                <Checkbox
+                                    checked={isSelected}
+                                    onChange={() => {
+                                        if (isSelected) {
+                                            setMultipleCostCenterUpdateValues(prev => ({
+                                                ...prev,
+                                                Do_Id: prev.Do_Id.filter(item => !isEqualNumber(item, row.Do_Id)),
+                                            }));
+                                        } else {
+                                            setMultipleCostCenterUpdateValues(prev => ({
+                                                ...prev,
+                                                Do_Id: [...prev.Do_Id, toNumber(row.Do_Id)],
+                                            }));
+                                        }
+                                    }}
+                                />
+                            );
+                        },
+                    },
                     createCol("Do_Inv_No", "string", "Invoice"),
                     createCol("voucherTypeGet", "string", "Voucher"),
                     createCol("retailerNameGet", "string", "Customer"),
@@ -263,6 +337,11 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 EnableSerialNumber
                 ButtonArea={
                     <>
+                        <IconButton
+                            size='small'
+                            onClick={() => setFilters(prev => ({ ...prev, multipleStaffUpdateDialog: true }))}
+                            disabled={!multipleCostCenterUpdateValues.Do_Id.length}
+                        ><PersonAdd fontSize="small" /></IconButton>
 
                         <IconButton
                             size='small'
@@ -294,40 +373,47 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 <form onSubmit={postAssignCostCenters}>
                     <DialogContent>
                         <div className="row">
-                            {costTypes.map((costType, index) => {
-                                const invoiceEmployee = toArray(filters.selectedInvoice?.involvedStaffs);
-                                const empCostType = invoiceEmployee.filter(
-                                    emp => isEqualNumber(
-                                        emp.Emp_Type_Id, costType.Cost_Category_Id
-                                    )
-                                ).map(emp => ({ value: emp.Emp_Id, label: emp.Emp_Name }));
-                                return (
-                                    <div className="col-lg-4 col-md-6 p-2" key={index}>
-                                        <label>{costType.Cost_Category}</label>
-
-                                        <Select
-                                            value={empCostType}
-                                            isMulti
-                                            styles={customSelectStyles}
-                                            options={costCenterData}
-                                            onChange={e => {
-                                                const values = e.map(option => ({
-                                                    Do_Id: filters?.selectedInvoice?.Do_Id,
-                                                    Emp_Id: option.value,
-                                                    Emp_Name: option.label,
-                                                    Emp_Type_Id: costType.Cost_Category_Id,
-                                                    Involved_Emp_Type: costType.Cost_Category
-                                                }));
-                                                onChangeEmployee(filters.selectedInvoice, values, costType);
-                                            }}
-                                            // closeMenuOnSelect={false}
-                                            placeholder={`Select ${costType.Cost_Category}`}
-                                            filterOption={reactSelectFilterLogic}
-                                            menuPortalTarget={document.body}
-                                        />
-                                    </div>
+                            {costTypes
+                                .filter(
+                                    costType =>
+                                        !['Broker', 'Transport'].some(keyword =>
+                                            String(costType?.Cost_Category).includes(keyword)
+                                        )
                                 )
-                            })}
+                                .map((costType, index) => {
+                                    const invoiceEmployee = toArray(filters.selectedInvoice?.involvedStaffs);
+                                    const empCostType = invoiceEmployee.filter(
+                                        emp => isEqualNumber(
+                                            emp.Emp_Type_Id, costType.Cost_Category_Id
+                                        )
+                                    ).map(emp => ({ value: emp.Emp_Id, label: emp.Emp_Name }));
+                                    return (
+                                        <div className="col-lg-4 col-md-6 p-2" key={index}>
+                                            <label>{costType.Cost_Category}</label>
+
+                                            <Select
+                                                value={empCostType}
+                                                isMulti
+                                                styles={customSelectStyles}
+                                                options={costCenterData}
+                                                onChange={e => {
+                                                    const values = e.map(option => ({
+                                                        Do_Id: filters?.selectedInvoice?.Do_Id,
+                                                        Emp_Id: option.value,
+                                                        Emp_Name: option.label,
+                                                        Emp_Type_Id: costType.Cost_Category_Id,
+                                                        Involved_Emp_Type: costType.Cost_Category
+                                                    }));
+                                                    onChangeEmployee(filters.selectedInvoice, values, costType);
+                                                }}
+                                                // closeMenuOnSelect={false}
+                                                placeholder={`Select ${costType.Cost_Category}`}
+                                                filterOption={reactSelectFilterLogic}
+                                                menuPortalTarget={document.body}
+                                            />
+                                        </div>
+                                    )
+                                })}
                             <div className="col-lg-4 col-md-6 p-2 d-flex align-items-end">
                                 <input
                                     className="form-check-input shadow-none pointer mx-2"
@@ -372,6 +458,60 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 <DialogActions>
                     <Button onClick={onCloseFilterDialog} variant='outlined'>Close</Button>
                     <Button variant='contained' type="submit">Apply</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={filters.multipleStaffUpdateDialog}
+                onClose={onCloseMultipleUpdateCostCategoryDialog}
+                maxWidth='sm'
+                fullWidth
+            >
+                <DialogTitle>Update Cost Category</DialogTitle>
+                <DialogContent>
+
+                    <div className="py-2">
+                        <label>Cost Category</label>
+                        <Select
+                            value={multipleCostCenterUpdateValues.CostCategory}
+                            styles={customSelectStyles}
+                            options={costTypes.filter(costType => !['Broker', 'Transport'].some(keyword =>
+                                String(costType?.Cost_Category).includes(keyword)
+                            )).map(costType => ({
+                                value: costType.Cost_Category_Id,
+                                label: costType.Cost_Category
+                            }))}
+                            onChange={e => {
+                                setMultipleCostCenterUpdateValues(prev => ({ ...prev, CostCategory: e }));
+                            }}
+                            placeholder={`Select Cost Category`}
+                            filterOption={reactSelectFilterLogic}
+                            menuPortalTarget={document.body}
+                        />
+                    </div>
+
+                    <div className="py-2">
+                        <label>Staff</label>
+                        <Select
+                            value={multipleCostCenterUpdateValues.involvedStaffs}
+                            isMulti
+                            styles={customSelectStyles}
+                            options={costCenterData}
+                            onChange={e => {
+                                setMultipleCostCenterUpdateValues(prev => ({ ...prev, involvedStaffs: e }));
+                            }}
+
+                            placeholder={`Select Staff`}
+                            filterOption={reactSelectFilterLogic}
+                            menuPortalTarget={document.body}
+                            closeMenuOnSelect={false}
+                        />
+                    </div>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onCloseMultipleUpdateCostCategoryDialog} variant='outlined'>Close</Button>
+                    <Button variant='contained' onClick={postMultipleCostCenterUpdate} disabled={!saveMultipleInvoiceValidation}>Save</Button>
                 </DialogActions>
             </Dialog>
         </>
