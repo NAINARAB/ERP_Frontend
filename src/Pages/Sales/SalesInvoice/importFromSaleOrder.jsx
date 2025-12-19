@@ -16,16 +16,7 @@ const validStockValue = (Item_Id, Godown_Id, stockInGodown) => {
         )
     )?.Act_Bal_Qty;
 
-    if (
-        godownStockValue === null ||
-        godownStockValue === undefined ||
-        Number.isNaN(godownStockValue) ||
-        godownStockValue == 0
-    ) {
-        return 0;
-    }
-
-    return godownStockValue;
+    return toNumber(godownStockValue);
 };
 
 const AddProductsInSalesInvoice = ({

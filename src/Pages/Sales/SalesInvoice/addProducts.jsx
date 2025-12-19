@@ -7,6 +7,18 @@ import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
+import { fetchLink } from "../../../Components/fetchComponent";
+
+const validStockValue = (Item_Id, Godown_Id, stockInGodown) => {
+    const godownStockValue = toArray(stockInGodown).find(
+        godownItem => (
+            isEqualNumber(godownItem?.Product_Id, Item_Id) &&
+            isEqualNumber(godownItem?.Godown_Id, Godown_Id)
+        )
+    )?.Act_Bal_Qty;
+
+    return toNumber(godownStockValue);
+};
 
 const AddProductForm = ({
     children,
@@ -29,6 +41,8 @@ const AddProductForm = ({
 
     const isInclusive = isEqualNumber(GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(GST_Inclusive, 2);
+
+    const [stockInGodowns, setStockInGodowns] = useState([]);
 
     useEffect(() => {
         if (isValidObject(editValues) && open) {
@@ -94,6 +108,19 @@ const AddProductForm = ({
 
         closeDialog();
     };
+
+    useEffect(() => {
+        setStockInGodowns([]);
+        if (checkIsNumber(productDetails.Item_Id) && !isEqualNumber(productDetails.Item_Id, 0)) {
+            fetchLink({ address: `sales/stockInGodown?Item_Id=${productDetails.Item_Id}` })
+                .then(data => {
+                    const stockInGodowns = (data.success ? data.data : []).sort(
+                        (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
+                    );
+                    setStockInGodowns(stockInGodowns);
+                })
+        }
+    }, [productDetails.Item_Id])
 
     return (
         <>
@@ -201,6 +228,7 @@ const AddProductForm = ({
 
                                             Item_Id: e.value,
                                             Item_Rate: productInfo.Item_Rate ?? 0,
+                                            GoDown_Id: '',
                                             Bill_Qty: 0,
                                             Amount: 0,
                                             Unit_Id: productInfo.UOM_Id ?? pre.Unit_Id,
@@ -247,7 +275,15 @@ const AddProductForm = ({
                                             { value: '', label: 'select', isDisabled: true },
                                             ...toArray(godowns).map(obj => ({
                                                 value: obj?.Godown_Id,
-                                                label: obj?.Godown_Name
+                                                label: `${obj?.Godown_Name}${checkIsNumber(obj?.Godown_Id)
+                                                        ? ` (Bal: ${validStockValue(
+                                                            productDetails.Item_Id,
+                                                            obj?.Godown_Id,
+                                                            stockInGodowns
+                                                        )})`
+                                                        : ''
+                                                    }`
+
                                             }))
                                         ]}
                                         styles={customSelectStyles}
@@ -401,8 +437,8 @@ const AddProductForm = ({
                                     placeholder={"Select Batch"}
                                     menuPortalTarget={document.body}
                                     isDisabled={
-                                        !checkIsNumber(productDetails?.Item_Id) 
-                                        || !checkIsNumber(productDetails?.GoDown_Id) 
+                                        !checkIsNumber(productDetails?.Item_Id)
+                                        || !checkIsNumber(productDetails?.GoDown_Id)
                                         || isEqualNumber(productDetails?.Bill_Qty, 0)
                                     }
                                 />

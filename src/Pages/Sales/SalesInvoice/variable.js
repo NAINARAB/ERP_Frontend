@@ -34,16 +34,17 @@ export const salesInvoiceGeneralInfo = {
     Ref_Inv_Number: '', // purchase invoice reference number
     deliveryAddressId: null, // retailer delivery address id
 
-    // Delivery_Status: '',
+    Delivery_Status: 0,
+    Payment_Mode: 0,
+    Payment_Status: 0,
+
     // Delivery_Time: '',
     // Delivery_Location: '',
     // Delivery_Latitude: '',
     // Delivery_Longitude: '',
     // Collected_By: '',
     // Collected_Status: '',
-    // Payment_Mode: '',
     // Payment_Ref_No: '',
-    // Payment_Status: '',
 
     Alter_Id: '',
     Created_by: storage?.UserId,

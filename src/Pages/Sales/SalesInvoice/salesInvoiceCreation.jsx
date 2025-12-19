@@ -82,7 +82,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffCategory,
                     godownLocationsResponse,
                     expenceResponse,
-                    godownWiseStock,
+                    // godownWiseStock,
                     stockItemLedgerNameResponse,
                     batchDetailsResponse
                 ] = await Promise.all([
@@ -95,7 +95,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `masters/defaultAccountMaster` }),
-                    fetchLink({ address: `sales/stockInGodown` }),
+                    // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` })
                 ]);
@@ -127,9 +127,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 const expencesMaster = (expenceResponse.success ? toArray(expenceResponse.data) : []).sort(
                     (a, b) => String(a?.Account_Name).localeCompare(b?.Account_Name)
                 );
-                const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
-                    (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
-                );
+                // const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
+                //     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
+                // );
                 const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : []).sort(
                     (a, b) => String(a?.Stock_Item_Ledger_Name).localeCompare(b?.Stock_Item_Ledger_Name)
                 );
@@ -148,7 +148,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     expence: expencesMaster.filter(
                         exp => !stringCompare(exp.Type, 'DEFAULT')
                     ).map(exp => ({ Id: exp.Acc_Id, Expence_Name: exp.Account_Name })),
-                    stockInGodown: stockInGodowns,
+                    // stockInGodown: stockInGodowns,
                     stockItemLedgerName: stockItemLedgerName,
                     batchDetails: toArray(batchDetailsResponse.data)
                 }));

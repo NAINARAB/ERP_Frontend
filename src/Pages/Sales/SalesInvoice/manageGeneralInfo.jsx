@@ -1,6 +1,6 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { retailerDeliveryAddressInfo } from "./variable";
 import { useMemo } from "react";
@@ -132,7 +132,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                     </datalist>
                 </div>
 
-                {/* delivery name */}
+                {/* phone number */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label htmlFor="phoneInput">Phone Number</label>
                     <input
@@ -170,7 +170,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                     </datalist>
                 </div>
 
-                {/* address name */}
+                {/* address */}
                 <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                     <label htmlFor="addressInput">Address</label>
                     <input
@@ -292,6 +292,65 @@ const ManageSalesInvoiceGeneralInfo = ({
                         <option value="2">Progess</option>
                         <option value="3">Completed</option>
                         <option value="0">Canceled</option>
+                    </select>
+                </div>
+
+                {/* DELIVERY STATUS */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Delivery Status</label>
+                    <select
+                        className="cus-inpt p-2"
+                        onChange={(e) =>
+                            setInvoiceInfo({
+                                ...invoiceInfo,
+                                Delivery_Status: toNumber(e.target.value),
+                            })
+                        }
+                        value={toNumber(invoiceInfo.Delivery_Status)}
+                    >
+                        <option value={0}>Select</option>
+                        <option value={5}>Pending</option>
+                        <option value={7}>Delivered</option>
+                        <option value={6}>Return</option>
+                    </select>
+                </div>
+
+                {/* PAYMENT STATUS */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Payment Status</label>
+                    <select
+                        className="cus-inpt p-2"
+                        onChange={(e) =>
+                            setInvoiceInfo({
+                                ...invoiceInfo,
+                                Payment_Status: toNumber(e.target.value),
+                            })
+                        }
+                        value={toNumber(invoiceInfo.Payment_Status)}
+                    >
+                        <option value={0}>Select</option>
+                        <option value={1}>Pending</option>
+                        <option value={3}>Complete</option>
+                    </select>
+                </div>
+
+                {/* PAYMENT MODE */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label className='fa-13'>Payment Mode</label>
+                    <select
+                        className="cus-inpt p-2"
+                        onChange={(e) =>
+                            setInvoiceInfo({
+                                ...invoiceInfo,
+                                Payment_Mode: toNumber(e.target.value),
+                            })
+                        }
+                        value={toNumber(invoiceInfo.Payment_Mode)}
+                    >
+                        <option value={0}>Select</option>
+                        <option value={1}>Cash</option>
+                        <option value={3}>QR-Pay</option>
+                        <option value={2}>G-Pay</option>
                     </select>
                 </div>
 
