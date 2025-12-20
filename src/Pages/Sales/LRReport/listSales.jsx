@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import {
     Autocomplete,
     Button,
@@ -16,8 +16,9 @@ import {
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
-import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Search } from "@mui/icons-material";
+import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
 import { toast } from "react-toastify";
+import BillOfSupplyA5 from "./A5printOut";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -49,7 +50,7 @@ const getCostTypeEmployees = (invoiceOrRow, costTypeId) => {
         .filter(Boolean);
 };
 
-const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
     const [salesInvoices, setSalesInvoices] = useState([]);
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
@@ -61,6 +62,12 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
+
+    const [printInvoice, setPrintInvoice] = useState({
+        Do_Id: null,
+        Do_Date: null,
+        open: false
+    })
 
     const [filters, setFilters] = useState({
         reqDate: ISOString(),
@@ -93,7 +100,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
             })
             .catch(console.error);
-    }, [filters.fetchTrigger, filters.reqDate, loadingOn, loadingOff]);
+    }, [filters.fetchTrigger, loadingOn, loadingOff]);
 
     useEffect(() => {
         fetchLink({ address: "masters/erpCostCenter/dropDown" })
@@ -139,6 +146,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         setMultipleCostCenterUpdateValues(multipleStaffUpdateInitialValues);
         setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: false }));
     };
+
+    const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
 
     const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters((prev) => {
@@ -419,17 +428,29 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         Field_Name: "Action",
                         isVisible: 1,
                         isCustomCell: true,
-                        Cell: ({ row }) =>
-                            AddRights && EditRights ? (
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setFilters((prev) => ({ ...prev, assignDialog: true, selectedInvoice: row }))}
-                                >
-                                    <PersonAdd fontSize="small" color="primary" />
-                                </IconButton>
-                            ) : (
-                                <></>
-                            ),
+                        Cell: ({ row }) => {
+
+                            return (
+                                <ButtonActions
+                                    buttonsData={[
+                                        {
+                                            name: "Add Employee",
+                                            onclick: () => setFilters((prev) => ({ ...prev, assignDialog: true, selectedInvoice: row })),
+                                            icon: <PersonAdd fontSize="small" color="primary" />,
+                                            disabled: !AddRights && !EditRights,
+                                        },
+                                        {
+                                            name: "Print Invoice",
+                                            onclick: () => {
+                                                setPrintInvoice({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true })
+                                            },
+                                            icon: <Print fontSize="small" color="primary" />,
+                                            disabled: !PrintRights,
+                                        }
+                                    ]}
+                                />
+                            )
+                        }
                     },
                 ]}
                 dataArray={filteredData}
@@ -613,6 +634,26 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     <Button variant="contained" onClick={postMultipleCostCenterUpdate} disabled={!saveMultipleInvoiceValidation}>
                         Save
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={printInvoice.open}
+                onClose={onClosePrintDialog}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>Bill Print Preview</DialogTitle>
+                <DialogContent>
+                    <BillOfSupplyA5 
+                        Do_Id={printInvoice.Do_Id} 
+                        Do_Date={printInvoice.Do_Date} 
+                        loadingOn={loadingOn}
+                        loadingOff={loadingOff}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" onClick={onClosePrintDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
         </>

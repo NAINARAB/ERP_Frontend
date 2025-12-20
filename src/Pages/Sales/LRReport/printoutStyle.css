@@ -1,0 +1,469 @@
+/* A5 print sizing */
+@page {
+    size: A5 portrait;
+    margin: 6mm;
+}
+
+.a5-page {
+    width: 148mm;
+    min-height: 210mm;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #111;
+}
+
+.bill-box {
+    width: 100%;
+    min-height: 100%;
+    border: 1px solid #2f7f6d;
+    box-sizing: border-box;
+}
+
+/* TOP HEADER */
+.top-header {
+    display: grid;
+    grid-template-columns: 1fr 0.46fr;
+    border-bottom: 1px solid #2f7f6d;
+}
+
+.top-left {
+    display: grid;
+    grid-template-columns: 26mm 1fr;
+    gap: 2mm;
+    padding: 3mm;
+    border-right: 1px solid #2f7f6d;
+}
+
+.logoBox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logoPlaceholder {
+    width: 22mm;
+    height: 14mm;
+    border: 1px solid #bdbdbd;
+}
+
+.logoImg {
+    max-width: 22mm;
+    max-height: 14mm;
+    object-fit: contain;
+}
+
+.companyCenter {
+    text-align: center;
+}
+
+.companyName {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+}
+
+.companyLines {
+    margin-top: 1mm;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.billTitle {
+    margin-top: 1mm;
+    font-weight: 700;
+}
+
+.top-right {
+    padding: 3mm;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.kv {
+    display: grid;
+    grid-template-columns: 20mm 1fr;
+    column-gap: 2mm;
+}
+
+.k {
+    font-weight: 700;
+}
+
+.v {
+    text-align: left;
+}
+
+/* PARTY + META */
+.party-meta {
+    display: grid;
+    grid-template-columns: 1fr 0.9fr;
+    border-bottom: 1px solid #2f7f6d;
+}
+
+.party-left {
+    padding: 3mm;
+    border-right: 1px solid #2f7f6d;
+}
+
+.toRow {
+    display: flex;
+    gap: 2mm;
+    margin-bottom: 1mm;
+}
+
+.toLabel {
+    font-weight: 700;
+}
+
+.addressBlock {
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: pre-line;
+}
+
+.buyerName {
+    font-weight: 700;
+}
+
+.buyerGstin {
+    margin-top: 1mm;
+    font-weight: 800;
+}
+
+.gstLabel {
+    font-weight: 800;
+}
+
+.party-right {
+    padding: 3mm;
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.metaRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3mm;
+    align-items: baseline;
+    margin-bottom: 1.5mm;
+}
+
+.metaTop {
+    grid-template-columns: 1fr 1fr;
+}
+
+.metaKV {
+    display: grid;
+    grid-template-columns: 18mm 1fr;
+    gap: 2mm;
+}
+
+.billNo {
+    font-weight: 800;
+}
+
+.metaItalic {
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.metaTag {
+    text-align: right;
+    font-weight: 700;
+}
+
+/* ITEMS TABLE */
+.itemsTable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+.itemsTable th,
+.itemsTable td {
+    border: 1px solid #2f7f6d;
+    padding: 2mm 2mm;
+    vertical-align: top;
+}
+
+.itemsTable thead th {
+    background: #2f7f6d;
+    color: #fff;
+    font-weight: 800;
+    text-align: center;
+}
+
+.c-no {
+    width: 8mm;
+}
+
+.c-items {
+    width: 54mm;
+}
+
+.c-hsn {
+    width: 18mm;
+}
+
+.c-gst {
+    width: 14mm;
+}
+
+.c-bags {
+    width: 14mm;
+}
+
+.c-rate {
+    width: 22mm;
+}
+
+.c-qty {
+    width: 14mm;
+}
+
+.c-amt {
+    width: 24mm;
+}
+
+.t-center {
+    text-align: center;
+}
+
+.t-right {
+    text-align: right;
+}
+
+.t-left {
+    text-align: left;
+}
+
+.itemName {
+    font-weight: 700;
+}
+
+.itemSub {
+    margin-top: 0.5mm;
+}
+
+.emptyRow td {
+    height: 56mm;
+    /* keeps the big blank area like your sheet */
+}
+
+/* POST TABLE (charges on right) */
+.postTable {
+    display: grid;
+    grid-template-columns: 1fr 0.46fr;
+    border-left: 1px solid #2f7f6d;
+    border-right: 1px solid #2f7f6d;
+    border-bottom: 1px solid #2f7f6d;
+}
+
+.postLeft {
+    min-height: 18mm;
+    border-right: 1px solid #2f7f6d;
+}
+
+.postRight {
+    padding: 2mm 3mm;
+    font-size: 13px;
+}
+
+.chargeRow {
+    display: grid;
+    grid-template-columns: 1fr 18mm;
+    gap: 2mm;
+    margin: 1mm 0;
+}
+
+.chargeLabel {
+    text-align: left;
+    font-weight: 700;
+}
+
+.chargeAmt {
+    text-align: right;
+}
+
+/* BANK LINE */
+.bankLine {
+    border-left: 1px solid #2f7f6d;
+    border-right: 1px solid #2f7f6d;
+    border-bottom: 1px solid #2f7f6d;
+    padding: 2mm 3mm;
+}
+
+.bankText {
+    font-weight: 800;
+}
+
+/* BOTTOM AREA */
+.bottomArea {
+    display: grid;
+    grid-template-columns: 1fr 0.46fr 0.46fr;
+    border-left: 1px solid #2f7f6d;
+    border-right: 1px solid #2f7f6d;
+}
+
+.bottomLeft {
+    padding: 2mm 3mm;
+    border-right: 1px solid #2f7f6d;
+    min-height: 44mm;
+}
+
+.inWords {
+    font-size: 13px;
+    margin-bottom: 4mm;
+    white-space: pre-line;
+}
+
+.hsnSummary {
+    font-size: 13px;
+}
+
+.hsnRow {
+    display: grid;
+    grid-template-columns: 22mm 1fr;
+    gap: 2mm;
+    margin: 1mm 0;
+}
+
+.hsnCode {
+    text-align: left;
+}
+
+.hsnAmt {
+    text-align: right;
+}
+
+.subTotalRow {
+    margin-top: 3mm;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm;
+    font-weight: 800;
+}
+
+.subTotalLabel {
+    text-align: left;
+}
+
+.subTotalAmt {
+    text-align: right;
+}
+
+.bottomMid {
+    border-right: 1px solid #2f7f6d;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 2mm;
+}
+
+.qrBox {
+    width: 100%;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    gap: 2mm;
+}
+
+.qrImg {
+    width: 32mm;
+    height: 32mm;
+    object-fit: contain;
+    border: 1px solid #bdbdbd;
+}
+
+.qrPlaceholder {
+    width: 32mm;
+    height: 32mm;
+    border: 1px solid #bdbdbd;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1mm;
+    padding: 1mm;
+    box-sizing: border-box;
+}
+
+.qrSquare {
+    border: 1px solid #cfcfcf;
+}
+
+.qrCaption {
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.1;
+}
+
+.upiId {
+    font-weight: 800;
+}
+
+.qrCompany {
+    font-weight: 800;
+}
+
+.bottomRight {
+    display: grid;
+    grid-template-rows: auto 1fr;
+}
+
+.netBox {
+    border-bottom: 1px solid #2f7f6d;
+    padding: 2mm 3mm;
+}
+
+.netLabel {
+    font-weight: 800;
+    font-size: 13px;
+}
+
+.netValue {
+    text-align: right;
+    font-weight: 900;
+    font-size: 18px;
+    margin-top: 1mm;
+}
+
+.signArea {
+    padding: 3mm;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    align-items: end;
+}
+
+.forText {
+    text-align: center;
+    font-weight: 800;
+    margin-bottom: 2mm;
+}
+
+.signBox {
+    height: 18mm;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.signPlaceholder {
+    width: 26mm;
+    height: 12mm;
+    border: 1px solid #bdbdbd;
+}
+
+.signImg {
+    max-width: 34mm;
+    max-height: 16mm;
+    object-fit: contain;
+}
+
+/* Print */
+@media print {
+    .a5-page {
+        width: 148mm;
+        min-height: 210mm;
+    }
+}
