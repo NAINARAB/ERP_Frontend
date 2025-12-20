@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ISOString, numberToWords } from "../../../Components/functions";
+import { checkIsNumber, ISOString, numberToWords } from "../../../Components/functions";
 import "./printoutStyle.css";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
@@ -49,7 +49,7 @@ const BillOfSupplyA5 = ({ Do_Id, Do_Date, loadingOn, loadingOff }) => {
     const printRef = useRef(null);
 
     useEffect(() => {
-        if (!Do_Id || !Do_Date) return;
+        if (!checkIsNumber(Do_Id) || !Do_Date) return;
         fetchLink({
             address: `sales/salesInvoice?
             Fromdate=${ISOString(Do_Date)}&

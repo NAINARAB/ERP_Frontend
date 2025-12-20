@@ -19,6 +19,7 @@ import { reactSelectFilterLogic } from "../../../Components/functions";
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import BillOfSupplyA5 from "./A5printOut";
+import KatchathCopy from "./katchathCopy";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -67,6 +68,11 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         Do_Id: null,
         Do_Date: null,
         open: false
+    })
+
+    const [katchathCopyPrint, setKatchathCopyPrint] = useState({
+        Do_Id: null,
+        open: false,
     })
 
     const [filters, setFilters] = useState({
@@ -148,6 +154,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     };
 
     const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
+
+    const onCloseKatchathDialog = () => setKatchathCopyPrint((prev) => ({ Do_Id: null, open: false }));
 
     const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters((prev) => {
@@ -446,6 +454,14 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                             },
                                             icon: <Print fontSize="small" color="primary" />,
                                             disabled: !PrintRights,
+                                        },
+                                        {
+                                            name: "Katchath Copy",
+                                            onclick: () => {
+                                                setKatchathCopyPrint({ Do_Id: row.Do_Id, open: true })
+                                            },
+                                            icon: <Print fontSize="small" color="primary" />,
+                                            disabled: !PrintRights,
                                         }
                                     ]}
                                 />
@@ -645,15 +661,35 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             >
                 <DialogTitle>Bill Print Preview</DialogTitle>
                 <DialogContent>
-                    <BillOfSupplyA5 
-                        Do_Id={printInvoice.Do_Id} 
-                        Do_Date={printInvoice.Do_Date} 
+                    <BillOfSupplyA5
+                        Do_Id={printInvoice.Do_Id}
+                        Do_Date={printInvoice.Do_Date}
                         loadingOn={loadingOn}
                         loadingOff={loadingOff}
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button variant="outlined" onClick={onClosePrintDialog}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* katchathCopyPrint */}
+            <Dialog
+                open={katchathCopyPrint.open}
+                onClose={onCloseKatchathDialog}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>Bill Print Preview</DialogTitle>
+                <DialogContent>
+                    <KatchathCopy
+                        Do_Id={katchathCopyPrint.Do_Id}
+                        loadingOn={loadingOn}
+                        loadingOff={loadingOff}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" onClick={onCloseKatchathDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
         </>
