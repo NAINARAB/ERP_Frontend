@@ -1378,6 +1378,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         VoucherType: [],
         Broker: [],
         Transporters: [],
+        Loadman:[],
         Item: [],
         Godown: "",
         search: false,
@@ -1394,11 +1395,12 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [selectedItems, setSelectedItems] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [broker, setBroker] = useState([]);
+    const [loadman,setLoadman]=useState([])
     const [transporters, setTransporters] = useState([]);
     const [items, setItems] = useState([]);
     const [godowns, setGodowns] = useState([]);
     const [retailers, setRetailers] = useState([]);
-const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
     const [initialized, setInitialized] = useState(false);
     
 
@@ -1576,7 +1578,8 @@ const clearAllStaff = () => {
                     voucherResponse,
                     itemsRes,
                     godownRes,
-                    retailerRes
+                    retailerRes,
+                    
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
@@ -1602,7 +1605,7 @@ const clearAllStaff = () => {
                 // Filter brokers and transporters
                 const brokers = staffData.filter(cc => cc.UserTypeGet === "Broker");
                 const transporters = staffData.filter(cc => cc.UserTypeGet === "Transport");
-
+                const loadman=staffData.filter(cc=>cc.UserTypeGet==="Load Man")
                 // Other masters
                 const voucherData = voucherResponse.success ? voucherResponse.data : [];
                 const itemData = itemsRes.success ? itemsRes.data : [];
@@ -1619,6 +1622,7 @@ const clearAllStaff = () => {
                 setGodowns(godownData);
                 setItems(itemData);
                 setRetailers(retailData);
+                setLoadman(loadman)
 
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -1887,11 +1891,12 @@ useEffect(() => {
 
 const searchTransaction = (e) => {
         e.preventDefault();
-        const { Fromdate, Todate, Sales_Person_Id, Broker, Transporters, Godown, Item, Retailer, VoucherType } = filters;
+        const { Fromdate, Todate, Sales_Person_Id, Broker, Transporters, Loadman,Godown, Item, Retailer, VoucherType } = filters;
 
         const voucherTypeString = Array.isArray(VoucherType) ? VoucherType.join(',') : VoucherType || '';
         const brokerString = Array.isArray(Broker) ? Broker.join(',') : Broker || '';
         const transporterString = Array.isArray(Transporters) ? Transporters.join(',') : Transporters || '';
+         const loadmanString = Array.isArray(Loadman) ? Loadman.join(',') : Loadman || '';
         const itemString = Array.isArray(Item) ? Item.join(',') : Item || '';
         const retailerString = Array.isArray(Retailer) ? Retailer.join(',') : Retailer || '';
         const branchValue = filters?.Branch || '';
@@ -1901,7 +1906,7 @@ const searchTransaction = (e) => {
             setTransactionData([]);
             fetchLink({
                 address: `delivery/deliveryDetailsList?Fromdate=${Fromdate}&Todate=${Todate}&Sales_Person_Id=${Sales_Person_Id}&VoucherType=${voucherTypeString}&Branch=${branchValue}
-                &Broker=${brokerString}&Transporter=${transporterString}&Godown=${Godown}&Item=${itemString}&Retailer=${retailerString}`,
+                &Broker=${brokerString}&Transporter=${transporterString}&Loadman=${loadmanString}&Godown=${Godown}&Item=${itemString}&Retailer=${retailerString}`,
             })
                 .then((data) => {
                     if (data.success) setTransactionData(data.data);
@@ -1987,16 +1992,16 @@ const searchTransaction = (e) => {
 
             let newSelectedItems;
             if (isSelected) {
-                // Remove the item
+         
                 newSelectedItems = prevSelectedItems.filter(
                     (selectedRow) => selectedRow.Do_Id != row.Do_Id
                 );
             } else {
-                // Add the item
+            
                 newSelectedItems = [...prevSelectedItems, row];
             }
 
-            // Staff will be auto-updated via useEffect
+
 
             return newSelectedItems;
         });
@@ -2502,6 +2507,7 @@ const searchTransaction = (e) => {
                             Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
                         </h6>
                     </div>
+   
                     <FilterableTable
                         dataArray={selectedItems?.map((item) => item?.Products_List).flat()}
                         expandableComp={ExpendableComponent}
@@ -2523,9 +2529,12 @@ const searchTransaction = (e) => {
                         disablePagination
                         maxHeightOption
                         columns={[
+                            createCol("Do_Inv_No", "string", "Do_Inv_No"),
                             createCol("Retailer_Name", "string", "Retailer_Name"),
+                            createCol("Transporter_Name", "string", "Transporter"),
                             createCol("Product_Name", "string", "Product_Name"),
                             createCol("Taxable_Rate", "number", "Rate"),
+          
                             createCol("Bill_Qty", "number", "Bill_Qty"),
                             createCol("Taxable_Amount", "string", "Before_Tax_Amount"),
                             createCol("Amount", "number", "Total_Invoice_value"),
@@ -2807,7 +2816,7 @@ const searchTransaction = (e) => {
 
                                     <tr>
                                         <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Retailers</td>
-                                        <td colSpan="3">
+                                        <td >
                                             <MultiSelect
                                                 value={(filters.Retailer || []).map(val => ({
                                                     value: val,
@@ -2828,7 +2837,7 @@ const searchTransaction = (e) => {
                                         </td>
 
                                         <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Products</td>
-                                        <td colSpan="3">
+                                        <td >
                                             <MultiSelect
                                                 value={(filters.Item || []).map(val => ({
                                                     value: val,
@@ -2847,6 +2856,27 @@ const searchTransaction = (e) => {
                                                 placeholder={"Select Products"}
                                             />
                                         </td>
+                                              <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Loadman</td>
+                                        <td>
+                                            <MultiSelect
+                                                value={(filters.loadman || []).map(val => ({
+                                                    value: val,
+                                                    label: loadman.find(t => t.Cost_Center_Id === val)?.Cost_Center_Name || val
+                                                }))}
+                                                onChange={(selectedOptions) =>
+                                                    setFilters({
+                                                        ...filters,
+                                                        loadman: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
+                                                    })
+                                                }
+                                                options={loadman.map(option => ({
+                                                    value: option.Cost_Center_Id,
+                                                    label: option.Cost_Center_Name,
+                                                }))}
+                                                placeholder={"Select Loadman"}
+                                            />
+                                        </td>
+
                                     </tr>
                                 </tbody>
                             </table>
@@ -2916,9 +2946,11 @@ const searchTransaction = (e) => {
                                         );
                                     },
                                 },
+                                 createCol("Do_Inv_No", "string", "Do_Inv_No"),
                                 createCol("Retailer_Name", "string", "Retailer_Name"),
                                 createCol("Branch_Name", "string", "Branch_Name"),
                                 createCol("AreaName", "string", "AreaName"),
+                                 createCol("Transporter_Name", "string", "Transporter_Name"),
                                 createCol("Do_Date", "date", "Do_Date"),
                                 createCol("Total_Before_Tax", "string", "Total_Before_Tax"),
                                 createCol("Total_Tax", "number", "Total_Tax"),
