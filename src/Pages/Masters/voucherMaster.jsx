@@ -45,7 +45,7 @@ function VoucherMaster() {
 
     useEffect(() => {
         fetchLink({
-            address: `masters/voucher`,
+            address: `masters/voucher?showDeleted=1`,
         })
             .then((data) => {
                 if (data.success) {
@@ -97,6 +97,7 @@ function VoucherMaster() {
                 toast.error("Error deleting voucher");
             });
     };
+    
     const handleCreate = () => {
         if (
             !selectedBranch ||

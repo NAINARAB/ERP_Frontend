@@ -108,6 +108,35 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     );
     const diff = useMemo(() => sumOfDebit - sumOfCredit, [sumOfDebit, sumOfCredit]);
 
+    const debitLines = useMemo(
+        () =>
+            journalEntriesInfo
+                .filter((e) => e.DrCr === "Dr")
+                .map((line) => {
+
+                    return {
+                        ...line,
+                        BillEntries: journalBillReference.filter(
+                            (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
+                        ),
+                    }
+                }),
+        [journalEntriesInfo, journalBillReference]
+    );
+
+    const creditLines = useMemo(
+        () =>
+            journalEntriesInfo
+                .filter((e) => e.DrCr === "Cr")
+                .map((line) => ({
+                    ...line,
+                    BillEntries: journalBillReference.filter(
+                        (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Cr"
+                    ),
+                })),
+        [journalEntriesInfo, journalBillReference]
+    );
+
     // const saveStatus = useMemo(() => {
     //     const hasDr = journalEntriesInfo.some(e => (
     //         e.DrCr === "Dr"
@@ -177,15 +206,16 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         if (!saveStatus) return;
         const method =
             journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
-        const entryLineNums = new Set(
-            journalEntriesInfo.map(e => e.LineNum)
-        );
+        // const entryLineNums = new Set(
+        //     journalEntriesInfo.map(e => e.LineNum)
+        // );
+
         const bodyData = {
             ...journalGeneralInfo,
-            Entries: journalEntriesInfo,
-            BillReferences: journalBillReference.filter(ref =>
-                entryLineNums.has(ref.LineNum)
-            )
+            Entries: [...debitLines, ...creditLines],
+            // BillReferences: journalBillReference.filter(ref =>
+            //     entryLineNums.has(ref.LineNum)
+            // )
         };
 
         fetchLink({
@@ -205,8 +235,6 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             console.error("Save journal error", e);
         });
     }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, loadingOn, loadingOff]);
-
-    console.log(journalEntriesInfo)
 
     return (
         <Card>
@@ -250,6 +278,8 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                     setJournalBillReference={setJournalBillReference}
                     onOpenRef={openRef}
                     totals={{ sumOfDebit, sumOfCredit, diff }}
+                    debitLines={debitLines}
+                    creditLines={creditLines}
                 />
 
                 <BillRefDialog

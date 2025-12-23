@@ -10,9 +10,9 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
-import { 
-    salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo, 
-    salesInvoiceStaffInfo, retailerDeliveryAddressInfo 
+import {
+    salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo,
+    salesInvoiceStaffInfo, retailerDeliveryAddressInfo
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";

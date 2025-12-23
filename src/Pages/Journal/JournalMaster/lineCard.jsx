@@ -92,10 +92,10 @@ const LineCard = memo(function LineCard({
                     </Tooltip>
                 </div>
 
-                {toArray(entry.Entries).length > 0 && (
+                {toArray(entry.BillEntries).length > 0 && (
                     <div className="col-12 p-0 m-0 mt-2">
                         <InlineBillRefTable
-                            billRef={toArray(entry.Entries)}
+                            billRef={toArray(entry.BillEntries)}
                             refAmount={entry?.Amount}
                             setJournalBillReference={setJournalBillReference}
                         />

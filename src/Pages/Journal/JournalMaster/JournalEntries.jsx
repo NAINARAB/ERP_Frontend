@@ -1,52 +1,20 @@
 import { useMemo, useCallback } from "react";
 import { Button } from "@mui/material";
-import { rid, isEqualNumber } from "../../../Components/functions";
+import { rid } from "../../../Components/functions";
 import { journalEntriesInfoIV } from "./variable";
 import LineCard from "./lineCard";
 
 const JournalEntriesPanel = ({
     accountsList = [],
     journalEntriesInfo = [],
+    debitLines = [],
+    creditLines = [],
     setJournalEntriesInfo,
     journalBillReference = [],
     setJournalBillReference,
     onOpenRef,
     totals = { sumOfDebit: 0, sumOfCredit: 0, diff: 0 },
 }) => {
-
-    // const accountOptions = useMemo(
-    //     () => accountsList.map(a => ({ value: Number(a.Acc_Id), label: a.Account_name })),
-    //     [accountsList]
-    // );
-
-    const debitLines = useMemo(
-        () =>
-            journalEntriesInfo
-                .filter((e) => e.DrCr === "Dr")
-                .map((line) => {
-
-                    return {
-                        ...line,
-                        Entries: journalBillReference.filter(
-                            (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Dr"
-                        ),
-                    }
-                }),
-        [journalEntriesInfo, journalBillReference]
-    );
-
-    const creditLines = useMemo(
-        () =>
-            journalEntriesInfo
-                .filter((e) => e.DrCr === "Cr")
-                .map((line) => ({
-                    ...line,
-                    Entries: journalBillReference.filter(
-                        (bill) => bill.LineId === line.LineId && isEqualNumber(bill.Acc_Id, line.Acc_Id) && bill.DrCr === "Cr"
-                    ),
-                })),
-        [journalEntriesInfo, journalBillReference]
-    );
 
     const usedDr = useMemo(
         () => new Set(debitLines.filter((r) => r.Acc_Id != null).map((r) => Number(r.Acc_Id))),

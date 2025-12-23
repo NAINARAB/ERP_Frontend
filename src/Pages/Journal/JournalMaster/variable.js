@@ -32,7 +32,7 @@ export const journalEntriesInfoIV = {
     DrCr: '',
     Amount: 0,
     Remarks: '',
-    Entries: [],
+    BillEntries: [],
 }
 
 export const journalBillReferenceIV = {
