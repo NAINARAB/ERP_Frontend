@@ -1322,6 +1322,11 @@
 
 
 
+
+
+
+
+
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import {
@@ -1896,7 +1901,7 @@ const searchTransaction = (e) => {
         const voucherTypeString = Array.isArray(VoucherType) ? VoucherType.join(',') : VoucherType || '';
         const brokerString = Array.isArray(Broker) ? Broker.join(',') : Broker || '';
         const transporterString = Array.isArray(Transporters) ? Transporters.join(',') : Transporters || '';
-         const loadmanString = Array.isArray(Loadman) ? Loadman.join(',') : Loadman || '';
+        const loadmanString = Array.isArray(Loadman) ? Loadman.join(',') : Loadman || '';
         const itemString = Array.isArray(Item) ? Item.join(',') : Item || '';
         const retailerString = Array.isArray(Retailer) ? Retailer.join(',') : Retailer || '';
         const branchValue = filters?.Branch || '';
@@ -2076,7 +2081,7 @@ const searchTransaction = (e) => {
         });
     };
 
-    // Calculate distinct staff count from selected items
+   
     const getDistinctStaffCount = () => {
         const allStaff = selectedItems.flatMap(item =>
             item.All_Staff_Details?.map(staff => staff.Emp_Id) || []
@@ -2859,16 +2864,16 @@ const searchTransaction = (e) => {
                                               <td style={{ verticalAlign: "middle" }} className="fa-13 fw-bold">Loadman</td>
                                         <td>
                                             <MultiSelect
-                                                value={(filters.loadman || []).map(val => ({
+                                                value={(filters.Loadman || []).map(val => ({
                                                     value: val,
                                                     label: loadman.find(t => t.Cost_Center_Id === val)?.Cost_Center_Name || val
                                                 }))}
-                                                onChange={(selectedOptions) =>
-                                                    setFilters({
-                                                        ...filters,
-                                                        loadman: selectedOptions ? selectedOptions.map(opt => opt.value) : [],
-                                                    })
-                                                }
+                                           onChange={(selectedOptions) =>
+    setFilters({
+        ...filters,
+        Loadman: selectedOptions ? selectedOptions.map(opt => opt.value) : [], // uppercase L
+    })
+}
                                                 options={loadman.map(option => ({
                                                     value: option.Cost_Center_Id,
                                                     label: option.Cost_Center_Name,

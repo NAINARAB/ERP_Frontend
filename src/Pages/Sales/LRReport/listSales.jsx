@@ -22,6 +22,8 @@ import BillOfSupplyA5 from "./SalesInvoicePrint/A5printOut";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
 import InvoiceCard from "./SalesInvoicePrint/SalesInvoicePrint";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
+import DeliverysSlipPrint from "./deliverySlipPrint" 
+
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -75,6 +77,13 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [katchathCopyPrint, setKatchathCopyPrint] = useState({
         Do_Id: null,
         open: false,
+    })
+
+    
+    const [deliverySlipPrint,setDeliverySlipPrint]=useState({
+          Do_Id: null,
+        Do_Date: null,
+        open: false
     })
 
     const [filters, setFilters] = useState({
@@ -158,7 +167,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
 
     const onCloseKatchathDialog = () => setKatchathCopyPrint((prev) => ({ Do_Id: null, open: false }));
-
+   const onCloseDeliverySlipDialog=()=>setDeliverySlipPrint((prev)=>({Do_Id:null,Do_Date:null,open:false}))    
     const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters((prev) => {
             const updatedInvolvedStaffs = toArray(prev.selectedInvoice?.involvedStaffs)
@@ -457,6 +466,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                             icon: <Print fontSize="small" color="primary" />,
                                             disabled: !PrintRights,
                                         },
+                                          {
+    name: "Delivery Slip",
+    onclick: () => {
+
+        setDeliverySlipPrint({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true }) 
+    },
+    icon: <Print fontSize="small" color="primary" />,
+    disabled: !PrintRights,
+},
                                         {
                                             name: "Katchath Copy",
                                             onclick: () => {
@@ -694,6 +712,27 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     <Button variant="outlined" onClick={onCloseKatchathDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
+
+<Dialog
+                open={deliverySlipPrint.open}
+                onClose={onCloseDeliverySlipDialog}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>Delivery Slip Preview</DialogTitle>
+                <DialogContent>
+                    <DeliverysSlipPrint
+                        Do_Id={deliverySlipPrint.Do_Id}
+                        loadingOn={loadingOn}
+                        loadingOff={loadingOff}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" onClick={onCloseDeliverySlipDialog}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+
         </>
     );
 };
