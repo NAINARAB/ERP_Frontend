@@ -544,7 +544,7 @@ const DeliverySlipprint = ({ Do_Id, loadingOn, loadingOff }) => {
                 lineHeight: "1.1" // Reduced line height
             }}
         >
-            <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Product_Rate}</div>
+            <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
             <div style={{ width: "4.5cm", paddingLeft: "0.05cm" }}>{item.Short_Name}</div>
             <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
             <div style={{ width: "1.8cm", textAlign: "center" }}>{item.Alt_Act_Qty}</div>
