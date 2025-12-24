@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { checkIsNumber, ISOString, numberToWords } from "../../../Components/functions";
-import "./printoutStyle.css";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { checkIsNumber, ISOString, numberToWords } from "../../../../Components/functions";
+import "./A5PrintCss.css";
+import { fetchLink } from "../../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import { Button } from "@mui/material";
 import { Print } from "@mui/icons-material";
-import smtQRcode from '../../../assets/smtQRcode.jpg'
+import smtQRcode from '../../../../assets/smtQRcode.jpg'
 
 const val = (v, fallback = "") => (v === null || v === undefined ? fallback : v);
 

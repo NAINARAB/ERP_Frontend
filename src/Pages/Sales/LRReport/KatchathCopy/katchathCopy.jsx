@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchLink } from "../../../Components/fetchComponent";
+import { fetchLink } from "../../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
-import { checkIsNumber, LocalDateWithTime, toArray } from "../../../Components/functions";
+import { checkIsNumber, LocalDateWithTime, toArray } from "../../../../Components/functions";
 import { Print } from "@mui/icons-material";
 import { Button } from "@mui/material";
 

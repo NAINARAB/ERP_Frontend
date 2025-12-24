@@ -18,8 +18,10 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import BillOfSupplyA5 from "./A5printOut";
-import KatchathCopy from "./katchathCopy";
+import BillOfSupplyA5 from "./SalesInvoicePrint/A5printOut";
+import KatchathCopy from "./KatchathCopy/katchathCopy";
+import InvoiceCard from "./SalesInvoicePrint/SalesInvoicePrint";
+import InvoiceTemplate from "./SalesInvPrint/invTemplate";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -76,8 +78,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     })
 
     const [filters, setFilters] = useState({
-        reqDate: ISOString(),
-        // reqDate: "2025-11-11",
+        // reqDate: ISOString(),
+        reqDate: "2025-12-24",
         assignDialog: false,
         filterDialog: false,
         selectedInvoice: null,
@@ -661,7 +663,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             >
                 <DialogTitle>Bill Print Preview</DialogTitle>
                 <DialogContent>
-                    <BillOfSupplyA5
+                    <InvoiceTemplate
                         Do_Id={printInvoice.Do_Id}
                         Do_Date={printInvoice.Do_Date}
                         loadingOn={loadingOn}

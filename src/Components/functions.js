@@ -37,6 +37,45 @@ export const decryptPasswordFun = (str) => {
     return decryptedText;
 }
 
+export const getIndianTime = (dateString) => {
+  const date = new Date(dateString);
+
+  const options = {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+    hour12: false
+  };
+
+  const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
+
+  const get = (type) =>
+    parts.find(p => p.type === type)?.value ?? "";
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}.${get("fractionalSecond")}`;
+}
+
+export const addFiveThirty = (dateString) => {
+    const iso = dateString.replace(" ", "T");
+    const date = new Date(iso);
+    const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+
+    const istDate = new Date(date.getTime() + IST_OFFSET_MS);
+
+    const pad = (n, len = 2) => String(n).padStart(len, "0");
+
+    return `${istDate.getFullYear()}-${pad(istDate.getMonth() + 1)}-${pad(
+        istDate.getDate()
+    )} ${pad(istDate.getHours())}:${pad(
+        istDate.getMinutes()
+    )}:${pad(istDate.getSeconds())}.${pad(istDate.getMilliseconds(), 3)}`;
+}
+
 export const LocalDate = (dateObj) => {
     const receivedDate = dateObj ? new Date(dateObj) : new Date();
     return receivedDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
