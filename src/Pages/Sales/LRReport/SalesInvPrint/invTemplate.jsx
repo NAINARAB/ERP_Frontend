@@ -7,33 +7,11 @@ import {
 } from "../../../../Components/functions";
 import { fetchLink } from "../../../../Components/fetchComponent";
 import { useReactToPrint } from "react-to-print";
-import { CheckBox, CheckBoxOutlineBlank, Print, RemoveRedEye, VisibilityOff } from "@mui/icons-material";
+import { CheckBox, CheckBoxOutlineBlank, Print } from "@mui/icons-material";
 import { Button } from "@mui/material";
-import smtQRcode from "../../../../assets/smtQRcode.jpg";
 
 const cm = (n) => `${n}cm`;
 const pct = (part, total) => `${((part / total) * 100).toFixed(4)}%`;
-
-// 🔧 print calibration (increase if output is smaller than your pre-printed box)
-const PRINT_SCALE = 1.25;  // try 1.06 → 1.15
-const PRINT_OFFSET_X = 0;  // cm (use if you need to shift left/right)
-const PRINT_OFFSET_Y = 0;  // cm (use if you need to shift up/down)
-
-const pageStyle = `
-  @page { margin: 0; }
-  @media print {
-    html, body { margin: 0 !important; padding: 0 !important; }
-    .invoicePrintScale { 
-      zoom: ${PRINT_SCALE};              
-    }
-    @supports not (zoom: 1) {
-      .invoicePrintScale {
-        transform: scale(${PRINT_SCALE});
-        transform-origin: top left;
-      }
-    }
-  }
-`;
 
 const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
     const [data, setData] = useState({});
@@ -43,6 +21,24 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
     const [pri, setPri] = useState("");
     const [bb, setBb] = useState("");
     const [designsView, setDesignsView] = useState(false);
+    const [PRINT_SCALE, setPRINT_SCALE] = useState(1.25);
+    const [PRINT_OFFSET_X, setPRINT_OFFSET_X] = useState(0);
+    const [PRINT_OFFSET_Y, setPRINT_OFFSET_Y] = useState(0);
+
+    const pageStyle = `
+        @page { margin: 0; }
+        @media print {
+            html, body { margin: 0 !important; padding: 0 !important; }
+            .invoicePrintScale { 
+                zoom: ${PRINT_SCALE};              
+            }
+            @supports not (zoom: 1) {
+                .invoicePrintScale {
+                    transform: scale(${PRINT_SCALE});
+                    transform-origin: top left;
+                }
+            }
+        }`;
 
     useEffect(() => {
         if (!checkIsNumber(Do_Id)) return;
@@ -79,31 +75,18 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
         });
     };
 
-    // const invLabel = "opacity-0";
-    // const b = "";
-    // const pri = "";
-    // const bb = "";
-
-    // const invLabel = ''
-    // const b = " border ";
-    // const pri = " border-primary ";
-    // const bb = " border-bottom ";
-
     const tctr = " text-center ";
-    const tright = " text-start ";
     const tleft = " text-end ";
     const fwBold = " fw-bold ";
 
     const fontSize = "12px";
     const hsnFont = "10px";
 
-    // ✅ FINAL measured page size
     const INVOICE_W = cm(17.75);
     const INVOICE_H = cm(13.4);
-    const PAGE_PAD_Y = cm(0.75);
-    const PAGE_PAD_X = cm(0.6);
+    // const PAGE_PAD_Y = cm(0.75);
+    // const PAGE_PAD_X = cm(0.6);
 
-    // ✅ measured outer padding (paper margin around invoice)
     const PAGE_PAD = {
         top: 0.75,
         right: 0.6,
@@ -111,7 +94,6 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
         left: 0.6,
     };
 
-    // ✅ measured block heights (these sum exactly to 13.4cm)
     const H_HEADER1 = 1.7; // top big blank
     const H_PARTY = 2.25; // To / Date block
     const H_TABLE_HEAD = 0.55; // green header strip
@@ -185,15 +167,53 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
 
     return (
         <div className="d-flex flex-column align-items-center justify-content-center">
-            <Button onClick={handlePrint} startIcon={<Print />}>
-                Print
-            </Button>
 
-            <Button onClick={handleDesignsView} startIcon={designsView ?<CheckBox /> : <CheckBoxOutlineBlank />}>
-                Designs View
-            </Button>
+            <div className="d-flex flex-row flex-wrap">
+                <Button onClick={handlePrint} startIcon={<Print />}>
+                    Print
+                </Button>
 
-            {/* <div
+                <Button onClick={handleDesignsView} startIcon={designsView ? <CheckBox /> : <CheckBoxOutlineBlank />}>
+                    Designs View
+                </Button>
+
+                {designsView && (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div>
+                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Scale:</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={PRINT_SCALE}
+                                onChange={(e) => setPRINT_SCALE(parseFloat(e.target.value))}
+                                style={{ width: '60px' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Offset X:</label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                value={PRINT_OFFSET_X}
+                                onChange={(e) => setPRINT_OFFSET_X(parseFloat(e.target.value))}
+                                style={{ width: '60px' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Offset Y:</label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                value={PRINT_OFFSET_Y}
+                                onChange={(e) => setPRINT_OFFSET_Y(parseFloat(e.target.value))}
+                                style={{ width: '60px' }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div
                 ref={printRef}
                 style={{
                     padding: `${cm(PAGE_PAD.top)} ${cm(PAGE_PAD.right)} ${cm(PAGE_PAD.bottom)} ${cm(
@@ -201,11 +221,11 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
                     )}`,
                     boxSizing: "border-box",
                 }}
-            > */}
-            <div
+            >
+                {/* <div
                 ref={printRef}
                 style={{ padding: `${PAGE_PAD_Y} ${PAGE_PAD_X}`, boxSizing: "border-box" }}
-            >
+            > */}
                 <div
                     className="invoicePrintScale"
                     style={{
