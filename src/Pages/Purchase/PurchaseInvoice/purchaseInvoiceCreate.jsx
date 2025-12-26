@@ -544,8 +544,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                     {selectedItems.map((row, i) => (
                                         <tr key={i}>
                                             <td className={tdStyle}>{i + 1}</td>
-                                            {/* <td className={tdStyle}>{findProductDetails(baseData.products, row.Item_Id)?.Product_Name ?? 'Not found'}</td> */}
-                                            <td className={tdStyle}>{row?.Item_Name || 'Not found'}</td>
+                                            <td className={tdStyle}>{findProductDetails(baseData.products, row.Item_Id)?.Product_Name ?? 'Not found'}</td>
+                                            {/* <td className={tdStyle}>{row?.Item_Name || 'Not found'}</td> */}
                                             <td className={tdStyle}>
                                                 <input
                                                     value={row?.Item_Rate ? row?.Item_Rate : ''}
