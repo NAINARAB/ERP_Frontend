@@ -1,511 +1,1204 @@
+// import { useEffect, useRef, useState } from "react";
+// import { toArray, checkIsNumber, numberToWords, NumberFormat } from "../../../../Components/functions";
+// import { fetchLink } from "../../../../Components/fetchComponent";
+// import { useReactToPrint } from "react-to-print";
+// import { Button } from "@mui/material";
+// import { Print } from "@mui/icons-material";
+// import { useNavigate, useLocation } from "react-router-dom";
+
+// // Import your A5 background image
+// import a5BackgroundImage from './templatea5.jpeg';
+
+// const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
+//   const [data, setData] = useState({});
+//   const printRef = useRef(null);
+//   const nav = useNavigate();
+//   const location = useLocation();
+//   const [companyInfo, setCompanyInfo] = useState({});
+//   const storage = JSON.parse(localStorage.getItem('user'));
+  
+//   useEffect(() => {
+//     if (!checkIsNumber(Do_Id)) return;
+//     fetchLink({
+//       address: `sales/salesInvoice/printOuts/invoicePrint?Do_Id=${Do_Id}`,
+//       loadingOn,
+//       loadingOff,
+//     }).then((res) => {
+//       if (res?.success) setData(res.data?.[0] || {});
+//     });
+//   }, [Do_Id]);
+
+//   useEffect(() => {
+//     fetchLink({
+//       address: `masters/company?Company_id=${storage?.Company_id}`
+//     }).then(data => {
+//       if (data.success) {
+//         setCompanyInfo(data?.data[0] ? data?.data[0] : {})
+//       }
+//     }).catch(e => console.error(e))
+//   }, [storage?.Company_id])
+
+//   const handlePrint = useReactToPrint({ content: () => printRef.current });
+
+//   const products = toArray(data?.productDetails);
+//   const expenses = toArray(data?.expencessDetails)
+//     .filter(e => !e.expenseName?.includes("GST") && !e.expenseName?.toLowerCase().includes("round off"));
+//   const broker = toArray(data?.staffDetails).find(e => e.empType === "Broker");
+//   const transport = toArray(data?.staffDetails).find(e => e.empType === "Transport");
+
+//   const totalAmount = products.reduce((a, b) => a + Number(b.amount || 0), 0);
+//   const totalExpenses = expenses.reduce((a, b) => a + Number(b.expenseValue || 0), 0);
+//   const netAmount = totalAmount + totalExpenses + Number(data?.roundOffValue || 0);
+
+//   const groupHSNSummary = (list) => {
+//     const map = new Map();
+//     list.forEach(p => {
+//       const hsn = p?.hsnCode || "";
+//       const amt = Number(p?.amount) || 0;
+//       map.set(hsn, (map.get(hsn) || 0) + amt);
+//     });
+//     return Array.from(map.entries()).map(([hsn, amount]) => ({ hsn, amount }));
+//   };
+//   const hsnSummary = groupHSNSummary(products);
+
+//   return (
+//     <div style={{ 
+//       display: "flex", 
+//       flexDirection: "column", 
+//       alignItems: "center"
+//     }}>
+//       <style>
+//         {`
+//           @media print {
+//             @page {
+//               size: A5 landscape;
+//               margin: 0mm;
+//             }
+//             body {
+//               margin: 0;
+//               -webkit-print-color-adjust: exact;
+//             }
+//             .print-container {
+//               width: 21cm !important;
+//               height: 14.8cm !important;
+//               margin: 0 auto !important;
+//               padding: 0 !important;
+//               position: relative !important;
+//             }
+//             .no-print {
+//               display: none !important;
+//             }
+            
+//             /* Adjust print positioning */
+//             .print-adjust {
+//               position: relative !important;
+//               left: 0.7cm !important; /* Adjust this for centering */
+//             }
+            
+//             /* Center HSN summary for print */
+//             .hsn-print {
+//               position: relative !important;
+//               left: 1.5cm !important;
+//             }
+//           }
+          
+//           /* Preview adjustments */
+//           @media screen {
+//             .preview-center {
+//               margin-left: 1cm;
+//             }
+//           }
+//         `}
+//       </style>
+
+//       <Button onClick={handlePrint} startIcon={<Print />} className="no-print" style={{ margin: "20px" }}>
+//         Print Preview
+//       </Button>
+
+//       <div
+//         ref={printRef}
+//         style={{
+//           width: "21cm",
+//           height: "14.8cm",
+//           position: "relative",
+//           margin: "0 auto",
+//           boxSizing: "border-box"
+//         }}
+//       >
+//         {/* Background Image */}
+//         <img 
+//           src={a5BackgroundImage}
+//           alt="A5 Invoice Layout"
+//           style={{
+//             position: "absolute",
+//             top: 0,
+//             left: 0,
+//             width: "100%",
+//             height: "100%",
+//             zIndex: 0
+//           }}
+//         />
+
+//         {/* Content Overlay */}
+//         <div style={{
+//           position: "absolute",
+//           top: 0,
+//           left: 0,
+//           width: "100%",
+//           height: "100%",
+//           zIndex: 1,
+//           boxSizing: "border-box"
+//         }}>
+//           {/* TOP HEADER SECTION */}
+//           <div style={{
+//             position: "absolute",
+//             top: "0.5cm",
+//             width: "100%"
+//           }}>
+//             {/* LEFT: Company Info */}
+//             <div style={{
+//               position: "absolute",
+//               left: "0cm",
+//               width: "9cm",
+//               padding: "0px"
+//             }}>
+//               <div style={{
+//                 position: "absolute",
+//                 left: "3.5cm",
+//                 fontWeight: "bold",
+//                 top:"0.2cm",
+//                 fontSize: "25px",
+//                 width: "7cm",
+//                 padding: "3px",
+//                 color: "#000"
+//               }}>
+//                 {companyInfo?.Company_Name}
+//               </div>
+//             </div>
+
+//             {/* CENTER: Address */}
+//             <div style={{
+//               position: "absolute",
+//               left: "2.0cm",
+//               fontSize: "15px",
+//               width: "10cm",
+//               marginTop: "1cm",
+//               color: "#000"
+//             }}>
+//               {companyInfo?.Company_Address}
+              
+//               <div style={{
+//                 position: "absolute",
+//                 fontSize: "15px",
+//                 width: "10cm",
+//                 left: "0.0cm",
+//                 marginTop: "0.0cm",
+//                 padding: "1px",
+//                 color: "#000"
+//               }}>
+//                 <p>G.O:746 Puliyur, Sayanapuram,Svga</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* CUSTOMER & INVOICE DETAILS SECTION */}
+//           <div style={{
+//             position: "absolute",
+//             top: "2.8cm",
+//             width: "100%"
+//           }}>
+//             {/* LEFT: Retailer Details */}
+//             <div style={{
+//               position: "absolute",
+//               left: "2.4cm",
+//               fontSize:"15px",
+//               top: "0.0cm",
+//               width: "9cm",
+//               padding: "2.5px"
+//             }}>
+//               <div style={{ color: "#000" }}>{data.mailingName}</div>
+//               <div style={{ color: "#000" }}>{data.mailingAddress}</div>
+//               <div style={{ color: "#000" }}>{data.mailingNumber}</div>
+//               <div style={{ color: "#000" }}>GSTIN: {data.retailerGstNumber}</div>
+//             </div>
+
+//             {/* RIGHT: Invoice Details */}
+//             <div style={{
+//               position: "absolute",
+//               left: "12.5cm",
+//               width: "7cm",
+//               fontSize:"12px",
+//               padding: "0px",
+//               top: "0.3cm"
+//             }}>
+//               <div style={{ height: "0.7cm", display: "flex", justifyContent: "space-between" }}>
+//                 <span style={{ position: "relative", bottom: "0cm", color: "#000" }}>
+//                   {data.createdOn && new Date(data.createdOn).toLocaleDateString("en-GB")}
+//                 </span>
+//                 <b style={{ position: "relative", bottom: "0cm", color: "#000" }}>
+//                   {data.voucherTypeGet}
+//                 </b>
+//               </div>
+
+//               <div style={{ height: "0.7cm" }}>
+//                 <b style={{ color: "#000" }}>{data.voucherNumber}</b>
+//               </div>
+
+//               <div style={{ height: "1cm", display: "flex", justifyContent: "space-between" }}>
+//                 <span style={{ color: "#000" }}>{broker?.empName}</span>
+//                 <span style={{ color: "#000" }}>{transport?.empName}</span>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* PRODUCTS TABLE AREA */}
+//           <div style={{
+//             position: "absolute",
+//             top: "6cm",
+//             left: "0",
+//             width: "20cm"
+//           }}>
+//             {products.filter(p => p.itemName).map((p, i) => (
+//               <div
+//                 key={i}
+//                 style={{
+//                   display: "flex",
+//                   height: "0.5cm",          
+//                   lineHeight: "0.5cm",      
+//                   alignItems: "left"
+//                 }}
+//               >
+//                 {/* S.No */}
+//                 <div
+//                   style={{
+//                     width: "1cm",
+//                     textAlign: "right",
+//                     marginLeft:"0.2cm",
+//                     fontWeight: "bold",
+//                     color: "#000"
+//                   }}
+//                 >
+//                   {i + 1}
+//                 </div>
+
+//                 {/* Item Name */}
+//                 <div
+//                   style={{
+//                     marginLeft: "0.4cm",
+//                     width: "8.2cm",
+//                     lineHeight: "normal",
+//                     color: "#000",
+//                     fontSize:"13px"
+//                   }}
+//                 >
+//                   {p.itemName}
+//                 </div>
+
+//                 <div style={{ width: "2cm", color: "#000" }}>{p.hsnCode}</div>
+//                 <div style={{ width: "1.5cm", color: "#000" }}>{p.gstPercentage}</div>
+//                 <div style={{ width: "1.2cm", color: "#000" }}>{p.billQuantity}</div>
+//                 <div style={{ width: "3cm", color: "#000" }}>{p.itemRate}</div>
+//                 <div style={{ width: "1cm", color: "#000" }}>{p.quantity}</div>
+//                 <div style={{ width: "3.5cm", textAlign: "right", color: "#000" }}>
+//                   {NumberFormat(p.amount)}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+
+//           {/* AMOUNT IN WORDS */}
+//           <div
+//             style={{
+//               fontWeight: "bold",
+//               position: "absolute",
+//               top: "9.7cm",
+//               left: "2cm",
+//               color: "#000",
+//               width: "15cm"
+//             }}
+//           >
+//             {numberToWords(parseInt(netAmount))}
+//           </div>
+
+//           {/* EXPENSES SECTION */}
+//           <div style={{ 
+//             position: "absolute",
+//             top: "8.5cm",
+//             left: "4cm",
+//             width: "15cm"
+//           }}>
+//             {expenses.map((e, i) => (
+//               <div
+//                 key={i}
+//                 style={{
+//                   display: "flex",
+//                   height: "0.5cm",
+//                   lineHeight: "0.5cm",
+//                   alignItems: "center"
+//                 }}
+//               >
+//                 <div style={{ width: "5.0cm" }}></div>
+//                 <div style={{ width: "0.3cm" }}></div>
+//                 <div style={{ width: "1.9cm" }}></div>
+//                 <div style={{ width: "0.9cm" }}></div>
+//                 <div style={{ width: "1.3cm" }}></div>
+
+//                 <div
+//                   style={{
+//                     width: "4.2cm",
+//                     marginLeft: "0cm",
+//                     lineHeight: "normal",
+//                     color: "#000"
+//                   }}
+//                 >
+//                   {e.expenseName}
+//                 </div>
+
+//                 <div style={{ width: "0cm" }}></div>
+
+//                 <div
+//                   style={{
+//                     width: "1.5cm",
+//                     textAlign: "right",
+//                     color: "#000"
+//                   }}
+//                 >
+//                   {NumberFormat(e.expenseValue)}
+//                 </div>
+//               </div>
+//             ))}
+
+//             {/* ROUND OFF */}
+//             {data?.roundOffValue ? (
+//               <div style={{ display: "flex", height: "1cm", fontWeight: "bold" }}>
+//                 <div style={{ width: "0cm" }}></div>
+//                 <div style={{ width: "4.3cm" }}></div>
+//                 <div style={{ width: "1.9cm" }}></div>
+//                 <div style={{ width: "0.9cm" }}></div>
+//                 <div style={{ width: "1.3cm" }}></div>
+//                 <div style={{ width: "3.7cm" }}></div>
+//                 <div style={{ width: "1.5cm" }}></div>
+//                 <div style={{ width: "1.0cm", marginLeft: "1.1cm", color: "#000" }}>
+//                   {NumberFormat(data.roundOffValue)}
+//                 </div>
+//               </div>
+//             ) : null}
+
+//             {/* NET AMOUNT */}
+//             <div
+//               style={{
+//                 fontWeight: "bold",
+//                 textAlign: "center",
+//                 marginLeft: "8.5cm",
+//                 marginTop: "0cm",
+//                 color: "#000"
+//               }}
+//             >
+//               {netAmount.toFixed(2)}
+//             </div>
+//           </div>
+
+//           {/* HSN SUMMARY - Centered for print */}
+//           <div style={{ 
+//             position: "absolute",
+//             top: "13cm",
+//             left: "4cm", // Changed from -2.5cm to 4cm for centering
+//             width: "10cm"
+//           }}>
+//             {hsnSummary.map((h, i) => (
+//               <div
+//                 key={i}
+//                 style={{
+//                   display: "flex",
+//                   justifyContent: "space-between",
+//                   marginTop: "-1cm"
+//                 }}
+//               >
+//                 <span style={{ color: "#000", fontWeight: "bold" }}>{h.hsn}</span>
+//                 <span style={{ color: "#000", fontWeight: "bold" }}>
+//                   {NumberFormat(h.amount)}
+//                 </span>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default InvoiceTemplate;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useEffect, useRef, useState } from "react";
-import {
-    toArray,
-    checkIsNumber,
-    numberToWords,
-    NumberFormat,
-} from "../../../../Components/functions";
+import { toArray, checkIsNumber, numberToWords, NumberFormat } from "../../../../Components/functions";
 import { fetchLink } from "../../../../Components/fetchComponent";
 import { useReactToPrint } from "react-to-print";
-import { CheckBox, CheckBoxOutlineBlank, Print } from "@mui/icons-material";
 import { Button } from "@mui/material";
+import { Print } from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const cm = (n) => `${n}cm`;
-const pct = (part, total) => `${((part / total) * 100).toFixed(4)}%`;
+// Import your A5 background image
+// import a5BackgroundImage from './templatea5.jpeg';
+
+import a5BackgroundImage from './plain.jpeg'
 
 const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
-    const [data, setData] = useState({});
-    const printRef = useRef(null);
-    const [invLabel, setInvLabel] = useState("opacity-0");
-    const [b, setB] = useState("");
-    const [pri, setPri] = useState("");
-    const [bb, setBb] = useState("");
-    const [designsView, setDesignsView] = useState(false);
-    const [PRINT_SCALE, setPRINT_SCALE] = useState(1.25);
-    const [PRINT_OFFSET_X, setPRINT_OFFSET_X] = useState(0);
-    const [PRINT_OFFSET_Y, setPRINT_OFFSET_Y] = useState(0);
-
-    const pageStyle = `
-        @page { margin: 0; }
-        @media print {
-            html, body { margin: 0 !important; padding: 0 !important; }
-            .invoicePrintScale { 
-                zoom: ${PRINT_SCALE};              
-            }
-            @supports not (zoom: 1) {
-                .invoicePrintScale {
-                    transform: scale(${PRINT_SCALE});
-                    transform-origin: top left;
-                }
-            }
-        }`;
-
-    useEffect(() => {
-        if (!checkIsNumber(Do_Id)) return;
-        fetchLink({
-            address: `sales/salesInvoice/printOuts/invoicePrint?Do_Id=${Do_Id}`,
-            loadingOn,
-            loadingOff,
-        })
-            .then((res) => {
-                if (res.success) setData(res?.data?.[0] || {});
-            })
-            .catch((e) => console.error(e));
-    }, [Do_Id]);
-
-    const handlePrint = useReactToPrint({
-        content: () => printRef.current,
-        pageStyle,
+  const [data, setData] = useState({});
+  const printRef = useRef(null);
+  const nav = useNavigate();
+  const location = useLocation();
+  const [companyInfo, setCompanyInfo] = useState({});
+  const storage = JSON.parse(localStorage.getItem('user'));
+  
+  useEffect(() => {
+    if (!checkIsNumber(Do_Id)) return;
+    fetchLink({
+      address: `sales/salesInvoice/printOuts/invoicePrint?Do_Id=${Do_Id}`,
+      loadingOn,
+      loadingOff,
+    }).then((res) => {
+      if (res?.success) setData(res.data?.[0] || {});
     });
+  }, [Do_Id]);
 
-    const handleDesignsView = () => {
-        setDesignsView(pre => {
-            if (pre) {
-                setB("");
-                setPri("");
-                setBb("");
-                setInvLabel('opacity-0');
-            } else {
-                setB(" border ");
-                setPri(" border-primary ");
-                setBb(" border-bottom ");
-                setInvLabel('')
-            }
-            return !pre;
-        });
-    };
+  useEffect(() => {
+    fetchLink({
+      address: `masters/company?Company_id=${storage?.Company_id}`
+    }).then(data => {
+      if (data.success) {
+        setCompanyInfo(data?.data[0] ? data?.data[0] : {})
+      }
+    }).catch(e => console.error(e))
+  }, [storage?.Company_id])
 
-    const tctr = " text-center ";
-    const tleft = " text-end ";
-    const fwBold = " fw-bold ";
+  const handlePrint = useReactToPrint({ content: () => printRef.current });
 
-    const fontSize = "12px";
-    const hsnFont = "10px";
+  const products = toArray(data?.productDetails);
+  const expenses = toArray(data?.expencessDetails)
+    .filter(e => !e.expenseName?.includes("GST") && !e.expenseName?.toLowerCase().includes("round off"));
+  const broker = toArray(data?.staffDetails).find(e => e.empType === "Broker");
+  const transport = toArray(data?.staffDetails).find(e => e.empType === "Transport");
 
-    const INVOICE_W = cm(17.75);
-    const INVOICE_H = cm(13.4);
-    // const PAGE_PAD_Y = cm(0.75);
-    // const PAGE_PAD_X = cm(0.6);
+  const totalAmount = products.reduce((a, b) => a + Number(b.amount || 0), 0);
+  const totalExpenses = expenses.reduce((a, b) => a + Number(b.expenseValue || 0), 0);
+  const netAmount = totalAmount + totalExpenses + Number(data?.roundOffValue || 0);
 
-    const PAGE_PAD = {
-        top: 0.75,
-        right: 0.6,
-        bottom: 0.6,
-        left: 0.6,
-    };
-
-    const H_HEADER1 = 1.7; // top big blank
-    const H_PARTY = 2.25; // To / Date block
-    const H_TABLE_HEAD = 0.55; // green header strip
-    const H_TABLE_BODY = 4.65; // items rows region
-    const H_ROUND_ROW = 0.55; // rounded-off row
-    const H_NET_ROW = 0.95; // net row
-    const H_BOTTOM = 2.75; // bottom big boxes
-
-    // ✅ measured widths
-    const header2 = { left: 9.5, right: 8.2 };
-    const header2Total = header2.left + header2.right;
-
-    // ✅ measured bottom split
-    const bottomRow = { left: 12.3, right: 5.45 };
-    const bottomRowTotal = bottomRow.left + bottomRow.right;
-
-    // ✅ measured column widths from your image
-    const cols = [
-        { key: "no", label: "No", cm: 0.65, cls: tctr },
-        { key: "items", label: "Items", cm: 6.35, cls: tctr },
-        { key: "hsn", label: "HSN", cm: 1.9, cls: tctr },
-        { key: "gst", label: "GST", cm: 0.9, cls: tctr },
-        { key: "bags", label: "Bags", cm: 1.25, cls: tctr },
-        { key: "rate", label: "Rate", cm: 2.4, cls: tctr },
-        { key: "qty", label: "Qty", cm: 1.475, cls: tctr },
-        { key: "amount", label: "Amount", cm: 2.5, cls: tctr },
-    ];
-    const colsTotal = cols.reduce((s, c) => s + c.cm, 0);
-
-    const broker = toArray(data?.staffDetails).find((st) => st.empType === "Broker");
-    const transport = toArray(data?.staffDetails).find((st) => st.empType === "Transport");
-
-    const products = toArray(data?.productDetails);
-    const expenses = toArray(data?.expencessDetails);
-    const visibleExpenses = expenses.filter((e) => !e.expenseName?.includes("GST"));
-
-    const totalAmount = products.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const totalExpenses = expenses.reduce((acc, curr) => acc + (Number(curr.expenseValue) || 0), 0);
-    const netAmount = totalAmount + totalExpenses + (Number(data?.roundOffValue) || 0);
-
-    // ✅ body rows are forced to fit EXACTLY inside 4.65cm
-    const totalRows = Math.max(8, 6 + visibleExpenses.length);
-    const ROW_H = H_TABLE_BODY / totalRows;
-
-    // ✅ padding in cm (so print stays consistent)
-    const CELL_PAD_Y = 0.05;
-    const CELL_PAD_X = 0.12;
-
-    const cellStyle = (width) => ({
-        width,
-        fontSize,
-        padding: `${cm(CELL_PAD_Y)} ${cm(CELL_PAD_X)}`,
-        boxSizing: "border-box",
-        overflow: "hidden",
+  const groupHSNSummary = (list) => {
+    const map = new Map();
+    list.forEach(p => {
+      const hsn = p?.hsnCode || "";
+      const amt = Number(p?.amount) || 0;
+      map.set(hsn, (map.get(hsn) || 0) + amt);
     });
+    return Array.from(map.entries()).map(([hsn, amount]) => ({ hsn, amount }));
+  };
+  const hsnSummary = groupHSNSummary(products);
 
-    const groupHSNSummary = (productsList) => {
-        const map = new Map();
-        productsList.forEach((p) => {
-            const hsn = p?.hsnCode || "";
-            const amt = Number(p?.amount);
-            map.set(hsn, (map.get(hsn) || 0) + (Number.isNaN(amt) ? 0 : amt));
-        });
-        return Array.from(map.entries()).map(([hsn, amount]) => ({ hsn, amount }));
-    };
+  return (
+    <div style={{ 
+      display: "flex", 
+      flexDirection: "column", 
+      alignItems: "center"
+    }}>
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A5 landscape;
+              margin: 0mm;
+            }
+            body {
+              margin: 0;
+              -webkit-print-color-adjust: exact;
+            }
+            .print-container {
+              width: 21cm !important;
+              height: 14.8cm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              position: relative !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            
+            /* Adjust print positioning */
+            .print-adjust {
+              position: relative !important;
+              left: 0.7cm !important; /* Adjust this for centering */
+            }
+            
+            /* Center HSN summary for print */
+            .hsn-print {
+              position: relative !important;
+              left: 1.5cm !important;
+            }
+          }
+          
+          /* Preview adjustments */
+          @media screen {
+            .preview-center {
+              margin-left: 1cm;
+            }
+          }
+        `}
+      </style>
 
-    const hsnSummary = groupHSNSummary(products);
+      <Button onClick={handlePrint} startIcon={<Print />} className="no-print" style={{ margin: "20px" }}>
+        Print Preview
+      </Button>
 
-    // Helper widths (pct)
-    const w = (cmVal) => pct(cmVal, colsTotal);
+      <div
+        ref={printRef}
+        style={{
+          width: "21cm",
+          height: "14.8cm",
+          position: "relative",
+          margin: "0 auto",
+          boxSizing: "border-box"
+        }}
+      >
+        {/* Background Image */}
+        <img 
+          src={a5BackgroundImage}
+          alt="A5 Invoice Layout"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 0
+          }}
+        />
 
-    return (
-        <div className="d-flex flex-column align-items-center justify-content-center">
-
-            <div className="d-flex flex-row flex-wrap">
-                <Button onClick={handlePrint} startIcon={<Print />}>
-                    Print
-                </Button>
-
-                <Button onClick={handleDesignsView} startIcon={designsView ? <CheckBox /> : <CheckBoxOutlineBlank />}>
-                    Designs View
-                </Button>
-
-                {designsView && (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <div>
-                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Scale:</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={PRINT_SCALE}
-                                onChange={(e) => setPRINT_SCALE(parseFloat(e.target.value))}
-                                style={{ width: '60px' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Offset X:</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={PRINT_OFFSET_X}
-                                onChange={(e) => setPRINT_OFFSET_X(parseFloat(e.target.value))}
-                                style={{ width: '60px' }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontSize: '10px', marginRight: '5px' }}>Offset Y:</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={PRINT_OFFSET_Y}
-                                onChange={(e) => setPRINT_OFFSET_Y(parseFloat(e.target.value))}
-                                style={{ width: '60px' }}
-                            />
-                        </div>
-                    </div>
-                )}
+        {/* Content Overlay */}
+        <div style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 1,
+          boxSizing: "border-box"
+        }}>
+    
+          <div style={{
+            position: "absolute",
+            top: "0.5cm",
+            width: "100%"
+          }}>
+          
+            <div style={{
+              position: "absolute",
+              left: "0cm",
+              width: "9cm",
+              padding: "0px"
+            }}>
+              <div style={{
+                position: "absolute",
+                left: "4.5cm",
+                fontWeight: "bold",
+                top:"0.2cm",
+                fontSize: "25px",
+                width: "7cm",
+                padding: "3px",
+                color: "#000"
+              }}>
+                {companyInfo?.Company_Name}
+              </div>
             </div>
 
-            <div
-                ref={printRef}
+       
+            <div style={{
+              position: "absolute",
+              left: "3.0cm",
+              fontSize: "15px",
+              width: "10cm",
+              marginTop: "1cm",
+              color: "#000"
+            }}>
+              {companyInfo?.Company_Address}
+              
+              <div style={{
+                position: "absolute",
+                fontSize: "15px",
+                width: "10cm",
+                left: "0.0cm",
+                marginTop: "0.0cm",
+                padding: "1px",
+                color: "#000"
+              }}>
+                <p>G.O:746 Puliyur, Sayanapuram,Svga</p>
+              </div>
+            </div>
+          </div>
+
+       
+          <div style={{
+            position: "absolute",
+            top: "3.3cm",
+            width: "100%"
+          }}>
+            <p style={{
+              position: "absolute",
+              left: "1.0cm",
+              fontSize:"13px",
+              top: "0.0cm",
+              width: "9cm",
+              padding: "2.5px"}}>
+                {/* To */}
+                </p>
+           
+            <div style={{
+              position: "absolute",
+              left: "2.4cm",
+              fontSize:"13px",
+              top: "0.0cm",
+              width: "9cm",
+              padding: "2.5px"
+            }}>
+              
+              <div style={{ color: "#000" }}>{data.mailingName}</div>
+              <div style={{ color: "#000" }}>{data.mailingAddress}</div>
+              <div style={{ color: "#000" }}>{data.mailingNumber}</div>
+              <div style={{ color: "#000" }}>GSTIN: {data.retailerGstNumber}</div>
+            </div>
+
+   
+       <div style={{
+  position: "absolute",
+  left: "12cm",
+  width: "8cm",
+  fontSize:"12px",
+  padding: "0px",
+  // top: "0.2cm"
+}}>
+
+  <div style={{ 
+    height: "0.7cm", 
+    display: "flex", 
+    justifyContent: "space-between",
+    alignItems: "center"
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+      <span style={{ 
+        fontWeight: "bold", 
+        color: "#000"
+      }}>
+        {/* Date: */}
+        </span>
+      <span style={{ color: "#000",marginLeft:"30px" }}>
+        {data.createdOn && new Date(data.createdOn).toLocaleDateString("en-GB")}
+      </span>
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+      <span style={{ 
+        fontWeight: "bold", 
+        color: "#000",
+        marginLeft:"50px",
+      }}>
+        {/* Bill Type: */}
+      </span>
+   <b style={{ 
+  color: "#000",
+  marginLeft: "50px"
+}}>
+  {data.voucherTypeGet}
+</b>
+    </div>
+  </div>
+
+  {/* Second Row: Bill No */}
+  <div style={{ 
+    height: "0.7cm",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px"
+  }}>
+    <span style={{ 
+      fontWeight: "bold", 
+      color: "#000"
+    }}>
+      {/* Bill No: */}
+      </span>
+    <b style={{ color: "#000",marginLeft:"50px" }}>{data.voucherNumber}</b>
+  </div>
+
+  {/* Third Row: Broker & Transport */}
+  <div style={{ 
+    height: "1cm", 
+    display: "flex", 
+    justifyContent: "space-between",
+    alignItems: "center"
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+      <span style={{ 
+        fontWeight: "bold", 
+        color: "#000"
+      }}>
+        {/* Broker: */}
+        </span>
+      <span style={{ color: "#000",marginLeft:"50px" }}>{broker?.empName || "-"}</span>
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+      <span style={{ 
+        fontWeight: "bold", 
+        color: "#000"
+      }}>
+        {/* Transport: */}
+        </span>
+      <span style={{ color: "#000" }}>{transport?.empName || "-"}</span>
+    </div>
+  </div>
+</div>
+          </div>
+
+          {/* PRODUCTS TABLE AREA */}
+      <div style={{
+  position: "absolute",
+  top: "5.2cm",
+  left: "0",
+  width: "20cm",
+  fontSize: "10px"
+}}>
+  {/* COLUMN HEADERS */}
+  <div
+    style={{
+      display: "flex",
+      height: "0.5cm",
+      lineHeight: "0.5cm",
+      alignItems: "left",
+      fontWeight: "bold",
+    
+      marginBottom: "0.3cm"
+    }}
+  >
+    {/* S.No Header */}
+    <div
+      style={{
+        width: "1cm",
+        textAlign: "right",
+        marginLeft: "0.4cm",
+        // color: "#000"
+      }}
+    >
+      {/* No */}
+    </div>
+
+    {/* Items Header */}
+    <div
+      style={{
+        marginLeft: "0.2cm",
+        width: "8.2cm",
+        color: "#000"
+      }}
+    >
+      {/* ITEMS */}
+    </div>
+
+    {/* HSN Header */}
+    <div style={{ 
+      width: "2cm", 
+      color: "#000"
+    }}>
+      {/* HSN */}
+    </div>
+    
+    {/* GST Header */}
+    <div style={{ 
+      width: "1.5cm",  
+      color: "#000"
+    }}>
+      {/* GST */}
+    </div>
+    
+    {/* BAGS Header */}
+    <div style={{ 
+      width: "1.2cm",
+      color: "#000"
+    }}>
+      {/* BAGS */}
+      </div>
+    
+    {/* Rate Header */}
+    <div style={{ 
+      width: "3cm", 
+      color: "#000"
+    }}>
+      {/* Rate */}
+      </div>
+    
+    {/* Qty Header */}
+    <div style={{ 
+      width: "1cm", 
+      color: "#000"
+    }}>
+      {/* Qty */}
+      </div>
+    
+    {/* Amount Header */}
+    <div style={{ 
+      width: "3.5cm", 
+      textAlign: "right", 
+      color: "#000"
+    }}>
+      {/* Amount */}
+    </div>
+  </div>
+
+  {/* PRODUCTS LIST */}
+
+  {products.filter(p => p.itemName).map((p, i) => (
+  <div
+    key={i}
+    style={{
+      display: "flex",
+      height: "0.5cm",          
+      lineHeight: "0.5cm",      
+      alignItems: "center",
+    }}
+  >
+    {/* S.No - Fixed position */}
+    <div style={{ 
+      width: "1cm", 
+      textAlign: "right",
+      marginLeft: "1.2cm",
+      fontWeight: "bold",
+      color: "#000",
+      flexShrink: 0 // Prevents shrinking
+    }}>
+      {i + 1}
+    </div>
+
+    {/* Item Name - Fixed position */}
+    <div style={{ 
+      marginLeft: "0.5cm",
+      width: "6.8cm",
+      color: "#000",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      flexShrink: 0
+    }}>
+      {p.itemName}
+    </div>
+
+    {/* HSN Code - Fixed position */}
+    <div style={{ 
+      width: "1cm", 
+      color: "#000",
+      marginLeft: "0.5cm",
+      textAlign: "center",
+      flexShrink: 0
+    }}>
+      {p.hsnCode}
+    </div>
+    
+    {/* GST Percentage - Fixed width won't affect HSN */}
+    <div style={{ 
+      width: "1cm",  
+      color: "#000",
+      textAlign: "right",
+      flexShrink: 0,
+      
+    }}>
+      {p.gstPercentage}
+    </div>
+    
+    {/* Quantity */}
+    <div style={{ 
+      width: "5cm", 
+      color: "#000",
+      textAlign: "center"
+    }}>{p.quantity}</div>
+    
+    {/* Item Rate */}
+    <div style={{ 
+      width: "4.5cm", 
+      color: "#000",
+      textAlign: "center"
+    }}>{p.itemRate}</div>
+
+    <div style={{ 
+      width: "1.2cm",
+      color: "#000",
+      marginLeft: "2cm",
+      textAlign: "left",
+      marginRight:"0.5cm"
+    }}>{p.billQuantity}</div>
+    
+   
+    <div style={{ 
+      width: "3.5cm", 
+      textAlign: "right", 
+      color: "#000",
+      marginRight: "0.5cm"
+    }}>
+      {NumberFormat(p.amount)}
+    </div>
+  </div>
+))}
+  {/* {products.filter(p => p.itemName).map((p, i) => (
+    <div
+      key={i}
+      style={{
+        display: "flex",
+        height: "0.5cm",          
+        lineHeight: "0.5cm",      
+        alignItems: "left",
+      
+      }}
+    >
+      {/* S.No */}
+      {/* <div
+        style={{
+          width: "1cm",
+          textAlign: "right",
+          marginLeft: "0.2cm",
+          fontWeight: "bold",
+          marginLeft:"1cm",
+          color: "#000"
+        }}
+      >
+        {i + 1}
+      </div>
+
+      {/* Item Name */}
+      {/* <div
+    style={{
+  marginLeft: "0.4cm",
+  width: "15.2cm",
+ color: "#000",
+  marginBottom: "0.5cm"
+}}
+      >
+        {p.itemName}
+      </div> */}
+
+      {/* <div style={{ 
+        width: "1cm", 
+        color: "#000",
+        marginLeft:"1.5cm"
+      }}>{p.hsnCode}</div> */}
+      
+      {/* <div style={{ 
+        width: "1.5cm",  
+        color: "#000",
+      }}>{p.gstPercentage}</div>
+          <div style={{ 
+        width: "5cm", 
+        color: "#000"
+      }}>{p.quantity}</div>
+     */}
+      
+      {/* <div style={{ 
+        width: "4.5cm", 
+        color: "#000"
+      }}>{p.itemRate}</div>
+       */}
+    {/* <div style={{ 
+        width: "1.2cm",
+        color: "#000",
+        marginLeft:"3cm"
+      }}>{p.billQuantity}</div>
+       */}
+      {/* <div style={{ 
+        width: "3.5cm", 
+        textAlign: "right", 
+        color: "#000"
+      }}>
+        {NumberFormat(p.amount)}
+      </div>  */}
+    {/* </div> */}
+  {/* ))} */}
+</div>
+
+   
+          <div
+            style={{
+              fontWeight: "bold",
+              position: "absolute",
+              top: "10.35cm",
+              left: "2.3cm",
+              color: "#000",
+              width: "15cm"
+            }}
+          >
+            {numberToWords(parseInt(netAmount))}
+          </div>
+
+ 
+
+          <div style={{ 
+  position: "absolute",
+  top: "9.6cm",
+  left: "0cm",
+  width: "20cm"
+}}>
+  {expenses.map((e, i) => (
+    <div
+      key={i}
+      style={{
+        display: "flex",
+        height: "0.5cm",
+        lineHeight: "0.5cm",
+        alignItems: "center"
+      }}
+    >
+      <div style={{ width: "5.0cm" }}></div>
+      <div style={{ width: "0.3cm" }}></div>
+      <div style={{ width: "1.9cm" }}></div>
+      <div style={{ width: "0.9cm" }}></div>
+      <div style={{ width: "1.3cm" }}></div>
+
+      <div
+        style={{
+          width: "4.2cm",
+          marginLeft: "4.5cm",
+          lineHeight: "normal",
+          color: "#000",
+          fontSize:'10px'
+        }}
+      >
+        {e.expenseName}
+      </div>
+
+      <div style={{ width: "0cm" }}></div>
+
+      <div
+        style={{
+          width: "1.5cm",
+          textAlign: "right",
+          color: "#000",
+          fontSize: '12px',
+          marginRight: "auto"
+        }}
+      >
+        {NumberFormat(e.expenseValue)}
+      </div>
+    </div>
+  ))}
+
+  
+  {data?.roundOffValue ? (
+    <div style={{ 
+      display: "flex", 
+      height: "1cm", 
+      fontWeight: "bold",
+      alignItems: "center"
+    }}>
+      <div style={{ width: "5.0cm" }}></div>
+      <div style={{ width: "0.3cm" }}></div>
+      <div style={{ width: "1.9cm" }}></div>
+      <div style={{ width: "0.9cm" }}></div>
+      <div style={{ width: "1.3cm" }}></div>
+
+    
+      <div
+        style={{
+          width: "4.2cm",
+          marginLeft: "8.5cm",
+          lineHeight: "normal",
+          color: "#000",
+          fontSize: '10px',
+          fontWeight: "bold"
+        }}
+      >
+  
+      </div>
+
+      <div style={{ width: "0cm" }}></div>
+
+     
+    <div
+  style={{
+    width: "1.5cm",
+    textAlign: "right",
+    color: "#000",
+    fontSize: '12px',
+    marginRight: "20px",
+    marginTop: "9px" 
+  }}
+>
+  {NumberFormat(data.roundOffValue)}
+</div>
+    </div>
+  ) : null}
+
+
+
+ <div
+  style={{
+    fontWeight: "bold",
+    textAlign: "center",
+    marginLeft: "14cm",
+    marginTop: "0.13cm",
+    color: "#000",
+    fontSize: "12px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "140px"
+  }}
+>
+  <span></span>
+  <span>{netAmount.toFixed(2)}</span>
+</div>
+</div>
+
+         
+          <div style={{ 
+            position: "absolute",
+            top: "14.5cm",
+            left: "2cm", 
+            width: "10cm"
+          }}>
+            {hsnSummary.map((h, i) => (
+              <div
+                key={i}
                 style={{
-                    padding: `${cm(PAGE_PAD.top)} ${cm(PAGE_PAD.right)} ${cm(PAGE_PAD.bottom)} ${cm(
-                        PAGE_PAD.left
-                    )}`,
-                    boxSizing: "border-box",
+                  display: "flex",
+                  justifyContent: "space-around",
+                  marginLeft:"0cm",
+                  marginTop: "-1cm"
                 }}
-            >
-                {/* <div
-                ref={printRef}
-                style={{ padding: `${PAGE_PAD_Y} ${PAGE_PAD_X}`, boxSizing: "border-box" }}
-            > */}
-                <div
-                    className="invoicePrintScale"
-                    style={{
-                        position: "relative",
-                        left: cm(PRINT_OFFSET_X),
-                        top: cm(PRINT_OFFSET_Y),
-                    }}
-                >
-                    <div
-                        style={{
-                            width: INVOICE_W,
-                            height: INVOICE_H,
-                            boxSizing: "border-box",
-                            display: "flex",
-                            flexDirection: "column",
-                        }}
-                        className={b + pri}
-                    >
-                        {/* header one - company details (measured 1.7cm) */}
-                        <div style={{ height: cm(H_HEADER1), boxSizing: "border-box" }} className={b + bb + pri} />
-
-                        {/* header two - party details (measured 2.25cm) */}
-                        <div style={{ display: "flex", width: "100%", height: cm(H_PARTY) }}>
-                            <div
-                                style={{
-                                    width: pct(header2.left, header2Total),
-                                    height: "100%",
-                                    boxSizing: "border-box",
-                                    fontSize,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    padding: cm(0.15),
-                                }}
-                                className={b + bb + pri}
-                            >
-                                <div style={{ display: "flex" }}>
-                                    <span style={{ width: "40px" }}>
-                                        <span className={invLabel}>To </span>
-                                    </span>
-                                    <div>
-                                        <p style={{ fontSize: "10px", margin: 0 }}>{data.mailingName}</p>
-                                        <p style={{ fontSize: "10px", margin: 0 }}>{data.mailingAddress}</p>
-                                        <p style={{ fontSize: "10px", margin: 0 }}>{data.mailingCity}</p>
-                                        <p style={{ fontSize: "10px", margin: 0 }}>{data.mailingNumber}</p>
-                                        <p style={{ fontSize: "10px", margin: 0 }}>
-                                            <span className={invLabel}>GSTIN : </span>
-                                            {data.retailerGstNumber}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    width: pct(header2.right, header2Total),
-                                    height: "100%",
-                                    boxSizing: "border-box",
-                                    fontSize,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    padding: cm(0.15),
-                                }}
-                                className={b + bb + pri}
-                            >
-                                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <span className={invLabel}>
-                                        Date :{" "}
-                                        {data.createdOn ? new Date(data.createdOn).toLocaleDateString("en-GB") : ""}
-                                    </span>
-                                    <span style={{ fontWeight: "bold" }}>{data.voucherTypeGet}</span>
-                                </div>
-
-                                <div style={{ display: "flex" }}>
-                                    <span className={invLabel}>Bill No. : </span>
-                                    <span style={{ fontWeight: "bold", marginLeft: "5px" }}>{data.voucherNumber}</span>
-                                </div>
-
-                                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <div>
-                                        <span className={invLabel}>Broker:</span>
-                                        <span>{broker?.empName}</span>
-                                    </div>
-                                    <div>
-                                        <span className={invLabel}>Transport:</span>
-                                        <span>{transport?.empName}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* items table */}
-                        <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
-                            {/* Header (measured 0.55cm) */}
-                            <div style={{ display: "flex", width: "100%" }} className={pri}>
-                                {cols.map((c) => (
-                                    <div
-                                        key={c.key}
-                                        className={tctr + pri}
-                                        style={{
-                                            width: w(c.cm),
-                                            fontWeight: 600,
-                                            fontSize,
-                                            boxSizing: "border-box",
-                                            height: cm(H_TABLE_HEAD),
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <span className={invLabel}>{c.label}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Body (measured 4.65cm total, rows auto-fit) */}
-                            <div style={{ width: "100%", height: cm(H_TABLE_BODY), display: "flex", flexDirection: "column" }}>
-                                {Array.from({ length: totalRows }).map((_, index) => {
-                                    // Product Rows (first 6)
-                                    if (index < 6) {
-                                        const item = products[index] || {};
-                                        return (
-                                            <div
-                                                key={index}
-                                                style={{ display: "flex", width: "100%", height: cm(ROW_H) }}
-                                                className={pri}
-                                            >
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[0].cm))}>
-                                                    {item.itemName ? index + 1 : ""}
-                                                </div>
-                                                <div className={fwBold + pri} style={cellStyle(w(cols[1].cm))}>
-                                                    {item.itemName}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[2].cm))}>
-                                                    {item.hsnCode}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[3].cm))}>
-                                                    {item.gstPercentage}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[4].cm))}>
-                                                    {item.billQuantity}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[5].cm))}>
-                                                    {item.itemRate}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[6].cm))}>
-                                                    {item.quantity}
-                                                </div>
-                                                <div className={fwBold + pri + tleft} style={cellStyle(w(cols[7].cm))}>
-                                                    {item.amount}
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-
-                                    // Expense Rows
-                                    const expenseIndex = index - 6;
-                                    const expenseItem = visibleExpenses[expenseIndex] || {};
-
-                                    // merged cell width (Rate + Qty)
-                                    const mergedWidth = cols[5].cm + cols[6].cm;
-
-                                    return (
-                                        <div
-                                            key={index}
-                                            style={{ display: "flex", width: "100%", height: cm(ROW_H) }}
-                                            className={pri}
-                                        >
-                                            <div className={tctr + pri} style={cellStyle(w(cols[0].cm))} />
-                                            <div className={tctr + pri} style={cellStyle(w(cols[1].cm))} />
-                                            <div className={tctr + pri} style={cellStyle(w(cols[2].cm))} />
-                                            <div className={tctr + pri} style={cellStyle(w(cols[3].cm))} />
-                                            <div className={tctr + pri} style={cellStyle(w(cols[4].cm))} />
-
-                                            <div className={pri + fwBold} style={cellStyle(w(mergedWidth))}>
-                                                {expenseItem.expenseName}
-                                            </div>
-
-                                            <div className={tctr + pri + fwBold} style={cellStyle(w(cols[7].cm))}>
-                                                {expenseItem.expenseValue}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Rounded Off row (measured 0.55cm) aligned to last columns */}
-                        <div style={{ display: "flex", width: "100%", height: cm(H_ROUND_ROW) }} className={pri}>
-                            <div className={pri} style={cellStyle(w(cols[0].cm))} />
-                            <div className={pri} style={cellStyle(w(cols[1].cm))} />
-                            <div className={pri} style={cellStyle(w(cols[2].cm))} />
-                            <div className={pri} style={cellStyle(w(cols[3].cm))} />
-                            <div className={pri} style={cellStyle(w(cols[4].cm))} />
-
-                            <div className={pri} style={cellStyle(w(cols[5].cm + cols[6].cm))}>
-                                <span className={invLabel}>Rounded Off</span>
-                            </div>
-
-                            <div className={pri + tleft} style={cellStyle(w(cols[7].cm))}>
-                                {data.roundOffValue}
-                            </div>
-                        </div>
-
-                        {/* Net row (measured 0.95cm) using your measured bottom split 12.3 / 5.45 */}
-                        <div style={{ display: "flex", width: "100%" }}>
-                            <div
-                                style={{
-                                    width: pct(bottomRow.left, bottomRowTotal),
-                                    height: cm(H_NET_ROW),
-                                    boxSizing: "border-box",
-                                }}
-                                className={b + pri}
-                            />
-                            <div
-                                style={{
-                                    width: pct(bottomRow.right, bottomRowTotal),
-                                    height: cm(H_NET_ROW),
-                                    padding: cm(0.15),
-                                    boxSizing: "border-box",
-                                    fontSize,
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    fontWeight: "bold",
-                                }}
-                                className={b + pri}
-                            >
-                                <span className={invLabel}>Net</span>
-                                <span>{netAmount.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        {/* Bottom big boxes (measured 2.75cm) */}
-                        <div style={{ display: "flex", flexWrap: "wrap" }}>
-                            <div
-                                style={{
-                                    width: pct(bottomRow.left, bottomRowTotal),
-                                    height: cm(H_BOTTOM),
-                                    boxSizing: "border-box",
-                                    display: "flex",
-                                }}
-                                className={b + pri}
-                            >
-                                <div style={{ fontSize: "12px", padding: cm(0.15) }}>
-                                    {numberToWords(parseInt(netAmount))}
-                                    {hsnSummary.map((h, i) => (
-                                        <div className="hsnRow" key={i}>
-                                            <div className="hsnCode" style={{ fontSize: hsnFont }}>
-                                                {h.hsn || ""}
-                                            </div>
-                                            <div className="hsnAmt" style={{ fontSize: hsnFont }}>
-                                                {NumberFormat(h.amount)}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div>
-                                    {/* <img src={smtQRcode} alt="QR" style={{ height: "100%", width: "130px" }} /> */}
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    width: pct(bottomRow.right, bottomRowTotal),
-                                    height: cm(H_BOTTOM),
-                                    padding: cm(0.15),
-                                    boxSizing: "border-box",
-                                    fontSize: "10px",
-                                }}
-                                className={b + pri}
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+              >
+                <span style={{ color: "#000", fontWeight: "bold" }}>{h.hsn}</span>
+                <span style={{ color: "#000", fontWeight: "bold" }}>
+                  {NumberFormat(h.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default InvoiceTemplate;
