@@ -4,12 +4,14 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Sync, Visibility  } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
+import PrintIcon from '@mui/icons-material/Print';
+import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -40,6 +42,28 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         orderDetails: false,
     });
 
+    const [printPreview,setPrintPreview] =useState({
+        open:false,
+        Do_Id:null,
+        Do_Date:null
+    })
+
+
+    const handleOpenPrintPreview = (row) => {
+    setPrintPreview({
+        open: true,
+        Do_Id: row.Do_Id, 
+        Do_Date: row.Do_Date || new Date().toISOString().split('T')[0],
+    });
+};
+
+const handleClosePrintPreview = () => {
+    setPrintPreview({
+        open: false,
+        Do_Id: null,
+        Do_Date: null,
+    });
+};
     useEffect(() => {
 
         const otherSessionFiler = getSessionFiltersByPageId(pageID);
@@ -207,6 +231,32 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             <Visibility className="fa-16" />
                                         </IconButton>
                                     </Tooltip>
+                                    {/* <Tooltip title='Print Invoice'>
+                                        <IconButton
+                                            onClick={() => {
+                                                setViewOrder({
+                                                    orderDetails: row,
+                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
+                                                })
+                                            }}
+                                            color='primary' size="small"
+                                        >
+                                            <PrintIcon className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip> */}
+
+
+<Tooltip title='Print Invoice'>
+    <IconButton
+        onClick={() => handleOpenPrintPreview(row)}
+        color='primary' 
+        size="small"
+    >
+        <PrintIcon className="fa-16" />
+    </IconButton>
+</Tooltip>
+  
+
 
                                     {EditRights && (
                                         <Tooltip title='Edit'>
@@ -276,6 +326,44 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     TitleText={'Sale Order'}
                 />
             )}
+
+
+<Dialog
+    open={printPreview.open}
+    // onClose={handleClosePrintPreview}
+    maxWidth="lg"
+    fullWidth
+>
+    <DialogTitle>
+        Invoice Print Preview
+        {printPreview.Do_Id && ` - DO No: ${printPreview.Do_Id}`}
+    </DialogTitle>
+    <DialogContent>
+        {printPreview.Do_Id ? (
+            <InvoiceTemplate
+                Do_Id={printPreview.Do_Id}
+                loadingOn={loadingOn}
+                loadingOff={loadingOff}
+            />
+        ) : (
+            <div className="text-center p-5">Loading invoice...</div>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={handleClosePrintPreview} variant="outlined">
+            Close
+        </Button>
+        {/* <Button onClick={() => {
+            // If you want to trigger print automatically
+            // You might need to expose a print function from InvoiceTemplate
+            handleClosePrintPreview();
+        }} variant="contained" color="primary">
+            Print
+        </Button> */}
+    </DialogActions>
+</Dialog>
+
+
 
             <Dialog
                 open={dialog.filters}
