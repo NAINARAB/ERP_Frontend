@@ -786,7 +786,8 @@ const InvoiceTemplate = ({ Do_Id, loadingOn, loadingOff }) => {
     }}
   >
     <span></span>
-    <span>{NumberFormat(netAmount)}</span>
+    {/* <span>{NumberFormat(netAmount)}</span> */}
+      {(Number(parseFloat(netAmount || 0)).toFixed(2))}
     {/* <span>{netAmount}</span> */}
   </div>
 </div>
