@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button, IconButton, CardContent, Card,Dialog,DialogTitle,DialogContent,DialogActions  } from "@mui/material";
+import { Button, IconButton, CardContent, Card } from "@mui/material";
 import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
@@ -12,7 +12,7 @@ import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo,
-    salesInvoiceStaffInfo, retailerDeliveryAddressInfo,
+    salesInvoiceStaffInfo, retailerDeliveryAddressInfo
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -20,7 +20,7 @@ import SalesInvoiceTaxDetails from "./taxDetails";
 import AddProductsInSalesInvoice from "./importFromSaleOrder";
 import ExpencesOfSalesInvoice from "./manageExpences";
 import AddProductForm from "./addProducts";
-import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
+
 
 const storage = getSessionUser().user;
 
@@ -49,12 +49,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const [dialog, setDialog] = useState({
         addProductDialog: false,
         importFromSaleOrder: false,
-        printPreviewDialog:false
-    })
-
-    const [printData,setPrintData]=useState({
-        Do_Id:null,
-        Do_Date:null
     })
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
@@ -253,11 +247,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         taxType,
     ])
 
-
-     const handleClosePrintPreview = () => {
-        setDialog(prev => ({ ...prev, printPreviewDialog: false }));
-        setPrintData({ Do_Id: null, Do_Date: null });
-    };
     useEffect(() => {
         if (
             isValidObject(editValues) &&
@@ -338,46 +327,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             }
         }).then(data => {
             if (data.success) {
- 
-                const createdDoId = data?.others?.Do_Id;
-                
+                clearValues();
                 toast.success(data.message);
-                
-           
-                if (createdDoId) {
-                    setPrintData({
-                        Do_Id: createdDoId,
-                        Do_Date: invoiceInfo.Do_Date || new Date().toISOString().split('T')[0]
-                    });
-                    setDialog(prev => ({ ...prev, printPreviewDialog: true }));
-                } else {
-                   
-                    const existingDoId = invoiceInfo?.Do_Id;
-                    if (existingDoId) {
-                        setPrintData({
-                            Do_Id: existingDoId,
-                            Do_Date: invoiceInfo.Do_Date || new Date().toISOString().split('T')[0]
-                        });
-                        setDialog(prev => ({ ...prev, printPreviewDialog: true }));
-                    } else {
-                        
-                        navigate('/erp/sales/invoice');
-                    }
-                }
-           
+                navigate('/erp/sales/invoice')
             } else {
-                toast.warn(data.message);
+                toast.warn(data.message)
             }
         }).catch(e => console.error(e)).finally(() => {
             if (loadingOff) loadingOff();
-        });
-    };
-
-        const handlePrintAndClose = () => {
-        handleClosePrintPreview();
-        clearValues();
-        navigate('/erp/sales/invoice');
-    };
+        })
+    }
 
     return (
         <>
@@ -400,39 +359,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
                 batchDetails={baseData.batchDetails}
             />
-
-
-              <Dialog
-                open={dialog.printPreviewDialog}
-                // onClose={handleClosePrintPreview}
-                maxWidth="lg"
-                fullWidth
-            >
-                <DialogTitle>
-                    Invoice Print Preview
-                    {printData.Do_Id && ` - DO No: ${printData.Do_Id}`}
-                </DialogTitle>
-                <DialogContent>
-                    {printData.Do_Id ? (
-                        <InvoiceTemplate
-                            Do_Id={printData.Do_Id}
-                            loadingOn={loadingOn}
-                            loadingOff={loadingOff}
-                        />
-                    ) : (
-                        <div className="text-center p-5">Loading invoice...</div>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClosePrintPreview} variant="outlined">
-                        Close
-                    </Button>
-                    {/* <Button onClick={handlePrintAndClose} variant="contained" color="primary"> */}
-                        {/* Print & Close */}
-                    {/* </Button> */}
-                </DialogActions>
-            </Dialog>
-
 
             <Card>
                 <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
