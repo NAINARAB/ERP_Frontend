@@ -1226,6 +1226,25 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 });
 
 
+// ================= PACK SUMMARY =================
+const packSummary = useMemo(() => {
+    if (!selectedRow?.Product_Array) return {};
+
+    const products = selectedRow.Product_Array.flatMap(
+        product => product?.Products_List || []
+    );
+
+    return products.reduce((acc, item) => {
+        const pack = item?.Pack; // or `${item?.Pack}`
+
+        if (!pack) return acc;
+
+        acc[pack] = (acc[pack] || 0) + 1;
+        return acc;
+    }, {});
+}, [selectedRow]);
+
+
     return (
         <>
 
@@ -1790,30 +1809,63 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </thead>
                                 <tbody>
 
-                                    {selectedRow?.Product_Array?.map((product, productIndex) => (
-                                        (product?.Products_List || []).map((item, index) => (
-                                            <tr key={`${productIndex}-${index}`}>
-                                                <td className="fa-10">{index + 1}</td>
-                                                {/* <td className="fa-10">{item.Reason || "Delivery"}</td> */}
-                                                   <td className="fa-10">{item.Do_Inv_No || "Delivery"}</td>
-                                                <td className="fa-10">{item?.Retailer_Name}</td>
-                                                {/* <td className="fa-10">{item?.Retailer_Address}</td> */}
-                                                   <td className="fa-10">
-  {item?.Delivery_Staff
-    ?.filter(staff => staff.Emp_Type_Name === "Transport")
-    .map(staff => staff.Emp_Name)
-    .join(", ")}
-</td>
+                                 {(selectedRow?.Product_Array || [])
+  .flatMap(product => product?.Products_List || [])
+  .map((item, index) => (
+    <tr key={index}>
+      <td className="fa-10">{index + 1}</td>
 
-                                                <td className="fa-10">{item?.Product_Name}</td>
-                                                <td className="fa-10">{item?.HSN_Code}</td>
-                                                <td className="fa-10">{NumberFormat(item?.Bill_Qty)}</td>
-                                                <td className="fa-10">{NumberFormat(item?.Act_Qty || 0)}</td>
-                                                <td className="fa-10">{NumberFormat(item?.Item_Rate)}</td>
-                                                <td className="fa-10">{NumberFormat(item?.Taxable_Rate * item?.Bill_Qty)}</td>
-                                            </tr>
-                                        ))
-                                    ))}
+      <td className="fa-10">{item.Do_Inv_No || "Delivery"}</td>
+
+      <td className="fa-10">{item?.Retailer_Name}</td>
+
+      <td className="fa-10">
+        {(item?.Delivery_Staff || [])
+          .filter(staff => staff.Emp_Type_Name === "Transport")
+          .map(staff => staff.Emp_Name)
+          .join(", ")}
+      </td>
+
+      <td className="fa-10">{item?.Product_Name}</td>
+
+      <td className="fa-10">{item?.HSN_Code}</td>
+
+      <td className="fa-10">
+        {NumberFormat(item?.Alt_Act_Qty || 0)}
+      </td>
+
+      <td className="fa-10">
+        {NumberFormat(item?.Bill_Qty || 0)}
+      </td>
+
+      <td className="fa-10">
+        {NumberFormat(item?.Item_Rate || 0)}
+      </td>
+
+      <td className="fa-10">
+        {NumberFormat((item?.Taxable_Rate || 0) * (item?.Bill_Qty || 0))}
+      </td>
+    </tr>
+  ))}
+    <tr>
+  <td
+    colSpan={9}
+    className="border fa-14 text-end fw-bold"
+  >
+    Total
+  </td>
+
+  <td className="border fa-14 fw-bold">
+    {NumberFormat(
+      TaxData.reduce(
+        (sum, item) => sum + (item.totalBeforeTax || 0),
+        0
+      )
+    )}
+  </td>
+</tr>
+
+
                                 </tbody>
                             </table>
 
@@ -1892,7 +1944,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         <td>0</td>
                                         <td>Grand Total</td>
                                         <td className="fa-15 fw-bold">
-                                            {/* Calculate Total Value (Taxable Value + Total Tax) */}
+                                         
                                             {NumberFormat(
                                                 Object.values(TaxData).reduce(
                                                     (acc, item) => acc + (item.taxableValue ?? 0) + (item.igst ?? 0) + (item.cgst ?? 0) + (item.sgst ?? 0), 0
@@ -1903,6 +1955,24 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                 </tbody>
 
                             </table>
+
+               <table className="table table-bordered fa-10">
+  <tbody>
+    <tr className="fw-bold">
+      <td>Pack Details</td>
+      <td>Count</td>
+    </tr>
+
+    {Object.entries(packSummary).map(([pack, count], index) => (
+      <tr key={index}>
+        <td className="fw-bold">{pack} KG</td>
+        <td>Count : {count}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
 
                             <td colSpan={6} className='col-12 fa-15 fw-bold'>
                                 {numberToWords(
