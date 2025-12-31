@@ -37,6 +37,7 @@ export const salesInvoiceGeneralInfo = {
     Delivery_Status: 0,
     Payment_Mode: 0,
     Payment_Status: 0,
+    gstNumber: "",
 
     // Delivery_Time: '',
     // Delivery_Location: '',

@@ -114,6 +114,7 @@ const SalesInvoiceCreation = lazy(() => import("./Pages/Sales/SalesInvoice/sales
 const PreSaleorder = lazy(() => import("./Pages/Sales/PreSaleOrder/orderList"));
 // sales LR Report
 const SalesInvoiceListLRReport = lazy(() => import("./Pages/Sales/LRReport/listSales"))
+const SalesInvoicePaper = lazy(() => import("./Pages/Sales/SalesPeper/salesPaper"))
 
 // Inventry
 const StockReport = lazy(() => import("./Pages/Inventry/stockReport"))
@@ -341,6 +342,7 @@ const RoutingArray = [
     { component: <PreSaleorder />, path: '/erp/sales/PreSaleorder' },
     // { component: <LrReport />, path: '/erp/sales/lrReport' },
     { component: <SalesInvoiceListLRReport />, path: '/erp/sales/lrReport' },
+    { component: <SalesInvoicePaper />, path: '/erp/sales/salesInvoicePaper' },
 
     // ERP - purchase
     { component: <DisplayNavigations />, path: '/erp/purchase' },

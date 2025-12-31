@@ -61,10 +61,12 @@ const ManageSalesInvoiceGeneralInfo = ({
                             label: invoiceInfo?.Retailer_Name
                         }}
                         onChange={e => {
+                            const gstValue = retailers.find(ret => isEqualNumber(ret.Retailer_Id, e.value))?.Gstno || '';
                             setInvoiceInfo(pre => ({
                                 ...pre,
                                 Retailer_Id: e.value,
-                                Retailer_Name: e.label
+                                Retailer_Name: e.label,
+                                gstNumber: gstValue
                             }));
                             setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
                             // if (onChangeRetailer) onChangeRetailer();
@@ -108,6 +110,17 @@ const ManageSalesInvoiceGeneralInfo = ({
                         placeholder={"Select Voucher Type"}
                         maxMenuHeight={300}
                         filterOption={reactSelectFilterLogic}
+                    />
+                </div>
+
+                {/* GSTNO */}
+                <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                    <label >GSTNO</label>
+                    <input
+                        value={invoiceInfo?.gstNumber || ""}
+                        className={inputStyle}
+                        placeholder="ex: 15-CHAR-STRING"
+                        onChange={e => setInvoiceInfo(pre => ({ ...pre, gstNumber: e.target.value }))}
                     />
                 </div>
 

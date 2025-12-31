@@ -18,11 +18,9 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import BillOfSupplyA5 from "./SalesInvoicePrint/A5printOut";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
-import InvoiceCard from "./SalesInvoicePrint/SalesInvoicePrint";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
-import DeliverysSlipPrint from "./deliverySlipPrint" 
+import DeliverysSlipPrint from "./deliverySlipPrint"
 
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
@@ -79,21 +77,22 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         open: false,
     })
 
-    
-    const [deliverySlipPrint,setDeliverySlipPrint]=useState({
-          Do_Id: null,
+
+    const [deliverySlipPrint, setDeliverySlipPrint] = useState({
+        Do_Id: null,
         Do_Date: null,
         open: false
     })
 
     const [filters, setFilters] = useState({
-        // reqDate: ISOString(),
-        reqDate: "2025-12-24",
+        reqDate: ISOString(),
+        // reqDate: "2025-12-24",
         assignDialog: false,
         filterDialog: false,
         selectedInvoice: null,
         multipleStaffUpdateDialog: false,
         fetchTrigger: 0,
+        staffStatus: 0,
     });
 
     const columns = useMemo(
@@ -106,18 +105,20 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     );
 
     useEffect(() => {
+
         fetchLink({
-            address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}`,
+            address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
             loadingOn,
             loadingOff,
-        })
-            .then((data) => {
-                setSalesInvoices(toArray(data.data));
-                setCostTypes(toArray(data?.others?.costTypes));
-                setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
-            })
-            .catch(console.error);
-    }, [filters.fetchTrigger, loadingOn, loadingOff]);
+        }).then((data) => {
+            setSalesInvoices(toArray(data.data));
+            setCostTypes(toArray(data?.others?.costTypes));
+            setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+        }).catch(console.error);
+
+        console.log(filters.staffStatus)
+
+    }, [filters.fetchTrigger, loadingOn, loadingOff, filters.staffStatus]);
 
     useEffect(() => {
         fetchLink({ address: "masters/erpCostCenter/dropDown" })
@@ -167,7 +168,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
 
     const onCloseKatchathDialog = () => setKatchathCopyPrint((prev) => ({ Do_Id: null, open: false }));
-   const onCloseDeliverySlipDialog=()=>setDeliverySlipPrint((prev)=>({Do_Id:null,Do_Date:null,open:false}))    
+    const onCloseDeliverySlipDialog = () => setDeliverySlipPrint((prev) => ({ Do_Id: null, Do_Date: null, open: false }))
     const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters((prev) => {
             const updatedInvolvedStaffs = toArray(prev.selectedInvoice?.involvedStaffs)
@@ -466,15 +467,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                             icon: <Print fontSize="small" color="primary" />,
                                             disabled: !PrintRights,
                                         },
-                                          {
-    name: "Delivery Slip",
-    onclick: () => {
+                                        {
+                                            name: "Delivery Slip",
+                                            onclick: () => {
 
-        setDeliverySlipPrint({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true }) 
-    },
-    icon: <Print fontSize="small" color="primary" />,
-    disabled: !PrintRights,
-},
+                                                setDeliverySlipPrint({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true })
+                                            },
+                                            icon: <Print fontSize="small" color="primary" />,
+                                            disabled: !PrintRights,
+                                        },
                                         {
                                             name: "Katchath Copy",
                                             onclick: () => {
@@ -515,6 +516,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             value={filters.reqDate}
                             onChange={(e) => setFilters((prev) => ({ ...prev, reqDate: e.target.value }))}
                         />
+
+                        <select
+                            value={filters.staffStatus}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, staffStatus: Number(e.target.value) }))}
+                            className="cus-inpt w-auto me-2"
+                        >
+                            <option value={1}>All Invoice</option>
+                            <option value={0}>Unassigned Invoice</option>
+                        </select>
                     </>
                 }
             />
@@ -713,7 +723,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 </DialogActions>
             </Dialog>
 
-<Dialog
+            <Dialog
                 open={deliverySlipPrint.open}
                 onClose={onCloseDeliverySlipDialog}
                 maxWidth="lg"
