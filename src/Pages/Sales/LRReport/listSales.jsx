@@ -12,13 +12,17 @@ import {
     DialogTitle,
     IconButton,
     TextField,
+    FormControl,
+    MenuItem
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
 import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
 import { toast } from "react-toastify";
+import BillOfSupplyA5 from "./SalesInvoicePrint/A5printOut";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
+import InvoiceCard from "./SalesInvoicePrint/SalesInvoicePrint";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
 import DeliverysSlipPrint from "./deliverySlipPrint"
 
@@ -31,6 +35,8 @@ const multipleStaffUpdateInitialValues = {
     Do_Id: [],
     involvedStaffs: [],
 };
+
+
 
 const normalize = (v) => String(v ?? "").toLowerCase().trim();
 
@@ -52,6 +58,9 @@ const getCostTypeEmployees = (invoiceOrRow, costTypeId) => {
         .map((emp) => String(emp.Emp_Name ?? "").trim())
         .filter(Boolean);
 };
+
+
+
 
 const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
     const [salesInvoices, setSalesInvoices] = useState([]);
@@ -85,15 +94,23 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     })
 
     const [filters, setFilters] = useState({
-        reqDate: ISOString(),
-        // reqDate: "2025-12-24",
+        // reqDate: ISOString(),
+        reqDate: "2025-12-24",
         assignDialog: false,
         filterDialog: false,
         selectedInvoice: null,
         multipleStaffUpdateDialog: false,
         fetchTrigger: 0,
-        staffStatus: 0,
+        docType: "",
     });
+
+    const [multiPrint, setMultiPrint] = useState({
+        open: false,
+        doIds: [],
+        docType: ""
+    });
+
+
 
     const columns = useMemo(
         () => [
@@ -105,20 +122,18 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     );
 
     useEffect(() => {
-
         fetchLink({
-            address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
+            address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}`,
             loadingOn,
             loadingOff,
-        }).then((data) => {
-            setSalesInvoices(toArray(data.data));
-            setCostTypes(toArray(data?.others?.costTypes));
-            setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
-        }).catch(console.error);
-
-        console.log(filters.staffStatus)
-
-    }, [filters.fetchTrigger, loadingOn, loadingOff, filters.staffStatus]);
+        })
+            .then((data) => {
+                setSalesInvoices(toArray(data.data));
+                setCostTypes(toArray(data?.others?.costTypes));
+                setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+            })
+            .catch(console.error);
+    }, [filters.fetchTrigger, loadingOn, loadingOff]);
 
     useEffect(() => {
         fetchLink({ address: "masters/erpCostCenter/dropDown" })
@@ -452,7 +467,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
                             return (
                                 <ButtonActions
+
                                     buttonsData={[
+
                                         {
                                             name: "Add Employee",
                                             onclick: () => setFilters((prev) => ({ ...prev, assignDialog: true, selectedInvoice: row })),
@@ -494,6 +511,11 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 EnableSerialNumber
                 ButtonArea={
                     <>
+
+
+
+
+
                         <IconButton
                             size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
@@ -509,6 +531,33 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         <IconButton size="small" onClick={fetchSalesInvoices}>
                             <Search />
                         </IconButton>
+                        {/* <FormControl size="small" sx={{ minWidth: 160 }}>
+  <Select
+    value={filters.docType}
+    displayEmpty
+    disabled={!multipleCostCenterUpdateValues.Do_Id.length}
+    onChange={(e) =>
+      setFilters((prev) => ({ ...prev, docType: e.target.value }))
+    }
+    MenuProps={{
+      disablePortal: true,
+      PaperProps: {
+        sx: {
+          zIndex: 9999,
+        },
+      },
+    }}
+  >
+    <MenuItem value="">
+      <em>Select Type</em>
+    </MenuItem>
+    <MenuItem value="sales_invoice">Sales Invoice</MenuItem>
+    <MenuItem value="katchath">Katchath</MenuItem>
+    <MenuItem value="delivery_slip">Delivery Slip</MenuItem>
+  </Select>
+</FormControl> */}
+
+
 
                         <input
                             type="date"
@@ -517,14 +566,44 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             onChange={(e) => setFilters((prev) => ({ ...prev, reqDate: e.target.value }))}
                         />
 
-                        <select
-                            value={filters.staffStatus}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, staffStatus: Number(e.target.value) }))}
-                            className="cus-inpt w-auto me-2"
+
+                        <IconButton
+                            size="small"
+                            disabled={
+                                !filters.docType || !multipleCostCenterUpdateValues.Do_Id.length
+                            }
+                            onClick={() => {
+                                setMultiPrint({
+                                    open: true,
+                                    doIds: multipleCostCenterUpdateValues.Do_Id,
+                                    docType: filters.docType
+                                });
+                            }}
                         >
-                            <option value={1}>All Invoice</option>
-                            <option value={0}>Unassigned Invoice</option>
+                            <Print />
+                        </IconButton>
+                        <select
+                            className="cus-inpt w-auto rounded-5 border-0"
+                            disabled={!multipleCostCenterUpdateValues.Do_Id.length}
+                            value={filters.docType}
+                            onChange={(e) => {
+                                const selectedIndex = e.target.selectedIndex;
+                                const selectedText = e.target.options[selectedIndex].text;
+
+                                setFilters((prev) => ({
+                                    ...prev,
+                                    docType: e.target.value,
+                                    docTypeLabel: selectedText,
+                                }));
+                            }}
+                        >
+                            <option value="">SELECT TYPE</option>
+                            <option value="sales_invoice">SALES INVOICE</option>
+                            <option value="katchath">KATCHATH</option>
+                            <option value="delivery_slip">DELIVERY SLIP</option>
                         </select>
+
+
                     </>
                 }
             />
@@ -742,6 +821,122 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 </DialogActions>
             </Dialog>
 
+            <Dialog
+                open={multiPrint.open}
+                onClose={() => setMultiPrint({ open: false, doIds: [], docType: "" })}
+                maxWidth="lg"
+                fullWidth
+            >
+                {/* <DialogTitle>Multiple Print Preview</DialogTitle> */}
+
+                <DialogContent>
+                    {multiPrint.doIds.map((id) => {
+                        if (multiPrint.docType === "sales_invoice") {
+                            return (
+                                <InvoiceTemplate
+                                    key={id}
+                                    Do_Id={id}
+                                    loadingOn={loadingOn}
+                                    loadingOff={loadingOff}
+                                />
+                            );
+                        }
+
+                        if (multiPrint.docType === "katchath") {
+                            return (
+                                <KatchathCopy
+                                    key={id}
+                                    Do_Id={id}
+                                    loadingOn={loadingOn}
+                                    loadingOff={loadingOff}
+                                />
+                            );
+                        }
+
+                        if (multiPrint.docType === "delivery_slip") {
+                            return (
+                                <DeliverysSlipPrint
+                                    key={id}
+                                    Do_Id={id}
+                                    loadingOn={loadingOn}
+                                    loadingOff={loadingOff}
+                                />
+                            );
+                        }
+
+                        return null;
+                    })}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        variant="outlined"
+                        onClick={() =>
+                            setMultiPrint({ open: false, doIds: [], docType: "" })
+                        }
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
+            <Dialog
+                open={multiPrint.open}
+                onClose={() => setMultiPrint({ open: false, doIds: [], docType: "" })}
+                maxWidth="lg"
+            //   fullWidth
+            //   fullScreen={true} // Optional: make it fullscreen for better view
+            >
+                {/* <DialogTitle> */}
+                {/* Multiple Print Preview - {multiPrint.doIds.length} {filters.docTypeLabel || multiPrint.docType} */}
+                {/* </DialogTitle> */}
+
+                <DialogContent dividers>
+                    {multiPrint.docType === "sales_invoice" && (
+                        <InvoiceTemplate
+                            Do_Ids={multiPrint.doIds}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                            isCombinedPrint={true}
+                        />
+                    )}
+
+                    {multiPrint.docType === "katchath" && (
+                        <KatchathCopy
+                            Do_Ids={multiPrint.doIds}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                            isCombinedPrint={true}
+                        />
+                    )}
+
+                    {multiPrint.docType === "delivery_slip" && (
+                        <DeliverysSlipPrint
+                            Do_Ids={multiPrint.doIds}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                            isCombinedPrint={true}
+                        />
+                    )}
+                </DialogContent>
+
+                <DialogActions className="no-print">
+                    <Button
+                        variant="contained"
+                        onClick={() => window.print()}
+                        startIcon={<Print />}
+                    >
+                        Print All
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        onClick={() => setMultiPrint({ open: false, doIds: [], docType: "" })}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
         </>
     );
