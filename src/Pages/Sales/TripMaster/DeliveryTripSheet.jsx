@@ -1818,7 +1818,7 @@ const packSummary = useMemo(() => {
       <td className="fa-10">{item.Do_Inv_No || "Delivery"}</td>
 
       {/* <td className="fa-10">{item?.Retailer_Name}</td> */}
-      <td clasdName="fa-10">{item.Party_Mailing_Name},{item.Party_Location} </td>
+      <td className="fa-10">{item.Party_Mailing_Name},{item.Party_Location} </td>
 
       <td className="fa-10">
         {(item?.Delivery_Staff || [])
