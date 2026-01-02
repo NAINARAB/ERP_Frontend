@@ -95,7 +95,7 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                         >
                             <option value={'LedgerBased'}>Ledger Based</option>
                             <option value={'ProductBased'}>Product Based</option>
-                            {/* <option value={'ProductDayAverage'}>Product/Day Based</option> */}
+                            <option value={'ProductDayAverage'}>Product/Day Based</option>
                         </select>
                     </span>
                 </div>

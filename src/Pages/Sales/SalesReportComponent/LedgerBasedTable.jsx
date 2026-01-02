@@ -1,8 +1,39 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
-import { isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber, Division, toArray } from '../../../Components/functions'
-import { Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Switch, TextField, Tooltip } from "@mui/material";
-import { CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt, ToggleOn, ToggleOff } from '@mui/icons-material'
+import {
+    isEqualNumber,
+    checkIsNumber,
+    filterableText,
+    groupData,
+    Addition,
+    toNumber,
+    Division,
+    toArray
+} from '../../../Components/functions'
+import {
+    Autocomplete,
+    Button,
+    Card,
+    Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    Paper,
+    Switch,
+    TextField,
+    Tooltip
+} from "@mui/material";
+import {
+    CheckBoxOutlineBlank,
+    CheckBox,
+    FilterAltOff,
+    Settings,
+    FilterAlt,
+    ToggleOn,
+    ToggleOff
+} from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
 
@@ -80,21 +111,91 @@ const GroupSalesDetails = ({ row, Fromdate, Todate, DB }) => {
             ? <h5 className="text-center text-primary ">Loading...</h5>
             : <DisplayArrayData dataArray={salesData} columns={dataTypes.salesInfo} />
     )
-}
+};
 
-const GroupedExpandDetails = ({ row, groupBy, DB, Fromdate, Todate, DisplayColumn, showGroupSalesDetails }) => {
-    return groupBy ? (
-        showGroupSalesDetails ? (
+const RecursiveGroupDetails = ({
+    row,
+    groupByFields,
+    level,
+    DB,
+    Fromdate,
+    Todate,
+    DisplayColumn,
+    showGroupSalesDetails
+}) => {
+    const currentGroupBy = groupByFields[level];
+
+    // numeric columns that should be aggregated
+    const numericAggKeys = useMemo(() => {
+        return DisplayColumn
+            .filter(col => filterableText(col.Fied_Data) === "number")
+            .map(col => col.Field_Name);
+    }, [DisplayColumn]);
+
+    // group the current row's groupedData by the currentGroupBy field
+    const grouped = useMemo(() => {
+        if (!currentGroupBy) return [];
+
+        const arr = toArray(row?.groupedData);
+        if (!arr.length) return [];
+
+        const groupedRaw = groupData(arr, currentGroupBy);
+
+        // ADD: aggregation for each subgroup, just like the top level
+        const groupedWithAgg = groupedRaw.map(grp => {
+            const source = toArray(grp?.groupedData);
+
+            return {
+                ...grp,
+                ...Object.fromEntries(
+                    numericAggKeys.map(key => [
+                        key,
+                        key === 'Total_Qty'
+                            ? source.reduce(
+                                (acc, item) => Addition(acc, toNumber(item[key]) || 0),
+                                0
+                            )
+                            : Division(
+                                source.reduce(
+                                    (acc, item) => Addition(acc, toNumber(item[key]) || 0),
+                                    0
+                                ),
+                                source.length || 1
+                            )
+                    ])
+                )
+            };
+        });
+
+        return groupedWithAgg;
+    }, [row?.groupedData, currentGroupBy, numericAggKeys]);
+
+    const columnsForLevel = useMemo(() => {
+        if (!currentGroupBy || grouped.length === 0) return DisplayColumn;
+
+        return DisplayColumn
+            .filter(col => Object.keys(grouped[0]).includes(col.Field_Name))
+            .map(col => ({
+                ...col,
+                ColumnHeader: col.Field_Name === currentGroupBy ? currentGroupBy : col.ColumnHeader
+            }));
+    }, [DisplayColumn, grouped, currentGroupBy]);
+
+    // Base case: no more groupBy fields → show ledgers or grouped sales detail
+    if (!currentGroupBy) {
+        const ledgerArray = toArray(row?.groupedData);
+
+        return showGroupSalesDetails ? (
             <GroupSalesDetails
-                row={row}
+                row={{ ...row, groupedData: ledgerArray }}
                 DB={DB}
                 Fromdate={Fromdate}
                 Todate={Todate}
             />
         ) : (
             <FilterableTable
-                title={row[groupBy] + ' - Ledgers'}
-                dataArray={Array.isArray(row?.groupedData) ? row?.groupedData : []}
+                title="Ledgers"
+                dataArray={ledgerArray}
                 columns={DisplayColumn}
                 ExcelPrintOption
                 isExpendable={true}
@@ -107,20 +208,80 @@ const GroupedExpandDetails = ({ row, groupBy, DB, Fromdate, Todate, DisplayColum
                     />
                 )}
             />
-        )
-    ) : (
-        <LedgerDetails
+        );
+    }
+
+    // Recursive grouping table for current level (Group 2, Group 3, ...)
+    return (
+        <FilterableTable
+            title={`${currentGroupBy?.replace(/_/g, ' ') || 'Group'} - Sub Group`}
+            dataArray={grouped}
+            columns={columnsForLevel}
+            ExcelPrintOption
+            isExpendable={true}
+            expandableComp={({ row: childRow }) => (
+                <RecursiveGroupDetails
+                    row={childRow}
+                    groupByFields={groupByFields}
+                    level={level + 1}
+                    DB={DB}
+                    Fromdate={Fromdate}
+                    Todate={Todate}
+                    DisplayColumn={DisplayColumn}
+                    showGroupSalesDetails={showGroupSalesDetails}
+                />
+            )}
+        />
+    );
+};
+
+const GroupedExpandDetails = ({
+    row,
+    groupBy,
+    groupBy2,
+    groupBy3,
+    DB,
+    Fromdate,
+    Todate,
+    DisplayColumn,
+    showGroupSalesDetails
+}) => {
+    const groupByFields = [groupBy, groupBy2, groupBy3];
+
+    // No top-level grouping → just show ledger detail (old behaviour)
+    if (!groupBy) {
+        return (
+            <LedgerDetails
+                row={row}
+                DB={DB}
+                Fromdate={Fromdate}
+                Todate={Todate}
+            />
+        );
+    }
+
+    // We are already grouped by `groupBy` at top level.
+    // Start recursive grouping from index 1 (Sub Group 1).
+    return (
+        <RecursiveGroupDetails
             row={row}
+            groupByFields={groupByFields}
+            level={1}
             DB={DB}
             Fromdate={Fromdate}
             Todate={Todate}
+            DisplayColumn={DisplayColumn}
+            showGroupSalesDetails={showGroupSalesDetails}
         />
-    )
-}
+    );
+};
 
 const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) => {
     const [filters, setFilters] = useState({});
     const [groupBy, setGroupBy] = useState('');
+    const [groupBy2, setGroupBy2] = useState('');
+    const [groupBy3, setGroupBy3] = useState('');
+
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
@@ -148,6 +309,13 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
             col => (isEqualNumber(col?.Defult_Display, 1) || isEqualNumber(col?.isVisible, 1))
         )
     }, [sortedCoulumns])
+
+    const groupableColumns = useMemo(() => {
+        return DisplayColumn.filter(fil =>
+            filterableText(fil.Fied_Data) === "string" &&
+            fil?.Field_Name !== 'Ledger_Name'
+        );
+    }, [DisplayColumn]);
 
     const showData = useMemo(() => {
         const filter = Object.keys(filters).length > 0, grouping = groupBy ? true : false;
@@ -211,7 +379,11 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                         return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
                     });
                 } else if (Array.isArray(filters[column.Field_Name])) {
-                    filtered = filters[column.Field_Name]?.length > 0 ? filtered.filter(item => filters[column.Field_Name].includes(item[column.Field_Name]?.toLowerCase().trim())) : filtered
+                    filtered = filters[column.Field_Name]?.length > 0
+                        ? filtered.filter(item =>
+                            filters[column.Field_Name].includes(item[column.Field_Name]?.toLowerCase().trim())
+                        )
+                        : filtered
                 }
             }
         }
@@ -228,14 +400,22 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                         type="number"
                         className="bg-light border-0 m-1 p-1 w-50"
                         value={filters[Field_Name]?.min ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], min: e.target.value ? parseFloat(e.target.value) : undefined })}
+                        onChange={(e) => handleFilterChange(Field_Name, {
+                            type: 'range',
+                            ...filters[Field_Name],
+                            min: e.target.value ? parseFloat(e.target.value) : undefined
+                        })}
                     />
                     <input
                         placeholder="Max"
                         type="number"
                         className="bg-light border-0 m-1 p-1 w-50"
                         value={filters[Field_Name]?.max ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], max: e.target.value ? parseFloat(e.target.value) : undefined })}
+                        onChange={(e) => handleFilterChange(Field_Name, {
+                            type: 'range',
+                            ...filters[Field_Name],
+                            max: e.target.value ? parseFloat(e.target.value) : undefined
+                        })}
                     />
                 </div>
             );
@@ -247,14 +427,20 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                         type="date"
                         className="bg-light border-0 m-1 p-1 w-50"
                         value={filters[Field_Name]?.value?.start ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, start: e.target.value || undefined } })}
+                        onChange={(e) => handleFilterChange(Field_Name, {
+                            type: 'date',
+                            value: { ...filters[Field_Name]?.value, start: e.target.value || undefined }
+                        })}
                     />
                     <input
                         placeholder="End Date"
                         type="date"
                         className="bg-light border-0 m-1 p-1 w-50"
                         value={filters[Field_Name]?.value?.end ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, end: e.target.value || undefined } })}
+                        onChange={(e) => handleFilterChange(Field_Name, {
+                            type: 'date',
+                            value: { ...filters[Field_Name]?.value, end: e.target.value || undefined }
+                        })}
                     />
                 </div>
             );
@@ -300,7 +486,6 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
 
     return (
         <Fragment>
-
             <FilterableTable
                 title="LOL - Sales Reports"
                 headerFontSizePx={12}
@@ -327,23 +512,68 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                             <IconButton
                                 onClick={() => setFilterDialog(true)}
                                 size="small"
-                            // className="d-md-none d-inline"
                             >
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
+
+                        {/* EXISTING: main Group By */}
                         <select
                             className="cus-inpt p-2 w-auto m-1"
                             value={groupBy}
-                            onChange={e => setGroupBy(e.target.value)}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setGroupBy(val);
+                                setGroupBy2('');
+                                setGroupBy3('');
+                            }}
                         >
                             <option value="">Group By</option>
-                            {DisplayColumn.filter(fil => (
-                                filterableText(fil.Fied_Data) === "string"
-                                && fil?.Field_Name !== 'Ledger_Name'
-                            )).map((col, colInd) => (
-                                <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
+                            {groupableColumns.map((col, colInd) => (
+                                <option value={col?.Field_Name} key={colInd}>
+                                    {col?.Field_Name?.replace(/_/g, ' ')}
+                                </option>
                             ))}
+                        </select>
+
+                        {/* NEW: Sub Group 1 */}
+                        <select
+                            className="cus-inpt p-2 w-auto m-1"
+                            value={groupBy2}
+                            onChange={e => {
+                                setGroupBy2(e.target.value);
+                                setGroupBy3('');
+                            }}
+                            disabled={!groupBy}
+                        >
+                            <option value="">Sub Group 1</option>
+                            {groupableColumns
+                                .filter(col => col.Field_Name !== groupBy)
+                                .map((col, colInd) => (
+                                    <option value={col?.Field_Name} key={colInd}>
+                                        {col?.Field_Name?.replace(/_/g, ' ')}
+                                    </option>
+                                ))}
+                        </select>
+
+                        {/* NEW: Sub Group 2 */}
+                        <select
+                            className="cus-inpt p-2 w-auto m-1"
+                            value={groupBy3}
+                            onChange={e => setGroupBy3(e.target.value)}
+                            disabled={!groupBy || !groupBy2}
+                        >
+                            <option value="">Sub Group 2</option>
+                            {groupableColumns
+                                .filter(col =>
+                                    col.Field_Name !== groupBy &&
+                                    col.Field_Name !== groupBy2
+                                )
+                                .map((col, colInd) => (
+                                    <option value={col?.Field_Name} key={colInd}>
+                                        {col?.Field_Name?.replace(/_/g, ' ')}
+                                    </option>
+                                ))}
                         </select>
                     </>
                 }
@@ -374,6 +604,8 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                         Fromdate={Fromdate}
                         Todate={Todate}
                         groupBy={groupBy}
+                        groupBy2={groupBy2}
+                        groupBy3={groupBy3}
                         DisplayColumn={DisplayColumn}
                         showGroupSalesDetails={showGroupSalesDetails}
                     />
