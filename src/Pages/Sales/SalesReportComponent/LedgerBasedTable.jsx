@@ -1,38 +1,16 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import {
-    isEqualNumber,
-    checkIsNumber,
-    filterableText,
-    groupData,
-    Addition,
-    toNumber,
-    Division,
-    toArray
+    isEqualNumber, checkIsNumber, filterableText, groupData, Addition, toNumber,
+    Division, toArray
 } from '../../../Components/functions'
 import {
-    Autocomplete,
-    Button,
-    Card,
-    Checkbox,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Paper,
-    Switch,
-    TextField,
-    Tooltip
+    Autocomplete, Button, Card, Checkbox, Dialog,
+    DialogActions, DialogContent, DialogTitle, IconButton, 
+    Paper, Switch, TextField, Tooltip
 } from "@mui/material";
 import {
-    CheckBoxOutlineBlank,
-    CheckBox,
-    FilterAltOff,
-    Settings,
-    FilterAlt,
-    ToggleOn,
-    ToggleOff
+    CheckBoxOutlineBlank, CheckBox, FilterAltOff, Settings, FilterAlt, ToggleOn, ToggleOff
 } from '@mui/icons-material'
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
@@ -125,14 +103,12 @@ const RecursiveGroupDetails = ({
 }) => {
     const currentGroupBy = groupByFields[level];
 
-    // numeric columns that should be aggregated
     const numericAggKeys = useMemo(() => {
         return DisplayColumn
             .filter(col => filterableText(col.Fied_Data) === "number")
             .map(col => col.Field_Name);
     }, [DisplayColumn]);
 
-    // group the current row's groupedData by the currentGroupBy field
     const grouped = useMemo(() => {
         if (!currentGroupBy) return [];
 
@@ -141,7 +117,6 @@ const RecursiveGroupDetails = ({
 
         const groupedRaw = groupData(arr, currentGroupBy);
 
-        // ADD: aggregation for each subgroup, just like the top level
         const groupedWithAgg = groupedRaw.map(grp => {
             const source = toArray(grp?.groupedData);
 
@@ -181,7 +156,6 @@ const RecursiveGroupDetails = ({
             }));
     }, [DisplayColumn, grouped, currentGroupBy]);
 
-    // Base case: no more groupBy fields → show ledgers or grouped sales detail
     if (!currentGroupBy) {
         const ledgerArray = toArray(row?.groupedData);
 
@@ -211,7 +185,6 @@ const RecursiveGroupDetails = ({
         );
     }
 
-    // Recursive grouping table for current level (Group 2, Group 3, ...)
     return (
         <FilterableTable
             title={`${currentGroupBy?.replace(/_/g, ' ') || 'Group'} - Sub Group`}
@@ -248,7 +221,6 @@ const GroupedExpandDetails = ({
 }) => {
     const groupByFields = [groupBy, groupBy2, groupBy3];
 
-    // No top-level grouping → just show ledger detail (old behaviour)
     if (!groupBy) {
         return (
             <LedgerDetails
@@ -260,8 +232,6 @@ const GroupedExpandDetails = ({
         );
     }
 
-    // We are already grouped by `groupBy` at top level.
-    // Start recursive grouping from index 1 (Sub Group 1).
     return (
         <RecursiveGroupDetails
             row={row}
