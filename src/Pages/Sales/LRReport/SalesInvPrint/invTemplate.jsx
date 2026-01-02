@@ -8,14 +8,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import a5BackgroundImage from './plain.jpeg';
 
 const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPrint = false }) => {
-  const [data, setData] = useState([]); // Changed to array for multiple invoices
+  const [data, setData] = useState([]); 
   const printRef = useRef(null);
   const nav = useNavigate();
   const location = useLocation();
   const [companyInfo, setCompanyInfo] = useState({});
   const storage = JSON.parse(localStorage.getItem('user'));
   
-  // Handle both single and multiple IDs
+
   const isMultiple = Array.isArray(Do_Ids) && Do_Ids.length > 0;
   const idsToFetch = isMultiple ? Do_Ids : (Do_Id ? [Do_Id] : []);
   const [printReady, setPrintReady] = useState(false);
@@ -25,7 +25,7 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
     
     loadingOn?.();
     
-    // Fetch company info once
+
     fetchLink({
       address: `masters/company?Company_id=${storage?.Company_id}`
     }).then(data => {
@@ -34,7 +34,7 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
       }
     }).catch(e => console.error(e));
     
-    // Fetch all invoices
+   
     const fetchAllInvoices = async () => {
       try {
         const promises = idsToFetch.map(id => 
@@ -67,7 +67,7 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
     onAfterPrint: () => console.log("Print completed")
   });
 
-  // Single invoice display (original design)
+
   if (!isCombinedPrint && data.length > 0) {
     return (
       <div style={{ 
@@ -308,7 +308,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
             width: "9cm",
             padding: "2.5px"
           }}>
-            <div style={{ color: "#000" }}>{data.mailingName}</div>
+            <div style={{ color: "#000" }}>{data.mailingName},{data.Party_Location}</div>
             <div style={{ color: "#000" }}>{data.mailingAddress}</div>
             <div style={{ color: "#000" }}>{data.mailingNumber}</div>
             <div style={{ color: "#000" }}>GSTIN: {data.retailerGstNumber}</div>
@@ -639,62 +639,75 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
           </div>
         </div>
 
-        {/* HSN Summary */}
-        <div style={{
-          position: "absolute",
-          top: "11.6cm",
-          fontSize: "11px",
-          left: "3cm",
-          width: "10cm"
-        }}>
-          {hsnSummary.map((h, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "left",
-                width: "100%",
-                marginBottom: "0.1cm"
-              }}
-            >
-              <span style={{ 
-                color: "#000",
-                fontWeight: "bold",
-                minWidth: "3cm"
-              }}>
-                {h.hsn}
-              </span>
-              <span style={{ 
-                color: "#000",
-                fontWeight: "bold",
-                textAlign: "left",
-                minWidth: "3cm"
-              }}>
-                {NumberFormat(h.amount)}
-              </span>
-            </div>
-          ))}
-          <div style={{
-            display: "flex",
-            justifyContent: "flex-start",
-            width: "100%",
-            marginTop: "0.0cm",
-            fontWeight: "bold"
-          }}>
-            <span style={{ 
-              color: "#000",
-              width: "4cm",
-              textAlign: "right"
-            }}>
-              {NumberFormat(
-                hsnSummary.reduce(
-                  (sum, item) => sum + Number(item.amount || 0),
-                  0
-                )
-              )}
-            </span>
-          </div>
-        </div>
+     {/* HSN Summary */}
+<div style={{
+  position: "absolute",
+  top: "11.6cm",
+  fontSize: "11px",
+  left: "3cm",
+  width: "10cm"
+}}>
+  {hsnSummary.map((h, i) => (
+    <div
+      key={i}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        width: "100%",
+        marginBottom: "0.1cm"
+      }}
+    >
+      <span style={{ 
+        color: "#000",
+        fontWeight: "bold",
+        width: "3cm",
+        textAlign: "left"
+      }}>
+        {h.hsn}
+      </span>
+      <span style={{ 
+        color: "#000",
+        fontWeight: "bold",
+        width: "3cm",
+        textAlign: "right",
+        // marginLeft: "auto"
+      }}>
+        {NumberFormat(h.amount)}
+      </span>
+    </div>
+  ))}
+  {/* Total Row */}
+  <div style={{
+    display: "flex",
+    alignItems: "center",
+    width: "100%",
+    marginTop: "0.1cm",
+
+    paddingTop: "0.1cm",
+    fontWeight: "bold"
+  }}>
+    <span style={{ 
+      color: "#000",
+      width: "3cm",
+      textAlign: "left"
+    }}>
+     
+    </span>
+    <span style={{ 
+      color: "#000",
+      width: "3cm",
+      textAlign: "right",
+      // marginLeft: "auto"
+    }}>
+      {NumberFormat(
+        hsnSummary.reduce(
+          (sum, item) => sum + Number(item.amount || 0),
+          0
+        )
+      )}
+    </span>
+  </div>
+</div>
       </div>
     </div>
   );

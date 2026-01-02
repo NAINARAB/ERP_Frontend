@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Button, IconButton, CardContent, Card } from "@mui/material";
+import { Button, IconButton, CardContent, Card,Dialog,DialogTitle,DialogContent,DialogActions } from "@mui/material";
 import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
     checkIsNumber, toNumber, toArray, stringCompare
 } from "../../../Components/functions";
+import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
@@ -20,6 +21,7 @@ import SalesInvoiceTaxDetails from "./taxDetails";
 import AddProductsInSalesInvoice from "./importFromSaleOrder";
 import ExpencesOfSalesInvoice from "./manageExpences";
 import AddProductForm from "./addProducts";
+import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 
 
 const storage = getSessionUser().user;
@@ -65,7 +67,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const taxType = isNotTaxableBill ? 'zerotax' : isInclusive ? 'remove' : 'add';
     const minimumRows = 3;
     const dummyRowCount = minimumRows - invoiceProducts.length
-
+const [printDialog, setPrintDialog] = useState({
+    open: false,
+    Do_Id: null
+});
     useEffect(() => {
 
         const fetchData = async () => {
@@ -306,37 +311,61 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }
     }, [editValues, baseData.retailers])
 
-    const saveSalesInvoice = () => {
-        if (loadingOn) loadingOn();
+const saveSalesInvoice = () => {
+    if (loadingOn) loadingOn();
 
-        fetchLink({
-            address: `sales/salesInvoice`,
-            method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
-            bodyData: {
-                ...invoiceInfo,
+    fetchLink({
+        address: `sales/salesInvoice`,
+        method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
+        bodyData: {
+            ...invoiceInfo,
+            delivery_id: retailerDeliveryAddress?.id,
+            deliveryName: retailerDeliveryAddress?.deliveryName,
+            phoneNumber: retailerDeliveryAddress?.phoneNumber,
+            cityName: retailerDeliveryAddress?.cityName,
+            deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
 
-                delivery_id: retailerDeliveryAddress?.id,
-                deliveryName: retailerDeliveryAddress?.deliveryName,
-                phoneNumber: retailerDeliveryAddress?.phoneNumber,
-                cityName: retailerDeliveryAddress?.cityName,
-                deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
+            Product_Array: invoiceProducts,
+            Staffs_Array: staffArray,
+            Expence_Array: invoiceExpences
+        }
+    }).then(data => {
+        if (data.success) {
+            const savedDoId = data.others?.Do_Id;
+            
+            toast.success(data.message);
+            
+            // Open print dialog with the saved Do_Id
+            setPrintDialog({
+                open: true,
+                Do_Id: savedDoId
+            });
+            
+            // Clear form after successful submission (optional)
+            // clearValues();
+        } else {
+            toast.warn(data.message);
+        }
+    }).catch(e => {
+        console.error(e);
+        toast.error("Failed to save invoice");
+    }).finally(() => {
+        if (loadingOff) loadingOff();
+    })
+}
 
-                Product_Array: invoiceProducts,
-                Staffs_Array: staffArray,
-                Expence_Array: invoiceExpences
-            }
-        }).then(data => {
-            if (data.success) {
-                clearValues();
-                toast.success(data.message);
-                navigate('/erp/sales/invoice')
-            } else {
-                toast.warn(data.message)
-            }
-        }).catch(e => console.error(e)).finally(() => {
-            if (loadingOff) loadingOff();
-        })
-    }
+    //     }).then(data => {
+    //         if (data.success) {
+    //             clearValues();
+    //             toast.success(data.message);
+    //             navigate('/erp/sales/invoice')
+    //         } else {
+    //             toast.warn(data.message)
+    //         }
+    //     }).catch(e => console.error(e)).finally(() => {
+    //         if (loadingOff) loadingOff();
+    //     })
+    // }
 
     return (
         <>
@@ -538,7 +567,55 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             },
                         ]}
                     />
+                    
+  <Dialog
+                open={printDialog.open}
+                // onClose={() => setPrintDialog({ open: false, Do_Id: null })}
+    //                onClose={() => {
+    //     setPrintDialog({ open: false, Do_Id: null });
+    //     clearValues(); // Clear the form
+    //     navigate('/erp/sales/invoice'); // Navigate to listing
+    // }}
+                maxWidth="lg"
+                fullWidth
+                scroll="paper"
+            >
+                <DialogTitle>
+                    Print Invoice #{printDialog.Do_Id}
+                    <IconButton
+                        // onClick={() => setPrintDialog({ open: false, Do_Id: null })}
+                                    onClick={() => {
+                setPrintDialog({ open: false, Do_Id: null });
+                clearValues(); 
+                navigate('/erp/sales/invoice');
+            }}
 
+                        style={{ position: 'absolute', right: 8, top: 8 }}
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {printDialog.Do_Id && (
+                        <InvoiceTemplate
+                            Do_Id={printDialog.Do_Id}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                        />
+                    )}
+                </DialogContent>
+                  <DialogActions>
+        <Button 
+            onClick={() => {
+                setPrintDialog({ open: false, Do_Id: null });
+                clearValues(); 
+                navigate('/erp/sales/invoice');
+            }}
+        >
+            Close and Go to Listing
+        </Button>
+    </DialogActions>
+            </Dialog>
                     <br />
 
                     <ExpencesOfSalesInvoice

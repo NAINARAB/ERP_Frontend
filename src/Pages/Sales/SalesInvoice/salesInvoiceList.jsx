@@ -10,7 +10,8 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
-
+import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
+import { Close,Print } from "@mui/icons-material";
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -38,7 +39,13 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     const [dialog, setDialog] = useState({
         filters: false,
         orderDetails: false,
+           printInvoice: false, // Added print dialog state
     });
+    const [selectedInvoice, setSelectedInvoice] = useState(null); // For single invoice print
+
+
+  
+
 
     useEffect(() => {
 
@@ -205,6 +212,17 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             color='primary' size="small"
                                         >
                                             <Visibility className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip>
+     <Tooltip title='Print Invoice'>
+                                        <IconButton
+                                            onClick={() => {
+                                                setSelectedInvoice(row); // Set the current row as selected invoice
+                                                setDialog(pre => ({ ...pre, printInvoice: true })); // Open print dialog
+                                            }}
+                                            color='secondary' size="small"
+                                        >
+                                            <Print className="fa-16" />
                                         </IconButton>
                                     </Tooltip>
 
@@ -410,6 +428,51 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     >Search</Button>
                 </DialogActions>
             </Dialog>
+
+
+  <Dialog
+                open={dialog.printInvoice}
+                onClose={() => {
+                    setDialog(pre => ({ ...pre, printInvoice: false }));
+                    setSelectedInvoice(null);
+                }}
+                maxWidth="lg"
+                fullWidth
+                scroll="paper"
+            >
+                <DialogTitle>
+                    Print Invoice #{selectedInvoice?.Do_Inv_No}
+                    <IconButton
+                        onClick={() => {
+                            setDialog(pre => ({ ...pre, printInvoice: false }));
+                            setSelectedInvoice(null);
+                        }}
+                        style={{ position: 'absolute', right: 8, top: 8 }}
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedInvoice?.Do_Id && (
+                        <InvoiceTemplate
+                            Do_Id={selectedInvoice.Do_Id}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={() => {
+                            setDialog(pre => ({ ...pre, printInvoice: false }));
+                            setSelectedInvoice(null);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
 
         </>
     )

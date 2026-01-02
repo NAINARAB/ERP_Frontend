@@ -1817,7 +1817,8 @@ const packSummary = useMemo(() => {
 
       <td className="fa-10">{item.Do_Inv_No || "Delivery"}</td>
 
-      <td className="fa-10">{item?.Retailer_Name}</td>
+      {/* <td className="fa-10">{item?.Retailer_Name}</td> */}
+      <td clasdName="fa-10">{item.Party_Mailing_Name},{item.Party_Location} </td>
 
       <td className="fa-10">
         {(item?.Delivery_Staff || [])
@@ -1847,14 +1848,36 @@ const packSummary = useMemo(() => {
       </td>
     </tr>
   ))}
+
+
+  
     <tr>
   <td
-    colSpan={9}
+    colSpan={6}
     className="border fa-14 text-end fw-bold"
   >
     Total
   </td>
+ <td className="border fa-14 fw-bold">
+   {(() => {
+                    const totalAltActQty = (selectedRow?.Product_Array || [])
+                        .flatMap(product => product?.Products_List || [])
+                        .reduce((sum, item) => sum + (item.Alt_Act_Qty || 0), 0);
+                    return NumberFormat(totalAltActQty);
+                })()}
+  </td>
 
+   <td className="border fa-14 fw-bold">
+     {(() => {
+                    const totalBillQty = (selectedRow?.Product_Array || [])
+                        .flatMap(product => product?.Products_List || [])
+                        .reduce((sum, item) => sum + (item.Bill_Qty || 0), 0);
+                    return NumberFormat(totalBillQty);
+                })()}
+  </td>
+   <td className="border fa-14 fw-bold">
+  
+  </td>
   <td className="border fa-14 fw-bold">
     {NumberFormat(
       TaxData.reduce(
@@ -1966,7 +1989,7 @@ const packSummary = useMemo(() => {
     {Object.entries(packSummary).map(([pack, count], index) => (
       <tr key={index}>
         <td className="fw-bold">{pack} KG</td>
-        <td>Count : {count}</td>
+        <td>Bags : {count}</td>
       </tr>
     ))}
   </tbody>
