@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, ISOString, stringCompare, toNumber } from "../../../Components/functions";
+import { Addition, ISOString, RoundNumber, stringCompare, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { IconButton } from "@mui/material";
 import { Search } from "@mui/icons-material";
@@ -31,6 +31,7 @@ const transformSalesVoucherData = (data) => {
             voucherGroup.push(entry.voucheGet);
             transformedData.push({
                 SNo: '',
+                unitDifference: '',
                 quantityDifference: '',
                 particular: entry.voucheGet,
                 voucherNoOrRate: '',
@@ -46,6 +47,7 @@ const transformSalesVoucherData = (data) => {
         // ---------- HEADER ROW (Voucher + Retailer) ----------
         transformedData.push({
             SNo: entryIndex + 1,
+            unitDifference: '',
             quantityDifference: '',
             particular: entry.retailerGet,
             voucherNoOrRate: entry.voucherNumber,
@@ -59,8 +61,11 @@ const transformSalesVoucherData = (data) => {
 
         // ---------- ITEM ROWS ----------
         entry.productDetails.forEach((item) => {
+            const unitDifference = Math.round(Number(item.actUnitQuantity)) - Number(item.actUnitQuantity);
+
             transformedData.push({
                 SNo: "",
+                unitDifference: unitDifference !== 0 ? RoundNumber(unitDifference) : '',
                 quantityDifference: item.quantityDifference || "",
                 particular: item.itemNameGet,
                 voucherNoOrRate: item.billedRate || "",
@@ -117,6 +122,14 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
                 PDFPrintOption
                 columns={[
                     createCol('SNo', 'number', 'S.No'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Unit Diff',
+                        isCustomCell: true,
+                        Cell: ({ row }) => (
+                            <span>{row.unitDifference}</span>
+                        )
+                    },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Diff',
