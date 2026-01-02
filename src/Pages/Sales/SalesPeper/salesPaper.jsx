@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, ISOString, toNumber } from "../../../Components/functions";
+import { Addition, ISOString, stringCompare, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { IconButton } from "@mui/material";
 import { Search } from "@mui/icons-material";
@@ -13,6 +13,7 @@ const getStaff = (staffs, type) =>
 
 const transformSalesVoucherData = (data) => {
     let transformedData = [];
+    let voucherGroup = [];
 
     data.forEach((entry, entryIndex) => {
 
@@ -22,14 +23,30 @@ const transformSalesVoucherData = (data) => {
         );
 
         const totalUnitQty = entry.productDetails.reduce(
-            (sum, item) => Addition(sum, item.unitQuantity),
+            (sum, item) => Addition(sum, item.actUnitQuantity),
             0
         );
+
+        if (voucherGroup.findIndex(voucher => stringCompare(voucher, entry.voucheGet)) === -1) {
+            voucherGroup.push(entry.voucheGet);
+            transformedData.push({
+                SNo: '',
+                quantityDifference: '',
+                particular: entry.voucheGet,
+                voucherNoOrRate: '',
+                unitQuantity: '',
+                billedQuantity: '',
+                broker: '',
+                transporter: '',
+                loadMan: '',
+                rowType: "VOUCHER-HEADER"
+            });
+        }
 
         // ---------- HEADER ROW (Voucher + Retailer) ----------
         transformedData.push({
             SNo: entryIndex + 1,
-            quantityDifference: entry.voucheGet,
+            quantityDifference: '',
             particular: entry.retailerGet,
             voucherNoOrRate: entry.voucherNumber,
             unitQuantity: totalUnitQty,
@@ -47,8 +64,8 @@ const transformSalesVoucherData = (data) => {
                 quantityDifference: item.quantityDifference || "",
                 particular: item.itemNameGet,
                 voucherNoOrRate: item.billedRate || "",
-                unitQuantity: toNumber(item.actUnitQuantity) || "",
-                billedQuantity: toNumber(item.billedQuantity) || "",
+                unitQuantity: item.actUnitQuantity || "",
+                billedQuantity: item.billedQuantity || "",
                 broker: "",
                 transporter: "",
                 loadMan: "",
@@ -59,7 +76,6 @@ const transformSalesVoucherData = (data) => {
 
     return transformedData;
 };
-
 
 const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
     const [reortData, setReportData] = useState([]);
@@ -82,6 +98,12 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
     const displayData = useMemo(() => transformSalesVoucherData(reortData), [reortData]);
 
     const fetchSalesInvoices = () => setFilter((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
+
+    const headerColor = (type) => {
+        if ('HEADER' === type) return 'fw-bold';
+        if ('ITEM' === type) return '';
+        if ('VOUCHER-HEADER' === type) return 'text-success fw-bold';
+    }
 
     return (
         <div>
@@ -108,7 +130,7 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
                         ColumnHeader: 'Particulars',
                         isCustomCell: true,
                         Cell: ({ row }) => (
-                            <span className={row.rowType === 'HEADER' ? ' text-primary fw-bold ' : ''}>{row.particular}</span>
+                            <span className={headerColor(row.rowType)}>{row.particular}</span>
                         )
                     },
                     {

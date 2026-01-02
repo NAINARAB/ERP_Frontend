@@ -561,7 +561,7 @@ const FilterableTable = ({
                         onPageChange={handleChangePage}
                         rowsPerPage={rowsPerPage}
                         onRowsPerPageChange={handleChangeRowsPerPage}
-                        rowsPerPageOptions={Array.from(new Set([initialPageCount, 5, 20, 50, 100, 200, 500])).sort((a, b) => a - b)}
+                        rowsPerPageOptions={Array.from(new Set([initialPageCount, 5, 20, 50, 100, 200, 500, 1000, 2000])).sort((a, b) => a - b)}
                         labelRowsPerPage="Rows per page"
                         showFirstButton
                         showLastButton
