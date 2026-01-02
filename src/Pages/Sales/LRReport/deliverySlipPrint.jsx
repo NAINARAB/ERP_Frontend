@@ -66,14 +66,14 @@ const handlePrint = useReactToPrint({
     /* MAIN PRINT CONTAINER */
     #delivery-slip-print-content {
       width: 10.2cm;
-      margin: 0 auto !important;   /* ✅ CENTER FIX */
+      margin: 0 auto !important;  
     }
 
     /* EACH PAGE */
     .delivery-page {
       width: 10.2cm;
       height: 14.5cm;
-      margin: 0 auto !important;   /* ✅ CENTER FIX */
+      margin: 0 auto !important; 
       page-break-after: always;
       break-after: page;
       position: relative;

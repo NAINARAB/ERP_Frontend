@@ -12,6 +12,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close,Print } from "@mui/icons-material";
+import { ButtonActions } from "../../../Components/filterableTable2";
+import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -39,9 +41,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     const [dialog, setDialog] = useState({
         filters: false,
         orderDetails: false,
-           printInvoice: false, // Added print dialog state
+           printInvoice: false, 
+           deliverySlip:false
     });
-    const [selectedInvoice, setSelectedInvoice] = useState(null); // For single invoice print
+    const [selectedInvoice, setSelectedInvoice] = useState(null); 
 
 
   
@@ -194,58 +197,110 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                             )
                         },
                     },
+                    // {
+                    //     Field_Name: 'Action',
+                    //     isVisible: 1,
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => {
+                    //         return (
+                    //             <>
+                    //                 <Tooltip title='View Order'>
+                    //                     <IconButton
+                    //                         onClick={() => {
+                    //                             setViewOrder({
+                    //                                 orderDetails: row,
+                    //                                 orderProducts: row?.Products_List ? row?.Products_List : [],
+                    //                             })
+                    //                         }}
+                    //                         color='primary' size="small"
+                    //                     >
+                    //                         <Visibility className="fa-16" />
+                    //                     </IconButton>
+                    //                 </Tooltip>
+                    //                            <Tooltip title='Print Invoice'>
+                    //                     <IconButton
+                    //                         onClick={() => {
+                    //                             setSelectedInvoice(row); 
+                    //                             setDialog(pre => ({ ...pre, printInvoice: true })); 
+                    //                         }}
+                    //                         color='secondary' size="small"
+                    //                     >
+                    //                         <Print className="fa-16" />
+                    //                     </IconButton>
+                    //                 </Tooltip>
+
+                    //                 {EditRights && (
+                    //                     <Tooltip title='Edit'>
+                    //                         <IconButton
+                    //                             onClick={() => navigate('create', {
+                    //                                 state: {
+                    //                                     ...row,
+                    //                                     isEdit: true
+                    //                                 }
+                    //                             })}
+                    //                             size="small"
+                    //                         >
+                    //                             <Edit className="fa-16" />
+                    //                         </IconButton>
+                    //                     </Tooltip>
+                    //                 )}
+
+                    //             </>
+                    //         )
+                    //     },
+                    // },
+
+
                     {
-                        Field_Name: 'Action',
-                        isVisible: 1,
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-                            return (
-                                <>
-                                    <Tooltip title='View Order'>
-                                        <IconButton
-                                            onClick={() => {
-                                                setViewOrder({
-                                                    orderDetails: row,
-                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
-                                                })
-                                            }}
-                                            color='primary' size="small"
-                                        >
-                                            <Visibility className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
-     <Tooltip title='Print Invoice'>
-                                        <IconButton
-                                            onClick={() => {
-                                                setSelectedInvoice(row); // Set the current row as selected invoice
-                                                setDialog(pre => ({ ...pre, printInvoice: true })); // Open print dialog
-                                            }}
-                                            color='secondary' size="small"
-                                        >
-                                            <Print className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
-
-                                    {EditRights && (
-                                        <Tooltip title='Edit'>
-                                            <IconButton
-                                                onClick={() => navigate('create', {
-                                                    state: {
-                                                        ...row,
-                                                        isEdit: true
-                                                    }
-                                                })}
-                                                size="small"
-                                            >
-                                                <Edit className="fa-16" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    )}
-
-                                </>
-                            )
+    Field_Name: 'Action',
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) => {
+        return (
+            <ButtonActions
+                buttonsData={[
+                    {
+                        name: 'View Order',
+                        onclick: () => {
+                            setViewOrder({
+                                orderDetails: row,
+                                orderProducts: row?.Products_List ? row?.Products_List : [],
+                            })
                         },
+                        icon: <Visibility fontSize="small" color="primary" />,
                     },
+                    {
+                        name: 'Print Invoice',
+                        onclick: () => {
+                            setSelectedInvoice(row);
+                            setDialog(pre => ({ ...pre, printInvoice: true }));
+                        },
+                        icon: <Print fontSize="small" color="primary" />,
+                    },
+                    {
+                        name: 'Edit',
+                        onclick: () => navigate('create', {
+                            state: {
+                                ...row,
+                                isEdit: true
+                            }
+                        }),
+                        icon: <Edit fontSize="small" color="primary" />,
+                        disabled: !EditRights,
+                    },
+                       {
+                        name: 'Delivery Slip',
+                        onclick: () => {
+                            setSelectedInvoice(row);
+                            setDialog(pre => ({ ...pre, deliverySlip: true }));
+                        },
+                        icon: <Print fontSize="small" color="primary" />,
+                    },
+                ]}
+            />
+        )
+    },
+}
                 ]}
                 ButtonArea={
                     <>
@@ -465,6 +520,52 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     <Button 
                         onClick={() => {
                             setDialog(pre => ({ ...pre, printInvoice: false }));
+                            setSelectedInvoice(null);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
+
+
+  <Dialog
+                open={dialog.deliverySlip}
+                onClose={() => {
+                    setDialog(pre => ({ ...pre, deliverySlip: false }));
+                    setSelectedInvoice(null);
+                }}
+                maxWidth="lg"
+                fullWidth
+                scroll="paper"
+            >
+                <DialogTitle>
+                    Print Delivery Slip #{selectedInvoice?.Do_Inv_No}
+                    <IconButton
+                        onClick={() => {
+                            setDialog(pre => ({ ...pre, deliverySlip: false }));
+                            setSelectedInvoice(null);
+                        }}
+                        style={{ position: 'absolute', right: 8, top: 8 }}
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedInvoice?.Do_Id && (
+                        <DeliverySlipprint
+                            Do_Id={selectedInvoice.Do_Id}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={() => {
+                            setDialog(pre => ({ ...pre, deliverySlip: false }));
                             setSelectedInvoice(null);
                         }}
                     >
