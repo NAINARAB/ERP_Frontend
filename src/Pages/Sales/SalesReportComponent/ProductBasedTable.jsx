@@ -29,6 +29,7 @@ const ProductBasedSalesReport = ({ dataArray }) => {
     return (
         <Fragment>
             <FilterableTable
+                // title="Product Based Sales Report"
                 dataArray={showData}
                 isExpendable={true}
                 columns={[

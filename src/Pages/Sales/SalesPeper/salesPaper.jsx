@@ -11,24 +11,115 @@ const getStaff = (staffs, type) =>
         .map(s => s.empName)
         .join(", ");
 
-const transformSalesVoucherData = (data) => {
-    let transformedData = [];
-    let voucherGroup = [];
+// const transformSalesVoucherData = (data) => {
+//     let transformedData = [];
+//     let voucherGroup = [];
+
+//     data.forEach((entry, entryIndex) => {
+
+//         const totalBilledQty = entry.productDetails.reduce(
+//             (sum, item) => Addition(sum, item.billedQuantity),
+//             0
+//         );
+
+//         const totalUnitQty = entry.productDetails.reduce(
+//             (sum, item) => Addition(sum, item.actUnitQuantity),
+//             0
+//         );
+
+//         if (voucherGroup.findIndex(voucher => stringCompare(voucher, entry.voucheGet)) === -1) {
+//             voucherGroup.push(entry.voucheGet);
+//             transformedData.push({
+//                 SNo: '',
+//                 unitDifference: '',
+//                 quantityDifference: '',
+//                 particular: entry.voucheGet,
+//                 voucherNoOrRate: '',
+//                 unitQuantity: '',
+//                 billedQuantity: '',
+//                 broker: '',
+//                 transporter: '',
+//                 loadMan: '',
+//                 rowType: "VOUCHER-HEADER"
+//             });
+//         }
+
+//         // ---------- HEADER ROW (Voucher + Retailer) ----------
+//         transformedData.push({
+//             SNo: entryIndex + 1,
+//             unitDifference: '',
+//             quantityDifference: '',
+//             particular: entry.retailerGet,
+//             voucherNoOrRate: entry.voucherNumber,
+//             unitQuantity: totalUnitQty,
+//             billedQuantity: totalBilledQty,
+//             broker: getStaff(entry.staffDetails || [], "Broker"),
+//             transporter: getStaff(entry.staffDetails || [], "Transport"),
+//             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
+//             rowType: "HEADER"
+//         });
+
+//         // ---------- ITEM ROWS ----------
+//         entry.productDetails.forEach((item) => {
+//             const unitDifference = Math.round(Number(item.actUnitQuantity)) - Number(item.actUnitQuantity);
+
+//             transformedData.push({
+//                 SNo: "",
+//                 unitDifference: unitDifference !== 0 ? RoundNumber(unitDifference) : '',
+//                 quantityDifference: item.quantityDifference || "",
+//                 particular: item.itemNameGet,
+//                 voucherNoOrRate: item.billedRate || "",
+//                 unitQuantity: item.actUnitQuantity || "",
+//                 billedQuantity: item.billedQuantity || "",
+//                 broker: "",
+//                 transporter: "",
+//                 loadMan: "",
+//                 rowType: "ITEM"
+//             });
+//         });
+//     });
+
+//     return transformedData;
+// };
+
+const transformSalesVoucherData = (data = []) => {
+    const transformedData = [];
+
+    let currentVoucherType = null;
+
+    let totalUnitQuantity = 0;
+    let totalBilledQuantity = 0;
+    let totalUnitDifference = 0;
+
+    const pushCumulativeRow = (voucherType) => {
+        transformedData.push({
+            SNo: '',
+            unitDifference: RoundNumber(totalUnitDifference),
+            quantityDifference: '',
+            particular: `${voucherType} TOTAL`,
+            voucherNoOrRate: '',
+            unitQuantity: RoundNumber(totalUnitQuantity),
+            billedQuantity: RoundNumber(totalBilledQuantity),
+            broker: '',
+            transporter: '',
+            loadMan: '',
+            rowType: "VOUCHER-TOTAL"
+        });
+    };
 
     data.forEach((entry, entryIndex) => {
 
-        const totalBilledQty = entry.productDetails.reduce(
-            (sum, item) => Addition(sum, item.billedQuantity),
-            0
-        );
+        if (currentVoucherType && currentVoucherType !== entry.voucheGet) {
+            pushCumulativeRow(currentVoucherType);
 
-        const totalUnitQty = entry.productDetails.reduce(
-            (sum, item) => Addition(sum, item.actUnitQuantity),
-            0
-        );
+            totalUnitQuantity = 0;
+            totalBilledQuantity = 0;
+            totalUnitDifference = 0;
+        }
 
-        if (voucherGroup.findIndex(voucher => stringCompare(voucher, entry.voucheGet)) === -1) {
-            voucherGroup.push(entry.voucheGet);
+        if (currentVoucherType !== entry.voucheGet) {
+            currentVoucherType = entry.voucheGet;
+
             transformedData.push({
                 SNo: '',
                 unitDifference: '',
@@ -44,40 +135,62 @@ const transformSalesVoucherData = (data) => {
             });
         }
 
-        // ---------- HEADER ROW (Voucher + Retailer) ----------
+        const invoiceBilledQty = entry.productDetails.reduce(
+            (sum, item) => Addition(sum, item.billedQuantity),
+            0
+        );
+
+        const invoiceUnitQty = entry.productDetails.reduce(
+            (sum, item) => Addition(sum, item.actUnitQuantity),
+            0
+        );
+
+        totalUnitQuantity += invoiceUnitQty;
+        totalBilledQuantity += invoiceBilledQty;
+
+        // ---------- HEADER ROW ----------
         transformedData.push({
             SNo: entryIndex + 1,
             unitDifference: '',
             quantityDifference: '',
             particular: entry.retailerGet,
             voucherNoOrRate: entry.voucherNumber,
-            unitQuantity: totalUnitQty,
-            billedQuantity: totalBilledQty,
+            unitQuantity: invoiceUnitQty,
+            billedQuantity: invoiceBilledQty,
             broker: getStaff(entry.staffDetails || [], "Broker"),
             transporter: getStaff(entry.staffDetails || [], "Transport"),
             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
             rowType: "HEADER"
         });
 
-        // ---------- ITEM ROWS ----------
         entry.productDetails.forEach((item) => {
-            const unitDifference = Math.round(Number(item.actUnitQuantity)) - Number(item.actUnitQuantity);
+            const unitDiff =
+                Math.round(Number(item.actUnitQuantity)) -
+                Number(item.actUnitQuantity);
+
+            if (unitDiff !== 0) {
+                totalUnitDifference += unitDiff;
+            }
 
             transformedData.push({
-                SNo: "",
-                unitDifference: unitDifference !== 0 ? RoundNumber(unitDifference) : '',
-                quantityDifference: item.quantityDifference || "",
+                SNo: '',
+                unitDifference: unitDiff !== 0 ? RoundNumber(unitDiff) : '',
+                quantityDifference: item.quantityDifference || '',
                 particular: item.itemNameGet,
-                voucherNoOrRate: item.billedRate || "",
-                unitQuantity: item.actUnitQuantity || "",
-                billedQuantity: item.billedQuantity || "",
-                broker: "",
-                transporter: "",
-                loadMan: "",
+                voucherNoOrRate: item.billedRate || '',
+                unitQuantity: item.actUnitQuantity || '',
+                billedQuantity: item.billedQuantity || '',
+                broker: '',
+                transporter: '',
+                loadMan: '',
                 rowType: "ITEM"
             });
         });
     });
+
+    if (currentVoucherType) {
+        pushCumulativeRow(currentVoucherType);
+    }
 
     return transformedData;
 };
@@ -105,9 +218,10 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
     const fetchSalesInvoices = () => setFilter((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
 
     const headerColor = (type) => {
-        if ('HEADER' === type) return 'fw-bold';
+        if ('HEADER' === type) return ' text-primary fw-bold ';
         if ('ITEM' === type) return '';
-        if ('VOUCHER-HEADER' === type) return 'text-success fw-bold';
+        if ('VOUCHER-HEADER' === type) return ' text-success fw-bold ';
+        if ('VOUCHER-TOTAL' === type) return ' fw-bold ';
     }
 
     return (
@@ -122,53 +236,41 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
                 PDFPrintOption
                 columns={[
                     createCol('SNo', 'number', 'S.No'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Unit Diff',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span>{row.unitDifference}</span>
-                        )
-                    },
+                    createCol('unitDifference', 'number', 'Unit Diff'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Diff',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span className={row.rowType === 'HEADER' ? ' text-primary fw-bold ' : ''}>{row.quantityDifference}</span>
-                        )
+                        Field_Name: 'quantityDifference',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
                     },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Particulars',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span className={headerColor(row.rowType)}>{row.particular}</span>
-                        )
+                        Field_Name: 'particular',
+                        Fied_Data: 'string',
+                        tdClass: ({ row }) => headerColor(row.rowType)
                     },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Vou.No / Rate',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span className={row.rowType === 'HEADER' ? ' text-primary fw-bold ' : ''}>{row.voucherNoOrRate}</span>
-                        )
+                        Field_Name: 'voucherNoOrRate',
+                        Fied_Data: 'string',
+                        tdClass: ({ row }) => headerColor(row.rowType)
                     },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Act Qty',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span className={row.rowType === 'HEADER' ? ' text-primary fw-bold ' : ''}>{row.unitQuantity}</span>
-                        )
+                        Field_Name: 'unitQuantity',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
                     },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Bill Qty',
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <span className={row.rowType === 'HEADER' ? ' text-primary fw-bold ' : ''}>{row.billedQuantity}</span>
-                        )
+                        Field_Name: 'billedQuantity',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
                     },
                     createCol('broker', 'string', 'Broker Name'),
                     createCol('transporter', 'string', 'Transporter'),

@@ -1,11 +1,10 @@
-import React, { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { DaysBetween, firstDayOfMonth, getPreviousDate, ISOString } from "../../Components/functions";
+import { DaysBetween, getPreviousDate, ISOString } from "../../Components/functions";
 // import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
-import DisplayArrayData from './SalesReportComponent/DataSetDisplay'
 import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
 import ProductDayBasedSalesReport from "./SalesReportComponent/ProductDayBasedTable";
-import { FilterAlt, Refresh } from "@mui/icons-material";
+import { Refresh } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import LedgerBasedSalesReport from "./SalesReportComponent/LedgerBasedTable";
 
@@ -83,27 +82,12 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
     return (
         <Fragment>
             <Card className="mt-3">
-                <div className="px-3 py-2 d-flex justify-content-between align-items-center fw-bold text-dark" style={{ backgroundColor: '#eae0cc' }}>
+                <div 
+                    className="px-3 py-2 d-flex justify-content-between align-items-center fw-bold text-dark" 
+                    style={{ backgroundColor: '#eae0cc' }}
+                >
                     <span>
-                        {storage?.Company_Name}
-                    </span>
-                    <span>
-                        <select
-                            value={filters.ReportType}
-                            className="cus-inpt ps-3 w-100 rounded-5 border-0"
-                            onChange={e => setFilters(pre => ({ ...pre, ReportType: e.target.value }))}
-                        >
-                            <option value={'LedgerBased'}>Ledger Based</option>
-                            <option value={'ProductBased'}>Product Based</option>
-                            <option value={'ProductDayAverage'}>Product/Day Based</option>
-                        </select>
-                    </span>
-                </div>
-
-                <CardContent>
-
-                    <div className="mb-3">
-                        <form onSubmit={e => { 
+                        <form onSubmit={e => {
                             e.preventDefault();
                             setFilters(pre => ({ ...pre, reload: !pre.reload }))
                         }}>
@@ -132,17 +116,21 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                                 </IconButton>
                             </Tooltip>
                         </form>
+                    </span>
+                    <span>
+                        <select
+                            value={filters.ReportType}
+                            className="cus-inpt ps-3 w-100 rounded-5 border-0"
+                            onChange={e => setFilters(pre => ({ ...pre, ReportType: e.target.value }))}
+                        >
+                            <option value={'LedgerBased'}>Ledger Based</option>
+                            <option value={'ProductBased'}>Product Based</option>
+                            {/* <option value={'ProductDayAverage'}>Product/Day Based</option> */}
+                        </select>
+                    </span>
+                </div>
 
-                        {/* <Tooltip title="Filters">
-                            <IconButton
-                                onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
-                                size="small"
-                                className="d-md-none d-inline"
-                            >
-                                <FilterAlt />
-                            </IconButton>
-                        </Tooltip> */}
-                    </div>
+                <CardContent className="p-0">
 
                     {salesData === null && filters.ReportType === "LedgerBased" && (
                         <h6 className="blue-text text-center">Fetching Ledger Based data...</h6>

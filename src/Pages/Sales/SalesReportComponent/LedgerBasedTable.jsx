@@ -457,7 +457,7 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
     return (
         <Fragment>
             <FilterableTable
-                title="LOL - Sales Reports"
+                // title="LOL - Sales Reports"
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 ButtonArea={

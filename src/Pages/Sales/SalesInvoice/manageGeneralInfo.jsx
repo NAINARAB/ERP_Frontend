@@ -1,6 +1,6 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { retailerDeliveryAddressInfo } from "./variable";
 import { useMemo } from "react";
@@ -23,21 +23,21 @@ const ManageSalesInvoiceGeneralInfo = ({
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
     const retailerDetails = useMemo(() => {
-        return retailers.find(ret => isEqualNumber(ret.Retailer_Id, invoiceInfo?.Retailer_Id)) || {};
+        return toArray(retailers).find(ret => isEqualNumber(ret.Retailer_Id, invoiceInfo?.Retailer_Id)) || {};
     }, [invoiceInfo?.Retailer_Id])
 
     const onChangeRetailerAddress = (column, value) => {
 
-        const retailerAddress = retailerDetails?.deliveryAddresses.find(add => add[column] === value);
+        const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(add => stringCompare(add[column], value));
 
         if (retailerAddress) {
             setRetailerDeliveryAddress(pre => ({
                 ...pre,
-                deliveryName: retailerAddress?.deliveryName,
-                phoneNumber: retailerAddress?.phoneNumber,
-                cityName: retailerAddress?.cityName,
-                deliveryAddress: retailerAddress?.deliveryAddress,
-                id: retailerAddress.id
+                deliveryName: retailerAddress?.deliveryName || '',
+                phoneNumber: retailerAddress?.phoneNumber || '',
+                cityName: retailerAddress?.cityName || '',
+                deliveryAddress: retailerAddress?.deliveryAddress || '',
+                id: retailerAddress?.id || null
             }))
         } else {
             setRetailerDeliveryAddress(pre => ({
