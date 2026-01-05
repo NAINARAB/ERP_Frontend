@@ -294,6 +294,7 @@ const handlePrint = useReactToPrint({
                                     height: "14.5cm",
                                     position: "relative",
                                     fontSize: "11px",
+                                    top:"0.22cm",
                                     padding: "0.25cm",
                                      transform: `scale(${isCombinedPrint ? 1 : printScale})`,
                                     boxSizing: "border-box",

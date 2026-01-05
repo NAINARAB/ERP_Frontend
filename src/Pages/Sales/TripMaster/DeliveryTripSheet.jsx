@@ -991,6 +991,9 @@ import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from 'react-toastify'
+import * as XLSX  from 'xlsx';
+import { saveAs } from 'file-saver';
+
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -1024,8 +1027,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     const [selectedId, setSelectedId] = useState(null);
     const [reload, setReload] = useState(false)
     const printRef = useRef(null);
-        const [companyInfo, setCompanyInfo] = useState({});
+    const [companyInfo, setCompanyInfo] = useState({});
     const itemPreviewPrintRef = useRef(null); 
+
+   
 
 
     useEffect(() => {
@@ -1245,6 +1250,309 @@ const packSummary = useMemo(() => {
 }, [selectedRow]);
 
 
+
+
+const exportToExcel = () => {
+  
+    
+    if (!selectedRow?.Product_Array || !Array.isArray(selectedRow.Product_Array)) {
+        toast.error('No trip data available to export');
+        return;
+    }
+
+    try {
+     
+        const wb = XLSX.utils.book_new();
+        
+      
+        const mainData = [];
+        
+      
+        mainData.push(
+            ['DELIVERY CHALLAN', '', '', `GSTIN / UIN: ${companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number || 'Not Available'}`, '', '', 'ORIGINAL / DUPLICATE'],
+            ['Company Name:', companyInfo?.Company_Name || '', '', 'FSSAI No:', '', 'Challan No:', selectedRow?.Challan_No || ''],
+            ['Address:', companyInfo?.Company_Address || '', '', 'Phone No:', '9842131353, 9786131353', 'Date:', selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''],
+            [],
+            ['Vehicle No:', selectedRow?.Vehicle_No || '', 'Delivery Person:', 
+             selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Delivery Man')?.map(staff => staff?.Emp_Name).join(', ') || '', 
+             'Start Time:', selectedRow?.StartTime ? LocalTime(new Date(selectedRow.StartTime)) : '', 'Start KM:', selectedRow?.Trip_ST_KM || ''],
+            ['Trip No:', selectedRow?.Trip_No || '', 'LoadMan:', 
+             selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Load Man')?.map(staff => staff?.Emp_Name).join(', ') || '', 
+             'End Time:', selectedRow?.EndTime ? LocalTime(new Date(selectedRow.EndTime)) : '', 'End KM:', selectedRow?.Trip_EN_KM || ''],
+            []
+        );
+
+    
+        mainData.push(
+            ['S.No', 'Invoice No', 'Retailer Name', 'Location', 'Item Name', 'HSN Code', 'Quantity', 'Rate', 'Amount']
+        );
+
+
+        let allProducts = [];
+        let serialNo = 1;
+        
+    
+        selectedRow.Product_Array.forEach((delivery) => {
+      
+            if (delivery.Products_List && Array.isArray(delivery.Products_List)) {
+          
+                delivery.Products_List.forEach((product) => {
+            
+                    const quantity = product.Bill_Qty || product.Act_Qty || 0;
+                    
+       
+                    const rate = product.Taxable_Rate || product.Item_Rate || 0;
+                    
+                  
+                    const amount = (quantity * rate) / 100; 
+                    
+                    allProducts.push({
+                        serialNo: serialNo++,
+                        invoiceNo: product.Do_Inv_No || "Delivery",
+                        retailerName: delivery.Retailer_Name || '',
+                        location: product.Party_Location || '',
+                        itemName: product.Product_Name || '',
+                        hsnCode: product.HSN_Code || '',
+                        quantity: quantity,
+                        rate: rate / 100, // Convert to rupees
+                        amount: amount,
+                        pack: product.Pack || ''
+                    });
+                });
+            }
+        });
+
+        // Add all products to the Excel sheet
+        if (allProducts.length > 0) {
+            allProducts.forEach(product => {
+                mainData.push([
+                    product.serialNo,
+                    product.invoiceNo,
+                    product.retailerName,
+                    product.location,
+                    product.itemName,
+                    product.hsnCode,
+                    product.quantity,
+                    product.rate.toFixed(2),
+                    product.amount.toFixed(2)
+                ]);
+            });
+        } else {
+            mainData.push(['No products found in this trip', '', '', '', '', '', '', '', '']);
+        }
+
+        // Calculate totals
+        const totalQty = allProducts.reduce((sum, product) => sum + (Number(product.quantity) || 0), 0);
+        const totalAmount = allProducts.reduce((sum, product) => sum + (Number(product.amount) || 0), 0);
+
+        // Add totals row with proper formatting
+        mainData.push(
+            [], // Empty row
+            ['Total', '', '', '', '', '', totalQty, '', totalAmount.toFixed(2)],
+            [], // Empty row
+            // Tax Summary Header
+            ['HSN / SAC', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total Tax', '', '', '']
+        );
+
+        // Group by HSN Code for tax summary
+        const taxSummary = {};
+        allProducts.forEach(product => {
+            const hsnCode = product.hsnCode;
+            if (!taxSummary[hsnCode]) {
+                taxSummary[hsnCode] = {
+                    taxableValue: 0,
+                    igst: 0,
+                    cgst: 0,
+                    sgst: 0
+                };
+            }
+            taxSummary[hsnCode].taxableValue += product.amount;
+        });
+
+        // Add tax data rows
+        Object.keys(taxSummary).forEach(hsnCode => {
+            const taxData = taxSummary[hsnCode];
+            mainData.push([
+                hsnCode || 'N/A',
+                taxData.taxableValue.toFixed(2),
+                taxData.igst.toFixed(2),
+                taxData.cgst.toFixed(2),
+                taxData.sgst.toFixed(2),
+                (taxData.igst + taxData.cgst + taxData.sgst).toFixed(2),
+                '', '', ''
+            ]);
+        });
+
+        // Calculate tax totals
+        const totalTaxable = Object.values(taxSummary).reduce((sum, item) => sum + item.taxableValue, 0);
+        const totalIGST = Object.values(taxSummary).reduce((sum, item) => sum + item.igst, 0);
+        const totalCGST = Object.values(taxSummary).reduce((sum, item) => sum + item.cgst, 0);
+        const totalSGST = Object.values(taxSummary).reduce((sum, item) => sum + item.sgst, 0);
+        const totalTax = totalIGST + totalCGST + totalSGST;
+
+        mainData.push(
+            ['Total', totalTaxable.toFixed(2), totalIGST.toFixed(2), totalCGST.toFixed(2), totalSGST.toFixed(2), totalTax.toFixed(2), '', '', ''],
+            [], // Empty row
+            // Pack Summary
+            ['Pack Details', 'Count', '', '', '', '', '', '', '']
+        );
+
+        // Group by pack size
+        const packSummary = {};
+        allProducts.forEach(product => {
+            if (product.pack) {
+                const packKey = `${product.pack} KG`;
+                packSummary[packKey] = (packSummary[packKey] || 0) + 1;
+            }
+        });
+
+        // Add pack summary rows
+        Object.entries(packSummary).forEach(([pack, count]) => {
+            mainData.push([pack, `Bags: ${count}`, '', '', '', '', '', '', '']);
+        });
+
+        if (Object.keys(packSummary).length === 0) {
+            mainData.push(['No pack information', '', '', '', '', '', '', '', '']);
+        }
+
+        // Add footer with proper spacing
+        const grandTotal = totalTaxable + totalTax;
+        mainData.push(
+            [], // Empty row
+            ['Prepared By', '', 'Executed By', '', 'Verified By', '', '', '', ''],
+            [], // Empty row
+            ['Other Expenses', '0.00', 'Round Off', '0.00', 'Grand Total', grandTotal.toFixed(2), '', '', ''],
+            [], // Empty row
+            ['Total Amount (in words):', `INR ${numberToWords(parseInt(grandTotal))} only.`, '', '', '', '', '', '', ''],
+            [], // Empty row
+            ['This is a Computer Generated Invoice', '', '', '', '', '', '', '', '']
+        );
+
+        const ws = XLSX.utils.aoa_to_sheet(mainData);
+        
+        // Set column widths for better PDF export
+        ws['!cols'] = [
+            { wch: 8 },   // S.No - Wider
+            { wch: 18 },  // Invoice No - Wider
+            { wch: 30 },  // Retailer Name - Much wider
+            { wch: 15 },  // Location - Wider
+            { wch: 35 },  // Item Name - Much wider
+            { wch: 12 },  // HSN Code - Wider
+            { wch: 12 },  // Quantity - Wider
+            { wch: 12 },  // Rate - Wider
+            { wch: 15 }   // Amount - Wider
+        ];
+
+   
+        const rowCount = mainData.length;
+        ws['!rows'] = [];
+        for (let i = 0; i < rowCount; i++) {
+            ws['!rows'][i] = { hpt: 20 }; 
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Delivery Challan');
+
+  
+        const simpleData = [];
+        
+       
+        simpleData.push(['DELIVERY CHALLAN']);
+        simpleData.push([`Company: ${companyInfo?.Company_Name || ''}`]);
+        simpleData.push([`Address: ${companyInfo?.Company_Address || ''}`]);
+        simpleData.push([`GSTIN/UIN: ${companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number || 'Not Available'}`]);
+        simpleData.push([`Challan No: ${selectedRow?.Challan_No || ''} | Date: ${selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}`]);
+        simpleData.push([`Vehicle No: ${selectedRow?.Vehicle_No || ''} | Trip No: ${selectedRow?.Trip_No || ''}`]);
+        simpleData.push([]);
+        
+   
+        simpleData.push(['S.No', 'Item Description', 'HSN', 'Qty', 'Rate', 'Amount']);
+        
+      
+        let sn = 1;
+        selectedRow.Product_Array.forEach((delivery) => {
+            if (delivery.Products_List && Array.isArray(delivery.Products_List)) {
+                delivery.Products_List.forEach((product) => {
+                    const qty = product.Bill_Qty || product.Act_Qty || 0;
+                    const rate = (product.Taxable_Rate || product.Item_Rate || 0) / 100;
+                    const amount = qty * rate;
+                    
+                    simpleData.push([
+                        sn++,
+                        `${product.Product_Name || ''}`,
+                        product.HSN_Code || '',
+                        qty,
+                        rate.toFixed(2),
+                        amount.toFixed(2)
+                    ]);
+                });
+            }
+        });
+        
+      
+        simpleData.push([]);
+        const totalQtySimple = allProducts.reduce((sum, p) => sum + p.quantity, 0);
+        const totalAmountSimple = allProducts.reduce((sum, p) => sum + p.amount, 0);
+        simpleData.push(['', '', 'TOTAL:', totalQtySimple, '', totalAmountSimple.toFixed(2)]);
+        
+       
+        simpleData.push([]);
+        simpleData.push(['TAX SUMMARY']);
+        simpleData.push(['HSN', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total']);
+        
+        Object.keys(taxSummary).forEach(hsn => {
+            const tax = taxSummary[hsn];
+            simpleData.push([
+                hsn,
+                tax.taxableValue.toFixed(2),
+                tax.igst.toFixed(2),
+                tax.cgst.toFixed(2),
+                tax.sgst.toFixed(2),
+                (tax.taxableValue + tax.igst + tax.cgst + tax.sgst).toFixed(2)
+            ]);
+        });
+        
+        simpleData.push([]);
+        simpleData.push(['Grand Total:', grandTotal.toFixed(2)]);
+        simpleData.push(['In Words:', `INR ${numberToWords(parseInt(grandTotal))} only`]);
+        simpleData.push([]);
+        simpleData.push(['--- This is a Computer Generated Invoice ---']);
+        
+        const wsSimple = XLSX.utils.aoa_to_sheet(simpleData);
+        
+      
+        wsSimple['!cols'] = [
+            { wch: 6 },   
+            { wch: 40 },  
+            { wch: 10 }, 
+            { wch: 10 }, 
+            { wch: 12 },  
+            { wch: 15 }   
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, wsSimple, 'Simple Format');
+
+       
+        const excelBuffer = XLSX.write(wb, { 
+            bookType: 'xlsx', 
+            type: 'array',
+            bookSST: false,
+            cellStyles: true
+        });
+        const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        const fileName = `Delivery_Challan_${selectedRow?.Challan_No || selectedRow?.Trip_No || 'Trip'}_${LocalDate(new Date())}.xlsx`;
+        saveAs(data, fileName);
+        
+        toast.success('Excel file downloaded successfully!');
+        
+    } catch (error) {
+       
+        toast.error('Failed to export to Excel: ' + error.message);
+    }
+};
+
+
+
     return (
         <>
 
@@ -1437,6 +1745,14 @@ const packSummary = useMemo(() => {
                                         onclick: () => {
                                             setFilters(pre => ({ ...pre, printPreviewDialog: true }));
                                             setSelectedRow(row);
+                                        }
+                                    },
+                                       {
+                                        name: 'Download Excel',
+                                        icon: <Download className="fa-14" />,
+                                        onclick: () => {
+                                            setSelectedRow(row);
+                                            setTimeout(() => exportToExcel(), 100);
                                         }
                                     },
                                 ]}

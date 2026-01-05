@@ -358,7 +358,7 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
      width: 'calc(15cm)',
                                 height: 'calc(10.5cm)',
    transform: 'scale(1.1)',  
-//   margin: '0 auto',
+  margin: '0 auto',
   position: 'relative',
   boxSizing: 'border-box',
 }}
