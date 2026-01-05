@@ -551,7 +551,17 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                             );
                         },
                     },
-
+                    //     {
+                    //     ColumnHeader: "Created_By",
+                    //     isVisible: 1,
+                    //     align: "center",
+                    //     isCustomCell: true,
+                    //     Cell: ({ row }) => {
+                    //        {row?.Created_BY_Name}
+                        
+                    //     },
+                    // },
+                    createCol("Created_BY_Name", "string", "Created_By"),
                     {
                         Field_Name: "Action",
                         isVisible: 1,
