@@ -946,7 +946,7 @@ function Loslist() {
                                     .map((row, idx) => (
                                         <StyledTableRow
                                             key={idx}
-                                            highlight={row.Is_Tally_Updated === 1 || row.Is_Tally_Updated === "1"}
+                                            highlight={row.IsUpdated === 0}
                                         >
                                             <StyledTableCell align="center">
                                                 {page * rowsPerPage + idx + 1}
