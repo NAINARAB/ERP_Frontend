@@ -2,6 +2,17 @@ import { getSessionUser, ISOString } from "../../../Components/functions";
 
 const storage = getSessionUser().user;
 
+export const retailerDeliveryAddressInfo = {
+    id: null,
+    retailerId: null,
+    deliveryName: '',
+    phoneNumber: '',
+    cityName: '',
+    deliveryAddress: '',
+    gstNumber: '',
+    stateName: '',
+}
+
 export const salesInvoiceGeneralInfo = {
     Do_Id: '',
     Do_No: '',
@@ -32,7 +43,10 @@ export const salesInvoiceGeneralInfo = {
     Stock_Item_Ledger_Name: '',
 
     Ref_Inv_Number: '', // purchase invoice reference number
-    deliveryAddressId: null, // retailer delivery address id
+    deliveryAddressId: null,
+    deliveryAddressDetails: retailerDeliveryAddressInfo, // retailer delivery address
+    shipingAddressId: null,
+    shipingAddressDetails: retailerDeliveryAddressInfo, // retailer shipping address
 
     Delivery_Status: 0,
     Payment_Mode: 0,
@@ -52,15 +66,6 @@ export const salesInvoiceGeneralInfo = {
     Altered_by: storage?.UserId,
     Created_on: '',
     Alterd_on: '',
-}
-
-export const retailerDeliveryAddressInfo = {
-    id: null,
-    retailerId: null,
-    deliveryName: '',
-    phoneNumber: '',
-    cityName: '',
-    deliveryAddress: ''
 }
 
 export const salesInvoiceDetailsInfo = {

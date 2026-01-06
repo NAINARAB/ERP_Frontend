@@ -55,6 +55,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
     const [retailerDeliveryAddress, setRetailerDeliveryAddress] = useState(retailerDeliveryAddressInfo);
+    const [retailerShippingAddress, setRetailerShippingAddress] = useState(retailerDeliveryAddressInfo);
     const [invoiceProducts, setInvoiceProduct] = useState([]);
     const [invoiceExpences, setInvoiceExpences] = useState([]);
     const [staffArray, setStaffArray] = useState([]);
@@ -294,18 +295,37 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (checkIsNumber(editValues?.Retailer_Id) && !isEqualNumber(editValues?.Retailer_Id, 0)) {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, editValues?.Retailer_Id)) || {};
-            const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(
+            const billingAddress = toArray(retailerDetails?.deliveryAddresses).find(
                 addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
             ) ?? null;
 
-            if (retailerAddress) {
+            if (billingAddress) {
 
                 setRetailerDeliveryAddress({
-                    deliveryName: retailerAddress?.deliveryName,
-                    phoneNumber: retailerAddress?.phoneNumber,
-                    cityName: retailerAddress?.cityName,
-                    deliveryAddress: retailerAddress?.deliveryAddress,
-                    id: retailerAddress.id
+                    deliveryName: billingAddress?.deliveryName,
+                    phoneNumber: billingAddress?.phoneNumber,
+                    cityName: billingAddress?.cityName,
+                    deliveryAddress: billingAddress?.deliveryAddress,
+                    gstNumber: billingAddress?.gstNumber,
+                    stateName: billingAddress?.stateName,
+                    id: billingAddress.id
+                })
+            }
+
+            const shippingAddress = toArray(retailerDetails?.deliveryAddresses).find(
+                addr => isEqualNumber(addr?.id, editValues?.shipingAddressId)
+            ) ?? null;
+
+            if (shippingAddress) {
+
+                setRetailerDeliveryAddress({
+                    deliveryName: shippingAddress?.deliveryName,
+                    phoneNumber: shippingAddress?.phoneNumber,
+                    cityName: shippingAddress?.cityName,
+                    deliveryAddress: shippingAddress?.deliveryAddress,
+                    gstNumber: shippingAddress?.gstNumber,
+                    stateName: shippingAddress?.stateName,
+                    id: shippingAddress.id
                 })
             }
 
@@ -320,12 +340,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...invoiceInfo,
-                delivery_id: retailerDeliveryAddress?.id,
-                deliveryName: retailerDeliveryAddress?.deliveryName,
-                phoneNumber: retailerDeliveryAddress?.phoneNumber,
-                cityName: retailerDeliveryAddress?.cityName,
-                deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
-
+                deliveryAddressDetails: {
+                    delivery_id: retailerDeliveryAddress?.id,
+                    deliveryName: retailerDeliveryAddress?.deliveryName,
+                    phoneNumber: retailerDeliveryAddress?.phoneNumber,
+                    cityName: retailerDeliveryAddress?.cityName,
+                    deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
+                    gstNumber: retailerDeliveryAddress?.gstNumber,
+                    stateName: retailerDeliveryAddress?.stateName
+                },
+                shipingAddressDetails: {
+                    delivery_id: retailerShippingAddress?.id,
+                    deliveryName: retailerShippingAddress?.deliveryName,
+                    phoneNumber: retailerShippingAddress?.phoneNumber,
+                    cityName: retailerShippingAddress?.cityName,
+                    deliveryAddress: retailerShippingAddress?.deliveryAddress,
+                    gstNumber: retailerShippingAddress?.gstNumber,
+                    stateName: retailerShippingAddress?.stateName
+                },
                 Product_Array: invoiceProducts,
                 Staffs_Array: staffArray,
                 Expence_Array: invoiceExpences
@@ -434,6 +466,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     }}
                                     retailerDeliveryAddress={retailerDeliveryAddress}
                                     setRetailerDeliveryAddress={setRetailerDeliveryAddress}
+                                    shippingAddress={retailerShippingAddress}
+                                    setShippingAddress={setRetailerShippingAddress}
                                 />
                             </div>
                         </div>
@@ -571,12 +605,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
                     <Dialog
                         open={printDialog.open}
-                        // onClose={() => setPrintDialog({ open: false, Do_Id: null })}
-                        //                onClose={() => {
-                        //     setPrintDialog({ open: false, Do_Id: null });
-                        //     clearValues(); // Clear the form
-                        //     navigate('/erp/sales/invoice'); // Navigate to listing
-                        // }}
                         maxWidth="lg"
                         fullWidth
                         scroll="paper"
@@ -617,6 +645,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             </Button>
                         </DialogActions>
                     </Dialog>
+
                     <br />
 
                     <ExpencesOfSalesInvoice
