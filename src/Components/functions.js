@@ -531,6 +531,10 @@ export const Multiplication = (a, b) => limitFractionDigits(Number(a || 0) * Num
 
 export const Division = (a, b) => limitFractionDigits(b != 0 ? Number(a || 0) / Number(b || 1) : 0);
 
+export const getPercentage = (value, percent) => {
+  return (value * percent) / 100;
+};
+
 export const trimText = (text = '', replaceWith = '_') => String(text).trim().replace(/\s+/g, replaceWith ?? '_');
 
 export const filterableText = (text) => {

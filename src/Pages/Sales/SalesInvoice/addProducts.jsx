@@ -436,11 +436,12 @@ const AddProductForm = ({
                                     isSearchable={true}
                                     placeholder={"Select Batch"}
                                     menuPortalTarget={document.body}
-                                    isDisabled={
-                                        !checkIsNumber(productDetails?.Item_Id)
-                                        || !checkIsNumber(productDetails?.GoDown_Id)
-                                        || isEqualNumber(productDetails?.Bill_Qty, 0)
-                                    }
+                                    isDisabled={true}
+                                    // isDisabled={
+                                    //     !checkIsNumber(productDetails?.Item_Id)
+                                    //     || !checkIsNumber(productDetails?.GoDown_Id)
+                                    //     || isEqualNumber(productDetails?.Bill_Qty, 0)
+                                    // }
                                 />
                             </div>
 

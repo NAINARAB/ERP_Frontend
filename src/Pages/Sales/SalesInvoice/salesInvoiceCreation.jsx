@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { Button, IconButton, CardContent, Card, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { useState, useEffect, useMemo } from "react";
+import { Button, IconButton, CardContent, Card, Dialog, DialogTitle, DialogContent, DialogActions, CardActions } from "@mui/material";
 import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
-    checkIsNumber, toNumber, toArray, stringCompare
+    checkIsNumber, toNumber, toArray, stringCompare,
+    RoundNumber
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -55,6 +56,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
     const [retailerDeliveryAddress, setRetailerDeliveryAddress] = useState(retailerDeliveryAddressInfo);
+    const [retailerShippingAddress, setRetailerShippingAddress] = useState(retailerDeliveryAddressInfo);
     const [invoiceProducts, setInvoiceProduct] = useState([]);
     const [invoiceExpences, setInvoiceExpences] = useState([]);
     const [staffArray, setStaffArray] = useState([]);
@@ -153,7 +155,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
                     expence: expencesMaster.filter(
                         exp => !stringCompare(exp.Type, 'DEFAULT')
-                    ).map(exp => ({ Id: exp.Acc_Id, Expence_Name: exp.Account_Name })),
+                    ).map(exp => ({ 
+                        Id: exp.Acc_Id, 
+                        Expence_Name: exp.Account_Name,
+                        percentageValue: exp.percentageValue
+                    })),
                     // stockInGodown: stockInGodowns,
                     stockItemLedgerName: stockItemLedgerName,
                     batchDetails: toArray(batchDetailsResponse.data)
@@ -294,23 +300,118 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (checkIsNumber(editValues?.Retailer_Id) && !isEqualNumber(editValues?.Retailer_Id, 0)) {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, editValues?.Retailer_Id)) || {};
-            const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(
+            const billingAddress = toArray(retailerDetails?.deliveryAddresses).find(
                 addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
             ) ?? null;
 
-            if (retailerAddress) {
+            if (billingAddress) {
 
                 setRetailerDeliveryAddress({
-                    deliveryName: retailerAddress?.deliveryName,
-                    phoneNumber: retailerAddress?.phoneNumber,
-                    cityName: retailerAddress?.cityName,
-                    deliveryAddress: retailerAddress?.deliveryAddress,
-                    id: retailerAddress.id
+                    deliveryName: billingAddress?.deliveryName,
+                    phoneNumber: billingAddress?.phoneNumber,
+                    cityName: billingAddress?.cityName,
+                    deliveryAddress: billingAddress?.deliveryAddress,
+                    gstNumber: billingAddress?.gstNumber,
+                    stateName: billingAddress?.stateName,
+                    id: billingAddress.id
+                })
+            }
+
+            const shippingAddress = toArray(retailerDetails?.deliveryAddresses).find(
+                addr => isEqualNumber(addr?.id, editValues?.shipingAddressId)
+            ) ?? null;
+
+            if (shippingAddress) {
+
+                setRetailerDeliveryAddress({
+                    deliveryName: shippingAddress?.deliveryName,
+                    phoneNumber: shippingAddress?.phoneNumber,
+                    cityName: shippingAddress?.cityName,
+                    deliveryAddress: shippingAddress?.deliveryAddress,
+                    gstNumber: shippingAddress?.gstNumber,
+                    stateName: shippingAddress?.stateName,
+                    id: shippingAddress.id
                 })
             }
 
         }
     }, [editValues, baseData.retailers])
+
+    // Expence Info
+
+    const invExpencesTotal = useMemo(() => {
+        return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    }, [invoiceExpences]);
+
+    const Total_Invoice_value = useMemo(() => {
+        const invValue = invoiceProducts.reduce((acc, item) => {
+            const Amount = RoundNumber(item?.Amount);
+
+            if (isNotTaxableBill) return Addition(acc, Amount);
+
+            const product = findProductDetails(baseData.products, item.Item_Id);
+            const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+
+            if (isInclusive) {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+            } else {
+                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+            }
+        }, 0);
+
+        return Addition(invValue, invExpencesTotal);
+    }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal])
+
+    const taxSplitUp = useMemo(() => {
+        if (!invoiceProducts || invoiceProducts.length === 0) return {};
+
+        let totalTaxable = 0;
+        let totalTax = 0;
+
+        invoiceProducts.forEach(item => {
+            const Amount = RoundNumber(item?.Amount || 0);
+
+            if (isNotTaxableBill) {
+                totalTaxable = Addition(totalTaxable, Amount);
+                return;
+            }
+
+            const product = findProductDetails(baseData.products, item.Item_Id);
+            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+
+            totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
+            totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
+        });
+
+        const totalWithTax = Addition(totalTaxable, totalTax);
+        const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
+        const roundedTotal = Math.round(totalWithExpenses);
+        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
+
+        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
+
+        return {
+            totalTaxable: RoundNumber(totalTaxable),
+            totalTax: RoundNumber(totalTax),
+            cgst,
+            sgst,
+            igst,
+            roundOff,
+            invoiceTotal: roundedTotal
+        };
+
+    }, [invoiceProducts, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
+
+    // Update invoiceInfo when roundOff changes
+    useEffect(() => {
+        if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
+            setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
+        }
+    }, [taxSplitUp.roundOff]);
 
     const saveSalesInvoice = () => {
         if (loadingOn) loadingOn();
@@ -320,12 +421,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
             bodyData: {
                 ...invoiceInfo,
-                delivery_id: retailerDeliveryAddress?.id,
-                deliveryName: retailerDeliveryAddress?.deliveryName,
-                phoneNumber: retailerDeliveryAddress?.phoneNumber,
-                cityName: retailerDeliveryAddress?.cityName,
-                deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
-
+                deliveryAddressDetails: {
+                    delivery_id: retailerDeliveryAddress?.id,
+                    deliveryName: retailerDeliveryAddress?.deliveryName,
+                    phoneNumber: retailerDeliveryAddress?.phoneNumber,
+                    cityName: retailerDeliveryAddress?.cityName,
+                    deliveryAddress: retailerDeliveryAddress?.deliveryAddress,
+                    gstNumber: retailerDeliveryAddress?.gstNumber,
+                    stateName: retailerDeliveryAddress?.stateName
+                },
+                shipingAddressDetails: {
+                    delivery_id: retailerShippingAddress?.id,
+                    deliveryName: retailerShippingAddress?.deliveryName,
+                    phoneNumber: retailerShippingAddress?.phoneNumber,
+                    cityName: retailerShippingAddress?.cityName,
+                    deliveryAddress: retailerShippingAddress?.deliveryAddress,
+                    gstNumber: retailerShippingAddress?.gstNumber,
+                    stateName: retailerShippingAddress?.stateName
+                },
                 Product_Array: invoiceProducts,
                 Staffs_Array: staffArray,
                 Expence_Array: invoiceExpences
@@ -434,6 +547,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     }}
                                     retailerDeliveryAddress={retailerDeliveryAddress}
                                     setRetailerDeliveryAddress={setRetailerDeliveryAddress}
+                                    shippingAddress={retailerShippingAddress}
+                                    setShippingAddress={setRetailerShippingAddress}
                                 />
                             </div>
                         </div>
@@ -571,12 +686,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
                     <Dialog
                         open={printDialog.open}
-                        // onClose={() => setPrintDialog({ open: false, Do_Id: null })}
-                        //                onClose={() => {
-                        //     setPrintDialog({ open: false, Do_Id: null });
-                        //     clearValues(); // Clear the form
-                        //     navigate('/erp/sales/invoice'); // Navigate to listing
-                        // }}
                         maxWidth="lg"
                         fullWidth
                         scroll="paper"
@@ -617,6 +726,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             </Button>
                         </DialogActions>
                     </Dialog>
+
                     <br />
 
                     <ExpencesOfSalesInvoice
@@ -625,6 +735,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         expenceMaster={baseData.expence}
                         IS_IGST={IS_IGST}
                         taxType={taxType}
+                        Total_Invoice_value={Total_Invoice_value}
                     />
 
                     <br />
@@ -638,8 +749,21 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         products={baseData.products}
                         invoiceInfo={invoiceInfo}
                         setInvoiceInfo={setInvoiceInfo}
+                        invExpencesTotal={invExpencesTotal}
+                        Total_Invoice_value={Total_Invoice_value}
+                        taxSplitUp={taxSplitUp}
                     />
                 </CardContent>
+                <CardActions className="d-flex justify-content-end">
+                    <Button type='button' onClick={() => {
+                        if (window.history.length > 1) {
+                            navigate(-1);
+                        } else {
+                            navigate('/erp/sales/invoice');
+                        }
+                    }}>Cancel</Button>
+                    <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
+                </CardActions>
             </Card>
         </>
     )
