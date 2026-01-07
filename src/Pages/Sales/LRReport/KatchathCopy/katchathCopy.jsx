@@ -351,16 +351,17 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
             </div>
             <div ref={printRef} className="katchath-multiple-print" >
                 {data.map((invoice, index) => (
-                    <div key={invoice.Do_Id || index} className="mb-4">
+                    <div style={{fontWeight:'bold'}} key={invoice.Do_Id || index} className="mb-4">
                         <div
                          
                             style={{
-     width: 'calc(15cm)',
+     width: 'calc(14cm)',
                                 height: 'calc(10.5cm)',
-   transform: 'scale(1.1)',  
+   transform: 'scale(1.0)',  
   margin: '0 auto',
   position: 'relative',
   boxSizing: 'border-box',
+  fontWeight:'bold'
 }}
 className="border py-4 px-4"
 

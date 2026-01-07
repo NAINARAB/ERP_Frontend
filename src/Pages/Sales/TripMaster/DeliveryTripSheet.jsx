@@ -1586,6 +1586,32 @@ const exportToExcel = () => {
                     createCol('Trip_Date', 'date', 'Date'),
                     createCol('Trip_No', 'string'),
                     createCol('Challan_No', 'string', 'Challan'),
+      {
+    isVisible: 1,
+    ColumnHeader: 'Load Man',
+    isCustomCell: true,
+    Cell: ({ row }) => {
+        // Get the Employees_Involved array
+        const employeesInvolved = Array.isArray(row?.Employees_Involved) ? row.Employees_Involved : [];
+        
+        // Find all Load Man employees
+        const loadMen = employeesInvolved.filter(emp => 
+            emp?.Cost_Category === "Load Man" || 
+            emp?.Cost_Category === "LoadMan" || 
+            emp?.Cost_Center_Type_Id === 4
+        );
+        
+        // Extract unique names (in case of duplicates)
+        const uniqueNames = [...new Set(loadMen.map(emp => emp.Emp_Name?.trim()).filter(Boolean))];
+        
+        // Join with comma and space
+        const loadManNames = uniqueNames.join(', ');
+        
+        return (
+            <span className="cus-badge bg-light">{loadManNames || 'N/A'}</span>
+        )
+    }
+},
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('StartTime', 'time', 'Start Time'),
                     createCol('EndTime', 'time', 'End Time'),

@@ -1118,15 +1118,15 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
           </div>
         </div>
 
-        {/* PRODUCTS TABLE AREA */}
+       
         <div style={{
           position: "absolute",
-          top: "5.2cm",
+          top: "5.1cm",
           left: "0",
           width: "20cm",
           fontSize: "12px"
         }}>
-          {/* COLUMN HEADERS */}
+      
           <div style={{
             display: "flex",
             height: "0.5cm",
@@ -1136,16 +1136,16 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
             marginBottom: "0.3cm"
           }}>
             <div style={{ width: "1cm", textAlign: "right", marginLeft: "0.4cm" }}>
-              {/* No */}
+      
             </div>
             <div style={{ marginLeft: "0.2cm", width: "8.2cm", color: "#000" }}>
-              {/* ITEMS */}
+       
             </div>
             <div style={{ width: "2cm", color: "#000" }}>
-              {/* HSN */}
+    
             </div>
             <div style={{ width: "1.5cm", color: "#000" }}>
-              {/* GST */}
+
             </div>
             <div style={{ width: "1.2cm", color: "#000" }}></div>
             <div style={{ width: "3cm", color: "#000" }}></div>
@@ -1166,7 +1166,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
               <div style={{ 
                 width: "1cm", 
                 textAlign: "right",
-                marginLeft: "1.7cm",
+                marginLeft: "2.3cm",
                 fontWeight: "bold",
                 color: "#000",
                 flexShrink: 0 
@@ -1175,8 +1175,8 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
               </div>
 
               <div style={{ 
-                marginLeft: "0.5cm",
-                width: "6.8cm",
+                marginLeft: "0.7cm",
+                width: "6.5cm",
                 color: "#000",
                 fontWeight: "bold",
                 whiteSpace: "nowrap",
@@ -1190,8 +1190,8 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
               <div style={{ 
                 width: "1cm", 
                 color: "#000",
-                marginLeft: "0.1cm",
-                textAlign: "center",
+                marginLeft: "-0.3cm",
+                textAlign: "left",
                 fontWeight: "bold",
                 flexShrink: 0
               }}>
@@ -1201,10 +1201,10 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
               <div style={{ 
                 width: "1cm",  
                 color: "#000",
-                textAlign: "right",
+                textAlign: "center",
                 fontWeight: "bold",
                 flexShrink: 0,
-                marginRight: "0.15cm"
+                marginLeft: "0.25cm"
               }}>
                 {p.gstPercentage}
               </div>
@@ -1248,16 +1248,16 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
         <p style={{
           position: "absolute",
           fontWeight: "bold",
-          top: "9.95cm",
-          left: "2.5cm"
+          top: "9.94cm",
+          left: "3.1cm"
         }}>
           TMB A/C NO: 002530350870041  IFSC : TMBL0000002
         </p>
 
         <div style={{
           position: "absolute",
-          top: "10.6cm",
-          left: "2.5cm",
+          top: "10.5cm",
+          left: "3.1cm",
           color: "#000",
           width: "15cm"
         }}>
@@ -1270,7 +1270,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
           left: "0cm",
           width: "20cm"
         }}>
-          {/* EXPENSES */}
+        
           {expenses.map((e, i) => (
             <div
               key={i}
@@ -1338,12 +1338,12 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
                 fontSize: '10px',
                 fontWeight: "bold"
               }}>
-                {/* Empty or you can add "Round Off:" label here */}
+              
               </div>
 
               <div style={{ width: "0cm" }}></div>
 
-              {/* Round Off Value - Fixed position */}
+         
               <div style={{
                 position: "absolute",
                 right: "0.5cm",
@@ -1358,7 +1358,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
             </div>
           ) : null}
 
-          {/* NET AMOUNT */}
+        
           <div style={{
             position: "absolute",
             top: "1.6cm",
