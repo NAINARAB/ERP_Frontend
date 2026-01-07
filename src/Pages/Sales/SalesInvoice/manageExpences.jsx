@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { Addition, checkIsNumber, Division, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
 import { useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -14,6 +14,7 @@ const ExpencesOfSalesInvoice = ({
     expenceMaster = [],
     IS_IGST,
     taxType,
+    Total_Invoice_value = 0
 }) => {
 
     const handleInputChange = (index, field, value) => {
@@ -68,13 +69,19 @@ const ExpencesOfSalesInvoice = ({
 
     const handleSelectChange = (index, selectedOption) => {
         const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, selectedOption.value)) || {};
+        const getInvoicedAmountInPercentage = (
+            Number(selected?.percentageValue) > 0
+        ) ? getPercentage(Total_Invoice_value, selected.percentageValue) : 0;
+
+        console.log({selected, getInvoicedAmountInPercentage, expenceMaster})
+        
         setInvoiceExpences(prev =>
             prev.map((item, i) => {
                 if (i !== index) return item;
                 return {
                     ...item,
                     Expense_Id: selected.Id,
-                    Expence_Value: 0
+                    Expence_Value: getInvoicedAmountInPercentage
                 };
             })
         );
@@ -108,7 +115,6 @@ const ExpencesOfSalesInvoice = ({
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
                             {invoiceExpences.map((row, index) => {
-                                // Get the current expense name for display
                                 const currentExpenseName = expenceMaster.find(
                                     exp => isEqualNumber(exp.Id, row?.Expense_Id)
                                 )?.Expence_Name || '';
@@ -124,12 +130,8 @@ const ExpencesOfSalesInvoice = ({
                                                 }}
                                                 onChange={e => handleSelectChange(index, e)}
                                                 options={expenceMaster
-                                                    // Fix the filtering logic
                                                     .filter(exp => {
-                                                        // Always include the currently selected expense
                                                         if (isEqualNumber(exp.Id, row?.Expense_Id)) return true;
-
-                                                        // Exclude expenses that are already selected in other rows
                                                         return !invoiceExpences.some(
                                                             (inv, idx) => idx !== index && isEqualNumber(inv.Expense_Id, exp.Id)
                                                         );

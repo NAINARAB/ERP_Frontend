@@ -1,93 +1,99 @@
-import { useMemo } from "react";
-import { Addition, isEqualNumber, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, toArray } from "../../../Components/functions";
-import { calculateGSTDetails } from "../../../Components/taxCalculator";
+// import { useEffect, useMemo } from "react";
+import { 
+    isEqualNumber, NumberFormat, numberToWords, 
+    onlynumAndNegative, RoundNumber, 
+    // toArray, Addition,  
+} from "../../../Components/functions";
+// import { calculateGSTDetails } from "../../../Components/taxCalculator";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const SalesInvoiceTaxDetails = ({
-    invoiceProducts = [],
-    invoiceExpences = [],
-    isNotTaxableBill,
-    isInclusive,
+    // invoiceProducts = [],
+    // invoiceExpences = [],
+    // isNotTaxableBill,
+    // isInclusive,
+    // products = [],
     IS_IGST,
-    products = [],
     invoiceInfo = {},
-    setInvoiceInfo
+    setInvoiceInfo,
+    invExpencesTotal,
+    Total_Invoice_value,
+    taxSplitUp,
 }) => {
 
-    const invExpencesTotal = useMemo(() => {
-        return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
-    }, [invoiceExpences]);
+    // const invExpencesTotal = useMemo(() => {
+    //     return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    // }, [invoiceExpences]);
 
-    const Total_Invoice_value = useMemo(() => {
-        const invValue = invoiceProducts.reduce((acc, item) => {
-            const Amount = RoundNumber(item?.Amount);
+    // const Total_Invoice_value = useMemo(() => {
+    //     const invValue = invoiceProducts.reduce((acc, item) => {
+    //         const Amount = RoundNumber(item?.Amount);
 
-            if (isNotTaxableBill) return Addition(acc, Amount);
+    //         if (isNotTaxableBill) return Addition(acc, Amount);
 
-            const product = findProductDetails(products, item.Item_Id);
-            const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+    //         const product = findProductDetails(products, item.Item_Id);
+    //         const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
 
-            if (isInclusive) {
-                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
-            } else {
-                return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
-            }
-        }, 0);
+    //         if (isInclusive) {
+    //             return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+    //         } else {
+    //             return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+    //         }
+    //     }, 0);
 
-        return Addition(invValue, invExpencesTotal);
-    }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invExpencesTotal])
+    //     return Addition(invValue, invExpencesTotal);
+    // }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invExpencesTotal])
 
-    const taxSplitUp = useMemo(() => {
-        if (!invoiceProducts || invoiceProducts.length === 0) return {};
+    // const taxSplitUp = useMemo(() => {
+    //     if (!invoiceProducts || invoiceProducts.length === 0) return {};
 
-        let totalTaxable = 0;
-        let totalTax = 0;
+    //     let totalTaxable = 0;
+    //     let totalTax = 0;
 
-        invoiceProducts.forEach(item => {
-            const Amount = RoundNumber(item?.Amount || 0);
+    //     invoiceProducts.forEach(item => {
+    //         const Amount = RoundNumber(item?.Amount || 0);
 
-            if (isNotTaxableBill) {
-                totalTaxable = Addition(totalTaxable, Amount);
-                return;
-            }
+    //         if (isNotTaxableBill) {
+    //             totalTaxable = Addition(totalTaxable, Amount);
+    //             return;
+    //         }
 
-            const product = findProductDetails(products, item.Item_Id);
-            const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+    //         const product = findProductDetails(products, item.Item_Id);
+    //         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
 
-            const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+    //         const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
 
-            totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
-            totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
-        });
+    //         totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
+    //         totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
+    //     });
 
-        const totalWithTax = Addition(totalTaxable, totalTax);
-        const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
-        const roundedTotal = Math.round(totalWithExpenses);
-        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
+    //     const totalWithTax = Addition(totalTaxable, totalTax);
+    //     const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
+    //     const roundedTotal = Math.round(totalWithExpenses);
+    //     const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
 
-        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
-        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
-        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
+    //     const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+    //     const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+    //     const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
 
-        return {
-            totalTaxable: RoundNumber(totalTaxable),
-            totalTax: RoundNumber(totalTax),
-            cgst,
-            sgst,
-            igst,
-            roundOff,
-            invoiceTotal: roundedTotal
-        };
+    //     return {
+    //         totalTaxable: RoundNumber(totalTaxable),
+    //         totalTax: RoundNumber(totalTax),
+    //         cgst,
+    //         sgst,
+    //         igst,
+    //         roundOff,
+    //         invoiceTotal: roundedTotal
+    //     };
 
-    }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
+    // }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
 
-    // Update invoiceInfo when roundOff changes
-    useMemo(() => {
-        if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
-            setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
-        }
-    }, [taxSplitUp.roundOff]);
+    // useEffect(() => {
+    //     if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
+    //         setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
+    //     }
+    // }, [taxSplitUp.roundOff]);
 
     return (
         <>
