@@ -58,6 +58,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
+const [currentPrintType, setCurrentPrintType] = useState('');
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
         multipleStaffUpdateInitialValues
@@ -314,16 +315,56 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         setFilteredData(filtered);
     };
 
-    const handleMultiPrint = useReactToPrint({
-        content: () => multiPrintRef.current,
-        documentTitle: "Multiple Documents",
-        pageStyle: `
-    @page {
-      margin: 0;
-      size: auto;
-    }
+//     const handleMultiPrint = useReactToPrint({
+//         content: () => multiPrintRef.current,
+//         documentTitle: "Multiple Documents",
+//         pageStyle: `
+//     @page {
+//       margin: 0;
+//       size: auto;
+//     }
 
-    html, body {
+//     html, body {
+//       margin: 0;
+//       padding: 0;
+//     }
+
+//     body {
+//       display: flex;
+//       flex-direction: column;
+//       align-items: center;
+//     }
+
+//     /* Center everything */
+//     @media print {
+//       body > * {
+//         margin-left: auto !important;
+//         margin-right: auto !important;
+//       }
+      
+//       .no-print {
+//         display: none !important;
+//       }
+//     }
+//   `,
+//     });
+
+
+    const handleMultiPrint = useReactToPrint({
+    content: () => multiPrintRef.current,
+    documentTitle: "Multiple Documents",
+    pageStyle: currentPrintType === 'delivery_slip' ? `
+        @page {
+            margin: 0.7cm 0 0 0;
+            size: auto;
+        }
+   
+    ` : `
+        @page {
+            margin: 0.6cm;
+            size: auto;
+        }
+        html, body {
       margin: 0;
       padding: 0;
     }
@@ -345,9 +386,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         display: none !important;
       }
     }
-  `,
-    });
-
+    `,
+});
     const renderFilter = (column) => {
         const { Field_Name, Fied_Data, ColumnHeader } = column;
 
@@ -581,7 +621,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             disabled={
                                 !filters.docType || !multipleCostCenterUpdateValues.Do_Id.length
                             }
+                            
                             onClick={() => {
+                                 setCurrentPrintType(filters.docType);
                                 setMultiPrint({
                                     open: true,
                                     doIds: multipleCostCenterUpdateValues.Do_Id,
@@ -845,7 +887,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             </Dialog>
 
             {/* multiple print dialog */}
-            <Dialog
+            {/* <Dialog
                 open={multiPrint.open}
                 onClose={() => setMultiPrint({ open: false, doIds: [], docType: "" })}
                 maxWidth="lg"
@@ -853,7 +895,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             >
                 {/* <DialogTitle>Multiple Print Preview</DialogTitle> */}
 
-                <DialogContent>
+                {/* <DialogContent>
                     {multiPrint.doIds.map((id) => {
                         if (multiPrint.docType === "sales_invoice") {
                             return (
@@ -901,8 +943,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     >
                         Close
                     </Button>
-                </DialogActions>
-            </Dialog>
+                </DialogActions> */}
+            {/* </Dialog> */}
 
             <Dialog
                 open={multiPrint.open}
@@ -946,7 +988,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 <DialogActions className="no-print">
                     <Button
                         variant="contained"
-                        onClick={handleMultiPrint}
+                        onClick={()=>{handleMultiPrint()}}
                         startIcon={<Print />}
                     >
                         Print All

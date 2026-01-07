@@ -155,7 +155,7 @@ const handlePrint = useReactToPrint({
                                     style={{
                                         position: "absolute",
                                         right: "0.25cm",
-                                        top: "3.45cm",
+                                        top: "3.4cm",
                                         right: "1.7cm",
                                         width: "2.2cm",
                                         textAlign: "right",
@@ -171,7 +171,7 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "4.26cm",
+                                        top: "4.1cm",
                                         left: "2cm",
                                         right: "0.25cm",
                                         overflow: "hidden"
@@ -211,11 +211,11 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        bottom: "4.0cm",
+                                        bottom: "4.5cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         fontWeight: "bold",
-                                        paddingTop: "0.1cm",
+                                        paddingTop: "0cm",
                                         display: "flex",
                                         fontSize: "11px"
                                     }}
@@ -230,7 +230,7 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        bottom: "2.7cm",
+                                        bottom: "3cm",
                                         left: "2.4cm",
                                         right: "0.25cm",
                                         fontWeight: "bold",
@@ -294,7 +294,7 @@ const handlePrint = useReactToPrint({
                                     height: "14.5cm",
                                     position: "relative",
                                     fontSize: "11px",
-                                    top:"0.22cm",
+                                    top:"0.17cm",
                                     padding: "0.25cm",
                                      transform: `scale(${isCombinedPrint ? 1 : printScale})`,
                                     boxSizing: "border-box",
@@ -331,7 +331,7 @@ const handlePrint = useReactToPrint({
                                     style={{
                                         position: "absolute",
                                         right: "0.25cm",
-                                        top: "3.4cm",
+                                        top: "3.2cm",
                                         right: "1.7cm",
                                         width: "2.2cm",
                                         textAlign: "right",
@@ -347,7 +347,7 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "4.2cm",
+                                        top: "4.0cm",
                                         left: "2.1cm",
                                         right: "0.25cm",
                                         overflow: "hidden"
@@ -367,7 +367,7 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "6.5cm",
+                                        top: "6.0cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         bottom: "3.8cm",
@@ -388,11 +388,12 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        bottom: "4.0cm",
+                                        // bottom: "4.0cm",
+                                        top:"9.7cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         fontWeight: "bold",
-                                        paddingTop: "0.1cm",
+                                        paddingTop: "0cm",
                                         display: "flex",
                                         fontSize: "11px"
                                     }}
@@ -407,7 +408,8 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        bottom: "2.55cm",
+                                        // bottom: "2.55cm",
+                                        top:"11cm",
                                         left: "2.4cm",
                                         right: "0.25cm",
                                         fontWeight: "bold",
