@@ -77,6 +77,46 @@ const ManageSalesInvoiceGeneralInfo = ({
         }
     }
 
+    const onChangeRetailerName = (e) => {
+        setInvoiceInfo(pre => ({
+            ...pre,
+            Retailer_Id: e.value,
+            Retailer_Name: e.label,
+        }));
+
+        const retailer = toArray(retailers).find(ret => isEqualNumber(ret?.Retailer_Id, e.value));
+
+        const retailerAddress = toArray(retailer?.deliveryAddresses)[0];
+
+        if (retailerAddress) {
+            setRetailerDeliveryAddress(pre => ({
+                ...pre,
+                deliveryName: retailerAddress?.deliveryName || '',
+                phoneNumber: retailerAddress?.phoneNumber || '',
+                cityName: retailerAddress?.cityName || '',
+                deliveryAddress: retailerAddress?.deliveryAddress || '',
+                gstNumber: retailerAddress?.gstNumber || '',
+                stateName: retailerAddress?.stateName || '',
+                id: retailerAddress?.id || null
+            }));
+            setShippingAddress(pre => ({
+                ...pre,
+                deliveryName: retailerAddress?.deliveryName || '',
+                phoneNumber: retailerAddress?.phoneNumber || '',
+                cityName: retailerAddress?.cityName || '',
+                deliveryAddress: retailerAddress?.deliveryAddress || '',
+                gstNumber: retailerAddress?.gstNumber || '',
+                stateName: retailerAddress?.stateName || '',
+                id: retailerAddress?.id || null
+            }));
+        } else {
+            setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
+            setShippingAddress(retailerDeliveryAddressInfo);
+        }
+        
+        if (onChangeRetailer) onChangeRetailer();
+    }
+
     return (
         <>
             <div className="row">
@@ -95,18 +135,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 value: invoiceInfo?.Retailer_Id,
                                                 label: invoiceInfo?.Retailer_Name
                                             }}
-                                            onChange={e => {
-                                                const gstValue = retailers.find(ret => isEqualNumber(ret.Retailer_Id, e.value))?.Gstno || '';
-                                                setInvoiceInfo(pre => ({
-                                                    ...pre,
-                                                    Retailer_Id: e.value,
-                                                    Retailer_Name: e.label,
-                                                    gstNumber: gstValue
-                                                }));
-                                                setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
-                                                setShippingAddress(retailerDeliveryAddressInfo);
-                                                if (onChangeRetailer) onChangeRetailer();
-                                            }}
+                                            onChange={onChangeRetailerName}
                                             options={[
                                                 { value: '', label: 'Search', isDisabled: true },
                                                 ...toArray(retailers).map(obj => ({
@@ -175,6 +204,94 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 <option value={o?.BranchId} key={i}>{o?.BranchName}</option>
                                             ))}
                                         </select>
+                                    </div>
+
+                                    {/* GST TYPE */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>GST Type <RequiredStar /></label>
+                                        <select
+                                            className={inputStyle}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, GST_Inclusive: Number(e.target.value) }))}
+                                            value={invoiceInfo.GST_Inclusive}
+                                            required
+                                        >
+                                            <option value={1}>Inclusive Tax</option>
+                                            <option value={0}>Exclusive Tax</option>
+                                            <option value={2}>Not Taxable</option>
+                                        </select>
+                                    </div>
+
+                                    {/* TAX TYPE */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Tax Type</label>
+                                        <select
+                                            className={inputStyle}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, IS_IGST: Number(e.target.value) }))}
+                                            value={invoiceInfo.IS_IGST}
+                                        >
+                                            <option value='0'>GST</option>
+                                            <option value='1'>IGST</option>
+                                        </select>
+                                    </div>
+
+                                    {/* stock item ledger name */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Stock Item Ledger Name</label>
+                                        <Select
+                                            value={{ value: invoiceInfo.Stock_Item_Ledger_Name, label: invoiceInfo.Stock_Item_Ledger_Name }}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Stock_Item_Ledger_Name: e.value }))}
+                                            options={[
+                                                { value: '', label: 'Search', isDisabled: true },
+                                                ...stockItemLedgerName.map(obj => ({
+                                                    value: obj?.Stock_Item_Ledger_Name,
+                                                    label: obj?.Stock_Item_Ledger_Name
+                                                }))
+                                            ]}
+                                            styles={customSelectStyles}
+                                            menuPortalTarget={document.body}
+                                            required={true}
+                                            isSearchable={true}
+                                            placeholder={"Select"}
+                                            maxMenuHeight={300}
+                                            filterOption={reactSelectFilterLogic}
+                                        />
+                                    </div>
+
+                                    {/* purchase ref */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Purchase Ref</label>
+                                        <input
+                                            value={invoiceInfo?.Ref_Inv_Number}
+                                            className={inputStyle}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Number: String(e.target.value).trim() }))}
+                                        />
+                                    </div>
+
+                                    {/* STATUS */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Status</label>
+                                        <select
+                                            value={invoiceInfo?.Cancel_status}
+                                            className={inputStyle}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Cancel_status: e.target.value }))}
+                                        >
+                                            <option value="" disabled>Select</option>
+                                            <option value="1">New</option>
+                                            <option value="2">Progess</option>
+                                            <option value="3">Completed</option>
+                                            <option value="0">Canceled</option>
+                                        </select>
+                                    </div>
+
+                                    {/* narration */}
+                                    <div className="col-12 p-2">
+                                        <label className='fa-13'>Narration</label>
+                                        <textarea
+                                            className="cus-inpt fa-14"
+                                            rows={2}
+                                            value={invoiceInfo.Narration}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Narration: e.target.value }))}
+                                        />
                                     </div>
                                 </div>
                             )
@@ -423,21 +540,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                             label: 'Invoice Status',
                             children: (
                                 <div className='row'>
-                                    {/* STATUS */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Status</label>
-                                        <select
-                                            value={invoiceInfo?.Cancel_status}
-                                            className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Cancel_status: e.target.value }))}
-                                        >
-                                            <option value="" disabled>Select</option>
-                                            <option value="1">New</option>
-                                            <option value="2">Progess</option>
-                                            <option value="3">Completed</option>
-                                            <option value="0">Canceled</option>
-                                        </select>
-                                    </div>
 
                                     {/* DELIVERY STATUS */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -500,84 +602,14 @@ const ManageSalesInvoiceGeneralInfo = ({
                                 </div>
                             )
                         },
-                        {
-                            label: 'Others',
-                            children: (
-                                <div className='row'>
-                                    {/* GST TYPE */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>GST Type <RequiredStar /></label>
-                                        <select
-                                            className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, GST_Inclusive: Number(e.target.value) }))}
-                                            value={invoiceInfo.GST_Inclusive}
-                                            required
-                                        >
-                                            <option value={1}>Inclusive Tax</option>
-                                            <option value={0}>Exclusive Tax</option>
-                                            <option value={2}>Not Taxable</option>
-                                        </select>
-                                    </div>
+                        // {
+                        //     label: 'Others',
+                        //     children: (
+                        //         <div className='row'>
 
-                                    {/* TAX TYPE */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Tax Type</label>
-                                        <select
-                                            className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, IS_IGST: Number(e.target.value) }))}
-                                            value={invoiceInfo.IS_IGST}
-                                        >
-                                            <option value='0'>GST</option>
-                                            <option value='1'>IGST</option>
-                                        </select>
-                                    </div>
-
-                                    {/* stock item ledger name */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Stock Item Ledger Name</label>
-                                        <Select
-                                            value={{ value: invoiceInfo.Stock_Item_Ledger_Name, label: invoiceInfo.Stock_Item_Ledger_Name }}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Stock_Item_Ledger_Name: e.value }))}
-                                            options={[
-                                                { value: '', label: 'Search', isDisabled: true },
-                                                ...stockItemLedgerName.map(obj => ({
-                                                    value: obj?.Stock_Item_Ledger_Name,
-                                                    label: obj?.Stock_Item_Ledger_Name
-                                                }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            menuPortalTarget={document.body}
-                                            required={true}
-                                            isSearchable={true}
-                                            placeholder={"Select"}
-                                            maxMenuHeight={300}
-                                            filterOption={reactSelectFilterLogic}
-                                        />
-                                    </div>
-
-                                    {/* purchase ref */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Purchase Ref</label>
-                                        <input
-                                            value={invoiceInfo?.Ref_Inv_Number}
-                                            className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Number: String(e.target.value).trim() }))}
-                                        />
-                                    </div>
-
-                                    {/* narration */}
-                                    <div className="col-12 p-2">
-                                        <label className='fa-13'>Narration</label>
-                                        <textarea
-                                            className="cus-inpt fa-14"
-                                            rows={2}
-                                            value={invoiceInfo.Narration}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Narration: e.target.value }))}
-                                        />
-                                    </div>
-                                </div>
-                            )
-                        },
+                        //         </div>
+                        //     )
+                        // },
                     ]}
                 />
 
