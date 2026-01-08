@@ -95,173 +95,175 @@ const handlePrint = useReactToPrint({
 
 
     // Combined print mode (for multiple documents)
-    if (isCombinedPrint) {
-        return (
-            <div id="delivery-slip-print-content" ref={printRef} style={{ position: 'relative' }}>
-                {data.map((invoice, index) => {
-                    const totalWeight = toArray(invoice.productDetails).reduce(
-                        (sum, item) => sum + Number(item.Bill_Qty || 0),
-                        0
-                    );
-                    
-                    const totalQty = toArray(invoice.productDetails).reduce(
-                        (sum, item) => sum + Number(item.Alt_Act_Qty || 0),
-                        0
-                    );
+if (isCombinedPrint) {
+    return (
+        <div id="delivery-slip-print-content" ref={printRef} style={{ position: 'relative' }}>
+            {data.map((invoice, index) => {
+                const totalWeight = toArray(invoice.productDetails).reduce(
+                    (sum, item) => sum + Number(item.Bill_Qty || 0),
+                    0
+                );
+                
+                const totalQty = toArray(invoice.productDetails).reduce(
+                    (sum, item) => sum + Number(item.Alt_Act_Qty || 0),
+                    0
+                );
 
-                    return (
-                        <div key={invoice.Do_Id || index} style={{ 
-                            pageBreakInside: 'avoid',
-                            marginBottom: index < data.length - 1 ? '20px' : '0'
-                        }}>
+                return (
+                    <div key={invoice.Do_Id || index} style={{ 
+                        pageBreakInside: 'avoid',
+                        marginBottom: index < data.length - 1 ? '20px' : '0'
+                    }}>
+                        <div
+                            style={{
+                                width: "10.2cm",
+                                height: "14.5cm",
+                                position: "relative",
+                                fontSize: "11px",
+                                top: "0.2cm",
+                                padding: "0.25cm",
+                                transform: `scale(${isCombinedPrint ? 1 : printScale})`,
+                                boxSizing: "border-box",
+                                overflow: "hidden",
+                                margin: '0 auto'
+                            }}
+                        >
+                            {/* Header */}
                             <div
                                 style={{
-                                    width: "10.2cm",
-                                    height: "14.5cm",
-                                    position: "relative",
-                                    fontSize: "11px",
-                                    // padding: "0.25cm",
-                                    // boxSizing: "border-box",
-                                  
-                                    margin: '0 auto'
+                                    position: "absolute",
+                                    top: "0.0cm",
+                                    left: "0.3cm",
+                                    right: "0.25cm",
+                                    display: "flex",
+                                    overflow: "hidden"
                                 }}
                             >
-                      
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: "0.0cm",
-                                        left: "0.25cm",
-                                        right: "0.25cm",
-                                        display: "flex",
-                                        overflow: "hidden"
-                                    }}
-                                >
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ top: "0", margin: 0, fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap" }}>
-                                            {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
-                                        </p>
-                                        <p style={{ margin: "0.1cm 0 0 0", fontSize: "13px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {invoice.createdByGet}
-                                        </p>
-                                    </div>
-                                    <div style={{ width: "3cm", textAlign: "right", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px", flexShrink: 0 }}>
-                                        {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
-                                    </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ top: "0", margin: 0, fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap" }}>
+                                        {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
+                                    </p>
+                                    <p style={{ margin: "0.1cm 0 0 0", fontSize: "13px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        {invoice.createdByGet}
+                                    </p>
                                 </div>
-
-                            
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        right: "0.25cm",
-                                        top: "3.4cm",
-                                        right: "1.7cm",
-                                        width: "2.2cm",
-                                        textAlign: "right",
-                                        padding: "2px 4px",
-                                        fontSize: "14px",
-                                        fontWeight: "bold"
-                                    }}
-                                >
-                                    {invoice.createdOn ? new Date(invoice.createdOn).toLocaleDateString("en-GB") : ""}
-                                </div>
-
-                               
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: "4.1cm",
-                                        left: "2cm",
-                                        right: "0.25cm",
-                                        overflow: "hidden"
-                                    }}
-                                >
-                                    <div style={{ fontWeight: "bold", fontSize: "15px" }}>
-                                        <p style={{ margin: "0 0 0.1cm 0", lineHeight: "1.2" }}>
-                                            {invoice.mailingName ? `${invoice.mailingName},` : ""}
-                                        </p>
-                                        <p style={{ margin: 0, lineHeight: "1.5", fontSize: "13px" }}>
-                                            {invoice.mailingAddress ? `${invoice.mailingAddress},` : ""}
-                                        </p>
-                                    </div>
-                                </div>
-
-                      
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: "6.5cm",
-                                        left: "0.25cm",
-                                        right: "0.25cm",
-                                        bottom: "3.8cm",
-                                        overflow: "auto"
-                                    }}
-                                >
-                                    {toArray(invoice.productDetails).map((item, idx) => (
-                                        <div key={idx} style={{ display: "flex", marginBottom: "0.02cm", fontSize: "12px", fontWeight: "bold", lineHeight: "1.1" }}>
-                                            <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
-                                            <div style={{ width: "4.5cm", paddingLeft: "0.05cm" }}>{item.Short_Name}</div>
-                                            <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
-                                            <div style={{ width: "1.8cm", textAlign: "center" }}>{item.Alt_Act_Qty}</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        bottom: "4.5cm",
-                                        left: "0.25cm",
-                                        right: "0.25cm",
-                                        fontWeight: "bold",
-                                        paddingTop: "0cm",
-                                        display: "flex",
-                                        fontSize: "11px"
-                                    }}
-                                >
-                                    <div style={{ width: "2.2cm" }}></div>
-                                    <div style={{ width: "4.5cm" }}>TOTAL</div>
-                                    <div style={{ width: "1.5cm", textAlign: "center" }}>{totalWeight}</div>
-                                    <div style={{ width: "1.8cm", textAlign: "center" }}>{totalQty}</div>
-                                </div>
-
-                               
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        bottom: "3cm",
-                                        left: "2.4cm",
-                                        right: "0.25cm",
-                                        fontWeight: "bold",
-                                        fontSize: "12px",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis"
-                                    }}
-                                >
-                                    {toArray(invoice.staffDetails)
-                                        .filter(c => c?.empTypeId === 3)
-                                        .map(c => c?.empName)
-                                        .join(", ")}
+                                <div style={{ width: "3cm", textAlign: "right", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px", flexShrink: 0 }}>
+                                    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
                                 </div>
                             </div>
-                            
-                           
-                            {index < data.length - 1 && (
-                                <div style={{ 
-                                    pageBreakAfter: 'always',
-                                    breakAfter: 'page',
-                                    height: '0',
-                                    visibility: 'hidden'
-                                }} />
-                            )}
+
+                            {/* Date */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    right: "1.7cm",
+                                    top: "3.2cm",
+                                    width: "2.2cm",
+                                    textAlign: "right",
+                                    padding: "2px 4px",
+                                    fontSize: "14px",
+                                    fontWeight: "bold"
+                                }}
+                            >
+                                {invoice.createdOn ? new Date(invoice.createdOn).toLocaleDateString("en-GB") : ""}
+                            </div>
+
+                            {/* Customer Details */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "4.0cm",
+                                    left: "2.1cm",
+                                    right: "0.25cm",
+                                    overflow: "hidden"
+                                }}
+                            >
+                                <div style={{ fontWeight: "bold", fontSize: "15px" }}>
+                                    <p style={{ margin: "0 0 0.1cm 0", lineHeight: "1.2" }}>
+                                        {invoice.mailingName ? `${invoice.mailingName},` : ""}
+                                    </p>
+                                    <p style={{ margin: 0, lineHeight: "1", fontSize: "10px" }}>
+                                        {invoice.mailingAddress ? `${invoice.mailingAddress},` : ""}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Product Details */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "5.7cm",
+                                    left: "0.25cm",
+                                    right: "0.25cm",
+                                    bottom: "3.8cm",
+                                    overflow: "auto"
+                                }}
+                            >
+                                {toArray(invoice.productDetails).map((item, idx) => (
+                                    <div key={idx} style={{ display: "flex", marginBottom: "0.1cm", fontSize: "12px", fontWeight: "bold", lineHeight: "1.1" }}>
+                                        <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
+                                        <div style={{ width: "5.0cm", paddingLeft: "0.05cm" }}>{item.Short_Name}</div>
+                                        <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
+                                        <div style={{ width: "1.8cm", textAlign: "center" }}>{item.Alt_Act_Qty}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Totals */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "9.7cm",
+                                    left: "0.25cm",
+                                    right: "0.25cm",
+                                    fontWeight: "bold",
+                                    paddingTop: "0cm",
+                                    display: "flex",
+                                    fontSize: "11px"
+                                }}
+                            >
+                                <div style={{ width: "2.2cm" }}></div>
+                                <div style={{ width: "5.0cm", paddingLeft: "0.05cm" }}>TOTAL</div>
+                                <div style={{ width: "1.5cm", textAlign: "center" }}>{totalWeight}</div>
+                                <div style={{ width: "1.8cm", textAlign: "center" }}>{totalQty}</div>
+                            </div>
+
+                            {/* Staff Details */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "11cm",
+                                    left: "2.4cm",
+                                    right: "0.25cm",
+                                    fontWeight: "bold",
+                                    fontSize: "12px",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                }}
+                            >
+                                {toArray(invoice.staffDetails)
+                                    .filter(c => c?.empTypeId === 3)
+                                    .map(c => c?.empName)
+                                    .join(", ")}
+                            </div>
                         </div>
-                    );
-                })}
-            </div>
-        );
-    }
+                        
+                        {/* Page break for next invoice */}
+                        {index < data.length - 1 && (
+                            <div style={{ 
+                                pageBreakAfter: 'always',
+                                breakAfter: 'page',
+                                height: '0',
+                                visibility: 'hidden'
+                            }} />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
    
     return (
@@ -294,7 +296,7 @@ const handlePrint = useReactToPrint({
                                     height: "14.5cm",
                                     position: "relative",
                                     fontSize: "11px",
-                                    top:"0.17cm",
+                                    top:"0.2cm",
                                     padding: "0.25cm",
                                      transform: `scale(${isCombinedPrint ? 1 : printScale})`,
                                     boxSizing: "border-box",
@@ -367,7 +369,7 @@ const handlePrint = useReactToPrint({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "6.0cm",
+                                        top: "5.7cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         bottom: "3.8cm",
@@ -375,9 +377,9 @@ const handlePrint = useReactToPrint({
                                     }}
                                 >
                                     {toArray(invoice.productDetails).map((item, idx) => (
-                                        <div key={idx} style={{ display: "flex", marginBottom: "0.02cm", fontSize: "12px", fontWeight: "bold", lineHeight: "1.1" }}>
+                                        <div key={idx} style={{ display: "flex", marginBottom: "0.1cm", fontSize: "12px", fontWeight: "bold", lineHeight: "1.1" }}>
                                             <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
-                                            <div style={{ width: "4.5cm", paddingLeft: "0.05cm" }}>{item.Short_Name}</div>
+                                            <div style={{ width: "5.0cm", paddingLeft: "left" }}>{item.Short_Name}</div>
                                             <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
                                             <div style={{ width: "1.8cm", textAlign: "center" }}>{item.Alt_Act_Qty}</div>
                                         </div>
