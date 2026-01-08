@@ -2535,7 +2535,7 @@ const searchTransaction = (e) => {
                         maxHeightOption
                         columns={[
                             createCol("Do_Inv_No", "string", "Do_Inv_No"),
-                            createCol("Retailer_Name", "string", "Retailer_Name"),
+                            createCol("Retailer_Name", "string","Retailer_Name"),
                             createCol("Transporter_Name", "string", "Transporter"),
                             createCol("Product_Name", "string", "Product_Name"),
                             createCol("Taxable_Rate", "number", "Rate"),
