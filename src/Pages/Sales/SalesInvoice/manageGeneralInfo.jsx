@@ -44,13 +44,28 @@ const ManageSalesInvoiceGeneralInfo = ({
                 gstNumber: retailerAddress?.gstNumber || '',
                 stateName: retailerAddress?.stateName || '',
                 id: retailerAddress?.id || null
-            }))
+            }));
+            setShippingAddress(pre => ({
+                ...pre,
+                deliveryName: retailerAddress?.deliveryName || '',
+                phoneNumber: retailerAddress?.phoneNumber || '',
+                cityName: retailerAddress?.cityName || '',
+                deliveryAddress: retailerAddress?.deliveryAddress || '',
+                gstNumber: retailerAddress?.gstNumber || '',
+                stateName: retailerAddress?.stateName || '',
+                id: retailerAddress?.id || null
+            }));
         } else {
             setRetailerDeliveryAddress(pre => ({
                 ...pre,
                 [column]: value,
                 id: null
-            }))
+            }));
+            setShippingAddress(pre => ({
+                ...pre,
+                [column]: value,
+                id: null
+            }));
         }
     }
 
@@ -74,7 +89,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                 ...pre,
                 [column]: value,
                 id: null
-            }))
+            }));
         }
     }
 
