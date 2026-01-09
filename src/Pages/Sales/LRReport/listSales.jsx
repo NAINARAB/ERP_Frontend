@@ -899,7 +899,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         <label htmlFor="removeFromList" className="fw-bold">
                             Remove invoice from this page
                         </label>
-                        
                     </div>
                 </DialogContent>
                 <DialogActions>
