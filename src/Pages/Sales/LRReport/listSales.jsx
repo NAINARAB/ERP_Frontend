@@ -30,6 +30,7 @@ const multipleStaffUpdateInitialValues = {
     CostCategory: { label: "", value: "" },
     Do_Id: [],
     involvedStaffs: [],
+    staffInvolvedStatus: 0
 };
 
 const normalize = (v) => String(v ?? "").toLowerCase().trim();
@@ -58,7 +59,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
-const [currentPrintType, setCurrentPrintType] = useState('');
+    const [currentPrintType, setCurrentPrintType] = useState('');
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
         multipleStaffUpdateInitialValues
@@ -241,6 +242,7 @@ const [currentPrintType, setCurrentPrintType] = useState('');
                 CostCategory: toNumber(multipleCostCenterUpdateValues.CostCategory.value),
                 Do_Id: multipleCostCenterUpdateValues.Do_Id,
                 involvedStaffs: multipleCostCenterUpdateValues.involvedStaffs.map((option) => toNumber(option.value)),
+                staffInvolvedStatus: toNumber(multipleCostCenterUpdateValues.staffInvolvedStatus),
             },
             loadingOn,
             loadingOff,
@@ -315,45 +317,45 @@ const [currentPrintType, setCurrentPrintType] = useState('');
         setFilteredData(filtered);
     };
 
-//     const handleMultiPrint = useReactToPrint({
-//         content: () => multiPrintRef.current,
-//         documentTitle: "Multiple Documents",
-//         pageStyle: `
-//     @page {
-//       margin: 0;
-//       size: auto;
-//     }
+    //     const handleMultiPrint = useReactToPrint({
+    //         content: () => multiPrintRef.current,
+    //         documentTitle: "Multiple Documents",
+    //         pageStyle: `
+    //     @page {
+    //       margin: 0;
+    //       size: auto;
+    //     }
 
-//     html, body {
-//       margin: 0;
-//       padding: 0;
-//     }
+    //     html, body {
+    //       margin: 0;
+    //       padding: 0;
+    //     }
 
-//     body {
-//       display: flex;
-//       flex-direction: column;
-//       align-items: center;
-//     }
+    //     body {
+    //       display: flex;
+    //       flex-direction: column;
+    //       align-items: center;
+    //     }
 
-//     /* Center everything */
-//     @media print {
-//       body > * {
-//         margin-left: auto !important;
-//         margin-right: auto !important;
-//       }
-      
-//       .no-print {
-//         display: none !important;
-//       }
-//     }
-//   `,
-//     });
+    //     /* Center everything */
+    //     @media print {
+    //       body > * {
+    //         margin-left: auto !important;
+    //         margin-right: auto !important;
+    //       }
+
+    //       .no-print {
+    //         display: none !important;
+    //       }
+    //     }
+    //   `,
+    //     });
 
 
-const handleMultiPrint = useReactToPrint({
-    content: () => multiPrintRef.current,
-    documentTitle: "Multiple Documents",
-    pageStyle: currentPrintType === 'delivery_slip' ? `
+    const handleMultiPrint = useReactToPrint({
+        content: () => multiPrintRef.current,
+        documentTitle: "Multiple Documents",
+        pageStyle: currentPrintType === 'delivery_slip' ? `
         @page {
             margin: 0.7cm 0 0 0;
             size: auto;
@@ -448,7 +450,8 @@ const handleMultiPrint = useReactToPrint({
             }
         }
     `,
-});
+    });
+
     const renderFilter = (column) => {
         const { Field_Name, Fied_Data, ColumnHeader } = column;
 
@@ -561,7 +564,10 @@ const handleMultiPrint = useReactToPrint({
             checkIsNumber(multipleCostCenterUpdateValues.CostCategory.value) &&
             !isEqualNumber(multipleCostCenterUpdateValues.CostCategory.value, 0);
 
-        return validDoId && validCostCenterId && validCostCategory;
+        if (!validDoId) return false;
+        if (validCostCenterId && !validCostCategory) return false;
+        if (!validCostCenterId && validCostCategory) return false;
+        return true;
     }, [multipleCostCenterUpdateValues]);
 
     return (
@@ -682,9 +688,9 @@ const handleMultiPrint = useReactToPrint({
                             disabled={
                                 !filters.docType || !multipleCostCenterUpdateValues.Do_Id.length
                             }
-                            
+
                             onClick={() => {
-                                 setCurrentPrintType(filters.docType);
+                                setCurrentPrintType(filters.docType);
                                 setMultiPrint({
                                     open: true,
                                     doIds: multipleCostCenterUpdateValues.Do_Id,
@@ -875,6 +881,26 @@ const handleMultiPrint = useReactToPrint({
                             closeMenuOnSelect={false}
                         />
                     </div>
+
+                    <div className="py-2">
+                        <input
+                            className="form-check-input shadow-none pointer mx-2"
+                            style={{ padding: "0.7em" }}
+                            type="checkbox"
+                            id="removeFromList"
+                            checked={isEqualNumber(multipleCostCenterUpdateValues.staffInvolvedStatus, 1)}
+                            onChange={() => {
+                                setMultipleCostCenterUpdateValues((pre) => ({
+                                    ...pre,
+                                    staffInvolvedStatus: isEqualNumber(pre.staffInvolvedStatus, 1) ? 0 : 1,
+                                }));
+                            }}
+                        />
+                        <label htmlFor="removeFromList" className="fw-bold">
+                            Remove invoice from this page
+                        </label>
+                        
+                    </div>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={onCloseMultipleUpdateCostCategoryDialog} variant="outlined">
@@ -956,7 +982,7 @@ const handleMultiPrint = useReactToPrint({
             >
                 {/* <DialogTitle>Multiple Print Preview</DialogTitle> */}
 
-                {/* <DialogContent>
+            {/* <DialogContent>
                     {multiPrint.doIds.map((id) => {
                         if (multiPrint.docType === "sales_invoice") {
                             return (
@@ -1049,7 +1075,7 @@ const handleMultiPrint = useReactToPrint({
                 <DialogActions className="no-print">
                     <Button
                         variant="contained"
-                        onClick={()=>{handleMultiPrint()}}
+                        onClick={() => { handleMultiPrint() }}
                         startIcon={<Print />}
                     >
                         Print All
