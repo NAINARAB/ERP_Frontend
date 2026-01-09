@@ -17,11 +17,15 @@ import { Delete, Edit, Search } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 
+// CORRECTED: Use consistent camelCase for all fields
 const initialState = {
     Acc_Id: "",
     Account_name: "",
     Account_Alias_Name: "",
     Group_Id: "",
+    creditLimit: '',  // camelCase
+    creditDays: '',   // camelCase
+    percentageValue: ''  // camelCase
 };
 
 function AccountMaster() {
@@ -120,18 +124,23 @@ function AccountMaster() {
             .catch((e) => console.error(e));
     };
 
+    // CORRECTED: Properly map API response fields to inputValue
     const editRow = (row) => {
         setInputValue({
             Acc_Id: row.Acc_Id,
             Account_name: row.Account_name,
             Account_Alias_Name: row.Account_Alias_Name,
             Group_Id: row.Group_Id,
+            creditLimit: row.creditLimit || row.CreditLimit || "",  // Handle both cases
+            creditDays: row.creditDays || row.CreditDays || "",    // Handle both cases
+            percentageValue: row.percentageValue || row.PercentageValue || ""  // Handle both cases
         });
         setEditMode(true);
     };
 
+    // CORRECTED: Use proper field names
     const handleEdit = () => {
-        const { Acc_Id, Account_name, Group_Id } = inputValue;
+        const { Acc_Id, Account_name, Group_Id, creditLimit, creditDays, percentageValue } = inputValue;
         if (!Acc_Id || !Account_name || !Group_Id) {
             toast.error("All required fields must be filled.");
             return;
@@ -198,8 +207,6 @@ function AccountMaster() {
                     </div>
                 </div>
 
-
-
                 <FilterableTable
                     dataArray={filteredAccountList}
                     EnableSerialNumber={true}
@@ -208,6 +215,9 @@ function AccountMaster() {
                         createCol("Account_name", "string", "Account Name"),
                         createCol("Account_Alias_Name", "string", "Alias Name"),
                         createCol("Group_Name", "string", "Group"),
+                        createCol("creditLimit", "number", "Credit Limit"),
+                        createCol("creditDays", "number", "Credit Days"),
+                        createCol("percentageValue", "number", "Percentage Value"),
                         {
                             ColumnHeader: "Actions",
                             isVisible: 1,
@@ -234,9 +244,12 @@ function AccountMaster() {
                 />
             </div>
 
+            {/* Create Dialog */}
             <Dialog
                 open={isCreateDialogOpen}
                 onClose={() => setIsCreateDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
             >
                 <DialogTitle>Account Master Creation</DialogTitle>
                 <DialogContent>
@@ -248,7 +261,7 @@ function AccountMaster() {
                             onChange={(e) =>
                                 setInputValue({ ...inputValue, Account_name: e.target.value })
                             }
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                             placeholder="Enter Account Name"
                         />
                     </div>
@@ -264,20 +277,20 @@ function AccountMaster() {
                                     Account_Alias_Name: e.target.value,
                                 })
                             }
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         />
                     </div>
                     <div className="p-2">
                         <label>Group Name*</label>
                         <Select
-                            labelId="group-select-label"
                             value={inputValue.Group_Id}
-                            label="Group"
                             onChange={(e) =>
                                 setInputValue({ ...inputValue, Group_Id: e.target.value })
                             }
                             fullWidth
+                            displayEmpty
                         >
+                            <MenuItem value="">Select Group</MenuItem>
                             {groupList.map((group) => (
                                 <MenuItem key={group.value} value={group.value}>
                                     {group.label}
@@ -285,19 +298,63 @@ function AccountMaster() {
                             ))}
                         </Select>
                     </div>
+                    <div className="p-2">
+                        <label>Credit Limit</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditLimit}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditLimit: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                            placeholder="Enter Credit Limit"
+                        />
+                    </div>
+                    <div className="p-2">
+                        <label>Credit Days</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditDays}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditDays: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                            placeholder="Enter Credit Days"
+                        />
+                    </div>
+                    <div className="p-2">
+                        <label>Percentage Value</label>
+                        <input
+                            type="number"
+                            value={inputValue.percentageValue}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, percentageValue: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                            placeholder="Enter Percentage Value"
+                        />
+                    </div>
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setIsCreateDialogOpen(false)}>
                         Cancel
                     </MuiButton>
-                    <MuiButton onClick={handleCreate} color="success">
+                    <MuiButton onClick={handleCreate} color="success" variant="contained">
                         Create
                     </MuiButton>
                 </DialogActions>
             </Dialog>
 
             {/* Edit Dialog */}
-            <Dialog open={editMode} onClose={() => setEditMode(false)}>
+            <Dialog 
+                open={editMode} 
+                onClose={() => {
+                    setEditMode(false);
+                    setInputValue(initialState);
+                }}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Edit Account</DialogTitle>
                 <DialogContent>
                     <div className="p-2">
@@ -308,7 +365,7 @@ function AccountMaster() {
                             onChange={(e) =>
                                 setInputValue({ ...inputValue, Account_name: e.target.value })
                             }
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         />
                     </div>
                     <div className="p-2">
@@ -322,23 +379,20 @@ function AccountMaster() {
                                     Account_Alias_Name: e.target.value,
                                 })
                             }
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         />
                     </div>
                     <div className="p-2">
                         <label>Group Name*</label>
                         <FormControl fullWidth>
                             <Select
-                                labelId="group-edit-select-label"
                                 value={inputValue.Group_Id}
-                                displayEmpty
                                 onChange={(e) =>
                                     setInputValue({ ...inputValue, Group_Id: e.target.value })
                                 }
+                                displayEmpty
                             >
-                                <MenuItem disabled value="">
-                                    Select Group
-                                </MenuItem>
+                                <MenuItem value="">Select Group</MenuItem>
                                 {groupList.map((group) => (
                                     <MenuItem key={group.value} value={group.value}>
                                         {group.label}
@@ -347,10 +401,48 @@ function AccountMaster() {
                             </Select>
                         </FormControl>
                     </div>
+                    <div className="p-2">
+                        <label>Credit Limit</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditLimit}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditLimit: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                        />
+                    </div>
+                    <div className="p-2">
+                        <label>Credit Days</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditDays}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditDays: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                        />
+                    </div>
+                    <div className="p-2">
+                        <label>Percentage Value</label>
+                        <input
+                            type="number"
+                            value={inputValue.percentageValue}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, percentageValue: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                        />
+                    </div>
                 </DialogContent>
                 <DialogActions>
-                    <MuiButton onClick={() => setEditMode(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={handleEdit} color="success">
+                    <MuiButton onClick={() => {
+                        setEditMode(false);
+                        setInputValue(initialState);
+                    }}>
+                        Cancel
+                    </MuiButton>
+                    <MuiButton onClick={handleEdit} color="success" variant="contained">
                         Update
                     </MuiButton>
                 </DialogActions>
@@ -364,7 +456,7 @@ function AccountMaster() {
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setOpen(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={handleDelete} color="error" autoFocus>
+                    <MuiButton onClick={handleDelete} color="error" variant="contained">
                         Delete
                     </MuiButton>
                 </DialogActions>
