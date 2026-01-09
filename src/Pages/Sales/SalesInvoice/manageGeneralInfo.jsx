@@ -17,7 +17,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     setRetailerDeliveryAddress,
     shippingAddress = retailerDeliveryAddressInfo,
     setShippingAddress,
-    onChangeRetailer
+    onChangeRetailer,
+    retailerSalesStatus = {}
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -113,7 +114,7 @@ const ManageSalesInvoiceGeneralInfo = ({
             setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
             setShippingAddress(retailerDeliveryAddressInfo);
         }
-        
+
         if (onChangeRetailer) onChangeRetailer();
     }
 
@@ -177,6 +178,16 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             filterOption={reactSelectFilterLogic}
                                         />
                                     </div>
+
+                                    {/* {console.log(retailerSalesStatus)} */}
+                                    {retailerSalesStatus.invoiceCreationStatus === false && (
+                                        <div className="col-12 p-2">
+                                            <p className="text-danger m-0">
+                                                The retailer has exceeded the credit limit or credit days.
+                                            </p>
+                                        </div>
+                                    )}
+
 
                                     {/* Date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">

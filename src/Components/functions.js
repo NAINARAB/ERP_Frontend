@@ -514,6 +514,18 @@ export const RoundNumber = (num) => {
     return checkIsNumber(num) ? Number(num).toFixed(2) : 0;
 }
 
+export const isValidNumber = (num) => {
+    return checkIsNumber(num) && Number(num) !== 0
+}
+
+export const isPositiveNumber = (num) => {
+    return checkIsNumber(num) && Number(num) > 0
+}
+
+export const isNegativeNumber = (num) => {
+    return checkIsNumber(num) && Number(num) < 0
+}
+
 export const indianCurrency = (number) => {
     let num = Number(number)
     return new Intl.NumberFormat('en-IN', {

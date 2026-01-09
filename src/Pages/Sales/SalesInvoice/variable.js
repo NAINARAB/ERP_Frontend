@@ -2,6 +2,37 @@ import { getSessionUser, ISOString } from "../../../Components/functions";
 
 const storage = getSessionUser().user;
 
+export function canCreateInvoice(data) {
+    const {
+        outstanding,
+        creditLimit,
+        creditDays,
+        recentDate
+    } = data;
+
+    const baseDate = new Date(recentDate);
+
+    const expiryDate = new Date(baseDate);
+    expiryDate.setDate(expiryDate.getDate() + creditDays);
+
+    const today = new Date();
+
+    const isOutstandingExceeded = outstanding > creditLimit;
+    const isCreditDaysCrossed = today > expiryDate;
+
+    return !(isOutstandingExceeded || isCreditDaysCrossed);
+}
+
+export const retailerOutstandingDetails = {
+    outstanding: 0,
+    creditLimit: 0,
+    creditDays: 0,
+    recentDate: new Date(),
+    invoiceCreationStatus: null,
+    forceCreateInvoice: false,
+    dialog: false,
+}
+
 export const retailerDeliveryAddressInfo = {
     id: null,
     retailerId: null,

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
     checkIsNumber, toNumber, toArray, stringCompare,
-    RoundNumber
+    RoundNumber, isValidNumber
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -14,7 +14,9 @@ import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo,
-    salesInvoiceStaffInfo, retailerDeliveryAddressInfo
+    salesInvoiceStaffInfo, retailerDeliveryAddressInfo,
+    retailerOutstandingDetails,
+    canCreateInvoice
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -23,6 +25,7 @@ import AddProductsInSalesInvoice from "./importFromSaleOrder";
 import ExpencesOfSalesInvoice from "./manageExpences";
 import AddProductForm from "./addProducts";
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
+import AppDialog from "../../../Components/appDialogComponent";
 
 
 const storage = getSessionUser().user;
@@ -60,6 +63,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const [invoiceProducts, setInvoiceProduct] = useState([]);
     const [invoiceExpences, setInvoiceExpences] = useState([]);
     const [staffArray, setStaffArray] = useState([]);
+    const [retailerSalesStatus, setRetailerSalesStatus] = useState(retailerOutstandingDetails);
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
 
@@ -155,8 +159,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
                     expence: expencesMaster.filter(
                         exp => !stringCompare(exp.Type, 'DEFAULT')
-                    ).map(exp => ({ 
-                        Id: exp.Acc_Id, 
+                    ).map(exp => ({
+                        Id: exp.Acc_Id,
                         Expence_Name: exp.Account_Name,
                         percentageValue: exp.percentageValue
                     })),
@@ -174,6 +178,27 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         fetchData();
 
     }, [storage?.Company_id])
+
+    useEffect(() => {
+        if (isValidNumber(invoiceInfo.Retailer_Id)) {
+            fetchLink({
+                address: `receipt/receiptMaster/pendingSalesInvoiceReceipt/amount?Retailer_Id=${invoiceInfo.Retailer_Id}`,
+                loadingOff, loadingOn
+            }).then(data => {
+                if (data.success) {
+                    const invoiceCreationStatus = canCreateInvoice(data?.others);
+                    setRetailerSalesStatus(pre => ({
+                        ...pre,
+                        outstanding: toNumber(data?.others?.outstanding),
+                        creditLimit: toNumber(data?.others?.creditLimit),
+                        creditDays: toNumber(data?.others?.creditDays),
+                        recentDate: data?.others?.recentDate ? new Date(data?.others?.recentDate) : new Date(),
+                        invoiceCreationStatus: invoiceCreationStatus
+                    }));
+                }
+            }).catch(console.error);
+        } else setRetailerSalesStatus(retailerOutstandingDetails)
+    }, [invoiceInfo.Retailer_Id])
 
     const clearValues = () => {
         setInvoiceInfo(salesInvoiceGeneralInfo);
@@ -414,6 +439,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [taxSplitUp.roundOff]);
 
     const saveSalesInvoice = () => {
+        if (retailerSalesStatus.forceCreateInvoice === false && retailerSalesStatus.invoiceCreationStatus === false) {
+            setRetailerSalesStatus(pre => ({ ...pre, dialog: true }));
+            return;
+        }
+
         if (loadingOn) loadingOn();
 
         fetchLink({
@@ -549,6 +579,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     setRetailerDeliveryAddress={setRetailerDeliveryAddress}
                                     shippingAddress={retailerShippingAddress}
                                     setShippingAddress={setRetailerShippingAddress}
+                                    retailerSalesStatus={retailerSalesStatus}
                                 />
                             </div>
                         </div>
@@ -762,9 +793,27 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             navigate('/erp/sales/invoice');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
+                    <Button onClick={saveSalesInvoice} variant="contained">submit</Button>
                 </CardActions>
             </Card>
+
+            <AppDialog
+                open={retailerSalesStatus.dialog}
+                onClose={() => setRetailerSalesStatus(pre => ({ ...pre, dialog: false }))}
+                title="Retailer Sales Status"
+                onSubmit={() => {
+                    setRetailerSalesStatus(pre => ({ ...pre, dialog: false, forceCreateInvoice: true }));
+                    saveSalesInvoice();
+                }}
+                submitText="Yes"
+                closeText="No"
+                maxWidth="sm"
+                fullWidth
+                isSubmit
+            >
+                <h3>The Retailer Exceeds the credit limit and credit days!</h3>
+                <p>Anyway Do you want to create invoice?</p>
+            </AppDialog>
         </>
     )
 }

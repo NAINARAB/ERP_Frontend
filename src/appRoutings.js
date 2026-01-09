@@ -254,8 +254,8 @@ const RoutingArray = [
     { component: <ActivityTracking />, path: '/userControl/activityTracking' },
     { component: <ProjectReports />, path: '/taskManagement/report/projectReports' },
     // Dashboard
-    { component: <CommonDashboard />, path: '/dashboard' },
     { component: <CommonDashboard />, path: '/' },
+    { component: <CommonDashboard />, path: '/dashboard' },
 
     // Change password
     { component: <ChangePassword />, path: '/changePassword' },
