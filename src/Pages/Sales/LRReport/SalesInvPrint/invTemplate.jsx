@@ -1239,7 +1239,8 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
                 fontWeight: "bold",
                 color: "#000",
               }}>
-                {NumberFormat(p.amount)}
+                {/* {NumberFormat(p.amount)} */}
+                {parseFloat(p.amount || 0).toFixed(2)}
               </div>
             </div>
           ))}
@@ -1353,7 +1354,8 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
                 fontWeight: "bold",
                 top: "0.45cm"
               }}>
-                {NumberFormat(data.roundOffValue)}
+                {/* {parseFloat(p.amount || 0).toFixed(2)} */}
+               {(parseFloat(data.roundOffValue) || 0).toFixed(2)}
               </div>
             </div>
           ) : null}
