@@ -278,11 +278,22 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                 {data.map((invoice, index) => (
                     <div key={invoice.Do_Id || index} className="katchath-page">
                         <div
-                            style={{ 
-                                width: 'calc(15cm)',
+                            // style={{ 
+                            //     width: 'calc(14cm)',
+                            //     height: 'calc(10.5cm)',
+                            //     marginBottom: index < data.length - 1 ? '20px' : '0'
+                            // }
+                               style={{ 
+                             width: 'calc(13.8cm)',
                                 height: 'calc(10.5cm)',
-                                marginBottom: index < data.length - 1 ? '20px' : '0'
-                            }}
+   transform: 'scale(1.0)',  
+  margin: '0 auto',
+  position: 'relative',
+  boxSizing: 'border-box',
+  fontWeight:'bold'
+                            // pageBreakAfter: index < data.length - 1 ? "always" : "auto",
+                            // breakAfter: index < data.length - 1 ? "page" : "auto"
+                        }}
                             className="border py-1 px-2"
                         >
                             <div className="row">
@@ -299,11 +310,11 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
 
                                 <div className="col-7 p-2">
                                     <div className="table-responsive">
-                                        <table className="table table-borderless">
+                                        <table className="table table-borderless" style={{lineHeight:'0.37cm'}}>
                                             <tbody>
                                                 {toArray(invoice.productDetails).map((item, idx) => (
                                                     <tr key={idx}>
-                                                        <td>{item.itemName}</td>
+                                                        <td >{item.itemName}</td>
                                                         <td>{item.quantity}</td>
                                                     </tr>
                                                 ))}
@@ -380,7 +391,7 @@ className="border py-4 px-4"
 
                                 <div className="col-7 p-2">
                                     <div className="table-responsive">
-                                        <table className="table table-borderless">
+                                        <table className="table table-borderless"  style={{lineHeight:'0.35cm'}}>
                                             <tbody>
                                                 {toArray(invoice.productDetails).map((item, idx) => (
                                                     <tr key={idx}>

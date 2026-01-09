@@ -781,7 +781,7 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
         const allData = results
           .filter(result => result?.success && result?.data?.[0])
           .map(result => result.data[0]);
-        
+        console.log("allData",allData)
         setData(allData);
         setPrintReady(true);
       } catch (error) {
@@ -1381,7 +1381,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 <div style={{
   position: "absolute",
   top: "11.6cm",
-  fontSize: "11px",
+  fontSize: "10px",
   left: "3cm",
   width: "10cm"
 }}>
@@ -1392,7 +1392,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
         display: "flex",
         alignItems: "center",
         width: "100%",
-        marginBottom: "0.1cm"
+        marginBottom: "0.0cm"
       }}
     >
       <span style={{ 
@@ -1419,7 +1419,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
     display: "flex",
     alignItems: "center",
     width: "100%",
-    marginTop: "0.1cm",
+    marginTop: "0.0cm",
 
     paddingTop: "0.1cm",
     fontWeight: "bold"
@@ -1435,6 +1435,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
       color: "#000",
       width: "3cm",
       textAlign: "right",
+      top:"0"
       // marginLeft: "auto"
     }}>
       {NumberFormat(

@@ -350,7 +350,7 @@ const [currentPrintType, setCurrentPrintType] = useState('');
 //     });
 
 
-    const handleMultiPrint = useReactToPrint({
+const handleMultiPrint = useReactToPrint({
     content: () => multiPrintRef.current,
     documentTitle: "Multiple Documents",
     pageStyle: currentPrintType === 'delivery_slip' ? `
@@ -358,34 +358,95 @@ const [currentPrintType, setCurrentPrintType] = useState('');
             margin: 0.7cm 0 0 0;
             size: auto;
         }
-   
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media print {
+            body > * {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    ` : currentPrintType === 'sales_invoice' ? `
+        @page {
+            size: A5 landscape;
+            margin: 0;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media print {
+            body > * {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    ` : currentPrintType === 'katchath' ? `
+        @page {
+            margin: 0.6cm;
+            size: auto;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media print {
+            body > * {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     ` : `
         @page {
             margin: 0.6cm;
             size: auto;
         }
         html, body {
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* Center everything */
-    @media print {
-      body > * {
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
-      
-      .no-print {
-        display: none !important;
-      }
-    }
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media print {
+            body > * {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     `,
 });
     const renderFilter = (column) => {
