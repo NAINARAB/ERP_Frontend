@@ -323,7 +323,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [editValues])
 
     useEffect(() => {
-        if (checkIsNumber(editValues?.Retailer_Id) && !isEqualNumber(editValues?.Retailer_Id, 0)) {
+        if (isValidNumber(editValues?.Retailer_Id)) {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, editValues?.Retailer_Id)) || {};
             const billingAddress = toArray(retailerDetails?.deliveryAddresses).find(
                 addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
@@ -348,7 +348,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
             if (shippingAddress) {
 
-                setRetailerDeliveryAddress({
+                setRetailerShippingAddress({
                     deliveryName: shippingAddress?.deliveryName,
                     phoneNumber: shippingAddress?.phoneNumber,
                     cityName: shippingAddress?.cityName,
