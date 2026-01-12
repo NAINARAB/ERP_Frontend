@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, isValidNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
 import { useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -69,12 +69,10 @@ const ExpencesOfSalesInvoice = ({
 
     const handleSelectChange = (index, selectedOption) => {
         const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, selectedOption.value)) || {};
-        const getInvoicedAmountInPercentage = (
-            Number(selected?.percentageValue) > 0
-        ) ? getPercentage(Total_Invoice_value, selected.percentageValue) : 0;
+        const getInvoicedAmountInPercentage = isValidNumber(selected?.percentageValue)
+            ? getPercentage(Total_Invoice_value, selected.percentageValue)
+            : 0;
 
-        console.log({selected, getInvoicedAmountInPercentage, expenceMaster})
-        
         setInvoiceExpences(prev =>
             prev.map((item, i) => {
                 if (i !== index) return item;
