@@ -1,8 +1,6 @@
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, isValidNumber, NumberFormat, onlynum, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toArray, toNumber } from "../../../Components/functions";
+import { Button, Card, IconButton } from "@mui/material";
+import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, isValidNumber, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
-import { useState } from "react";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
@@ -79,7 +77,7 @@ const ExpencesOfSalesInvoice = ({
                 return {
                     ...item,
                     Expense_Id: selected.Id,
-                    Expence_Value: getInvoicedAmountInPercentage
+                    Expence_Value: RoundNumber(getInvoicedAmountInPercentage)
                 };
             })
         );

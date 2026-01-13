@@ -38,26 +38,26 @@ export const decryptPasswordFun = (str) => {
 }
 
 export const getIndianTime = (dateString) => {
-  const date = new Date(dateString);
+    const date = new Date(dateString);
 
-  const options = {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    fractionalSecondDigits: 3,
-    hour12: false
-  };
+    const options = {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+        hour12: false
+    };
 
-  const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
+    const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
 
-  const get = (type) =>
-    parts.find(p => p.type === type)?.value ?? "";
+    const get = (type) =>
+        parts.find(p => p.type === type)?.value ?? "";
 
-  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}.${get("fractionalSecond")}`;
+    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}.${get("fractionalSecond")}`;
 }
 
 export const addFiveThirty = (dateString) => {
@@ -510,8 +510,8 @@ export const limitFractionDigits = (num = 0, maxFractionDigits = 2) => {
     return Math.round(num * factor) / factor;
 }
 
-export const RoundNumber = (num) => {
-    return checkIsNumber(num) ? Number(num).toFixed(2) : 0;
+export const RoundNumber = (num = 0, round = 2) => {
+    return checkIsNumber(num) ? Number(num).toFixed(round) : 0;
 }
 
 export const isValidNumber = (num) => {
@@ -544,7 +544,7 @@ export const Multiplication = (a, b) => limitFractionDigits(Number(a || 0) * Num
 export const Division = (a, b) => limitFractionDigits(b != 0 ? Number(a || 0) / Number(b || 1) : 0);
 
 export const getPercentage = (value, percent) => {
-  return (value * percent) / 100;
+    return (value * percent) / 100;
 };
 
 export const trimText = (text = '', replaceWith = '_') => String(text).trim().replace(/\s+/g, replaceWith ?? '_');
