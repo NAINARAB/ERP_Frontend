@@ -130,6 +130,34 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     }, [multiPrint.open, multiPrint.doIds, multiPrint.docType]);
 
+
+
+  const selectedTotals = useMemo(() => {
+        const selectedIds = multipleCostCenterUpdateValues.Do_Id;
+
+        if (!selectedIds.length) {
+            return { billQty: 0, altActQty: 0 };
+        }
+
+        let billQty = 0;
+        let altActQty = 0;
+
+        salesInvoices
+            .filter(inv => selectedIds.includes(toNumber(inv.Do_Id)))
+            .forEach(inv => {
+                if (Array.isArray(inv.stockDetails)) {
+                    inv.stockDetails.forEach(item => {
+                        billQty += Number(item.Bill_Qty) || 0;
+                        altActQty += Number(item.Alt_Act_Qty) || 0;
+                    });
+                }
+            });
+
+        return { billQty, altActQty };
+    }, [multipleCostCenterUpdateValues.Do_Id, salesInvoices]);
+
+
+
     useEffect(() => {
         fetchLink({
             address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
@@ -572,9 +600,12 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     return (
         <>
+                 
+
             <FilterableTable
                 title={"Sales Invoice"}
                 columns={[
+                    
                     {
                         Field_Name: "Select",
                         isVisible: 1,
@@ -600,11 +631,40 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                 />
                             );
                         },
+                        
                     },
+                    
+                    
                     createCol("Do_Inv_No", "string", "Invoice"),
                     createCol("createdOn", "time", "Created"),
                     createCol("voucherTypeGet", "string", "Voucher"),
                     createCol("retailerNameGet", "string", "Customer"),
+                    {
+    Field_Name: "BillQty",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) => {  
+        if (row.stockDetails && row.stockDetails.length > 0) {
+            return row.stockDetails.reduce((sum, item) => 
+                sum + (Number(item.Bill_Qty) || 0), 0
+            );
+        }
+        return 0;
+    },
+},
+{
+    Field_Name: "AltActQty",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) => {  
+        if (row.stockDetails && row.stockDetails.length > 0) {
+            return row.stockDetails.reduce((sum, item) => 
+                sum + (Number(item.Alt_Act_Qty) || 0), 0
+            );
+        }
+        return 0;
+    },
+},
                     createCol("Narration", "string", "Narration"),
                     ...costTypeColumns,
                     {
@@ -734,6 +794,20 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <option value="1">ALL INVOICES</option>
                             <option value="0">INCOMPLETED INVOICES</option>
                         </select>
+                        
+                    {multipleCostCenterUpdateValues.Do_Id.length > 0 && (
+                <div className="d-flex gap-4 mb-0 p-0">
+                   
+                    <div>
+                        <strong>Total Bill Qty:</strong>{" "}
+                        {selectedTotals.billQty}
+                    </div>
+                    <div>
+                        <strong>Total Alt Act Qty:</strong>{" "}
+                        {selectedTotals.altActQty}
+                    </div>
+                </div>
+            )}
                     </>
                 }
             />

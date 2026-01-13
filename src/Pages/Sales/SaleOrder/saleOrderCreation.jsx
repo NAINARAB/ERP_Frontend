@@ -445,7 +445,20 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
-
+<div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Status</label>
+                                        <select
+                                            value={orderDetails?.Cancel_status}
+                                              className="cus-inpt p-2"
+                                            onChange={e => setOrderDetails(pre => ({ ...pre, Cancel_status: e.target.value }))}
+                                        >
+                                            <option value="" disabled>Select</option>
+                                            <option value="1">New</option>
+                                            <option value="2">Pending</option>
+                                            <option value="3">Cancel</option>
+                                            <option value="0">Pending</option>
+                                        </select>
+                                    </div>
                                     <div className="col-12 p-2">
                                         <label className='fa-13'>Narration</label>
                                         <textarea
