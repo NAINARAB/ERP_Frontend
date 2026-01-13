@@ -1,7 +1,8 @@
 // import { useEffect, useMemo } from "react";
 import { 
     isEqualNumber, NumberFormat, numberToWords, 
-    onlynumAndNegative, RoundNumber, 
+    onlynumAndNegative, RoundNumber,
+    toNumber, 
     // toArray, Addition,  
 } from "../../../Components/functions";
 // import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -105,7 +106,7 @@ const SalesInvoiceTaxDetails = ({
                         </td>
                         <td className="border p-2">Total Taxable Amount</td>
                         <td className="border p-2">
-                            {taxSplitUp.totalTaxable}
+                            {toNumber(taxSplitUp?.totalTaxable)}
                         </td>
                     </tr>
                     {!IS_IGST ? (
@@ -113,13 +114,13 @@ const SalesInvoiceTaxDetails = ({
                             <tr>
                                 <td className="border p-2">CGST</td>
                                 <td className="border p-2">
-                                    {taxSplitUp.cgst}
+                                    {toNumber(taxSplitUp?.cgst)}
                                 </td>
                             </tr>
                             <tr>
                                 <td className="border p-2">SGST</td>
                                 <td className="border p-2">
-                                    {taxSplitUp.sgst}
+                                    {toNumber(taxSplitUp?.sgst)}
                                 </td>
                             </tr>
                         </>
@@ -127,7 +128,7 @@ const SalesInvoiceTaxDetails = ({
                         <tr>
                             <td className="border p-2">IGST</td>
                             <td className="border p-2">
-                                {taxSplitUp.igst}
+                                {toNumber(taxSplitUp?.igst)}
                             </td>
                         </tr>
                     )}
@@ -141,7 +142,7 @@ const SalesInvoiceTaxDetails = ({
                         <td className="border p-2">Round Off</td>
                         <td className="border p-0">
                             <input
-                                value={invoiceInfo.Round_off || taxSplitUp.roundOff || 0}
+                                value={invoiceInfo?.Round_off || taxSplitUp?.roundOff || 0}
                                 className="cus-inpt p-2 m-0 border-0"
                                 onInput={onlynumAndNegative}
                                 onChange={e => setInvoiceInfo(pre => ({ 

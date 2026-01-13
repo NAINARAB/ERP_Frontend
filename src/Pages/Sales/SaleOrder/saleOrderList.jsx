@@ -511,59 +511,59 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     //     );
                     //   },
                     // },
-               {
-    ColumnHeader: "Status",
-    isVisible: 1,
-    align: "center",
-    isCustomCell: true,
-    Cell: ({ row }) => {
+                    {
+                        ColumnHeader: "Status",
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
 
 
-        if (Number(row?.Cancel_status) === 3) {
-            return (
-                <span className="py-0 fw-bold px-2 rounded-4 fa-12 bg-danger text-white">
-                    Cancelled
-                </span>
-            );
-        }
+                            if (Number(row?.Cancel_status) === 3) {
+                                return (
+                                    <span className="py-0 fw-bold px-2 rounded-4 fa-12 bg-danger text-white">
+                                        Cancelled
+                                    </span>
+                                );
+                            }
 
 
-        const orderedQty = row?.Products_List?.reduce(
-            (sum, p) => sum + (Number(p?.Bill_Qty) || 0),
-            0
-        ) || 0;
-     
-        const deliveredQty = row?.ConvertedInvoice?.reduce((sum, d) => {
-            const items = d?.InvoicedProducts || [];
-            return (
-                sum +
-                items.reduce(
-                    (sub, prod) => sub + (Number(prod?.Bill_Qty) || 0),
-                    0
-                )
-            );
-        }, 0) || 0;
+                            const orderedQty = row?.Products_List?.reduce(
+                                (sum, p) => sum + (Number(p?.Bill_Qty) || 0),
+                                0
+                            ) || 0;
+
+                            const deliveredQty = row?.ConvertedInvoice?.reduce((sum, d) => {
+                                const items = d?.InvoicedProducts || [];
+                                return (
+                                    sum +
+                                    items.reduce(
+                                        (sub, prod) => sub + (Number(prod?.Bill_Qty) || 0),
+                                        0
+                                    )
+                                );
+                            }, 0) || 0;
 
 
-        const pendingQty = orderedQty - deliveredQty;
+                            const pendingQty = orderedQty - deliveredQty;
 
-     
-        const isCompleted = pendingQty <= 0;
 
-        const status = isCompleted ? "Completed" : "Pending";
-        const statusColor = isCompleted
-            ? "bg-success text-white"
-            : "bg-warning text-dark";
+                            const isCompleted = pendingQty <= 0;
 
-        return (
-            <span
-                className={`py-0 fw-bold px-2 rounded-4 fa-12 ${statusColor}`}
-            >
-                {status}
-            </span>
-        );
-    },
-},
+                            const status = isCompleted ? "Completed" : "Pending";
+                            const statusColor = isCompleted
+                                ? "bg-success text-white"
+                                : "bg-warning text-dark";
+
+                            return (
+                                <span
+                                    className={`py-0 fw-bold px-2 rounded-4 fa-12 ${statusColor}`}
+                                >
+                                    {status}
+                                </span>
+                            );
+                        },
+                    },
 
                     //     {
                     //     ColumnHeader: "Created_By",
@@ -572,7 +572,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     //     isCustomCell: true,
                     //     Cell: ({ row }) => {
                     //        {row?.Created_BY_Name}
-                        
+
                     //     },
                     // },
                     createCol("Created_BY_Name", "string", "Created_By"),

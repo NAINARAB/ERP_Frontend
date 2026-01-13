@@ -388,7 +388,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal])
 
     const taxSplitUp = useMemo(() => {
-        if (!invoiceProducts || invoiceProducts.length === 0) return {};
+        console.log(invoiceProducts);
+        if (toArray(invoiceProducts).length === 0) return {};
 
         let totalTaxable = 0;
         let totalTax = 0;
@@ -419,6 +420,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
         const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
 
+        console.log({totalWithTax, totalWithExpenses, roundedTotal, roundOff})
+
         return {
             totalTaxable: RoundNumber(totalTaxable),
             totalTax: RoundNumber(totalTax),
@@ -433,10 +436,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     // Update invoiceInfo when roundOff changes
     useEffect(() => {
-        if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
+        if (taxSplitUp?.roundOff && taxSplitUp?.roundOff !== invoiceInfo.Round_off) {
             setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
         }
-    }, [taxSplitUp.roundOff]);
+    }, [taxSplitUp?.roundOff]);
 
     const saveSalesInvoice = () => {
         if (retailerSalesStatus.forceCreateInvoice === false && retailerSalesStatus.invoiceCreationStatus === false) {
