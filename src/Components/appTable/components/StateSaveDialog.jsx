@@ -25,27 +25,27 @@ const StateSaveDialog = ({ open, onSave, onClose, defaults = {} }) => {
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Save Report State</DialogTitle>
+            <DialogTitle>Save Table State</DialogTitle>
 
             <DialogContent>
                 <div className="d-flex flex-column gap-3 mt-1">
-                    <TextField
-                        label="State Name"
-                        fullWidth
-                        size="small"
+                    <label htmlFor="">State Name</label>
+                    <input
+                        type="text"
                         value={form.name}
-                        onChange={e => setForm({ ...form, name: e.target.value })}
-                        helperText="Internal system name"
+                        onChange={e => setForm({ ...form, name: e.target.value, displayName: e.target.value })}
+                        className='cus-inpt'
+                        style={{ minWidth: '310px'}}
                     />
-                    <TextField
+                    {/* <TextField
                         label="Display Name"
                         fullWidth
                         size="small"
                         value={form.displayName}
                         onChange={e => setForm({ ...form, displayName: e.target.value })}
                         helperText="Name shown in dropdown"
-                    />
-                    <TextField
+                    /> */}
+                    {/* <TextField
                         label="Report URL"
                         fullWidth
                         size="small"
@@ -60,7 +60,7 @@ const StateSaveDialog = ({ open, onSave, onClose, defaults = {} }) => {
                         value={form.reportGroup}
                         onChange={e => setForm({ ...form, reportGroup: e.target.value })}
                         disabled
-                    />
+                    /> */}
                 </div>
             </DialogContent>
 

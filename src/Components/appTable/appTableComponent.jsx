@@ -109,10 +109,10 @@ const AppTableComponent = ({
     const handleSaveState = async (formData) => {
         try {
             // Check for duplicates
-            if (checkIfNameExists(formData.name)) {
-                alert('State name already exists!');
-                return;
-            }
+            // if (checkIfNameExists(formData.name)) {
+            //     alert('State name already exists!');
+            //     return;
+            // }
             await saveState(formData);
             setSaveStateOpen(false);
         } catch (e) {
@@ -311,7 +311,7 @@ const AppTableComponent = ({
                                 <MenuItem value="" disabled>Select View</MenuItem>
                                 {availableViews.map((v, i) => (
                                     <MenuItem key={i} value={v.reportName}>
-                                        {v.displayName}
+                                        {v.reportName}
                                     </MenuItem>
                                 ))}
                             </Select>

@@ -56,9 +56,9 @@ export const useTableStateSync = ({
     };
 
     const saveState = ({ name, displayName, reportUrl, reportGroup }) => {
-        if (checkIfNameExists(name)) {
-            return Promise.reject(new Error("State name already exists!"));
-        }
+        // if (checkIfNameExists(name)) {
+        //     return Promise.reject(new Error("State name already exists!"));
+        // }
 
         const visibilityPayload = {
             visibleColumns: dispColumns.map(c => ({
