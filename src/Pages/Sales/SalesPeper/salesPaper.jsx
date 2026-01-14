@@ -4,7 +4,10 @@ import { Addition, ISOString, RoundNumber, stringCompare, toNumber } from "../..
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { IconButton } from "@mui/material";
 import { Search } from "@mui/icons-material";
-
+import DownloadIcon from "@mui/icons-material/Download";
+import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 const getStaff = (staffs, type) =>
     staffs
         .filter(s => s.empType === type)
@@ -203,6 +206,183 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
         // reqDate: '2025-12-29',
     })
 
+
+const downloadExcel = async (rows) => {
+    if (!rows || rows.length === 0) {
+        alert("No data to export");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sales Invoice Paper");
+
+    // 🔹 HEADER ROW
+    const header = [
+        "SNo",
+        "Unit Diff",
+        "Diff",
+        "Particular",
+        "Vou.No / Rate",
+        "Act Qty",
+        "Bill Qty",
+        "Broker",
+        "Transporter",
+        "Load Man"
+    ];
+
+    worksheet.addRow(header);
+
+    worksheet.getRow(1).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFF00" } 
+        };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+            bottom: { style: "thin" }
+        };
+    });
+
+
+    let overallActQty = 0;
+    let overallBillQty = 0;
+
+    rows.forEach(rowData => {
+   if (rowData.rowType === "HEADER") {
+        overallActQty += Number(rowData.unitQuantity || 0);
+        overallBillQty += Number(rowData.billedQuantity || 0);
+    }
+
+
+        const row = worksheet.addRow([
+            rowData.SNo || "",
+            rowData.unitDifference || "",
+            rowData.quantityDifference || "",
+            rowData.particular || "",
+            rowData.voucherNoOrRate || "",
+            rowData.unitQuantity || "",
+            rowData.billedQuantity || "",
+            rowData.broker || "",
+            rowData.transporter || "",
+            rowData.loadMan || ""
+        ]);
+
+        row.eachCell((cell, colNumber) => {
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+
+            cell.alignment = {
+                vertical: "middle",
+                horizontal: colNumber === 4 ? "left" : "center"
+            };
+
+     
+            if (rowData.rowType === "VOUCHER-HEADER") {
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "4472C4" } 
+                };
+                cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+            }
+
+    
+            if (rowData.rowType === "HEADER") {
+                cell.font = { bold: true, color: { argb: "1F4E79" } };
+            }
+
+          
+            if (rowData.rowType === "ITEM") {
+                cell.font = { color: { argb: "000000" } };
+            }
+
+       
+            if (rowData.rowType === "VOUCHER-TOTAL") {
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "D9D9D9" }
+                };
+                cell.font = { bold: true };
+            }
+        });
+    });
+
+    const totalRow = worksheet.addRow([
+        "",
+        "",
+        "",
+        "OVERALL TOTAL",
+        "",
+        overallActQty,
+        overallBillQty,
+        "",
+        "",
+        ""
+    ]);
+
+    totalRow.eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "C6E0B4" } 
+        };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+            bottom: { style: "thin" }
+        };
+    });
+
+    // 🔹 COLUMN WIDTHS
+    worksheet.columns = [
+        { width: 6 },
+        { width: 10 },
+        { width: 10 },
+        { width: 45 },
+        { width: 18 },
+        { width: 10 },
+        { width: 10 },
+        { width: 20 },
+        { width: 20 },
+        { width: 20 }
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), "Sales_Invoice_Paper.xlsx");
+};
+//     worksheet.columns = [
+//         { width: 6 },
+//         { width: 10 },
+//         { width: 10 },
+//         { width: 45 },
+//         { width: 18 },
+//         { width: 10 },
+//         { width: 10 },
+//         { width: 20 },
+//         { width: 20 },
+//         { width: 20 }
+//     ];
+
+//     const buffer = await workbook.xlsx.writeBuffer();
+//     saveAs(new Blob([buffer]), "Sales_Invoice_Paper.xlsx");
+// };
+
+
+
+
     useEffect(() => {
         fetchLink({
             address: `sales/salesInvoice/salesInvoicePaper?reqDate=${filter.reqDate}`,
@@ -281,6 +461,16 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
                         <IconButton size="small" onClick={fetchSalesInvoices}>
                             <Search />
                         </IconButton>
+                        
+        <IconButton
+            size="small"
+            color="success"
+            onClick={() => downloadExcel(displayData)}
+            title="Download Excel"
+        >
+            <DownloadIcon />
+        </IconButton>
+
                         <input
                             className="cus-inpt w-auto"
                             type="date"

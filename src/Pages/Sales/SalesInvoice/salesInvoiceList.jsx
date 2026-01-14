@@ -277,17 +277,21 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                         },
                         icon: <Print fontSize="small" color="primary" />,
                     },
-                    {
-                        name: 'Edit',
-                        onclick: () => navigate('create', {
-                            state: {
-                                ...row,
-                                isEdit: true
-                            }
-                        }),
-                        icon: <Edit fontSize="small" color="primary" />,
-                        disabled: !EditRights,
-                    },
+                   {
+  name: 'Edit',
+  onclick: () => {
+  
+    navigate('create', {
+      state: {
+        ...row,
+        isEdit: true,
+      },
+    });
+  },
+  icon: <Edit fontSize="small" color="primary" />,
+  disabled: !EditRights,
+},
+
                        {
                         name: 'Delivery Slip',
                         onclick: () => {
