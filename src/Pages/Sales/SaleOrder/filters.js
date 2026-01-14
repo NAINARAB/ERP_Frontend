@@ -54,6 +54,11 @@ const SALES_VIEW_CONFIGS = {
 
 const transformSalesItemBasedData = (data, filterType = 'all') => {
   return data?.reduce((acc, order) => {
+
+        if (filterType === 'pending' && Number(order?.Cancel_status) === 3) {
+      return acc;
+    }
+
     if (!Array.isArray(order?.OrderStockDetails)) return acc;
 
     let filteredItems = order.OrderStockDetails;
@@ -114,14 +119,37 @@ const transformSalesDeliveryBasedData = (data) => {
 
 const filterSalesOrdersByStatus = (data, status) => {
   return data.reduce((acc, order) => {
-    const isCanceled = order?.Cancel_status !== "0";
-    const isCompleted = order?.DeliveryDetails?.length > 0;
-    
-    if (status === 'completed' && (!isCompleted || isCanceled)) return acc;
-    if (status === 'incomplete' && (isCompleted && !isCanceled)) return acc;
-    return acc.concat(order);
+
+    if (order?.Cancel_status !== "0") return acc;
+
+    const orderItems = order?.OrderStockDetails || [];
+    const deliveries = order?.DeliveryDetails || [];
+
+    if (!orderItems.length) return acc;
+
+    const isFullyDelivered = orderItems.every(item => {
+      const deliveredQty = deliveries.reduce((sum, delivery) => {
+        const stock = delivery.StockDetails?.find(st =>
+          isEqualNumber(st.Item_Id, item.Item_Id)
+        );
+        return Addition(sum, stock?.Bill_Qty || 0);
+      }, 0);
+
+      return Number(deliveredQty) >= Number(item.Bill_Qty);
+    });
+
+    if (status === 'completed' && isFullyDelivered) {
+      acc.push(order);
+    }
+
+    if (status === 'incomplete' && !isFullyDelivered) {
+      acc.push(order);
+    }
+
+    return acc;
   }, []);
 };
+
 
 const filterSalesOrdersByDelivery = (data, type) => {
   return data.reduce((acc, order) => {

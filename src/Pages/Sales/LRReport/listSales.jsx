@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber,RoundNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import {
@@ -115,6 +115,29 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         []
     );
 
+
+    const calculateAltActQty = (item) => {
+
+    if (item.Alt_Act_Qty !== undefined && item.Alt_Act_Qty !== null) {
+        return Number(item.Alt_Act_Qty) || 0;
+    }
+    
+
+    const billQty = Number(item.Bill_Qty) || 0;
+    const conversionFactor = Number(item.PackValue) || 1;
+    
+    const possibleAltFields = ['AltQty', 'Alt_Act_Qty', 'Alt_Qty', 'Alternate_Qty', 'Actual_Qty'];
+    
+    for (const field of possibleAltFields) {
+        if (item[field] !== undefined && item[field] !== null) {
+            return Number(item[field]) || 0;
+        }
+    }
+    
+
+    return billQty * conversionFactor;
+};
+
     useEffect(() => {
         if (multiPrint.open) {
 
@@ -165,6 +188,24 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             loadingOff,
         })
             .then((data) => {
+                 const invoices = toArray(data.data);
+                
+                // Process each invoice to ensure Alt_Act_Qty is available
+                const processedInvoices = invoices.map(invoice => {
+                    if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
+                        const processedStockDetails = invoice.stockDetails.map(item => ({
+                            ...item,
+                           
+                            Alt_Act_Qty: calculateAltActQty(item)
+                        }));
+                        
+                        return {
+                            ...invoice,
+                            stockDetails: processedStockDetails
+                        };
+                    }
+                    return invoice;
+                });
                 setSalesInvoices(toArray(data.data));
                 setCostTypes(toArray(data?.others?.costTypes));
                 setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
@@ -652,19 +693,30 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return 0;
     },
 },
-{
-    Field_Name: "AltActQty",
-    isVisible: 1,
-    isCustomCell: true,
-    Cell: ({ row }) => {  
-        if (row.stockDetails && row.stockDetails.length > 0) {
-            return row.stockDetails.reduce((sum, item) => 
-                sum + (Number(item.Alt_Act_Qty) || 0), 0
-            );
-        }
-        return 0;
-    },
-},
+// {
+//     Field_Name: "AltActQty",
+//     isVisible: 1,
+//     isCustomCell: true,
+//     Cell: ({ row }) => {  
+//         if (row.stockDetails && row.stockDetails.length > 0) {
+//             return row.stockDetails.reduce((sum, item) => 
+//                 sum + (Number(item.Alt_Act_Qty) || 0), 0
+//             );
+//         }
+//         return 0;
+//     },
+// },
+  {
+                        Field_Name: "AltActQty",
+                        ColumnHeader: "Alt Act Qty",
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) =>
+                            RoundNumber(toArray(row.stockDetails).reduce(
+                                (s, i) => s + toNumber(i.Alt_Act_Qty),
+                                0
+                            ))
+                    },
                     createCol("Narration", "string", "Narration"),
                     ...costTypeColumns,
                     {

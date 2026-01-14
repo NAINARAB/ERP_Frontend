@@ -45,7 +45,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
-        view: 'PURCHASE ORDERS'
+        view: 'SALE ORDERS'
     });
 
     useEffect(() => {
@@ -282,11 +282,11 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                                         <optgroup label="ITEM BASED">
                                             <option value={'ITEMS'}>ITEMS</option>
                                             <option value={'ITEMS PENDING'}>ITEMS - PENDING</option>
-                                            <option value={'ITEMS DELIVERED'}>ITEMS - Delivered</option>
+                                            {/* <option value={'ITEMS DELIVERED'}>ITEMS - DELIVERED</option> */}
                                         </optgroup>
                                         <optgroup label="ORDER BASED">
                                             <option value={'ORDERS'}>ORDERS</option>
-                                            <option value={'COMPLETED ORDERS'}>COMPLETED ORDERS</option>
+                                            {/* <option value={'COMPLETED ORDERS'}>COMPLETED ORDERS</option> */}
                                             <option value={'IN-COMPLETED ORDERS'}>IN-COMPLETED ORDERS</option>
                                         </optgroup>
                                     </select>
