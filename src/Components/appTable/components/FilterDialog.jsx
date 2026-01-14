@@ -1,9 +1,9 @@
-import React from 'react';
 import {
     Dialog, DialogTitle, DialogContent,
     DialogActions, Button, Card
 } from '@mui/material';
 import FilterRow from './FilterRow';
+import { randomNumber } from '../../functions';
 
 const FilterDialog = ({
     open,
@@ -27,8 +27,8 @@ const FilterDialog = ({
 
             <DialogContent dividers>
                 <div className="row">
-                    {columns.filter(c => c.isVisible === 1).map((col, i) => (
-                        <div className="col-md-6 p-2" key={col.Field_Name}>
+                    {columns.filter(c => c.isVisible === 1 && !c.isCustomCell).map((col, i) => (
+                        <div className="col-md-6 p-2" key={randomNumber()}>
                             <Card variant="outlined" className="p-3">
                                 <h6 className="mb-2 fw-bold text-secondary" style={{ fontSize: '0.9rem' }}>
                                     {col.ColumnHeader || col.Field_Name}

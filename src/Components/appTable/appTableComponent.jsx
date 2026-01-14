@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
     Card, Table, TableHead, TableBody,
     TableRow, TableCell, TableContainer,
-    IconButton, TablePagination
+    IconButton, TablePagination,
+    Select, MenuItem, FormControl, InputLabel
 } from '@mui/material';
 import {
     KeyboardArrowDown,
@@ -20,6 +21,8 @@ import ColumnSettingsDialog from './components/ColumnSettingsDialog';
 import StateSaveDialog from './components/StateSaveDialog';
 import FilterDialog from './components/FilterDialog';
 import { generatePDF, exportToExcel } from './utils/exportUtils';
+import { NumberFormat, LocalDate, LocalTime } from '../functions';
+import { randomNumber } from '../functions';
 
 const AppTableComponent = ({
     dataArray = [],
@@ -64,6 +67,15 @@ const AppTableComponent = ({
         setPage(0);
     };
 
+    const formatValue = (val, type) => {
+        switch (type) {
+            case 'number': return val ? NumberFormat(val) : val;
+            case 'date': return val ? LocalDate(val) : val;
+            case 'time': return val ? LocalTime(val) : val;
+            default: return val;
+        }
+    };
+
     // Column Visibility Hook
     const { dispColumns, setDispColumns, toggleVisibility, updateOrder } = useColumnVisibility(columns);
 
@@ -71,7 +83,14 @@ const AppTableComponent = ({
     const { filteredData, filters, setFilters, updateFilter } = useColumnFilters(dataArray, dispColumns);
 
     // State Sync Hook
-    const { enabled: stateEnabled, savedStates, saveState } = useTableStateSync({
+    const {
+        enabled: stateEnabled,
+        availableViews,
+        savedVisibility,
+        savedGrouping,
+        checkIfNameExists,
+        saveState
+    } = useTableStateSync({
         stateName,
         stateUrl,
         stateGroup,
@@ -89,11 +108,46 @@ const AppTableComponent = ({
 
     const handleSaveState = async (formData) => {
         try {
+            // Check for duplicates
+            if (checkIfNameExists(formData.name)) {
+                alert('State name already exists!');
+                return;
+            }
             await saveState(formData);
             setSaveStateOpen(false);
         } catch (e) {
             console.error("Failed to save state", e);
+            alert("Failed to save state: " + e.message);
         }
+    };
+
+    const handleViewChange = (reportName) => {
+        // Find visible columns for this report
+        const viewCols = savedVisibility.filter(v => v.reportName === reportName);
+
+        if (viewCols.length > 0) {
+            setDispColumns(cols => cols.map(c => {
+                const match = viewCols.find(v => v.columnName === c.Field_Name);
+                if (match) {
+                    return { ...c, isVisible: 1, OrderBy: match.orderNum };
+                } else {
+                    // Start with hidden? Or keep default? 
+                    // Usually saved state implies "this is the configuration". 
+                    // If column is missing from saved state, it's likely hidden or new.
+                    // Let's hide it to match the "saved view" exactly.
+                    return { ...c, isVisible: 0 };
+                }
+            }));
+        }
+
+        // Find grouping for this report
+        const viewGroups = savedGrouping.filter(g => g.reportName === reportName);
+        const newGrouping = []; // Reset
+        viewGroups.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0));
+        viewGroups.forEach((g, i) => {
+            if (i < 3) newGrouping[i] = g.columnName;
+        });
+        setGrouping(newGrouping);
     };
 
     // Helper for Expandable Row
@@ -137,14 +191,23 @@ const AppTableComponent = ({
 
                     {dispColumns
                         .filter(c => c.isVisible === 1)
-                        .map(col => (
-                            <TableCell
-                                key={col.Field_Name}
-                                style={{ fontSize: bodyFontSizePx }}
-                            >
-                                {row[col.Field_Name] ?? '-'}
-                            </TableCell>
-                        ))}
+                        .map((col, i) => {
+                            if (col.isCustomCell && typeof col.Cell === 'function') {
+                                return (
+                                    <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
+                                        {col.Cell({ row })}
+                                    </TableCell>
+                                );
+                            }
+
+                            return (
+                                <TableCell
+                                    key={i}
+                                    style={{ fontSize: bodyFontSizePx }}>
+                                    {formatValue(row[col.Field_Name], col.Fied_Data) ?? '-'}
+                                </TableCell>
+                            );
+                        })}
                 </TableRow>
 
                 {isExpendable && expandableComp && open && (
@@ -194,18 +257,22 @@ const AppTableComponent = ({
 
                             {dispColumns
                                 .filter(c => c.isVisible === 1)
-                                .map(col => {
+                                .map((col, i) => {
                                     if (col.Field_Name === row.__groupField) {
                                         return (
-                                            <TableCell key={col.Field_Name} style={{ fontSize: bodyFontSizePx }}>
+                                            <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
                                                 <strong>{row.__groupValue}</strong>
                                             </TableCell>
                                         );
                                     }
 
+                                    if (col.isCustomCell) {
+                                        return <TableCell key={i} style={{ fontSize: bodyFontSizePx }} />;
+                                    }
+
                                     return (
-                                        <TableCell key={col.Field_Name} style={{ fontSize: bodyFontSizePx }}>
-                                            {row.__aggregates[col.Field_Name] ?? ''}
+                                        <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
+                                            {formatValue(row.__aggregates[col.Field_Name], col.Fied_Data) ?? ''}
                                         </TableCell>
                                     );
                                 })}
@@ -232,6 +299,25 @@ const AppTableComponent = ({
                 <h6 className="flex-grow-1 mb-0">{title}</h6>
 
                 <div className="d-flex align-items-center gap-2">
+                    {/* View Selector */}
+                    {stateEnabled && availableViews.length > 0 && (
+                        <FormControl size="small" style={{ minWidth: 150 }}>
+                            <InputLabel>Saved View</InputLabel>
+                            <Select
+                                label="Saved View"
+                                onChange={(e) => handleViewChange(e.target.value)}
+                                defaultValue=""
+                            >
+                                <MenuItem value="" disabled>Select View</MenuItem>
+                                {availableViews.map((v, i) => (
+                                    <MenuItem key={i} value={v.reportName}>
+                                        {v.displayName}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
                     {ButtonArea && ButtonArea}
 
                     <TableOptionsMenu
@@ -307,7 +393,7 @@ const AppTableComponent = ({
                                 .filter(c => c.isVisible === 1)
                                 .map(col => (
                                     <TableCell
-                                        key={col.Field_Name}
+                                        key={randomNumber()}
                                         style={{ fontSize: headerFontSizePx, backgroundColor: '#EDF0F7' }}
                                         className="fw-bold"
                                     >

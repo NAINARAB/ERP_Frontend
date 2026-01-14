@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { MenuItem, Select, Stack } from "@mui/material";
 import AppDialog from "../../appDialogComponent";
+import { randomNumber } from "../../functions";
 
 const GroupingDialog = ({
     open,
@@ -28,7 +29,7 @@ const GroupingDialog = ({
 
                     return (
                         <Select
-                            key={level}
+                            key={randomNumber()}
                             size="small"
                             displayEmpty
                             disabled={disabled}
@@ -51,14 +52,16 @@ const GroupingDialog = ({
                                 No Grouping (Level {level + 1})
                             </MenuItem>
 
-                            {columns.map(col => (
-                                <MenuItem
-                                    key={col.Field_Name}
-                                    value={col.Field_Name}
-                                >
-                                    {col.ColumnHeader || col.Field_Name}
-                                </MenuItem>
-                            ))}
+                            {columns
+                                .filter(col => !col.isCustomCell)
+                                .map(col => (
+                                    <MenuItem
+                                        key={randomNumber()}
+                                        value={col.Field_Name}
+                                    >
+                                        {col.ColumnHeader || col.Field_Name}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     );
                 })}
