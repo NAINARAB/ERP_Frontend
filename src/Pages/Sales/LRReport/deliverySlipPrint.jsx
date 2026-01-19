@@ -282,7 +282,7 @@ if (isCombinedPrint) {
                     );
                     
                     const totalQty = toArray(invoice.productDetails).reduce(
-                        (sum, item) => sum + Number(item.Alt_Act_Qty || 0),
+                        (sum, item) => sum + Number(item.quantity || 0),
                         0
                     );
 
@@ -381,7 +381,7 @@ if (isCombinedPrint) {
                                             <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
                                             <div style={{ width: "5.0cm", paddingLeft: "left" }}>{item.Short_Name}</div>
                                             <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
-                                            <div style={{ width: "1.8cm", textAlign: "center" }}>{item.Alt_Act_Qty}</div>
+                                            <div style={{ width: "1.8cm", textAlign: "center" }}>{item.quantity}</div>
                                         </div>
                                     ))}
                                 </div>
