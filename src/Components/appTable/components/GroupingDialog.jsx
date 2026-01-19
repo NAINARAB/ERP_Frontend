@@ -53,7 +53,7 @@ const GroupingDialog = ({
                             </MenuItem>
 
                             {columns
-                                .filter(col => !col.isCustomCell)
+                                .filter(col => !col.isCustomCell && col.isVisible == 1)
                                 .map(col => (
                                     <MenuItem
                                         key={randomNumber()}

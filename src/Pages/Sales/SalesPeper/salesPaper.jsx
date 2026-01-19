@@ -1,226 +1,297 @@
-import { Abc } from "@mui/icons-material";
-import AppTableComponent from "../../../Components/appTable/appTableComponent";
+import { useEffect, useMemo, useState } from "react";
+import { fetchLink } from "../../../Components/fetchComponent";
+import { Addition, ISOString, RoundNumber, stringCompare, toNumber } from "../../../Components/functions";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import { IconButton } from "@mui/material";
+import { Search } from "@mui/icons-material";
 
-const stockData = [
-    {
-        Godown_Name: 'Chennai',
-        stock_item_name: 'Rice',
-        quantity: 120,
-        rate: 45,
-        created_date: '2025-01-10',
-        created_time: '2026-01-14 10:03:51.913',
-    },
-    {
-        Godown_Name: 'Madurai',
-        stock_item_name: 'Wheat',
-        quantity: 80,
-        rate: 50,
-        created_date: '2025-01-12',
-        created_time: '2026-01-14 15:03:51.913',
-    },
-    {
-        Godown_Name: 'Chennai',
-        stock_item_name: 'Wheat',
-        quantity: 60,
-        rate: 48,
-        created_date: '2025-01-14',
-        created_time: '2026-01-14 01:03:51.913',
-    },
+const getStaff = (staffs, type) =>
+    staffs
+        .filter(s => s.empType === type)
+        .map(s => s.empName)
+        .join(", ");
 
-    // ---- additional data ----
+// const transformSalesVoucherData = (data) => {
+//     let transformedData = [];
+//     let voucherGroup = [];
 
-    {
-        Godown_Name: 'Coimbatore',
-        stock_item_name: 'Rice',
-        quantity: 150,
-        rate: 44,
-        created_date: '2025-01-15',
-        created_time: '2026-01-14 09:03:51.913',
-    },
-    {
-        Godown_Name: 'Salem',
-        stock_item_name: 'Sugar',
-        quantity: 90,
-        rate: 42,
-        created_date: '2025-01-16',
-        created_time: '2026-01-14 07:03:51.913',
-    },
-    {
-        Godown_Name: 'Madurai',
-        stock_item_name: 'Rice',
-        quantity: 110,
-        rate: 46,
-        created_date: '2025-01-17',
-        created_time: '2026-01-14 05:03:51.913',
-    },
-    {
-        Godown_Name: 'Chennai',
-        stock_item_name: 'Sugar',
-        quantity: 70,
-        rate: 43,
-        created_date: '2025-01-18',
-        created_time: '2026-01-14 16:30:00.000',
-    },
-    {
-        Godown_Name: 'Trichy',
-        stock_item_name: 'Wheat',
-        quantity: 95,
-        rate: 49,
-        created_date: '2025-01-19',
-        created_time: '2026-01-14 09:20:00.000',
-    },
-    {
-        Godown_Name: 'Coimbatore',
-        stock_item_name: 'Maize',
-        quantity: 130,
-        rate: 38,
-        created_date: '2025-01-20',
-        created_time: '2026-01-14 13:45:00.000',
-    },
-    {
-        Godown_Name: 'Salem',
-        stock_item_name: 'Rice',
-        quantity: 100,
-        rate: 47,
-        created_date: '2025-01-21',
-        created_time: '2026-01-14 15:10:00.000',
-    },
-    {
-        Godown_Name: 'Madurai',
-        stock_item_name: 'Maize',
-        quantity: 85,
-        rate: 37,
-        created_date: '2025-01-22',
-        created_time: '2026-01-14 11:50:00.000',
-    },
-    {
-        Godown_Name: 'Trichy',
-        stock_item_name: 'Sugar',
-        quantity: 60,
-        rate: 41,
-        created_date: '2025-01-23',
-        created_time: '2026-01-14 10:40:00.000',
-    },
-    {
-        Godown_Name: 'Chennai',
-        stock_item_name: 'Maize',
-        quantity: 140,
-        rate: 39,
-        created_date: '2025-01-24',
-        created_time: '2026-01-14 17:00:00.000',
-    },
-    {
-        Godown_Name: 'Coimbatore',
-        stock_item_name: 'Wheat',
-        quantity: 75,
-        rate: 51,
-        created_date: '2025-01-25',
-        created_time: '2026-01-14 09:55:00.000',
-    },
-    {
-        Godown_Name: 'Salem',
-        stock_item_name: 'Wheat',
-        quantity: 65,
-        rate: 50,
-        created_date: '2025-01-26',
-        created_time: '2026-01-14 12:35:00.000',
-    },
-];
+//     data.forEach((entry, entryIndex) => {
 
-const stockColumns = [
-    {
-        Field_Name: 'Godown_Name',
-        ColumnHeader: 'Godown',
-        Fied_Data: 'string',
-        isVisible: 1,
-        OrderBy: 1,
-    },
-    {
-        Field_Name: 'stock_item_name',
-        ColumnHeader: 'Item Name',
-        Fied_Data: 'string',
-        isVisible: 1,
-        OrderBy: 2,
-    },
-    {
-        Field_Name: 'quantity',
-        ColumnHeader: 'Quantity',
-        Fied_Data: 'number',
-        isVisible: 1,
-        OrderBy: 3,
-    },
-    {
-        Field_Name: 'rate',
-        ColumnHeader: 'Rate',
-        Fied_Data: 'number',
-        isVisible: 1,
-        OrderBy: 4,
-    },
-    {
-        Field_Name: 'created_date',
-        ColumnHeader: 'Created Date',
-        Fied_Data: 'date',
-        isVisible: 1,
-        OrderBy: 5,
-    },
-    {
-        Field_Name: 'created_time',
-        ColumnHeader: 'Created Time',
-        Fied_Data: 'time',
-        isVisible: 1,
-        OrderBy: 6,
-    },
-    {
-        // Field_Name: 'created_time',
-        ColumnHeader: 'custom cell',
-        // Fied_Data: 'time',
-        isCustomCell: true,
-        Cell: ({ row }) => {
-            console.log(row)
-            return (
-                <div>
-                    {row.created_time}
-                </div>
-            )
-        },
-        isVisible: 1,
-        OrderBy: 6,
-    },
-];
+//         const totalBilledQty = entry.productDetails.reduce(
+//             (sum, item) => Addition(sum, item.billedQuantity),
+//             0
+//         );
 
-const StockInHandReport = () => {
+//         const totalUnitQty = entry.productDetails.reduce(
+//             (sum, item) => Addition(sum, item.actUnitQuantity),
+//             0
+//         );
+
+//         if (voucherGroup.findIndex(voucher => stringCompare(voucher, entry.voucheGet)) === -1) {
+//             voucherGroup.push(entry.voucheGet);
+//             transformedData.push({
+//                 SNo: '',
+//                 unitDifference: '',
+//                 quantityDifference: '',
+//                 particular: entry.voucheGet,
+//                 voucherNoOrRate: '',
+//                 unitQuantity: '',
+//                 billedQuantity: '',
+//                 broker: '',
+//                 transporter: '',
+//                 loadMan: '',
+//                 rowType: "VOUCHER-HEADER"
+//             });
+//         }
+
+//         // ---------- HEADER ROW (Voucher + Retailer) ----------
+//         transformedData.push({
+//             SNo: entryIndex + 1,
+//             unitDifference: '',
+//             quantityDifference: '',
+//             particular: entry.retailerGet,
+//             voucherNoOrRate: entry.voucherNumber,
+//             unitQuantity: totalUnitQty,
+//             billedQuantity: totalBilledQty,
+//             broker: getStaff(entry.staffDetails || [], "Broker"),
+//             transporter: getStaff(entry.staffDetails || [], "Transport"),
+//             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
+//             rowType: "HEADER"
+//         });
+
+//         // ---------- ITEM ROWS ----------
+//         entry.productDetails.forEach((item) => {
+//             const unitDifference = Math.round(Number(item.actUnitQuantity)) - Number(item.actUnitQuantity);
+
+//             transformedData.push({
+//                 SNo: "",
+//                 unitDifference: unitDifference !== 0 ? RoundNumber(unitDifference) : '',
+//                 quantityDifference: item.quantityDifference || "",
+//                 particular: item.itemNameGet,
+//                 voucherNoOrRate: item.billedRate || "",
+//                 unitQuantity: item.actUnitQuantity || "",
+//                 billedQuantity: item.billedQuantity || "",
+//                 broker: "",
+//                 transporter: "",
+//                 loadMan: "",
+//                 rowType: "ITEM"
+//             });
+//         });
+//     });
+
+//     return transformedData;
+// };
+
+const transformSalesVoucherData = (data = []) => {
+    const transformedData = [];
+
+    let currentVoucherType = null;
+
+    let totalUnitQuantity = 0;
+    let totalBilledQuantity = 0;
+    let totalUnitDifference = 0;
+
+    const pushCumulativeRow = (voucherType) => {
+        transformedData.push({
+            SNo: '',
+            unitDifference: RoundNumber(totalUnitDifference),
+            quantityDifference: '',
+            particular: `${voucherType} TOTAL`,
+            voucherNoOrRate: '',
+            unitQuantity: RoundNumber(totalUnitQuantity),
+            billedQuantity: RoundNumber(totalBilledQuantity),
+            broker: '',
+            transporter: '',
+            loadMan: '',
+            rowType: "VOUCHER-TOTAL"
+        });
+    };
+
+    data.forEach((entry, entryIndex) => {
+
+        if (currentVoucherType && currentVoucherType !== entry.voucheGet) {
+            pushCumulativeRow(currentVoucherType);
+
+            totalUnitQuantity = 0;
+            totalBilledQuantity = 0;
+            totalUnitDifference = 0;
+        }
+
+        if (currentVoucherType !== entry.voucheGet) {
+            currentVoucherType = entry.voucheGet;
+
+            transformedData.push({
+                SNo: '',
+                unitDifference: '',
+                quantityDifference: '',
+                particular: entry.voucheGet,
+                voucherNoOrRate: '',
+                unitQuantity: '',
+                billedQuantity: '',
+                broker: '',
+                transporter: '',
+                loadMan: '',
+                rowType: "VOUCHER-HEADER"
+            });
+        }
+
+        const invoiceBilledQty = entry.productDetails.reduce(
+            (sum, item) => Addition(sum, item.billedQuantity),
+            0
+        );
+
+        const invoiceUnitQty = entry.productDetails.reduce(
+            (sum, item) => Addition(sum, item.actUnitQuantity),
+            0
+        );
+
+        totalUnitQuantity += invoiceUnitQty;
+        totalBilledQuantity += invoiceBilledQty;
+
+        // ---------- HEADER ROW ----------
+        transformedData.push({
+            SNo: entryIndex + 1,
+            unitDifference: '',
+            quantityDifference: '',
+            particular: entry.retailerGet,
+            voucherNoOrRate: entry.voucherNumber,
+            unitQuantity: invoiceUnitQty,
+            billedQuantity: invoiceBilledQty,
+            broker: getStaff(entry.staffDetails || [], "Broker"),
+            transporter: getStaff(entry.staffDetails || [], "Transport"),
+            loadMan: getStaff(entry.staffDetails || [], "Load Man"),
+            rowType: "HEADER"
+        });
+
+        entry.productDetails.forEach((item) => {
+            const unitDiff =
+                Math.round(Number(item.actUnitQuantity)) -
+                Number(item.actUnitQuantity);
+
+            if (unitDiff !== 0) {
+                totalUnitDifference += unitDiff;
+            }
+
+            transformedData.push({
+                SNo: '',
+                unitDifference: unitDiff !== 0 ? RoundNumber(unitDiff) : '',
+                quantityDifference: item.quantityDifference || '',
+                particular: item.itemNameGet,
+                voucherNoOrRate: item.billedRate || '',
+                unitQuantity: item.actUnitQuantity || '',
+                billedQuantity: item.billedQuantity || '',
+                broker: '',
+                transporter: '',
+                loadMan: '',
+                rowType: "ITEM"
+            });
+        });
+    });
+
+    if (currentVoucherType) {
+        pushCumulativeRow(currentVoucherType);
+    }
+
+    return transformedData;
+};
+
+const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
+    const [reortData, setReportData] = useState([]);
+    const [filter, setFilter] = useState({
+        reqDate: ISOString(),
+        fetchTrigger: 0,
+        // reqDate: '2025-12-29',
+    })
+
+    useEffect(() => {
+        fetchLink({
+            address: `sales/salesInvoice/salesInvoicePaper?reqDate=${filter.reqDate}`,
+            loadingOn,
+            loadingOff,
+        }).then((data) => {
+            setReportData(data.data)
+        }).catch(console.error);
+    }, [filter.fetchTrigger]);
+
+    const displayData = useMemo(() => transformSalesVoucherData(reortData), [reortData]);
+
+    const fetchSalesInvoices = () => setFilter((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
+
+    const headerColor = (type) => {
+        if ('HEADER' === type) return ' text-primary fw-bold ';
+        if ('ITEM' === type) return '';
+        if ('VOUCHER-HEADER' === type) return ' text-success fw-bold ';
+        if ('VOUCHER-TOTAL' === type) return ' fw-bold ';
+    }
+
     return (
-        <div className="p-3">
-            <AppTableComponent
-                /* ================= DATA ================= */
-                dataArray={[...stockData, ...stockData, ...stockData]}
-                columns={stockColumns}
-
-                /* ================= BASIC ================= */
-                title="Stock In Hand"
-                initialPageCount={20}
-                disablePagination={false}
-
-                /* ================= EXPORT ================= */
-                PDFPrintOption={true}
-                ExcelPrintOption={true}
-
-                /* ================= UI OPTIONS ================= */
-                EnableSerialNumber={true}
-                CellSize="small"
-                tableMaxHeight={550}
-                maxHeightOption={true}
-                bodyFontSizePx={13}
-                headerFontSizePx={14}
-
-
-                /* ================= STATE SAVE / RESTORE ================= */
-                stateName="testStateName"
-                stateUrl="/erp/test"
-                stateGroup="testGrouping"
+        <div>
+            <FilterableTable
+                headerFontSizePx={11}
+                bodyFontSizePx={11}
+                title="Sales Invoice Paper"
+                dataArray={displayData}
+                maxHeightOption
+                ExcelPrintOption
+                PDFPrintOption
+                columns={[
+                    createCol('SNo', 'number', 'S.No'),
+                    createCol('unitDifference', 'number', 'Unit Diff'),
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Diff',
+                        Field_Name: 'quantityDifference',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Particulars',
+                        Field_Name: 'particular',
+                        Fied_Data: 'string',
+                        tdClass: ({ row }) => headerColor(row.rowType)
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Vou.No / Rate',
+                        Field_Name: 'voucherNoOrRate',
+                        Fied_Data: 'string',
+                        tdClass: ({ row }) => headerColor(row.rowType)
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Act Qty',
+                        Field_Name: 'unitQuantity',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
+                    },
+                    {
+                        isVisible: 1,
+                        ColumnHeader: 'Bill Qty',
+                        Field_Name: 'billedQuantity',
+                        Fied_Data: 'number',
+                        tdClass: ({ row }) => headerColor(row.rowType)
+                    },
+                    createCol('broker', 'string', 'Broker Name'),
+                    createCol('transporter', 'string', 'Transporter'),
+                    createCol('loadMan', 'string', 'Load Man'),
+                ]}
+                ButtonArea={
+                    <>
+                        <IconButton size="small" onClick={fetchSalesInvoices}>
+                            <Search />
+                        </IconButton>
+                        <input
+                            className="cus-inpt w-auto"
+                            type="date"
+                            value={filter.reqDate}
+                            onChange={(e) => setFilter({ ...filter, reqDate: e.target.value })}
+                        />
+                    </>
+                }
             />
         </div>
     );
 };
 
-export default StockInHandReport;
+export default SalesInvoicePaper;

@@ -23,6 +23,16 @@ export const useColumnVisibility = (initialColumns = []) => {
         );
     };
 
+    const updateAggregation = (fieldName, aggType) => {
+        setDispColumns(cols =>
+            cols.map(col =>
+                col.Field_Name === fieldName
+                    ? { ...col, Aggregation: aggType }
+                    : col
+            )
+        );
+    };
+
     const orderedColumns = useMemo(() => [...dispColumns].sort(
         (a, b) => (a.OrderBy ?? 999) - (b.OrderBy ?? 999)
     ), [dispColumns]);
@@ -33,5 +43,6 @@ export const useColumnVisibility = (initialColumns = []) => {
         setDispColumns,
         toggleVisibility: toggleColumn,
         updateOrder: reorderColumn,
+        updateAggregation
     };
 };

@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useDeferredValue } from 'react';
 import {
     Card, Table, TableHead, TableBody,
     TableRow, TableCell, TableContainer,
     IconButton, TablePagination,
-    Select, MenuItem, FormControl, InputLabel
+    Select, MenuItem, FormControl, InputLabel, TextField, InputAdornment
 } from '@mui/material';
 import {
+    FilterAlt,
     KeyboardArrowDown,
-    KeyboardArrowUp
+    KeyboardArrowUp,
+    Visibility, Transform,
+    Save,
+    PictureAsPdf,
+    ViewCompact,
+    Calculate,
+    CalculateOutlined,
+    InsertChartOutlined,
+    ToggleOn,
+    ToggleOff,
+    Search
 } from '@mui/icons-material';
 
 import { useColumnVisibility } from './hooks/useColumnVisibility';
@@ -18,6 +29,7 @@ import { groupAndAggregate } from './utils/groupAndAggregate';
 import GroupingDialog from './components/GroupingDialog';
 import TableOptionsMenu from './components/TableOptionsMenu';
 import ColumnSettingsDialog from './components/ColumnSettingsDialog';
+import AggregationSettingsDialog from './components/AggregationSettingsDialog';
 import StateSaveDialog from './components/StateSaveDialog';
 import FilterDialog from './components/FilterDialog';
 import { generatePDF, exportToExcel } from './utils/exportUtils';
@@ -46,25 +58,35 @@ const AppTableComponent = ({
     maxHeightOption = false,
     ButtonArea,
     bodyFontSizePx = 13,
-    headerFontSizePx = 14
+    headerFontSizePx = 14,
+    enableGlobalSearch = false
 }) => {
     const [groupDialog, setGroupDialog] = useState(false);
     const [colSettingsOpen, setColSettingsOpen] = useState(false);
+    const [aggSettingsOpen, setAggSettingsOpen] = useState(false);
     const [saveStateOpen, setSaveStateOpen] = useState(false);
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
     const [grouping, setGrouping] = useState([]);
     const [expanded, setExpanded] = useState({});
     const [page, setPage] = useState(0);
+    const [groupPage, setGroupPage] = useState({}); // { groupKey: pageNumber }
     const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
     const [showFullHeight, setShowFullHeight] = useState(false);
+    const [globalSearchText, setGlobalSearchText] = useState("");
+    const deferredGlobalSearch = useDeferredValue(globalSearchText);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
 
+    const handleChangeGroupPage = (key, newPage) => {
+        setGroupPage(prev => ({ ...prev, [key]: newPage }));
+    };
+
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
+        setGroupPage({}); // Reset group pages too
     };
 
     const formatValue = (val, type) => {
@@ -77,10 +99,16 @@ const AppTableComponent = ({
     };
 
     // Column Visibility Hook
-    const { dispColumns, setDispColumns, toggleVisibility, updateOrder } = useColumnVisibility(columns);
+    const {
+        dispColumns,
+        setDispColumns,
+        toggleVisibility,
+        updateOrder,
+        updateAggregation
+    } = useColumnVisibility(columns);
 
     // Column Filters Hook
-    const { filteredData, filters, setFilters, updateFilter } = useColumnFilters(dataArray, dispColumns);
+    const { filteredData, filters, setFilters, updateFilter } = useColumnFilters(dataArray, dispColumns, deferredGlobalSearch);
 
     // State Sync Hook
     const {
@@ -122,6 +150,19 @@ const AppTableComponent = ({
     };
 
     const handleViewChange = (reportName) => {
+        if (!reportName) {
+            // Reset to default
+            setDispColumns(columns.map((col, i) => ({
+                ...col,
+                isVisible: col.isVisible ?? 1,
+                OrderBy: col.OrderBy ?? (i + 1),
+                Aggregation: col.Aggregation || (['number', 'currency'].includes(col.Fied_Data) ? 'sum' :
+                    ['date', 'time'].includes(col.Fied_Data) ? 'max' : 'count')
+            })));
+            setGrouping([]);
+            return;
+        }
+
         // Find visible columns for this report
         const viewCols = savedVisibility.filter(v => v.reportName === reportName);
 
@@ -236,7 +277,7 @@ const AppTableComponent = ({
                 return (
                     <>
                         <TableRow key={key} className="bg-light">
-                            <TableCell style={{ fontSize: bodyFontSizePx }}>
+                            <TableCell style={{ fontSize: bodyFontSizePx }} className=''>
                                 <IconButton size="small" onClick={() => toggleExpand(key)}>
                                     {expanded[key]
                                         ? <KeyboardArrowUp />
@@ -248,7 +289,7 @@ const AppTableComponent = ({
                             {isExpendable && <TableCell />}
                             {EnableSerialNumber && (
                                 <TableCell
-                                    className="text-center"
+                                    className="text-center "
                                     style={{ width: 60, fontSize: bodyFontSizePx }}
                                 >
                                     {idx + 1 + (page * rowsPerPage)}
@@ -260,26 +301,59 @@ const AppTableComponent = ({
                                 .map((col, i) => {
                                     if (col.Field_Name === row.__groupField) {
                                         return (
-                                            <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
+                                            <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className=''>
                                                 <strong>{row.__groupValue}</strong>
                                             </TableCell>
                                         );
                                     }
 
                                     if (col.isCustomCell) {
-                                        return <TableCell key={i} style={{ fontSize: bodyFontSizePx }} />;
+                                        return <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className='' />;
                                     }
 
                                     return (
-                                        <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
+                                        <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className=''>
                                             {formatValue(row.__aggregates[col.Field_Name], col.Fied_Data) ?? ''}
                                         </TableCell>
                                     );
                                 })}
                         </TableRow>
 
-                        {expanded[key] &&
-                            renderRows(row.__rows, level + 1)}
+                        {expanded[key] && (
+                            <>
+                                {renderRows(
+                                    row.__rows.slice(
+                                        (groupPage[key] || 0) * rowsPerPage,
+                                        (groupPage[key] || 0) * rowsPerPage + rowsPerPage
+                                    ),
+                                    level + 1
+                                )}
+                                {row.__rows.length > rowsPerPage && (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={
+                                                dispColumns.filter(c => c.isVisible === 1).length +
+                                                (activeGroups.length > 0 ? 1 : 0) +
+                                                (isExpendable ? 1 : 0) +
+                                                (EnableSerialNumber ? 1 : 0)
+                                            }
+                                            style={{ padding: 0 }}
+                                        >
+                                            <TablePagination
+                                                component="div"
+                                                count={row.__rows.length}
+                                                rowsPerPage={rowsPerPage}
+                                                page={groupPage[key] || 0}
+                                                onPageChange={(e, newPage) => handleChangeGroupPage(key, newPage)}
+                                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                                rowsPerPageOptions={[rowsPerPage]}
+                                                labelRowsPerPage=""
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </>
+                        )}
                     </>
                 );
             }
@@ -299,6 +373,25 @@ const AppTableComponent = ({
                 <h6 className="flex-grow-1 mb-0">{title}</h6>
 
                 <div className="d-flex align-items-center gap-2">
+                    {/* Global Search */}
+                    {enableGlobalSearch && (
+                        <TextField
+                            size="small"
+                            placeholder="Search..."
+                            variant="outlined"
+                            value={globalSearchText}
+                            onChange={(e) => setGlobalSearchText(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Search />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            style={{ minWidth: 200 }}
+                        />
+                    )}
+
                     {/* View Selector */}
                     {stateEnabled && availableViews.length > 0 && (
                         <FormControl size="small" style={{ minWidth: 150 }}>
@@ -308,7 +401,7 @@ const AppTableComponent = ({
                                 onChange={(e) => handleViewChange(e.target.value)}
                                 defaultValue=""
                             >
-                                <MenuItem value="" disabled>Select View</MenuItem>
+                                <MenuItem value="">Select View (Default)</MenuItem>
                                 {availableViews.map((v, i) => (
                                     <MenuItem key={i} value={v.reportName}>
                                         {v.reportName}
@@ -324,35 +417,47 @@ const AppTableComponent = ({
                         options={[
                             maxHeightOption && {
                                 label: showFullHeight ? 'Min Height' : 'Max Height',
-                                onClick: () => setShowFullHeight(!showFullHeight)
+                                onClick: () => setShowFullHeight(!showFullHeight),
+                                icon: showFullHeight ? <ToggleOn color='primary' /> : <ToggleOff />,
                             },
                             {
                                 label: 'Filters',
-                                onClick: () => setFilterDialogOpen(true)
+                                onClick: () => setFilterDialogOpen(true),
+                                icon: <FilterAlt />
                             },
                             {
                                 label: 'Columns',
-                                onClick: () => setColSettingsOpen(true)
+                                onClick: () => setColSettingsOpen(true),
+                                icon: <Visibility />
                             },
                             {
                                 label: 'Group By',
-                                onClick: () => setGroupDialog(true)
+                                onClick: () => setGroupDialog(true),
+                                icon: <Transform />
                             },
                             stateEnabled && {
                                 label: 'Save View',
-                                onClick: () => setSaveStateOpen(true)
+                                onClick: () => setSaveStateOpen(true),
+                                icon: <Save />
                             },
                             PDFPrintOption && {
                                 label: 'Print PDF',
                                 onClick: () => typeof PDFPrintOption === 'function'
                                     ? PDFPrintOption()
-                                    : generatePDF(filteredData, dispColumns)
+                                    : generatePDF(filteredData, dispColumns),
+                                icon: <PictureAsPdf />
                             },
                             ExcelPrintOption && {
                                 label: 'Export Excel',
                                 onClick: () => typeof ExcelPrintOption === 'function'
                                     ? ExcelPrintOption()
-                                    : exportToExcel(filteredData, dispColumns)
+                                    : exportToExcel(filteredData, dispColumns),
+                                icon: <ViewCompact />
+                            },
+                            {
+                                label: 'Aggregations',
+                                onClick: () => setAggSettingsOpen(true),
+                                icon: <InsertChartOutlined />
                             },
                             ...MenuButtons.map(b => ({
                                 label: b.name,
@@ -369,7 +474,10 @@ const AppTableComponent = ({
                 <Table size={CellSize} stickyHeader>
                     <TableHead>
                         <TableRow>
-                            {activeGroups.length > 0 && <TableCell padding="checkbox" />}
+                            {activeGroups.length > 0 &&
+                                <TableCell
+                                    style={{ width: 50, fontSize: headerFontSizePx, backgroundColor: '#EDF0F7' }}
+                                    className="fw-bold text-center" padding="checkbox" />}
 
                             {isExpendable && (
                                 <TableCell
@@ -383,7 +491,7 @@ const AppTableComponent = ({
                             {EnableSerialNumber && (
                                 <TableCell
                                     style={{ width: 60, fontSize: headerFontSizePx, backgroundColor: '#EDF0F7' }}
-                                    className="fw-bold text-center"
+                                    className="fw-bold text-center "
                                 >
                                     SNo
                                 </TableCell>
@@ -406,9 +514,7 @@ const AppTableComponent = ({
                     <TableBody>
                         {Array.isArray(groupedData)
                             ? renderRows(
-                                activeGroups.length > 0
-                                    ? groupedData
-                                    : groupedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                groupedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                             )
                             : null}
                     </TableBody>
@@ -453,6 +559,13 @@ const AppTableComponent = ({
                 dispColumns={dispColumns}
                 onToggle={toggleVisibility}
                 onOrderChange={updateOrder}
+            />
+
+            <AggregationSettingsDialog
+                open={aggSettingsOpen}
+                onClose={() => setAggSettingsOpen(false)}
+                columns={dispColumns}
+                onUpdateAggregation={updateAggregation}
             />
 
             <FilterDialog

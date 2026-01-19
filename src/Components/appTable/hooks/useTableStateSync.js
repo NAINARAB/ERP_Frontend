@@ -61,7 +61,7 @@ export const useTableStateSync = ({
         // }
 
         const visibilityPayload = {
-            visibleColumns: dispColumns.map(c => ({
+            visibleColumns: dispColumns.filter(c => c.isVisible == 1).map(c => ({
                 ColumnName: c.Field_Name,
                 ColumnOrder: c.OrderBy,
             })),

@@ -1,4 +1,6 @@
-export const applyFilters = (dataArray, dispColumns, filters) => {
+import { reactSelectFilterLogic } from '../../functions';
+
+export const applyFilters = (dataArray, dispColumns, filters, globalFilter) => {
     let filtered = [...dataArray];
 
     dispColumns.forEach(col => {
@@ -27,14 +29,26 @@ export const applyFilters = (dataArray, dispColumns, filters) => {
 
         if (Array.isArray(filter)) {
             filtered = filter.length
-                ? filtered.filter(row =>
-                      filter.includes(
-                          row[col.Field_Name]?.toLowerCase()?.trim()
-                      )
-                  )
+                ? filtered.filter(row => {
+                    const rowVal = row[col.Field_Name];
+                    return filter.some(selectedVal =>
+                        // Check if row matches any selected value using fuzzy logic
+                        reactSelectFilterLogic({ label: String(rowVal) }, String(selectedVal))
+                    );
+                })
                 : filtered;
         }
     });
+
+    if (globalFilter) {
+        filtered = filtered.filter(row =>
+            dispColumns.some(col => {
+                const val = row[col.Field_Name];
+                // Use reactSelectFilterLogic which expects { label: string } and search string
+                return val && reactSelectFilterLogic({ label: String(val) }, globalFilter);
+            })
+        );
+    }
 
     return filtered;
 };
