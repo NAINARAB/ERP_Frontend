@@ -3,7 +3,7 @@ import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { fetchLink } from "../../../Components/fetchComponent";
 import DisplayArrayData from "./DataSetDisplay";
 
-const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
+const LedgerDetails = ({ row, Fromdate, Todate }) => {
     const [salesData, setSalesData] = useState([]);
     const [dataTypes, setDataTypes] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -12,9 +12,6 @@ const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
         setLoading(true);
         fetchLink({
             address: `reports/salesReport/ledger/itemDetails?Fromdate=${Fromdate}&Todate=${Todate}&Ledger_Id=${row?.Ledger_Tally_Id}`,
-            headers: {
-                'Db': DB
-            }
         }).then(({ success, data, others }) => {
             if (success) {
                 const { dataTypeInfo } = others;
@@ -35,9 +32,8 @@ const LedgerDetails = ({ row, Fromdate, Todate, DB }) => {
     )
 }
 
-const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) => {
+const LedgerBasedSalesReport = ({ dataArray, colTypes, Fromdate, Todate, loadingOn, loadingOff }) => {
 
-    // Convert colTypes to AppTableComponent columns format
     const columns = useMemo(() => {
         return colTypes.map((col, i) => ({
             Field_Name: col?.Column_Name,
@@ -46,8 +42,8 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
             isVisible: i < 10 ? 1 : 0,
             OrderBy: i + 1,
             // Default Aggregation based on type
-            Aggregation: col?.Data_Type === 'number' ? 'sum' :
-                col?.Data_Type === 'date' ? 'max' : 'count'
+            // Aggregation: col?.Data_Type === 'number' ? 'sum' :
+            //     col?.Data_Type === 'date' ? 'max' : 'count'
         }));
     }, [colTypes]);
 
@@ -72,12 +68,12 @@ const LedgerBasedSalesReport = ({ dataArray, colTypes, DB, Fromdate, Todate }) =
                 expandableComp={({ row }) => (
                     <LedgerDetails
                         row={row}
-                        DB={DB}
                         Fromdate={Fromdate}
                         Todate={Todate}
                     />
                 )}
-
+                loadingOn={loadingOn}
+                loadingOff={loadingOff}
                 // State Management
                 stateName="ledger_based_sales_report"
                 stateUrl="/reports/salesReport/ledger" // Example URL

@@ -1,12 +1,13 @@
 import { useEffect, useState, Fragment } from "react";
 import { Card, CardContent, IconButton, Tooltip } from "@mui/material";
-import { DaysBetween, getPreviousDate, ISOString } from "../../Components/functions";
+import { DaysBetween, getPreviousDate, ISOString, toArray } from "../../Components/functions";
 // import LedgerBasedSalesReport from './SalesReportComponent/LedgerBasedTable';
 import ProductBasedSalesReport from "./SalesReportComponent/ProductBasedTable";
 import ProductDayBasedSalesReport from "./SalesReportComponent/ProductDayBasedTable";
 import { Refresh } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import LedgerBasedSalesReport from "./SalesReportComponent/LedgerBasedTable";
+import ItemBasedSalesReport from "./SalesReportComponent/itemBasedSalesReport";
 
 const SalesReport = ({ loadingOn, loadingOff }) => {
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -46,17 +47,17 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
             headers: {
                 'Db': storage?.Company_id
             }
-        }).then(data => {
-            if (data.success) {
-                const { dataTypeInfo } = data?.others;
+        }).then(({ success, data, others }) => {
+            if (success) {
+                const { LOSAbstract } = others;
 
-                const combinedData = Array.isArray(data?.others?.LOSAbstract) ? data.others.LOSAbstract.map(los => ({
-                    ...los,
-                    StockTransaction: Array.isArray(data.data) ? [...data.data].filter(losDetails => losDetails.Stock_Group === los.Stock_Group) : []
-                })) : [];
+                // const combinedData = Array.isArray(LOSAbstract) ? LOSAbstract.map(los => ({
+                //     ...los,
+                //     StockTransaction: data.filter(losDetails => losDetails.Stock_Group === los.Stock_Group)
+                // })) : [];
 
-                setDataTypes(pre => ({ ...pre, salesItemInfo: Array.isArray(dataTypeInfo) ? dataTypeInfo : [] }))
-                setSalesDataOfProduct(combinedData);
+                setDataTypes(pre => ({ ...pre, salesItemInfo: toArray(LOSAbstract) }))
+                setSalesDataOfProduct(data);
             } else {
                 setSalesDataOfProduct([])
             }
@@ -142,11 +143,8 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
 
                     {(filters.ReportType === "LedgerBased" && Array.isArray(salesData)) && (
                         <LedgerBasedSalesReport
-                            filterDialog={filters.filterDialog}
-                            closeDialog={closeDialog}
                             dataArray={salesData}
                             colTypes={dataTypes.salesInfo}
-                            DB={storage?.Company_id}
                             Fromdate={filters?.Fromdate}
                             Todate={filters?.Todate}
                             loadingOn={loadingOn}
@@ -155,12 +153,18 @@ const SalesReport = ({ loadingOn, loadingOff }) => {
                     )}
 
                     {(filters.ReportType === "ProductBased" && Array.isArray(salesDataOFProduct)) && (
-                        <ProductBasedSalesReport
-                            filterDialog={filters.filterDialog}
-                            closeDialog={closeDialog}
+                        // <ProductBasedSalesReport
+                        //     filterDialog={filters.filterDialog}
+                        //     closeDialog={closeDialog}
+                        //     dataArray={salesDataOFProduct}
+                        //     fromDate={filters.Fromdate}
+                        //     toDate={filters.Todate}
+                        // />
+                        <ItemBasedSalesReport 
                             dataArray={salesDataOFProduct}
-                            fromDate={filters.Fromdate}
-                            toDate={filters.Todate}
+                            colTypes={dataTypes.salesItemInfo}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
                         />
                     )}
 

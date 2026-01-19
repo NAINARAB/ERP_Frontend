@@ -9,8 +9,8 @@ import { randomNumber } from '../../functions';
 const AGGREGTION_OPTIONS = [
     { value: '', label: 'Default' },
     { value: 'sum', label: 'Sum' },
-    { value: 'avg', label: 'Average (Mean)' },
-    { value: 'mean', label: 'Mean' },
+    // { value: 'avg', label: 'Average (Mean)' },
+    { value: 'mean', label: 'Average' },
     { value: 'median', label: 'Median' },
     { value: 'min', label: 'Min' },
     { value: 'max', label: 'Max' },

@@ -8,7 +8,7 @@ export const useTableStateSync = ({
     stateGroup,
     dispColumns,
     grouping,
-    loadingOn,
+    loadingOn,  
     loadingOff
 }) => {
     const [savedVisibility, setSavedVisibility] = useState([]);
@@ -81,6 +81,7 @@ export const useTableStateSync = ({
             reportGroup,
         };
 
+        if (loadingOn) loadingOn();
         return Promise.all([
             fetchLink({
                 address: 'reports/reportState/columnVisiblity',
@@ -94,7 +95,9 @@ export const useTableStateSync = ({
             }),
         ]).then(() => {
             setFetchTrigger(prev => prev + 1);
-        });
+        }).finally(() => {
+            if (loadingOff) loadingOff();
+        })
     };
 
     return {

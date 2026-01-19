@@ -59,7 +59,9 @@ const AppTableComponent = ({
     ButtonArea,
     bodyFontSizePx = 13,
     headerFontSizePx = 14,
-    enableGlobalSearch = false
+    enableGlobalSearch = false,
+    loadingOn, 
+    loadingOff
 }) => {
     const [groupDialog, setGroupDialog] = useState(false);
     const [colSettingsOpen, setColSettingsOpen] = useState(false);
@@ -124,6 +126,8 @@ const AppTableComponent = ({
         stateGroup,
         dispColumns,
         grouping,
+        loadingOn,
+        loadingOff
     });
 
     const activeGroups = grouping.filter(Boolean);
