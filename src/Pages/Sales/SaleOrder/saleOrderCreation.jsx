@@ -456,7 +456,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             <option value="1">New</option>
                                             <option value="2">Pending</option>
                                             <option value="3">Cancel</option>
-                                            <option value="0">Pending</option>
+                                            <option value="4">Completed</option>
                                         </select>
                                     </div>
                                     <div className="col-12 p-2">
