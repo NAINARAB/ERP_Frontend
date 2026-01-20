@@ -1,6 +1,6 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, getNextDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { retailerDeliveryAddressInfo } from "./variable";
 import { useMemo } from "react";
@@ -18,7 +18,9 @@ const ManageSalesInvoiceGeneralInfo = ({
     shippingAddress = retailerDeliveryAddressInfo,
     setShippingAddress,
     onChangeRetailer,
-    retailerSalesStatus = {}
+    retailerSalesStatus = {},
+    staffArray = [],
+    setStaffArray
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -130,6 +132,36 @@ const ManageSalesInvoiceGeneralInfo = ({
             setShippingAddress(retailerDeliveryAddressInfo);
         }
 
+        setStaffArray(prev => {
+            const newStaff = [];
+
+            if (isValidNumber(retailer.brokerId)) {
+                newStaff.push({
+                    Emp_Id: retailer.brokerId,
+                    Emp_Name: retailer.brokerName,
+                    Emp_Type_Id: retailer.brokerTypeId
+                });
+            }
+
+            if (isValidNumber(retailer.transporterId)) {
+                newStaff.push({
+                    Emp_Id: retailer.transporterId,
+                    Emp_Name: retailer.transporterName,
+                    Emp_Type_Id: retailer.transporterTypeId
+                });
+            }
+
+            const filteredNewStaff = newStaff.filter(ns =>
+                !prev.some(ps =>
+                    ps.Emp_Id === ns.Emp_Id &&
+                    ps.Emp_Type_Id === ns.Emp_Type_Id
+                )
+            );
+
+            return [...prev, ...filteredNewStaff];
+        });
+
+
         if (onChangeRetailer) onChangeRetailer();
     }
 
@@ -202,7 +234,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             </p>
                                         </div>
                                     )}
-
 
                                     {/* Date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -628,14 +659,71 @@ const ManageSalesInvoiceGeneralInfo = ({
                                 </div>
                             )
                         },
-                        // {
-                        //     label: 'Others',
-                        //     children: (
-                        //         <div className='row'>
+                        {
+                            label: 'Transaction Limit',
+                            children: (
+                                <div className="row">
+                                    {/* outstanding */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Outstanding</label>
+                                        <input
+                                            type="number"
+                                            className="cus-inpt p-2"
+                                            value={retailerSalesStatus?.outstanding}
+                                            disabled
+                                        />
+                                    </div>
+                                    {/* credit limit */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Credit Limit</label>
+                                        <input
+                                            className="cus-inpt p-2"
+                                            value={
+                                                isEqualNumber(retailerSalesStatus?.creditLimit, 0)
+                                                    ? 'Unlimited'
+                                                    : retailerSalesStatus?.creditLimit
+                                            }
+                                            disabled
+                                        />
+                                    </div>
+                                    {/* credit days */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Credit Days</label>
+                                        <input
+                                            type="number"
+                                            className="cus-inpt p-2"
+                                            value={retailerSalesStatus?.creditDays}
+                                            disabled
+                                        />
+                                    </div>
 
-                        //         </div>
-                        //     )
-                        // },
+                                    {/* previous invoice date */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Recent Sales Date</label>
+                                        <input
+                                            className="cus-inpt p-2"
+                                            value={retailerSalesStatus?.recentDate ? LocalDate(retailerSalesStatus?.recentDate) : ''}
+                                            disabled
+                                        />
+                                    </div>
+
+                                    {/* due date */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Due Date</label>
+                                        <input
+                                            className="cus-inpt p-2"
+                                            value={
+                                                // (retailerSalesStatus?.recentDate && isValidNumber(retailerSalesStatus?.creditDays)) 
+                                                // ? 
+                                                LocalDate(getNextDate(30, retailerSalesStatus?.recentDate))
+                                                // : ''
+                                            }
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                            )
+                        }
                     ]}
                 />
 

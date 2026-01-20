@@ -276,6 +276,11 @@ export const getPreviousDate = (days) => {
     return new Date(new Date().setDate(new Date().getDate() - num)).toISOString().split('T')[0]
 }
 
+export const getNextDate = (days, fromDate = ISOString()) => {
+    const num = days ? Number(days) : 1;
+    return new Date(new Date().setDate(new Date(fromDate).getDate() + num)).toISOString().split('T')[0]
+}
+
 export const firstDayOfMonth = (monthAndYear = '') => {
     return new Date(new Date().getFullYear(), new Date().getMonth(), 2).toISOString().split('T')[0]
 }

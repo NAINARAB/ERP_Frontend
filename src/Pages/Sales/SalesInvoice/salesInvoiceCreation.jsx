@@ -388,7 +388,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal])
 
     const taxSplitUp = useMemo(() => {
-        console.log(invoiceProducts);
         if (toArray(invoiceProducts).length === 0) return {};
 
         let totalTaxable = 0;
@@ -420,8 +419,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
         const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
 
-        console.log({totalWithTax, totalWithExpenses, roundedTotal, roundOff})
-
         return {
             totalTaxable: RoundNumber(totalTaxable),
             totalTax: RoundNumber(totalTax),
@@ -434,7 +431,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     }, [invoiceProducts, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
 
-    // Update invoiceInfo when roundOff changes
     useEffect(() => {
         if (taxSplitUp?.roundOff && taxSplitUp?.roundOff !== invoiceInfo.Round_off) {
             setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
@@ -447,11 +443,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             return;
         }
 
-        if (loadingOn) loadingOn();
-
         fetchLink({
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
+            loadingOff, loadingOn,
             bodyData: {
                 ...invoiceInfo,
                 deliveryAddressDetails: {
@@ -496,8 +491,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }).catch(e => {
             console.error(e);
             toast.error("Failed to save invoice");
-        }).finally(() => {
-            if (loadingOff) loadingOff();
         })
     }
 
@@ -583,6 +576,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     shippingAddress={retailerShippingAddress}
                                     setShippingAddress={setRetailerShippingAddress}
                                     retailerSalesStatus={retailerSalesStatus}
+                                    staffArray={staffArray}
+                                    setStaffArray={setStaffArray}
                                 />
                             </div>
                         </div>
