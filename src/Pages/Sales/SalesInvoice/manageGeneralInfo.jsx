@@ -132,35 +132,34 @@ const ManageSalesInvoiceGeneralInfo = ({
             setShippingAddress(retailerDeliveryAddressInfo);
         }
 
-        setStaffArray(prev => {
-            const newStaff = [];
+        // setStaffArray(prev => {
+        //     const newStaff = [];
 
-            if (isValidNumber(retailer.brokerId)) {
-                newStaff.push({
-                    Emp_Id: retailer.brokerId,
-                    Emp_Name: retailer.brokerName,
-                    Emp_Type_Id: retailer.brokerTypeId
-                });
-            }
+        //     if (isValidNumber(retailer.brokerId)) {
+        //         newStaff.push({
+        //             Emp_Id: retailer.brokerId,
+        //             Emp_Name: retailer.brokerName,
+        //             Emp_Type_Id: retailer.brokerTypeId
+        //         });
+        //     }
 
-            if (isValidNumber(retailer.transporterId)) {
-                newStaff.push({
-                    Emp_Id: retailer.transporterId,
-                    Emp_Name: retailer.transporterName,
-                    Emp_Type_Id: retailer.transporterTypeId
-                });
-            }
+        //     if (isValidNumber(retailer.transporterId)) {
+        //         newStaff.push({
+        //             Emp_Id: retailer.transporterId,
+        //             Emp_Name: retailer.transporterName,
+        //             Emp_Type_Id: retailer.transporterTypeId
+        //         });
+        //     }
 
-            const filteredNewStaff = newStaff.filter(ns =>
-                !prev.some(ps =>
-                    ps.Emp_Id === ns.Emp_Id &&
-                    ps.Emp_Type_Id === ns.Emp_Type_Id
-                )
-            );
+        //     const filteredNewStaff = newStaff.filter(ns =>
+        //         !prev.some(ps =>
+        //             ps.Emp_Id === ns.Emp_Id &&
+        //             ps.Emp_Type_Id === ns.Emp_Type_Id
+        //         )
+        //     );
 
-            return [...prev, ...filteredNewStaff];
-        });
-
+        //     return [...prev, ...filteredNewStaff];
+        // });
 
         if (onChangeRetailer) onChangeRetailer();
     }
@@ -196,6 +195,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder={"Select Vendor"}
                                             maxMenuHeight={300}
                                             filterOption={reactSelectFilterLogic}
+                                            isDisabled={isValidNumber(invoiceInfo?.So_No)}
                                         />
                                     </div>
 

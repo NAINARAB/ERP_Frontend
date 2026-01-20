@@ -1401,8 +1401,6 @@ const fetchSaleOrders = () => {
                 isConverted: 0
             };
 
-            console.log("Invoice navigation state:", stateData);
-
             navigate("/erp/sales/invoice/create", {
                 state: stateData,
             });

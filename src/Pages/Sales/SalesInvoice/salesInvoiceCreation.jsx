@@ -200,6 +200,44 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         } else setRetailerSalesStatus(retailerOutstandingDetails)
     }, [invoiceInfo.Retailer_Id])
 
+    useEffect(() => {
+        if (checkIsNumber(invoiceInfo.Retailer_Id) && baseData.retailers.length) {
+
+            const retailer = toArray(baseData.retailers).find(ret => isEqualNumber(ret?.Retailer_Id, invoiceInfo.Retailer_Id));
+
+            if (!retailer) return;
+
+            setStaffArray(prev => {
+                const newStaff = [];
+
+                if (isValidNumber(retailer.brokerId)) {
+                    newStaff.push({
+                        Emp_Id: retailer.brokerId,
+                        Emp_Name: retailer.brokerName,
+                        Emp_Type_Id: retailer.brokerTypeId
+                    });
+                }
+
+                if (isValidNumber(retailer.transporterId)) {
+                    newStaff.push({
+                        Emp_Id: retailer.transporterId,
+                        Emp_Name: retailer.transporterName,
+                        Emp_Type_Id: retailer.transporterTypeId
+                    });
+                }
+
+                const filteredNewStaff = newStaff.filter(ns =>
+                    !prev.some(ps =>
+                        ps.Emp_Id === ns.Emp_Id &&
+                        ps.Emp_Type_Id === ns.Emp_Type_Id
+                    )
+                );
+
+                return [...prev, ...filteredNewStaff]
+            });
+        }
+    }, [invoiceInfo.Retailer_Id, baseData.retailers.length])
+
     const clearValues = () => {
         setInvoiceInfo(salesInvoiceGeneralInfo);
         setInvoiceProduct([]);
@@ -568,7 +606,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     voucherType={baseData.voucherType}
                                     stockItemLedgerName={baseData.stockItemLedgerName}
                                     onChangeRetailer={() => {
-                                        setInvoiceProduct([]);
+                                        // setInvoiceProduct([]);
                                         setInvoiceExpences([]);
                                     }}
                                     retailerDeliveryAddress={retailerDeliveryAddress}

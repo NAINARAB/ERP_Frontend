@@ -20,7 +20,7 @@ export function canCreateInvoice(data) {
     const isOutstandingExceeded = outstanding > creditLimit;
     const isCreditDaysCrossed = today > expiryDate;
 
-    return !((creditLimit > 0 ? isOutstandingExceeded : true) || isCreditDaysCrossed);
+    return !((creditLimit > 0 ? isOutstandingExceeded : false) || isCreditDaysCrossed);
 }
 
 export const retailerOutstandingDetails = {
