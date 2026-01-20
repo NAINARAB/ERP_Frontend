@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import {
@@ -26,7 +24,15 @@ import {
     Paper,
     Switch,
     TextField,
+    Typography,
+    Table,
+    TableBody,
+    TableCell,
+  
     Tooltip,
+    TableContainer,
+    TableHead,
+    TableRow
 } from "@mui/material";
 import {
     CheckBox,
@@ -37,6 +43,7 @@ import {
 } from "@mui/icons-material";
 import { useMemo } from "react";
 import { toast } from "react-toastify";
+import { Close } from "@mui/icons-material";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -61,6 +68,10 @@ const ItemWiseStockReport = ({
     const [filterDialog, setFilterDialog] = useState(false);
     const [columnSettings, setColumnSettings] = useState([]);
     const [reportVisiblity, setReportVisiblity] = useState([]);
+    const [expenseReportDialog, setExpenseReportDialog] = useState(false);
+    const [expenseReportData, setExpenseReportData] = useState([]);
+    const [selectedProductInfo, setSelectedProductInfo] = useState({});
+
 
     const propsColumns = storageStockColumns.map((col, colInd) => {
         const columnState =
@@ -69,11 +80,11 @@ const ItemWiseStockReport = ({
             ) || {};
 
         return {
-            isVisible: 1, // Force visible for all columns
+            isVisible: 1, 
             Field_Name: col?.Column_Name,
             Fied_Data: col?.Data_Type,
             OrderBy: columnState?.orderNum || colInd + 1,
-            isEnabled: true, // Default all columns to enabled
+            isEnabled: true, 
         };
     });
 
@@ -285,6 +296,77 @@ const ItemWiseStockReport = ({
         setFilteredData(filtered);
     };
 
+const handleViewExpenseReport = (row) => {
+    let productId = null;
+    let godownId = null;
+    let productName = "";
+    let godownName = "";
+    
+    console.log("row", row);
+    
+    if (row.groupedData && row.groupedData.length > 0) {
+      
+        productId = row.groupedData[0]?.Product_Id;
+        godownId = row.groupedData[0]?.Godown_Id;
+        productName = row.groupedData[0]?.stock_item_name || "";
+        godownName = row.groupedData[0]?.Godown_Name || row[groupBy] || "";
+    } else {
+  
+        productId = row.Product_Id;
+        godownId = row.Godown_Id;
+        productName = row.stock_item_name || "";
+        godownName = row.Godown_Name || "";
+    }
+    
+    if (!productId) {
+        toast.error("Product ID is not available for this item");
+        return;
+    }
+    
+
+    const isGodownWise = api === "godownWise";
+    
+    loadingOn();
+    
+  
+    let apiEndpoint = "";
+    let params = `?Fromdate=${Fromdate}&Todate=${Todate}&Product_Id=${productId}`;
+    
+    if (isGodownWise && godownId) {
+
+        params += `&Godown_Id=${godownId}`;
+        apiEndpoint = `reports/godownexpenseReport`;
+    } else {
+      
+        apiEndpoint = `reports/itemexpenseReport`;
+    }
+    
+    fetchLink({
+        address: `${apiEndpoint}${params}`,
+    })
+        .then((data) => {
+            if (data.success) {
+                setExpenseReportData(toArray(data.data));
+                setSelectedProductInfo({
+                    productId,
+                    productName,
+                    godownId,
+                    godownName,
+                    fromDate: Fromdate,
+                    toDate: Todate,
+                    reportType: isGodownWise ? "godownWise" : "itemWise"
+                });
+                setExpenseReportDialog(true);
+            } else {
+                toast.error(data.message || "Failed to fetch expense report");
+            }
+        })
+        .catch((error) => {
+            console.error("Error fetching expense report:", error);
+            toast.error("Error fetching expense report");
+        })
+        .finally(() => loadingOff());
+};
     const renderFilter = (column) => {
         const { Field_Name, Fied_Data } = column;
         if (Fied_Data === "number") {
@@ -451,89 +533,179 @@ const ItemWiseStockReport = ({
             .catch((e) => console.error(e));
     };
     
-    return (
+
+    const actionColumn = {
+    Field_Name: "__action__",
+    ColumnHeader: "Action",
+    isVisible: 1,
+    isEnabled: true,
+    isCustomCell: true,
+    align: "center",
+    Cell: ({ row }) => (
+        <Button
+            size="small"
+            variant="outlined"
+            onClick={(e) => {
+                   e.stopPropagation(); 
+                   handleViewExpenseReport(row);
+            }}
+        >
+            View
+        </Button>
+    )
+};
+
+
+ const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const calculateTotals = () => {
+        const totals = {
+            inQty: 0,
+            outQty: 0,
+            amount: 0,
+        };
+
+        expenseReportData.forEach(item => {
+            totals.inQty += Number(item.In_Qty) || 0;
+            totals.outQty += Number(item.Out_Qty) || 0;
+            totals.amount += Number(item.Amount) || 0;
+        });
+
+        return totals;
+    };
+
+    const totals = calculateTotals();
+
+
+    const godownActionColumn = {
+    Field_Name: "__godown_action__",
+    ColumnHeader: "Action",
+    isVisible: 1,
+    isEnabled: true,
+    isCustomCell: true,
+    align: "center",
+    Cell: ({ row }) => (
+        <Button
+            size="small"
+            variant="outlined"
+            onClick={(e) => {
+                e.stopPropagation(); 
+                handleViewExpenseReport(row);
+            }}
+        >
+            View
+        </Button>
+    )
+};
+
+
+const formatINR = (value, fraction = 2) =>
+    new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: fraction,
+        maximumFractionDigits: fraction,
+    }).format(Number(value || 0));
+
+
+ return (
+    <>
+        <FilterableTable
+            title={api === "godownWise" ? "Godown Wise" : "Item Wise"}
+    EnableSerialNumber
+    headerFontSizePx={12}
+    bodyFontSizePx={12}
+    maxHeightOption
+    ButtonArea={
         <>
-            <FilterableTable
-                title="Item Wise"
-                EnableSerialNumber
-                headerFontSizePx={12}
-                bodyFontSizePx={12}
-                maxHeightOption
-                ButtonArea={
-                    <>
-                        <Tooltip title="Column Visibility">
-                            <IconButton size="small" onClick={() => setDialog(true)}>
-                                <Settings />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Clear Filters">
-                            <IconButton size="small" onClick={() => setFilters({})}>
-                                <FilterAltOff />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Filters">
-                            <IconButton onClick={() => setFilterDialog(true)} size="small">
-                                <FilterAlt />
-                            </IconButton>
-                        </Tooltip>
-                        {groupingOption && (
-                            <div className="d-flex align-items-center flex-wrap">
-                                <span>Group-By: </span>
-                                <select
-                                    className="cus-inpt p-2 w-auto m-1"
-                                    value={groupBy}
-                                    onChange={(e) => setGroupBy(e.target.value)}
-                                >
-                                    <option value="">select group</option>
-                                    {DisplayColumn.filter(
-                                        (fil) =>
-                                            filterableText(fil.Fied_Data) === "string" &&
-                                            fil?.Field_Name !== "Ledger_Name" &&
-                                            fil.isEnabled
-                                    ).map((col, colInd) => (
-                                        <option value={col?.Field_Name} key={colInd}>
-                                            {getDisplayName(col?.Field_Name)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                    </>
-                }
-                ExcelPrintOption
-                dataArray={showData}
-                columns={
-                    groupBy
-                        ? DisplayColumn.filter(
+            <Tooltip title="Column Visibility">
+                <IconButton size="small" onClick={() => setDialog(true)}>
+                    <Settings />
+                </IconButton>
+            </Tooltip>
+            <Tooltip title="Clear Filters">
+                <IconButton size="small" onClick={() => setFilters({})}>
+                    <FilterAltOff />
+                </IconButton>
+            </Tooltip>
+            <Tooltip title="Filters">
+                <IconButton onClick={() => setFilterDialog(true)} size="small">
+                    <FilterAlt />
+                </IconButton>
+            </Tooltip>
+
+            {groupingOption && (
+                <div className="d-flex align-items-center flex-wrap">
+                    <span>Group-By:</span>
+                    <select
+                        className="cus-inpt p-2 w-auto m-1"
+                        value={groupBy}
+                        onChange={(e) => setGroupBy(e.target.value)}
+                    >
+                        <option value="">select group</option>
+                        {DisplayColumn.filter(
                             (fil) =>
-                                showData.length > 0 &&
-                                Object.keys(showData[0]).includes(fil.Field_Name) &&
+                                filterableText(fil.Fied_Data) === "string" &&
+                                fil.Field_Name !== "Ledger_Name" &&
                                 fil.isEnabled
-                        ).map((col) => ({
-                            ...col,
-                            ColumnHeader: getDisplayName(col.Field_Name),
-                        }))
-                        : DisplayColumn.filter((col) => col.isEnabled).map((col) => ({
-                            ...col,
-                            ColumnHeader: getDisplayName(col.Field_Name),
-                        }))
-                }
-                isExpendable={groupBy ? true : false}
-                expandableComp={({ row }) => (
-                    <FilterableTable
-                        EnableSerialNumber
-                        headerFontSizePx={12}
-                        bodyFontSizePx={12}
-                        dataArray={toArray(row?.groupedData)}
-                        columns={DisplayColumn.filter(
-                            (clm) => !stringCompare(clm.Field_Name, groupBy) && clm.isEnabled
-                        ).map((col) => ({
-                            ...col,
-                            ColumnHeader: getDisplayName(col.Field_Name),
-                        }))}
-                    />
-                )}
-            />
+                        ).map((col, colInd) => (
+                            <option key={colInd} value={col.Field_Name}>
+                                {getDisplayName(col.Field_Name)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+        </>
+    }
+    ExcelPrintOption
+    dataArray={showData}
+    columns={[
+        ...(groupBy
+            ? DisplayColumn.filter(
+                (fil) =>
+                    showData.length > 0 &&
+                    Object.keys(showData[0]).includes(fil.Field_Name) &&
+                    fil.isEnabled
+            )
+            : DisplayColumn.filter((col) => col.isEnabled)
+        ).map((col) => ({
+            ...col,
+            ColumnHeader: getDisplayName(col.Field_Name),
+        })),
+      ...(api === "itemWise" ? [actionColumn] : [])
+       
+    ]}
+    isExpendable={Boolean(groupBy)}
+
+ expandableComp={({ row }) => (
+    <FilterableTable
+        EnableSerialNumber
+        headerFontSizePx={12}
+        bodyFontSizePx={12}
+        dataArray={toArray(row?.groupedData)}
+        columns={[
+            ...DisplayColumn.filter(
+                (clm) =>
+                    !stringCompare(clm.Field_Name, groupBy) &&
+                    clm.isEnabled
+            ).map((col) => ({
+                ...col,
+                ColumnHeader: getDisplayName(col.Field_Name),
+            })),
+
+           
+            ...(api === "godownWise" ? [godownActionColumn] : [])
+        ]}
+    />
+)}
+/>
 
             <Dialog open={filterDialog} onClose={closeDialog} maxWidth="sm" fullWidth>
                 <DialogContent>
@@ -647,6 +819,139 @@ const ItemWiseStockReport = ({
                     </span>
                 </DialogActions>
             </Dialog>
+
+
+
+ <Dialog
+                open={expenseReportDialog}
+                onClose={() => setExpenseReportDialog(false)}
+                maxWidth="lg"
+                fullWidth
+                maxHeight="90vh"
+            >
+                <DialogTitle>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <Typography variant="h6">
+                              {selectedProductInfo.productName}
+                        </Typography>
+                        <IconButton onClick={() => setExpenseReportDialog(false)}>
+                            <Close />
+                        </IconButton>
+                    </div>
+                    <Typography variant="body2" color="textSecondary">
+                    
+                        Period: {formatDate(selectedProductInfo.fromDate)} to {formatDate(selectedProductInfo.toDate)}
+                    </Typography>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {expenseReportData.length === 0 ? (
+                        <Typography align="center" color="textSecondary">
+                            No expense data found for this product
+                        </Typography>
+                    ) : (
+                        <>
+                       <TableContainer component={Paper} style={{ maxHeight: 500 }}>
+    <Table stickyHeader size="small">
+        <TableHead>
+            <TableRow>
+                <TableCell><strong>Invoice No</strong></TableCell>
+                <TableCell><strong>Date</strong></TableCell>
+                <TableCell><strong>Particulars</strong></TableCell>
+                <TableCell><strong>Month/Year</strong></TableCell>
+                <TableCell align="right"><strong>In Qty</strong></TableCell>
+                <TableCell align="right"><strong>Out Qty</strong></TableCell>
+                <TableCell align="right"><strong>Rate</strong></TableCell>
+                <TableCell align="right"><strong>Amount</strong></TableCell>
+                <TableCell><strong>Retailer</strong></TableCell>
+                <TableCell><strong>Voucher</strong></TableCell>
+            </TableRow>
+        </TableHead>
+
+        <TableBody>
+            {expenseReportData.map((item, index) => (
+                <TableRow key={index}>
+                    <TableCell>{item.invoice_no || ""}</TableCell>
+                    <TableCell>{formatDate(item.Ledger_Date)}</TableCell>
+                    <TableCell>{item.Particulars || ""}</TableCell>
+                    <TableCell>{item.Month_Year || ""}</TableCell>
+
+                    <TableCell align="right">
+                        {formatINR(item.In_Qty)}
+                    </TableCell>
+
+                    <TableCell align="right">
+                        {formatINR(item.Out_Qty)}
+                    </TableCell>
+
+                    <TableCell align="right">
+                        {formatINR(item.Rate)}
+                    </TableCell>
+
+                    <TableCell align="right">
+                        {formatINR(item.Amount)}
+                    </TableCell>
+
+                    <TableCell>{item.Retailer_Name || "-"}</TableCell>
+                    <TableCell>{item.voucher_name || "-"}</TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+</TableContainer>
+
+
+<div className="mt-4 p-3 border rounded bg-light">
+    <Typography variant="h6" gutterBottom>
+        Summary
+    </Typography>
+
+    <div className="row">
+        <div className="col-md-4">
+            <Typography>
+                <strong>Total In Quantity:</strong>{" "}
+                {formatINR(totals.inQty)}
+            </Typography>
+        </div>
+
+        <div className="col-md-4">
+            <Typography>
+                <strong>Total Out Quantity:</strong>{" "}
+                {formatINR(totals.outQty)}
+            </Typography>
+        </div>
+
+        <div className="col-md-4">
+            <Typography>
+                <strong>Total Amount:</strong>{" "}
+                ₹{formatINR(totals.amount)}
+            </Typography>
+        </div>
+    </div>
+
+    <div className="mt-2">
+        <Typography variant="body2" color="textSecondary">
+            <strong>Net Quantity:</strong>{" "}
+            {formatINR(totals.inQty - totals.outQty)}
+        </Typography>
+    </div>
+</div>
+
+                        </>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={() => setExpenseReportDialog(false)} 
+                        color="primary"
+                        variant="contained"
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
+
         </>
     );
 };
