@@ -361,9 +361,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [editValues])
 
     useEffect(() => {
-        if (isValidNumber(editValues?.Retailer_Id)) {
-            const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, editValues?.Retailer_Id)) || {};
-            const billingAddress = toArray(retailerDetails?.deliveryAddresses).find(
+        const retailerId = editValues?.Retailer_Id || invoiceInfo.Retailer_Id;
+        if (isValidNumber(retailerId)) {
+            const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
+            const deliveryAddress = toArray(retailerDetails?.deliveryAddresses);
+            const address = deliveryAddress.length > 0 ? deliveryAddress[0] : null;
+            
+            const billingAddress = deliveryAddress.find(
                 addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
             ) ?? null;
 
@@ -378,9 +382,19 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: billingAddress?.stateName,
                     id: billingAddress.id
                 })
+            } else if (address) {
+                setRetailerDeliveryAddress({
+                    deliveryName: address?.deliveryName,
+                    phoneNumber: address?.phoneNumber,
+                    cityName: address?.cityName,
+                    deliveryAddress: address?.deliveryAddress,
+                    gstNumber: address?.gstNumber,
+                    stateName: address?.stateName,
+                    id: address.id
+                })
             }
 
-            const shippingAddress = toArray(retailerDetails?.deliveryAddresses).find(
+            const shippingAddress = deliveryAddress.find(
                 addr => isEqualNumber(addr?.id, editValues?.shipingAddressId)
             ) ?? null;
 
@@ -395,10 +409,20 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: shippingAddress?.stateName,
                     id: shippingAddress.id
                 })
+            } else if (address) {
+                setRetailerShippingAddress({
+                    deliveryName: address?.deliveryName,
+                    phoneNumber: address?.phoneNumber,
+                    cityName: address?.cityName,
+                    deliveryAddress: address?.deliveryAddress,
+                    gstNumber: address?.gstNumber,
+                    stateName: address?.stateName,
+                    id: address.id
+                })
             }
 
         }
-    }, [editValues, baseData.retailers])
+    }, [editValues, baseData.retailers, invoiceInfo.Retailer_Id])
 
     // Expence Info
 

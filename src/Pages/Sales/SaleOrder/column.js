@@ -18,7 +18,7 @@ export const saleOrderGeneralInfo = {
     IS_IGST: 0,
     Narration: '',
     isConverted: '',
-    Cancel_status: '',
+    Cancel_status: 1,
     
     CSGT_Total: 0,
     SGST_Total: 0,
