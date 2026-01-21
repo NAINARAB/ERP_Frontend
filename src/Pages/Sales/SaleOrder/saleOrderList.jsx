@@ -926,7 +926,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         CreatedBy: { value: "", label: "ALL" },
         SalesPerson: { value: "", label: "ALL" },
         VoucherType: { value: "", label: "ALL" },
-        Cancel_status: 0,
+        Cancel_status: 1,
         OrderStatus: { value: "", label: "ALL" },
     };
 
@@ -1230,19 +1230,14 @@ const fetchSaleOrders = () => {
 
         const debugProductCalculation = () => {
             console.group(`Debug Order: ${row.So_Inv_No || row.Do_Inv_No}`);
-            console.log("Product details:", row.Products_List);
+      
 
             row?.Products_List?.forEach((product, idx) => {
                 const ordered = getOrderedQty(product);
                 const delivered = getDeliveredQty(product);
                 const remaining = getRemainingQty(product);
 
-                console.log(`Product ${idx + 1}: ${product.Product_Name || product.Product_Short_Name}`);
-                console.log(`  Item_Id: ${product.Item_Id}`);
-                console.log(`  Ordered: ${ordered}`);
-                console.log(`  Delivered: ${delivered}`);
-                console.log(`  Act_Qty: ${product.Act_Qty || 'N/A'}`);
-                console.log(`  Remaining: ${remaining}`);
+           
             });
             console.groupEnd();
         };
@@ -1572,7 +1567,7 @@ const fetchSaleOrders = () => {
         const cancelStatus = Number(row?.Cancel_status);
         
         // Handle different Cancel_status values
-        let status = "Active";
+        let status = "";
         let className = "bg-success text-white";
         
         if (cancelStatus == 1) {
@@ -1581,7 +1576,7 @@ const fetchSaleOrders = () => {
         } else if (cancelStatus == 2) {
             status = "Hold";
             className = "bg-warning text-dark";
-        } else if (cancelStatus == 3) {
+        } else if (cancelStatus == 0) {
             status = "Cancelled";
             className = "bg-secondary text-white";
         }
@@ -1601,7 +1596,7 @@ const fetchSaleOrders = () => {
                         align: "center",
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            if (Number(row?.Cancel_status) == 3) {
+                            if (Number(row?.Cancel_status) == 0) {
                                 return (
                                     <span className="py-0 fw-bold px-2 rounded-4 fa-12 bg-danger text-white">
                                         Cancelled
@@ -1872,14 +1867,14 @@ const fetchSaleOrders = () => {
             onChange={(e) =>
                 setFilters({
                     ...filters,
-                    Cancel_status: e.target.value, // Don't convert to number
+                    Cancel_status: e.target.value, 
                 })
             }
             className="cus-inpt"
         >
             <option value="">All (Both Active & Cancelled)</option>
-            <option value="0">Active Only</option>
-            <option value="1">Cancelled Only</option>
+            <option value="1">Active Only</option>
+            <option value="0">Cancelled Only</option>
         </select>
     </td>
 </tr>
