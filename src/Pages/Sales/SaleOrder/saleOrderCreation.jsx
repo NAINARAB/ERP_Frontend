@@ -445,7 +445,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
-<div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Status</label>
                                         <select
                                             value={orderDetails?.Cancel_status}
@@ -455,7 +455,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             <option value="" disabled>Select</option>
                                             <option value="1">New</option>
                                             <option value="2">Pending</option>
-                                            <option value="3">Cancel</option>
+                                            <option value="0">Cancel</option>
                                             <option value="4">Completed</option>
                                         </select>
                                     </div>
