@@ -449,10 +449,9 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                         <label className='fa-13'>Status</label>
                                         <select
                                             value={orderDetails?.Cancel_status}
-                                              className="cus-inpt p-2"
+                                            className="cus-inpt p-2"
                                             onChange={e => setOrderDetails(pre => ({ ...pre, Cancel_status: e.target.value }))}
                                         >
-                                            <option value="" disabled>Select</option>
                                             <option value="1">New</option>
                                             <option value="2">Pending</option>
                                             <option value="0">Cancel</option>

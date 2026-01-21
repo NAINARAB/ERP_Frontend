@@ -1040,7 +1040,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     .reduce((sum, p) => sum + (Number(p?.Bill_Qty) || 0), 0);
 
                 const remainingQty = Math.max(orderedQty - deliveredQty, 0);
-                
+
                 // Use Act_Qty if available, otherwise use remainingQty
                 const finalQty = item.Act_Qty !== undefined ? item.Act_Qty : remainingQty;
 
@@ -1125,51 +1125,51 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             .catch((e) => console.error(e));
     }, []);
 
-const fetchSaleOrders = () => {
-    const otherSessionFiler = getSessionFiltersByPageId(pageID);
-    const {
-        Fromdate,
-        Todate,
-        Retailer = defaultFilters.Retailer,
-        CreatedBy = defaultFilters.CreatedBy,
-        SalesPerson = defaultFilters.SalesPerson,
-        VoucherType = defaultFilters.VoucherType,
-        Cancel_status = defaultFilters.Cancel_status,
-    } = otherSessionFiler;
+    const fetchSaleOrders = () => {
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate,
+            Todate,
+            Retailer = defaultFilters.Retailer,
+            CreatedBy = defaultFilters.CreatedBy,
+            SalesPerson = defaultFilters.SalesPerson,
+            VoucherType = defaultFilters.VoucherType,
+            Cancel_status = defaultFilters.Cancel_status,
+        } = otherSessionFiler;
 
-    // Build query parameters
-    let queryParams = [
-        `Fromdate=${Fromdate}`,
-        `Todate=${Todate}`,
-    ];
+        // Build query parameters
+        let queryParams = [
+            `Fromdate=${Fromdate}`,
+            `Todate=${Todate}`,
+        ];
 
-    // Add optional parameters
-    if (Retailer?.value) queryParams.push(`Retailer_Id=${Retailer.value}`);
-    if (SalesPerson?.value) queryParams.push(`Sales_Person_Id=${SalesPerson.value}`);
-    if (CreatedBy?.value) queryParams.push(`Created_by=${CreatedBy.value}`);
-    if (VoucherType?.value) queryParams.push(`VoucherType=${VoucherType.value}`);
-    
-    // Fix for Cancel_status - only include if not empty
-    if (Cancel_status !== '' && Cancel_status !== undefined) {
-        queryParams.push(`Cancel_status=${Cancel_status}`);
-    }
-    
-    if (filters?.OrderStatus?.value) {
-        queryParams.push(`OrderStatus=${filters.OrderStatus.value}`);
-    }
+        // Add optional parameters
+        if (Retailer?.value) queryParams.push(`Retailer_Id=${Retailer.value}`);
+        if (SalesPerson?.value) queryParams.push(`Sales_Person_Id=${SalesPerson.value}`);
+        if (CreatedBy?.value) queryParams.push(`Created_by=${CreatedBy.value}`);
+        if (VoucherType?.value) queryParams.push(`VoucherType=${VoucherType.value}`);
 
-    fetchLink({
-        address: `sales/saleOrder?${queryParams.join('&')}`,
-        loadingOn,
-        loadingOff,
-    })
-        .then((data) => {
-            if (data.success) {
-                setSaleOrders(data?.data);
-            }
+        // Fix for Cancel_status - only include if not empty
+        // if (Cancel_status !== '' && Cancel_status !== undefined) {
+        //     queryParams.push(`Cancel_status=${Cancel_status}`);
+        // }
+
+        if (filters?.OrderStatus?.value) {
+            queryParams.push(`OrderStatus=${filters.OrderStatus.value}`);
+        }
+
+        fetchLink({
+            address: `sales/saleOrder?${queryParams.join('&')}`,
+            loadingOn,
+            loadingOff,
         })
-        .catch((e) => console.error(e));
-};
+            .then((data) => {
+                if (data.success) {
+                    setSaleOrders(data?.data);
+                }
+            })
+            .catch((e) => console.error(e));
+    };
 
     useEffect(() => {
         fetchSaleOrders();
@@ -1218,7 +1218,7 @@ const fetchSaleOrders = () => {
             const ordered = getOrderedQty(product);
             const delivered = getDeliveredQty(product);
             const remaining = Math.max(ordered - delivered, 0);
-            
+
             // Use Act_Qty if available, otherwise use calculated remaining
             return product.Act_Qty !== undefined ? product.Act_Qty : remaining;
         };
@@ -1230,31 +1230,31 @@ const fetchSaleOrders = () => {
 
         const debugProductCalculation = () => {
             console.group(`Debug Order: ${row.So_Inv_No || row.Do_Inv_No}`);
-      
+
 
             row?.Products_List?.forEach((product, idx) => {
                 const ordered = getOrderedQty(product);
                 const delivered = getDeliveredQty(product);
                 const remaining = getRemainingQty(product);
 
-           
+
             });
             console.groupEnd();
         };
 
         const handlePendingNavigation = () => {
             const isDeliveryOrder = row.Do_Inv_No && !row.So_Inv_No;
-            
+
             const normalizedRow = {
                 So_Id: isDeliveryOrder ? row.Do_Id : row.So_Id || "",
                 So_Inv_No: isDeliveryOrder ? row.Do_Inv_No : row.So_Inv_No || "",
                 So_Year: isDeliveryOrder ? row.Do_Year : row.So_Year || 0,
                 So_Date: isDeliveryOrder ? row.Do_Date : row.So_Date || "",
-                So_Branch_Inv_Id: isDeliveryOrder 
+                So_Branch_Inv_Id: isDeliveryOrder
                     ? parseInt(row.Do_Inv_No?.match(/\d+/g)?.[0]) || 0
                     : row.So_Branch_Inv_Id || 0,
                 So_No: row.So_No,
-                
+
                 Alter_Id: row.Alter_Id || "",
                 Alterd_on: row.Created_on || "",
                 Altered_by: row.Created_by || "",
@@ -1319,7 +1319,7 @@ const fetchSaleOrders = () => {
                 const ordered = getOrderedQtyInternal(product);
                 const delivered = getDeliveredQtyInternal(product);
                 const remaining = Math.max(ordered - delivered, 0);
-                
+
                 return product.Act_Qty !== undefined ? product.Act_Qty : remaining;
             };
 
@@ -1331,7 +1331,7 @@ const fetchSaleOrders = () => {
 
                     if (remaining > 0) {
                         const qtyToUse = product.Act_Qty !== undefined ? product.Act_Qty : remaining;
-                        
+
                         return {
                             ...product,
                             Product_Name: product.Product_Name || product.Product_Short_Name || product.Item_Name || "Unknown Product",
@@ -1382,7 +1382,7 @@ const fetchSaleOrders = () => {
                 Sales_Person_Name: normalizedRow.Sales_Person_Name,
                 So_Branch_Inv_Id: normalizedRow.So_Branch_Inv_Id,
                 So_Date: normalizedRow.So_Date,
-                So_No:normalizedRow.So_Id,
+                So_No: normalizedRow.So_Id,
                 Staff_Involved_List: normalizedRow.Staff_Involved_List || [],
                 Staffs_Array: staffsArray,
                 Total_Before_Tax: normalizedRow.Total_Before_Tax,
@@ -1558,38 +1558,38 @@ const fetchSaleOrders = () => {
                     createCol("Total_Before_Tax", "number", "Before Tax"),
                     createCol("Total_Tax", "number", "Tax"),
                     createCol("Total_Invoice_value", "number", "Invoice Value"),
-            {
-    ColumnHeader: "Order Status",
-    isVisible: 1,
-    align: "center",
-    isCustomCell: true,
-    Cell: ({ row }) => {
-        const cancelStatus = Number(row?.Cancel_status);
-        
-        // Handle different Cancel_status values
-        let status = "";
-        let className = "bg-success text-white";
-        
-        if (cancelStatus == 1) {
-            status = "New";
-            className = "bg-danger text-white";
-        } else if (cancelStatus == 2) {
-            status = "Hold";
-            className = "bg-warning text-dark";
-        } else if (cancelStatus == 0) {
-            status = "Cancelled";
-            className = "bg-secondary text-white";
-        }
-        // Add more statuses as needed
-        
-        return (
-            <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${className}`}>
-                {status}
-            </span>
-        );
-    },
-},
-                    
+                    {
+                        ColumnHeader: "Order Status",
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const cancelStatus = Number(row?.Cancel_status);
+
+                            // Handle different Cancel_status values
+                            let status = "";
+                            let className = "bg-success text-white";
+
+                            if (cancelStatus == 1) {
+                                status = "New";
+                                className = "bg-danger text-white";
+                            } else if (cancelStatus == 2) {
+                                status = "Hold";
+                                className = "bg-warning text-dark";
+                            } else if (cancelStatus == 0) {
+                                status = "Cancelled";
+                                className = "bg-secondary text-white";
+                            }
+                            // Add more statuses as needed
+
+                            return (
+                                <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${className}`}>
+                                    {status}
+                                </span>
+                            );
+                        },
+                    },
+
                     {
                         ColumnHeader: "Convert Status",
                         isVisible: 1,
@@ -1859,25 +1859,25 @@ const fetchSaleOrders = () => {
                                     </td>
                                 </tr>
 
-                              <tr>
-    <td style={{ verticalAlign: "middle" }}>Canceled Order</td>
-    <td>
-        <select
-            value={filters.Cancel_status}
-            onChange={(e) =>
-                setFilters({
-                    ...filters,
-                    Cancel_status: e.target.value, 
-                })
-            }
-            className="cus-inpt"
-        >
-            <option value="">All (Both Active & Cancelled)</option>
-            <option value="1">Active Only</option>
-            <option value="0">Cancelled Only</option>
-        </select>
-    </td>
-</tr>
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Canceled Order</td>
+                                    <td>
+                                        <select
+                                            value={filters.Cancel_status}
+                                            onChange={(e) =>
+                                                setFilters({
+                                                    ...filters,
+                                                    Cancel_status: e.target.value,
+                                                })
+                                            }
+                                            className="cus-inpt"
+                                        >
+                                            <option value="">All (Both Active & Cancelled)</option>
+                                            <option value="1">Active Only</option>
+                                            <option value="0">Cancelled Only</option>
+                                        </select>
+                                    </td>
+                                </tr>
 
                                 <tr>
                                     <td style={{ verticalAlign: "middle" }}>Order Status</td>
