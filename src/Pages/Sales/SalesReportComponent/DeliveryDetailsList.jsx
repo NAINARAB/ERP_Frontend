@@ -703,7 +703,7 @@ const DeliveryDetailsList = ({
         Delivery_Person_Name: "ALL",
         Sales_Person_Id: "",
         Sales_Person_Name: "ALL",
-        Cancel_status: 0,
+        Delivery_Status: '',
     });
 
     // temp filters (used in dialog before applying)
@@ -723,7 +723,7 @@ const DeliveryDetailsList = ({
     if (loadingOn) loadingOn();
 
     fetchLink({
-        address: `delivery/deliveryOrderList?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Delivery_Person_Id=${filters?.Delivery_Person_Id}&Created_by=${filters?.Created_by}&Cancel_status=${filters?.Cancel_status}`,
+        address: `delivery/deliveryOrderList?Fromdate=${filters?.Fromdate}&Todate=${filters?.Todate}&Retailer_Id=${filters?.Retailer_Id}&Sales_Person_Id=${filters?.Sales_Person_Id}&Delivery_Person_Id=${filters?.Delivery_Person_Id}&Created_by=${filters?.Created_by}&Delivery_Status=${filters?.Delivery_Status}`,
     })
         .then((data) => {
             if (data.success) {
@@ -1242,6 +1242,29 @@ const DeliveryDetailsList = ({
                                         />
                                     </td>
                                 </tr>
+
+                 <tr>
+  <td style={{ verticalAlign: "middle" }}>Order Status</td>
+  <td>
+    <select
+      value={filters.Delivery_Status ?? ""}
+      onChange={(e) =>
+        setFilters({
+          ...filters,
+          Delivery_Status: e.target.value === "" ? undefined : Number(e.target.value),
+        })
+      }
+      className="cus-inpt"
+    >
+      <option value="">ALL</option>
+      <option value="1">New</option>
+      <option value="0">Cancel</option>
+      <option value="6">Return</option>
+      <option value="7">Delivered</option>
+    </select>
+  </td>
+</tr>
+
                             </tbody>
                         </table>
                     </div>
