@@ -1,4 +1,4 @@
-import { getSessionUser, ISOString } from "../../../Components/functions";
+import { getSessionUser, ISOString, toNumber } from "../../../Components/functions";
 
 const storage = getSessionUser().user;
 
@@ -13,14 +13,14 @@ export function canCreateInvoice(data) {
     const baseDate = new Date(recentDate);
 
     const expiryDate = new Date(baseDate);
-    expiryDate.setDate(expiryDate.getDate() + creditDays);
+    expiryDate.setDate(expiryDate.getDate() + toNumber(creditDays));
 
     const today = new Date();
 
-    const isOutstandingExceeded = outstanding > creditLimit;
+    const isOutstandingExceeded = toNumber(outstanding) > toNumber(creditLimit);
     const isCreditDaysCrossed = today > expiryDate;
 
-    return !((creditLimit > 0 ? isOutstandingExceeded : false) || isCreditDaysCrossed);
+    return !((toNumber(creditLimit) > 0 ? isOutstandingExceeded : false) || (toNumber(creditDays) > 0 ? isCreditDaysCrossed : false));
 }
 
 export const retailerOutstandingDetails = {

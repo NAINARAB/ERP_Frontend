@@ -223,6 +223,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder={"Select Voucher Type"}
                                             maxMenuHeight={300}
                                             filterOption={reactSelectFilterLogic}
+                                            isDisabled={isValidNumber(invoiceInfo.Do_Id)}
                                         />
                                     </div>
 
@@ -667,10 +668,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Outstanding</label>
                                         <input
-                                            type="number"
                                             className="cus-inpt p-2"
                                             value={retailerSalesStatus?.outstanding}
-                                            disabled
                                         />
                                     </div>
                                     {/* credit limit */}
@@ -683,17 +682,18 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                     ? 'Unlimited'
                                                     : retailerSalesStatus?.creditLimit
                                             }
-                                            disabled
                                         />
                                     </div>
                                     {/* credit days */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Credit Days</label>
+                                        <label className='fa-13'>Due Days</label>
                                         <input
-                                            type="number"
                                             className="cus-inpt p-2"
-                                            value={retailerSalesStatus?.creditDays}
-                                            disabled
+                                            value={
+                                                isEqualNumber(retailerSalesStatus?.creditDays, 0)
+                                                    ? 'Unlimited'
+                                                    : retailerSalesStatus?.creditDays
+                                            }
                                         />
                                     </div>
 
@@ -703,7 +703,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         <input
                                             className="cus-inpt p-2"
                                             value={retailerSalesStatus?.recentDate ? LocalDate(retailerSalesStatus?.recentDate) : ''}
-                                            disabled
                                         />
                                     </div>
 
@@ -718,7 +717,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 LocalDate(getNextDate(30, retailerSalesStatus?.recentDate))
                                                 // : ''
                                             }
-                                            disabled
                                         />
                                     </div>
                                 </div>

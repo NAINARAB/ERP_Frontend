@@ -233,7 +233,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     )
                 );
 
-                return [...prev, ...filteredNewStaff]
+                const filteredStaff = Array.from(
+                    new Map(
+                        filteredNewStaff.map(item => [
+                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                            item
+                        ])
+                    ).values()
+                );
+
+                return [...prev, ...filteredStaff]
             });
         }
     }, [invoiceInfo.Retailer_Id, baseData.retailers.length])
@@ -350,13 +359,22 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-            setStaffArray(
-                toArray(Staffs_Array).map(item => Object.fromEntries(
+            setStaffArray(() => {
+                const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
                     Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
                         return [key, item[key] ?? value]
                     })
-                ))
-            );
+                ));
+
+                return Array.from(
+                    new Map(
+                        stateOfStaff.map(item => [
+                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                            item
+                        ])
+                    ).values()
+                );
+            });
         }
     }, [editValues])
 
@@ -366,7 +384,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
             const deliveryAddress = toArray(retailerDetails?.deliveryAddresses);
             const address = deliveryAddress.length > 0 ? deliveryAddress[0] : null;
-            
+
             const billingAddress = deliveryAddress.find(
                 addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
             ) ?? null;
@@ -530,7 +548,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: retailerShippingAddress?.stateName
                 },
                 Product_Array: invoiceProducts,
-                Staffs_Array: staffArray,
+                Staffs_Array: Array.from(
+                    new Map(
+                        staffArray.map(item => [
+                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                            item
+                        ])
+                    ).values()
+                ),
                 Expence_Array: invoiceExpences
             }
         }).then(data => {
