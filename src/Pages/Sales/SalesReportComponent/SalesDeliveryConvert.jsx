@@ -73,7 +73,7 @@ const SalesDeliveryConvert = ({ loadingOn, loadingOff }) => {
     CreatedByGet: "ALL",
     Sales_Person_Id: "",
     SalsePersonGet: "ALL",
-    Cancel_status: 0,
+    Cancel_status: 1,
     Route_Id: "",
     RoutesGet: "ALL",
     Area_Id: "",
@@ -602,7 +602,7 @@ setIsSubmitting(true);
               }}
               switchScreen={() => setScreen(true)}
               onToggle={handleToggle}
-              triggerReload={triggerReload} // ✅ you're passing it
+              triggerReload={triggerReload} 
             />
           ) : (
             <NewDeliveryOrder
@@ -928,8 +928,8 @@ setIsSubmitting(true);
                       }
                       className="cus-inpt"
                     >
-                      <option value={1}>Show</option>
-                      <option value={0}>Hide</option>
+                      <option value={1}>Active</option>
+                      <option value={0}>Cancel</option>
                     </select>
                   </td>
                 </tr>
