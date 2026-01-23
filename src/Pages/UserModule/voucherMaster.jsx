@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, Fragment, useMemo } from "react";
 import {
     Dialog,
     DialogActions,
@@ -6,10 +6,12 @@ import {
     DialogTitle,
     IconButton,
     Button as MuiButton,
+    TextField,
+    InputAdornment
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Button } from "react-bootstrap";
-import { Delete, Edit } from "@mui/icons-material";
+import { Delete, Edit, Search as SearchIcon } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { erpModules } from "../../Components/tablecolumn";
@@ -20,7 +22,8 @@ const EMPTY_FORM = {
     Voucher_Type: "",
     Voucher_Code: "",
     Branch_Id: "",
-    Type: ""
+    Type: "",
+    status: ""
 };
 
 function VoucherMaster({ loadingOn, loadingOff }) {
@@ -37,8 +40,12 @@ function VoucherMaster({ loadingOn, loadingOff }) {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.UserId;
+    
     const [tallySync, setTallySync] = useState(false);
     const [typeOptions, setTypeOptions] = useState([]);
+    
+    
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         const typesFromData = voucherData
@@ -68,6 +75,21 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             .catch(console.error);
     }, [reload]);
 
+    const filteredData = useMemo(() => {
+        if (!searchTerm.trim()) return voucherData;
+        
+        const searchLower = searchTerm.toLowerCase().trim();
+        
+        return voucherData.filter(voucher => {
+            return (
+                (voucher?.Voucher_Type?.toLowerCase() || "").includes(searchLower) ||
+                (voucher?.Voucher_Code?.toLowerCase() || "").includes(searchLower) ||
+                (voucher?.Type?.toLowerCase() || "").includes(searchLower) ||
+                (voucher?.BranchName?.toLowerCase() || "").includes(searchLower)
+            );
+        });
+    }, [voucherData, searchTerm]);
+
     const resetForm = () => {
         setForm(EMPTY_FORM);
         setTallySync(false);
@@ -80,17 +102,16 @@ function VoucherMaster({ loadingOn, loadingOff }) {
     };
 
     const openEdit = (row) => {
-
         setForm({
             id: row?.Vocher_Type_Id || "",
             Voucher_Type: row?.Voucher_Type || "",
             Voucher_Code: row?.Voucher_Code || "",
             Branch_Id: row?.Branch_Id || "",
             Type: row?.Type || "",
+            status: Number(row?.isDeleted) || 0 
         });
 
-        setTallySync(Number(row?.tallySync) === 0);
-
+        setTallySync(Number(row?.tallySync) === 1);
         setFormMode("edit");
         setIsFormOpen(true);
     };
@@ -116,11 +137,15 @@ function VoucherMaster({ loadingOn, loadingOff }) {
     const handleSubmit = async () => {
         if (!validate()) return;
 
+        const tallySyncValue = tallySync ? 1 : 0;
+
         const bodyData = {
             Voucher_Type: form.Voucher_Type.trim(),
             Voucher_Code: form.Voucher_Code.trim(),
             Branch_Id: Number(form.Branch_Id),
             Type: form.Type,
+            tallySync: tallySyncValue, 
+            status: Number(form.status) || 0
         };
 
         const isEdit = formMode === "edit" && form.id;
@@ -133,8 +158,6 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     Vocher_Type_Id: form.id,
                     ...bodyData,
                     Alter_By: userId,
-                    tallySync: tallySync,
-
                 },
             }
             : {
@@ -143,8 +166,6 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 bodyData: {
                     ...bodyData,
                     Created_By: userId,
-                    tallySync: tallySync,
-
                 },
             };
 
@@ -202,7 +223,29 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             <div className="card">
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     Voucher Master
-                    <div className="text-end">
+                    <div className="text-end d-flex align-items-center gap-2">
+                      
+                        <TextField
+                            placeholder="Search vouchers..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            size="small"
+                            sx={{ 
+                                width: 250,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '20px',
+                                    height: '36px'
+                                }
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                        
                         <Button
                             className="rounded-5 px-3 py-1 fa-13 btn-primary shadow"
                             onClick={openCreate}
@@ -212,8 +255,10 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
                 </div>
 
+              
+
                 <FilterableTable
-                    dataArray={voucherData}
+                    dataArray={filteredData} 
                     EnableSerialNumber
                     isExpendable
                     maxHeightOption
@@ -222,9 +267,19 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                         createCol("Type", "string", "Type"),
                         createCol("BranchName", "string", "Branch Name"),
                         createCol("Voucher_Code", "string", "Voucher Code"),
-                        createCol("Tally Sync", "string", "Tally Sync", (row) =>
-                            row?.tallySync == 0 ? "Yes" : "No"
-                        ),
+                        {
+                            ColumnHeader: "Tally Sync",
+                            isVisible: 1,
+                            isCustomCell: true,
+                            Cell: ({ row }) => {
+                                const syncValue = Number(row?.tallySync);
+                                return (
+                                    <span className={syncValue === 1 ? "text-success fw-bold" : "text-secondary"}>
+                                        {syncValue == 1 ? "Yes" : "No"}
+                                    </span>
+                                );
+                            }
+                        },
                         {
                             ColumnHeader: 'Status',
                             isVisible: 1,
@@ -232,7 +287,7 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                             Cell: ({ row }) => {
                                 return (
                                     <>
-                                        {isEqualNumber(row?.isDeleted, 1 )? (
+                                        {isEqualNumber(row?.isDeleted, 1) ? (
                                             <span className="badge bg-danger">Inactive</span>
                                         ) : (
                                             <span className="badge bg-success">Active</span>
@@ -265,6 +320,7 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             </div>
 
             <Dialog
+                fullWidth maxWidth='sm'
                 open={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 aria-labelledby="voucher-dialog-title"
@@ -274,31 +330,31 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 </DialogTitle>
                 <DialogContent>
                     <div className="p-2">
-                        <label>Voucher Name</label>
+                        <label className="d-block mb-1">Voucher Name</label>
                         <input
                             type="text"
                             value={form.Voucher_Type}
                             onChange={onChange("Voucher_Type")}
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         />
                     </div>
 
                     <div className="p-2">
-                        <label>Voucher Code</label>
+                        <label className="d-block mb-1">Voucher Code</label>
                         <input
                             type="text"
                             value={form.Voucher_Code}
                             onChange={onChange("Voucher_Code")}
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         />
                     </div>
 
                     <div className="p-2">
-                        <label>Branch</label>
+                        <label className="d-block mb-1">Branch</label>
                         <select
                             value={form.Branch_Id}
                             onChange={onChange("Branch_Id")}
-                            className="cus-inpt"
+                            className="cus-inpt w-100"
                         >
                             <option value="">Select Branch</option>
                             {branches.map((b) => (
@@ -310,8 +366,12 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
 
                     <div className="p-2">
-                        <label>Type</label>
-                        <select value={form.Type} onChange={onChange("Type")} className="cus-inpt">
+                        <label className="d-block mb-1">Type</label>
+                        <select 
+                            value={form.Type} 
+                            onChange={onChange("Type")} 
+                            className="cus-inpt w-100"
+                        >
                             <option value="">Select Type</option>
                             {typeOptions.map((name) => (
                                 <option key={name} value={name}>{name}</option>
@@ -320,16 +380,31 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
 
                     <div className="p-2">
-                        <label className="mr-2, me-2">Tally Sync:</label>
-                        <label className="mr-2">
+                        <label className="d-block mb-1">Status</label>
+                        <select
+                            value={form.status}
+                            onChange={(e) => setForm(prev => ({ ...prev, status: Number(e.target.value) }))}
+                            className="cus-inpt w-100"
+                        >
+                            <option value={0}>Active</option>
+                            <option value={1}>Inactive</option>
+                        </select>
+                    </div>
+
+                    <div className="p-2">
+                        <label className="d-block mb-1">Tally Sync</label>
+                        <div className="d-flex align-items-center">
                             <input
                                 type="checkbox"
                                 checked={tallySync}
                                 onChange={(e) => setTallySync(e.target.checked)}
                                 className="me-2"
-                            />{" "}
-                            {tallySync ? "Yes" : "No"}
-                        </label>
+                                id="tallySyncCheckbox"
+                            />
+                            <label htmlFor="tallySyncCheckbox" className="mb-0">
+                                {tallySync ? "Yes, sync with Tally" : "No, don't sync"}
+                            </label>
+                        </div>
                     </div>
                 </DialogContent>
                 <DialogActions>
@@ -356,7 +431,6 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </MuiButton>
                 </DialogActions>
             </Dialog>
-
         </Fragment>
     );
 }

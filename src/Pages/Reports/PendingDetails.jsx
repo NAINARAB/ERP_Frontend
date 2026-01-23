@@ -27,6 +27,7 @@ import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useNavigate } from "react-router-dom";
+import { salesOrderDataSet } from "../Sales/SaleOrder/filters";
 
 const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
@@ -38,7 +39,7 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
         SalesPerson: { value: '', label: 'ALL' },
         VoucherType: { value: '', label: 'ALL' },
         DeliveryPerson: { value: '', label: 'ALL' },
-        Cancel_status: 0
+        Cancel_status: 1
     };
 
     const storage = JSON.parse(localStorage.getItem('user'));
@@ -53,11 +54,19 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
     const [viewOrder, setViewOrder] = useState({});
     const [viewType, setViewType] = useState('sales');
     const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("All");
+    const [salesStatusFilter, setSalesStatusFilter] = useState("All");
+    
     const [statusCounts, setStatusCounts] = useState({
         all: 0,
         delivered: 0,
         pending: 0,
         previousDaySalesCount: 0
+    });
+
+    const [salesStatusCount, setSalesStatusCount] = useState({
+        all: 0,
+        converted: 0,
+        nonConvert: 0
     });
 
     const [filters, setFilters] = useState(defaultFilters);
@@ -66,7 +75,7 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
         orderDetails: false,
     });
 
- useEffect(() => {
+    useEffect(() => {
         const otherSessionFiler = getSessionFiltersByPageId(pageID);
         const {
             Fromdate, Todate,
@@ -135,7 +144,21 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                 address: `reports/reportsNonconvert/sales?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value}&Sales_Person_Id=${SalesPerson?.value}&Created_by=${CreatedBy?.value}&VoucherType=${VoucherType?.value}&Cancel_status=${Cancel_status}`,
                 loadingOn, loadingOff
             }).then(data => {
-                if (data.success) setSaleOrders(data?.data);
+                if (data.success) {
+                    const salesData = data?.data || [];
+                    setSaleOrders(salesData);
+                    
+                  
+                    const converted = salesData.filter(row => row.IsConverted === 2).length;
+                    const nonConvert = salesData.filter(row => row.IsConverted !== 2).length;
+                    const all = salesData.length;
+                    
+                    setSalesStatusCount({
+                        all: all,
+                        converted: converted,
+                        nonConvert: nonConvert
+                    });
+                }
             }).catch(e => console.error(e));
         } else {
             fetchLink({
@@ -143,12 +166,20 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success) {
-                    setDeliveryOrders(data?.data);
-                    const delivered = data.data.filter(row => row.DeliveryStatusName === "Delivered").length;
-                    const pending = data.data.filter(row => row.Delivery_Status === 1).length;
-                    const all = data.data.length;
-                    const previousDaySalesCount = data.data.length > 0 ? data.data[0].PreviousDaySalesOrderCount || 0 : 0;
-                    setStatusCounts({ all, delivered, pending, previousDaySalesCount });
+                    const deliveryData = data?.data || [];
+                    setDeliveryOrders(deliveryData);
+                    
+                    const delivered = deliveryData.filter(row => row.DeliveryStatusName === "Delivered").length;
+                    const pending = deliveryData.filter(row => row.Delivery_Status === 1).length;
+                    const all = deliveryData.length;
+                    const previousDaySalesCount = deliveryData.length > 0 ? deliveryData[0].PreviousDaySalesOrderCount || 0 : 0;
+                    
+                    setStatusCounts({ 
+                        all, 
+                        delivered, 
+                        pending, 
+                        previousDaySalesCount 
+                    });
                 }
             }).catch(e => console.error(e));
         }
@@ -204,23 +235,46 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
 
     const filteredDeliveryData = useMemo(() => {
         if (viewType !== 'delivery') return deliveryOrders;
-        if (deliveryStatusFilter === "Delivered") {
-            return deliveryOrders.filter(row => row.Delivery_Status === 7);
-        } else if (deliveryStatusFilter === "Pending") {
-            return deliveryOrders.filter(row => row.Delivery_Status === 1);
-        } else {
-            return deliveryOrders;
+        
+        switch(deliveryStatusFilter) {
+            case "Delivered":
+                return deliveryOrders.filter(row => row.Delivery_Status === 7);
+            case "Pending":
+                return deliveryOrders.filter(row => row.Delivery_Status === 1);
+            case "All":
+            default:
+                return deliveryOrders;
         }
     }, [deliveryOrders, deliveryStatusFilter, viewType]);
 
+    const filteredSalesData = useMemo(() => {
+        if (viewType !== 'sales') return saleOrders;
+        
+        switch(salesStatusFilter) {
+            case "Converted":
+                return saleOrders.filter(row => row.IsConverted === 2);
+            case "Non-Converted":
+                return saleOrders.filter(row => row.IsConverted !== 2);
+            case "All":
+            default:
+                return saleOrders;
+        }
+    }, [saleOrders, salesStatusFilter, viewType]);
 
     const resetFilters = () => {
-  setFilters(defaultFilters);
-  setSessionFilters({
-    ...defaultFilters,
-    pageID
-  });
-};
+        setFilters(defaultFilters);
+        setSessionFilters({
+            ...defaultFilters,
+            pageID
+        });
+      
+        if (viewType === 'sales') {
+            setSalesStatusFilter("All");
+        } else {
+            setDeliveryStatusFilter("All");
+        }
+    };
+
     const columns = useMemo(() => {
         if (viewType === 'sales') {
             return [
@@ -316,145 +370,188 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
 
     return (
         <>
-         <FilterableTable
-  title={`${viewType === 'sales' ? 'Sale' : 'Delivery'} Orders`}
-  dataArray={viewType === 'sales' ? saleOrders : filteredDeliveryData}
-  EnableSerialNumber
-  columns={columns}
-  ButtonArea={
-    <>
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
-   
-        <ToggleButtonGroup
-          value={viewType}
-          exclusive
-          onChange={(e, newView) => {
-            if (newView) {
-              resetFilters();
-              setViewType(newView);
-            }
-          }}
-          aria-label="view type"
-          sx={{ 
-            '& .MuiToggleButton-root': {
-              px: 3,  
-              py:1,  
-              m: 0.5, 
-            }
-          }}
-        >
-          <ToggleButton 
-            value="sales" 
-            aria-label="sales view"
-            sx={{
-              backgroundColor: viewType === 'sales' ? '#1976d2' : 'inherit',
-              color: viewType === 'sales' ? 'white' : 'inherit',
-              fontWeight: viewType === 'sales' ? 'bold' : 'normal',
-              '&:hover': {
-                backgroundColor: viewType === 'sales' ? '#1565c0' : 'rgba(0, 0, 0, 0.04)'
-              }
-            }}
-          >
-            Sales
-          </ToggleButton>
-          <ToggleButton 
-            value="delivery" 
-            aria-label="delivery view"
-            sx={{
-              backgroundColor: viewType === 'delivery' ? '#1976d2' : 'inherit',
-              color: viewType === 'delivery' ? 'white' : 'inherit',
-              fontWeight: viewType === 'delivery' ? 'bold' : 'normal',
-              '&:hover': {
-                backgroundColor: viewType === 'delivery' ? '#1565c0' : 'rgba(0, 0, 0, 0.04)'
-              }
-            }}
-          >
-            Delivery
-          </ToggleButton>
-        </ToggleButtonGroup>
-     
+            <FilterableTable
+                title={`${viewType === 'sales' ? 'Sale' : 'Delivery'} Orders`}
+                dataArray={viewType === 'sales' ? filteredSalesData : filteredDeliveryData}
+                EnableSerialNumber
+                columns={columns}
+                ButtonArea={
+                    <>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
+                        
+                            <ToggleButtonGroup
+                                value={viewType}
+                                exclusive
+                                onChange={(e, newView) => {
+                                    if (newView) {
+                                        resetFilters();
+                                        setViewType(newView);
+                                       
+                                        setSalesStatusFilter("All");
+                                        setDeliveryStatusFilter("All");
+                                    }
+                                }}
+                                aria-label="view type"
+                                sx={{ 
+                                    '& .MuiToggleButton-root': {
+                                        px: 3,  
+                                        py: 1,  
+                                        m: 0.5, 
+                                    }
+                                }}
+                            >
+                                <ToggleButton 
+                                    value="sales" 
+                                    aria-label="sales view"
+                                    sx={{
+                                        backgroundColor: viewType === 'sales' ? '#1976d2' : 'inherit',
+                                        color: viewType === 'sales' ? 'white' : 'inherit',
+                                        fontWeight: viewType === 'sales' ? 'bold' : 'normal',
+                                        '&:hover': {
+                                            backgroundColor: viewType === 'sales' ? '#1565c0' : 'rgba(0, 0, 0, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    Sale Order
+                                </ToggleButton>
+                                <ToggleButton 
+                                    value="delivery" 
+                                    aria-label="delivery view"
+                                    sx={{
+                                        backgroundColor: viewType === 'delivery' ? '#1976d2' : 'inherit',
+                                        color: viewType === 'delivery' ? 'white' : 'inherit',
+                                        fontWeight: viewType === 'delivery' ? 'bold' : 'normal',
+                                        '&:hover': {
+                                            backgroundColor: viewType === 'delivery' ? '#1565c0' : 'rgba(0, 0, 0, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    Invoice
+                                </ToggleButton>
+                            </ToggleButtonGroup>
 
-        {viewType === 'delivery' && (
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          
-            <Button
-              variant={deliveryStatusFilter === "All" ? "contained" : "outlined"}
-              color="primary"
-              onClick={() => setDeliveryStatusFilter("All")}
-              sx={{ 
-                px: 3,
-                py: 1,
-                fontWeight: deliveryStatusFilter === "All" ? 'bold' : 'normal',
-                m: 0.5
-              }}
-            >
-              All - {statusCounts.all}
-            </Button>
-            <Button
-              variant={deliveryStatusFilter === "Delivered" ? "contained" : "outlined"}
-              color="success"
-              onClick={() => setDeliveryStatusFilter("Delivered")}
-              sx={{ 
-                px: 3,
-                py: 1,
-                fontWeight: deliveryStatusFilter === "Delivered" ? 'bold' : 'normal',
-                m: 0.5
-              }}
-            >
-              Delivered - {statusCounts.delivered}
-            </Button>
-         
-            <Button
-              variant={deliveryStatusFilter === "Pending" ? "contained" : "outlined"}
-              color="warning"
-              onClick={() => setDeliveryStatusFilter("Pending")}
-              sx={{ 
-                px: 3,
-                py: 1,
-                fontWeight: deliveryStatusFilter === "Pending" ? 'bold' : 'normal',
-                m: 0.5
-              }}
-            >
-              Pending - {statusCounts.pending}
-            </Button>
-                  <Typography variant="body1" sx={{ mr: 1, fontWeight: 'bold' }}>
-              Sales Order: {statusCounts.previousDaySalesCount}
-            </Typography>
-          </Box>
-        )}
+                          
+                            {viewType === 'sales' && (
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                    <Button
+                                        variant={salesStatusFilter === "All" ? "contained" : "outlined"}
+                                        color="primary"
+                                        onClick={() => setSalesStatusFilter("All")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: salesStatusFilter === "All" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Overall - {salesStatusCount.all}
+                                    </Button>
+                                    <Button
+                                        variant={salesStatusFilter === "Converted" ? "contained" : "outlined"}
+                                        color="success"
+                                        onClick={() => setSalesStatusFilter("Converted")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: salesStatusFilter === "Converted" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Converted - {salesStatusCount.converted}
+                                    </Button>
+                                    <Button
+                                        variant={salesStatusFilter === "Non-Converted" ? "contained" : "outlined"}
+                                        color="warning"
+                                        onClick={() => setSalesStatusFilter("Non-Converted")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: salesStatusFilter === "Non-Converted" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Non-Converted - {salesStatusCount.nonConvert}
+                                    </Button>
+                                </Box>
+                            )}
 
-      
-        <Tooltip title='Filters'>
-          <IconButton
-            size="medium"
-            onClick={() => setDialog(prev => ({ ...prev, filters: true }))}
-            sx={{ ml: 1 }}
-          >
-            <FilterAlt />
-          </IconButton>
-        </Tooltip>
+                           
+                            {viewType === 'delivery' && (
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                    <Button
+                                        variant={deliveryStatusFilter === "All" ? "contained" : "outlined"}
+                                        color="primary"
+                                        onClick={() => setDeliveryStatusFilter("All")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: deliveryStatusFilter === "All" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Overall - {statusCounts.all}
+                                    </Button>
+                                    <Button
+                                        variant={deliveryStatusFilter === "Delivered" ? "contained" : "outlined"}
+                                        color="success"
+                                        onClick={() => setDeliveryStatusFilter("Delivered")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: deliveryStatusFilter === "Delivered" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Delivered - {statusCounts.delivered}
+                                    </Button>
+                                    <Button
+                                        variant={deliveryStatusFilter === "Pending" ? "contained" : "outlined"}
+                                        color="warning"
+                                        onClick={() => setDeliveryStatusFilter("Pending")}
+                                        sx={{ 
+                                            px: 3,
+                                            py: 1,
+                                            fontWeight: deliveryStatusFilter === "Pending" ? 'bold' : 'normal',
+                                            m: 0.5
+                                        }}
+                                    >
+                                        Pending - {statusCounts.pending}
+                                    </Button>
+                                </Box>
+                            )}
 
-        {/* Total Value */}
-        <Box sx={{ 
-          bgcolor: 'background.paper', 
-          px: 2, 
-          py: 1, 
-          borderRadius: 1,
-          ml: 'auto'
-        }}>
-          {toNumber(Total_Invoice_value) > 0 && (
-            <Typography variant="subtitle2" color="text.secondary">
-              Total: {NumberFormat(Total_Invoice_value)}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-    </>
-  }
-  isExpendable={true}
-  tableMaxHeight={550}
-  expandableComp={ExpendableComponent}
-/>
+                  
+                            <Tooltip title='Filters'>
+                                <IconButton
+                                    size="medium"
+                                    onClick={() => setDialog(prev => ({ ...prev, filters: true }))}
+                                    sx={{ ml: 1 }}
+                                >
+                                    <FilterAlt />
+                                </IconButton>
+                            </Tooltip>
+
+                       
+                            <Box sx={{ 
+                                bgcolor: 'background.paper', 
+                                px: 2, 
+                                py: 1, 
+                                borderRadius: 1,
+                                ml: 'auto'
+                            }}>
+                                {toNumber(Total_Invoice_value) > 0 && (
+                                    <Typography variant="subtitle2" color="text.secondary">
+                                        Total Amount: {NumberFormat(Total_Invoice_value)}
+                                    </Typography>
+                                )}
+                            </Box>
+                        </Box>
+                    </>
+                }
+                isExpendable={true}
+                tableMaxHeight={550}
+                expandableComp={ExpendableComponent}
+            />
 
             <Dialog
                 open={dialog.filters}

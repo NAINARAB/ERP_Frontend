@@ -1231,7 +1231,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 });
 
 
-// ================= PACK SUMMARY =================
+
 const packSummary = useMemo(() => {
     if (!selectedRow?.Product_Array) return {};
 
@@ -1239,16 +1239,29 @@ const packSummary = useMemo(() => {
         product => product?.Products_List || []
     );
 
-    return products.reduce((acc, item) => {
-        const pack = item?.Pack; // or `${item?.Pack}`
 
-        if (!pack) return acc;
+    const packMap = {};
+    
+    products.forEach(item => {
+        const pack = item?.Pack;
+        
+        if (!pack) return;
+        
+    
+        const billQty = Number(item?.Bill_Qty) || 0;
+        const packSize = Number(pack) || 1; 
+        
+       
+        const bags = packSize > 0 ? billQty / packSize : 0;
+        
+        if (bags > 0) {
+            const packKey = `${pack}`;
+            packMap[packKey] = (packMap[packKey] || 0) + bags;
+        }
+    });
 
-        acc[pack] = (acc[pack] || 0) + 1;
-        return acc;
-    }, {});
+    return packMap;
 }, [selectedRow]);
-
 
 
 
@@ -1314,7 +1327,7 @@ const exportToExcel = () => {
                         itemName: product.Product_Name || '',
                         hsnCode: product.HSN_Code || '',
                         quantity: quantity,
-                        rate: rate / 100, // Convert to rupees
+                        rate: rate / 100, 
                         amount: amount,
                         pack: product.Pack || ''
                     });
@@ -1322,7 +1335,7 @@ const exportToExcel = () => {
             }
         });
 
-        // Add all products to the Excel sheet
+       
         if (allProducts.length > 0) {
             allProducts.forEach(product => {
                 mainData.push([
@@ -1341,20 +1354,20 @@ const exportToExcel = () => {
             mainData.push(['No products found in this trip', '', '', '', '', '', '', '', '']);
         }
 
-        // Calculate totals
+    
         const totalQty = allProducts.reduce((sum, product) => sum + (Number(product.quantity) || 0), 0);
         const totalAmount = allProducts.reduce((sum, product) => sum + (Number(product.amount) || 0), 0);
 
-        // Add totals row with proper formatting
+        
         mainData.push(
-            [], // Empty row
+            [], 
             ['Total', '', '', '', '', '', totalQty, '', totalAmount.toFixed(2)],
             [], // Empty row
             // Tax Summary Header
             ['HSN / SAC', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total Tax', '', '', '']
         );
 
-        // Group by HSN Code for tax summary
+      
         const taxSummary = {};
         allProducts.forEach(product => {
             const hsnCode = product.hsnCode;
@@ -1369,7 +1382,6 @@ const exportToExcel = () => {
             taxSummary[hsnCode].taxableValue += product.amount;
         });
 
-        // Add tax data rows
         Object.keys(taxSummary).forEach(hsnCode => {
             const taxData = taxSummary[hsnCode];
             mainData.push([
@@ -1383,7 +1395,6 @@ const exportToExcel = () => {
             ]);
         });
 
-        // Calculate tax totals
         const totalTaxable = Object.values(taxSummary).reduce((sum, item) => sum + item.taxableValue, 0);
         const totalIGST = Object.values(taxSummary).reduce((sum, item) => sum + item.igst, 0);
         const totalCGST = Object.values(taxSummary).reduce((sum, item) => sum + item.cgst, 0);
@@ -1397,8 +1408,9 @@ const exportToExcel = () => {
             ['Pack Details', 'Count', '', '', '', '', '', '', '']
         );
 
-        // Group by pack size
+
         const packSummary = {};
+       
         allProducts.forEach(product => {
             if (product.pack) {
                 const packKey = `${product.pack} KG`;
@@ -1406,7 +1418,6 @@ const exportToExcel = () => {
             }
         });
 
-        // Add pack summary rows
         Object.entries(packSummary).forEach(([pack, count]) => {
             mainData.push([pack, `Bags: ${count}`, '', '', '', '', '', '', '']);
         });
@@ -1415,7 +1426,6 @@ const exportToExcel = () => {
             mainData.push(['No pack information', '', '', '', '', '', '', '', '']);
         }
 
-        // Add footer with proper spacing
         const grandTotal = totalTaxable + totalTax;
         mainData.push(
             [], // Empty row
@@ -1430,17 +1440,17 @@ const exportToExcel = () => {
 
         const ws = XLSX.utils.aoa_to_sheet(mainData);
         
-        // Set column widths for better PDF export
+ 
         ws['!cols'] = [
-            { wch: 8 },   // S.No - Wider
-            { wch: 18 },  // Invoice No - Wider
-            { wch: 30 },  // Retailer Name - Much wider
-            { wch: 15 },  // Location - Wider
-            { wch: 35 },  // Item Name - Much wider
-            { wch: 12 },  // HSN Code - Wider
-            { wch: 12 },  // Quantity - Wider
-            { wch: 12 },  // Rate - Wider
-            { wch: 15 }   // Amount - Wider
+            { wch: 8 },  
+            { wch: 18 },  
+            { wch: 30 }, 
+            { wch: 15 }, 
+            { wch: 35 },  
+            { wch: 12 },  
+            { wch: 12 },  
+            { wch: 12 }, 
+            { wch: 15 }  
         ];
 
    
@@ -1591,20 +1601,20 @@ const exportToExcel = () => {
     ColumnHeader: 'Load Man',
     isCustomCell: true,
     Cell: ({ row }) => {
-        // Get the Employees_Involved array
+     
         const employeesInvolved = Array.isArray(row?.Employees_Involved) ? row.Employees_Involved : [];
         
-        // Find all Load Man employees
+
         const loadMen = employeesInvolved.filter(emp => 
             emp?.Cost_Category === "Load Man" || 
             emp?.Cost_Category === "LoadMan" || 
             emp?.Cost_Center_Type_Id === 4
         );
         
-        // Extract unique names (in case of duplicates)
+     
         const uniqueNames = [...new Set(loadMen.map(emp => emp.Emp_Name?.trim()).filter(Boolean))];
         
-        // Join with comma and space
+       
         const loadManNames = uniqueNames.join(', ');
         
         return (
