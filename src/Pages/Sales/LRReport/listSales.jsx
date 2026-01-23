@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber,RoundNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber, RoundNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import {
@@ -30,7 +30,8 @@ const multipleStaffUpdateInitialValues = {
     CostCategory: { label: "", value: "" },
     Do_Id: [],
     involvedStaffs: [],
-    staffInvolvedStatus: 0
+    staffInvolvedStatus: 0,
+    deliveryStatus: 5,
 };
 
 const normalize = (v) => String(v ?? "").toLowerCase().trim();
@@ -115,28 +116,27 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         []
     );
 
-
     const calculateAltActQty = (item) => {
 
-    if (item.Alt_Act_Qty !== undefined && item.Alt_Act_Qty !== null) {
-        return Number(item.Alt_Act_Qty) || 0;
-    }
-    
-
-    const billQty = Number(item.Bill_Qty) || 0;
-    const conversionFactor = Number(item.PackValue) || 1;
-    
-    const possibleAltFields = ['AltQty', 'Alt_Act_Qty', 'Alt_Qty', 'Alternate_Qty', 'Actual_Qty'];
-    
-    for (const field of possibleAltFields) {
-        if (item[field] !== undefined && item[field] !== null) {
-            return Number(item[field]) || 0;
+        if (item.Alt_Act_Qty !== undefined && item.Alt_Act_Qty !== null) {
+            return Number(item.Alt_Act_Qty) || 0;
         }
-    }
-    
 
-    return billQty * conversionFactor;
-};
+
+        const billQty = Number(item.Bill_Qty) || 0;
+        const conversionFactor = Number(item.PackValue) || 1;
+
+        const possibleAltFields = ['AltQty', 'Alt_Act_Qty', 'Alt_Qty', 'Alternate_Qty', 'Actual_Qty'];
+
+        for (const field of possibleAltFields) {
+            if (item[field] !== undefined && item[field] !== null) {
+                return Number(item[field]) || 0;
+            }
+        }
+
+
+        return billQty * conversionFactor;
+    };
 
     useEffect(() => {
         if (multiPrint.open) {
@@ -153,9 +153,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     }, [multiPrint.open, multiPrint.doIds, multiPrint.docType]);
 
-
-
-  const selectedTotals = useMemo(() => {
+    const selectedTotals = useMemo(() => {
         const selectedIds = multipleCostCenterUpdateValues.Do_Id;
 
         if (!selectedIds.length) {
@@ -179,8 +177,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return { billQty, altActQty };
     }, [multipleCostCenterUpdateValues.Do_Id, salesInvoices]);
 
-
-
     useEffect(() => {
         fetchLink({
             address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
@@ -188,17 +184,17 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             loadingOff,
         })
             .then((data) => {
-                 const invoices = toArray(data.data);
-                
+                const invoices = toArray(data.data);
+
                 // Process each invoice to ensure Alt_Act_Qty is available
                 const processedInvoices = invoices.map(invoice => {
                     if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
                         const processedStockDetails = invoice.stockDetails.map(item => ({
                             ...item,
-                           
+
                             Alt_Act_Qty: calculateAltActQty(item)
                         }));
-                        
+
                         return {
                             ...invoice,
                             stockDetails: processedStockDetails
@@ -312,6 +308,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 Do_Id: multipleCostCenterUpdateValues.Do_Id,
                 involvedStaffs: multipleCostCenterUpdateValues.involvedStaffs.map((option) => toNumber(option.value)),
                 staffInvolvedStatus: toNumber(multipleCostCenterUpdateValues.staffInvolvedStatus),
+                deliveryStatus: toNumber(multipleCostCenterUpdateValues.deliveryStatus),
             },
             loadingOn,
             loadingOff,
@@ -385,41 +382,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
         setFilteredData(filtered);
     };
-
-    //     const handleMultiPrint = useReactToPrint({
-    //         content: () => multiPrintRef.current,
-    //         documentTitle: "Multiple Documents",
-    //         pageStyle: `
-    //     @page {
-    //       margin: 0;
-    //       size: auto;
-    //     }
-
-    //     html, body {
-    //       margin: 0;
-    //       padding: 0;
-    //     }
-
-    //     body {
-    //       display: flex;
-    //       flex-direction: column;
-    //       align-items: center;
-    //     }
-
-    //     /* Center everything */
-    //     @media print {
-    //       body > * {
-    //         margin-left: auto !important;
-    //         margin-right: auto !important;
-    //       }
-
-    //       .no-print {
-    //         display: none !important;
-    //       }
-    //     }
-    //   `,
-    //     });
-
 
     const handleMultiPrint = useReactToPrint({
         content: () => multiPrintRef.current,
@@ -641,12 +603,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     return (
         <>
-                 
-
             <FilterableTable
                 title={"Sales Invoice"}
                 columns={[
-                    
                     {
                         Field_Name: "Select",
                         isVisible: 1,
@@ -672,41 +631,26 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                 />
                             );
                         },
-                        
+
                     },
-                    
-                    
                     createCol("Do_Inv_No", "string", "Invoice"),
                     createCol("createdOn", "time", "Created"),
                     createCol("voucherTypeGet", "string", "Voucher"),
                     createCol("retailerNameGet", "string", "Customer"),
                     {
-    Field_Name: "BillQty",
-    isVisible: 1,
-    isCustomCell: true,
-    Cell: ({ row }) => {  
-        if (row.stockDetails && row.stockDetails.length > 0) {
-            return row.stockDetails.reduce((sum, item) => 
-                sum + (Number(item.Bill_Qty) || 0), 0
-            );
-        }
-        return 0;
-    },
-},
-// {
-//     Field_Name: "AltActQty",
-//     isVisible: 1,
-//     isCustomCell: true,
-//     Cell: ({ row }) => {  
-//         if (row.stockDetails && row.stockDetails.length > 0) {
-//             return row.stockDetails.reduce((sum, item) => 
-//                 sum + (Number(item.Alt_Act_Qty) || 0), 0
-//             );
-//         }
-//         return 0;
-//     },
-// },
-  {
+                        Field_Name: "BillQty",
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            if (row.stockDetails && row.stockDetails.length > 0) {
+                                return row.stockDetails.reduce((sum, item) =>
+                                    sum + (Number(item.Bill_Qty) || 0), 0
+                                );
+                            }
+                            return 0;
+                        },
+                    },
+                    {
                         Field_Name: "AltActQty",
                         ColumnHeader: "Alt Act Qty",
                         isVisible: 1,
@@ -771,7 +715,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 EnableSerialNumber
                 ButtonArea={
                     <>
-
                         <IconButton
                             size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
@@ -812,6 +755,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         >
                             <Print />
                         </IconButton>
+
                         <select
                             className="cus-inpt w-auto rounded-5 border-0"
                             disabled={!multipleCostCenterUpdateValues.Do_Id.length}
@@ -846,20 +790,20 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <option value="1">ALL INVOICES</option>
                             <option value="0">INCOMPLETED INVOICES</option>
                         </select>
-                        
-                    {multipleCostCenterUpdateValues.Do_Id.length > 0 && (
-                <div className="d-flex gap-4 mb-0 p-0">
-                   
-                    <div>
-                        <strong>Total Bill Qty:</strong>{" "}
-                        {selectedTotals.billQty}
-                    </div>
-                    <div>
-                        <strong>Total Alt Act Qty:</strong>{" "}
-                        {selectedTotals.altActQty}
-                    </div>
-                </div>
-            )}
+
+                        {multipleCostCenterUpdateValues.Do_Id.length > 0 && (
+                            <div className="d-flex gap-4 mb-0 p-0">
+
+                                <div>
+                                    <strong>Total Bill Qty:</strong>{" "}
+                                    {selectedTotals.billQty}
+                                </div>
+                                <div>
+                                    <strong>Total Alt Act Qty:</strong>{" "}
+                                    {selectedTotals.altActQty}
+                                </div>
+                            </div>
+                        )}
                     </>
                 }
             />
@@ -1006,6 +950,19 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             menuPortalTarget={document.body}
                             closeMenuOnSelect={false}
                         />
+                    </div>
+
+                    <div className="py-2">
+                        <label>Delivery Status</label>
+                        <select
+                            className="cus-inpt p-1"
+                            onChange={e => setMultipleCostCenterUpdateValues(pre => ({ ...pre, deliveryStatus: e.target.value }))}
+                            value={multipleCostCenterUpdateValues.deliveryStatus}
+                        >
+                            <option value={5}>Pending</option>
+                            <option value={7}>Delivered</option>
+                            <option value={6}>Return</option>
+                        </select>
                     </div>
 
                     <div className="py-2">

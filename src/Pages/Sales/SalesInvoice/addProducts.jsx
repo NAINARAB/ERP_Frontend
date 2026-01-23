@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -136,10 +136,16 @@ const AddProductForm = ({
                 </DialogTitle>
                 <form onSubmit={e => {
                     e.preventDefault();
-                    if (productDetails.Item_Id) {
+                    if (
+                        isValidNumber(productDetails.Item_Id) && (
+                            Object.hasOwn(productDetails, 'GoDown_Id')
+                                ? isValidNumber(productDetails.GoDown_Id)
+                                : true
+                        )
+                    ) {
                         handleProductInputChange();
                     } else {
-                        toast.warn('Select Product');
+                        productDetails.Item_Id ? toast.warn('Select Godown') : toast.warn('Select Product');
                     }
                 }}>
                     <DialogContent>
@@ -254,7 +260,6 @@ const AddProductForm = ({
                                     ]}
                                     styles={customSelectStyles}
                                     isSearchable={true}
-                                    required
                                     placeholder={"Select Product"}
                                     maxMenuHeight={200}
                                     filterOption={reactSelectFilterLogic}
@@ -276,12 +281,12 @@ const AddProductForm = ({
                                             ...toArray(godowns).map(obj => ({
                                                 value: obj?.Godown_Id,
                                                 label: `${obj?.Godown_Name}${checkIsNumber(obj?.Godown_Id)
-                                                        ? ` (Bal: ${validStockValue(
-                                                            productDetails.Item_Id,
-                                                            obj?.Godown_Id,
-                                                            stockInGodowns
-                                                        )})`
-                                                        : ''
+                                                    ? ` (Bal: ${validStockValue(
+                                                        productDetails.Item_Id,
+                                                        obj?.Godown_Id,
+                                                        stockInGodowns
+                                                    )})`
+                                                    : ''
                                                     }`
 
                                             }))
@@ -437,11 +442,11 @@ const AddProductForm = ({
                                     placeholder={"Select Batch"}
                                     menuPortalTarget={document.body}
                                     isDisabled={true}
-                                    // isDisabled={
-                                    //     !checkIsNumber(productDetails?.Item_Id)
-                                    //     || !checkIsNumber(productDetails?.GoDown_Id)
-                                    //     || isEqualNumber(productDetails?.Bill_Qty, 0)
-                                    // }
+                                // isDisabled={
+                                //     !checkIsNumber(productDetails?.Item_Id)
+                                //     || !checkIsNumber(productDetails?.GoDown_Id)
+                                //     || isEqualNumber(productDetails?.Bill_Qty, 0)
+                                // }
                                 />
                             </div>
 
