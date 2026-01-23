@@ -218,7 +218,7 @@ const salesStatusColor = {
 };
 
 const getSalesStatusColor = (order) => {
-  const isCanceled = order?.Cancel_status !== "0";
+  const isCanceled = order?.Cancel_status == "0";
   const hasDelivery = Array.isArray(order?.DeliveryDetails) && order.DeliveryDetails.length > 0;
   
   if (isCanceled) return salesStatusColor.Canceled;
@@ -227,7 +227,7 @@ const getSalesStatusColor = (order) => {
 };
 
 const getSalesStatusText = (order) => {
-  const isCanceled = order?.Cancel_status !== "0";
+  const isCanceled = order?.Cancel_status == "0";
   const hasDelivery = Array.isArray(order?.DeliveryDetails) && order.DeliveryDetails.length > 0;
   
   if (isCanceled) return 'Canceled';
@@ -235,9 +235,9 @@ const getSalesStatusText = (order) => {
   return 'Pending';
 };
 
-// Column definitions for SALES ORDERS
+
 const SALES_COLUMN_DEFINITIONS = {
-  // Common columns
+
   OrderId: {
     type: 'string',
     header: 'Order ID',
@@ -406,7 +406,7 @@ const renderSalesActions = (row, { setOrderPreview, navigation, EditRights, Dele
     StaffDetails = []
   } = orderDetails;
 
-  const isCanceled = orderDetails?.Cancel_status !== "0";
+  const isCanceled = orderDetails?.Cancel_status == "0";
   const hasDelivery = DeliveryDetails?.length > 0;
 
   return (
