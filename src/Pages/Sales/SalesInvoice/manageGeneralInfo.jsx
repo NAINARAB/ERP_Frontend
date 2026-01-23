@@ -2,7 +2,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { checkIsNumber, getNextDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
-import { retailerDeliveryAddressInfo } from "./variable";
+import { retailerDeliveryAddressInfo, setAddress } from "./variable";
 import { useMemo } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
 
@@ -37,26 +37,8 @@ const ManageSalesInvoiceGeneralInfo = ({
         const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(add => stringCompare(add[column], value));
 
         if (retailerAddress) {
-            setRetailerDeliveryAddress(pre => ({
-                ...pre,
-                deliveryName: retailerAddress?.deliveryName || '',
-                phoneNumber: retailerAddress?.phoneNumber || '',
-                cityName: retailerAddress?.cityName || '',
-                deliveryAddress: retailerAddress?.deliveryAddress || '',
-                gstNumber: retailerAddress?.gstNumber || '',
-                stateName: retailerAddress?.stateName || '',
-                id: retailerAddress?.id || null
-            }));
-            setShippingAddress(pre => ({
-                ...pre,
-                deliveryName: retailerAddress?.deliveryName || '',
-                phoneNumber: retailerAddress?.phoneNumber || '',
-                cityName: retailerAddress?.cityName || '',
-                deliveryAddress: retailerAddress?.deliveryAddress || '',
-                gstNumber: retailerAddress?.gstNumber || '',
-                stateName: retailerAddress?.stateName || '',
-                id: retailerAddress?.id || null
-            }));
+            setAddress(retailerAddress, setRetailerDeliveryAddress);
+            setAddress(retailerAddress, setShippingAddress);
         } else {
             setRetailerDeliveryAddress(pre => ({
                 ...pre,
@@ -76,16 +58,7 @@ const ManageSalesInvoiceGeneralInfo = ({
         const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(add => stringCompare(add[column], value));
 
         if (retailerAddress) {
-            setShippingAddress(pre => ({
-                ...pre,
-                deliveryName: retailerAddress?.deliveryName || '',
-                phoneNumber: retailerAddress?.phoneNumber || '',
-                cityName: retailerAddress?.cityName || '',
-                deliveryAddress: retailerAddress?.deliveryAddress || '',
-                gstNumber: retailerAddress?.gstNumber || '',
-                stateName: retailerAddress?.stateName || '',
-                id: retailerAddress?.id || null
-            }))
+            setAddress(retailerAddress, setShippingAddress);
         } else {
             setShippingAddress(pre => ({
                 ...pre,
@@ -101,66 +74,6 @@ const ManageSalesInvoiceGeneralInfo = ({
             Retailer_Id: e.value,
             Retailer_Name: e.label,
         }));
-
-        const retailer = toArray(retailers).find(ret => isEqualNumber(ret?.Retailer_Id, e.value));
-
-        const retailerAddress = toArray(retailer?.deliveryAddresses)[0];
-
-        if (retailerAddress) {
-            setRetailerDeliveryAddress(pre => ({
-                ...pre,
-                deliveryName: retailerAddress?.deliveryName || '',
-                phoneNumber: retailerAddress?.phoneNumber || '',
-                cityName: retailerAddress?.cityName || '',
-                deliveryAddress: retailerAddress?.deliveryAddress || '',
-                gstNumber: retailerAddress?.gstNumber || '',
-                stateName: retailerAddress?.stateName || '',
-                id: retailerAddress?.id || null
-            }));
-            setShippingAddress(pre => ({
-                ...pre,
-                deliveryName: retailerAddress?.deliveryName || '',
-                phoneNumber: retailerAddress?.phoneNumber || '',
-                cityName: retailerAddress?.cityName || '',
-                deliveryAddress: retailerAddress?.deliveryAddress || '',
-                gstNumber: retailerAddress?.gstNumber || '',
-                stateName: retailerAddress?.stateName || '',
-                id: retailerAddress?.id || null
-            }));
-        } else {
-            setRetailerDeliveryAddress(retailerDeliveryAddressInfo);
-            setShippingAddress(retailerDeliveryAddressInfo);
-        }
-
-        // setStaffArray(prev => {
-        //     const newStaff = [];
-
-        //     if (isValidNumber(retailer.brokerId)) {
-        //         newStaff.push({
-        //             Emp_Id: retailer.brokerId,
-        //             Emp_Name: retailer.brokerName,
-        //             Emp_Type_Id: retailer.brokerTypeId
-        //         });
-        //     }
-
-        //     if (isValidNumber(retailer.transporterId)) {
-        //         newStaff.push({
-        //             Emp_Id: retailer.transporterId,
-        //             Emp_Name: retailer.transporterName,
-        //             Emp_Type_Id: retailer.transporterTypeId
-        //         });
-        //     }
-
-        //     const filteredNewStaff = newStaff.filter(ns =>
-        //         !prev.some(ps =>
-        //             ps.Emp_Id === ns.Emp_Id &&
-        //             ps.Emp_Type_Id === ns.Emp_Type_Id
-        //         )
-        //     );
-
-        //     return [...prev, ...filteredNewStaff];
-        // });
-
         if (onChangeRetailer) onChangeRetailer();
     }
 

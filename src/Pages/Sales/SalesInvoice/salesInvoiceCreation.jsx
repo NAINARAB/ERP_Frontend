@@ -4,7 +4,9 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
     checkIsNumber, toNumber, toArray, stringCompare,
-    RoundNumber, isValidNumber
+    RoundNumber, isValidNumber,
+    validValue,
+    isValidValue
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -16,7 +18,8 @@ import {
     salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo,
     salesInvoiceStaffInfo, retailerDeliveryAddressInfo,
     retailerOutstandingDetails,
-    canCreateInvoice
+    canCreateInvoice,
+    setAddress
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -201,7 +204,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [invoiceInfo.Retailer_Id])
 
     useEffect(() => {
-        if (checkIsNumber(invoiceInfo.Retailer_Id) && baseData.retailers.length) {
+        const staffs = toArray(editValues?.Staffs_Array)
+        if (checkIsNumber(invoiceInfo.Retailer_Id) && baseData.retailers.length && staffs.length === 0) {
 
             const retailer = toArray(baseData.retailers).find(ret => isEqualNumber(ret?.Retailer_Id, invoiceInfo.Retailer_Id));
 
@@ -245,7 +249,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 return [...prev, ...filteredStaff]
             });
         }
-    }, [invoiceInfo.Retailer_Id, baseData.retailers.length])
+    }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
 
     const clearValues = () => {
         setInvoiceInfo(salesInvoiceGeneralInfo);
@@ -379,68 +383,52 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [editValues])
 
     useEffect(() => {
-        const retailerId = editValues?.Retailer_Id || invoiceInfo.Retailer_Id;
+        const retailerId = invoiceInfo?.Retailer_Id;
+
         if (isValidNumber(retailerId)) {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
-            const deliveryAddress = toArray(retailerDetails?.deliveryAddresses);
-            const address = deliveryAddress.length > 0 ? deliveryAddress[0] : null;
 
-            const billingAddress = deliveryAddress.find(
-                addr => isEqualNumber(addr?.id, editValues?.deliveryAddressId)
+            const retailerAddress = toArray(retailerDetails?.deliveryAddresses);
+            const withGstNumber = retailerAddress.find(add => isValidValue(add.gstNumber));
+            const firstAddress = retailerAddress[0];
+
+            const billingAddress = retailerAddress.find(
+                addr => isEqualNumber(addr?.id, invoiceInfo?.deliveryAddressId)
             ) ?? null;
 
             if (billingAddress) {
-
-                setRetailerDeliveryAddress({
-                    deliveryName: billingAddress?.deliveryName,
-                    phoneNumber: billingAddress?.phoneNumber,
-                    cityName: billingAddress?.cityName,
-                    deliveryAddress: billingAddress?.deliveryAddress,
-                    gstNumber: billingAddress?.gstNumber,
-                    stateName: billingAddress?.stateName,
-                    id: billingAddress.id
-                })
-            } else if (address) {
-                setRetailerDeliveryAddress({
-                    deliveryName: address?.deliveryName,
-                    phoneNumber: address?.phoneNumber,
-                    cityName: address?.cityName,
-                    deliveryAddress: address?.deliveryAddress,
-                    gstNumber: address?.gstNumber,
-                    stateName: address?.stateName,
-                    id: address.id
-                })
+                setAddress(billingAddress, setRetailerDeliveryAddress)
+            } else if (withGstNumber) {
+                setAddress(withGstNumber, setRetailerDeliveryAddress)
+            } else if (firstAddress) {
+                setAddress({
+                    ...firstAddress,
+                    gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
+                    id: retailerDetails.Gstno ? null : firstAddress.id
+                }, setRetailerDeliveryAddress)
+            } else {
+                setAddress(retailerDeliveryAddressInfo, setRetailerDeliveryAddress)
             }
 
-            const shippingAddress = deliveryAddress.find(
-                addr => isEqualNumber(addr?.id, editValues?.shipingAddressId)
+            const shippingAddress = retailerAddress.find(
+                addr => isEqualNumber(addr?.id, invoiceInfo?.shipingAddressId)
             ) ?? null;
 
             if (shippingAddress) {
-
-                setRetailerShippingAddress({
-                    deliveryName: shippingAddress?.deliveryName,
-                    phoneNumber: shippingAddress?.phoneNumber,
-                    cityName: shippingAddress?.cityName,
-                    deliveryAddress: shippingAddress?.deliveryAddress,
-                    gstNumber: shippingAddress?.gstNumber,
-                    stateName: shippingAddress?.stateName,
-                    id: shippingAddress.id
-                })
-            } else if (address) {
-                setRetailerShippingAddress({
-                    deliveryName: address?.deliveryName,
-                    phoneNumber: address?.phoneNumber,
-                    cityName: address?.cityName,
-                    deliveryAddress: address?.deliveryAddress,
-                    gstNumber: address?.gstNumber,
-                    stateName: address?.stateName,
-                    id: address.id
-                })
+                setAddress(shippingAddress, setRetailerShippingAddress)
+            } else if (withGstNumber) {
+                setAddress(withGstNumber, setRetailerShippingAddress)
+            } else if (firstAddress) {
+                setAddress({
+                    ...firstAddress,
+                    gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
+                    id: retailerDetails.Gstno ? null : firstAddress.id
+                }, setRetailerShippingAddress)
+            } else {
+                setAddress(retailerDeliveryAddressInfo, setRetailerShippingAddress)
             }
-
         }
-    }, [editValues, baseData.retailers, invoiceInfo.Retailer_Id])
+    }, [baseData.retailers, invoiceInfo.Retailer_Id])
 
     // Expence Info
 

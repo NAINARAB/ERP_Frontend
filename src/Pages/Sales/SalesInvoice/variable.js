@@ -161,3 +161,21 @@ export const salesInvoiceStaffInfo = {
     Emp_Name: '',       // for Front-end purpose
     Emp_Type_Id: '',
 }
+
+export const setAddress = (address, setFun) => {
+    const {
+        deliveryName = '', phoneNumber = '', cityName = '', deliveryAddress = '',
+        gstNumber = '', stateName = '', id = null
+    } = address;
+
+    setFun(pre => ({
+        ...pre,
+        deliveryName,
+        phoneNumber,
+        cityName,
+        deliveryAddress,
+        gstNumber,
+        stateName,
+        id
+    }));
+}
