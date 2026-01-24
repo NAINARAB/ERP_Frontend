@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
-  Button,Box,
+  Button, Box,
   Dialog, 
   Tooltip, 
   IconButton, 
@@ -11,7 +11,9 @@ import {
   ToggleButton,
   Card,
   Switch,
-  Typography
+  Typography,
+  Grid,
+  Paper
 } from "@mui/material";
 import Select from "react-select";
 import { 
@@ -23,7 +25,7 @@ import {
   setSessionFilters, 
   toNumber 
 } from "../../Components/functions";
-import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Visibility, LocalShipping, ShoppingCart } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +58,23 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
     const [deliveryStatusFilter, setDeliveryStatusFilter] = useState("All");
     const [salesStatusFilter, setSalesStatusFilter] = useState("All");
     
+    const [overallCounts, setOverallCounts] = useState({
+        totalPendingOrders: 0,
+        totalFilteredOrders: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        fulfilledOrders: 0
+    });
+
+    const [deliveryOverallCounts, setDeliveryOverallCounts] = useState({
+        totalDeliveries: 0,
+        deliveredCount: 0,
+        pendingCount: 0,
+        returnedCount:0,
+        cancelledCount: 0,
+        totalAmount: 0
+    });
+
     const [statusCounts, setStatusCounts] = useState({
         all: 0,
         delivered: 0,
@@ -145,12 +164,21 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success) {
-                    const salesData = data?.data || [];
+                    const responseData = data?.data || {};
+                    const salesData = responseData.orders || [];
+                    
+                    setOverallCounts({
+                        totalPendingOrders: responseData.totalPendingOrders || 0,
+                        totalFilteredOrders: responseData.totalFilteredOrders || 0,
+                        totalOrders: responseData.summary?.totalOrders || 0,
+                        pendingOrders: responseData.summary?.pendingOrders || 0,
+                        fulfilledOrders: responseData.summary?.fulfilledOrders || 0
+                    });
+                    
                     setSaleOrders(salesData);
                     
-                  
-                    const converted = salesData.filter(row => row.IsConverted === 2).length;
-                    const nonConvert = salesData.filter(row => row.IsConverted !== 2).length;
+                    const converted = salesData.filter(row => row.isConverted == 2).length;
+                    const nonConvert = salesData.filter(row => row.isConverted != 2).length;
                     const all = salesData.length;
                     
                     setSalesStatusCount({
@@ -171,14 +199,29 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                     
                     const delivered = deliveryData.filter(row => row.DeliveryStatusName === "Delivered").length;
                     const pending = deliveryData.filter(row => row.Delivery_Status === 1).length;
+                    const returned =deliveryData.filter(row=>row.Delivery_Status === 6).length;
                     const all = deliveryData.length;
                     const previousDaySalesCount = deliveryData.length > 0 ? deliveryData[0].PreviousDaySalesOrderCount || 0 : 0;
                     
                     setStatusCounts({ 
                         all, 
                         delivered, 
+                        returned,
                         pending, 
                         previousDaySalesCount 
+                    });
+
+                    // Calculate delivery summary
+                    const cancelled = deliveryData.filter(row =>  row.Delivery_Status === 0).length;
+                    const totalAmount = deliveryData.reduce((sum, order) => sum + toNumber(order.Total_Invoice_value || 0), 0);
+                    
+                    setDeliveryOverallCounts({
+                        totalDeliveries: all,
+                        deliveredCount: delivered,
+                        pendingCount: pending,
+                           returnedCount: returned,
+                        cancelledCount: cancelled,
+                        totalAmount: totalAmount
                     });
                 }
             }).catch(e => console.error(e));
@@ -252,9 +295,9 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
         
         switch(salesStatusFilter) {
             case "Converted":
-                return saleOrders.filter(row => row.IsConverted === 2);
+                return saleOrders.filter(row => row.isConverted === 2);
             case "Non-Converted":
-                return saleOrders.filter(row => row.IsConverted !== 2);
+                return saleOrders.filter(row => row.isConverted !== 2);
             case "All":
             default:
                 return saleOrders;
@@ -273,6 +316,257 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
         } else {
             setDeliveryStatusFilter("All");
         }
+    };
+
+    const SaleOrderSummary = () => {
+        if (viewType !== 'sales') return null;
+        
+        return (
+            <Paper 
+                elevation={2} 
+                sx={{ 
+                    p: 2, 
+                    mb: 2, 
+                    backgroundColor: '#f8f9fa',
+                    borderLeft: '4px solid #1976d2'
+                }}
+            >
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <ShoppingCart sx={{ color: '#1976d2' }} />
+                            <Typography variant="h6" sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                                📊 Sale Order Summary
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper 
+                            elevation={1} 
+                            sx={{ 
+                                p: 2, 
+                                textAlign: 'center',
+                                backgroundColor: '#e3f2fd',
+                                border: '1px solid #bbdefb'
+                            }}
+                        >
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                {overallCounts.totalFilteredOrders || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Total Orders
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper 
+                            elevation={1} 
+                            sx={{ 
+                                p: 2, 
+                                textAlign: 'center',
+                                backgroundColor: '#fff3e0',
+                                border: '1px solid #ffe0b2'
+                            }}
+                        >
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                                {overallCounts.totalPendingOrders || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Pending Orders
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper 
+                            elevation={1} 
+                            sx={{ 
+                                p: 2, 
+                                textAlign: 'center',
+                                backgroundColor: '#e8f5e9',
+                                border: '1px solid #c8e6c9'
+                            }}
+                        >
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
+                                {overallCounts.fulfilledOrders || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Fulfilled Orders
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper 
+                            elevation={1} 
+                            sx={{ 
+                                p: 2, 
+                                textAlign: 'center',
+                                backgroundColor: '#fce4ec',
+                                border: '1px solid #f8bbd9'
+                            }}
+                        >
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c2185b' }}>
+                                {overallCounts.totalOrders ? 
+                                    `${Math.round((overallCounts.fulfilledOrders / overallCounts.totalOrders) * 100)}%` : 
+                                    '0%'
+                                }
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Fulfillment Rate
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            </Paper>
+        );
+    };
+
+    const DeliverySummary = () => {
+        if (viewType !== 'delivery') return null;
+        
+        return (
+      <Paper 
+    elevation={2} 
+    sx={{ 
+        p: 2, 
+        mb: 2, 
+        backgroundColor: '#f8f9fa',
+        borderLeft: '4px solid #9c27b0'
+    }}
+>
+    <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <LocalShipping sx={{ color: '#9c27b0' }} />
+                <Typography variant="h6" sx={{ color: '#9c27b0', fontWeight: 'bold' }}>
+                    🚚 Delivery Summary
+                </Typography>
+            </Box>
+        </Grid>
+        
+       
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#f3e5f5',
+                    border: '1px solid #e1bee7'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
+                    {deliveryOverallCounts.totalDeliveries || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Total Deliveries
+                </Typography>
+            </Paper>
+        </Grid>
+        
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#e8f5e9',
+                    border: '1px solid #c8e6c9'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
+                    {deliveryOverallCounts.deliveredCount || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Delivered
+                </Typography>
+            </Paper>
+        </Grid>
+        
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#fff3e0',
+                    border: '1px solid #ffe0b2'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                    {deliveryOverallCounts.pendingCount || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Pending
+                </Typography>
+            </Paper>
+        </Grid>
+        
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ffcdd2'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                    {deliveryOverallCounts.cancelledCount || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Cancelled
+                </Typography>
+            </Paper>
+        </Grid>
+         
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ffcdd2'
+                }}
+            >
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                    {deliveryOverallCounts.returnedCount || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Return
+                </Typography>
+            </Paper>
+        </Grid>
+        
+        <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Paper 
+                elevation={1} 
+                sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    backgroundColor: '#e3f2fd',
+                    border: '1px solid #bbdefb'
+                }}
+            >
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                    {deliveryOverallCounts.totalDeliveries > 0 ? 
+                        `${Math.round((deliveryOverallCounts.deliveredCount / deliveryOverallCounts.totalDeliveries) * 100)}%` : 
+                        '0%'
+                    }
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Delivery Rate
+                </Typography>
+            </Paper>
+        </Grid>
+    </Grid>
+</Paper>
+        );
     };
 
     const columns = useMemo(() => {
@@ -370,6 +664,9 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
 
     return (
         <>
+            <SaleOrderSummary />
+            <DeliverySummary />
+
             <FilterableTable
                 title={`${viewType === 'sales' ? 'Sale' : 'Delivery'} Orders`}
                 dataArray={viewType === 'sales' ? filteredSalesData : filteredDeliveryData}
@@ -418,11 +715,11 @@ const PendingDetails = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                                     value="delivery" 
                                     aria-label="delivery view"
                                     sx={{
-                                        backgroundColor: viewType === 'delivery' ? '#1976d2' : 'inherit',
+                                        backgroundColor: viewType === 'delivery' ? '#9c27b0' : 'inherit',
                                         color: viewType === 'delivery' ? 'white' : 'inherit',
                                         fontWeight: viewType === 'delivery' ? 'bold' : 'normal',
                                         '&:hover': {
-                                            backgroundColor: viewType === 'delivery' ? '#1565c0' : 'rgba(0, 0, 0, 0.04)'
+                                            backgroundColor: viewType === 'delivery' ? '#7b1fa2' : 'rgba(0, 0, 0, 0.04)'
                                         }
                                     }}
                                 >
