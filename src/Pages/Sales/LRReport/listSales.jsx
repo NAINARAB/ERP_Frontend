@@ -12,6 +12,7 @@ import {
     DialogTitle,
     IconButton,
     TextField,
+    Tooltip,
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -61,6 +62,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
     const [currentPrintType, setCurrentPrintType] = useState('');
+    const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
         multipleStaffUpdateInitialValues
@@ -588,6 +590,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return null;
     };
 
+    useEffect(() => {
+        if (selectAllCheckBox) {
+            const allDoIds = filteredData.map(item => toNumber(item.Do_Id));
+            setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: allDoIds }));
+        } else {
+            setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: [] }));
+        }
+    }, [selectAllCheckBox, filteredData])
+
     const saveMultipleInvoiceValidation = useMemo(() => {
         const validDoId = multipleCostCenterUpdateValues.Do_Id.length > 0;
         const validCostCenterId = multipleCostCenterUpdateValues.involvedStaffs.length > 0;
@@ -715,6 +726,12 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 EnableSerialNumber
                 ButtonArea={
                     <>
+                        <Tooltip title="Select All">
+                            <Checkbox
+                                checked={selectAllCheckBox}
+                                onChange={e => setSelectAllCheckBox(e.target.checked)}
+                            />
+                        </Tooltip>
                         <IconButton
                             size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
