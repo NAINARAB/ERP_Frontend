@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, LocalDate, rid, toArray, toNumber } from "../../../Components/functions";
 import { Button, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
@@ -99,6 +99,7 @@ const AddProductsInSalesInvoice = ({
                         const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
 
                         switch (key) {
+                            case 'rowId': return [key, rid()];
                             case 'S_No': return [key, curIndex + 1 ?? value];
                             case 'Item_Id': return [key, cur['Item_Id'] ?? value];
                             case 'Item_Name': return [key, productMaster?.Product_Name ?? value];

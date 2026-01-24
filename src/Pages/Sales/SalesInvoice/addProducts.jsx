@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, rid, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -65,10 +65,10 @@ const AddProductForm = ({
     const handleProductInputChange = () => {
 
         setOrderProducts(pre => {
-            const existingProducts = pre.filter(ordered => !isEqualNumber(ordered.Item_Id, productDetails.Item_Id));
+            const existingProducts = pre.filter(ordered => ordered.rowId !== productDetails.rowId);
 
             const currentProductDetails = Object.fromEntries(
-                Object.entries(initialValue).map(([key, value]) => {
+                Object.entries(productDetails).map(([key, value]) => {
                     const productMaster = findProductDetails(productDetails.Item_Id);
                     const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
                     const isTaxable = gstPercentage > 0;
@@ -127,7 +127,7 @@ const AddProductForm = ({
         const quantity = toNumber(productDetails?.Bill_Qty);
         const productMaster = findProductDetails(productDetails?.Item_Id) || {};
         const pack = toNumber(productMaster?.PackGet);
-        
+
         return Division(quantity, pack);
     }, [productDetails.Item_Id, productDetails.Bill_Qty])
 
@@ -361,11 +361,13 @@ const AddProductForm = ({
                                 </div>
                             )}
 
+                            {/* display only alter actual quantity */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Alt Act Quantity</label>
                                 <input
                                     value={altActQty}
                                     className="cus-inpt"
+                                    readOnly={true}
                                 />
                             </div>
 

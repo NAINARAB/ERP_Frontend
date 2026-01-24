@@ -6,7 +6,8 @@ import {
     checkIsNumber, toNumber, toArray, stringCompare,
     RoundNumber, isValidNumber,
     validValue,
-    isValidValue
+    isValidValue,
+    rid
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -19,7 +20,8 @@ import {
     salesInvoiceStaffInfo, retailerDeliveryAddressInfo,
     retailerOutstandingDetails,
     canCreateInvoice,
-    setAddress
+    setAddress,
+    defaultStaffTypes
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -251,6 +253,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }
     }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
 
+    useEffect(() => {
+        const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
+        setStaffArray(pre => [...pre, ...defaultStaffTypesData])
+    }, [baseData.staffType])
+
     const clearValues = () => {
         setInvoiceInfo(salesInvoiceGeneralInfo);
         setInvoiceProduct([]);
@@ -352,6 +359,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             setInvoiceProduct(
                 Products_List.map(item => Object.fromEntries(
                     Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                        if (key === 'rowId') return [key, rid()]
                         return [key, item[key] ?? value]
                     })
                 ))
@@ -511,6 +519,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             return;
         }
 
+        
+
         fetchLink({
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
@@ -538,7 +548,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 Product_Array: invoiceProducts,
                 Staffs_Array: Array.from(
                     new Map(
-                        staffArray.map(item => [
+                        staffArray.filter(
+                            item => isValidNumber(item.Emp_Id) && isValidNumber(item.Emp_Type_Id)
+                        ).map(item => [
                             `${item.Emp_Id}-${item.Emp_Type_Id}`,
                             item
                         ])
@@ -582,6 +594,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     //     })
     // }
 
+    console.log(invoiceProducts)
+
     return (
         <>
 
@@ -600,7 +614,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 GST_Inclusive={invoiceInfo.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
-                initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
+                initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No, rowId: rid() }}
                 batchDetails={baseData.batchDetails}
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
             />
@@ -773,7 +787,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                                 size="small"
                                                 type="button"
                                                 onClick={() => setInvoiceProduct(
-                                                    pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id))
+                                                    pre => pre.filter(obj => obj.rowId !== row.rowId)
                                                 )}
                                                 color='error'
                                                 disabled={!checkIsNumber(row?.Item_Id)}

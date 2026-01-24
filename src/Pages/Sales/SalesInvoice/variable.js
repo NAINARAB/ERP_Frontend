@@ -1,4 +1,4 @@
-import { getSessionUser, ISOString, toNumber } from "../../../Components/functions";
+import { getSessionUser, ISOString, rid, toArray, toNumber } from "../../../Components/functions";
 
 const storage = getSessionUser().user;
 
@@ -99,6 +99,7 @@ export const salesInvoiceGeneralInfo = {
 }
 
 export const salesInvoiceDetailsInfo = {
+    rowId: '',
     DO_St_Id: '',
     Do_Date: '',
     Delivery_Order_Id: '',
@@ -178,4 +179,12 @@ export const setAddress = (address, setFun) => {
         stateName,
         id
     }));
+}
+
+export const defaultStaffTypes = (costTypes = []) => {
+    const defaultStaffTypes = ['Broker', 'Others5', 'Transport']
+    return toArray(costTypes).filter(staff => defaultStaffTypes.includes(staff?.Cost_Category)).map(staff => ({
+        ...salesInvoiceStaffInfo,
+        Emp_Type_Id: staff?.Cost_Category_Id
+    }))
 }
