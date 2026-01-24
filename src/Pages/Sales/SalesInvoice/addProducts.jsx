@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
@@ -34,7 +34,8 @@ const AddProductForm = ({
     IS_IGST,
     editValues = null,
     initialValue = {},
-    batchDetails = []
+    batchDetails = [],
+    saleOrderNumber
 }) => {
 
     const [productDetails, setProductDetails] = useState(initialValue);
@@ -121,6 +122,14 @@ const AddProductForm = ({
                 })
         }
     }, [productDetails.Item_Id])
+
+    const altActQty = useMemo(() => {
+        const quantity = toNumber(productDetails?.Bill_Qty);
+        const productMaster = findProductDetails(productDetails?.Item_Id) || {};
+        const pack = toNumber(productMaster?.PackGet);
+        
+        return Division(quantity, pack);
+    }, [productDetails.Item_Id, productDetails.Bill_Qty])
 
     return (
         <>
@@ -351,6 +360,14 @@ const AddProductForm = ({
                                     />
                                 </div>
                             )}
+
+                            <div className="col-lg-4 col-md-6 p-2">
+                                <label>Alt Act Quantity</label>
+                                <input
+                                    value={altActQty}
+                                    className="cus-inpt"
+                                />
+                            </div>
 
                             {/* Rate */}
                             <div className="col-lg-4 col-md-6 p-2">

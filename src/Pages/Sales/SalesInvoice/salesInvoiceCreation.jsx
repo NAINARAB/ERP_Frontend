@@ -602,6 +602,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 editValues={selectedProductToEdit}
                 initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No }}
                 batchDetails={baseData.batchDetails}
+                saleOrderNumber={toNumber(invoiceInfo.So_No)}
             />
 
             <Card>
