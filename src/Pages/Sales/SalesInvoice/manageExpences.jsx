@@ -1,10 +1,11 @@
 import { Button, Card, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, isValidNumber, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, getPercentage, isEqualNumber, isValidNumber, Multiplication, onlynumAndNegative, reactSelectFilterLogic, RoundNumber, stringCompare, toNumber } from "../../../Components/functions";
 import { salesInvoiceExpencesInfo } from "./variable";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
+import { useMemo } from "react";
 
 const ExpencesOfSalesInvoice = ({
     invoiceExpences = [],
@@ -12,8 +13,21 @@ const ExpencesOfSalesInvoice = ({
     expenceMaster = [],
     IS_IGST,
     taxType,
-    Total_Invoice_value = 0
+    Total_Invoice_value = 0,
+    invoiceProducts = [],
+    findProductDetails,
+    products = []
 }) => {
+
+    const coolieExp = useMemo(() => {
+        const exp = invoiceProducts.reduce((pre, cur) => {
+            const quantity = cur?.Alt_Act_Qty;
+            const coolieExp = toNumber(findProductDetails(products, cur?.Item_Id)?.Coolie);
+            const coolieExpAmount = Multiplication(coolieExp, quantity);
+            return Addition(pre, coolieExpAmount);
+        }, 0)
+        return exp;
+    }, [invoiceProducts])
 
     const handleInputChange = (index, field, value) => {
 
@@ -67,20 +81,35 @@ const ExpencesOfSalesInvoice = ({
 
     const handleSelectChange = (index, selectedOption) => {
         const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, selectedOption.value)) || {};
-        const getInvoicedAmountInPercentage = isValidNumber(selected?.percentageValue)
-            ? getPercentage(Total_Invoice_value, selected.percentageValue)
-            : 0;
+        console.log(selected)
 
-        setInvoiceExpences(prev =>
-            prev.map((item, i) => {
-                if (i !== index) return item;
-                return {
-                    ...item,
-                    Expense_Id: selected.Id,
-                    Expence_Value: RoundNumber(getInvoicedAmountInPercentage)
-                };
-            })
-        );
+        if (stringCompare(selected?.Expence_Name, 'COOLIE EXPENSES')) {
+            setInvoiceExpences(prev =>
+                prev.map((item, i) => {
+                    if (i !== index) return item;
+                    return {
+                        ...item,
+                        Expense_Id: selected.Id,
+                        Expence_Value: RoundNumber(coolieExp)
+                    };
+                })
+            );
+        } else {
+            const getInvoicedAmountInPercentage = isValidNumber(selected?.percentageValue)
+                ? getPercentage(Total_Invoice_value, selected.percentageValue)
+                : 0;
+
+            setInvoiceExpences(prev =>
+                prev.map((item, i) => {
+                    if (i !== index) return item;
+                    return {
+                        ...item,
+                        Expense_Id: selected.Id,
+                        Expence_Value: RoundNumber(getInvoicedAmountInPercentage)
+                    };
+                })
+            );
+        }
     };
 
     const addNewRow = () => {
@@ -104,9 +133,10 @@ const ExpencesOfSalesInvoice = ({
                             <tr>
                                 {[
                                     'S.No', 'Expense',
-                                    'Expense Value', 'Action'].map(
-                                        (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
-                                    )}
+                                    'Expense Value', 'Action'
+                                ].map(
+                                    (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
+                                )}
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>

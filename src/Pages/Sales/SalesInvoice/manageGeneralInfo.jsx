@@ -253,17 +253,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <option value="0">Canceled</option>
                                         </select>
                                     </div>
-
-                                    {/* narration */}
-                                    <div className="col-12 p-2">
-                                        <label className='fa-13'>Narration</label>
-                                        <textarea
-                                            className="cus-inpt fa-14"
-                                            rows={2}
-                                            value={invoiceInfo.Narration}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Narration: e.target.value }))}
-                                        />
-                                    </div>
                                 </div>
                             )
                         },

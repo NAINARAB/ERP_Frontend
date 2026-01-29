@@ -55,11 +55,11 @@ export const salesInvoiceGeneralInfo = {
     Retailer_Id: '',
     Retailer_Name: '',      // for Front-end purpose
     Delivery_Person_Id: '', // not used in sales invoice
-    Branch_Id: '',
+    Branch_Id: storage.BranchId || '',
     GST_Inclusive: 2,
     IS_IGST: 0,
     Narration: '',
-    Cancel_status: 1,
+    Cancel_status: 3,
     So_No: '',              // SALE ORDER ID (ONE TO MANY INVOICE MAPPING)
     Trans_Type: '',
 
@@ -112,7 +112,8 @@ export const salesInvoiceDetailsInfo = {
     Taxble: '',
     Batch_Name: '',
 
-    Bill_Qty: '',               // From front-end
+    Bill_Qty: '',
+    Alt_Bill_Qty: '',
     Act_Qty: '',
     Alt_Act_Qty: '',
     Free_Qty: '',

@@ -7,7 +7,8 @@ import {
     RoundNumber, isValidNumber,
     validValue,
     isValidValue,
-    rid
+    rid,
+    Division
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -206,143 +207,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [invoiceInfo.Retailer_Id])
 
     useEffect(() => {
-        const staffs = toArray(editValues?.Staffs_Array)
-        if (checkIsNumber(invoiceInfo.Retailer_Id) && baseData.retailers.length && staffs.length === 0) {
-
-            const retailer = toArray(baseData.retailers).find(ret => isEqualNumber(ret?.Retailer_Id, invoiceInfo.Retailer_Id));
-
-            if (!retailer) return;
-
-            setStaffArray(prev => {
-                const newStaff = [];
-
-                if (isValidNumber(retailer.brokerId)) {
-                    newStaff.push({
-                        Emp_Id: retailer.brokerId,
-                        Emp_Name: retailer.brokerName,
-                        Emp_Type_Id: retailer.brokerTypeId
-                    });
-                }
-
-                if (isValidNumber(retailer.transporterId)) {
-                    newStaff.push({
-                        Emp_Id: retailer.transporterId,
-                        Emp_Name: retailer.transporterName,
-                        Emp_Type_Id: retailer.transporterTypeId
-                    });
-                }
-
-                const filteredNewStaff = newStaff.filter(ns =>
-                    !prev.some(ps =>
-                        ps.Emp_Id === ns.Emp_Id &&
-                        ps.Emp_Type_Id === ns.Emp_Type_Id
-                    )
-                );
-
-                const filteredStaff = Array.from(
-                    new Map(
-                        filteredNewStaff.map(item => [
-                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
-                            item
-                        ])
-                    ).values()
-                );
-
-                return [...prev, ...filteredStaff]
-            });
-        }
-    }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
-
-    useEffect(() => {
-        const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
-        setStaffArray(pre => [...pre, ...defaultStaffTypesData])
-    }, [baseData.staffType])
-
-    const clearValues = () => {
-        setInvoiceInfo(salesInvoiceGeneralInfo);
-        setInvoiceProduct([]);
-        setInvoiceExpences([]);
-        setStaffArray([]);
-    }
-
-    useEffect(() => {
-        setInvoiceProduct(pre => {
-            const exist = [...pre];
-
-            return exist.map(item => {
-                return Object.fromEntries(
-                    Object.entries(item).map(([key, value]) => {
-                        const productMaster = findProductDetails(baseData.products, item?.Item_Id);
-                        const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
-                        const isTaxable = gstPercentage > 0;
-
-                        const { Bill_Qty, Item_Rate, Amount } = item;
-
-                        const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
-                        const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
-
-                        const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
-                        const igstPer = IS_IGST ? gstInfo.igst_per : 0;
-                        const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
-                        const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
-
-                        switch (key) {
-                            case 'Taxable_Rate': return [key, itemRateGst.base_amount]
-                            case 'Total_Qty': return [key, Bill_Qty]
-                            case 'Taxble': return [key, isTaxable ? 1 : 0]
-                            case 'Taxable_Amount': return [key, gstInfo.base_amount]
-                            case 'Tax_Rate': return [key, gstPercentage]
-                            case 'Cgst':
-                            case 'Sgst': return [key, cgstPer ?? 0]
-                            case 'Cgst_Amo':
-                            case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
-                            case 'Igst': return [key, igstPer ?? 0]
-                            case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
-                            case 'Final_Amo': return [key, gstInfo.with_tax]
-
-                            default: return [key, item[key] || value]
-                        }
-                    })
-                )
-            })
-        });
-    }, [
-        baseData.products,
-        IS_IGST,
-        taxType,
-    ]);
-
-    useEffect(() => {
-        setInvoiceExpences(pre => {
-            const exist = [...pre];
-
-            return exist.map(item => {
-                const
-                    Igst = IS_IGST ? toNumber(item?.Igst) : 0,
-                    Cgst = !IS_IGST ? toNumber(item?.Cgst) : 0,
-                    Sgst = !IS_IGST ? toNumber(item?.Sgst) : 0,
-                    Expence_Value = toNumber(item?.Expence_Value),
-                    taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
-
-                const taxAmount = calculateGSTDetails(Expence_Value, taxPercentage, taxType);
-
-                return {
-                    ...item,
-                    Cgst, Sgst, Igst,
-                    Expence_Value,
-                    Cgst_Amo: Cgst > 0 ? taxAmount.cgst_amount : 0,
-                    Sgst_Amo: Sgst > 0 ? taxAmount.sgst_amount : 0,
-                    Igst_Amo: Igst > 0 ? taxAmount.igst_amount : 0,
-                }
-            })
-        })
-    }, [
-        baseData.expence,
-        IS_IGST,
-        taxType,
-    ])
-
-    useEffect(() => {
         if (
             isValidObject(editValues) &&
             Array.isArray(editValues?.Products_List)
@@ -391,6 +255,64 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }, [editValues])
 
     useEffect(() => {
+        const staffs = toArray(editValues?.Staffs_Array)
+        if (checkIsNumber(invoiceInfo.Retailer_Id) && baseData.retailers.length && staffs.length === 0) {
+
+            const retailer = toArray(baseData.retailers).find(ret => isEqualNumber(ret?.Retailer_Id, invoiceInfo.Retailer_Id));
+
+            if (!retailer) return;
+
+            setStaffArray(prev => {
+                const newStaff = [];
+
+                if (isValidNumber(retailer.brokerId)) {
+                    newStaff.push({
+                        Emp_Id: retailer.brokerId,
+                        Emp_Name: retailer.brokerName,
+                        Emp_Type_Id: retailer.brokerTypeId
+                    });
+                }
+
+                if (isValidNumber(retailer.transporterId)) {
+                    newStaff.push({
+                        Emp_Id: retailer.transporterId,
+                        Emp_Name: retailer.transporterName,
+                        Emp_Type_Id: retailer.transporterTypeId
+                    });
+                }
+
+                const filteredNewStaff = newStaff.filter(ns =>
+                    !prev.some(ps =>
+                        ps.Emp_Id === ns.Emp_Id &&
+                        ps.Emp_Type_Id === ns.Emp_Type_Id
+                    )
+                );
+
+                const filteredStaff = Array.from(
+                    new Map(
+                        filteredNewStaff.map(item => [
+                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                            item
+                        ])
+                    ).values()
+                );
+
+                return [...prev, ...filteredStaff]
+            });
+        }
+    }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
+
+    useEffect(() => {
+        if (baseData.stockItemLedgerName.length > 0 && !editValues?.Stock_Item_Ledger_Name) {
+            const stockItemName = baseData.stockItemLedgerName[0];
+
+            if (stockItemName) {
+                setInvoiceInfo(prev => ({ ...prev, Stock_Item_Ledger_Name: stockItemName?.Stock_Item_Ledger_Name }));
+            }
+        }
+    }, [editValues, baseData.stockItemLedgerName])
+
+    useEffect(() => {
         const retailerId = invoiceInfo?.Retailer_Id;
 
         if (isValidNumber(retailerId)) {
@@ -437,6 +359,80 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             }
         }
     }, [baseData.retailers, invoiceInfo.Retailer_Id])
+
+    useEffect(() => {
+        const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
+        setStaffArray(pre => [...pre, ...defaultStaffTypesData])
+    }, [baseData.staffType])
+
+    useEffect(() => {
+        setInvoiceProduct(pre => {
+            const exist = [...pre];
+
+            return exist.map(item => {
+                return Object.fromEntries(
+                    Object.entries(item).map(([key, value]) => {
+                        const productMaster = findProductDetails(baseData.products, item?.Item_Id);
+                        const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
+                        const isTaxable = gstPercentage > 0;
+
+                        const { Bill_Qty, Item_Rate, Amount } = item;
+
+                        const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
+                        const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
+
+                        const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
+                        const igstPer = IS_IGST ? gstInfo.igst_per : 0;
+                        const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
+                        const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
+
+                        switch (key) {
+                            case 'Taxable_Rate': return [key, itemRateGst.base_amount]
+                            case 'Total_Qty': return [key, Bill_Qty]
+                            case 'Taxble': return [key, isTaxable ? 1 : 0]
+                            case 'Taxable_Amount': return [key, gstInfo.base_amount]
+                            case 'Tax_Rate': return [key, gstPercentage]
+                            case 'Cgst':
+                            case 'Sgst': return [key, cgstPer ?? 0]
+                            case 'Cgst_Amo':
+                            case 'Sgst_Amo': return [key, isNotTaxableBill ? 0 : Cgst_Amo]
+                            case 'Igst': return [key, igstPer ?? 0]
+                            case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
+                            case 'Final_Amo': return [key, gstInfo.with_tax]
+
+                            default: return [key, item[key] || value]
+                        }
+                    })
+                )
+            })
+        });
+    }, [baseData.products, IS_IGST, taxType]);
+
+    useEffect(() => {
+        setInvoiceExpences(pre => {
+            const exist = [...pre];
+
+            return exist.map(item => {
+                const
+                    Igst = IS_IGST ? toNumber(item?.Igst) : 0,
+                    Cgst = !IS_IGST ? toNumber(item?.Cgst) : 0,
+                    Sgst = !IS_IGST ? toNumber(item?.Sgst) : 0,
+                    Expence_Value = toNumber(item?.Expence_Value),
+                    taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
+
+                const taxAmount = calculateGSTDetails(Expence_Value, taxPercentage, taxType);
+
+                return {
+                    ...item,
+                    Cgst, Sgst, Igst,
+                    Expence_Value,
+                    Cgst_Amo: Cgst > 0 ? taxAmount.cgst_amount : 0,
+                    Sgst_Amo: Sgst > 0 ? taxAmount.sgst_amount : 0,
+                    Igst_Amo: Igst > 0 ? taxAmount.igst_amount : 0,
+                }
+            })
+        })
+    }, [baseData.expence, IS_IGST, taxType])
 
     // Expence Info
 
@@ -513,14 +509,18 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         }
     }, [taxSplitUp?.roundOff]);
 
+    const clearValues = () => {
+        setInvoiceInfo(salesInvoiceGeneralInfo);
+        setInvoiceProduct([]);
+        setInvoiceExpences([]);
+        setStaffArray([]);
+    }
+
     const saveSalesInvoice = () => {
         if (retailerSalesStatus.forceCreateInvoice === false && retailerSalesStatus.invoiceCreationStatus === false) {
             setRetailerSalesStatus(pre => ({ ...pre, dialog: true }));
             return;
         }
-
-        
-
         fetchLink({
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
@@ -580,21 +580,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             toast.error("Failed to save invoice");
         })
     }
-
-    //     }).then(data => {
-    //         if (data.success) {
-    //             clearValues();
-    //             toast.success(data.message);
-    //             navigate('/erp/sales/invoice')
-    //         } else {
-    //             toast.warn(data.message)
-    //         }
-    //     }).catch(e => console.error(e)).finally(() => {
-    //         if (loadingOff) loadingOff();
-    //     })
-    // }
-
-    console.log(invoiceProducts)
 
     return (
         <>
@@ -743,8 +728,22 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         columns={[
                             createCol('Item_Name', 'string'),
                             createCol('Batch_Name', 'string'),
-                            createCol('Bill_Qty', 'number'),
-                            createCol('Act_Qty', 'number'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Act Qty',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    return row?.Act_Qty ? `${row?.Act_Qty} (${row?.Alt_Act_Qty})` : '';
+                                }
+                            },
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'Bill Qty',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    return row?.Bill_Qty ? `${row?.Bill_Qty} (${row?.Alt_Bill_Qty})` : '';
+                                }
+                            },
                             createCol('Item_Rate', 'number'),
                             {
                                 isVisible: 1,
@@ -855,12 +854,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         IS_IGST={IS_IGST}
                         taxType={taxType}
                         Total_Invoice_value={Total_Invoice_value}
+                        invoiceProducts={invoiceProducts}
+                        findProductDetails={findProductDetails}
+                        products={baseData.products}
                     />
 
                     <br />
 
                     <SalesInvoiceTaxDetails
-                        invoiceProducts={invoiceProducts}
                         invoiceExpences={invoiceExpences}
                         isNotTaxableBill={isNotTaxableBill}
                         isInclusive={isInclusive}
@@ -872,6 +873,19 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         Total_Invoice_value={Total_Invoice_value}
                         taxSplitUp={taxSplitUp}
                     />
+
+
+
+                    {/* narration */}
+                    {/* <div className="col-12 p-2"> */}
+                    <label className='fa-13'>Narration</label>
+                    <textarea
+                        className="cus-inpt fa-14"
+                        rows={2}
+                        value={invoiceInfo.Narration}
+                        onChange={e => setInvoiceInfo(pre => ({ ...pre, Narration: e.target.value }))}
+                    />
+                    {/* </div> */}
                 </CardContent>
                 <CardActions className="d-flex justify-content-end">
                     <Button type='button' onClick={() => {

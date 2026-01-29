@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify'
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close,Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
+
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -45,10 +46,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
            deliverySlip:false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null); 
-
-
-  
-
 
     useEffect(() => {
 

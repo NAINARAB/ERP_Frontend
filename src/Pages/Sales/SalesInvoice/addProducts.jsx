@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, rid, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -44,6 +44,8 @@ const AddProductForm = ({
     const isNotTaxableBill = isEqualNumber(GST_Inclusive, 2);
 
     const [stockInGodowns, setStockInGodowns] = useState([]);
+
+    const lastEditedRef = useRef(null);
 
     useEffect(() => {
         if (isValidObject(editValues) && open) {
@@ -116,20 +118,80 @@ const AddProductForm = ({
             fetchLink({ address: `sales/stockInGodown?Item_Id=${productDetails.Item_Id}` })
                 .then(data => {
                     const stockInGodowns = (data.success ? data.data : []).sort(
-                        (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
+                        (a, b) => toNumber(b?.Act_Bal_Qty) - toNumber(a?.Act_Bal_Qty)
                     );
                     setStockInGodowns(stockInGodowns);
                 })
         }
     }, [productDetails.Item_Id])
 
-    const altActQty = useMemo(() => {
-        const quantity = toNumber(productDetails?.Bill_Qty);
-        const productMaster = findProductDetails(productDetails?.Item_Id) || {};
-        const pack = toNumber(productMaster?.PackGet);
+    const productInfo = useMemo(() => {
+        const currentProduct = findProductDetails(productDetails.Item_Id);
+        return productDetails.Item_Id ? currentProduct : {};
+    }, [products, productDetails.Item_Id]);
 
-        return Division(quantity, pack);
-    }, [productDetails.Item_Id, productDetails.Bill_Qty])
+    const onRateChange = (value) => {
+        lastEditedRef.current = 'RATE';
+        setProductDetails(prev => ({ ...prev, Item_Rate: value }));
+    };
+
+    const onAmountChange = (value) => {
+        lastEditedRef.current = 'AMOUNT';
+        setProductDetails(prev => ({ ...prev, Amount: value }));
+    };
+
+    useEffect(() => {
+        const { Item_Rate, Amount, Bill_Qty } = productDetails;
+
+        if (!isValidNumber(Bill_Qty) || Bill_Qty === 0) return;
+
+        if (lastEditedRef.current === 'RATE' && isValidNumber(Item_Rate)) {
+            const amount = Multiplication(Item_Rate, Bill_Qty);
+
+            setProductDetails(prev =>
+                prev.Amount === amount
+                    ? prev
+                    : { ...prev, Amount: amount }
+            );
+        }
+
+        if (lastEditedRef.current === 'AMOUNT' && isValidNumber(Amount)) {
+            const rate = Division(Amount, Bill_Qty);
+
+            setProductDetails(prev =>
+                prev.Item_Rate === rate
+                    ? prev
+                    : { ...prev, Item_Rate: rate }
+            );
+        }
+    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty]);
+
+    const godownOptions = useMemo(() => {
+        if (!checkIsNumber(productDetails.Item_Id)) return [];
+
+        return toArray(godowns)
+            .map(obj => {
+                const stock = checkIsNumber(obj?.Godown_Id)
+                    ? toNumber(
+                        validStockValue(
+                            productDetails.Item_Id,
+                            obj?.Godown_Id,
+                            stockInGodowns
+                        )
+                    )
+                    : 0;
+
+                return {
+                    value: obj?.Godown_Id,
+                    label: `${obj?.Godown_Name} (Bal: ${stock})`,
+                    stock
+                };
+            })
+            .sort((a, b) => {
+                return b.stock - a.stock;
+            })
+            .map(({ stock, ...rest }) => rest);
+    }, [godowns, productDetails.Item_Id, stockInGodowns]);
 
     return (
         <>
@@ -245,10 +307,13 @@ const AddProductForm = ({
                                             Item_Rate: productInfo.Item_Rate ?? 0,
                                             GoDown_Id: '',
                                             Bill_Qty: 0,
+                                            Alt_Bill_Qty: 0,
+                                            Act_Qty: 0,
+                                            Alt_Act_Qty: 0,
                                             Amount: 0,
                                             Unit_Id: productInfo.UOM_Id ?? pre.Unit_Id,
                                             Unit_Name: productInfo.Units ?? pre.Unit_Name,
-                                            HSN_Code: productInfo?.HSN_Code
+                                            HSN_Code: productInfo?.HSN_Code,
                                         }));
                                     }}
                                     options={[
@@ -287,18 +352,7 @@ const AddProductForm = ({
                                         onChange={(e) => setProductDetails(pre => ({ ...pre, GoDown_Id: e.value }))}
                                         options={[
                                             { value: '', label: 'select', isDisabled: true },
-                                            ...toArray(godowns).map(obj => ({
-                                                value: obj?.Godown_Id,
-                                                label: `${obj?.Godown_Name}${checkIsNumber(obj?.Godown_Id)
-                                                    ? ` (Bal: ${validStockValue(
-                                                        productDetails.Item_Id,
-                                                        obj?.Godown_Id,
-                                                        stockInGodowns
-                                                    )})`
-                                                    : ''
-                                                    }`
-
-                                            }))
+                                            ...godownOptions
                                         ]}
                                         styles={customSelectStyles}
                                         isDisabled={!checkIsNumber(productDetails?.Item_Id)}
@@ -311,63 +365,87 @@ const AddProductForm = ({
                                 </div>
                             )}
 
-                            {/* quantity */}
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Quantity <RequiredStar /></label>
+                            {/* act qty */}
+                            <div className="col-md-6 p-2">
+                                <label>Actual Quantity </label>
+                                <input
+                                    value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
+                                    onInput={onlynum}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
+                                    onChange={e => {
+                                        const pack = productInfo?.PackGet;
+                                        const alterQuantity = Division(e.target.value, pack);
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Act_Qty: e.target.value,
+                                            Bill_Qty: e.target.value,
+                                            Alt_Act_Qty: alterQuantity,
+                                            Alt_Bill_Qty: alterQuantity
+                                        }))
+                                    }}
+                                    required
+                                    className="cus-inpt"
+                                />
+                            </div>
+
+                            {/* alter actual quantity */}
+                            <div className="col-md-6 p-2">
+                                <label>Alt Act Quantity</label>
+                                <input
+                                    value={productDetails.Alt_Act_Qty || ''}
+                                    className="cus-inpt"
+                                    type="number"
+                                    onChange={e => {
+                                        const pack = productInfo?.PackGet;
+                                        const qty = Multiplication(e.target.value, pack)
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Alt_Act_Qty: e.target.value,
+                                            Alt_Bill_Qty: e.target.value,
+                                            Act_Qty: qty,
+                                            Bill_Qty: qty,
+                                        }));
+                                    }}
+                                />
+                            </div>
+
+                            {/* bill quantity */}
+                            <div className="col-md-6 p-2">
+                                <label>Bill Quantity <RequiredStar /></label>
                                 <input
                                     required
                                     value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
-                                        if (productDetails.Item_Rate) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Amount: Multiplication(productDetails.Item_Rate, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else if (productDetails.Amount) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Item_Rate: Division(pre.Amount, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Bill_Qty: e.target.value,
-                                            }));
-                                        }
+                                        const pack = productInfo?.PackGet;
+                                        const alterQuantity = Division(e.target.value, pack);
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Bill_Qty: e.target.value,
+                                            Alt_Bill_Qty: alterQuantity,
+                                        }));
                                     }}
                                     className="cus-inpt"
                                     min={1}
                                 />
                             </div>
 
-                            {Object.hasOwn(productDetails, 'Act_Qty') && (
-                                <div className="col-lg-4 col-md-6 p-2">
-                                    <label>Actual Quantity </label>
-                                    <input
-                                        value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
-                                        onInput={onlynum}
-                                        disabled={!checkIsNumber(productDetails.Item_Id)}
-                                        onChange={e => setProductDetails(pre => ({
-                                            ...pre,
-                                            Act_Qty: e.target.value,
-                                        }))}
-                                        required
-                                        className="cus-inpt"
-                                    />
-                                </div>
-                            )}
-
-                            {/* display only alter actual quantity */}
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Alt Act Quantity</label>
+                            {/* alt bill qty */}
+                            <div className="col-md-6 p-2">
+                                <label>Alt Bill Quantity</label>
                                 <input
-                                    value={altActQty}
+                                    value={productDetails.Alt_Bill_Qty || ''}
                                     className="cus-inpt"
-                                    readOnly={true}
+                                    type="number"
+                                    onChange={e => {
+                                        const pack = productInfo?.PackGet;
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Alt_Bill_Qty: e.target.value,
+                                            Bill_Qty: Multiplication(e.target.value, pack),
+                                        }));
+                                    }}
                                 />
                             </div>
 
@@ -375,14 +453,10 @@ const AddProductForm = ({
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
-                                    value={productDetails.Item_Rate ? productDetails.Item_Rate : ''}
+                                    value={productDetails.Item_Rate || ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Item_Rate: e.target.value,
-                                        Amount: pre.Bill_Qty ? Multiplication(e.target.value, pre.Bill_Qty) : pre.Amount
-                                    }))}
+                                    onChange={e => onRateChange(e.target.value)}
                                     required
                                     className="cus-inpt"
                                 />
@@ -423,14 +497,10 @@ const AddProductForm = ({
                                 <label>Amount</label>
                                 <input
                                     required
-                                    value={productDetails.Amount ? productDetails.Amount : ''}
+                                    value={productDetails.Amount || ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Amount: e.target.value,
-                                        Item_Rate: pre.Bill_Qty ? Division(e.target.value, pre.Bill_Qty) : pre.Item_Rate
-                                    }))}
+                                    onChange={e => onAmountChange(e.target.value)}
                                     className="cus-inpt"
                                     min={1}
                                 />
