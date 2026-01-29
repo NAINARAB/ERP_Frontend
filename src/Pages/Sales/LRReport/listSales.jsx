@@ -23,6 +23,8 @@ import KatchathCopy from "./KatchathCopy/katchathCopy";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
 import DeliverysSlipPrint from "./deliverySlipPrint"
 import { useReactToPrint } from "react-to-print";
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -34,6 +36,16 @@ const multipleStaffUpdateInitialValues = {
     staffInvolvedStatus: 0,
     deliveryStatus: 5,
 };
+
+
+const multipleStaffRemoveInitialValues = {
+    CostCategory: { label: "", value: "" },
+    Do_Id: [],
+    involvedStaffs: [],
+    staffInvolvedStatus: 0,
+    deliveryStatus: 5,
+};
+
 
 const normalize = (v) => String(v ?? "").toLowerCase().trim();
 
@@ -63,10 +75,16 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
     const [currentPrintType, setCurrentPrintType] = useState('');
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
+        const tableContainerRef = useRef(null);
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
         multipleStaffUpdateInitialValues
     );
+
+      const [multipleStaffRemoveValues, setMultipleStaffRemoveValues] = useState(
+        multipleStaffRemoveInitialValues
+    );
+
 
     const [printReady, setPrintReady] = useState(false);
     const [columnFilters, setColumnFilters] = useState({});
@@ -254,6 +272,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const onCloseMultipleUpdateCostCategoryDialog = () => {
         setMultipleCostCenterUpdateValues(multipleStaffUpdateInitialValues);
         setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: false }));
+    };
+      const onCloseMultipleStaffRemoveDialog = () => {
+        setMultipleStaffRemoveValues(multipleStaffRemoveInitialValues);
+        setFilters((prev) => ({ ...prev, multipleStaffRemoveDialog: false }));
     };
 
     const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
@@ -590,6 +612,37 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return null;
     };
 
+     const postMultipleStaffRemove = async () => {
+        if (!multipleStaffRemoveValues.CostCategory.value || multipleStaffRemoveValues.Do_Id.length === 0) {
+            toast.error("Please select a Cost Category and at least one invoice");
+            return;
+        }
+
+        fetchLink({
+            address: "sales/salesInvoice/lrReport/multipleDelete",
+            method: "POST",
+            bodyData: {
+                CostCategory: toNumber(multipleStaffRemoveValues.CostCategory.value),
+                Do_Id: multipleStaffRemoveValues.Do_Id,
+                staffInvolvedStatus: toNumber(multipleStaffRemoveValues.staffInvolvedStatus),
+                deliveryStatus: toNumber(multipleStaffRemoveValues.deliveryStatus),
+            },
+            loadingOn,
+            loadingOff,
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                onCloseMultipleStaffRemoveDialog();
+                fetchSalesInvoices();
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => console.log(e));
+    };
+
+
+
+    
     useEffect(() => {
         if (selectAllCheckBox) {
             const allDoIds = filteredData.map(item => toNumber(item.Do_Id));
@@ -612,19 +665,47 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return true;
     }, [multipleCostCenterUpdateValues]);
 
+      useEffect(() => {
+        if (selectAllCheckBox) {
+            const allDoIds = filteredData.map(item => toNumber(item.Do_Id));
+            setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: allDoIds }));
+            setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: allDoIds }));
+        } else {
+            setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: [] }));
+            setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: [] }));
+        }
+    }, [selectAllCheckBox, filteredData])
+
+
+    const removeMultipleInvoiceValidation = useMemo(() => {
+        const validDoId = multipleStaffRemoveValues.Do_Id.length > 0;
+        const validCostCategory = 
+            checkIsNumber(multipleStaffRemoveValues.CostCategory.value) &&
+            !isEqualNumber(multipleStaffRemoveValues.CostCategory.value, 0);
+
+        return validDoId && validCostCategory;
+    }, [multipleStaffRemoveValues]);
+
+
     return (
         <>
+        
             <FilterableTable
                 title={"Sales Invoice"}
                 columns={[
                     {
                         Field_Name: "Select",
                         isVisible: 1,
+                        
                         isCustomCell: true,
                         Cell: ({ row }) => {
                             const isSelected = multipleCostCenterUpdateValues.Do_Id.includes(toNumber(row.Do_Id));
+                             const isSelectedForRemove = multipleStaffRemoveValues.Do_Id.includes(toNumber(row.Do_Id));
                             return (
                                 <Checkbox
+                               onFocus={(e) => {
+                                                    e.target.blur();
+                                                }}
                                     checked={isSelected}
                                     onChange={() => {
                                         if (isSelected) {
@@ -632,8 +713,16 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                                 ...prev,
                                                 Do_Id: prev.Do_Id.filter((item) => !isEqualNumber(item, row.Do_Id)),
                                             }));
+                                            setMultipleStaffRemoveValues((prev) => ({
+                                                ...prev,
+                                                Do_Id: prev.Do_Id.filter((item) => !isEqualNumber(item, row.Do_Id)),
+                                            }));
                                         } else {
                                             setMultipleCostCenterUpdateValues((prev) => ({
+                                                ...prev,
+                                                Do_Id: [...prev.Do_Id, toNumber(row.Do_Id)],
+                                            }));
+                                             setMultipleStaffRemoveValues((prev) => ({
                                                 ...prev,
                                                 Do_Id: [...prev.Do_Id, toNumber(row.Do_Id)],
                                             }));
@@ -740,6 +829,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <PersonAdd fontSize="small" />
                         </IconButton>
 
+
+                      <IconButton
+                            size="small"
+                            onClick={() => setFilters((prev) => ({ ...prev, multipleStaffRemoveDialog: true }))}
+                            disabled={!multipleStaffRemoveValues.Do_Id.length}
+                        >
+                            <PersonRemoveIcon fontSize="small" />
+                        </IconButton>
+
                         <IconButton size="small" onClick={() => setFilters((prev) => ({ ...prev, filterDialog: true }))}>
                             <FilterAlt />
                         </IconButton>
@@ -824,6 +922,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     </>
                 }
             />
+
+
 
             {/* Assign dialog */}
             <Dialog open={filters.assignDialog} onClose={onCloseAssignDialog} maxWidth="lg" fullWidth>
@@ -1131,6 +1231,90 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     </Button>
                 </DialogActions> */}
             {/* </Dialog> */}
+
+      <Dialog
+                open={filters.multipleStaffRemoveDialog}
+                onClose={onCloseMultipleStaffRemoveDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Remove Staff from Cost Category</DialogTitle>
+                <DialogContent>
+                    <div className="py-2">
+                        <label>Cost Category to Remove</label>
+                        <Select
+                            value={multipleStaffRemoveValues.CostCategory}
+                            styles={customSelectStyles}
+                            options={costTypes
+                                .filter(
+                                    (costType) =>
+                                        !["Broker", "Transport"].some((keyword) => String(costType?.Cost_Category).includes(keyword))
+                                )
+                                .map((costType) => ({
+                                    value: costType.Cost_Category_Id,
+                                    label: costType.Cost_Category,
+                                }))}
+                            onChange={(e) => setMultipleStaffRemoveValues((prev) => ({ ...prev, CostCategory: e }))}
+                            placeholder="Select Cost Category to Remove"
+                            filterOption={reactSelectFilterLogic}
+                            menuPortalTarget={document.body}
+                        />
+                    </div>
+
+                    <div className="py-2">
+                        <label>Delivery Status</label>
+                        <select
+                            className="cus-inpt p-1"
+                            onChange={e => setMultipleStaffRemoveValues(pre => ({ ...pre, deliveryStatus: e.target.value }))}
+                            value={multipleStaffRemoveValues.deliveryStatus}
+                        >
+                            <option value={5}>Pending</option>
+                            <option value={7}>Delivered</option>
+                            <option value={6}>Return</option>
+                        </select>
+                    </div>
+
+                    <div className="py-2">
+                        <input
+                            className="form-check-input shadow-none pointer mx-2"
+                            style={{ padding: "0.7em" }}
+                            type="checkbox"
+                            id="removeFromListRemove"
+                            checked={isEqualNumber(multipleStaffRemoveValues.staffInvolvedStatus, 1)}
+                            onChange={() => {
+                                setMultipleStaffRemoveValues((pre) => ({
+                                    ...pre,
+                                    staffInvolvedStatus: isEqualNumber(pre.staffInvolvedStatus, 1) ? 0 : 1,
+                                }));
+                            }}
+                        />
+                        <label htmlFor="removeFromListRemove" className="fw-bold">
+                            Remove invoice from this page
+                        </label>
+                    </div>
+
+                    <div className="py-2 text-muted">
+                        <small>
+                            This will remove all staff members of the selected Cost Category from {multipleStaffRemoveValues.Do_Id.length} selected invoices.
+                        </small>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onCloseMultipleStaffRemoveDialog} variant="outlined">
+                        Cancel
+                    </Button>
+                    <Button 
+                        variant="contained" 
+                        color="error" 
+                        onClick={postMultipleStaffRemove} 
+                        disabled={!removeMultipleInvoiceValidation}
+                    >
+                        Remove Staff
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
 
             <Dialog
                 open={multiPrint.open}

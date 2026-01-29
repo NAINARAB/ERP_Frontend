@@ -399,12 +399,14 @@ className="border py-4 px-4"
                                                         <td>{item.quantity}</td>
                                                     </tr>
                                                 ))}
-                                                <tr>
-                                                    <td className="border">Total</td>
-                                                    <td className="border">
-                                                        {toArray(invoice.productDetails).reduce((acc, item) => acc + item.quantity, 0)}
-                                                    </td>
-                                                </tr>
+                                         <tr>
+                                         <td className="border text-right pr-4" style={{textAlign: "right", fontSize: "18px", fontWeight: "bold"}}>
+                                             Total
+                                         </td>
+                                         <td className="border text-right" style={{textAlign: "right", fontSize: "18px", fontWeight: "bold"}}>
+                                             {toArray(invoice.productDetails).reduce((acc, item) => acc + item.quantity, 0)}
+                                         </td>
+                                     </tr>
                                             </tbody>
                                         </table>
                                     </div>
