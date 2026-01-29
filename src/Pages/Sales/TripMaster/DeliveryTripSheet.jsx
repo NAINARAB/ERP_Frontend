@@ -2337,90 +2337,103 @@ const exportToExcel = () => {
                 </DialogActions>
             </Dialog>
 
-            <Dialog
-                open={filters.shortPreviewDialog}
-                onClose={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
-                maxWidth="xl"
-                fullWidth
-            >
-                <DialogTitle>Print Preview</DialogTitle>
-                <DialogContent ref={printRef}>
-                    {selectedRow?.Product_Array && (
-                        <React.Fragment>
-                            <table className="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th className="fa-12 bg-light">Retailer Name</th>
-                                        <th className="fa-12 bg-light">Do_Date</th>
-                                        <th className="fa-12 bg-light">Delivery_Person</th>
-                                        <th className="fa-12 bg-light">Amount</th>
-                                    </tr>
-                                </thead>
+ <Dialog
+    open={filters.shortPreviewDialog}
+    onClose={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
+    maxWidth="xl"
+    fullWidth
+>
+    <DialogTitle>Print Preview</DialogTitle>
+    <DialogContent ref={printRef}>
+        {selectedRow?.Product_Array && (
+            <React.Fragment>
+               <table className="table table-bordered">
+  <thead>
+    <tr>
+      <th className="fa-12 bg-light">Retailer Name</th>
+      <th className="fa-12 bg-light">Do_Date</th>
+      <th className="fa-12 bg-light">Delivery Person</th>
+      <th className="fa-12 bg-light text-end">Amount</th>
+    </tr>
+  </thead>
 
-                                <tbody>
-                                    {selectedRow.Product_Array.length > 0 ? (
-                                        <>
-                                            {selectedRow.Product_Array.map((group, idx) => {
-                                                const totalAmount = group.Products_List.reduce(
-                                                    (sum, product) => sum + product.Final_Amo,
-                                                    0
-                                                );
+  <tbody>
+    {selectedRow?.Product_Array?.length > 0 ? (
+      <>
+        {selectedRow.Product_Array.map((group, gIdx) => {
+          const formatDate = (d) => (d ? d.split("T")[0] : "");
+
+ 
+          const totalAmount =
+            group.Products_List?.reduce(
+              (sum, p) => sum + Number(p.Final_Amo || 0),
+              0
+            ) || 0;
+
+          
+          const firstProduct = group.Products_List?.[0] || {};
+
+          return (
+            <tr key={gIdx}>
+              <td className="fw-bold">
+                {firstProduct.Retailer_Name || "N/A"}
+              </td>
+              <td className="fw-bold text-end">
+                {formatDate(group.Product_Do_Date)}
+              </td>
+              <td className="fw-bold text-end">
+                {group.Retailer_Name ||
+                  firstProduct.Delivery_Person ||
+                  "N/A"}
+              </td>
+              <td className="fw-bold text-end">
+                {NumberFormat(totalAmount)}
+              </td>
+            </tr>
+          );
+        })}
 
 
-                                                const deliveryDetail = selectedRow.Trip_Details.find(
-                                                    (detail) => detail.Do_Id === group.Do_Id
-                                                );
-                                                   const formatDate = (dateString) => {
-                                                     if (!dateString) return '';
-                                                     return dateString.split('T')[0];
-                                                   };
-                                                   
-                                                return (
-                                                    <tr key={idx}>
-                                                        <td className="fw-bold">{group.Retailer_Name}</td>
-                                                        <td className="fw-bold text-end">{formatDate(group.Product_Do_Date)}</td>
-                                                        <td className="fw-bold text-end">{deliveryDetail?.Name || "N/A"}</td>
-                                                        <td className="fw-bold text-end">{NumberFormat(totalAmount)}</td>
-                                                    </tr>
-                                                );
-                                            })}
+        <tr>
+          <td colSpan={3} className="fw-bold text-end">
+            Total :
+          </td>
+          <td className="fw-bold text-end">
+            {NumberFormat(
+              selectedRow.Product_Array.reduce((acc, group) => {
+                const groupTotal =
+                  group.Products_List?.reduce(
+                    (sum, p) => sum + Number(p.Final_Amo || 0),
+                    0
+                  ) || 0;
+                return acc + groupTotal;
+              }, 0)
+            )}
+          </td>
+        </tr>
+      </>
+    ) : (
+      <tr>
+        <td colSpan={4} className="text-center">
+          No data available
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
-                                            <tr>
-                                                <td className="fw-bold text-end" colSpan={3}>Total:</td>
-                                                <td className="fw-bold text-end">
-                                                    {NumberFormat(
-                                                        selectedRow.Product_Array.reduce(
-                                                            (acc, group) => acc +
-                                                                group.Products_List.reduce(
-                                                                    (sum, product) => sum + product.Final_Amo,
-                                                                    0
-                                                                ),
-                                                            0
-                                                        )
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        </>
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="5" className="text-center">No data available</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </React.Fragment>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
-                        variant="outlined"
-                    >
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
+            </React.Fragment>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button
+            onClick={() => setFilters(pre => ({ ...pre, shortPreviewDialog: false }))}
+            variant="outlined"
+        >
+            Close
+        </Button>
+    </DialogActions>
+</Dialog>
             <Dialog
                 open={filters.printPreviewDialog}
                 onClose={() => setFilters(pre => ({ ...pre, printPreviewDialog: false }))}
