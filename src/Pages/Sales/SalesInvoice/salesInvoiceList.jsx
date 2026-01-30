@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -169,6 +169,8 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     const totalValues = useMemo(() => {
         return salesInvoice.reduce((acc, item) => {
 
+            const invoiceValue = Addition(acc.totalInvoiceValue, item.Total_Invoice_value)
+
             const totals = toArray(item.Products_List).reduce((tot, pro) => {
                 return {
                     tonnageValue: Addition(tot.tonnageValue, pro?.Total_Qty),
@@ -181,11 +183,13 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
 
             return {
                 totalTonnage: Addition(acc.totalTonnage, totals.tonnageValue),
-                totalBags: Addition(acc.totalBags, totals.bagsValue)
+                totalBags: Addition(acc.totalBags, totals.bagsValue),
+                totalInvoiceValue: invoiceValue
             }
         }, {
             totalTonnage: 0,
             totalBags: 0,
+            totalInvoiceValue: 0
         });
     }, [salesInvoice])
 
@@ -358,8 +362,9 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
 
                         {salesInvoice.length > 0 && (
                             <>
-                                <span> Tonnage: {totalValues.totalTonnage} </span>
-                                <span> Bags: {totalValues.totalBags} &nbsp; </span>
+                                <span> Qty: {NumberFormat(totalValues.totalTonnage)} </span>
+                                <span> Bag: {NumberFormat(totalValues.totalBags)} &nbsp; </span>
+                                <span> Worth: {NumberFormat(totalValues.totalInvoiceValue)} &nbsp; </span>
                             </>
                         )}
                     </>

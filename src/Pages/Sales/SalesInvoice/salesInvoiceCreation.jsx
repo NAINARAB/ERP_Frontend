@@ -281,23 +281,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     });
                 }
 
-                const filteredNewStaff = newStaff.filter(ns =>
-                    !prev.some(ps =>
-                        ps.Emp_Id === ns.Emp_Id &&
-                        ps.Emp_Type_Id === ns.Emp_Type_Id
-                    )
-                );
+                let updatedStaff = [...prev];
 
-                const filteredStaff = Array.from(
-                    new Map(
-                        filteredNewStaff.map(item => [
-                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
-                            item
-                        ])
-                    ).values()
-                );
+                newStaff.forEach(ns => {
+                    const existingIndex = updatedStaff.findIndex(ps => isEqualNumber(ps.Emp_Type_Id, ns.Emp_Type_Id));
 
-                return [...prev, ...filteredStaff]
+                    if (existingIndex !== -1) {
+                        const existing = updatedStaff[existingIndex];
+                        // If existing is dummy (no valid Emp_Id), replace it. 
+                        // If existing is real (valid Emp_Id), keep it (don't overwrite manual selection).
+                        if (!isValidNumber(existing.Emp_Id)) {
+                            updatedStaff[existingIndex] = ns;
+                        }
+                    } else {
+                        updatedStaff.push(ns);
+                    }
+                });
+
+                return updatedStaff;
             });
         }
     }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
@@ -362,7 +363,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
-        setStaffArray(pre => [...pre, ...defaultStaffTypesData])
+        setStaffArray(pre => {
+            const newDefaults = defaultStaffTypesData.filter(def =>
+                !pre.some(p => isEqualNumber(p.Emp_Type_Id, def.Emp_Type_Id))
+            );
+            return [...pre, ...newDefaults];
+        })
     }, [baseData.staffType])
 
     useEffect(() => {

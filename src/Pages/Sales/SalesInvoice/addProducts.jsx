@@ -35,7 +35,6 @@ const AddProductForm = ({
     editValues = null,
     initialValue = {},
     batchDetails = [],
-    saleOrderNumber
 }) => {
 
     const [productDetails, setProductDetails] = useState(initialValue);
@@ -64,7 +63,7 @@ const AddProductForm = ({
         onClose();
     }
 
-    const handleProductInputChange = () => {
+    const handleProductInputChange = (shouldClose = true) => {
 
         setOrderProducts(pre => {
             const existingProducts = pre.filter(ordered => ordered.rowId !== productDetails.rowId);
@@ -109,8 +108,27 @@ const AddProductForm = ({
             return [...existingProducts, currentProductDetails];
         });
 
-        closeDialog();
+        if (shouldClose) {
+            closeDialog();
+        } else {
+            setProductDetails(initialValue);
+        }
     };
+
+    const handleFormSubmit = (e, shouldClose) => {
+        e.preventDefault();
+        if (
+            isValidNumber(productDetails.Item_Id) && (
+                Object.hasOwn(productDetails, 'GoDown_Id')
+                    ? isValidNumber(productDetails.GoDown_Id)
+                    : true
+            )
+        ) {
+            handleProductInputChange(shouldClose);
+        } else {
+            productDetails.Item_Id ? toast.warn('Select Godown') : toast.warn('Select Product');
+        }
+    }
 
     useEffect(() => {
         setStockInGodowns([]);
@@ -205,20 +223,7 @@ const AddProductForm = ({
                 <DialogTitle className="border-bottom">
                     <span>Add Products Details</span>
                 </DialogTitle>
-                <form onSubmit={e => {
-                    e.preventDefault();
-                    if (
-                        isValidNumber(productDetails.Item_Id) && (
-                            Object.hasOwn(productDetails, 'GoDown_Id')
-                                ? isValidNumber(productDetails.GoDown_Id)
-                                : true
-                        )
-                    ) {
-                        handleProductInputChange();
-                    } else {
-                        productDetails.Item_Id ? toast.warn('Select Godown') : toast.warn('Select Product');
-                    }
-                }}>
+                <form onSubmit={e => handleFormSubmit(e, true)}>
                     <DialogContent>
                         <div className="row pb-5">
 
@@ -546,7 +551,8 @@ const AddProductForm = ({
                         <Button onClick={() => setProductDetails(initialValue)} type='button' startIcon={<ClearAll />}>Clear</Button>
                         <span>
                             <Button type="button" onClick={closeDialog}>cancel</Button>
-                            <Button type='submit' variant="outlined">Add</Button>
+                            <Button type='button' onClick={e => handleFormSubmit(e, false)} variant="outlined" className="me-2">Next</Button>
+                            <Button type='submit' variant="contained">Add</Button>
                         </span>
                     </DialogActions>
                 </form>
