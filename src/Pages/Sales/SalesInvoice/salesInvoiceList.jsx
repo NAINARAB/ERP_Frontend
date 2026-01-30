@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -11,7 +11,7 @@ import FilterableTable, { createCol } from "../../../Components/filterableTable2
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify'
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
-import { Close,Print } from "@mui/icons-material";
+import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 
@@ -42,10 +42,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     const [dialog, setDialog] = useState({
         filters: false,
         orderDetails: false,
-           printInvoice: false, 
-           deliverySlip:false
+        printInvoice: false,
+        deliverySlip: false
     });
-    const [selectedInvoice, setSelectedInvoice] = useState(null); 
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
 
     useEffect(() => {
 
@@ -166,6 +166,29 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         }).catch(e => console.error(e))
     }
 
+    const totalValues = useMemo(() => {
+        return salesInvoice.reduce((acc, item) => {
+
+            const totals = toArray(item.Products_List).reduce((tot, pro) => {
+                return {
+                    tonnageValue: Addition(tot.tonnageValue, pro?.Total_Qty),
+                    bagsValue: Addition(tot.bagsValue, pro.Alt_Bill_Qty)
+                }
+            }, {
+                tonnageValue: 0,
+                bagsValue: 0
+            })
+
+            return {
+                totalTonnage: Addition(acc.totalTonnage, totals.tonnageValue),
+                totalBags: Addition(acc.totalBags, totals.bagsValue)
+            }
+        }, {
+            totalTonnage: 0,
+            totalBags: 0,
+        });
+    }, [salesInvoice])
+
     return (
         <>
             <FilterableTable
@@ -249,59 +272,59 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
 
 
                     {
-    Field_Name: 'Action',
-    isVisible: 1,
-    isCustomCell: true,
-    Cell: ({ row }) => {
-        return (
-            <ButtonActions
-                buttonsData={[
-                    {
-                        name: 'View Order',
-                        onclick: () => {
-                            setViewOrder({
-                                orderDetails: row,
-                                orderProducts: row?.Products_List ? row?.Products_List : [],
-                            })
-                        },
-                        icon: <Visibility fontSize="small" color="primary" />,
-                    },
-                    {
-                        name: 'Print Invoice',
-                        onclick: () => {
-                            setSelectedInvoice(row);
-                            setDialog(pre => ({ ...pre, printInvoice: true }));
-                        },
-                        icon: <Print fontSize="small" color="primary" />,
-                    },
-                   {
-  name: 'Edit',
-  onclick: () => {
-  
-    navigate('create', {
-      state: {
-        ...row,
-        isEdit: true,
-      },
-    });
-  },
-  icon: <Edit fontSize="small" color="primary" />,
-  disabled: !EditRights,
-},
+                        Field_Name: 'Action',
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            return (
+                                <ButtonActions
+                                    buttonsData={[
+                                        {
+                                            name: 'View Order',
+                                            onclick: () => {
+                                                setViewOrder({
+                                                    orderDetails: row,
+                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
+                                                })
+                                            },
+                                            icon: <Visibility fontSize="small" color="primary" />,
+                                        },
+                                        {
+                                            name: 'Print Invoice',
+                                            onclick: () => {
+                                                setSelectedInvoice(row);
+                                                setDialog(pre => ({ ...pre, printInvoice: true }));
+                                            },
+                                            icon: <Print fontSize="small" color="primary" />,
+                                        },
+                                        {
+                                            name: 'Edit',
+                                            onclick: () => {
 
-                       {
-                        name: 'Delivery Slip',
-                        onclick: () => {
-                            setSelectedInvoice(row);
-                            setDialog(pre => ({ ...pre, deliverySlip: true }));
+                                                navigate('create', {
+                                                    state: {
+                                                        ...row,
+                                                        isEdit: true,
+                                                    },
+                                                });
+                                            },
+                                            icon: <Edit fontSize="small" color="primary" />,
+                                            disabled: !EditRights,
+                                        },
+
+                                        {
+                                            name: 'Delivery Slip',
+                                            onclick: () => {
+                                                setSelectedInvoice(row);
+                                                setDialog(pre => ({ ...pre, deliverySlip: true }));
+                                            },
+                                            icon: <Print fontSize="small" color="primary" />,
+                                        },
+                                    ]}
+                                />
+                            )
                         },
-                        icon: <Print fontSize="small" color="primary" />,
-                    },
-                ]}
-            />
-        )
-    },
-}
+                    }
                 ]}
                 ButtonArea={
                     <>
@@ -332,6 +355,13 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
+
+                        {salesInvoice.length > 0 && (
+                            <>
+                                <span> Tonnage: {totalValues.totalTonnage} </span>
+                                <span> Bags: {totalValues.totalBags} &nbsp; </span>
+                            </>
+                        )}
                     </>
                 }
                 // EnableSerialNumber={true}
@@ -485,8 +515,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                 </DialogActions>
             </Dialog>
 
-
-  <Dialog
+            <Dialog
                 open={dialog.printInvoice}
                 onClose={() => {
                     setDialog(pre => ({ ...pre, printInvoice: false }));
@@ -518,7 +547,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button 
+                    <Button
                         onClick={() => {
                             setDialog(pre => ({ ...pre, printInvoice: false }));
                             setSelectedInvoice(null);
@@ -529,10 +558,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                 </DialogActions>
             </Dialog>
 
-
-
-
-  <Dialog
+            <Dialog
                 open={dialog.deliverySlip}
                 onClose={() => {
                     setDialog(pre => ({ ...pre, deliverySlip: false }));
@@ -564,7 +590,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button 
+                    <Button
                         onClick={() => {
                             setDialog(pre => ({ ...pre, deliverySlip: false }));
                             setSelectedInvoice(null);
@@ -574,8 +600,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     </Button>
                 </DialogActions>
             </Dialog>
-
-
         </>
     )
 }
