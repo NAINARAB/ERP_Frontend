@@ -25,7 +25,10 @@ const initialInputValue = {
     Pos_Brand_Id:'',
     IsActive:'',
     Product_Rate:'',
-    Max_Rate:''
+    Max_Rate:'',
+    Coolie:'',
+    Packing_CH:'',
+    Other_Expen:''
 
 }
 
@@ -259,6 +262,34 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
          
             value: productInputValue.Max_Rate,
         },
+          {
+            label: 'Coolie',
+            elem: 'input',
+            oninput: e => onlynum(e),
+            placeholder: "Enter Coolie",
+            event: e => setProductInputValue(value => ({ ...value, Coolie: e.target.value })),
+         
+            value: productInputValue.Coolie,
+        },
+          {
+            label: 'Packing',
+            elem: 'input',
+            oninput: e => onlynum(e),
+            placeholder: "Enter Packing Ch",
+            event: e => setProductInputValue(value => ({ ...value, Packing_CH: e.target.value })),
+         
+            value: productInputValue.Packing_CH,
+        },
+          {
+            label: 'Other Exp',
+            elem: 'input',
+            oninput: e => onlynum(e),
+            placeholder: "Enter Other Expen",
+            event: e => setProductInputValue(value => ({ ...value, Other_Expen: e.target.value })),
+         
+            value: productInputValue.Other_Expen,
+        },
+
         {
             label: 'Product Description',
             elem: 'textarea',
