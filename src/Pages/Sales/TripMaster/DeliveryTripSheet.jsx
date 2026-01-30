@@ -1614,7 +1614,7 @@ const exportToExcel = () => {
                     allProducts.push({
                         serialNo: serialNo++,
                         invoiceNo: product.Do_Inv_No || "Delivery",
-                        retailerName: delivery.Retailer_Name || '',
+                        retailerName: product.Retailer_Name || '',
                         location: product.Party_Location || '',
                         itemName: product.Product_Name || '',
                         hsnCode: product.HSN_Code || '',
