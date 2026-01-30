@@ -1019,7 +1019,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
-        Items: []
+        Items: [],
+        Ledger_Name:[]
     });
      const storage = JSON.parse(localStorage.getItem('user'));
     const [selectedRow, setSelectedRow] = useState([]);
@@ -1161,35 +1162,89 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         }));
     }, [tripData]);
 
-    const filteredData = useMemo(() => {
-        return tripData.filter(trip => {
-            const hasFromGodownMatch = filters.FromGodown.length > 0
-                ? trip.Product_Array.some(product =>
-                    filters.FromGodown.some(selected => selected.value === product.FromLocation)
-                )
-                : false;
 
-            const hasToGodownMatch = filters.ToGodown.length > 0
-                ? trip.Product_Array.some(product =>
-                    filters.ToGodown.some(selected => selected.value === product.ToLocation)
-                )
-                : false;
-
-            const hasItemMatch = filters.Items.length > 0
-                ? trip.Product_Array.some(product =>
-                    filters.Items.some(selected => selected.value === product.Product_Name)
-                )
-                : false;
-
-            const hasEmployeeMatch = filters.Staffs.length > 0
-                ? trip.Employees_Involved.some(staff =>
-                    filters.Staffs.some(selected => selected.value === staff.Emp_Name)
-                )
-                : false;
-
-            return hasFromGodownMatch || hasToGodownMatch || hasItemMatch || hasEmployeeMatch;
+   const uniqueLedgers = useMemo(() => {
+        const allLedgers = tripData.flatMap((trip) => {
+            const ledgers = new Set();
+            
+            trip.Trip_Details?.forEach(detail => {
+                if (detail.Ledger_Name) {
+                    ledgers.add(detail.Ledger_Name);
+                }
+            });
+            
+            trip.Product_Array?.forEach(product => {
+                if (product.Ledger_Name) {
+                    ledgers.add(product.Ledger_Name);
+                }
+            });
+            
+            return Array.from(ledgers);
         });
-    }, [tripData, filters]);
+        
+        return [...new Set(allLedgers)].map((name) => ({
+            value: name,
+            label: name,
+        }));
+    }, [tripData]);
+
+
+      const filteredData = useMemo(() => {
+            // If no filters are selected, return all data
+            if (filters.Ledger_Name.length === 0 && 
+                filters.FromGodown.length === 0 &&
+                filters.ToGodown.length === 0 &&
+                filters.Items.length === 0 &&
+                filters.Staffs.length === 0) {
+                return tripData;
+            }
+    
+            return tripData.filter(trip => {
+                // Check ledger filter - only if filters.Ledger_Name has items
+                const hasLedgerMatch = filters.Ledger_Name.length === 0 || 
+                    (
+                        trip.Trip_Details?.some(detail => 
+                            filters.Ledger_Name.some(selected => 
+                                selected.value === detail.Ledger_Name
+                            )
+                        ) ||
+                        trip.Product_Array?.some(product => 
+                            filters.Ledger_Name.some(selected => 
+                                selected.value === product.Ledger_Name
+                            )
+                        )
+                    );
+    
+                // Check from godown filter - only if filters.FromGodown has items
+                const hasFromGodownMatch = filters.FromGodown.length === 0 ||
+                    trip.Product_Array.some(product =>
+                        filters.FromGodown.some(selected => selected.value === product.FromLocation)
+                    );
+    
+                // Check to godown filter - only if filters.ToGodown has items
+                const hasToGodownMatch = filters.ToGodown.length === 0 ||
+                    trip.Product_Array.some(product =>
+                        filters.ToGodown.some(selected => selected.value === product.ToLocation)
+                    );
+    
+                // Check item filter - only if filters.Items has items
+                const hasItemMatch = filters.Items.length === 0 ||
+                    trip.Product_Array.some(product =>
+                        filters.Items.some(selected => selected.value === product.Product_Name)
+                    );
+    
+                // Check staff filter - only if filters.Staffs has items
+                const hasEmployeeMatch = filters.Staffs.length === 0 ||
+                    trip.Employees_Involved.some(staff =>
+                        filters.Staffs.some(selected => selected.value === staff.Emp_Name)
+                    );
+    
+                // Return true if ALL applied filters match
+                return hasLedgerMatch && hasFromGodownMatch && hasToGodownMatch && 
+                       hasItemMatch && hasEmployeeMatch;
+            });
+        }, [tripData, filters]);
+    
 
     const flattenProductsList = (productArray) => {
         if (!Array.isArray(productArray)) return [];
@@ -1263,304 +1318,6 @@ const packSummary = useMemo(() => {
     return packMap;
 }, [selectedRow]);
 
-
-
-// const exportToExcel = () => {
-  
-    
-//     if (!selectedRow?.Product_Array || !Array.isArray(selectedRow.Product_Array)) {
-//         toast.error('No trip data available to export');
-//         return;
-//     }
-
-//     try {
-     
-//         const wb = XLSX.utils.book_new();
-        
-      
-//         const mainData = [];
-        
-      
-//         mainData.push(
-//             ['DELIVERY CHALLAN', '', '', `GSTIN / UIN: ${companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number || 'Not Available'}`, '', '', 'ORIGINAL / DUPLICATE'],
-//             ['Company Name:', companyInfo?.Company_Name || '', '', 'FSSAI No:', '', 'Challan No:', selectedRow?.Challan_No || ''],
-//             ['Address:', companyInfo?.Company_Address || '', '', 'Phone No:', '9842131353, 9786131353', 'Date:', selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''],
-//             [],
-//             ['Vehicle No:', selectedRow?.Vehicle_No || '', 'Delivery Person:', 
-//              selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Delivery Man')?.map(staff => staff?.Emp_Name).join(', ') || '', 
-//              'Start Time:', selectedRow?.StartTime ? LocalTime(new Date(selectedRow.StartTime)) : '', 'Start KM:', selectedRow?.Trip_ST_KM || ''],
-//             ['Trip No:', selectedRow?.Trip_No || '', 'LoadMan:', 
-//              selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Load Man')?.map(staff => staff?.Emp_Name).join(', ') || '', 
-//              'End Time:', selectedRow?.EndTime ? LocalTime(new Date(selectedRow.EndTime)) : '', 'End KM:', selectedRow?.Trip_EN_KM || ''],
-//             []
-//         );
-
-    
-//         mainData.push(
-//             ['S.No', 'Invoice No', 'Retailer Name', 'Location', 'Item Name', 'HSN Code', 'Quantity','Act_Qty' ,'Rate', 'Amount']
-//         );
-
-
-//         let allProducts = [];
-//         let serialNo = 1;
-        
-    
-//         selectedRow.Product_Array.forEach((delivery) => {
-      
-//             if (delivery.Products_List && Array.isArray(delivery.Products_List)) {
-          
-//                 delivery.Products_List.forEach((product) => {
-            
-//                     const quantity = product.Bill_Qty || product.Act_Qty || 0;
-                    
-       
-//                     const rate = product.Taxable_Rate || product.Item_Rate || 0;
-                    
-                  
-//                     const amount = (quantity * rate); 
-                    
-//                     allProducts.push({
-//                         serialNo: serialNo++,
-//                         invoiceNo: product.Do_Inv_No || "Delivery",
-//                         retailerName: delivery.Retailer_Name || '',
-//                         location: product.Party_Location || '',
-//                         itemName: product.Product_Name || '',
-//                         hsnCode: product.HSN_Code || '',
-//                         Act_Qty: product.Bill_Qty / product.Pack || '',
-//                         quantity: quantity,
-//                         rate: rate , 
-//                         amount: amount,
-//                         pack: product.Pack || ''
-//                     });
-//                 });
-//             }
-//         });
-
-       
-//         if (allProducts.length > 0) {
-//             allProducts.forEach(product => {
-//                 mainData.push([
-//                     product.serialNo,
-//                     product.invoiceNo,
-//                     product.retailerName,
-//                     product.location,
-//                     product.itemName,
-//                     product.hsnCode,
-//                     product.quantity,
-//                     product.rate.toFixed(2),
-//                     product.amount.toFixed(2)
-//                 ]);
-//             });
-//         } else {
-//             mainData.push(['No products found in this trip', '', '', '', '', '', '', '', '']);
-//         }
-
-    
-//         const totalQty = allProducts.reduce((sum, product) => sum + (Number(product.quantity) || 0), 0);
-//         const totalAmount = allProducts.reduce((sum, product) => sum + (Number(product.amount) || 0), 0);
-
-        
-//         mainData.push(
-//             [], 
-//             ['Total', '', '', '', '', '', totalQty, '', totalAmount.toFixed(2)],
-//             [], // Empty row
-//             // Tax Summary Header
-//             ['HSN / SAC', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total Tax', '', '', '']
-//         );
-
-      
-//         const taxSummary = {};
-//         allProducts.forEach(product => {
-//             const hsnCode = product.hsnCode;
-//             if (!taxSummary[hsnCode]) {
-//                 taxSummary[hsnCode] = {
-//                     taxableValue: 0,
-//                     igst: 0,
-//                     cgst: 0,
-//                     sgst: 0
-//                 };
-//             }
-//             taxSummary[hsnCode].taxableValue += product.amount;
-//         });
-
-//         Object.keys(taxSummary).forEach(hsnCode => {
-//             const taxData = taxSummary[hsnCode];
-//             mainData.push([
-//                 hsnCode || 'N/A',
-//                 taxData.taxableValue.toFixed(2),
-//                 taxData.igst.toFixed(2),
-//                 taxData.cgst.toFixed(2),
-//                 taxData.sgst.toFixed(2),
-//                 (taxData.igst + taxData.cgst + taxData.sgst).toFixed(2),
-//                 '', '', ''
-//             ]);
-//         });
-
-//         const totalTaxable = Object.values(taxSummary).reduce((sum, item) => sum + item.taxableValue, 0);
-//         const totalIGST = Object.values(taxSummary).reduce((sum, item) => sum + item.igst, 0);
-//         const totalCGST = Object.values(taxSummary).reduce((sum, item) => sum + item.cgst, 0);
-//         const totalSGST = Object.values(taxSummary).reduce((sum, item) => sum + item.sgst, 0);
-//         const totalTax = totalIGST + totalCGST + totalSGST;
-
-//         mainData.push(
-//             ['Total', totalTaxable.toFixed(2), totalIGST.toFixed(2), totalCGST.toFixed(2), totalSGST.toFixed(2), totalTax.toFixed(2), '', '', ''],
-//             [], // Empty row
-//             // Pack Summary
-//             ['Pack Details', 'Count', '', '', '', '', '', '', '']
-//         );
-
-
-//         const packSummary = {};
-       
-//         allProducts.forEach(product => {
-//             if (product.pack) {
-//                 const packKey = `${product.pack} KG`;
-//                 packSummary[packKey] = (packSummary[packKey] || 0) + 1;
-//             }
-//         });
-
-//         Object.entries(packSummary).forEach(([pack, count]) => {
-//             mainData.push([pack, `Bags: ${count}`, '', '', '', '', '', '', '']);
-//         });
-
-//         if (Object.keys(packSummary).length === 0) {
-//             mainData.push(['No pack information', '', '', '', '', '', '', '', '']);
-//         }
-
-//         const grandTotal = totalTaxable + totalTax;
-//         mainData.push(
-//             [], // Empty row
-//             ['Prepared By', '', 'Executed By', '', 'Verified By', '', '', '', ''],
-//             [], // Empty row
-//             ['Other Expenses', '0.00', 'Round Off', '0.00', 'Grand Total', grandTotal.toFixed(2), '', '', ''],
-//             [], // Empty row
-//             ['Total Amount (in words):', `INR ${numberToWords(parseInt(grandTotal))} only.`, '', '', '', '', '', '', ''],
-//             [], // Empty row
-//             ['This is a Computer Generated Invoice', '', '', '', '', '', '', '', '']
-//         );
-
-//         const ws = XLSX.utils.aoa_to_sheet(mainData);
-        
- 
-//         ws['!cols'] = [
-//             { wch: 8 },  
-//             { wch: 18 },  
-//             { wch: 30 }, 
-//             { wch: 15 }, 
-//             { wch: 35 },  
-//             { wch: 12 },  
-//             { wch: 12 },  
-//             { wch: 12 }, 
-//             { wch: 15 }  
-//         ];
-
-   
-//         const rowCount = mainData.length;
-//         ws['!rows'] = [];
-//         for (let i = 0; i < rowCount; i++) {
-//             ws['!rows'][i] = { hpt: 20 }; 
-//         }
-
-//         XLSX.utils.book_append_sheet(wb, ws, 'Delivery Challan');
-
-  
-//         const simpleData = [];
-        
-       
-//         simpleData.push(['DELIVERY CHALLAN']);
-//         simpleData.push([`Company: ${companyInfo?.Company_Name || ''}`]);
-//         simpleData.push([`Address: ${companyInfo?.Company_Address || ''}`]);
-//         simpleData.push([`GSTIN/UIN: ${companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number || 'Not Available'}`]);
-//         simpleData.push([`Challan No: ${selectedRow?.Challan_No || ''} | Date: ${selectedRow.Trip_Date ? LocalDate(selectedRow.Trip_Date) : ''}`]);
-//         simpleData.push([`Vehicle No: ${selectedRow?.Vehicle_No || ''} | Trip No: ${selectedRow?.Trip_No || ''}`]);
-//         simpleData.push([]);
-        
-   
-//         simpleData.push(['S.No', 'Item Description', 'HSN', 'Qty', 'Rate', 'Amount']);
-        
-      
-//         let sn = 1;
-//         selectedRow.Product_Array.forEach((delivery) => {
-//             if (delivery.Products_List && Array.isArray(delivery.Products_List)) {
-//                 delivery.Products_List.forEach((product) => {
-//                     const qty = product.Bill_Qty || product.Act_Qty || 0;
-//                     const rate = (product.Taxable_Rate || product.Item_Rate || 0) / 100;
-//                     const amount = qty * rate;
-                    
-//                     simpleData.push([
-//                         sn++,
-//                         `${product.Product_Name || ''}`,
-//                         product.HSN_Code || '',
-//                         qty,
-//                         rate.toFixed(2),
-//                         amount.toFixed(2)
-//                     ]);
-//                 });
-//             }
-//         });
-        
-      
-//         simpleData.push([]);
-//         const totalQtySimple = allProducts.reduce((sum, p) => sum + p.quantity, 0);
-//         const totalAmountSimple = allProducts.reduce((sum, p) => sum + p.amount, 0);
-//         simpleData.push(['', '', 'TOTAL:', totalQtySimple, '', totalAmountSimple.toFixed(2)]);
-        
-       
-//         simpleData.push([]);
-//         simpleData.push(['TAX SUMMARY']);
-//         simpleData.push(['HSN', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total']);
-        
-//         Object.keys(taxSummary).forEach(hsn => {
-//             const tax = taxSummary[hsn];
-//             simpleData.push([
-//                 hsn,
-//                 tax.taxableValue.toFixed(2),
-//                 tax.igst.toFixed(2),
-//                 tax.cgst.toFixed(2),
-//                 tax.sgst.toFixed(2),
-//                 (tax.taxableValue + tax.igst + tax.cgst + tax.sgst).toFixed(2)
-//             ]);
-//         });
-        
-//         simpleData.push([]);
-//         simpleData.push(['Grand Total:', grandTotal.toFixed(2)]);
-//         simpleData.push(['In Words:', `INR ${numberToWords(parseInt(grandTotal))} only`]);
-//         simpleData.push([]);
-//         simpleData.push(['--- This is a Computer Generated Invoice ---']);
-        
-//         const wsSimple = XLSX.utils.aoa_to_sheet(simpleData);
-        
-      
-//         wsSimple['!cols'] = [
-//             { wch: 6 },   
-//             { wch: 40 },  
-//             { wch: 10 }, 
-//             { wch: 10 }, 
-//             { wch: 12 },  
-//             { wch: 15 }   
-//         ];
-        
-//         XLSX.utils.book_append_sheet(wb, wsSimple, 'Simple Format');
-
-       
-//         const excelBuffer = XLSX.write(wb, { 
-//             bookType: 'xlsx', 
-//             type: 'array',
-//             bookSST: false,
-//             cellStyles: true
-//         });
-//         const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        
-//         const fileName = `Delivery_Challan_${selectedRow?.Challan_No || selectedRow?.Trip_No || 'Trip'}_${LocalDate(new Date())}.xlsx`;
-//         saveAs(data, fileName);
-        
-//         toast.success('Excel file downloaded successfully!');
-        
-//     } catch (error) {
-       
-//         toast.error('Failed to export to Excel: ' + error.message);
-//     }
-// };
 
 const exportToExcel = () => {
     if (!selectedRow?.Product_Array || !Array.isArray(selectedRow.Product_Array)) {
@@ -1922,14 +1679,10 @@ const exportToExcel = () => {
         <>
 
             <FilterableTable
-                dataArray={(
-                    filters.FromGodown.length > 0 ||
-                    filters.ToGodown.length > 0 ||
-                    filters.Staffs.length > 0
-                ) ? filteredData : tripData}
-                title="Trip Sheets"
-                maxHeightOption
-                ExcelPrintOption
+              dataArray={filteredData}
+                 title="Trip Sheets"
+                 maxHeightOption
+                 ExcelPrintOption 
                 ButtonArea={
                     <>
                         <Button
@@ -2277,6 +2030,27 @@ const exportToExcel = () => {
                                     </td>
                                 </tr>
 
+                   <tr>
+                                                      <td style={{ verticalAlign: 'middle' }}>Ledger Name</td>
+                                                      <td colSpan={3}>
+                                                          <Select
+                                                              value={filters.Ledger_Name}
+                                                              onChange={(selectedOptions) =>
+                                                                  setFilters((prev) => ({ ...prev, Ledger_Name: selectedOptions }))
+                                                              }
+                                                              menuPortalTarget={document.body}
+                                                              options={uniqueLedgers}
+                                                              isMulti
+                                                              styles={customSelectStyles}
+                                                              isSearchable={true}
+                                                              placeholder={"Select Ledger Name"}
+                                                              maxMenuHeight={300}
+                                                              isLoading={!tripData.length}
+                                                              loadingMessage={() => "Loading data..."}
+                                                          />
+                                                      </td>
+                                                  </tr>
+
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Staffs</td>
                                     <td colSpan={3}>
@@ -2296,25 +2070,7 @@ const exportToExcel = () => {
                                     </td>
                                 </tr>
 
-                                {/* <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Items</td>
-                                    <td colSpan={3}>
-                                        <Select
-                                            value={filters.Items}
-                                            onChange={(selectedOptions) =>
-                                                setFilters((prev) => ({ ...prev, Items: selectedOptions }))
-                                            }
-                                            menuPortalTarget={document.body}
-                                            options={uniqueItems}
-                                            isMulti
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Select Items"}
-                                            maxMenuHeight={300}
-                                        />
-                                    </td>
-                                </tr> */}
-
+                            
 
                             </tbody>
                         </table>
