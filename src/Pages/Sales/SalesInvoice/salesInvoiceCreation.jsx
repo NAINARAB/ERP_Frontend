@@ -148,9 +148,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 // const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
                 //     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
                 // );
-                const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : []).sort(
-                    (a, b) => String(a?.Stock_Item_Ledger_Name).localeCompare(b?.Stock_Item_Ledger_Name)
-                );
+                const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : [])
 
                 setBaseData((pre) => ({
                     ...pre,
