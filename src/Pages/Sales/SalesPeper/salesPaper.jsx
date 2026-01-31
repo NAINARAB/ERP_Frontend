@@ -103,6 +103,7 @@ const transformSalesVoucherData = (data = []) => {
             voucherNoOrRate: '',
             unitQuantity: RoundNumber(totalUnitQuantity),
             billedQuantity: RoundNumber(totalBilledQuantity),
+            tripNUmber:'',
             broker: '',
             transporter: '',
             loadMan: '',
@@ -111,6 +112,8 @@ const transformSalesVoucherData = (data = []) => {
     };
 
     data.forEach((entry, entryIndex) => {
+
+        const tripNumber=entry.tripNumber || ''
 
         if (currentVoucherType && currentVoucherType !== entry.voucheGet) {
             pushCumulativeRow(currentVoucherType);
@@ -132,6 +135,7 @@ const transformSalesVoucherData = (data = []) => {
                 unitQuantity: '',
                 billedQuantity: '',
                 broker: '',
+                // tripNumber:tripNumber,
                 transporter: '',
                 loadMan: '',
                 rowType: "VOUCHER-HEADER"
@@ -163,6 +167,7 @@ const transformSalesVoucherData = (data = []) => {
             broker: getStaff(entry.staffDetails || [], "Broker"),
             transporter: getStaff(entry.staffDetails || [], "Transport"),
             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
+              tripNumber: tripNumber,
             rowType: "HEADER"
         });
 
@@ -183,6 +188,7 @@ const transformSalesVoucherData = (data = []) => {
                 voucherNoOrRate: item.billedRate || '',
                 unitQuantity: item.actUnitQuantity || '',
                 billedQuantity: item.billedQuantity || '',
+                tripNumber: tripNumber,
                 broker: '',
                 transporter: '',
                 loadMan: '',
@@ -431,6 +437,7 @@ const downloadExcel = async (rows) => {
                         Fied_Data: 'string',
                         tdClass: ({ row }) => headerColor(row.rowType)
                     },
+                      createCol('tripNumber', 'string', 'Trip_No'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Vou.No / Rate',

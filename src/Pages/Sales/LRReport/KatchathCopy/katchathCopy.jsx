@@ -308,7 +308,7 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                                     <p className="m-0">{invoice.mailingNumber ? invoice.mailingNumber : " "}</p>
                                 </div>
 
-                                <div className="col-7 p-2">
+                                {/* <div className="col-7 p-2">
                                     <div className="table-responsive">
                                         <table className="table table-borderless" style={{lineHeight:'0.37cm'}}>
                                             <tbody>
@@ -324,6 +324,29 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                                                         {toArray(invoice.productDetails).reduce((acc, item) => acc + item.quantity, 0)}
                                                     </td>
                                                 </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div> */}
+
+                                    <div className="col-7 p-2">
+                                    <div className="table-responsive">
+                                        <table className="table table-borderless"  style={{lineHeight:'0.35cm'}}>
+                                            <tbody>
+                                                {toArray(invoice.productDetails).map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td>{item.itemName}</td>
+                                                        <td>{item.quantity}</td>
+                                                    </tr>
+                                                ))}
+                                         <tr>
+                                         <td className="border text-right pr-4" style={{textAlign: "right", fontSize: "18px", fontWeight: "bold"}}>
+                                             Total
+                                         </td>
+                                         <td className="border text-right" style={{textAlign: "right", fontSize: "18px", fontWeight: "bold"}}>
+                                             {toArray(invoice.productDetails).reduce((acc, item) => acc + item.quantity, 0)}
+                                         </td>
+                                     </tr>
                                             </tbody>
                                         </table>
                                     </div>

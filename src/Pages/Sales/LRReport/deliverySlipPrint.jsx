@@ -192,11 +192,12 @@ if (isCombinedPrint) {
                             <div
                                 style={{
                                     position: "absolute",
-                                    top: "5.7cm",
+                                    top: "6cm",
                                     left: "0.25cm",
                                     right: "0.25cm",
                                     bottom: "3.8cm",
                                     overflow: "auto"
+                                    
                                 }}
                             >
                                 {toArray(invoice.productDetails).map((item, idx) => (
@@ -222,10 +223,10 @@ if (isCombinedPrint) {
                                     fontSize: "11px"
                                 }}
                             >
-                                <div style={{ width: "2.2cm" }}></div>
-                                <div style={{ width: "5.0cm", paddingLeft: "0.05cm" }}>TOTAL</div>
-                                <div style={{ width: "1.5cm", textAlign: "center" }}>{totalWeight}</div>
-                                <div style={{ width: "1.8cm", textAlign: "center" }}>{totalQty}</div>
+                               <div style={{ width: "2.2cm", fontSize: "16px" }}></div>
+<div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}>TOTAL</div>
+<div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
+<div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
                             </div>
 
                             {/* Staff Details */}
@@ -333,7 +334,7 @@ if (isCombinedPrint) {
                                     style={{
                                         position: "absolute",
                                         right: "0.25cm",
-                                        top: "3.2cm",
+                                        top: "3.3cm",
                                         right: "1.7cm",
                                         width: "2.2cm",
                                         textAlign: "right",
@@ -349,7 +350,7 @@ if (isCombinedPrint) {
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "4.0cm",
+                                        top: "4.1cm",
                                         left: "2.1cm",
                                         right: "0.25cm",
                                         overflow: "hidden"
@@ -369,7 +370,7 @@ if (isCombinedPrint) {
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "5.7cm",
+                                        top: "6cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         bottom: "3.8cm",
@@ -401,10 +402,10 @@ if (isCombinedPrint) {
                                     }}
                                 >
                                     <div style={{ width: "2.2cm" }}></div>
-                                    <div style={{ width: "4.5cm" }}>TOTAL</div>
-                                    <div style={{ width: "1.5cm", textAlign: "center" }}>{totalWeight}</div>
-                                    <div style={{ width: "1.8cm", textAlign: "center" }}>{totalQty}</div>
-                                </div>
+                                 <div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}>TOTAL</div>
+<div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
+<div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
+                            </div>
 
                                 {/* Staff Details */}
                                 <div
