@@ -235,17 +235,17 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             .catch(console.error);
     }, []);
 
-    const costTypeColumns = useMemo(() => {
-        return costTypes
-            .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
-            // .filter(
-            //     (costType) =>
-            //         !["Broker", "Transport"].some((keyword) => String(costType?.Cost_Category).includes(keyword))
-            // )
-            .map((costType) => {
-                const field = `costType_${toNumber(costType.Cost_Category_Id)}`;
+ const costTypeColumns = useMemo(() => {
 
-                return {
+    const columns = costTypes
+        .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+        .map((costType) => {
+            const field = `costType_${toNumber(costType.Cost_Category_Id)}`;
+            
+            return {
+                costType: costType.Cost_Category,
+                field: field,
+                columnConfig: {
                     Field_Name: field,
                     Fied_Data: "string",
                     isVisible: 1,
@@ -256,9 +256,27 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         const names = getCostTypeEmployees(row, costType.Cost_Category_Id).join(", ");
                         return <span>{names || "-"}</span>;
                     },
-                };
-            });
-    }, [costTypes, uniqueInvolvedCost]);
+                }
+            };
+        });
+    
+
+    return columns.sort((a, b) => {
+        const aName = a.costType.toLowerCase();
+        const bName = b.costType.toLowerCase();
+        
+      
+        if (aName.includes('broker')) return -1;
+        if (bName.includes('broker')) return 1;
+        
+     
+        if (aName.includes('transport')) return -1;
+        if (bName.includes('transport')) return 1;
+        
+     
+        return a.costType.localeCompare(b.costType);
+    }).map(c => c.columnConfig);
+}, [costTypes, uniqueInvolvedCost]);
 
     const filterColumns = useMemo(() => [...columns, ...costTypeColumns], [columns, costTypeColumns]);
 
@@ -386,19 +404,19 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 continue;
             }
 
-            // string multi-select
+          
             if (Array.isArray(filterVal)) {
                 const selected = filterVal.map(normalize).filter(Boolean);
                 if (!selected.length) continue;
 
                 if (typeof column.getFilterValues === "function") {
-                    // computed columns (costType_*)
+                  
                     filtered = filtered.filter((item) => {
                         const rowVals = (column.getFilterValues(item) || []).map(normalize).filter(Boolean);
                         return selected.some((v) => rowVals.includes(v));
                     });
                 } else {
-                    // normal row field
+     
                     filtered = filtered.filter((item) => selected.includes(normalize(item[key])));
                 }
             }
