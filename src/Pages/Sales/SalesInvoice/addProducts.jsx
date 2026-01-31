@@ -163,9 +163,8 @@ const AddProductForm = ({
 
         if (!isValidNumber(Bill_Qty) || Bill_Qty === 0) return;
 
-        if (lastEditedRef.current === 'RATE' && isValidNumber(Item_Rate)) {
+        if ((lastEditedRef.current === 'RATE' || lastEditedRef.current === 'QTY') && isValidNumber(Item_Rate)) {
             const amount = Multiplication(Item_Rate, Bill_Qty);
-
             setProductDetails(prev =>
                 prev.Amount === amount
                     ? prev
@@ -175,14 +174,13 @@ const AddProductForm = ({
 
         if (lastEditedRef.current === 'AMOUNT' && isValidNumber(Amount)) {
             const rate = Division(Amount, Bill_Qty);
-
             setProductDetails(prev =>
                 prev.Item_Rate === rate
                     ? prev
                     : { ...prev, Item_Rate: rate }
             );
         }
-    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty]);
+    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty, productDetails.Act_Qty]);
 
     const godownOptions = useMemo(() => {
         if (!checkIsNumber(productDetails.Item_Id)) return [];
@@ -378,6 +376,7 @@ const AddProductForm = ({
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
+                                        lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
                                         const alterQuantity = Division(e.target.value, pack);
                                         setProductDetails(pre => ({
@@ -401,6 +400,7 @@ const AddProductForm = ({
                                     className="cus-inpt"
                                     type="number"
                                     onChange={e => {
+                                        lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
                                         const qty = Multiplication(e.target.value, pack)
                                         setProductDetails(pre => ({
@@ -423,6 +423,7 @@ const AddProductForm = ({
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
+                                        lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
                                         const alterQuantity = Division(e.target.value, pack);
                                         setProductDetails(pre => ({
@@ -444,6 +445,7 @@ const AddProductForm = ({
                                     className="cus-inpt"
                                     type="number"
                                     onChange={e => {
+                                        lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
                                         setProductDetails(pre => ({
                                             ...pre,
