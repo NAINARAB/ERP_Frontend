@@ -387,7 +387,8 @@ export const displayColumns = ({
                                                         Retailer_Name: OrderDetails?.PartyName,
                                                         Discount: OrderDetails?.Discount,
                                                         QualityCondition: OrderDetails?.QualityCondition,
-                                                        PaymentDays: OrderDetails?.PaymentDays
+                                                        PaymentDays: OrderDetails?.PaymentDays,
+                                                        isFromPurchaseOrder: true
                                                     },
                                                     orderInfo: DeliveryDetails.filter(
                                                         fil => toNumber(fil.pendingInvoiceWeight) > 0
@@ -398,6 +399,7 @@ export const displayColumns = ({
                                                         Location_Id: item?.LocationId,
                                                         Item_Id: item?.ItemId,
                                                         Item_Name: item?.ItemName || 'not found',
+                                                        Product_Name: item?.ItemName || 'not found',
                                                         Bill_Qty: item?.pendingInvoiceWeight,
                                                         Act_Qty: item?.Weight,
                                                         Bill_Alt_Qty: item?.Quantity,

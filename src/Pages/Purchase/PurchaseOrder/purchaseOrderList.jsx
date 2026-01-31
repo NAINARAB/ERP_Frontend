@@ -238,11 +238,12 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                                                 label: obj?.Retailer_Name
                                             }))
                                         ]}
-                                        styles={customSelectStyles}
+                                        styles={customSelectStyles} 
                                         isSearchable={true}
                                         placeholder={"Select Vendor"}
                                         maxMenuHeight={300}
                                         filterOption={reactSelectFilterLogic}
+                                        menuPortalTarget={document.body}
                                     />
                                 </td>
                             </tr>
