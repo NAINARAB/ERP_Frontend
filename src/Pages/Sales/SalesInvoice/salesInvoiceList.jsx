@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Button, Dialog, Box,Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
@@ -8,12 +8,14 @@ import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-mater
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
+
+
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -26,6 +28,7 @@ const defaultFilters = {
 };
 
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+    const location = useLocation();
     const sessionValue = sessionStorage.getItem('filterValues');
     const navigate = useNavigate();
     const [salesInvoice, setSalesInvoice] = useState([]);
@@ -34,9 +37,12 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         retailers: [],
         createdBy: []
     });
+    const [isInitialLoad,setIsInitialLoad] = useState(true);
+    const [filtersLoaded, setFiltersLoaded] = useState(false);
     const [viewOrder, setViewOrder] = useState({});
-    const [reload, setReload] = useState(false)
-
+    const [reload, setReload] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); 
+    const [isFetchingData, setIsFetchingData] = useState(false); 
     const [filters, setFilters] = useState(defaultFilters);
 
     const [dialog, setDialog] = useState({
@@ -46,56 +52,44 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         deliverySlip: false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+  
+    const [voucherFromNavigation,setVoucherFromNavigation]=useState(false)
 
-    useEffect(() => {
-
-        const otherSessionFiler = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate,
-            Retailer = defaultFilters.Retailer,
-            CreatedBy = defaultFilters.CreatedBy,
-            SalesPerson = defaultFilters.SalesPerson,
-            VoucherType = defaultFilters.VoucherType,
-            Cancel_status = defaultFilters.Cancel_status
-        } = otherSessionFiler;
-
-        setFilters(pre => ({
-            ...pre,
-            Fromdate, Todate, Retailer, CreatedBy,
-            SalesPerson, VoucherType, Cancel_status
-        }));
-
-    }, [sessionValue, pageID]);
-
-    useEffect(() => {
-        const otherSessionFiler = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate,
-            Retailer = defaultFilters.Retailer.value,
-            CreatedBy = defaultFilters.CreatedBy.value,
-            VoucherType = defaultFilters.VoucherType.value,
-            Cancel_status = defaultFilters.Cancel_status
-        } = otherSessionFiler;
-
-        fetchLink({
-            address: `sales/salesInvoice?
-            Fromdate=${Fromdate}&
-            Todate=${Todate}&
-            Retailer_Id=${Retailer?.value}&
-            Created_by=${CreatedBy?.value}&
-            VoucherType=${VoucherType?.value}&
-            Cancel_status=${Cancel_status}`,
-            loadingOn, loadingOff
-        }).then(data => {
-            if (data.success) {
-                setSalesInvoice(data?.data)
+      useEffect(() => {
+        let isMounted = true;
+        
+        const fetchFilters = async () => {
+            try {
+                setIsLoading(true);
+                const data = await fetchLink({
+                    address: `sales/salesInvoice/filterValues`,
+                    loadingOn,
+                    loadingOff
+                });
+                
+                if (isMounted && data.success) {
+                    setFiltersDropDown({
+                        voucherType: toArray(data?.others?.voucherType) || [],
+                        retailers: toArray(data?.others?.retailers) || [],
+                        createdBy: toArray(data?.others?.createdBy) || [],
+                    });
+                    setFiltersLoaded(true);
+                }
+            } catch (e) {
+                console.error(e);
+                toast.error('Failed to load filter options');
             }
-        }).catch(e => console.error(e));
+        };
 
-    }, [sessionValue, pageID, reload])
+        fetchFilters();
+        
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
 
     useEffect(() => {
-
         fetchLink({
             address: `sales/salesInvoice/filterValues`
         }).then(data => {
@@ -104,14 +98,137 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     voucherType: toArray(data?.others?.voucherType),
                     retailers: toArray(data?.others?.retailers),
                     createdBy: toArray(data?.others?.createdBy),
-                })
+                });
+                setFiltersLoaded(true);
             }
-        }).catch(e => console.error(e))
+        }).catch(e => console.error(e));
+    }, []);
 
-    }, [])
+
+
+
+ useEffect(() => {
+        if (!filtersLoaded) return;
+
+        const navigationState = location.state || {};
+        const sessionFilters = getSessionFiltersByPageId(pageID) || {};
+         const hasVoucherFromNavigation = navigationState.VoucherType !== undefined;
+        setVoucherFromNavigation(hasVoucherFromNavigation);
+
+        const mergedFilters = {
+            ...defaultFilters,
+            ...sessionFilters,
+              ...(hasVoucherFromNavigation ? navigationState : {})
+        };
+        
+        let voucherTypeFilter = mergedFilters.VoucherType;
+        
+    if (hasVoucherFromNavigation && voucherTypeFilter) {
+            if (typeof voucherTypeFilter === 'object' && voucherTypeFilter.value !== undefined) {
+                const voucherExists = filtersDropDown.voucherType.find(v => 
+                    v.value === voucherTypeFilter.value || 
+                    String(v.value) === String(voucherTypeFilter.value)
+                );
+                
+                if (voucherExists) {
+                    voucherTypeFilter = voucherExists;
+                }
+            } else if (typeof voucherTypeFilter === 'number' || typeof voucherTypeFilter === 'string') {
+                const id = voucherTypeFilter;
+                const found = filtersDropDown.voucherType.find(v => 
+                    v.value === id || 
+                    String(v.value) === String(id)
+                );
+                
+                voucherTypeFilter = found || { 
+                    value: id, 
+                    label: `Voucher ${id}` 
+                };
+            }
+        } else {
+  
+            voucherTypeFilter = defaultFilters.VoucherType;
+        }
+        
+        const newFilters = {
+            Fromdate: mergedFilters.Fromdate || defaultFilters.Fromdate,
+            Todate: mergedFilters.Todate || defaultFilters.Todate,
+            Retailer: mergedFilters.Retailer || defaultFilters.Retailer,
+            CreatedBy: mergedFilters.CreatedBy || defaultFilters.CreatedBy,
+            SalesPerson: mergedFilters.SalesPerson || defaultFilters.SalesPerson,
+            VoucherType: voucherTypeFilter,
+            Cancel_status: mergedFilters.Cancel_status || defaultFilters.Cancel_status
+        };
+        
+        setFilters(newFilters);
+
+        
+        if (Object.keys(navigationState).length > 0) {
+            setSessionFilters({
+                ...navigationState,
+                pageID
+            });
+        }
+        
+    }, [location.state, pageID, filtersLoaded, filtersDropDown.voucherType]);
+
+
+  
+   useEffect(() => {
+        if (!filtersLoaded) return;
+        
+        const fetchSalesInvoice = async () => {
+            const {
+                Fromdate = defaultFilters.Fromdate,
+                Todate = defaultFilters.Todate,
+                Retailer = defaultFilters.Retailer,
+                CreatedBy = defaultFilters.CreatedBy,
+                VoucherType = defaultFilters.VoucherType,
+                Cancel_status = defaultFilters.Cancel_status
+            } = filters;
+
+             const voucherValue = voucherFromNavigation ? (VoucherType?.value || VoucherType || '') : '';
+
+  try {
+                setIsFetchingData(true);
+                const data = await fetchLink({
+                    address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${voucherValue}&Cancel_status=${Cancel_status}`,
+                    loadingOn,
+                    loadingOff
+                });
+                
+                if (data.success) {
+                    setSalesInvoice(data?.data || []);
+                } else {
+                    setSalesInvoice([]);
+                    toast.error(data.message || 'Failed to load sales invoices');
+                }
+            } catch (e) {
+                console.error(e);
+                toast.error('Error fetching sales invoices');
+                setSalesInvoice([]);
+            } finally {
+                setIsFetchingData(false);
+                setIsInitialLoad(false);
+            }
+        };
+
+        fetchSalesInvoice();
+    }, [filters, pageID, reload, filtersLoaded, voucherFromNavigation]);
+
+  
+ const getVoucherLabelById = (id) => {
+        if (!id) return { value: '', label: 'ALL' };
+        
+        const found = filtersDropDown.voucherType.find(v => 
+            v.value === id || 
+            String(v.value) === String(id)
+        );
+        return found || { value: id, label: `Voucher ${id}` };
+    };
+
 
     const ExpendableComponent = ({ row }) => {
-
         return (
             <>
                 <table className="table">
@@ -156,21 +273,28 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         });
     }
 
-    const syncTallyData = () => {
-        fetchLink({
-            address: `sales/salesInvoice/tallySync`,
-            loadingOn, loadingOff
-        }).then(data => {
+  const syncTallyData = async () => {
+        try {
+            loadingOn?.();
+            const data = await fetchLink({
+                address: `sales/salesInvoice/tallySync`,
+                loadingOn,
+                loadingOff
+            });
             toast.success(data.message);
-            setReload(pre => !pre)
-        }).catch(e => console.error(e))
+            setReload(pre => !pre);
+        } catch (e) {
+            console.error(e);
+            toast.error('Sync failed');
+        } finally {
+            loadingOff?.();
+        }
     }
 
-    const totalValues = useMemo(() => {
+
+ const totalValues = useMemo(() => {
         return salesInvoice.reduce((acc, item) => {
-
             const invoiceValue = Addition(acc.totalInvoiceValue, item.Total_Invoice_value)
-
             const totals = toArray(item.Products_List).reduce((tot, pro) => {
                 return {
                     tonnageValue: Addition(tot.tonnageValue, pro?.Total_Qty),
@@ -180,7 +304,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                 tonnageValue: 0,
                 bagsValue: 0
             })
-
             return {
                 totalTonnage: Addition(acc.totalTonnage, totals.tonnageValue),
                 totalBags: Addition(acc.totalBags, totals.bagsValue),
@@ -193,8 +316,26 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         });
     }, [salesInvoice])
 
+
+
+  
+    if (!filtersLoaded) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                {/* <CircularProgress /> */}
+                <span className="ms-3">Loading filters...</span>
+            </Box>
+        );
+    }
+
     return (
         <>
+
+          {isFetchingData && (
+                <Box position="absolute" top={0} left={0} right={0} zIndex={10}>
+                    {/* <LinearProgress /> */}
+                </Box>
+            )}
             <FilterableTable
                 title="Sales Invoice"
                 dataArray={salesInvoice}
@@ -221,60 +362,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                             )
                         },
                     },
-                    // {
-                    //     Field_Name: 'Action',
-                    //     isVisible: 1,
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => {
-                    //         return (
-                    //             <>
-                    //                 <Tooltip title='View Order'>
-                    //                     <IconButton
-                    //                         onClick={() => {
-                    //                             setViewOrder({
-                    //                                 orderDetails: row,
-                    //                                 orderProducts: row?.Products_List ? row?.Products_List : [],
-                    //                             })
-                    //                         }}
-                    //                         color='primary' size="small"
-                    //                     >
-                    //                         <Visibility className="fa-16" />
-                    //                     </IconButton>
-                    //                 </Tooltip>
-                    //                            <Tooltip title='Print Invoice'>
-                    //                     <IconButton
-                    //                         onClick={() => {
-                    //                             setSelectedInvoice(row); 
-                    //                             setDialog(pre => ({ ...pre, printInvoice: true })); 
-                    //                         }}
-                    //                         color='secondary' size="small"
-                    //                     >
-                    //                         <Print className="fa-16" />
-                    //                     </IconButton>
-                    //                 </Tooltip>
-
-                    //                 {EditRights && (
-                    //                     <Tooltip title='Edit'>
-                    //                         <IconButton
-                    //                             onClick={() => navigate('create', {
-                    //                                 state: {
-                    //                                     ...row,
-                    //                                     isEdit: true
-                    //                                 }
-                    //                             })}
-                    //                             size="small"
-                    //                         >
-                    //                             <Edit className="fa-16" />
-                    //                         </IconButton>
-                    //                     </Tooltip>
-                    //                 )}
-
-                    //             </>
-                    //         )
-                    //     },
-                    // },
-
-
                     {
                         Field_Name: 'Action',
                         isVisible: 1,
@@ -304,7 +391,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                         {
                                             name: 'Edit',
                                             onclick: () => {
-
                                                 navigate('create', {
                                                     state: {
                                                         ...row,
@@ -315,7 +401,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             icon: <Edit fontSize="small" color="primary" />,
                                             disabled: !EditRights,
                                         },
-
                                         {
                                             name: 'Delivery Slip',
                                             onclick: () => {
@@ -367,9 +452,13 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 <span> Worth: {NumberFormat(totalValues.totalInvoiceValue)} &nbsp; </span>
                             </>
                         )}
+                        {filters.VoucherType?.value && (
+                            <span className="mx-2 text-primary">
+                                Voucher: {filters.VoucherType.label}
+                            </span>
+                        )}
                     </>
                 }
-                // EnableSerialNumber={true}
                 isExpendable={true}
                 tableMaxHeight={550}
                 expandableComp={ExpendableComponent}
@@ -396,7 +485,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     <div className="table-responsive pb-4">
                         <table className="table">
                             <tbody>
-
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -494,7 +582,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                         />
                                     </td>
                                 </tr>
-
                             </tbody>
                         </table>
                     </div>

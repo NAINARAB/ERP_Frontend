@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
@@ -11,13 +11,21 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
 const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    
+    const locationState = location.state || {};
+    
     const [receiptData, setReceiptData] = useState([]);
     const sessionValue = sessionStorage.getItem('filterValues');
 
     const defaultFilters = {
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        voucherType_Filter: { label: 'ALL', value: '' },
+        Fromdate: locationState.Fromdate || ISOString(),
+        Todate: locationState.Todate || ISOString(),
+        voucherType_Filter: locationState.VoucherType 
+            ? { label: locationState.VoucherType?.label || locationState.Voucher_Type || 'Selected', value: locationState.VoucherType?.value || locationState.Voucher_Type_Id || '' }
+            : { label: 'ALL', value: '' },
         debit_accounts_Filter: { label: 'ALL', value: '' },
         credit_accounts_Filter: { label: 'ALL', value: '' },
         created_by_Filter: { label: 'ALL', value: '' },
@@ -37,8 +45,6 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         created_by: [],
     })
 
-    const navigate = useNavigate();
-
     useEffect(() => {
         fetchLink({
             address: `receipt/receiptMaster/filtersValues`
@@ -56,30 +62,71 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
     }, [])
 
     useEffect(() => {
-        const sessionFilterValues = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate,
-            voucherType_Filter = defaultFilters.voucherType_Filter,
-            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-            created_by_Filter = defaultFilters.created_by_Filter,
-            receipt_status = defaultFilters.receipt_status,
-            receipt_type = defaultFilters.receipt_type
-        } = sessionFilterValues;
+      
+        if (locationState.VoucherType) {
+            const sessionFilterValues = getSessionFiltersByPageId(pageID);
+            const {
+                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+                created_by_Filter = defaultFilters.created_by_Filter,
+                receipt_status = defaultFilters.receipt_status,
+                receipt_type = defaultFilters.receipt_type
+            } = sessionFilterValues;
 
-        setFilters(pre => ({
-            ...pre,
-            Fromdate: Fromdate,
-            Todate: Todate,
-            voucherType_Filter,
-            debit_accounts_Filter,
-            credit_accounts_Filter,
-            created_by_Filter,
-            receipt_status,
-            receipt_type,
-        }));
+            setFilters(pre => ({
+                ...pre,
+                Fromdate: locationState.Fromdate || pre.Fromdate,
+                Todate: locationState.Todate || pre.Todate,
+                voucherType_Filter: locationState.VoucherType 
+                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+                    : pre.voucherType_Filter,
+                debit_accounts_Filter,
+                credit_accounts_Filter,
+                created_by_Filter,
+                receipt_status,
+                receipt_type,
+            }));
 
-    }, [sessionValue, pageID]);
+      
+            setSessionFilters({
+                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
+                Todate: locationState.Todate || defaultFilters.Todate,
+                pageID,
+                voucherType_Filter: locationState.VoucherType 
+                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+                    : defaultFilters.voucherType_Filter,
+                debit_accounts_Filter,
+                credit_accounts_Filter,
+                created_by_Filter,
+                receipt_status,
+                receipt_type,
+            });
+        } else {
+      
+            const sessionFilterValues = getSessionFiltersByPageId(pageID);
+            const {
+                Fromdate, Todate,
+                voucherType_Filter = defaultFilters.voucherType_Filter,
+                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+                created_by_Filter = defaultFilters.created_by_Filter,
+                receipt_status = defaultFilters.receipt_status,
+                receipt_type = defaultFilters.receipt_type
+            } = sessionFilterValues;
+
+            setFilters(pre => ({
+                ...pre,
+                Fromdate: Fromdate,
+                Todate: Todate,
+                voucherType_Filter,
+                debit_accounts_Filter,
+                credit_accounts_Filter,
+                created_by_Filter,
+                receipt_status,
+                receipt_type,
+            }));
+        }
+    }, [sessionValue, pageID, location.state]);
 
     useEffect(() => {
         const sessionFilterValues = getSessionFiltersByPageId(pageID);
@@ -94,16 +141,9 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
         } = sessionFilterValues;
 
         fetchLink({
-            address: `receipt/receiptMaster?
-            Fromdate=${Fromdate}&
-            Todate=${Todate}&
-            voucher=${voucherType_Filter?.value || ''}&
-            debit=${debit_accounts_Filter?.value || ''}&
-            credit=${credit_accounts_Filter?.value || ''}&
-            createdBy=${created_by_Filter?.value || ''}&
-            status=${receipt_status}&
-            receipt_type=${receipt_type}`,
-            loadingOff, loadingOn
+            address: `receipt/receiptMaster?Fromdate=${Fromdate}&Todate=${Todate}&voucher=${voucherType_Filter?.value || ''}&debit=${debit_accounts_Filter?.value || ''}&credit=${credit_accounts_Filter?.value || ''}&createdBy=${created_by_Filter?.value || ''}&status=${receipt_status}&receipt_type=${receipt_type}`,
+            loadingOff, 
+            loadingOn
         }).then(data => {
             if (data.success) {
                 setReceiptData(data.data)
@@ -144,10 +184,23 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
-                        {/* <IconButton
-                            onClick={() => setRefresh(pre => !pre)}
-                            size="small" className="mx-1"
-                        ><FilterList /></IconButton> */}
+                
+                        {locationState.Fromdate && locationState.Todate && (
+                            <span className="mx-2 text-muted fa-12">
+                                Showing data from {new Date(locationState.Fromdate)} 
+                                to {new Date(locationState.Todate)}
+                            </span>
+                        )}
+                        {locationState.VoucherType && (
+                            <span className="mx-2 text-muted fa-12">
+                                | Voucher Type: {locationState.VoucherType.label}
+                            </span>
+                        )}
+                        {locationState.ModuleName && (
+                            <span className="mx-2 text-muted fa-12">
+                                | Module: {locationState.ModuleName}
+                            </span>
+                        )}
 
                         <IconButton
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
@@ -244,7 +297,8 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                         }),
                                         disabled: (
                                             !EditRights
-                                            || isEqualNumber(row.bill_type, 3)
+                                            || isEqualNumber(row.receipt_bill_type, 2)
+                                            || isEqualNumber(row.receipt_bill_type, 4)
                                         )
                                     },
                                 ]}
@@ -267,7 +321,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                         <table className="table">
                             <tbody>
 
-                                {/* from date */}
+                      
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -280,7 +334,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* to date */}
+                       
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
@@ -293,7 +347,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* debit account */}
+                       
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Debit Account</td>
                                     <td>
@@ -313,7 +367,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* credit account */}
+                       
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Credit Account </td>
                                     <td>
@@ -333,7 +387,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* Receipt type */}
+                              
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Receipt Type </td>
                                     <td>
@@ -350,7 +404,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* Voucher Type */}
+                            
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Voucher Type </td>
                                     <td>
@@ -370,15 +424,13 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* receipt status */}
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Receipt Status</td>
                                     <td>
                                         <select
-                                            type="date"
+                                            className="cus-inpt"
                                             value={filters.receipt_status}
                                             onChange={e => setFilters({ ...filters, receipt_status: e.target.value })}
-                                            className="cus-inpt"
                                         >
                                             <option value={''}>All</option>
                                             {receiptStatus.map((sts, ind) => (
@@ -388,7 +440,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                                     </td>
                                 </tr>
 
-                                {/* created by */}
+                              
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Created By</td>
                                     <td>
@@ -416,13 +468,23 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     <Button
                         variant="outlined"
                         onClick={() => {
+                    
                             setFilters(pre => ({
                                 ...pre,
-                                ...defaultFilters
+                                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
+                                Todate: locationState.Todate || defaultFilters.Todate,
+                                voucherType_Filter: locationState.VoucherType 
+                                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+                                    : defaultFilters.voucherType_Filter,
+                                debit_accounts_Filter: defaultFilters.debit_accounts_Filter,
+                                credit_accounts_Filter: defaultFilters.credit_accounts_Filter,
+                                created_by_Filter: defaultFilters.created_by_Filter,
+                                receipt_status: defaultFilters.receipt_status,
+                                receipt_type: defaultFilters.receipt_type,
                             }))
                         }}
                         startIcon={<ClearAll />}
-                    >clear</Button>
+                    >Reset to Navigation Filters</Button>
                     <span>
                         <Button onClick={closeDialog}>close</Button>
                         <Button

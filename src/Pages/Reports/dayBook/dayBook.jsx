@@ -69,7 +69,19 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
         });
     }
 
-    const RowComp = ({ row, Sno }) => {
+       const navigateWithVoucherFilter = (navLink, voucherTypeId, voucherTypeName) => {
+        navigate(navLink, {
+            state: {
+                Fromdate: filters.fetchFrom,
+                Todate: filters.fetchTo,
+                VoucherType: { 
+                    value: voucherTypeId, 
+                    label: voucherTypeName || `Voucher ${voucherTypeId}` 
+                }
+            }
+        });
+    };
+     const RowComp = ({ row, Sno }) => {
         const [open, setOpen] = useState(false);
 
         const ERP_Rows = useMemo(() => toArray(row?.groupedData).filter(
@@ -155,14 +167,24 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                                 <td className="p-0 text-center vctr">
                                     <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
                                         <button
-                                            onClick={() => {
-                                                navigate(item?.navLink, {
-                                                    state: {
-                                                        ...item,
-                                                        Fromdate: filters?.fetchFrom,
-                                                        Todate: filters?.fetchTo
-                                                    }
-                                                })
+                                            // onClick={() => {
+                                            //     navigate(item?.navLink, {
+                                            //         state: {
+                                            //             ...item,
+                                            //             Fromdate: filters?.fetchFrom,
+                                            //             Todate: filters?.fetchTo,
+                                            //             VoucherType:item?.Voucher_Type_Id
+                                            //         }
+                                            //     })
+                                            // }}
+
+                                             onClick={() => {
+                                                // Using navigateWithVoucherFilter for individual ERP items
+                                                navigateWithVoucherFilter(
+                                                    item?.navLink,
+                                                    item?.Voucher_Type_Id,
+                                                    item?.Voucher_Type
+                                                );
                                             }}
                                             className="icon-btn"
                                         >
@@ -191,13 +213,21 @@ const DayBookOfERP = ({ loadingOn, loadingOff }) => {
                                     <Tooltip title={'Open ' + item?.Voucher_Type + ' Details'}>
                                         <button
                                             onClick={() => {
-                                                navigate(item?.navLink, {
-                                                    state: {
-                                                        ...item,
-                                                        Fromdate: filters?.fetchFrom,
-                                                        Todate: filters?.fetchTo
-                                                    }
-                                                })
+                                                // navigate(item?.navLink, {
+                                                //     state: {
+                                                //         ...item,
+                                                //         Fromdate: filters?.fetchFrom,
+                                                //         Todate: filters?.fetchTo
+                                                //     }
+                                                // })
+
+                                                navigateWithVoucherFilter(
+                                                    item?.navLink,
+                                                    item?.Voucher_Type_Id,
+                                                    item?.Voucher_Type
+                                                );
+                                        
+
                                             }}
                                             className="icon-btn"
                                         >
