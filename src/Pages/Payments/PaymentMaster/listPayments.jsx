@@ -12,10 +12,17 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 
 const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
-    const defaultFilters = {
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        voucherType_Filter: { label: 'ALL', value: '' },
+    
+    const navigate = useNavigate();
+    const location=useLocation();
+    const  locationState=location.state || {};
+
+   const defaultFilters = {
+        Fromdate: locationState.Fromdate || ISOString(),
+        Todate: locationState.Todate || ISOString(),
+        voucherType_Filter: locationState.VoucherType 
+            ? { label: locationState.VoucherType?.label || locationState.Voucher_Type || 'Selected', value: locationState.VoucherType?.value || locationState.Voucher_Type_Id || '' }
+            : { label: 'ALL', value: '' },
         debit_accounts_Filter: { label: 'ALL', value: '' },
         credit_accounts_Filter: { label: 'ALL', value: '' },
         created_by_Filter: { label: 'ALL', value: '' },
@@ -27,6 +34,9 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
         filterDialog: false,
     });
     const [paymentData, setPaymentData] = useState([]);
+
+
+    
     const [filterDropDown, setFilterDropDown] = useState({
         voucherType: [],
         debit_accounts: [],
@@ -34,34 +44,103 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
         created_by: [],
     })
 
-    const navigate = useNavigate();
+
+    // useEffect(() => {
+
+    //     const otherSessionFiler = getSessionFiltersByPageId(pageID);
+    //     const {
+    //         Fromdate, Todate,
+    //         voucherType_Filter = defaultFilters.voucherType_Filter,
+    //         debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+    //         credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+    //         created_by_Filter = defaultFilters.created_by_Filter,
+    //         payment_status = defaultFilters.payment_status,
+    //         payment_type = defaultFilters.payment_type
+    //     } = otherSessionFiler;
+
+    //     setFilters(pre => ({
+    //         ...pre,
+    //         Fromdate: Fromdate,
+    //         Todate: Todate,
+    //         voucherType_Filter: voucherType_Filter,
+    //         debit_accounts_Filter: debit_accounts_Filter,
+    //         credit_accounts_Filter: credit_accounts_Filter,
+    //         created_by_Filter: created_by_Filter,
+    //         payment_status,
+    //         payment_type,
+    //     }));
+
+    // }, [sessionValue, pageID]);
+
 
     useEffect(() => {
+       
+        if (locationState.VoucherType) {
+            const otherSessionFiler = getSessionFiltersByPageId(pageID);
+            const {
+                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+                created_by_Filter = defaultFilters.created_by_Filter,
+                payment_status = defaultFilters.payment_status,
+                payment_type = defaultFilters.payment_type
+            } = otherSessionFiler;
 
-        const otherSessionFiler = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate,
-            voucherType_Filter = defaultFilters.voucherType_Filter,
-            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-            created_by_Filter = defaultFilters.created_by_Filter,
-            payment_status = defaultFilters.payment_status,
-            payment_type = defaultFilters.payment_type
-        } = otherSessionFiler;
+            setFilters(pre => ({
+                ...pre,
+                Fromdate: locationState.Fromdate || pre.Fromdate,
+                Todate: locationState.Todate || pre.Todate,
+                voucherType_Filter: locationState.VoucherType 
+                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+                    : pre.voucherType_Filter,
+                debit_accounts_Filter,
+                credit_accounts_Filter,
+                created_by_Filter,
+                payment_status,
+                payment_type,
+            }));
 
-        setFilters(pre => ({
-            ...pre,
-            Fromdate: Fromdate,
-            Todate: Todate,
-            voucherType_Filter: voucherType_Filter,
-            debit_accounts_Filter: debit_accounts_Filter,
-            credit_accounts_Filter: credit_accounts_Filter,
-            created_by_Filter: created_by_Filter,
-            payment_status,
-            payment_type,
-        }));
+           
+            setSessionFilters({
+                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
+                Todate: locationState.Todate || defaultFilters.Todate,
+                pageID,
+                voucherType_Filter: locationState.VoucherType 
+                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+                    : defaultFilters.voucherType_Filter,
+                debit_accounts_Filter,
+                credit_accounts_Filter,
+                created_by_Filter,
+                payment_status,
+                payment_type,
+            });
+        } else {
+        
+            const otherSessionFiler = getSessionFiltersByPageId(pageID);
+            const {
+                Fromdate, Todate,
+                voucherType_Filter = defaultFilters.voucherType_Filter,
+                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+                created_by_Filter = defaultFilters.created_by_Filter,
+                payment_status = defaultFilters.payment_status,
+                payment_type = defaultFilters.payment_type
+            } = otherSessionFiler;
 
-    }, [sessionValue, pageID]);
+            setFilters(pre => ({
+                ...pre,
+                Fromdate: Fromdate,
+                Todate: Todate,
+                voucherType_Filter: voucherType_Filter,
+                debit_accounts_Filter: debit_accounts_Filter,
+                credit_accounts_Filter: credit_accounts_Filter,
+                created_by_Filter: created_by_Filter,
+                payment_status,
+                payment_type,
+            }));
+        }
+
+    }, [sessionValue, pageID, location.state]);
+
 
     useEffect(() => {
         fetchLink({
@@ -142,6 +221,23 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
+
+     {locationState.Fromdate && locationState.Todate && (
+                            <span className="mx-2 text-muted fa-12">
+                                Showing data from {new Date(locationState.Fromdate).toLocaleDateString()} 
+                                to {new Date(locationState.Todate).toLocaleDateString()}
+                            </span>
+                        )}
+                        {locationState.VoucherType && (
+                            <span className="mx-2 text-muted fa-12">
+                                | Voucher Type: {locationState.VoucherType.label}
+                            </span>
+                        )}
+                        {locationState.ModuleName && (
+                            <span className="mx-2 text-muted fa-12">
+                                | Module: {locationState.ModuleName}
+                            </span>
+                        )}
 
                         <IconButton
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}
@@ -243,7 +339,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                         <table className="table">
                             <tbody>
 
-                                {/* from date */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>From</td>
                                     <td>
@@ -256,7 +352,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* to date */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>To</td>
                                     <td>
@@ -269,7 +365,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* debit account */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Debit Account</td>
                                     <td>
@@ -289,7 +385,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* credit account */}
+                              
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Credit Account </td>
                                     <td>
@@ -309,7 +405,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* payment type */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Payment Type </td>
                                     <td>
@@ -326,7 +422,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* Voucher Type */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Voucher Type </td>
                                     <td>
@@ -346,7 +442,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* payment status */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Payment Status</td>
                                     <td>
@@ -364,7 +460,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                     </td>
                                 </tr>
 
-                                {/* created by */}
+                               
                                 <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Created By</td>
                                     <td>
