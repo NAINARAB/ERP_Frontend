@@ -1,10 +1,13 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, getNextDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, getNextDate, getPreviousDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { retailerDeliveryAddressInfo, setAddress } from "./variable";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
+import LedgerBasedClosingStock from "../../Reports/CRM/ledgerWise";
+import AppDialog from "../../../Components/appDialogComponent";
+import { Button } from "@mui/material";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -20,11 +23,15 @@ const ManageSalesInvoiceGeneralInfo = ({
     onChangeRetailer,
     retailerSalesStatus = {},
     staffArray = [],
-    setStaffArray
+    setStaffArray,
+    loadingOn,
+    loadingOff
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
     const inputStyle = 'cus-inpt p-2';
+
+    const [open, setOpen] = useState(false);
 
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
@@ -252,6 +259,15 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <option value="3">Completed</option>
                                             <option value="0">Canceled</option>
                                         </select>
+                                    </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 d-flex align-items-center">
+                                        <Button 
+                                            onClick={() => setOpen(true)}
+                                            variant="outlined"
+                                            color="primary"
+                                            disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
+                                        >Show Previous Orders</Button>
                                     </div>
                                 </div>
                             )
@@ -628,6 +644,21 @@ const ManageSalesInvoiceGeneralInfo = ({
                 />
 
             </div>
+
+            <AppDialog
+                open={open}
+                onClose={() => setOpen(false)}
+                title="Previous Invoice"
+                maxWidth='lg'
+            >
+                <LedgerBasedClosingStock
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={getPreviousDate(30)}
+                    Todate={ISOString()}
+                    retailerId={invoiceInfo?.Retailer_Id}
+                />
+            </AppDialog>
 
         </>
     )

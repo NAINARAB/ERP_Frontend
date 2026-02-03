@@ -1,12 +1,12 @@
-import { NumberFormat, Addition, reactSelectFilterLogic } from '../../../Components/functions';
+import { NumberFormat, Addition, reactSelectFilterLogic, isValidNumber, LocalDate } from '../../../Components/functions';
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toArray } from '../../../Components/functions';
 import { fetchLink } from "../../../Components/fetchComponent";
 
-const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
+const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate, retailerId }) => {
     const [retailers, setRetailers] = useState([]);
     const [productClosingStock, setProductClosingStock] = useState([]);
     const [filters, setFilters] = useState({
@@ -26,9 +26,13 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) =>
     }, [])
 
     useEffect(() => {
-        if (filters?.customer.value) {
+        const customerID = retailerId ? retailerId : filters?.customer.value;
+        if (customerID) {
             fetchLink({
-                address: `reports/customerClosingStock/retailerBased/detailedInfo?Retailer_Id=${filters?.customer.value}&Fromdate=${Fromdate}&Todate=${Todate}`,
+                address: `reports/customerClosingStock/retailerBased/detailedInfo?
+                Retailer_Id=${customerID}&
+                Fromdate=${Fromdate}&
+                Todate=${Todate}`,
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success) {
@@ -36,7 +40,7 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) =>
                 }
             }).catch(e => console.error(e))
         }
-    }, [filters?.customer.value, Fromdate, Todate]);
+    }, [filters?.customer.value, Fromdate, Todate, retailerId]);
 
     const productBasedColumn = [
         createCol('Product_Name', 'string'),
@@ -59,37 +63,53 @@ const LedgerBasedClosingStock = ({ loadingOn, loadingOff, Fromdate, Todate }) =>
         createCol('totalValue', 'number', 'Stock-Value'),
     ]
 
+    const totalStockValue = useMemo(() => {
+        return NumberFormat(
+            productClosingStock.reduce(
+                (sum, product) => Addition(sum, product.stockValueOfItem),
+                0
+            )
+        )
+    }, [productClosingStock])
+
+    const titleText = useMemo(() => {
+        let text = ' Stock value: ₹' + totalStockValue;
+
+        if (isValidNumber(retailerId)) {
+            text += ' \t From ' + LocalDate(Fromdate) + ' \t To ' + LocalDate(Todate);
+        }
+
+        return text;
+    }, [retailerId, totalStockValue])
+
     return (
         <>
 
             <FilterableTable
-                title={" Stock value: ₹" + NumberFormat(
-                    productClosingStock.reduce(
-                        (sum, product) => Addition(sum, product.stockValueOfItem),
-                        0
-                    )
-                )}
+                title={titleText}
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
-                        <div style={{ minWidth: '360px', marginRight: '10px' }}>
-                            <Select
-                                value={filters.customer}
-                                onChange={(e) => {
-                                    setFilters({ ...filters, customer: e });
-                                }}
-                                options={[
-                                    // { value: '', label: 'All Retailer' },
-                                    ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
-                                ]}
-                                menuPortalTarget={document.body}
-                                styles={customSelectStyles}
-                                isSearchable={true}
-                                placeholder={"Retailer Name"}
-                                filterOption={reactSelectFilterLogic}
-                            />
-                        </div>
+                        {!isValidNumber(retailerId) && (
+                            <div style={{ minWidth: '360px', marginRight: '10px' }}>
+                                <Select
+                                    value={filters.customer}
+                                    onChange={(e) => {
+                                        setFilters({ ...filters, customer: e });
+                                    }}
+                                    options={[
+                                        // { value: '', label: 'All Retailer' },
+                                        ...retailers.map(obj => ({ value: obj?.Retailer_Id, label: obj?.Retailer_Name }))
+                                    ]}
+                                    menuPortalTarget={document.body}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Retailer Name"}
+                                    filterOption={reactSelectFilterLogic}
+                                />
+                            </div>
+                        )}
                     </>
                 }
                 EnableSerialNumber

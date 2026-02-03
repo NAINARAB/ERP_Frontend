@@ -8,7 +8,6 @@ import Select from "react-select";
 
 const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costCategory = [] }) => {
     
-
     const getAllStaffs = (currentIndex) => {
         return toArray(costCenter)
             .filter(staff => 
@@ -20,11 +19,10 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             )
             .map(st => ({
                 value: st.Cost_Center_Id,
-                label: st.Cost_Center_Name,
+                label: st.Allias_Name,
                 userType: st.User_Type 
             }));
     };
-
 
     const getFilteredStaffs = (categoryId, currentIndex) => {
         if (!checkIsNumber(categoryId)) return [];
@@ -40,11 +38,10 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             )
             .map(st => ({
                 value: st.Cost_Center_Id,
-                label: st.Cost_Center_Name,
+                label: st.Allias_Name,
                 userType: st.User_Type
             }));
     };
-
 
     const handleStaffChange = (selectedOption, index) => {
         setStaffArray(prev => 
@@ -66,7 +63,6 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             })
         );
     };
-
 
     const handleCategoryChange = (e, index) => {
         const newCategoryId = e.target.value;
@@ -94,7 +90,6 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             })
         );
     };
-
     
     const getStaffOptions = (row, index) => {
         if (checkIsNumber(row?.Emp_Type_Id)) {
@@ -105,7 +100,6 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             return getAllStaffs(index);
         }
     };
-
 
     const getCategoryName = (categoryId) => {
         const category = toArray(costCategory).find(
@@ -131,7 +125,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             <table className="table table-bordered">
                 <thead>
                     <tr>
-                        <th className="fa-13">Sno</th>
+                        {/* <th className="fa-13">Sno</th> */}
                         <th className="fa-13">Category</th>
                         <th className="fa-13">Staff Name</th>
                         <th className="fa-13">#</th>
@@ -141,11 +135,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                 <tbody>
                     {toArray(StaffArray).map((row, index) => (
                         <tr key={index}>
-                            <td className='fa-13 vctr text-center'>{index + 1}</td>
-                            
-                         
-                          
-                       
+                            {/* <td className='fa-13 vctr text-center'>{index + 1}</td> */}
                             <td className='fa-13 w-100 p-0'>
                                 <Select
                                     value={checkIsNumber(row?.Emp_Id) ? {
