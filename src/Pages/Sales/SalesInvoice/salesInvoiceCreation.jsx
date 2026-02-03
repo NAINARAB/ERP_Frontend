@@ -61,6 +61,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const [dialog, setDialog] = useState({
         addProductDialog: false,
         importFromSaleOrder: false,
+        godownMismatch: false
     })
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
@@ -585,6 +586,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         })
     }
 
+    const voucherGodownCondition = useMemo(() => {
+        const selectedVoucher = baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
+        const voucherGodown = toNumber(selectedVoucher?.GodownId);
+        const productHasGodown = invoiceProducts.length > 0 && invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, voucherGodown));
+        return productHasGodown;
+    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts]);
+
     return (
         <>
 
@@ -606,7 +614,22 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No, rowId: rid() }}
                 batchDetails={baseData.batchDetails}
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
+                voucherType={invoiceInfo}
             />
+
+            <AppDialog
+                open={dialog.godownMismatch}
+                onClose={() => setDialog(pre => ({ ...pre, godownMismatch: false }))}
+                title="Godown Mismatch"
+                submitText="Yes"
+                closeText="No"
+                onSubmit={() => {
+                    setDialog(pre => ({ ...pre, godownMismatch: false }));
+                    saveSalesInvoice();
+                }}
+            >
+                The godown is not match with Voucher type anyway do you want to save?
+            </AppDialog>
 
             <Card>
                 <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
@@ -619,7 +642,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={() => saveSalesInvoice()} variant="contained">submit</Button>
+                        <Button onClick={() => {
+                            if (voucherGodownCondition) {
+                                saveSalesInvoice();
+                            } else {
+                                setDialog(pre => ({ ...pre, godownMismatch: true }));
+                            }
+                        }} variant="contained">submit</Button>
                     </span>
                 </div>
                 <CardContent>
