@@ -437,7 +437,7 @@ const downloadExcel = async (rows) => {
                         Fied_Data: 'string',
                         tdClass: ({ row }) => headerColor(row.rowType)
                     },
-                      createCol('tripNumber', 'string', 'Trip_No'),
+                     
                     {
                         isVisible: 1,
                         ColumnHeader: 'Vou.No / Rate',
@@ -462,6 +462,7 @@ const downloadExcel = async (rows) => {
                     createCol('broker', 'string', 'Broker Name'),
                     createCol('transporter', 'string', 'Transporter'),
                     createCol('loadMan', 'string', 'Load Man'),
+                     createCol('tripNumber', 'string', 'Trip_No'),
                 ]}
                 ButtonArea={
                     <>
