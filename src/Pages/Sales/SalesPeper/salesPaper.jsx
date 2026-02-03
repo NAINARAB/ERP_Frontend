@@ -233,7 +233,8 @@ const downloadExcel = async (rows) => {
         "Bill Qty",
         "Broker",
         "Transporter",
-        "Load Man"
+        "Load Man",
+        "Trip_No"
     ];
 
     worksheet.addRow(header);
@@ -275,7 +276,8 @@ const downloadExcel = async (rows) => {
             rowData.billedQuantity || "",
             rowData.broker || "",
             rowData.transporter || "",
-            rowData.loadMan || ""
+            rowData.loadMan || "",
+            rowData.tripNumber || ""
         ]);
 
         row.eachCell((cell, colNumber) => {

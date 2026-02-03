@@ -28,7 +28,9 @@ const initialInputValue = {
     Max_Rate:'',
     Coolie:'',
     Packing_CH:'',
-    Other_Expen:''
+    Other_Expen:'',
+    NagalBrokerage:'',
+    NagalCoolie:''
 
 }
 
@@ -268,7 +270,6 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             oninput: e => onlynum(e),
             placeholder: "Enter Coolie",
             event: e => setProductInputValue(value => ({ ...value, Coolie: e.target.value })),
-         
             value: productInputValue.Coolie,
         },
           {
@@ -277,7 +278,6 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             oninput: e => onlynum(e),
             placeholder: "Enter Packing Ch",
             event: e => setProductInputValue(value => ({ ...value, Packing_CH: e.target.value })),
-         
             value: productInputValue.Packing_CH,
         },
           {
@@ -286,10 +286,24 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             oninput: e => onlynum(e),
             placeholder: "Enter Other Expen",
             event: e => setProductInputValue(value => ({ ...value, Other_Expen: e.target.value })),
-         
             value: productInputValue.Other_Expen,
         },
-
+        {
+            label: 'Nagal Brokerage',
+            elem: 'input',
+            oninput: e => onlynum(e),
+            placeholder: "Enter Nagal Brokerage",
+            event: e => setProductInputValue(value => ({ ...value, NagalBrokerage: e.target.value })),
+            value: productInputValue.NagalBrokerage,
+        },
+           {
+            label: 'Nagal Coolie',
+            elem: 'input',
+            oninput: e => onlynum(e),
+            placeholder: "Enter Nagal Coolie",
+            event: e => setProductInputValue(value => ({ ...value, NagalCoolie: e.target.value })),
+            value: productInputValue.NagalCoolie,
+        },
         {
             label: 'Product Description',
             elem: 'textarea',
