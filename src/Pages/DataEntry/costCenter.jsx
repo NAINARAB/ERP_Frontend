@@ -19,6 +19,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
     const initialInputValue = {
         Cost_Center_Id: '',
         Cost_Center_Name: '',
+        Allias_Name: '',
         User_Type: '',
         Is_Converted_To_User: 0,
         User_Id: '',
@@ -169,7 +170,7 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `dataEntry/costCenter`,
             method: inputValue.Cost_Center_Id ? 'PUT' : 'POST',
-            bodyData: { Cost_Center_Name: inputValue?.Cost_Center_Name, User_Type: inputValue?.User_Type, Cost_Center_Id: inputValue?.Cost_Center_Id }
+            bodyData: { Cost_Center_Name: inputValue?.Cost_Center_Name, User_Type: inputValue?.User_Type, Cost_Center_Id: inputValue?.Cost_Center_Id, Allias_Name: inputValue?.Allias_Name }
         }).then(data => {
 
             if (data.success) {
@@ -227,6 +228,11 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                 isVisible: 1,
                                 Field_Name: 'Cost_Center_Name',
                                 Fied_Data: 'string'
+                            },
+                            {
+                                isVisible: 1,
+                                Field_Name: 'Allias_Name',
+                                Fied_Data: 'string',
                             },
                             {
                                 isVisible: 1,
@@ -318,6 +324,17 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                                                 onChange={e => setInputValue(pre => ({ ...pre, Cost_Center_Name: e.target.value }))}
                                                 className="cus-inpt p-2"
                                                 required maxLength={150}
+                                            />
+                                        </Td>
+                                    </tr>
+                                    <tr>
+                                        <Td>Alias Name</Td>
+                                        <Td>
+                                            <input
+                                                value={inputValue.Allias_Name}
+                                                onChange={e => setInputValue(pre => ({ ...pre, Allias_Name: e.target.value }))}
+                                                className="cus-inpt p-2"
+                                                maxLength={250}
                                             />
                                         </Td>
                                     </tr>

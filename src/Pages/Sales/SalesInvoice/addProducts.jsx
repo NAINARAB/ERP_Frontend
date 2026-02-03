@@ -185,6 +185,9 @@ const AddProductForm = ({
     const godownOptions = useMemo(() => {
         if (!checkIsNumber(productDetails.Item_Id)) return [];
 
+        const productMaster = findProductDetails(productDetails.Item_Id);
+        const pack = productMaster?.PackGet || 1;
+
         return toArray(godowns)
             .map(obj => {
                 const stock = checkIsNumber(obj?.Godown_Id)
@@ -197,9 +200,11 @@ const AddProductForm = ({
                     )
                     : 0;
 
+                const packQty = Division(stock, pack);
+
                 return {
                     value: obj?.Godown_Id,
-                    label: `${obj?.Godown_Name} (Bal: ${stock})`,
+                    label: `${obj?.Godown_Name} (Q: ${stock}, P: ${packQty})`,
                     stock
                 };
             })
@@ -207,7 +212,7 @@ const AddProductForm = ({
                 return b.stock - a.stock;
             })
             .map(({ stock, ...rest }) => rest);
-    }, [godowns, productDetails.Item_Id, stockInGodowns]);
+    }, [godowns, productDetails.Item_Id, stockInGodowns, products]);
 
     return (
         <>

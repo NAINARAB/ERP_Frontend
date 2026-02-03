@@ -22,6 +22,7 @@ const EMPTY_FORM = {
     Voucher_Type: "",
     Voucher_Code: "",
     Branch_Id: "",
+    GodownId: "",
     Type: "",
     status: ""
 };
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
 function VoucherMaster({ loadingOn, loadingOff }) {
     const [voucherData, setVoucherData] = useState([]);
     const [branches, setBranches] = useState([]);
+    const [godowns, setGodowns] = useState([]);
     const [reload, setReload] = useState(false);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -40,11 +42,11 @@ function VoucherMaster({ loadingOn, loadingOff }) {
 
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.UserId;
-    
+
     const [tallySync, setTallySync] = useState(false);
     const [typeOptions, setTypeOptions] = useState([]);
-    
-    
+
+
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
@@ -73,13 +75,19 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 if (res?.success) setBranches(res.data || []);
             })
             .catch(console.error);
+
+        fetchLink({ address: `masters/godown` })
+            .then((res) => {
+                if (res?.success) setGodowns(res.data || []);
+            })
+            .catch(console.error);
     }, [reload]);
 
     const filteredData = useMemo(() => {
         if (!searchTerm.trim()) return voucherData;
-        
+
         const searchLower = searchTerm.toLowerCase().trim();
-        
+
         return voucherData.filter(voucher => {
             return (
                 (voucher?.Voucher_Type?.toLowerCase() || "").includes(searchLower) ||
@@ -107,8 +115,9 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             Voucher_Type: row?.Voucher_Type || "",
             Voucher_Code: row?.Voucher_Code || "",
             Branch_Id: row?.Branch_Id || "",
+            GodownId: row?.GodownId || "",
             Type: row?.Type || "",
-            status: Number(row?.isDeleted) || 0 
+            status: Number(row?.isDeleted) || 0
         });
 
         setTallySync(Number(row?.tallySync) === 1);
@@ -143,8 +152,9 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             Voucher_Type: form.Voucher_Type.trim(),
             Voucher_Code: form.Voucher_Code.trim(),
             Branch_Id: Number(form.Branch_Id),
+            GodownId: Number(form?.GodownId),
             Type: form.Type,
-            tallySync: tallySyncValue, 
+            tallySync: tallySyncValue,
             status: Number(form.status) || 0
         };
 
@@ -224,13 +234,13 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                 <div className="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
                     Voucher Master
                     <div className="text-end d-flex align-items-center gap-2">
-                      
+
                         <TextField
                             placeholder="Search vouchers..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             size="small"
-                            sx={{ 
+                            sx={{
                                 width: 250,
                                 '& .MuiOutlinedInput-root': {
                                     borderRadius: '20px',
@@ -245,7 +255,7 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                                 ),
                             }}
                         />
-                        
+
                         <Button
                             className="rounded-5 px-3 py-1 fa-13 btn-primary shadow"
                             onClick={openCreate}
@@ -255,16 +265,17 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
                 </div>
 
-              
+
 
                 <FilterableTable
-                    dataArray={filteredData} 
+                    dataArray={filteredData}
                     EnableSerialNumber
                     isExpendable
                     maxHeightOption
                     columns={[
                         createCol("Voucher_Type", "string", "Voucher Type"),
                         createCol("Type", "string", "Type"),
+                        createCol("godownNameGet", "string", "Godown Name"),
                         createCol("BranchName", "string", "Branch Name"),
                         createCol("Voucher_Code", "string", "Voucher Code"),
                         {
@@ -366,10 +377,26 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
 
                     <div className="p-2">
+                        <label className="d-block mb-1">Godown</label>
+                        <select
+                            value={form.GodownId}
+                            onChange={onChange("GodownId")}
+                            className="cus-inpt w-100"
+                        >
+                            <option value="">Select Godown</option>
+                            {godowns.map((g) => (
+                                <option key={g.Godown_Id} value={g.Godown_Id}>
+                                    {g.Godown_Name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="p-2">
                         <label className="d-block mb-1">Type</label>
-                        <select 
-                            value={form.Type} 
-                            onChange={onChange("Type")} 
+                        <select
+                            value={form.Type}
+                            onChange={onChange("Type")}
                             className="cus-inpt w-100"
                         >
                             <option value="">Select Type</option>
