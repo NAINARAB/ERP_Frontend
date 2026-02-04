@@ -105,6 +105,7 @@ export const salesInvoiceDetailsInfo = {
     Delivery_Order_Id: '',
 
     GoDown_Id: '',
+    Godown_Stock: 0,
     S_No: '',
     Item_Id: '',                // From front-end
     Item_Name: '',

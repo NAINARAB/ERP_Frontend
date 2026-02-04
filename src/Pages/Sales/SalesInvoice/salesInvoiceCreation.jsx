@@ -8,7 +8,8 @@ import {
     validValue,
     isValidValue,
     rid,
-    Division
+    Division,
+    Subraction
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -593,6 +594,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         return productHasGodown;
     }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts]);
 
+    const isStockValid = useMemo(() => {
+        if (invoiceProducts.length === 0) return true;
+
+        const hasPositive = invoiceProducts.some(item => {
+            const stock = toNumber(item?.Godown_Stock);
+            const qty = toNumber(item?.Bill_Qty);
+            return Subraction(stock, qty) >= 0;
+        });
+
+        const hasNegative = invoiceProducts.some(item => {
+            const stock = toNumber(item?.Godown_Stock);
+            const qty = toNumber(item?.Bill_Qty);
+            return Subraction(stock, qty) < 0;
+        });
+
+        return !(hasPositive && hasNegative);
+    }, [invoiceProducts]);
+
     return (
         <>
 
@@ -648,7 +667,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             } else {
                                 setDialog(pre => ({ ...pre, godownMismatch: true }));
                             }
-                        }} variant="contained">submit</Button>
+                        }} variant="contained" disabled={!isStockValid}>submit</Button>
                     </span>
                 </div>
                 <CardContent>
@@ -690,6 +709,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             </div>
                         </div>
                     </div>
+
+                    {!isStockValid && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            Can't save invoice with mixed stock (positive and negative). Please ensure all items have either positive or negative stock.
+                        </div>
+                    )}
 
                     {/* product details */}
                     <FilterableTable
@@ -907,8 +932,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         taxSplitUp={taxSplitUp}
                     />
 
-
-
                     {/* narration */}
                     {/* <div className="col-12 p-2"> */}
                     <label className='fa-13'>Narration</label>
@@ -928,7 +951,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             navigate('/erp/sales/invoice');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={saveSalesInvoice} variant="contained">submit</Button>
+                    <Button onClick={() => {
+                        if (voucherGodownCondition) {
+                            saveSalesInvoice();
+                        } else {
+                            setDialog(pre => ({ ...pre, godownMismatch: true }));
+                        }
+                    }} variant="contained" disabled={!isStockValid}>submit</Button>
                 </CardActions>
             </Card>
 

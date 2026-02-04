@@ -181,7 +181,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                 Cancel_status = defaultFilters.Cancel_status
             } = filters;
 
-            const voucherValue = voucherFromNavigation ? (VoucherType?.value || VoucherType || '') : '';
+            const voucherValue = VoucherType?.value || VoucherType || '';
 
             try {
                 setIsFetchingData(true);

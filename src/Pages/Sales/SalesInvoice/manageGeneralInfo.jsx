@@ -149,10 +149,8 @@ const ManageSalesInvoiceGeneralInfo = ({
 
                                     {/* {console.log(retailerSalesStatus)} */}
                                     {retailerSalesStatus.invoiceCreationStatus === false && (
-                                        <div className="col-12 p-2">
-                                            <p className="text-danger m-0">
+                                        <div className="col-12 alert alert-danger p-2">
                                                 The retailer has exceeded the credit limit or credit days.
-                                            </p>
                                         </div>
                                     )}
 
