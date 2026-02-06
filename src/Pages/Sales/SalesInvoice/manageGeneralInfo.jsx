@@ -7,7 +7,8 @@ import { useMemo, useState } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
 import LedgerBasedClosingStock from "../../Reports/CRM/ledgerWise";
 import AppDialog from "../../../Components/appDialogComponent";
-import { Button } from "@mui/material";
+import { Button, IconButton } from "@mui/material";
+import { InfoOutlined } from "@mui/icons-material";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -97,26 +98,34 @@ const ManageSalesInvoiceGeneralInfo = ({
                                     {/* customer name */}
                                     <div className="col-sm-8 p-2">
                                         <label className='fa-13'>Party Name <RequiredStar /></label>
-                                        <Select
-                                            value={{
-                                                value: invoiceInfo?.Retailer_Id,
-                                                label: invoiceInfo?.Retailer_Name
-                                            }}
-                                            onChange={onChangeRetailerName}
-                                            options={[
-                                                { value: '', label: 'Search', isDisabled: true },
-                                                ...toArray(retailers).map(obj => ({
-                                                    value: obj?.Retailer_Id,
-                                                    label: obj?.Retailer_Name
-                                                }))
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Select Vendor"}
-                                            maxMenuHeight={300}
-                                            filterOption={reactSelectFilterLogic}
-                                            isDisabled={isValidNumber(invoiceInfo?.So_No)}
-                                        />
+                                        <div className="d-flex">
+                                            <div className="flex-grow-1">
+                                                <Select
+                                                    value={{
+                                                        value: invoiceInfo?.Retailer_Id,
+                                                        label: invoiceInfo?.Retailer_Name
+                                                    }}
+                                                    onChange={onChangeRetailerName}
+                                                    options={[
+                                                        { value: '', label: 'Search', isDisabled: true },
+                                                        ...toArray(retailers).map(obj => ({
+                                                            value: obj?.Retailer_Id,
+                                                            label: obj?.Retailer_Name
+                                                        }))
+                                                    ]}
+                                                    styles={customSelectStyles}
+                                                    isSearchable={true}
+                                                    placeholder={"Select Vendor"}
+                                                    maxMenuHeight={300}
+                                                    filterOption={reactSelectFilterLogic}
+                                                    isDisabled={isValidNumber(invoiceInfo?.So_No)}
+                                                />
+                                            </div>
+                                            <IconButton
+                                                onClick={() => setOpen(true)}
+                                                disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
+                                            ><InfoOutlined /></IconButton>
+                                        </div>
                                     </div>
 
                                     {/* voucher type */}
@@ -150,7 +159,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                     {/* {console.log(retailerSalesStatus)} */}
                                     {retailerSalesStatus.invoiceCreationStatus === false && (
                                         <div className="col-12 alert alert-danger p-2">
-                                                The retailer has exceeded the credit limit or credit days.
+                                            The retailer has exceeded the credit limit or credit days.
                                         </div>
                                     )}
 
@@ -259,14 +268,16 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </select>
                                     </div>
 
-                                    <div className="col-xl-3 col-md-4 col-sm-6 d-flex align-items-center">
-                                        <Button 
-                                            onClick={() => setOpen(true)}
-                                            variant="outlined"
-                                            color="primary"
-                                            disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
-                                        >Show Previous Orders</Button>
-                                    </div>
+                                    {isValidNumber(invoiceInfo?.Do_Id) && (
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Edit Reason <RequiredStar /></label>
+                                            <input
+                                                value={invoiceInfo?.Alter_Reason}
+                                                className={inputStyle}
+                                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Alter_Reason: String(e.target.value).trim() }))}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )
                         },

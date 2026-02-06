@@ -14,6 +14,7 @@ import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
+import AppCalculator from "../../../Components/appCalculator/Calculator";
 
 
 
@@ -316,9 +317,15 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         );
     }
 
+    const canEditNow = (invoiceDate) => {
+        const invoiceDateObj = new Date(invoiceDate);
+        const today = new Date();
+        const diffInDays = Math.floor((today - invoiceDateObj) / (1000 * 60 * 60 * 24));
+        return diffInDays <= 3;
+    }
+
     return (
         <>
-
             {isFetchingData && (
                 <Box position="absolute" top={0} left={0} right={0} zIndex={10}>
                     {/* <LinearProgress /> */}
@@ -387,7 +394,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 });
                                             },
                                             icon: <Edit fontSize="small" color="primary" />,
-                                            disabled: !EditRights,
+                                            disabled: !EditRights || !canEditNow(row.Do_Date),
                                         },
                                         {
                                             name: 'Delivery Slip',

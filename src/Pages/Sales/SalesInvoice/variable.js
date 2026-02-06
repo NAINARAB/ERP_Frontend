@@ -1,4 +1,4 @@
-import { getSessionUser, ISOString, rid, toArray, toNumber } from "../../../Components/functions";
+import { getSessionUser, ISOString, toArray, toNumber } from "../../../Components/functions";
 
 const storage = getSessionUser().user;
 
@@ -82,6 +82,7 @@ export const salesInvoiceGeneralInfo = {
     Delivery_Status: 0,
     Payment_Mode: 0,
     Payment_Status: 0,
+    Alter_Reason: '',
 
     // Delivery_Time: '',
     // Delivery_Location: '',

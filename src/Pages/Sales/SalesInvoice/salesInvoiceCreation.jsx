@@ -9,7 +9,8 @@ import {
     isValidValue,
     rid,
     Division,
-    Subraction
+    Subraction,
+    filterableText
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -523,10 +524,17 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }
 
     const saveSalesInvoice = () => {
+
+        if (isValidNumber(invoiceInfo?.Do_Id) && filterableText(invoiceInfo?.Alter_Reason).length === 0) {
+            toast.warn('Alter reason is required');
+            return;
+        }
+
         if (retailerSalesStatus.forceCreateInvoice === false && retailerSalesStatus.invoiceCreationStatus === false) {
             setRetailerSalesStatus(pre => ({ ...pre, dialog: true }));
             return;
         }
+
         fetchLink({
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
@@ -612,6 +620,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         return !(hasPositive && hasNegative);
     }, [invoiceProducts]);
 
+    const saveFunWithCodition = () => {
+        if (voucherGodownCondition) {
+            saveSalesInvoice();
+        } else {
+            setDialog(pre => ({ ...pre, godownMismatch: true }));
+        }
+    }
+
     return (
         <>
 
@@ -661,13 +677,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={() => {
-                            if (voucherGodownCondition) {
-                                saveSalesInvoice();
-                            } else {
-                                setDialog(pre => ({ ...pre, godownMismatch: true }));
-                            }
-                        }} variant="contained" disabled={!isStockValid}>submit</Button>
+                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid}>submit</Button>
                     </span>
                 </div>
                 <CardContent>
@@ -951,13 +961,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             navigate('/erp/sales/invoice');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={() => {
-                        if (voucherGodownCondition) {
-                            saveSalesInvoice();
-                        } else {
-                            setDialog(pre => ({ ...pre, godownMismatch: true }));
-                        }
-                    }} variant="contained" disabled={!isStockValid}>submit</Button>
+                    <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid}>submit</Button>
                 </CardActions>
             </Card>
 

@@ -5,7 +5,8 @@ import {
     Menu, KeyboardArrowDown, Circle, Logout, Dashboard,
     BarChart, SettingsAccessibility, VpnKey, AccountCircle, Settings, Keyboard,
     AutoGraph, KeyboardDoubleArrowRight, KeyboardDoubleArrowLeft,
-    TaskAlt, KeyboardArrowUp
+    TaskAlt, KeyboardArrowUp,
+    Calculate
 } from '@mui/icons-material'
 import "./MainComponent.css";
 import Offcanvas from 'react-bootstrap/Offcanvas';
@@ -16,6 +17,8 @@ import { ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 import { checkIsNumber, isEqualNumber, LocalDateWithTime } from "../../Components/functions";
 import LastSynedTime from "../Dashboard/tallyLastSyncedTime";
+import CalculatorDrawer from "../../Components/appCalculator/CalculatorDrawer";
+
 
 const setLoclStoreage = (pageId, menu) => {
     localStorage.setItem('CurrentPage', JSON.stringify({ id: pageId, type: menu }));
@@ -244,6 +247,7 @@ const MainComponent = (props) => {
     const { contextObj, setContextObj } = useContext(MyContext);
     const [settings, setSettings] = useState(false);
     const [show, setShow] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
@@ -568,6 +572,16 @@ const MainComponent = (props) => {
                                 </span>
                             </Tooltip>
 
+                            <Tooltip title="Calculator">
+                                <span>
+                                    <IconButton
+                                        onClick={() => setShowCalculator(pre => !pre)}
+                                        color="primary"
+                                        size="small"
+                                    ><Calculate /></IconButton>
+                                </span>
+                            </Tooltip>
+
                             <Tooltip title="Logout">
                                 <span>
                                     <IconButton onClick={props.logout} color="primary" size="small"><Logout /></IconButton>
@@ -676,6 +690,14 @@ const MainComponent = (props) => {
                 </DialogActions>
 
             </Dialog>
+
+            <CalculatorDrawer
+                open={showCalculator}
+                onClose={() => setShowCalculator(false)}
+                enableBackdrop={false}
+                closeOnBackdropClick={false}
+                width={360}
+            />
         </Fragment>
     );
 }
