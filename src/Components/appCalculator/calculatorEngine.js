@@ -16,6 +16,7 @@ export const initialState = {
     op: null,
     waitingForNext: false,
     error: null,
+    history: "",
 };
 
 const toNumber = (str) => Number(str);
@@ -79,10 +80,15 @@ export function reduce(state, action) {
             // Pressing operator repeatedly: just replace operator, keep top updated
             if (state.waitingForNext) {
                 const base = state.prev ?? toNumber(state.display);
+                const nextOpSymbol = OP_SYMBOL[nextOp];
+                // Replace last char in history (the operator)
+                const newHistory = state.history.trimEnd().slice(0, -1) + nextOpSymbol;
+
                 return {
                     ...state,
                     op: nextOp,
-                    top: `${format(base)} ${OP_SYMBOL[nextOp]}`,
+                    top: `${format(base)} ${nextOpSymbol}`,
+                    history: newHistory
                 };
             }
 
@@ -96,6 +102,7 @@ export function reduce(state, action) {
                     op: nextOp,
                     waitingForNext: true,
                     top: `${format(current)} ${OP_SYMBOL[nextOp]}`,
+                    history: `${format(current)} ${OP_SYMBOL[nextOp]}`,
                 };
             }
 
@@ -114,6 +121,7 @@ export function reduce(state, action) {
                 display: format(computed),              // 👈 show cumulative in main (like Windows)
                 waitingForNext: true,
                 top: `${format(computed)} ${OP_SYMBOL[nextOp]}`, // 👈 show cumulative + current op on top
+                history: `${state.history} ${format(current)} ${OP_SYMBOL[nextOp]}`,
             };
         }
 
@@ -137,6 +145,7 @@ export function reduce(state, action) {
                 prev: null,
                 op: null,
                 waitingForNext: true,
+                history: `${state.history} ${format(current)} =`
             };
         }
 

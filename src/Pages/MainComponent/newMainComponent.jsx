@@ -500,6 +500,19 @@ const MainComponent = (props) => {
 
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.ctrlKey && (event.key === 'l' || event.key === 'L')) {
+                event.preventDefault();
+                setShowCalculator(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
     return (
         <Fragment>
             <div className="fullscreen-div">

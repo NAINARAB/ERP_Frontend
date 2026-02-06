@@ -14,6 +14,10 @@ export default function Calculator() {
 
             <CalculatorKeypad actions={actions} />
 
+            <div style={{ padding: '0 10px 10px', textAlign: 'right', color: '#666', fontSize: '0.85rem', wordBreak: 'break-all' }}>
+                {state.history}
+            </div>
+
             {/* <details className="calc-debug">
                 <summary>Debug</summary>
                 <pre>{JSON.stringify(state, null, 2)}</pre>
