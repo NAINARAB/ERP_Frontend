@@ -12,12 +12,14 @@ import {
     DialogTitle,
     IconButton,
     TextField,
+    // CircularProgress,
     Tooltip,
+    Box
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
-import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search } from "@mui/icons-material";
+import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search,HourglassEmpty } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
@@ -73,6 +75,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
+        const [viewMode, setViewMode] = useState('normal'); 
+     const [isLoading, setIsLoading] = useState(true); 
+         const [isRefreshing, setIsRefreshing] = useState(false); 
+    const [hasInitialLoading, setHasInitialLoading] = useState(false);
     const [currentPrintType, setCurrentPrintType] = useState('');
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
         const tableContainerRef = useRef(null);
@@ -114,6 +120,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         filterDialog: false,
         selectedInvoice: null,
         multipleStaffUpdateDialog: false,
+        multipleStaffRemoveDialog: false,
         fetchTrigger: 0,
         docType: "",
         staffStatus: 0,
@@ -158,6 +165,145 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return billQty * conversionFactor;
     };
 
+
+     const fetchAllInvoices = async (refresh = false) => {
+        try {
+            if (!refresh) {
+                setIsLoading(true);
+            } else {
+                setIsRefreshing(true);
+            }
+            
+            setViewMode('normal');
+            
+            const data = await fetchLink({
+                address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
+                loadingOn,
+                loadingOff,
+            });
+            
+            const invoices = toArray(data.data);
+
+
+            const processedInvoices = invoices.map(invoice => {
+                if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
+                    const processedStockDetails = invoice.stockDetails.map(item => ({
+                        ...item,
+                        Alt_Act_Qty: calculateAltActQty(item)
+                    }));
+
+                    return {
+                        ...invoice,
+                        stockDetails: processedStockDetails
+                    };
+                }
+                return invoice;
+            });
+            
+            setSalesInvoices(processedInvoices);
+            setCostTypes(toArray(data?.others?.costTypes));
+            setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+            
+            if (!hasInitialLoading) {
+                setHasInitialLoading(true);
+            }
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+            toast.error("Failed to load invoices");
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    };
+
+
+
+        const fetchPendingInvoices = async () => {
+        try {
+            setIsLoading(true);
+            setViewMode('pending');
+            
+            const data = await fetchLink({
+                address: `sales/salesInvoice/pendingDetails`,
+                loadingOn,
+                loadingOff,
+            });
+            
+            const invoices = toArray(data.data);
+
+            const processedInvoices = invoices.map(invoice => {
+                if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
+                    const processedStockDetails = invoice.stockDetails.map(item => ({
+                        ...item,
+                        Alt_Act_Qty: calculateAltActQty(item)
+                    }));
+
+                    return {
+                        ...invoice,
+                        stockDetails: processedStockDetails
+                    };
+                }
+                return invoice;
+            });
+            
+            setSalesInvoices(processedInvoices);
+            
+            if (data?.others?.costTypes) {
+                setCostTypes(toArray(data?.others?.costTypes));
+            }
+            if (data?.others?.uniqeInvolvedStaffs) {
+                setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+            }
+        } catch (error) {
+            console.error("Error fetching pending invoices:", error);
+            toast.error("Failed to load pending invoices");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+        const toggleViewMode = async () => {
+        if (viewMode === 'normal') {
+            await fetchPendingInvoices();
+        } else {
+            await fetchAllInvoices(true);
+        }
+    };
+
+
+        const fetchCostCenterData = async () => {
+        try {
+            const costCenterData = await fetchLink({ 
+                address: "masters/erpCostCenter/dropDown" 
+            });
+            setCostCenterData(toArray(costCenterData.data));
+        } catch (error) {
+            console.error("Error fetching cost center data:", error);
+            toast.error("Failed to load cost center data");
+        }
+    };
+
+
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                setIsLoading(true);
+                // Fetch in parallel for better performance
+                await Promise.all([
+                    fetchAllInvoices(),
+                    fetchCostCenterData()
+                ]);
+            } catch (error) {
+                console.error("Error fetching initial data:", error);
+                toast.error("Failed to load initial data");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchInitialData();
+    }, [filters.fetchTrigger, filters.staffStatus, filters.reqDate]);
     useEffect(() => {
         if (multiPrint.open) {
 
@@ -661,14 +807,16 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
 
     
-    useEffect(() => {
+   useEffect(() => {
         if (selectAllCheckBox) {
             const allDoIds = filteredData.map(item => toNumber(item.Do_Id));
             setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: allDoIds }));
+            setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: allDoIds }));
         } else {
             setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: [] }));
+            setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: [] }));
         }
-    }, [selectAllCheckBox, filteredData])
+    }, [selectAllCheckBox, filteredData]);
 
     const saveMultipleInvoiceValidation = useMemo(() => {
         const validDoId = multipleCostCenterUpdateValues.Do_Id.length > 0;
@@ -704,12 +852,24 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return validDoId && validCostCategory;
     }, [multipleStaffRemoveValues]);
 
+  if (isLoading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  {/* <CircularProgress size={60} />
+                    <div className="text-muted">
+                        Loading {viewMode === 'pending' ? 'Pending' : 'Sales'} Invoices...
+                    </div> */}
+                </Box>
+            </div>
+        );
+    }
 
     return (
         <>
         
             <FilterableTable
-                title={"Sales Invoice"}
+                 title={viewMode === 'pending' ? "Pending Invoices" : "Sales Invoice"}
                 columns={[
                     {
                         Field_Name: "Select",
@@ -833,12 +993,31 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 EnableSerialNumber
                 ButtonArea={
                     <>
+                        {/* {isRefreshing && (
+                            <CircularProgress size={20} style={{ marginRight: '8px' }} />
+                        )} */}
                         <Tooltip title="Select All">
                             <Checkbox
                                 checked={selectAllCheckBox}
                                 onChange={e => setSelectAllCheckBox(e.target.checked)}
                             />
                         </Tooltip>
+                              <button
+                            type="button"
+                            className={`btn btn-sm ${viewMode === 'pending' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                            onClick={toggleViewMode}
+                            disabled={isRefreshing}
+                            style={{ 
+                                marginRight: '8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <HourglassEmpty fontSize="small" style={{ marginRight: '4px' }} />
+                            {viewMode === 'pending' ? "New Invoices" : "Pending Invoice"}
+                        </button>
+
                         <IconButton
                             size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
@@ -855,21 +1034,54 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         >
                             <PersonRemoveIcon fontSize="small" />
                         </IconButton>
-
-                        <IconButton size="small" onClick={() => setFilters((prev) => ({ ...prev, filterDialog: true }))}>
+                           <IconButton 
+                            size="small" 
+                            onClick={() => setFilters((prev) => ({ ...prev, filterDialog: true }))}
+                            disabled={isRefreshing}
+                        >
                             <FilterAlt />
                         </IconButton>
 
-                        <IconButton size="small" onClick={fetchSalesInvoices}>
+                       
+
+                  
+                        <IconButton 
+                            size="small" 
+                            onClick={() => {
+                                if (viewMode === 'pending') {
+                                    fetchPendingInvoices();
+                                } else {
+                                    fetchAllInvoices(true);
+                                }
+                            }}
+                            disabled={isRefreshing}
+                        >
                             <Search />
                         </IconButton>
-
-                        <input
+                           {viewMode === 'normal' && (
+                            <input
+                                type="date"
+                                className="cus-inpt w-auto"
+                                value={filters.reqDate}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, reqDate: e.target.value }))}
+                                disabled={isRefreshing}
+                            />
+                         )}
+          {/* <input
                             type="date"
                             className="cus-inpt w-auto"
                             value={filters.reqDate}
                             onChange={(e) => setFilters((prev) => ({ ...prev, reqDate: e.target.value }))}
-                        />
+                        /> */}
+
+
+
+                        {/* <input
+                            type="date"
+                            className="cus-inpt w-auto"
+                            value={filters.reqDate}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, reqDate: e.target.value }))}
+                        /> */}
 
                         <IconButton
                             size="small"
@@ -923,6 +1135,13 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <option value="1">ALL INVOICES</option>
                             <option value="0">INCOMPLETED INVOICES</option>
                         </select>
+
+
+                         {viewMode === 'pending' && (
+                            <span className="ms-2 fw-bold text-primary">
+                                Viewing Pending Invoices ({salesInvoices.length} found)
+                            </span>
+                        )}
 
                         {multipleCostCenterUpdateValues.Do_Id.length > 0 && (
                             <div className="d-flex gap-4 mb-0 p-0">
@@ -1397,3 +1616,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 };
 
 export default SalesInvoiceListLRReport;
+
+
+
+
+
+
