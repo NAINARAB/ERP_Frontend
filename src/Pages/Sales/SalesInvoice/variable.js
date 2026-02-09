@@ -23,6 +23,8 @@ export function canCreateInvoice(data) {
     return !((toNumber(creditLimit) > 0 ? isOutstandingExceeded : false) || (toNumber(creditDays) > 0 ? isCreditDaysCrossed : false));
 }
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 export const retailerOutstandingDetails = {
     outstanding: 0,
     creditLimit: 0,

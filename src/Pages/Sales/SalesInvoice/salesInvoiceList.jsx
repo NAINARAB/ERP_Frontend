@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Box, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -14,6 +14,7 @@ import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
+import { allowedUserTypesForPreviousDateSalesEdit } from "./variable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -27,6 +28,7 @@ const defaultFilters = {
 
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
+    const storage = getSessionUser().user;
     const navigate = useNavigate();
     const location = useLocation();
     const [salesInvoice, setSalesInvoice] = useState([]);
@@ -224,6 +226,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     }, [salesInvoice])
 
     const canEditNow = (invoiceDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(toNumber(storage.UserTypeId));
+        if (isAllowedUser) {
+            return true;
+        }
         const invoiceDateObj = new Date(invoiceDate);
         const today = new Date();
         const diffInDays = Math.floor((today - invoiceDateObj) / (1000 * 60 * 60 * 24));
