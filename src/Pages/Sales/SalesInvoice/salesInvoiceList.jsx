@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Box, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
@@ -147,6 +147,26 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                             <td className="border p-2 bg-light">Narration</td>
                             <td className="border p-2" colSpan={5}>{row.Narration}</td>
                         </tr>
+                    </tbody>
+                </table>
+
+                <table className="table table-bordered">
+                    <thead>
+                        <tr>
+                            {['S.No', 'Edited By', 'Edited On', 'Reason'].map((item, index) => (
+                                <th key={index}>{item}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {toArray(row.alterationHistory).map((item, index) => (
+                            <tr key={index}>
+                                <td>{index + 1}</td>
+                                <td>{item.alterByGet}</td>
+                                <td>{LocalDateWithTime(item.alterAt)}</td>
+                                <td>{item.reason}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </>

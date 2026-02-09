@@ -274,7 +274,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <input
                                                 value={invoiceInfo?.Alter_Reason}
                                                 className={inputStyle}
-                                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Alter_Reason: String(e.target.value).trim() }))}
+                                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Alter_Reason: e.target.value }))}
                                             />
                                         </div>
                                     )}

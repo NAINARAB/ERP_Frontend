@@ -728,7 +728,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     stockItemLedgerName={baseData.stockItemLedgerName}
                                     onChangeRetailer={() => {
                                         // setInvoiceProduct([]);
-                                        setInvoiceExpences([]);
+                                        // setInvoiceExpences([]);
                                     }}
                                     retailerDeliveryAddress={retailerDeliveryAddress}
                                     setRetailerDeliveryAddress={setRetailerDeliveryAddress}
