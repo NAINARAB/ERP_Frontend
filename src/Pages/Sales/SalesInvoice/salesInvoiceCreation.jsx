@@ -85,7 +85,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     const [printDialog, setPrintDialog] = useState({
         open: false,
         Do_Id: null,
-         deliverySlipDialog:false
+        deliverySlipDialog: false
     });
 
     const isEdit = useMemo(() => isValidNumber(invoiceInfo?.Do_Id), [invoiceInfo?.Do_Id])
@@ -324,13 +324,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
 
             const retailerAddress = toArray(retailerDetails?.deliveryAddresses);
-            const { 
-                lolDeliveryName = '', 
-                lolPhoneNumber = '', 
-                lolCityName = '', 
-                lolDeliveryAddress = '', 
-                lolGstNumber = '', 
-                lolStateName = '' 
+            const {
+                lolDeliveryName = '',
+                lolPhoneNumber = '',
+                lolCityName = '',
+                lolDeliveryAddress = '',
+                lolGstNumber = '',
+                lolStateName = ''
             } = retailerDetails;
             // const withGstNumber = retailerAddress.find(add => isValidValue(add.gstNumber));
             // const firstAddress = retailerAddress[0];
@@ -351,7 +351,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: lolStateName
                 }, setRetailerDeliveryAddress)
             }
-            
+
             // else if (withGstNumber) {
             //     setAddress(withGstNumber, setRetailerDeliveryAddress)
             // } else if (firstAddress) {
@@ -380,7 +380,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: lolStateName
                 }, setRetailerShippingAddress)
             }
-            
+
             // else if (withGstNumber) {
             //     setAddress(withGstNumber, setRetailerShippingAddress)
             // } else if (firstAddress) {
@@ -615,7 +615,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 setPrintDialog({
                     open: true,
                     Do_Id: savedDoId,
-                     deliverySlipDialog: false
+                    deliverySlipDialog: false
                 });
 
                 // Clear form after successful submission (optional)
@@ -892,165 +892,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                         ]}
                     />
 
-                    {/* <Dialog
-                        open={printDialog.open}
-                        maxWidth="lg"
-                        fullWidth
-                        scroll="paper"
-                    >
-                        <DialogTitle>
-                            Print Invoice #{printDialog.Do_Id}
-                            <IconButton
-                                // onClick={() => setPrintDialog({ open: false, Do_Id: null })}
-                                onClick={() => {
-                                    setPrintDialog({ open: false, Do_Id: null });
-                                    clearValues();
-                                    navigate('/erp/sales/invoice');
-                                }}
-
-                                style={{ position: 'absolute', right: 8, top: 8 }}
-                            >
-                                <Close />
-                            </IconButton>
-                        </DialogTitle>
-                        <DialogContent>
-                            {printDialog.Do_Id && (
-                                <InvoiceTemplate
-                                    Do_Id={printDialog.Do_Id}
-                                    loadingOn={loadingOn}
-                                    loadingOff={loadingOff}
-                                />
-                            )}
-                        </DialogContent>
-                        <DialogActions>
-                            <Button
-                                onClick={() => {
-                                    setPrintDialog({ open: false, Do_Id: null });
-                                    clearValues();
-                                    navigate('/erp/sales/invoice');
-                                }}
-                            >
-                                Close and Go to Listing
-                            </Button>
-                        </DialogActions>
-                    </Dialog> */}
-<Dialog
-    open={printDialog.open}
-    maxWidth="lg"
-    fullWidth
-    scroll="paper"
-    onClose={() => {
-        setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
-        clearValues();
-        navigate('/erp/sales/invoice');
-    }}
->
-    <DialogTitle className="d-flex align-items-center justify-content-between">
-        <span>Print Invoice #{printDialog.Do_Id}</span>
-        <div className="d-flex align-items-center">
-            <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                    setPrintDialog({
-                        open: false,
-                        Do_Id: printDialog.Do_Id,
-                        deliverySlipDialog: true
-                    });
-                }}
-                sx={{ mr: 1 }}
-            >
-                Delivery Slip
-            </Button>
-            <IconButton
-                onClick={() => {
-                    setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
-                    clearValues();
-                    navigate('/erp/sales/invoice');
-                }}
-                size="small"
-            >
-                <Close />
-            </IconButton>
-        </div>
-    </DialogTitle>
-    <DialogContent>
-        {printDialog.Do_Id && (
-            <InvoiceTemplate
-                Do_Id={printDialog.Do_Id}
-                loadingOn={loadingOn}
-                loadingOff={loadingOff}
-            />
-        )}
-    </DialogContent>
-    <DialogActions>
-        <Button
-            onClick={() => {
-                setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
-                clearValues();
-                navigate('/erp/sales/invoice');
-            }}
-        >
-            Close and Go to Listing
-        </Button>
-    </DialogActions>
-</Dialog>
-
-<Dialog
-    open={printDialog.deliverySlipDialog || false}
-    onClose={() => {
-        setPrintDialog({ 
-            open: false, 
-            Do_Id: null, 
-            deliverySlipDialog: false 
-        });
-        navigate('/erp/sales/invoice'); 
-    }}
-    maxWidth="lg"
-    fullWidth
-    scroll="paper"
->
-    <DialogTitle className="d-flex align-items-center justify-content-between">
-        <span>Delivery Slip for Invoice #{printDialog.Do_Id}</span>
-        <IconButton
-            onClick={() => {
-                setPrintDialog({ 
-                    open: false, 
-                    Do_Id: null, 
-                    deliverySlipDialog: false 
-                });
-                navigate('/erp/sales/invoice'); 
-            }}
-            size="small"
-        >
-            <Close />
-        </IconButton>
-    </DialogTitle>
-    <DialogContent>
-        {printDialog.Do_Id && (
-            <DeliverySlipprint
-                Do_Id={printDialog.Do_Id}
-                loadingOn={loadingOn}
-                loadingOff={loadingOff}
-            />
-        )}
-    </DialogContent>
-    <DialogActions>
-        <Button
-            onClick={() => {
-                setPrintDialog({ 
-                    open: false, 
-                    Do_Id: null, 
-                    deliverySlipDialog: false 
-                });
-                navigate('/erp/sales/invoice'); 
-            }}
-        >
-            Close
-        </Button>
-    </DialogActions>
-</Dialog>
-
                     <br />
 
                     <ExpencesOfSalesInvoice
@@ -1134,6 +975,123 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 <h3>The Retailer Exceeds the credit limit and credit days!</h3>
                 <p>Anyway Do you want to create invoice?</p>
             </AppDialog>
+
+            <Dialog
+                open={printDialog.open}
+                maxWidth="lg"
+                fullWidth
+                scroll="paper"
+                onClose={() => {
+                    setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
+                    clearValues();
+                    navigate('/erp/sales/invoice');
+                }}
+            >
+                <DialogTitle className="d-flex align-items-center justify-content-between">
+                    <span>Print Invoice #{printDialog.Do_Id}</span>
+                    <div className="d-flex align-items-center">
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                                setPrintDialog({
+                                    open: false,
+                                    Do_Id: printDialog.Do_Id,
+                                    deliverySlipDialog: true
+                                });
+                            }}
+                            sx={{ mr: 1 }}
+                        >
+                            Delivery Slip
+                        </Button>
+                        <IconButton
+                            onClick={() => {
+                                setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
+                                clearValues();
+                                navigate('/erp/sales/invoice');
+                            }}
+                            size="small"
+                        >
+                            <Close />
+                        </IconButton>
+                    </div>
+                </DialogTitle>
+                <DialogContent>
+                    {printDialog.Do_Id && (
+                        <InvoiceTemplate
+                            Do_Id={printDialog.Do_Id}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            setPrintDialog({ open: false, Do_Id: null, deliverySlipDialog: false });
+                            clearValues();
+                            navigate('/erp/sales/invoice');
+                        }}
+                    >
+                        Close and Go to Listing
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={printDialog.deliverySlipDialog || false}
+                onClose={() => {
+                    setPrintDialog({
+                        open: false,
+                        Do_Id: null,
+                        deliverySlipDialog: false
+                    });
+                    navigate('/erp/sales/invoice');
+                }}
+                maxWidth="lg"
+                fullWidth
+                scroll="paper"
+            >
+                <DialogTitle className="d-flex align-items-center justify-content-between">
+                    <span>Delivery Slip for Invoice #{printDialog.Do_Id}</span>
+                    <IconButton
+                        onClick={() => {
+                            setPrintDialog({
+                                open: false,
+                                Do_Id: null,
+                                deliverySlipDialog: false
+                            });
+                            navigate('/erp/sales/invoice');
+                        }}
+                        size="small"
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {printDialog.Do_Id && (
+                        <DeliverySlipprint
+                            Do_Id={printDialog.Do_Id}
+                            loadingOn={loadingOn}
+                            loadingOff={loadingOff}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            setPrintDialog({
+                                open: false,
+                                Do_Id: null,
+                                deliverySlipDialog: false
+                            });
+                            navigate('/erp/sales/invoice');
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     )
 }
