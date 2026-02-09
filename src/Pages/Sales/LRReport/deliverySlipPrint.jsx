@@ -224,7 +224,7 @@ if (isCombinedPrint) {
                                 }}
                             >
                                <div style={{ width: "2.2cm", fontSize: "16px" }}></div>
-<div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}>TOTAL</div>
+<div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}></div>
 <div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
 <div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
                             </div>
@@ -402,9 +402,9 @@ if (isCombinedPrint) {
                                     }}
                                 >
                                     <div style={{ width: "2.2cm" }}></div>
-                                 <div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}>TOTAL</div>
-<div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
-<div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
+                                 <div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}></div>
+       <div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
+                  <div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
                             </div>
 
                                 {/* Staff Details */}
