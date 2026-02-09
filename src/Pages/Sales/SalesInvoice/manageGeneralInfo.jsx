@@ -296,6 +296,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 15-CHAR-STRING"
                                             onChange={e => onChangeRetailerAddress('gstNumber', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="billingGSTINData">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -315,6 +316,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: Party name / Other"
                                             onChange={e => onChangeRetailerAddress('deliveryName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="deliveryName">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -334,6 +336,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 9876543210"
                                             onChange={e => onChangeRetailerAddress('phoneNumber', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="phoneNumber">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -353,6 +356,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: Madurai"
                                             onChange={e => onChangeRetailerAddress('cityName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="cityName">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -372,6 +376,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: TamilNadu"
                                             onChange={e => onChangeRetailerAddress('stateName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="billingState">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -391,6 +396,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 123, ABC Street"
                                             onChange={e => onChangeRetailerAddress('deliveryAddress', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="deliveryAddress">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -416,6 +422,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 15-CHAR-STRING"
                                             onChange={e => onChangeRetailerShippingAddress('gstNumber', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingGSTINData">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -435,6 +442,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: Party name / Other"
                                             onChange={e => onChangeRetailerShippingAddress('deliveryName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingName">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -454,6 +462,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 9876543210"
                                             onChange={e => onChangeRetailerShippingAddress('phoneNumber', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingPhoneNumberData">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -473,6 +482,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: Madurai"
                                             onChange={e => onChangeRetailerShippingAddress('cityName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingCityName">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -492,6 +502,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: TamilNadu"
                                             onChange={e => onChangeRetailerShippingAddress('stateName', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingState">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
@@ -511,6 +522,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             placeholder="ex: 123, ABC Street"
                                             onChange={e => onChangeRetailerShippingAddress('deliveryAddress', e.target.value)}
                                             disabled={!validRetailer}
+                                            autoComplete="off"
                                         />
                                         <datalist id="shippingAddress">
                                             {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (

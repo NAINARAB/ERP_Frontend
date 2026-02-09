@@ -18,7 +18,8 @@ const AppDialog = ({
     closeText = "Close",
     maxWidth = "sm",
     fullWidth = true,
-    isSubmit = false
+    isSubmit = false,
+    startAction
 }) => {
     return (
         <Dialog
@@ -33,20 +34,28 @@ const AppDialog = ({
                 {children}
             </DialogContent>
 
-            <DialogActions>
-                <Button onClick={onClose}>
-                    {closeText}
-                </Button>
-
-                {onSubmit && (
-                    <Button
-                        variant="contained"
-                        onClick={onSubmit}
-                        type={isSubmit ? "submit" : "button"}
-                    >
-                        {submitText}
-                    </Button>
+            <DialogActions className={`${startAction ? "d-flex justify-content-between" : ""}`}>
+                {startAction && (
+                    <div>
+                        {startAction}
+                    </div>
                 )}
+                <div>
+                    <Button onClick={onClose}>
+                        {closeText}
+                    </Button>
+
+                    {onSubmit && (
+                        <Button
+                            variant="contained"
+                            onClick={onSubmit}
+                            type={isSubmit ? "submit" : "button"}
+                            className="ms-2"
+                        >
+                            {submitText}
+                        </Button>
+                    )}
+                </div>
             </DialogActions>
         </Dialog>
     );
@@ -64,5 +73,6 @@ AppDialog.propTypes = {
     closeText: PropTypes.string,
     maxWidth: PropTypes.oneOf(["xs", "sm", "md", "lg", "xl"]),
     fullWidth: PropTypes.bool,
-    isSubmit: PropTypes.bool
+    isSubmit: PropTypes.bool,
+    startAction: PropTypes.node
 };

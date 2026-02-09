@@ -87,6 +87,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         Do_Id: null
     });
 
+    const isEdit = useMemo(() => isValidNumber(invoiceInfo?.Do_Id), [invoiceInfo?.Do_Id])
+
     useEffect(() => {
 
         const fetchData = async () => {
@@ -321,8 +323,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
 
             const retailerAddress = toArray(retailerDetails?.deliveryAddresses);
-            const withGstNumber = retailerAddress.find(add => isValidValue(add.gstNumber));
-            const firstAddress = retailerAddress[0];
+            const { 
+                lolDeliveryName = '', 
+                lolPhoneNumber = '', 
+                lolCityName = '', 
+                lolDeliveryAddress = '', 
+                lolGstNumber = '', 
+                lolStateName = '' 
+            } = retailerDetails;
+            // const withGstNumber = retailerAddress.find(add => isValidValue(add.gstNumber));
+            // const firstAddress = retailerAddress[0];
 
             const billingAddress = retailerAddress.find(
                 addr => isEqualNumber(addr?.id, invoiceInfo?.deliveryAddressId)
@@ -330,17 +340,28 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
             if (billingAddress) {
                 setAddress(billingAddress, setRetailerDeliveryAddress)
-            } else if (withGstNumber) {
-                setAddress(withGstNumber, setRetailerDeliveryAddress)
-            } else if (firstAddress) {
-                setAddress({
-                    ...firstAddress,
-                    gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
-                    id: retailerDetails.Gstno ? null : firstAddress.id
-                }, setRetailerDeliveryAddress)
             } else {
-                setAddress(retailerDeliveryAddressInfo, setRetailerDeliveryAddress)
+                setAddress({
+                    deliveryName: lolDeliveryName,
+                    phoneNumber: lolPhoneNumber,
+                    cityName: lolCityName,
+                    deliveryAddress: lolDeliveryAddress,
+                    gstNumber: lolGstNumber,
+                    stateName: lolStateName
+                }, setRetailerDeliveryAddress)
             }
+            
+            // else if (withGstNumber) {
+            //     setAddress(withGstNumber, setRetailerDeliveryAddress)
+            // } else if (firstAddress) {
+            //     setAddress({
+            //         ...firstAddress,
+            //         gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
+            //         id: retailerDetails.Gstno ? null : firstAddress.id
+            //     }, setRetailerDeliveryAddress)
+            // } else {
+            //     setAddress(retailerDeliveryAddressInfo, setRetailerDeliveryAddress)
+            // }
 
             const shippingAddress = retailerAddress.find(
                 addr => isEqualNumber(addr?.id, invoiceInfo?.shipingAddressId)
@@ -348,17 +369,28 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
             if (shippingAddress) {
                 setAddress(shippingAddress, setRetailerShippingAddress)
-            } else if (withGstNumber) {
-                setAddress(withGstNumber, setRetailerShippingAddress)
-            } else if (firstAddress) {
-                setAddress({
-                    ...firstAddress,
-                    gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
-                    id: retailerDetails.Gstno ? null : firstAddress.id
-                }, setRetailerShippingAddress)
             } else {
-                setAddress(retailerDeliveryAddressInfo, setRetailerShippingAddress)
+                setAddress({
+                    deliveryName: lolDeliveryName,
+                    phoneNumber: lolPhoneNumber,
+                    cityName: lolCityName,
+                    deliveryAddress: lolDeliveryAddress,
+                    gstNumber: lolGstNumber,
+                    stateName: lolStateName
+                }, setRetailerShippingAddress)
             }
+            
+            // else if (withGstNumber) {
+            //     setAddress(withGstNumber, setRetailerShippingAddress)
+            // } else if (firstAddress) {
+            //     setAddress({
+            //         ...firstAddress,
+            //         gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
+            //         id: retailerDetails.Gstno ? null : firstAddress.id
+            //     }, setRetailerShippingAddress)
+            // } else {
+            //     setAddress(retailerDeliveryAddressInfo, setRetailerShippingAddress)
+            // }
         }
     }, [baseData.retailers, invoiceInfo.Retailer_Id])
 
@@ -596,13 +628,15 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
     }
 
     const voucherGodownCondition = useMemo(() => {
+        if (isEdit) return true;
         const selectedVoucher = baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
         const voucherGodown = toNumber(selectedVoucher?.GodownId);
         const productHasGodown = invoiceProducts.length > 0 && invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, voucherGodown));
         return productHasGodown;
-    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts]);
+    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts, isEdit]);
 
     const isStockValid = useMemo(() => {
+        if (isEdit) return true;
         if (invoiceProducts.length === 0) return true;
 
         const hasPositive = invoiceProducts.some(item => {
@@ -618,7 +652,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         });
 
         return !(hasPositive && hasNegative);
-    }, [invoiceProducts]);
+    }, [invoiceProducts, isEdit]);
 
     const saveFunWithCodition = () => {
         if (voucherGodownCondition) {
@@ -651,20 +685,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
                 voucherType={invoiceInfo}
             />
-
-            <AppDialog
-                open={dialog.godownMismatch}
-                onClose={() => setDialog(pre => ({ ...pre, godownMismatch: false }))}
-                title="Godown Mismatch"
-                submitText="Yes"
-                closeText="No"
-                onSubmit={() => {
-                    setDialog(pre => ({ ...pre, godownMismatch: false }));
-                    saveSalesInvoice();
-                }}
-            >
-                The godown is not match with Voucher type anyway do you want to save?
-            </AppDialog>
 
             <Card>
                 <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
@@ -964,6 +984,20 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid}>submit</Button>
                 </CardActions>
             </Card>
+
+            <AppDialog
+                open={dialog.godownMismatch}
+                onClose={() => setDialog(pre => ({ ...pre, godownMismatch: false }))}
+                title="Godown Mismatch"
+                submitText="Yes"
+                closeText="No"
+                onSubmit={() => {
+                    setDialog(pre => ({ ...pre, godownMismatch: false }));
+                    saveSalesInvoice();
+                }}
+            >
+                The godown is not match with Voucher type anyway do you want to save?
+            </AppDialog>
 
             <AppDialog
                 open={retailerSalesStatus.dialog}

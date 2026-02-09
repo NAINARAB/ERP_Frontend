@@ -8,15 +8,12 @@ import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-mater
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify'
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
-import AppCalculator from "../../../Components/appCalculator/Calculator";
-
-
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -29,22 +26,22 @@ const defaultFilters = {
 };
 
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
-    const location = useLocation();
     const sessionValue = sessionStorage.getItem('filterValues');
     const navigate = useNavigate();
+    const location = useLocation();
     const [salesInvoice, setSalesInvoice] = useState([]);
     const [filtersDropDown, setFiltersDropDown] = useState({
         voucherType: [],
         retailers: [],
         createdBy: []
     });
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
-    const [filtersLoaded, setFiltersLoaded] = useState(false);
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isFetchingData, setIsFetchingData] = useState(false);
-    const [filters, setFilters] = useState(defaultFilters);
+
+    const [filters, setFilters] = useState({
+        ...defaultFilters,
+        reload: false
+    });
 
     const [dialog, setDialog] = useState({
         filters: false,
@@ -53,41 +50,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         deliverySlip: false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
-
-    const [voucherFromNavigation, setVoucherFromNavigation] = useState(false)
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchFilters = async () => {
-            try {
-                setIsLoading(true);
-                const data = await fetchLink({
-                    address: `sales/salesInvoice/filterValues`,
-                    loadingOn,
-                    loadingOff
-                });
-
-                if (isMounted && data.success) {
-                    setFiltersDropDown({
-                        voucherType: toArray(data?.others?.voucherType) || [],
-                        retailers: toArray(data?.others?.retailers) || [],
-                        createdBy: toArray(data?.others?.createdBy) || [],
-                    });
-                    setFiltersLoaded(true);
-                }
-            } catch (e) {
-                console.error(e);
-                toast.error('Failed to load filter options');
-            }
-        };
-
-        fetchFilters();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
 
     useEffect(() => {
         fetchLink({
@@ -98,128 +60,61 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     voucherType: toArray(data?.others?.voucherType),
                     retailers: toArray(data?.others?.retailers),
                     createdBy: toArray(data?.others?.createdBy),
+                    salesPerson: toArray(data?.others?.salesPerson),
                 });
-                setFiltersLoaded(true);
             }
         }).catch(e => console.error(e));
     }, []);
 
     useEffect(() => {
-        if (!filtersLoaded) return;
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Retailer = defaultFilters.Retailer,
+            VoucherType = defaultFilters.VoucherType,
+            CreatedBy = defaultFilters.CreatedBy,
+            SalesPerson = defaultFilters.SalesPerson,
+            Cancel_status = defaultFilters.Cancel_status,
+        } = otherSessionFiler;
 
-        const navigationState = location.state || {};
-        const sessionFilters = getSessionFiltersByPageId(pageID) || {};
-        const hasVoucherFromNavigation = navigationState.VoucherType !== undefined;
-        setVoucherFromNavigation(hasVoucherFromNavigation);
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate || defaultFilters.Fromdate,
+            Todate: Todate || defaultFilters.Todate,
+            Retailer, VoucherType, CreatedBy, SalesPerson, Cancel_status
+        }));
 
-        const mergedFilters = {
-            ...defaultFilters,
-            ...sessionFilters,
-            ...(hasVoucherFromNavigation ? navigationState : {})
-        };
-
-        let voucherTypeFilter = mergedFilters.VoucherType;
-
-        if (hasVoucherFromNavigation && voucherTypeFilter) {
-            if (typeof voucherTypeFilter === 'object' && voucherTypeFilter.value !== undefined) {
-                const voucherExists = filtersDropDown.voucherType.find(v =>
-                    v.value === voucherTypeFilter.value ||
-                    String(v.value) === String(voucherTypeFilter.value)
-                );
-
-                if (voucherExists) {
-                    voucherTypeFilter = voucherExists;
-                }
-            } else if (typeof voucherTypeFilter === 'number' || typeof voucherTypeFilter === 'string') {
-                const id = voucherTypeFilter;
-                const found = filtersDropDown.voucherType.find(v =>
-                    v.value === id ||
-                    String(v.value) === String(id)
-                );
-
-                voucherTypeFilter = found || {
-                    value: id,
-                    label: `Voucher ${id}`
-                };
-            }
-        } else {
-
-            voucherTypeFilter = defaultFilters.VoucherType;
-        }
-
-        const newFilters = {
-            Fromdate: mergedFilters.Fromdate || defaultFilters.Fromdate,
-            Todate: mergedFilters.Todate || defaultFilters.Todate,
-            Retailer: mergedFilters.Retailer || defaultFilters.Retailer,
-            CreatedBy: mergedFilters.CreatedBy || defaultFilters.CreatedBy,
-            SalesPerson: mergedFilters.SalesPerson || defaultFilters.SalesPerson,
-            VoucherType: voucherTypeFilter,
-            Cancel_status: mergedFilters.Cancel_status || defaultFilters.Cancel_status
-        };
-
-        setFilters(newFilters);
-
-
-        if (Object.keys(navigationState).length > 0) {
-            setSessionFilters({
-                ...navigationState,
-                pageID
-            });
-        }
-
-    }, [location.state, pageID, filtersLoaded, filtersDropDown.voucherType]);
+    }, [sessionValue, pageID]);
 
     useEffect(() => {
-        if (!filtersLoaded) return;
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate = defaultFilters.Fromdate,
+            Todate = defaultFilters.Todate,
+            Retailer = defaultFilters.Retailer,
+            VoucherType = defaultFilters.VoucherType,
+            CreatedBy = defaultFilters.CreatedBy,
+            Cancel_status = defaultFilters.Cancel_status
+        } = otherSessionFiler;
 
-        const fetchSalesInvoice = async () => {
-            const {
-                Fromdate = defaultFilters.Fromdate,
-                Todate = defaultFilters.Todate,
-                Retailer = defaultFilters.Retailer,
-                CreatedBy = defaultFilters.CreatedBy,
-                VoucherType = defaultFilters.VoucherType,
-                Cancel_status = defaultFilters.Cancel_status
-            } = filters;
-
-            const voucherValue = VoucherType?.value || VoucherType || '';
-
-            try {
-                setIsFetchingData(true);
-                const data = await fetchLink({
-                    address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${voucherValue}&Cancel_status=${Cancel_status}`,
-                    loadingOn,
-                    loadingOff
-                });
-
-                if (data.success) {
-                    setSalesInvoice(data?.data || []);
-                } else {
-                    setSalesInvoice([]);
-                    toast.error(data.message || 'Failed to load sales invoices');
-                }
-            } catch (e) {
-                console.error(e);
-                toast.error('Error fetching sales invoices');
+        fetchLink({
+            address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${VoucherType?.value || ''}&Cancel_status=${Cancel_status}`,
+            loadingOn,
+            loadingOff
+        }).then(data => {
+            if (data.success) {
+                setSalesInvoice(data?.data || []);
+            } else {
                 setSalesInvoice([]);
-            } finally {
-                setIsFetchingData(false);
-                setIsInitialLoad(false);
+                toast.error(data.message || 'Failed to load sales invoices');
             }
-        };
+        }).catch(e => {
+            console.error(e);
+            toast.error('Error fetching sales invoices');
+            setSalesInvoice([]);
+        });
 
-        fetchSalesInvoice();
-    }, [filters, pageID, reload, filtersLoaded, voucherFromNavigation]);
-
-    const getVoucherLabelById = (id) => {
-        if (!id) return { value: '', label: 'ALL' };
-
-        const found = filtersDropDown.voucherType.find(v =>
-            v.value === id ||
-            String(v.value) === String(id)
-        );
-        return found || { value: id, label: `Voucher ${id}` };
-    };
+    }, [sessionValue, pageID, reload, location]);
 
     const ExpendableComponent = ({ row }) => {
         return (
@@ -308,15 +203,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         });
     }, [salesInvoice])
 
-    if (!filtersLoaded) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-                {/* <CircularProgress /> */}
-                <span className="ms-3">Loading filters...</span>
-            </Box>
-        );
-    }
-
     const canEditNow = (invoiceDate) => {
         const invoiceDateObj = new Date(invoiceDate);
         const today = new Date();
@@ -326,11 +212,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
 
     return (
         <>
-            {isFetchingData && (
-                <Box position="absolute" top={0} left={0} right={0} zIndex={10}>
-                    {/* <LinearProgress /> */}
-                </Box>
-            )}
             <FilterableTable
                 title="Sales Invoice"
                 dataArray={salesInvoice}
@@ -446,11 +327,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 <span> Bag: {NumberFormat(totalValues.totalBags)} &nbsp; </span>
                                 <span> Worth: {NumberFormat(totalValues.totalInvoiceValue)} &nbsp; </span>
                             </>
-                        )}
-                        {filters.VoucherType?.value && (
-                            <span className="mx-2 text-primary">
-                                Voucher: {filters.VoucherType.label}
-                            </span>
                         )}
                     </>
                 }

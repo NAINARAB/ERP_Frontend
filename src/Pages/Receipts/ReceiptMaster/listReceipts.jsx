@@ -1,37 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
+import AppDialog from "../../../Components/appDialogComponent";
+import { ClearAll } from "@mui/icons-material";
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
-import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
+import { Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { receiptStatus, receiptTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+    voucherType_Filter: { label: 'ALL', value: '' },
+    debit_accounts_Filter: { label: 'ALL', value: '' },
+    credit_accounts_Filter: { label: 'ALL', value: '' },
+    created_by_Filter: { label: 'ALL', value: '' },
+    receipt_status: '',
+    receipt_type: ''
+};
+
 const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    
-    
     const locationState = location.state || {};
-    
+
     const [receiptData, setReceiptData] = useState([]);
     const sessionValue = sessionStorage.getItem('filterValues');
-
-    const defaultFilters = {
-        Fromdate: locationState.Fromdate || ISOString(),
-        Todate: locationState.Todate || ISOString(),
-        voucherType_Filter: locationState.VoucherType 
-            ? { label: locationState.VoucherType?.label || locationState.Voucher_Type || 'Selected', value: locationState.VoucherType?.value || locationState.Voucher_Type_Id || '' }
-            : { label: 'ALL', value: '' },
-        debit_accounts_Filter: { label: 'ALL', value: '' },
-        credit_accounts_Filter: { label: 'ALL', value: '' },
-        created_by_Filter: { label: 'ALL', value: '' },
-        receipt_status: '',
-        receipt_type: ''
-    };
 
     const [filters, setFilters] = useState({
         ...defaultFilters,
@@ -56,80 +54,14 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     debit_accounts: toArray(data?.others?.debit_accounts),
                     credit_accounts: toArray(data?.others?.credit_accounts),
                     created_by: toArray(data?.others?.created_by)
-                }))
+                }));
             }
         })
     }, [])
 
     useEffect(() => {
-      
-        if (locationState.VoucherType) {
-            const sessionFilterValues = getSessionFiltersByPageId(pageID);
-            const {
-                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-                created_by_Filter = defaultFilters.created_by_Filter,
-                receipt_status = defaultFilters.receipt_status,
-                receipt_type = defaultFilters.receipt_type
-            } = sessionFilterValues;
 
-            setFilters(pre => ({
-                ...pre,
-                Fromdate: locationState.Fromdate || pre.Fromdate,
-                Todate: locationState.Todate || pre.Todate,
-                voucherType_Filter: locationState.VoucherType 
-                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
-                    : pre.voucherType_Filter,
-                debit_accounts_Filter,
-                credit_accounts_Filter,
-                created_by_Filter,
-                receipt_status,
-                receipt_type,
-            }));
-
-      
-            setSessionFilters({
-                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
-                Todate: locationState.Todate || defaultFilters.Todate,
-                pageID,
-                voucherType_Filter: locationState.VoucherType 
-                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
-                    : defaultFilters.voucherType_Filter,
-                debit_accounts_Filter,
-                credit_accounts_Filter,
-                created_by_Filter,
-                receipt_status,
-                receipt_type,
-            });
-        } else {
-      
-            const sessionFilterValues = getSessionFiltersByPageId(pageID);
-            const {
-                Fromdate, Todate,
-                voucherType_Filter = defaultFilters.voucherType_Filter,
-                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-                created_by_Filter = defaultFilters.created_by_Filter,
-                receipt_status = defaultFilters.receipt_status,
-                receipt_type = defaultFilters.receipt_type
-            } = sessionFilterValues;
-
-            setFilters(pre => ({
-                ...pre,
-                Fromdate: Fromdate,
-                Todate: Todate,
-                voucherType_Filter,
-                debit_accounts_Filter,
-                credit_accounts_Filter,
-                created_by_Filter,
-                receipt_status,
-                receipt_type,
-            }));
-        }
-    }, [sessionValue, pageID, location.state]);
-
-    useEffect(() => {
-        const sessionFilterValues = getSessionFiltersByPageId(pageID);
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
         const {
             Fromdate, Todate,
             voucherType_Filter = defaultFilters.voucherType_Filter,
@@ -138,18 +70,43 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
             created_by_Filter = defaultFilters.created_by_Filter,
             receipt_status = defaultFilters.receipt_status,
             receipt_type = defaultFilters.receipt_type
+        } = otherSessionFiler;
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate, Todate,
+            voucherType_Filter, debit_accounts_Filter, credit_accounts_Filter,
+            created_by_Filter, receipt_status, receipt_type
+        }));
+
+    }, [sessionValue, pageID]);
+
+    useEffect(() => {
+        const sessionFilterValues = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate = defaultFilters.Fromdate,
+            Todate = defaultFilters.Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
+            receipt_status = defaultFilters.receipt_status,
+            receipt_type = defaultFilters.receipt_type
         } = sessionFilterValues;
 
+        loadingOn?.();
         fetchLink({
             address: `receipt/receiptMaster?Fromdate=${Fromdate}&Todate=${Todate}&voucher=${voucherType_Filter?.value || ''}&debit=${debit_accounts_Filter?.value || ''}&credit=${credit_accounts_Filter?.value || ''}&createdBy=${created_by_Filter?.value || ''}&status=${receipt_status}&receipt_type=${receipt_type}`,
-            loadingOff, 
+            loadingOff,
             loadingOn
         }).then(data => {
             if (data.success) {
                 setReceiptData(data.data)
             }
         }).catch(e => console.error(e))
-    }, [sessionValue, pageID]);
+            .finally(() => loadingOff?.());
+
+    }, [sessionValue, pageID, location]);
 
     const TotalReceipt = useMemo(() => receiptData.filter(
         rec => !isEqualNumber(rec.status, 0)
@@ -184,10 +141,10 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 bodyFontSizePx={12}
                 ButtonArea={
                     <>
-                
+
                         {locationState.Fromdate && locationState.Todate && (
                             <span className="mx-2 text-muted fa-12">
-                                Showing data from {new Date(locationState.Fromdate)} 
+                                Showing data from {new Date(locationState.Fromdate)}
                                 to {new Date(locationState.Todate)}
                             </span>
                         )}
@@ -309,173 +266,35 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 EnableSerialNumber
             />
 
-            <Dialog
+            <AppDialog
                 open={filters.filterDialog}
                 onClose={closeDialog}
-                fullWidth maxWidth='sm'
-            >
-                <DialogTitle>Filters</DialogTitle>
-                <DialogContent>
-
-                    <div className="table-responsive pb-4">
-                        <table className="table">
-                            <tbody>
-
-                      
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>From</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Fromdate}
-                                            onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                       
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>To</td>
-                                    <td>
-                                        <input
-                                            type="date"
-                                            value={filters.Todate}
-                                            onChange={e => setFilters({ ...filters, Todate: e.target.value })}
-                                            className="cus-inpt"
-                                        />
-                                    </td>
-                                </tr>
-
-                       
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Debit Account</td>
-                                    <td>
-                                        <Select
-                                            value={filters?.debit_accounts_Filter}
-                                            onChange={(e) => setFilters({ ...filters, debit_accounts_Filter: e })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...filterDropDown.debit_accounts
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Debit Account"}
-                                            menuPortalTarget={document.body}
-                                            filterOption={reactSelectFilterLogic}
-                                        />
-                                    </td>
-                                </tr>
-
-                       
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Credit Account </td>
-                                    <td>
-                                        <Select
-                                            value={filters?.credit_accounts_Filter}
-                                            onChange={(e) => setFilters({ ...filters, credit_accounts_Filter: e })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...filterDropDown.credit_accounts
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Credit Account"}
-                                            menuPortalTarget={document.body}
-                                            filterOption={reactSelectFilterLogic}
-                                        />
-                                    </td>
-                                </tr>
-
-                              
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Receipt Type </td>
-                                    <td>
-                                        <select
-                                            className="cus-inpt p-2"
-                                            value={filters.receipt_type}
-                                            onChange={e => setFilters(pre => ({ ...pre, receipt_type: e.target.value }))}
-                                        >
-                                            <option value={''}>ALL</option>
-                                            {receiptTypes.map((type, ind) => (
-                                                <option value={type.value} key={ind}>{type.label}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                </tr>
-
-                            
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Voucher Type </td>
-                                    <td>
-                                        <Select
-                                            value={filters?.voucherType_Filter}
-                                            onChange={(e) => setFilters({ ...filters, voucherType_Filter: e })}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...filterDropDown.voucherType
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Voucher Type"}
-                                            menuPortalTarget={document.body}
-                                            filterOption={reactSelectFilterLogic}
-                                        />
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Receipt Status</td>
-                                    <td>
-                                        <select
-                                            className="cus-inpt"
-                                            value={filters.receipt_status}
-                                            onChange={e => setFilters({ ...filters, receipt_status: e.target.value })}
-                                        >
-                                            <option value={''}>All</option>
-                                            {receiptStatus.map((sts, ind) => (
-                                                <option value={sts.value} key={ind}>{sts.label}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                </tr>
-
-                              
-                                <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Created By</td>
-                                    <td>
-                                        <Select
-                                            value={filters?.created_by_Filter}
-                                            onChange={(e) => setFilters(pre => ({ ...pre, created_by_Filter: e }))}
-                                            options={[
-                                                { value: '', label: 'ALL' },
-                                                ...filterDropDown.created_by
-                                            ]}
-                                            styles={customSelectStyles}
-                                            isSearchable={true}
-                                            placeholder={"Sales Person Name"}
-                                            menuPortalTarget={document.body}
-                                            filterOption={reactSelectFilterLogic}
-                                        />
-                                    </td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </div>
-                </DialogContent>
-                <DialogActions className="d-flex align-items-center justify-content-between">
+                title="Filters"
+                maxWidth="sm"
+                onSubmit={() => {
+                    closeDialog();
+                    setSessionFilters({
+                        Fromdate: filters?.Fromdate,
+                        Todate: filters.Todate,
+                        pageID,
+                        voucherType_Filter: filters.voucherType_Filter,
+                        debit_accounts_Filter: filters.debit_accounts_Filter,
+                        credit_accounts_Filter: filters.credit_accounts_Filter,
+                        created_by_Filter: filters.created_by_Filter,
+                        receipt_status: filters.receipt_status,
+                        receipt_type: filters.receipt_type,
+                    });
+                }}
+                submitText="Search"
+                startAction={
                     <Button
                         variant="outlined"
                         onClick={() => {
-                    
                             setFilters(pre => ({
                                 ...pre,
-                                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
-                                Todate: locationState.Todate || defaultFilters.Todate,
-                                voucherType_Filter: locationState.VoucherType 
-                                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
-                                    : defaultFilters.voucherType_Filter,
+                                Fromdate: defaultFilters.Fromdate,
+                                Todate: defaultFilters.Todate,
+                                voucherType_Filter: defaultFilters.voucherType_Filter,
                                 debit_accounts_Filter: defaultFilters.debit_accounts_Filter,
                                 credit_accounts_Filter: defaultFilters.credit_accounts_Filter,
                                 created_by_Filter: defaultFilters.created_by_Filter,
@@ -484,30 +303,150 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                             }))
                         }}
                         startIcon={<ClearAll />}
-                    >Reset to Navigation Filters</Button>
-                    <span>
-                        <Button onClick={closeDialog}>close</Button>
-                        <Button
-                            onClick={() => {
-                                closeDialog();
-                                setSessionFilters({
-                                    Fromdate: filters?.Fromdate,
-                                    Todate: filters.Todate,
-                                    pageID,
-                                    voucherType_Filter: filters.voucherType_Filter,
-                                    debit_accounts_Filter: filters.debit_accounts_Filter,
-                                    credit_accounts_Filter: filters.credit_accounts_Filter,
-                                    created_by_Filter: filters.created_by_Filter,
-                                    receipt_status: filters.receipt_status,
-                                    receipt_type: filters.receipt_type,
-                                });
-                            }}
-                            startIcon={<Search />}
-                            variant="contained"
-                        >Search</Button>
-                    </span>
-                </DialogActions>
-            </Dialog>
+                        color="error"
+                    >
+                        Reset
+                    </Button>
+                }
+            >
+                <div className="table-responsive pb-4">
+                    <table className="table">
+                        <tbody>
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>From</td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        value={filters.Fromdate}
+                                        onChange={e => setFilters({ ...filters, Fromdate: e.target.value })}
+                                        className="cus-inpt"
+                                    />
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>To</td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        value={filters.Todate}
+                                        onChange={e => setFilters({ ...filters, Todate: e.target.value })}
+                                        className="cus-inpt"
+                                    />
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Debit Account</td>
+                                <td>
+                                    <Select
+                                        value={filters?.debit_accounts_Filter}
+                                        onChange={(e) => setFilters({ ...filters, debit_accounts_Filter: e })}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterDropDown.debit_accounts
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Debit Account"}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Credit Account </td>
+                                <td>
+                                    <Select
+                                        value={filters?.credit_accounts_Filter}
+                                        onChange={(e) => setFilters({ ...filters, credit_accounts_Filter: e })}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterDropDown.credit_accounts
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Credit Account"}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Receipt Type </td>
+                                <td>
+                                    <select
+                                        className="cus-inpt p-2"
+                                        value={filters.receipt_type}
+                                        onChange={e => setFilters(pre => ({ ...pre, receipt_type: e.target.value }))}
+                                    >
+                                        <option value={''}>ALL</option>
+                                        {receiptTypes.map((type, ind) => (
+                                            <option value={type.value} key={ind}>{type.label}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Voucher Type </td>
+                                <td>
+                                    <Select
+                                        value={filters?.voucherType_Filter}
+                                        onChange={(e) => setFilters({ ...filters, voucherType_Filter: e })}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterDropDown.voucherType
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Voucher Type"}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Receipt Status</td>
+                                <td>
+                                    <select
+                                        className="cus-inpt"
+                                        value={filters.receipt_status}
+                                        onChange={e => setFilters({ ...filters, receipt_status: e.target.value })}
+                                    >
+                                        <option value={''}>All</option>
+                                        {receiptStatus.map((sts, ind) => (
+                                            <option value={sts.value} key={ind}>{sts.label}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style={{ verticalAlign: 'middle' }}>Created By</td>
+                                <td>
+                                    <Select
+                                        value={filters?.created_by_Filter}
+                                        onChange={(e) => setFilters(pre => ({ ...pre, created_by_Filter: e }))}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterDropDown.created_by
+                                        ]}
+                                        styles={customSelectStyles}
+                                        isSearchable={true}
+                                        placeholder={"Sales Person Name"}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </AppDialog>
         </>
     )
 }

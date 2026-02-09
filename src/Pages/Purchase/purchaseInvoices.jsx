@@ -1,32 +1,34 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
+import { getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights, pageID }) => {
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+    Retailer: { value: '', label: 'ALL' },
+    VoucherType: { value: '', label: 'ALL' },
+    EmployeeType: { value: '', label: 'ALL' },
+    Employee: { value: '', label: 'ALL' },
+    filterItems: { value: '', label: 'ALL' },
+    Cancel_status: '',
+};
+
+const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
-    const defaultFilters = {
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        Retailer: { value: '', label: 'ALL' },
-        VoucherType: { value: '', label: 'ALL' },
-        EmployeeType: { value: '', label: 'ALL' },
-        Employee: { value: '', label: 'ALL' },
-        filterItems: { value: '', label: 'ALL' },
-        Cancel_status: '',
-    };
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [baseData, setBaseData] = useState({
         Employees: [],
@@ -99,7 +101,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, AddRights, Delet
             }
         }).catch(e => console.error(e));
 
-    }, [sessionValue, pageID])
+    }, [sessionValue, pageID, location])
 
     useEffect(() => {
 

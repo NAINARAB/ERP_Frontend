@@ -76,8 +76,6 @@ const AddProductForm = ({
 
                     // Added this line to get the stock value
                     const godownStock = validStockValue(productDetails.Item_Id, productDetails.GoDown_Id, stockInGodowns);
-                    console.log(godownStock)
-
 
                     const { Bill_Qty, Item_Rate, Amount } = productDetails;
 
@@ -106,13 +104,10 @@ const AddProductForm = ({
                         case 'Final_Amo': return [key, gstInfo.with_tax]
                         case 'Godown_Stock': return [key, godownStock] // Added this line
 
-
                         default: return [key, productDetails[key] || value]
                     }
                 })
             );
-
-            console.log({currentProductDetails})
 
             return [...existingProducts, currentProductDetails];
         });
