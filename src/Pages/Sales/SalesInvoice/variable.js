@@ -85,6 +85,7 @@ export const salesInvoiceGeneralInfo = {
     Payment_Mode: 0,
     Payment_Status: 0,
     Alter_Reason: '',
+    paymentDueDays: 0,
 
     // Delivery_Time: '',
     // Delivery_Location: '',

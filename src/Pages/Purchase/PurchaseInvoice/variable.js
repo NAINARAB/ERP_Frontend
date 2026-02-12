@@ -55,6 +55,7 @@ export const itemsRowDetails = {
     Act_Qty: 0,
     Item_Rate: 0,
     Bill_Alt_Qty: 0,
+    Alt_Act_Qty: 0,
     Free_Qty: 0,
     Unit_Id: '',
     Unit_Name: '',
@@ -82,4 +83,12 @@ export const staffRowDetails = {
     Involved_Emp_Id: '',
     Involved_Emp_Name: 'select',
     Cost_Center_Type_Id: '',
+}
+
+export const purchaseExpenceInfo = {
+    PA_Id: '',
+    PIN_Id: '',
+    Expense_Id: '',
+    Amount_value_DR: 0,
+    Amount_value_CR: 0,
 }

@@ -34,6 +34,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         Employees: [],
         EmployeeTypes: [],
         products: [],
+        defaultAccountMaster: []
     })
 
     const [filters, setFilters] = useState({
@@ -110,6 +111,14 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         }).then(data => {
             if (data.success) {
                 setRetailers(data.data);
+            }
+        }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `masters/defaultAccountMaster?Type=PURCHASE_INVOICE`
+        }).then(data => {
+            if (data.success) {
+                setBaseData(pre => ({ ...pre, defaultAccountMaster: data.data }));
             }
         }).catch(e => console.error(e))
 

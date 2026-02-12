@@ -5,12 +5,7 @@ import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
     checkIsNumber, toNumber, toArray, stringCompare,
     RoundNumber, isValidNumber,
-    validValue,
-    isValidValue,
-    rid,
-    Division,
-    Subraction,
-    filterableText
+    rid, Subraction, filterableText
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -112,13 +107,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
-                    fetchLink({ address: `masters/retailers/dropDown?Company_Id=${storage?.Company_id}` }),
+                    fetchLink({ address: `masters/retailers/dropDown` }),
                     fetchLink({ address: `masters/voucher?module=SALES` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `masters/defaultAccountMaster` }),
+                    fetchLink({ address: `masters/defaultAccountMaster?Type=SALES_INVOICE` }),
                     // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` })
@@ -167,9 +162,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     staffType: staffCategoryData,
                     godown: godownLocations,
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
-                    expence: expencesMaster.filter(
-                        exp => !stringCompare(exp.Type, 'DEFAULT')
-                    ).map(exp => ({
+                    expence: expencesMaster.map(exp => ({
                         Id: exp.Acc_Id,
                         Expence_Name: exp.Account_Name,
                         percentageValue: exp.percentageValue
@@ -187,7 +180,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
         fetchData();
 
-    }, [storage?.Company_id])
+    }, [])
 
     useEffect(() => {
         if (isValidNumber(invoiceInfo.Retailer_Id)) {

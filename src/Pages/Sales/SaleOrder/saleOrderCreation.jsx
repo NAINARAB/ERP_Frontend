@@ -312,13 +312,13 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
 
                 <div className="d-flex align-items-center flex-wrap p-2">
                     <h5 className="flex-grow-1 ps-2">Sale Order Creation</h5>
-                    <Button
+                    {/* <Button
                         variant='outlined' sx={{ ml: 1 }}
                         startIcon={<ArrowLeft />}
                         onClick={() => navigate('/erp/sales/saleOrder')}
                     >
                         {'Back'}
-                    </Button>
+                    </Button> */}
                     <Button
                         variant='outlined' sx={{ ml: 1 }}
                         startIcon={<Clear />}
@@ -326,6 +326,14 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     >
                         {'Clear'}
                     </Button>
+                    <Button
+                        onClick={postSaleOrder}
+                        sx={{ ml: 1 }}
+                        variant='outlined'
+                        color='success'
+                        startIcon={<Save />}
+                        disabled={orderProducts?.length === 0 || !orderDetails?.Retailer_Id}
+                    >Save</Button>
                 </div>
 
                 <CardContent>

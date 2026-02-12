@@ -57,8 +57,8 @@ const AppTableComponent = ({
     disablePagination = false,
     maxHeightOption = false,
     ButtonArea,
-    bodyFontSizePx = 13,
-    headerFontSizePx = 14,
+    bodyFontSizePx = 12,
+    headerFontSizePx = 12,
     enableGlobalSearch = false,
     loadingOn, 
     loadingOff

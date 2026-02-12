@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
@@ -29,6 +29,8 @@ const AddItemsDialog = ({
     const isInclusive = isEqualNumber(GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(GST_Inclusive, 2);
 
+    const lastEditedRef = useRef(null);
+
     useEffect(() => {
         if (isValidObject(editValues) && open) {
             setProductDetails(pre => (
@@ -40,6 +42,45 @@ const AddItemsDialog = ({
     }, [editValues])
 
     const findProductDetails = (productid) => products?.find(obj => isEqualNumber(obj?.Product_Id, productid)) ?? {};
+
+    const productInfo = useMemo(() => {
+        const currentProduct = findProductDetails(productDetails.Item_Id);
+        return productDetails.Item_Id ? currentProduct : {};
+    }, [products, productDetails.Item_Id]);
+
+    const onRateChange = (value) => {
+        lastEditedRef.current = 'RATE';
+        setProductDetails(prev => ({ ...prev, Item_Rate: value }));
+    };
+
+    const onAmountChange = (value) => {
+        lastEditedRef.current = 'AMOUNT';
+        setProductDetails(prev => ({ ...prev, Amount: value }));
+    };
+
+    useEffect(() => {
+        const { Item_Rate, Amount, Bill_Qty } = productDetails;
+
+        if (!isValidNumber(Bill_Qty) || Bill_Qty === 0) return;
+
+        if ((lastEditedRef.current === 'RATE' || lastEditedRef.current === 'QTY') && isValidNumber(Item_Rate)) {
+            const amount = Multiplication(Item_Rate, Bill_Qty);
+            setProductDetails(prev =>
+                prev.Amount === amount
+                    ? prev
+                    : { ...prev, Amount: amount }
+            );
+        }
+
+        if (lastEditedRef.current === 'AMOUNT' && isValidNumber(Amount)) {
+            const rate = Division(Amount, Bill_Qty);
+            setProductDetails(prev =>
+                prev.Item_Rate === rate
+                    ? prev
+                    : { ...prev, Item_Rate: rate }
+            );
+        }
+    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty, productDetails.Act_Qty]);
 
     const closeDialog = () => {
         setProductDetails(initialValue);
@@ -258,68 +299,102 @@ const AddItemsDialog = ({
                                 />
                             </div>
 
-                            {/* quantity */}
-                            <div className="col-lg-4 col-md-6 p-2">
-                                <label>Quantity <RequiredStar /></label>
+                            {/* act qty */}
+                            <div className="col-md-6 p-2">
+                                <label>Actual Quantity </label>
+                                <input
+                                    value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
+                                    onInput={onlynum}
+                                    disabled={!checkIsNumber(productDetails.Item_Id)}
+                                    onChange={e => {
+                                        lastEditedRef.current = 'QTY';
+                                        const pack = productInfo?.PackGet;
+                                        const alterQuantity = Division(e.target.value, pack);
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Act_Qty: e.target.value,
+                                            Bill_Qty: e.target.value,
+                                            Alt_Act_Qty: alterQuantity,
+                                            Alt_Bill_Qty: alterQuantity
+                                        }))
+                                    }}
+                                    required
+                                    className="cus-inpt"
+                                />
+                            </div>
+
+                            {/* alter actual quantity */}
+                            <div className="col-md-6 p-2">
+                                <label>Alt Act Quantity</label>
+                                <input
+                                    value={productDetails.Alt_Act_Qty || ''}
+                                    className="cus-inpt"
+                                    type="number"
+                                    onChange={e => {
+                                        lastEditedRef.current = 'QTY';
+                                        const pack = productInfo?.PackGet;
+                                        const qty = Multiplication(e.target.value, pack)
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Alt_Act_Qty: e.target.value,
+                                            Alt_Bill_Qty: e.target.value,
+                                            Act_Qty: qty,
+                                            Bill_Qty: qty,
+                                        }));
+                                    }}
+                                />
+                            </div>
+
+                            {/* bill quantity */}
+                            <div className="col-md-6 p-2">
+                                <label>Bill Quantity <RequiredStar /></label>
                                 <input
                                     required
                                     value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
-                                        if (productDetails.Item_Rate) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Amount: Multiplication(productDetails.Item_Rate, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else if (productDetails.Amount) {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Item_Rate: Division(pre.Amount, e.target.value),
-                                                Bill_Qty: e.target.value,
-                                            }))
-                                        } else {
-                                            setProductDetails(pre => ({
-                                                ...pre,
-                                                Bill_Qty: e.target.value,
-                                            }));
-                                        }
+                                        lastEditedRef.current = 'QTY';
+                                        const pack = productInfo?.PackGet;
+                                        const alterQuantity = Division(e.target.value, pack);
+                                        setProductDetails(pre => ({
+                                            ...pre,
+                                            Bill_Qty: e.target.value,
+                                            Alt_Bill_Qty: alterQuantity,
+                                        }));
                                     }}
                                     className="cus-inpt"
                                     min={1}
                                 />
                             </div>
 
-                            {Object.hasOwn(productDetails, 'Act_Qty') && (
-                                <div className="col-lg-4 col-md-6 p-2">
-                                    <label>Actual Quantity </label>
-                                    <input
-                                        value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
-                                        onInput={onlynum}
-                                        disabled={!checkIsNumber(productDetails.Item_Id)}
-                                        onChange={e => setProductDetails(pre => ({
+                            {/* alt bill qty */}
+                            <div className="col-md-6 p-2">
+                                <label>Alt Bill Quantity</label>
+                                <input
+                                    value={productDetails.Alt_Bill_Qty || ''}
+                                    className="cus-inpt"
+                                    type="number"
+                                    onChange={e => {
+                                        lastEditedRef.current = 'QTY';
+                                        const pack = productInfo?.PackGet;
+                                        setProductDetails(pre => ({
                                             ...pre,
-                                            Act_Qty: e.target.value,
-                                        }))}
-                                        required
-                                        className="cus-inpt"
-                                    />
-                                </div>
-                            )}
+                                            Alt_Bill_Qty: e.target.value,
+                                            Bill_Qty: Multiplication(e.target.value, pack),
+                                        }));
+                                    }}
+                                />
+                            </div>
 
                             {/* Rate */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
-                                    value={productDetails.Item_Rate ? productDetails.Item_Rate : ''}
+                                    value={productDetails.Item_Rate || ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Item_Rate: e.target.value,
-                                        Amount: pre.Bill_Qty ? Multiplication(e.target.value, pre.Bill_Qty) : pre.Amount
-                                    }))}
+                                    onChange={e => onRateChange(e.target.value)}
                                     required
                                     className="cus-inpt"
                                 />
@@ -360,14 +435,10 @@ const AddItemsDialog = ({
                                 <label>Amount</label>
                                 <input
                                     required
-                                    value={productDetails.Amount ? productDetails.Amount : ''}
+                                    value={productDetails.Amount || ''}
                                     onInput={onlynum}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Amount: e.target.value,
-                                        Item_Rate: pre.Bill_Qty ? Division(e.target.value, pre.Bill_Qty) : pre.Item_Rate
-                                    }))}
+                                    onChange={e => onAmountChange(e.target.value)}
                                     className="cus-inpt"
                                     min={1}
                                 />
@@ -386,8 +457,7 @@ const AddItemsDialog = ({
                                     className="cus-inpt"
                                 />
                             </div>
-
-
+                            
                         </div>
 
                     </DialogContent>

@@ -247,9 +247,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     createCol('Do_Inv_No', 'string', 'ID'),
                     createCol('Retailer_Name', 'string', 'Customer'),
                     createCol('VoucherTypeGet', 'string', 'Voucher'),
-                    createCol('Total_Before_Tax', 'number', 'Before Tax'),
-                    createCol('Total_Tax', 'number', 'Tax'),
+                    // createCol('Total_Before_Tax', 'number', 'Before Tax'),
+                    // createCol('Total_Tax', 'number', 'Tax'),
                     createCol('Total_Invoice_value', 'number', 'Invoice Value'),
+                    createCol('Created_BY_Name', 'string', 'Created By'),
                     {
                         ColumnHeader: 'Status',
                         isVisible: 1,

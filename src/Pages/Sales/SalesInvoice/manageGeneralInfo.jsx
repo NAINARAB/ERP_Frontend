@@ -268,6 +268,17 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </select>
                                     </div>
 
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Payment Days (in count)</label>
+                                        <input
+                                            type="number"
+                                            className={inputStyle}
+                                            value={invoiceInfo.paymentDueDays}
+                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, paymentDueDays: e.target.value }))}
+                                            placeholder='ex: 30, 12'
+                                        />
+                                    </div>
+
                                     {isValidNumber(invoiceInfo?.Do_Id) && (
                                         <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                             <label className='fa-13'>Edit Reason <RequiredStar /></label>
