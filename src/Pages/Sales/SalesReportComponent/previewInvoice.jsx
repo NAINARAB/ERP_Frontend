@@ -396,6 +396,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                     <p className='m-0 fa-17'>{companyInfo?.Company_Name}</p>
                                     <p className='m-0 fa-14'>Address: {companyInfo?.Company_Address}</p>
                                     <p className='m-0 fa-14'>City: {companyInfo?.Region} - {companyInfo?.Pincode}</p>
+                                    <p className='m-0 fa-14'>Phone No: {companyInfo?.Telephone_Number}</p>
                                     {/* <p className='m-0 fa-14'>GSTIN / UIN: {companyInfo?.Gst_Number}</p> */}
                                     <p className='m-0 fa-14'>
   {companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number ? (
