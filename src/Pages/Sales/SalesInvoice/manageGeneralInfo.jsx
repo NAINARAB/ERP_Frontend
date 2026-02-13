@@ -562,7 +562,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             }
                                             value={toNumber(invoiceInfo.Delivery_Status)}
                                         >
-                                            <option value={0}>Select</option>
+                                            <option value={1}>Select</option>
                                             <option value={5}>Pending</option>
                                             <option value={7}>Delivered</option>
                                             <option value={6}>Return</option>
