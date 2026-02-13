@@ -649,6 +649,35 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         return !(hasPositive && hasNegative);
     }, [invoiceProducts, isEdit]);
 
+    const cumulativeRow = useMemo(() => {
+        if (invoiceProducts.length > 0) {
+            const totals = invoiceProducts.reduce(
+                (acc, item) => ({
+                    Act_Qty: Addition(acc.Act_Qty, item.Act_Qty),
+                    Alt_Act_Qty: Addition(acc.Alt_Act_Qty, item.Alt_Act_Qty),
+                    Bill_Qty: Addition(acc.Bill_Qty, item.Bill_Qty),
+                    Alt_Bill_Qty: Addition(acc.Alt_Bill_Qty, item.Alt_Bill_Qty),
+                    Amount: Addition(acc.Amount, item.Amount),
+                }),
+                {
+                    Act_Qty: 0,
+                    Alt_Act_Qty: 0,
+                    Bill_Qty: 0,
+                    Alt_Bill_Qty: 0,
+                    Amount: 0,
+                }
+            );
+
+            return {
+                ...salesInvoiceDetailsInfo,
+                ...totals,
+                Item_Name: 'Total',
+                Item_Id: 'TOTAL_ROW',
+            };
+        }
+        return null;
+    }, [invoiceProducts]);
+
     const saveFunWithCodition = () => {
         if (voucherGodownCondition) {
             saveSalesInvoice();
@@ -806,7 +835,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             ...invoiceProducts,
                             ...Array.from({
                                 length: dummyRowCount > 0 ? dummyRowCount : 0
-                            }).map(d => salesInvoiceDetailsInfo)
+                            }).map(d => salesInvoiceDetailsInfo),
+                            ...(cumulativeRow ? [cumulativeRow] : []),
                         ]}
                         columns={[
                             createCol('Item_Name', 'string'),

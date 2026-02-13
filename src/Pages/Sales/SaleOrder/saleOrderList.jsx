@@ -32,9 +32,7 @@ import { ButtonActions } from "../../../Components/MenuButton";
 const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', isVisible = 1) => ({
     isVisible: isVisible,
     Field_Name: field,
-    Fied_Data: type, // Keeping typo 'Fied_Data' to match AppTableComponent/FilterableTable legacy prop name if needed, or check AppTableComponent definition.
-    // Checking AppTableComponent.jsx line 252: formatValue(row[col.Field_Name], col.Fied_Data)
-    // Yes, 'Fied_Data' is the correct prop name in AppTableComponent.
+    Fied_Data: type,
     align,
     verticalAlign,
     ...(ColumnHeader && { ColumnHeader })
@@ -49,7 +47,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         CreatedBy: { value: "", label: "ALL" },
         SalesPerson: { value: "", label: "ALL" },
         VoucherType: { value: "", label: "ALL" },
-        Cancel_status: 1,
+        Cancel_status: '',
         OrderStatus: { value: "", label: "ALL" },
     };
 
@@ -250,11 +248,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             SalesPerson = defaultFilters.SalesPerson,
             VoucherType = defaultFilters.VoucherType,
             Cancel_status = defaultFilters.Cancel_status,
+            OrderStatus = defaultFilters.OrderStatus,
         } = otherSessionFiler;
 
         let queryParams = [
             `Fromdate=${Fromdate}`,
             `Todate=${Todate}`,
+            `Cancel_status=${Cancel_status}`
         ];
 
         if (Retailer?.value) queryParams.push(`Retailer_Id=${Retailer.value}`);
@@ -262,13 +262,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         if (CreatedBy?.value) queryParams.push(`Created_by=${CreatedBy.value}`);
         if (VoucherType?.value) queryParams.push(`VoucherType=${VoucherType.value}`);
 
-        // Fix for Cancel_status - only include if not empty
-        // if (Cancel_status !== '' && Cancel_status !== undefined) {
-        //     queryParams.push(`Cancel_status=${Cancel_status}`);
-        // }
-
-        if (filters?.OrderStatus?.value) {
-            queryParams.push(`OrderStatus=${filters.OrderStatus.value}`);
+        if (OrderStatus?.value) {
+            queryParams.push(`OrderStatus=${OrderStatus.value}`);
         }
 
         fetchLink({
