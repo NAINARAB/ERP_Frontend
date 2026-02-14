@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, toArray, toNumber, RoundNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, toArray, toNumber, RoundNumber, NumberFormat } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import {
     Autocomplete,
     Button,
     Checkbox,
-      Select as MuiSelect,
-      Checkbox,
+    Select as MuiSelect,
+    // Checkbox,
     MenuItem,
     Dialog,
     DialogActions,
@@ -15,16 +15,16 @@ import {
     DialogTitle,
     IconButton,
     Typography,
-    TextField,   
+    TextField,
     Tooltip,
     Box,
     Divider,
     Snackbar,
     Alert,
-     Radio,
+    Radio,
     RadioGroup,
-     InputLabel,
-      FormControl,
+    InputLabel,
+    FormControl,
     FormControlLabel,
 } from "@mui/material";
 import Select from "react-select";
@@ -86,22 +86,22 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
-    const [viewMode, setViewMode] = useState('normal'); 
-    const [isLoading, setIsLoading] = useState(true); 
-    const [isRefreshing, setIsRefreshing] = useState(false); 
+    const [viewMode, setViewMode] = useState('normal');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [hasInitialLoading, setHasInitialLoading] = useState(false);
     const [currentPrintType, setCurrentPrintType] = useState('');
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
     const tableContainerRef = useRef(null);
 
 
-       const storage = JSON.parse(localStorage.getItem("user"));
-    const[pdfGeneration, setPdfGeneration] = useState({
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [pdfGeneration, setPdfGeneration] = useState({
         loading: false,
-        pdfUrl: null,       token: null,
+        pdfUrl: null, token: null,
         fileName: null,
         error: null
-    }); 
+    });
 
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
@@ -133,15 +133,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         open: false
     });
 
-       const [whatsappDialog, setWhatsappDialog] = useState({
+    const [whatsappDialog, setWhatsappDialog] = useState({
         open: false,
         order: null,
         loading: false,
-        method: 'template', 
+        method: 'template',
     });
 
 
-      const [templates, setTemplates] = useState([]);
+    const [templates, setTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState("");
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -170,22 +170,22 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const multiPrintRef = useRef(null);
 
 
-        const pdfTemplates = useMemo(() => {
-    return (templates || []).filter(t => {
-        const templateName = t.templateName || t.name || '';
-        return templateName.toLowerCase().includes('pdf') || 
-               templateName.toLowerCase().includes('invoice');
-    });
-}, [templates]);
+    const pdfTemplates = useMemo(() => {
+        return (templates || []).filter(t => {
+            const templateName = t.templateName || t.name || '';
+            return templateName.toLowerCase().includes('pdf') ||
+                templateName.toLowerCase().includes('invoice');
+        });
+    }, [templates]);
 
 
-const otherTemplates = useMemo(() => {
-    return (templates || []).filter(t => {
-        const templateName = t.templateName || t.name || '';
-        return !(templateName.toLowerCase().includes('pdf') || 
+    const otherTemplates = useMemo(() => {
+        return (templates || []).filter(t => {
+            const templateName = t.templateName || t.name || '';
+            return !(templateName.toLowerCase().includes('pdf') ||
                 templateName.toLowerCase().includes('invoice'));
-    });
-}, [templates]);
+        });
+    }, [templates]);
 
 
 
@@ -224,15 +224,15 @@ const otherTemplates = useMemo(() => {
             } else {
                 setIsRefreshing(true);
             }
-            
+
             setViewMode('normal');
-            
+
             const data = await fetchLink({
                 address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
                 loadingOn,
                 loadingOff,
             });
-            
+
             const invoices = toArray(data.data);
 
             const processedInvoices = invoices.map(invoice => {
@@ -249,11 +249,11 @@ const otherTemplates = useMemo(() => {
                 }
                 return invoice;
             });
-            
+
             setSalesInvoices(processedInvoices);
             setCostTypes(toArray(data?.others?.costTypes));
             setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
-            
+
             if (!hasInitialLoading) {
                 setHasInitialLoading(true);
             }
@@ -268,62 +268,62 @@ const otherTemplates = useMemo(() => {
 
 
     const fetchTemplates = async () => {
-    try {
-        const response = await DotPeWhatsAppService.fetchTemplates('APPROVED');
-        
-        
-        if (response.status && response.data) {
-            let templatesData = [];
-            
-           
-            if (Array.isArray(response.data)) {
-                templatesData = response.data;
-            } else if (response.data.data && Array.isArray(response.data.data)) {
-                templatesData = response.data.data;
-            } else if (response.data.templates && Array.isArray(response.data.templates)) {
-                templatesData = response.data.templates;
-            }
-            
-            
-            if (templatesData.length > 0) {
-                setTemplates(templatesData);
-                
-             
-                templatesData.forEach(template => {
-                    const name = template.templateName || template.name || '';
+        try {
+            const response = await DotPeWhatsAppService.fetchTemplates('APPROVED');
 
-                    if (name.includes('template_text')) {
-                        console.log('Found template_text template!', template);
-                        setSelectedTemplate(name);
-                    }
-                });
+
+            if (response.status && response.data) {
+                let templatesData = [];
+
+
+                if (Array.isArray(response.data)) {
+                    templatesData = response.data;
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    templatesData = response.data.data;
+                } else if (response.data.templates && Array.isArray(response.data.templates)) {
+                    templatesData = response.data.templates;
+                }
+
+
+                if (templatesData.length > 0) {
+                    setTemplates(templatesData);
+
+
+                    templatesData.forEach(template => {
+                        const name = template.templateName || template.name || '';
+
+                        if (name.includes('template_text')) {
+                            console.log('Found template_text template!', template);
+                            setSelectedTemplate(name);
+                        }
+                    });
+                } else {
+                    console.warn('No templates found');
+                }
             } else {
-                console.warn('No templates found');
+                console.warn('Failed to fetch templates:', response.message);
             }
-        } else {
-            console.warn('Failed to fetch templates:', response.message);
+        } catch (error) {
+            console.error('Failed to fetch templates:', error);
         }
-    } catch (error) {
-        console.error('Failed to fetch templates:', error);
-    }
-};
+    };
 
 
-useEffect(() => {
-    fetchTemplates();
-}, []);
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
 
     const fetchPendingInvoices = async () => {
         try {
             setIsLoading(true);
             setViewMode('pending');
-            
+
             const data = await fetchLink({
                 address: `sales/salesInvoice/pendingDetails?reqDate=${filters.reqDate}`,
                 loadingOn,
                 loadingOff,
             });
-            
+
             const invoices = toArray(data.data);
 
             const processedInvoices = invoices.map(invoice => {
@@ -340,9 +340,9 @@ useEffect(() => {
                 }
                 return invoice;
             });
-            
+
             setSalesInvoices(processedInvoices);
-            
+
             if (data?.others?.costTypes) {
                 setCostTypes(toArray(data?.others?.costTypes));
             }
@@ -356,21 +356,21 @@ useEffect(() => {
             setIsLoading(false);
         }
     };
-    
-    
 
-const toggleViewMode = async () => {
-    if (viewMode === 'normal') {
-        await fetchPendingInvoices();
-    } else {
-        await fetchAllInvoices(true);
-    }
-};
+
+
+    const toggleViewMode = async () => {
+        if (viewMode === 'normal') {
+            await fetchPendingInvoices();
+        } else {
+            await fetchAllInvoices(true);
+        }
+    };
 
     const fetchCostCenterData = async () => {
         try {
-            const costCenterData = await fetchLink({ 
-                address: "masters/erpCostCenter/dropDown" 
+            const costCenterData = await fetchLink({
+                address: "masters/erpCostCenter/dropDown"
             });
             setCostCenterData(toArray(costCenterData.data));
         } catch (error) {
@@ -395,7 +395,7 @@ const toggleViewMode = async () => {
                 setIsLoading(false);
             }
         };
-        
+
         fetchInitialData();
     }, []); // Empty dependency array for initial load only
 
@@ -434,7 +434,7 @@ const toggleViewMode = async () => {
         }
     }, [multiPrint.open, multiPrint.doIds, multiPrint.docType]);
 
-      const showSnackbar = (message, severity = "success") => {
+    const showSnackbar = (message, severity = "success") => {
         setSnackbar({
             open: true,
             message,
@@ -442,7 +442,7 @@ const toggleViewMode = async () => {
         });
     };
 
-  const closeWhatsAppDialog = () => {
+    const closeWhatsAppDialog = () => {
         setWhatsappDialog({
             open: false,
             order: null,
@@ -452,458 +452,458 @@ const toggleViewMode = async () => {
         setSelectedTemplate("");
     };
 
-const getPDFUrlSimple = (order) => {
-    const baseUrl = api;
-
-    
-    const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
+    const getPDFUrlSimple = (order) => {
+        const baseUrl = api;
 
 
-    const encodedInvoiceNo = btoa(formattedInvoiceNo);
-
-    return `${baseUrl}sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}`;
-};
+        const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
 
 
-const generateInvoicePDF = async (order, companyId) => {
-    try {
-    
+        const encodedInvoiceNo = btoa(formattedInvoiceNo);
 
-        const requestBody = {
-            invoiceId: order.Do_Inv_No, 
-            companyId: companyId,
-            invoiceData: {
-        
-                Do_Inv_No: order.Do_Inv_No,
-                Total_Invoice_value: order.Total_Invoice_value || 0,
-                retailerNameGet: order.retailerNameGet || order.Retailer_Name || 'Customer',
-                
-      
-                Do_Date: order.Do_Date || order.So_Date,
-                So_No: order.So_No || order.Do_No || 'N/A',
-                Retailer_Name: order.Retailer_Name || order.retailerNameGet,
-                Retailer_Address: order.Retailer_Address || 'Address not available',
-                Retailer_GSTIN: order.Retailer_GSTIN || 'Not Available',
-                
-            
-                CSGT_Total: order.CSGT_Total || 0,
-                SGST_Total: order.SGST_Total || 0,
-                IGST_Total: order.IGST_Total || 0,
-                Round_off: order.Round_off || 0,
-                CSGT_Percentage: order.CSGT_Percentage || 0,
-                SGST_Percentage: order.SGST_Percentage || 0,
-                IGST_Percentage: order.IGST_Percentage || 0,
-                
-     
-                stockDetails: order.stockDetails || order.ProductList || []
-            }
-        };
-        
-        console.log('Request body prepared:', requestBody);
-        
-  
-        const response = await fetchLink({
-            address: "sales/generatePdf",  
-            method: "POST",
-            bodyData: requestBody,
-            loadingOn,
-            loadingOff,
-        });
-        
-      
-        
-        return response;
-        
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        throw error;
-    }
-};
+        return `${baseUrl}sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}`;
+    };
 
 
-const generateAndStorePDF = async (order) => {
-    try {
-        setPdfGeneration({ loading: true, pdfUrl: null, error: null });
-        
-        
-        const storage = JSON.parse(localStorage.getItem("user"));
-        const companyId = storage?.Company_id;
-        
-        if (!companyId) {
-            throw new Error('Company ID not found');
+    const generateInvoicePDF = async (order, companyId) => {
+        try {
+
+
+            const requestBody = {
+                invoiceId: order.Do_Inv_No,
+                companyId: companyId,
+                invoiceData: {
+
+                    Do_Inv_No: order.Do_Inv_No,
+                    Total_Invoice_value: order.Total_Invoice_value || 0,
+                    retailerNameGet: order.retailerNameGet || order.Retailer_Name || 'Customer',
+
+
+                    Do_Date: order.Do_Date || order.So_Date,
+                    So_No: order.So_No || order.Do_No || 'N/A',
+                    Retailer_Name: order.Retailer_Name || order.retailerNameGet,
+                    Retailer_Address: order.Retailer_Address || 'Address not available',
+                    Retailer_GSTIN: order.Retailer_GSTIN || 'Not Available',
+
+
+                    CSGT_Total: order.CSGT_Total || 0,
+                    SGST_Total: order.SGST_Total || 0,
+                    IGST_Total: order.IGST_Total || 0,
+                    Round_off: order.Round_off || 0,
+                    CSGT_Percentage: order.CSGT_Percentage || 0,
+                    SGST_Percentage: order.SGST_Percentage || 0,
+                    IGST_Percentage: order.IGST_Percentage || 0,
+
+
+                    stockDetails: order.stockDetails || order.ProductList || []
+                }
+            };
+
+            console.log('Request body prepared:', requestBody);
+
+
+            const response = await fetchLink({
+                address: "sales/generatePdf",
+                method: "POST",
+                bodyData: requestBody,
+                loadingOn,
+                loadingOff,
+            });
+
+
+
+            return response;
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            throw error;
         }
-        
-       
-        const response = await generateInvoicePDF(order, companyId);
-        
-        if (response.success && response.data) {
-            const pdfUrl = response.data.pdfUrl; 
-            
+    };
+
+
+    const generateAndStorePDF = async (order) => {
+        try {
+            setPdfGeneration({ loading: true, pdfUrl: null, error: null });
+
+
+            const storage = JSON.parse(localStorage.getItem("user"));
+            const companyId = storage?.Company_id;
+
+            if (!companyId) {
+                throw new Error('Company ID not found');
+            }
+
+
+            const response = await generateInvoicePDF(order, companyId);
+
+            if (response.success && response.data) {
+                const pdfUrl = response.data.pdfUrl;
+
+                setPdfGeneration({
+                    loading: false,
+                    pdfUrl: pdfUrl,
+                    token: response.data.token,
+                    fileName: response.data.fileName,
+                    error: null
+                });
+
+                return {
+                    pdfUrl: pdfUrl,
+                    token: response.data.token,
+                    fileName: response.data.fileName
+                };
+            } else {
+                throw new Error(response.message || 'Failed to generate PDF');
+            }
+        } catch (error) {
+            console.error('Error generating PDF:', error);
             setPdfGeneration({
                 loading: false,
-                pdfUrl: pdfUrl,
-                token: response.data.token,
-                fileName: response.data.fileName,
-                error: null
+                pdfUrl: null,
+                error: error.message
             });
-            
-            return {
-                pdfUrl: pdfUrl,
-                token: response.data.token,
-                fileName: response.data.fileName
-            };
-        } else {
-            throw new Error(response.message || 'Failed to generate PDF');
+            throw error;
         }
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        setPdfGeneration({
-            loading: false,
-            pdfUrl: null,
-            error: error.message
-        });
-        throw error;
-    }
-};
+    };
 
-const handleWhatsAppClick = async (order) => {
-    try {
-
-        setWhatsappDialog({
-            open: true,
-            order: order,
-            loading: true,
-            method: 'pdf-link'
-        });
-        
-
-        const pdfData = await generateAndStorePDF(order);
-        
-
-        const recipientPhone = await getRecipientPhone(order);
-        
-        if (!recipientPhone) {
-            showSnackbar('Customer phone number not found', 'error');
-            closeWhatsAppDialog();
-            return;
-        }
-        
-
-        setWhatsappDialog({
-            open: true,
-            order: { 
-                ...order, 
-                recipientPhone,
-                generatedPdfUrl: pdfData.pdfUrl,
-                pdfToken: pdfData.token,
-                pdfFileName: pdfData.fileName
-            },
-            loading: false,
-            method: 'pdf-link'
-        });
-        
-    } catch (error) {
-        console.error('Error in handleWhatsAppClick:', error);
-        showSnackbar(`Failed to prepare PDF: ${error.message}`, 'error');
-        closeWhatsAppDialog();
-    }
-};
-
-
-
-const sendWhatsAppMessage = async () => {
-    const { order, method } = whatsappDialog;
-    
-    setWhatsappDialog(prev => ({ ...prev, loading: true }));
-    
-    try {
-      
-        
-
-        const pdfUrl = getPDFUrlSimple(order);
-     
-        
-        const mainOrder = order.ConvertedInvoice?.[0] || order;
-        const invoiceNo = order.Do_Inv_No || 'N/A';
-        const customerName = order.retailerNameGet || order.Retailer_Name || 'Customer';
-        const formattedDate = new Date(mainOrder.Do_Date || order.Do_Date).toLocaleDateString('en-GB');
-        const totalAmount = (mainOrder.Total_Invoice_value || order.Total_Invoice_value || 0).toFixed(2);
-        
-       
+    const handleWhatsAppClick = async (order) => {
         try {
-         
-            const testResponse = await fetch(pdfUrl, { method: 'HEAD' });
-         
-        } catch (testError) {
-            console.warn('PDF URL test warning:', testError.message);
-        }
-        //  const data=downloadInvoicePDF(invoiceNo);
-    
-        const payload = {
-            template: {
-                name: "template_text",
-                language: "en"
-            },
-            source: "crm",
-            // wabaNumber: "919944888054",
-            wabaNumber:Dot_Pe_Number,
-            recipients: [`91${order.recipientPhone}`],
-            clientRefId: `invoice_${invoiceNo.replace(/\//g, '_')}_${Date.now()}`,
-            params: {
-                // header: `http://192.168.1.39:9001/uploads/invoices/1/${invoiceNo}.pdf`, 
-                body: [
-                    `${customerName}`,           
-                    `${invoiceNo}`,          
-                    `${formattedDate}`,         
-                    `${totalAmount}`,     
-                    'SM TRADERS',          
-                    `${pdfUrl}`  
-                ]
+
+            setWhatsappDialog({
+                open: true,
+                order: order,
+                loading: true,
+                method: 'pdf-link'
+            });
+
+
+            const pdfData = await generateAndStorePDF(order);
+
+
+            const recipientPhone = await getRecipientPhone(order);
+
+            if (!recipientPhone) {
+                showSnackbar('Customer phone number not found', 'error');
+                closeWhatsAppDialog();
+                return;
             }
-        };
-        
-       
-        const response = await DotPeWhatsAppService.sendTemplateMessage(payload);
-        
-        if (response?.status) {
-            showSnackbar('WhatsApp message sent successfully!', 'success');
+
+
+            setWhatsappDialog({
+                open: true,
+                order: {
+                    ...order,
+                    recipientPhone,
+                    generatedPdfUrl: pdfData.pdfUrl,
+                    pdfToken: pdfData.token,
+                    pdfFileName: pdfData.fileName
+                },
+                loading: false,
+                method: 'pdf-link'
+            });
+
+        } catch (error) {
+            console.error('Error in handleWhatsAppClick:', error);
+            showSnackbar(`Failed to prepare PDF: ${error.message}`, 'error');
             closeWhatsAppDialog();
-        } else {
-            console.error('WhatsApp API error:', response);
-            throw new Error(response?.message || 'Failed to send message');
         }
-        
-    } catch (error) {
-   
-        console.error('Error sending WhatsApp:', error);
-        showSnackbar(`Failed to send message: ${error.message}`, 'error');
-        setWhatsappDialog(prev => ({ ...prev, loading: false }));
-    }
-};
+    };
 
 
 
-const renderWhatsAppDialogContent = () => {
-    const { order, method } = whatsappDialog;
-    
-    return (
-        <Box>
-            <Box mb={2}>
-                <Typography variant="subtitle2" color="textSecondary">
-                    Order: <strong>{order?.Do_Inv_No}</strong>
-                </Typography>
-                <Typography variant="subtitle2" color="textSecondary">
-                    Customer: <strong>{order?.retailerNameGet}</strong>
-                </Typography>
-                <Typography variant="subtitle2" color="textSecondary">
-                    Phone: <strong>{order?.Party_Mobile_1 || order?.recipientPhone}</strong>
-                </Typography>
-                <Typography variant="subtitle2" color="textSecondary">
-                    Amount: <strong>₹{NumberFormat(order?.Total_Invoice_value)}</strong>
-                </Typography>
-            </Box>
-            
-            <Divider sx={{ my: 2 }} />
-            
-            {/* PDF Generation Status */}
-            {pdfGeneration.loading && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-                    {/* <CircularProgress size={20} /> */}
-                    <Typography variant="body2">
-                        Generating PDF document...
+    const sendWhatsAppMessage = async () => {
+        const { order, method } = whatsappDialog;
+
+        setWhatsappDialog(prev => ({ ...prev, loading: true }));
+
+        try {
+
+
+
+            const pdfUrl = getPDFUrlSimple(order);
+
+
+            const mainOrder = order.ConvertedInvoice?.[0] || order;
+            const invoiceNo = order.Do_Inv_No || 'N/A';
+            const customerName = order.retailerNameGet || order.Retailer_Name || 'Customer';
+            const formattedDate = new Date(mainOrder.Do_Date || order.Do_Date).toLocaleDateString('en-GB');
+            const totalAmount = (mainOrder.Total_Invoice_value || order.Total_Invoice_value || 0).toFixed(2);
+
+
+            try {
+
+                const testResponse = await fetch(pdfUrl, { method: 'HEAD' });
+
+            } catch (testError) {
+                console.warn('PDF URL test warning:', testError.message);
+            }
+            //  const data=downloadInvoicePDF(invoiceNo);
+
+            const payload = {
+                template: {
+                    name: "template_text",
+                    language: "en"
+                },
+                source: "crm",
+                // wabaNumber: "919944888054",
+                wabaNumber: Dot_Pe_Number,
+                recipients: [`91${order.recipientPhone}`],
+                clientRefId: `invoice_${invoiceNo.replace(/\//g, '_')}_${Date.now()}`,
+                params: {
+                    // header: `http://192.168.1.39:9001/uploads/invoices/1/${invoiceNo}.pdf`, 
+                    body: [
+                        `${customerName}`,
+                        `${invoiceNo}`,
+                        `${formattedDate}`,
+                        `${totalAmount}`,
+                        'SM TRADERS',
+                        `${pdfUrl}`
+                    ]
+                }
+            };
+
+
+            const response = await DotPeWhatsAppService.sendTemplateMessage(payload);
+
+            if (response?.status) {
+                showSnackbar('WhatsApp message sent successfully!', 'success');
+                closeWhatsAppDialog();
+            } else {
+                console.error('WhatsApp API error:', response);
+                throw new Error(response?.message || 'Failed to send message');
+            }
+
+        } catch (error) {
+
+            console.error('Error sending WhatsApp:', error);
+            showSnackbar(`Failed to send message: ${error.message}`, 'error');
+            setWhatsappDialog(prev => ({ ...prev, loading: false }));
+        }
+    };
+
+
+
+    const renderWhatsAppDialogContent = () => {
+        const { order, method } = whatsappDialog;
+
+        return (
+            <Box>
+                <Box mb={2}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                        Order: <strong>{order?.Do_Inv_No}</strong>
+                    </Typography>
+                    <Typography variant="subtitle2" color="textSecondary">
+                        Customer: <strong>{order?.retailerNameGet}</strong>
+                    </Typography>
+                    <Typography variant="subtitle2" color="textSecondary">
+                        Phone: <strong>{order?.Party_Mobile_1 || order?.recipientPhone}</strong>
+                    </Typography>
+                    <Typography variant="subtitle2" color="textSecondary">
+                        Amount: <strong>₹{NumberFormat(order?.Total_Invoice_value)}</strong>
                     </Typography>
                 </Box>
-            )}
-            
-            {pdfGeneration.error && (
-                <Alert severity="error" sx={{ my: 2 }}>
-                    <Typography variant="body2">
-                        Failed to generate PDF: {pdfGeneration.error}
-                    </Typography>
-                    <Button 
-                        size="small" 
-                        onClick={() => generateAndStorePDF(order)}
-                        sx={{ mt: 1 }}
-                    >
-                        Retry PDF Generation
-                    </Button>
-                </Alert>
-            )}
-            
-            {pdfGeneration.pdfUrl && !pdfGeneration.loading && (
-                <Alert severity="success" sx={{ my: 2 }}>
-                    <Typography variant="body2" fontWeight="bold">
-                        ✓ PDF generated successfully!
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                        <Typography variant="caption" display="block">
-                            File: {pdfGeneration.fileName}
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* PDF Generation Status */}
+                {pdfGeneration.loading && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+                        {/* <CircularProgress size={20} /> */}
+                        <Typography variant="body2">
+                            Generating PDF document...
                         </Typography>
-                        <Typography variant="caption" display="block">
-                            Secure URL generated with token
-                        </Typography>
-                        
-          
-                        <Button 
-                            size="small" 
-                            variant="outlined" 
-                            onClick={() => downloadInvoicePDF(
-                                order.Do_Inv_No, 
-                                pdfGeneration.fileName
-                            )}
-                            sx={{ mt: 1 }}
-                            startIcon={<Print fontSize="small" />}
-                        >
-                            Test Download PDF
-                        </Button>
                     </Box>
-                </Alert>
-            )}
-            
-            <Box mb={2}>
-                <Typography variant="subtitle1" fontWeight="bold" mb={1}>
-                    Choose sending method:
-                </Typography>
-                <RadioGroup
-                    value={method}
-                    onChange={(e) => setWhatsappDialog(prev => ({ ...prev, method: e.target.value }))}
-                >
-                    <FormControlLabel 
-                        value="pdf-link" 
-                        control={<Radio size="small" />} 
-                        label={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <span>Send PDF Download Link</span>
-                                {/* {pdfGeneration.pdfUrl && (
+                )}
+
+                {pdfGeneration.error && (
+                    <Alert severity="error" sx={{ my: 2 }}>
+                        <Typography variant="body2">
+                            Failed to generate PDF: {pdfGeneration.error}
+                        </Typography>
+                        <Button
+                            size="small"
+                            onClick={() => generateAndStorePDF(order)}
+                            sx={{ mt: 1 }}
+                        >
+                            Retry PDF Generation
+                        </Button>
+                    </Alert>
+                )}
+
+                {pdfGeneration.pdfUrl && !pdfGeneration.loading && (
+                    <Alert severity="success" sx={{ my: 2 }}>
+                        <Typography variant="body2" fontWeight="bold">
+                            ✓ PDF generated successfully!
+                        </Typography>
+                        <Box sx={{ mt: 1 }}>
+                            <Typography variant="caption" display="block">
+                                File: {pdfGeneration.fileName}
+                            </Typography>
+                            <Typography variant="caption" display="block">
+                                Secure URL generated with token
+                            </Typography>
+
+
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => downloadInvoicePDF(
+                                    order.Do_Inv_No,
+                                    pdfGeneration.fileName
+                                )}
+                                sx={{ mt: 1 }}
+                                startIcon={<Print fontSize="small" />}
+                            >
+                                Test Download PDF
+                            </Button>
+                        </Box>
+                    </Alert>
+                )}
+
+                <Box mb={2}>
+                    <Typography variant="subtitle1" fontWeight="bold" mb={1}>
+                        Choose sending method:
+                    </Typography>
+                    <RadioGroup
+                        value={method}
+                        onChange={(e) => setWhatsappDialog(prev => ({ ...prev, method: e.target.value }))}
+                    >
+                        <FormControlLabel
+                            value="pdf-link"
+                            control={<Radio size="small" />}
+                            label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <span>Send PDF Download Link</span>
+                                    {/* {pdfGeneration.pdfUrl && (
                                     // <CheckCircle fontSize="small" color="success" />
                                 )} */}
-                            </Box>
-                        } 
-                        disabled={!pdfGeneration.pdfUrl && !pdfGeneration.loading}
-                    />
-                    
-                    <FormControlLabel 
-                        value="pdf-template" 
-                        control={<Radio size="small" />} 
-                        label="Send with PDF Template" 
-                    />
-                    
-                    <FormControlLabel 
-                        value="other-template" 
-                        control={<Radio size="small" />} 
-                        label="Send with Text Template" 
-                    />
-                </RadioGroup>
-            </Box>
-            
-            {method === 'pdf-template' && (
-                <Box>
-                    <FormControl fullWidth variant="outlined" size="small">
-                        <InputLabel>Select PDF Template</InputLabel>
-                        <MuiSelect
-                            value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value)}
-                            label="Select PDF Template"
-                        >
-                            <MenuItem value=""><em>Select a PDF template</em></MenuItem>
-                            {pdfTemplates.length > 0 ? (
-                                pdfTemplates.map((template) => {
-                                    const templateName = template.templateName || template.name;
-                                    const eventId = template.eventId || template.id;
-                                    return (
-                                        <MenuItem key={eventId} value={templateName}>
-                                            {templateName} ({template.language || 'en'})
-                                            {template.templateStatus && ` - ${template.templateStatus}`}
-                                        </MenuItem>
-                                    );
-                                })
-                            ) : (
-                                <MenuItem disabled>No PDF templates available</MenuItem>
-                            )}
-                        </MuiSelect>
-                    </FormControl>
-                </Box>
-            )}
-            
-            {method === 'other-template' && (
-                <Box>
-                    <FormControl fullWidth variant="outlined" size="small">
-                        <InputLabel>Select Text Template</InputLabel>
-                        <MuiSelect
-                            value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value)}
-                            label="Select Text Template"
-                        >
-                            <MenuItem value=""><em>Select a text template</em></MenuItem>
-                            {otherTemplates.length > 0 ? (
-                                otherTemplates.map((template) => {
-                                    const templateName = template.templateName || template.name;
-                                    const eventId = template.eventId || template.id;
-                                    return (
-                                        <MenuItem key={eventId} value={templateName}>
-                                            {templateName} ({template.language || 'en'})
-                                        </MenuItem>
-                                    );
-                                })
-                            ) : (
-                                <MenuItem disabled>No text templates available</MenuItem>
-                            )}
-                        </MuiSelect>
-                    </FormControl>
-                </Box>
-            )}
-            
-            {(selectedTemplate && method.includes('template')) && (
-                <Box mt={3} p={2} border={1} borderColor="divider" borderRadius={1}>
-                    <Typography variant="subtitle2" fontWeight="bold" mb={1}>
-                        Preview:
-                    </Typography>
-                    <Typography variant="body2">
-                        <strong>Template:</strong> {selectedTemplate}<br />
-                        <strong>Invoice:</strong> {order?.Do_Inv_No}<br />
-                        <strong>Customer:</strong> {order?.retailerNameGet}<br />
-                        <strong>Amount:</strong> ₹{NumberFormat(order?.Total_Invoice_value)}
-                        {pdfGeneration.pdfUrl && (
-                            <>
-                                <br />
-                                <strong>PDF URL:</strong> Will be included in message
-                            </>
-                        )}
-                    </Typography>
-                </Box>
-            )}
-            
-            {method === 'pdf-link' && pdfGeneration.pdfUrl && (
-                <Box mt={3} p={2} border={1} borderColor="divider" borderRadius={1}>
-                    <Typography variant="subtitle2" fontWeight="bold" mb={1}>
-                        PDF Link Preview:
-                    </Typography>
-                    <Typography variant="body2">
-                        The customer will receive a WhatsApp message with a secure link to download the PDF invoice.
-                        <br /><br />
-                        <strong>Invoice PDF Details:</strong>
-                        <br />• File: {pdfGeneration.fileName}
-                        <br />• Secure encrypted link
-                        <br />• Valid for 7 days
-                        <br />• Professional invoice format
-                    </Typography>
-                </Box>
-            )}
-        </Box>
-    );
-};
+                                </Box>
+                            }
+                            disabled={!pdfGeneration.pdfUrl && !pdfGeneration.loading}
+                        />
 
-  const getRecipientPhone = async (order) => {
+                        <FormControlLabel
+                            value="pdf-template"
+                            control={<Radio size="small" />}
+                            label="Send with PDF Template"
+                        />
+
+                        <FormControlLabel
+                            value="other-template"
+                            control={<Radio size="small" />}
+                            label="Send with Text Template"
+                        />
+                    </RadioGroup>
+                </Box>
+
+                {method === 'pdf-template' && (
+                    <Box>
+                        <FormControl fullWidth variant="outlined" size="small">
+                            <InputLabel>Select PDF Template</InputLabel>
+                            <MuiSelect
+                                value={selectedTemplate}
+                                onChange={(e) => setSelectedTemplate(e.target.value)}
+                                label="Select PDF Template"
+                            >
+                                <MenuItem value=""><em>Select a PDF template</em></MenuItem>
+                                {pdfTemplates.length > 0 ? (
+                                    pdfTemplates.map((template) => {
+                                        const templateName = template.templateName || template.name;
+                                        const eventId = template.eventId || template.id;
+                                        return (
+                                            <MenuItem key={eventId} value={templateName}>
+                                                {templateName} ({template.language || 'en'})
+                                                {template.templateStatus && ` - ${template.templateStatus}`}
+                                            </MenuItem>
+                                        );
+                                    })
+                                ) : (
+                                    <MenuItem disabled>No PDF templates available</MenuItem>
+                                )}
+                            </MuiSelect>
+                        </FormControl>
+                    </Box>
+                )}
+
+                {method === 'other-template' && (
+                    <Box>
+                        <FormControl fullWidth variant="outlined" size="small">
+                            <InputLabel>Select Text Template</InputLabel>
+                            <MuiSelect
+                                value={selectedTemplate}
+                                onChange={(e) => setSelectedTemplate(e.target.value)}
+                                label="Select Text Template"
+                            >
+                                <MenuItem value=""><em>Select a text template</em></MenuItem>
+                                {otherTemplates.length > 0 ? (
+                                    otherTemplates.map((template) => {
+                                        const templateName = template.templateName || template.name;
+                                        const eventId = template.eventId || template.id;
+                                        return (
+                                            <MenuItem key={eventId} value={templateName}>
+                                                {templateName} ({template.language || 'en'})
+                                            </MenuItem>
+                                        );
+                                    })
+                                ) : (
+                                    <MenuItem disabled>No text templates available</MenuItem>
+                                )}
+                            </MuiSelect>
+                        </FormControl>
+                    </Box>
+                )}
+
+                {(selectedTemplate && method.includes('template')) && (
+                    <Box mt={3} p={2} border={1} borderColor="divider" borderRadius={1}>
+                        <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+                            Preview:
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>Template:</strong> {selectedTemplate}<br />
+                            <strong>Invoice:</strong> {order?.Do_Inv_No}<br />
+                            <strong>Customer:</strong> {order?.retailerNameGet}<br />
+                            <strong>Amount:</strong> ₹{NumberFormat(order?.Total_Invoice_value)}
+                            {pdfGeneration.pdfUrl && (
+                                <>
+                                    <br />
+                                    <strong>PDF URL:</strong> Will be included in message
+                                </>
+                            )}
+                        </Typography>
+                    </Box>
+                )}
+
+                {method === 'pdf-link' && pdfGeneration.pdfUrl && (
+                    <Box mt={3} p={2} border={1} borderColor="divider" borderRadius={1}>
+                        <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+                            PDF Link Preview:
+                        </Typography>
+                        <Typography variant="body2">
+                            The customer will receive a WhatsApp message with a secure link to download the PDF invoice.
+                            <br /><br />
+                            <strong>Invoice PDF Details:</strong>
+                            <br />• File: {pdfGeneration.fileName}
+                            <br />• Secure encrypted link
+                            <br />• Valid for 7 days
+                            <br />• Professional invoice format
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
+        );
+    };
+
+    const getRecipientPhone = async (order) => {
         try {
             const response = await fetchLink({
                 address: `masters/getlolDetails`
             });
-            
+
             if (response && response.success && response.data) {
-                const retailerData = response.data.find(item => 
+                const retailerData = response.data.find(item =>
                     Number(item.Ret_Id) === Number(order?.Retailer_Id)
                 );
-                
+
                 return retailerData?.Party_Mobile_1 || order.Customer_Phone;
             }
             return order.Customer_Phone;
@@ -950,7 +950,7 @@ const renderWhatsAppDialogContent = () => {
             .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
             .map((costType) => {
                 const field = `costType_${toNumber(costType.Cost_Category_Id)}`;
-                
+
                 return {
                     costType: costType.Cost_Category,
                     field: field,
@@ -968,17 +968,17 @@ const renderWhatsAppDialogContent = () => {
                     }
                 };
             });
-        
+
         return columns.sort((a, b) => {
             const aName = a.costType.toLowerCase();
             const bName = b.costType.toLowerCase();
-            
+
             if (aName.includes('broker')) return -1;
             if (bName.includes('broker')) return 1;
-            
+
             if (aName.includes('transport')) return -1;
             if (bName.includes('transport')) return 1;
-            
+
             return a.costType.localeCompare(b.costType);
         }).map(c => c.columnConfig);
     }, [costTypes, uniqueInvolvedCost]);
@@ -1026,45 +1026,45 @@ const renderWhatsAppDialogContent = () => {
 
 
     const fetchSalesInvoices = () => {
-    if (viewMode === 'pending') {
-        fetchPendingInvoices();
-    } else {
-        setFilters((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
-    }
-};
+        if (viewMode === 'pending') {
+            fetchPendingInvoices();
+        } else {
+            setFilters((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
+        }
+    };
 
-const getPdfDownloadUrl = (invoiceId, token) => {
-    const baseUrl = api;
-    
-    const cleanInvoiceNo = invoiceId.replace(/\//g, '_');
-    
-    
-    const pdfParam = `${cleanInvoiceNo}`;
-    
+    const getPdfDownloadUrl = (invoiceId, token) => {
+        const baseUrl = api;
 
-    const url = `${baseUrl}sales/downloadPdf?Do_Inv_No=${pdfParam}`;
-    
-  
-    return url;
-};
-const downloadInvoicePDF = async (invoiceId, fileName = null) => {
-    try {
-   
-        const downloadUrl = getPdfDownloadUrl(invoiceId);
+        const cleanInvoiceNo = invoiceId.replace(/\//g, '_');
 
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = fileName || `${invoiceId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        return true;
-    } catch (error) {
-        console.error('Error downloading PDF:', error);
-        throw error;
-    }
-};
+
+        const pdfParam = `${cleanInvoiceNo}`;
+
+
+        const url = `${baseUrl}sales/downloadPdf?Do_Inv_No=${pdfParam}`;
+
+
+        return url;
+    };
+    const downloadInvoicePDF = async (invoiceId, fileName = null) => {
+        try {
+
+            const downloadUrl = getPdfDownloadUrl(invoiceId);
+
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = fileName || `${invoiceId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            return true;
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            throw error;
+        }
+    };
 
 
     const postAssignCostCenters = async (e) => {
@@ -1084,11 +1084,11 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
                 if (data.success) {
                     toast.success(data.message);
                     onCloseAssignDialog();
-                     if (viewMode === 'pending') {
-                    fetchPendingInvoices();
-                } else {
-                    fetchSalesInvoices(); // This will trigger fetchTrigger
-                }
+                    if (viewMode === 'pending') {
+                        fetchPendingInvoices();
+                    } else {
+                        fetchSalesInvoices(); // This will trigger fetchTrigger
+                    }
                 } else {
                     toast.error(data.message);
                 }
@@ -1113,11 +1113,11 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
             if (data.success) {
                 toast.success(data.message);
                 onCloseMultipleUpdateCostCategoryDialog();
-                 if (viewMode === 'pending') {
-                fetchPendingInvoices();
-            } else {
-                fetchSalesInvoices();
-            }
+                if (viewMode === 'pending') {
+                    fetchPendingInvoices();
+                } else {
+                    fetchSalesInvoices();
+                }
             } else {
                 toast.error(data.message);
             }
@@ -1279,7 +1279,7 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
     `,
     });
 
-  const renderFilter = (column) => {
+    const renderFilter = (column) => {
         const { Field_Name, Fied_Data, ColumnHeader } = column;
 
         if (Fied_Data === "number") {
@@ -1405,11 +1405,11 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
             if (data.success) {
                 toast.success(data.message);
                 onCloseMultipleStaffRemoveDialog();
-                 if (viewMode === 'pending') {
-                fetchPendingInvoices();
-            } else {
-                fetchSalesInvoices();
-            }
+                if (viewMode === 'pending') {
+                    fetchPendingInvoices();
+                } else {
+                    fetchSalesInvoices();
+                }
             } else {
                 toast.error(data.message);
             }
@@ -1442,7 +1442,7 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
 
     const removeMultipleInvoiceValidation = useMemo(() => {
         const validDoId = multipleStaffRemoveValues.Do_Id.length > 0;
-        const validCostCategory = 
+        const validCostCategory =
             checkIsNumber(multipleStaffRemoveValues.CostCategory.value) &&
             !isEqualNumber(multipleStaffRemoveValues.CostCategory.value, 0);
 
@@ -1460,16 +1460,16 @@ const downloadInvoicePDF = async (invoiceId, fileName = null) => {
             </div>
         );
     }
-    
+
 
     // Add this near your other functions
-const refreshData = () => {
-    if (viewMode === 'pending') {
-        fetchPendingInvoices();
-    } else {
-        fetchAllInvoices(true);
-    }
-};
+    const refreshData = () => {
+        if (viewMode === 'pending') {
+            fetchPendingInvoices();
+        } else {
+            fetchAllInvoices(true);
+        }
+    };
     return (
         <>
             <FilterableTable
@@ -1581,15 +1581,15 @@ const refreshData = () => {
                                             icon: <Print fontSize="small" color="primary" />,
                                             disabled: !PrintRights,
                                         },
-                                          {
-    name: "Send WhatsApp",
-    onclick: () => {
-       
-        handleWhatsAppClick(row);
-    },
-    icon: <WhatsAppIcon fontSize="small" color="success" />,
-    disabled: false, 
-}
+                                        {
+                                            name: "Send WhatsApp",
+                                            onclick: () => {
+
+                                                handleWhatsAppClick(row);
+                                            },
+                                            icon: <WhatsAppIcon fontSize="small" color="success" />,
+                                            disabled: false,
+                                        }
                                     ]}
                                 />
                             )
@@ -1606,13 +1606,13 @@ const refreshData = () => {
                                 onChange={e => setSelectAllCheckBox(e.target.checked)}
                             />
                         </Tooltip>
-                        
+
                         <button
                             type="button"
                             className={`btn btn-sm ${viewMode === 'pending' ? 'btn-primary' : 'btn-outline-secondary'}`}
                             onClick={toggleViewMode}
                             disabled={isRefreshing}
-                            style={{ 
+                            style={{
                                 marginRight: '8px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -1638,25 +1638,25 @@ const refreshData = () => {
                         >
                             <PersonRemoveIcon fontSize="small" />
                         </IconButton>
-                        
-                        <IconButton 
-                            size="small" 
+
+                        <IconButton
+                            size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, filterDialog: true }))}
                             disabled={isRefreshing}
                         >
                             <FilterAlt />
                         </IconButton>
 
-                       <IconButton 
-    size="small" 
-    onClick={() => {
-        refreshData(); // Use the refresh function
-    }}
-    disabled={isRefreshing}
->
-    <Search />
-</IconButton>
-                        
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                refreshData(); // Use the refresh function
+                            }}
+                            disabled={isRefreshing}
+                        >
+                            <Search />
+                        </IconButton>
+
                         {/* Date picker - visible in both modes */}
                         <input
                             type="date"
@@ -1703,7 +1703,7 @@ const refreshData = () => {
                             <option value="delivery_slip">DELIVERY SLIP</option>
                         </select>
 
-                    {viewMode === 'normal' &&   (<select
+                        {viewMode === 'normal' && (<select
                             className="cus-inpt w-auto rounded-5 border-0"
                             value={filters.staffStatus}
                             onChange={(e) => {
@@ -2057,10 +2057,10 @@ const refreshData = () => {
                     <Button onClick={onCloseMultipleStaffRemoveDialog} variant="outlined">
                         Cancel
                     </Button>
-                    <Button 
-                        variant="contained" 
-                        color="error" 
-                        onClick={postMultipleStaffRemove} 
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={postMultipleStaffRemove}
                         disabled={!removeMultipleInvoiceValidation}
                     >
                         Remove Staff
@@ -2125,8 +2125,8 @@ const refreshData = () => {
                 </DialogActions>
             </Dialog>
 
-                         <Dialog 
-                open={whatsappDialog.open} 
+            <Dialog
+                open={whatsappDialog.open}
                 onClose={closeWhatsAppDialog}
                 maxWidth="sm"
                 fullWidth
@@ -2136,19 +2136,19 @@ const refreshData = () => {
                     {renderWhatsAppDialogContent()}
                 </DialogContent>
                 <DialogActions>
-                    <Button 
+                    <Button
                         onClick={closeWhatsAppDialog}
                         disabled={whatsappDialog.loading}
                     >
                         Cancel
                     </Button>
-                    <Button 
+                    <Button
                         onClick={sendWhatsAppMessage}
-                        variant="contained" 
+                        variant="contained"
                         color="success"
                         startIcon={<WhatsAppIcon />}
                         disabled={
-                            whatsappDialog.loading || 
+                            whatsappDialog.loading ||
                             (whatsappDialog.method === 'template' && !selectedTemplate)
                         }
                     >
@@ -2162,7 +2162,7 @@ const refreshData = () => {
                 autoHideDuration={6000}
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
             >
-                <Alert 
+                <Alert
                     severity={snackbar.severity}
                     onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
                 >
