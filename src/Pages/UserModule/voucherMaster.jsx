@@ -56,7 +56,7 @@ function VoucherMaster({ loadingOn, loadingOff }) {
 
         const baseOptions = (erpModules || []).map((m) => m?.name).filter(Boolean);
 
-        const extras = ["MATERIAL INWARD", "OTHER GODOWN", "PROCESSING"];
+        const extras = ["MATERIAL_INWARD", "OTHER_GODOWN", "PROCESSING"];
 
         const allTypes = Array.from(new Set([...baseOptions, ...extras, ...typesFromData]));
 

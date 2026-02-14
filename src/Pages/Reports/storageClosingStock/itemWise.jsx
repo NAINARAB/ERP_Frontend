@@ -1,45 +1,16 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import {
-    Addition,
-    checkIsNumber,
-    filterableText,
-    groupData,
-    isEqualNumber,
-    stringCompare,
-    toArray,
-    toNumber,
+    Addition, checkIsNumber, filterableText, groupData, isEqualNumber, stringCompare, toArray, toNumber,
 } from "../../../Components/functions";
 import FilterableTable from "../../../Components/filterableTable2";
-import {
-    Autocomplete,
-    Button,
-    Card,
-    Checkbox,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Paper,
-    Switch,
-    TextField,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-
-    Tooltip,
-    TableContainer,
-    TableHead,
-    TableRow
+import { 
+    Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent,
+    DialogTitle, IconButton, Paper, Switch, TextField, Typography,
+    Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow
 } from "@mui/material";
 import {
-    CheckBox,
-    CheckBoxOutlineBlank,
-    FilterAlt,
-    FilterAltOff,
-    Settings,
+    CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, Settings,
 } from "@mui/icons-material";
 import { useMemo } from "react";
 import { toast } from "react-toastify";
@@ -72,7 +43,6 @@ const ItemWiseStockReport = ({
     const [expenseReportData, setExpenseReportData] = useState([]);
     const [selectedProductInfo, setSelectedProductInfo] = useState({});
 
-
     const propsColumns = storageStockColumns.map((col, colInd) => {
         const columnState =
             reportVisiblity.find((repState) =>
@@ -89,37 +59,10 @@ const ItemWiseStockReport = ({
     });
 
     const [columns, setColumns] = useState(propsColumns);
-    const parseData = JSON.parse(localStorage.getItem("user"));
-    const companyId = parseData?.Company_id;
 
     useEffect(() => {
         const parseData = JSON.parse(localStorage.getItem("user"));
         const companyId = parseData?.Company_id;
-
-        fetchLink({
-            address: `reports/reportState/columnVisiblity?reportName=${reportName}&reportUrl=${url}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    setReportVisiblity(toArray(data.data));
-                } else setReportVisiblity([]);
-            })
-            .catch((e) => console.error(e));
-
-        fetchLink({
-            address: `masters/displayLosColumn?company_id=${companyId}`,
-        })
-            .then((data) => {
-                if (data.success) {
-                    const settings = toArray(data.data);
-
-                    setColumnSettings(settings);
-                }
-            })
-            .catch((e) => console.error(e));
-    }, [reportName, url]);
-
-    useEffect(() => {
         loadingOn();
 
         Promise.all([
@@ -177,7 +120,6 @@ const ItemWiseStockReport = ({
     }, [
         Fromdate,
         Todate,
-        companyId,
         api,
         reportName,
         url,
@@ -367,6 +309,7 @@ const ItemWiseStockReport = ({
             })
             .finally(() => loadingOff());
     };
+
     const renderFilter = (column) => {
         const { Field_Name, Fied_Data } = column;
         if (Fied_Data === "number") {
@@ -533,7 +476,6 @@ const ItemWiseStockReport = ({
             .catch((e) => console.error(e));
     };
 
-
     const actionColumn = {
         Field_Name: "__action__",
         ColumnHeader: "Action",
@@ -554,7 +496,6 @@ const ItemWiseStockReport = ({
             </Button>
         )
     };
-
 
     const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -584,7 +525,6 @@ const ItemWiseStockReport = ({
 
     const totals = calculateTotals();
 
-
     const godownActionColumn = {
         Field_Name: "__godown_action__",
         ColumnHeader: "Action",
@@ -606,13 +546,11 @@ const ItemWiseStockReport = ({
         )
     };
 
-
     const formatINR = (value, fraction = 2) =>
         new Intl.NumberFormat('en-IN', {
             minimumFractionDigits: fraction,
             maximumFractionDigits: fraction,
         }).format(Number(value || 0));
-
 
     return (
         <>

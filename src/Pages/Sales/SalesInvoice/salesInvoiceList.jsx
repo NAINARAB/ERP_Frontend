@@ -297,6 +297,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 navigate('create', {
                                                     state: {
                                                         ...row,
+                                                        Products_List: toArray(row?.Products_List).sort((a, b) => a.S_No - b.S_No),
                                                         isEdit: true,
                                                     },
                                                 });

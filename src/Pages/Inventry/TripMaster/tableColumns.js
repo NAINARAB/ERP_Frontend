@@ -3,6 +3,17 @@ import { getSessionUser } from "../../../Components/functions";
 
 const userDetails = getSessionUser().user;
 
+export const tripTypes = [
+    {
+        value: 'MATERIAL_INWARD',
+        label: 'Material Inward'
+    },
+    {
+        value: 'OTHER_GODOWN',
+        label: 'Godown Stock Transfer'
+    }
+];
+
 export const tripMasterDetails = {
     Trip_Id: '',
     Challan_No: '',
@@ -71,27 +82,27 @@ export const initialArrivalValue = {
     Arr_Id: '',
     Arrival_Date: ISOString(),
     Batch_No: '',
-    From_Location: '',
-    To_Location: '',
+    From_Location: 0,
+    To_Location: 0,
     Concern: '',
     BillNo: '',
     BatchLocation: '',
-    Product_Id: '',
+    Product_Id: 0,
     HSN_Code: '',
-    QTY: '',
-    KGS: '',
-    Unit_Id: '',
+    QTY: 0,
+    KGS: 0,
+    Unit_Id: 0,
     Units: '',
-    GST_Inclusive: '',
-    IS_IGST: '',
-    Gst_Rate: '',
-    Gst_P: '',
-    Cgst_P: '',
-    Sgst_P: '',
-    Igst_P: '',
-    Taxable_Value: '',
-    Round_off: '',
-    Total_Value: '',
+    GST_Inclusive: 0,
+    IS_IGST: 0,
+    Gst_Rate: 0,
+    Gst_P: 0,
+    Cgst_P: 0,
+    Sgst_P: 0,
+    Igst_P: 0,
+    Taxable_Value: 0,
+    Round_off: 0,
+    Total_Value: 0,
     Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     CreatedAt: '',
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
