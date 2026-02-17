@@ -20,7 +20,6 @@ const initialPayload = {
 
 const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
     const [godownActivityData, setGodownActivityData] = useState(initialPayload)
-
     const [godownStock, setGodownStock] = useState([]);
 
     //dependency 
@@ -77,7 +76,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
     }, [])
 
     const getRowValue = (row) => godownActivityData.items.find(
-        item => isEqualNumber(item.stock_item_id, row.Product_Id)
+        item => isEqualNumber(item.Product_Id, row.Product_Id)
     ) || {};
 
     const getProductDetails = (productId) => products.find(pro => isEqualNumber(pro.Product_Id, productId)) || {};
@@ -88,7 +87,6 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
 
         setGodownActivityData(pre => {
             const itemIndex = pre.items.findIndex(item => isEqualNumber(item.Product_Id, Product_Id));
-
             if (itemIndex !== -1) {
                 const newItems = [...pre.items];
                 newItems[itemIndex] = {
@@ -284,7 +282,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                 styles={customSelectStyles}
                                 isSearchable={true}
                                 filterOption={reactSelectFilterLogic}
-                                // closeMenuOnSelect={false}
+                            // closeMenuOnSelect={false}
                             />
                             <br />
                             {godownActivityData.items.length > 0 && renderListPayloadData()}

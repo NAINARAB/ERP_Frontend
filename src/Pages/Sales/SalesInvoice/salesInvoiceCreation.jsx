@@ -3,8 +3,7 @@ import { Button, IconButton, CardContent, Card, Dialog, DialogTitle, DialogConte
 import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
-    checkIsNumber, toNumber, toArray, stringCompare,
-    RoundNumber, isValidNumber,
+    checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
     rid, Subraction, filterableText
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
@@ -794,7 +793,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                             && checkIsNumber(invoiceInfo.So_No))
                                     }
                                 >Add Product</Button>
-
 
                                 <AddProductsInSalesInvoice
                                     loadingOn={loadingOn}

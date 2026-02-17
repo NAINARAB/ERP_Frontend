@@ -188,7 +188,7 @@ export const setAddress = (address, setFun) => {
 }
 
 export const defaultStaffTypes = (costTypes = []) => {
-    const defaultStaffTypes = ['Broker', 'Others5', 'Transport']
+    const defaultStaffTypes = ['Broker', 'Others5', 'Others6', 'Transport']
     return toArray(costTypes).filter(staff => defaultStaffTypes.includes(staff?.Cost_Category)).map(staff => ({
         ...salesInvoiceStaffInfo,
         Emp_Type_Id: staff?.Cost_Category_Id
