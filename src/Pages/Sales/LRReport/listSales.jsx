@@ -7,7 +7,6 @@ import {
     Button,
     Checkbox,
     Select as MuiSelect,
-    // Checkbox,
     MenuItem,
     Dialog,
     DialogActions,
@@ -26,11 +25,26 @@ import {
     InputLabel,
     FormControl,
     FormControlLabel,
+    Menu,
+    ListItemIcon,
+    ListItemText,
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
-import { CheckBox, CheckBoxOutlineBlank, FilterAlt, PersonAdd, Print, Search, HourglassEmpty } from "@mui/icons-material";
+import { 
+    CheckBox, 
+    CheckBoxOutlineBlank, 
+    FilterAlt, 
+    PersonAdd, 
+    Print, 
+    Search, 
+    HourglassEmpty, 
+    Download,
+    PictureAsPdf,
+    TableChart,
+    ArrowDropDown 
+} from "@mui/icons-material";
 import { toast } from "react-toastify";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
 import InvoiceTemplate from "./SalesInvPrint/invTemplate";
@@ -41,6 +55,12 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { DotPeWhatsAppService } from "../../../Components/dotpeWhatsappService";
 import { Dot_Pe_Number } from "../../../encryptionKey";
 import api from "../../../API";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
@@ -92,6 +112,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [hasInitialLoading, setHasInitialLoading] = useState(false);
     const [currentPrintType, setCurrentPrintType] = useState('');
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
+    const [downloadLoading, setDownloadLoading] = useState(false);
+    const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
     const tableContainerRef = useRef(null);
 
 
@@ -112,6 +134,13 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         multipleStaffRemoveInitialValues
     );
 
+
+
+        const handleDownloadClick = (event) => {
+        setDownloadAnchorEl(event.currentTarget);
+    };
+
+    
     const [printReady, setPrintReady] = useState(false);
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
@@ -293,7 +322,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         const name = template.templateName || template.name || '';
 
                         if (name.includes('template_text')) {
-                            console.log('Found template_text template!', template);
                             setSelectedTemplate(name);
                         }
                     });
@@ -499,7 +527,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 }
             };
 
-            console.log('Request body prepared:', requestBody);
 
 
             const response = await fetchLink({
@@ -1066,6 +1093,260 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
+const convertToISTShort = (isoString) => {
+    if (!isoString) return '';
+    
+    try {
+        const date = new Date(isoString);
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(date.getTime() + istOffset);
+        
+        const day = String(istDate.getUTCDate()).padStart(2, '0');
+        const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+        const year = istDate.getUTCFullYear();
+        const hours = String(istDate.getUTCHours()).padStart(2, '0');
+        const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+        
+        return `${hours}:${minutes}`;
+    } catch (error) {
+        return isoString;
+    }
+};
+
+
+      const downloadSelectedAsExcel = () => {
+        const selectedIds = multipleCostCenterUpdateValues.Do_Id;
+        
+        if (selectedIds.length === 0) {
+            toast.warning("Please select at least one invoice to download");
+            return;
+        }
+
+        setDownloadLoading(true);
+        handleDownloadClose();
+        
+        try {
+
+            const selectedInvoices = salesInvoices.filter(inv => 
+                selectedIds.includes(toNumber(inv.Do_Id))
+            );
+            
+            
+            const excelData = [];
+            
+            selectedInvoices.forEach((invoice, index) => {
+            
+                const mainRow = {
+                    'S.No': index + 1,
+                    'Invoice No': invoice.Do_Inv_No || '',
+                    'Created': convertToISTShort(invoice.createdOn),
+                    'Voucher Type': invoice.voucherTypeGet || '',
+                    'Customer': invoice.retailerNameGet || '',
+                    'Bill Qty': invoice.stockDetails ? 
+                        invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Bill_Qty) || 0), 0) : 0,
+                          'Alt Act Qty': invoice.stockDetails ? 
+                        invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
+                    'Narration': invoice.Narration || '',
+                    'Total Amount': invoice.Total_Invoice_value || 0,
+                   'Delivery Status': invoice.Delivery_Status || '',
+                };
+                
+          
+                costTypes
+                    .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+                    .forEach(costType => {
+                        const names = getCostTypeEmployees(invoice, costType.Cost_Category_Id).join(", ");
+                        mainRow[costType.Cost_Category] = names || '-';
+                    });
+                
+                excelData.push(mainRow);
+            });
+            
+           
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            
+           
+            const colWidths = [];
+            const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                let maxWidth = 10;
+                for (let R = range.s.r; R <= range.e.r; ++R) {
+                    const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+                    if (cell && cell.v) {
+                        const width = String(cell.v).length + 2;
+                        if (width > maxWidth) maxWidth = width;
+                    }
+                }
+                colWidths[C] = { wch: Math.min(maxWidth, 50) };
+            }
+            ws['!cols'] = colWidths;
+            
+      
+            XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+            
+            
+            const fileName = `Invoices_${viewMode}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            toast.success(`Downloaded ${selectedIds.length} invoices as Excel`);
+        } catch (error) {
+            console.error('Error downloading Excel:', error);
+            toast.error(`Failed to download Excel: ${error.message}`);
+        } finally {
+            setDownloadLoading(false);
+        }
+    };
+
+   const downloadSelectedAsPDF = () => {
+    const selectedIds = multipleCostCenterUpdateValues.Do_Id;
+    
+    if (selectedIds.length === 0) {
+        toast.warning("Please select at least one invoice to download");
+        return;
+    }
+
+    setDownloadLoading(true);
+    handleDownloadClose();
+    
+    try {
+
+        const selectedInvoices = salesInvoices.filter(inv => 
+            selectedIds.includes(toNumber(inv.Do_Id))
+        );
+        
+
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+
+        const tableData = [];
+        
+        selectedInvoices.forEach((invoice, index) => {
+            const row = [
+                index + 1, // S.No
+                invoice.Do_Inv_No || 'N/A',
+                invoice.Do_Date ? invoice.Do_Date.split('T')[0] : '',
+                invoice.createdOn || '',
+                invoice.voucherTypeGet || '',
+                invoice.retailerNameGet || '',
+                invoice.Retailer_GSTIN || '',
+                `₹${NumberFormat(invoice.Total_Invoice_value || 0)}`,
+                invoice.stockDetails ? 
+                    invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Bill_Qty) || 0), 0) : 0,
+                invoice.stockDetails ? 
+                    invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
+                invoice.Narration || '',
+                invoice.Delivery_Status || '',
+            ];
+            
+            // Add cost type columns
+            costTypes
+                .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+                .forEach(costType => {
+                    const names = getCostTypeEmployees(invoice, costType.Cost_Category_Id).join(", ");
+                    row.push(names || '-');
+                });
+            
+            tableData.push(row);
+        });
+        
+        // Define table columns
+        const tableColumns = [
+            "S.No",
+            "Invoice No",
+            "Invoice Date",
+            "Created On",
+            "Voucher Type",
+            "Customer",
+            "Customer GST",
+            "Total Amount",
+            "Bill Qty",
+            "Alt Act Qty",
+            "Narration",
+            "Delivery Status",
+            ...costTypes
+                .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+                .map(costType => costType.Cost_Category)
+        ];
+        
+        // Add title
+        doc.setFontSize(16);
+        doc.setTextColor(40, 40, 40);
+        doc.text(`Invoices Report - ${viewMode === 'pending' ? 'Pending' : 'Sales'}`, 14, 15);
+        
+        // Add generation date and summary
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 280, 10, { align: 'right' });
+        doc.text(`Total Invoices: ${selectedIds.length}`, 14, 22);
+        doc.text(`Date Range: ${filters.reqDate}`, 14, 27);
+        
+        // Generate the table
+        doc.autoTable({
+            startY: 32,
+            head: [tableColumns],
+            body: tableData,
+            theme: 'grid',
+            styles: { 
+                fontSize: 7, 
+                cellPadding: 2,
+                overflow: 'linebreak',
+                cellWidth: 'wrap'
+            },
+            headStyles: { 
+                fillColor: [66, 66, 66], 
+                textColor: 255,
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 10 }, // S.No
+                1: { cellWidth: 25 }, // Invoice No
+                2: { cellWidth: 20 }, // Invoice Date
+                3: { cellWidth: 20 }, // Created On
+                4: { cellWidth: 15 }, // Voucher Type
+                5: { cellWidth: 30 }, // Customer
+                6: { cellWidth: 25 }, // Customer GST
+                7: { cellWidth: 20, halign: 'right' }, // Total Amount
+                8: { cellWidth: 15, halign: 'right' }, // Bill Qty
+                9: { cellWidth: 15, halign: 'right' }, // Alt Act Qty
+                10: { cellWidth: 25 }, // Narration
+                11: { cellWidth: 15 }, // Delivery Status
+            },
+            margin: { left: 10, right: 10 },
+            didDrawPage: (data) => {
+                // Add page number at the bottom
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`,
+                    data.settings.margin.left,
+                    doc.internal.pageSize.height - 10
+                );
+            }
+        });
+        
+        // Save PDF
+        const fileName = `Invoices_${viewMode}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        toast.success(`Downloaded ${selectedIds.length} invoices as PDF`);
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        toast.error(`Failed to download PDF: ${error.message}`);
+    } finally {
+        setDownloadLoading(false);
+    }
+};
+
+  const handleDownloadClose = () => {
+        setDownloadAnchorEl(null);
+    };
+
 
     const postAssignCostCenters = async (e) => {
         e.preventDefault();
@@ -1087,7 +1368,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     if (viewMode === 'pending') {
                         fetchPendingInvoices();
                     } else {
-                        fetchSalesInvoices(); // This will trigger fetchTrigger
+                        fetchSalesInvoices(); 
                     }
                 } else {
                     toast.error(data.message);
@@ -1656,6 +1937,42 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         >
                             <Search />
                         </IconButton>
+                        { viewMode==='pending' && (
+                        <>
+
+                         <div>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<Download />}
+                                endIcon={<ArrowDropDown />}
+                                onClick={handleDownloadClick}
+                                disabled={!multipleCostCenterUpdateValues.Do_Id.length || downloadLoading}
+                                sx={{ ml: 1, textTransform: 'none' }}
+                            >
+                                {downloadLoading ? 'Downloading...' : 'Download'}
+                            </Button>
+                            <Menu
+                                anchorEl={downloadAnchorEl}
+                                open={Boolean(downloadAnchorEl)}
+                                onClose={handleDownloadClose}
+                            >
+                                <MenuItem onClick={downloadSelectedAsExcel} disabled={downloadLoading}>
+                                    <ListItemIcon>
+                                        <TableChart fontSize="small" color="success" />
+                                    </ListItemIcon>
+                                    <ListItemText>Download as Excel</ListItemText>
+                                </MenuItem>
+                                <MenuItem onClick={downloadSelectedAsPDF} disabled={downloadLoading}>
+                                    <ListItemIcon>
+                                        <PictureAsPdf fontSize="small" color="error" />
+                                    </ListItemIcon>
+                                    <ListItemText>Download as PDF</ListItemText>
+                                </MenuItem>
+                            </Menu>
+                        </div>
+</>
+                        )} 
 
                         {/* Date picker - visible in both modes */}
                         <input
