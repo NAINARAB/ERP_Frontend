@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Dot_Pe_Api_Key, Dot_Pe_Number } from '../encryptionKey';
+import { Dot_Pe_Api_Key, Dot_Pe_Number,merchantId } from '../encryptionKey';
 
 const DOTPE_API_BASE = 'https://api.dotpe.in/api/comm/public/enterprise/v1';
 // const RAW_API_KEY = 'your-api-key';
@@ -155,31 +155,32 @@ export class DotPeWhatsAppService {
             // const invoiceValue=order?.Total_Invoice_value;
         
             const payload = {
-  merchantId: 21640, 
-  template: {
-    name: "template_text",
-    language: "en"
-  },
-//   wabaNumber: "919944888054", 
-      wabaNumber:Dot_Pe_Number,
- 
-//    recipients: ["919944032029"],
-recipients:[`91${phone}`],
-  source: "crm",
-   type: "document",
-  clientRefId: `invoice_INV001_${Date.now()}`,
-  params: {
-    //  header: `http://192.168.1.39:9001/uploads/invoices/1/${invoiceId}.pdf`, 
-    body: [
-      `${order?.retailerNameGet}`,          
-      `${order?.Do_Inv_No}`,            
-      `${Do_Date}`,   
-      `${order?.Total_Invoice_value}`,      
-       'SM TRADERS',          
-       `${pdfUrl}`
-    ]
-  }
-};
+                    merchantId: merchantId, 
+
+                         template: {
+                           name: "template_text",
+                           language: "en"
+                         },
+                       //   wabaNumber: "919944888054", 
+                             wabaNumber:Dot_Pe_Number,
+                        
+                       //    recipients: ["919944032029"],
+                       recipients:[`91${phone}`],
+                         source: "crm",
+                          type: "document",
+                         clientRefId: `invoice_INV001_${Date.now()}`,
+                         params: {
+                           //  header: `http://192.168.1.39:9001/uploads/invoices/1/${invoiceId}.pdf`, 
+                           body: [
+                             `${order?.retailerNameGet}`,          
+                             `${order?.Do_Inv_No}`,            
+                             `${Do_Date}`,   
+                             `${order?.Total_Invoice_value}`,      
+                              'SM TRADERS',          
+                              `${pdfUrl}`
+                           ]
+                         }
+                    };
             
            
             return await this.sendFreeFormMessage(payload);
