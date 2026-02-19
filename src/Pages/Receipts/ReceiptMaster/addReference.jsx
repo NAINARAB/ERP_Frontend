@@ -210,7 +210,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
             if (data.success) {
                 toast.success(data.message);
                 resetAll();
-                navigate('/erp/receipts/listReceipts', { state: editValues });
+                navigate('/erp/receipts/listReceipts');
             } else {
                 toast.error(data.message);
             }
@@ -231,7 +231,9 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                             type="button"
                             variant='contained'
                             className="mx-1"
-                            onClick={() => navigate('/erp/receipts/listReceipts', { state: editValues })}
+                            onClick={() => {
+                                navigate('/erp/receipts/listReceipts')
+                            }}
                         >back</Button>
                     </div>
 

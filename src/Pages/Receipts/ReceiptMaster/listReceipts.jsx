@@ -142,7 +142,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                 ButtonArea={
                     <>
 
-                        {locationState.Fromdate && locationState.Todate && (
+                        {/* {locationState.Fromdate && locationState.Todate && (
                             <span className="mx-2 text-muted fa-12">
                                 Showing data from {new Date(locationState.Fromdate)}
                                 to {new Date(locationState.Todate)}
@@ -157,7 +157,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                             <span className="mx-2 text-muted fa-12">
                                 | Module: {locationState.ModuleName}
                             </span>
-                        )}
+                        )} */}
 
                         <IconButton
                             onClick={() => setFilters(pre => ({ ...pre, filterDialog: true }))}

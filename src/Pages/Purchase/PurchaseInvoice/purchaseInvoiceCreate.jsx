@@ -58,8 +58,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         defaultAccounts: []
     });
 
+    const invExpencesTotal = useMemo(() => {
+        return (invoiceExpences || []).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    }, [invoiceExpences]);
+
     const Total_Invoice_value = useMemo(() => {
-        return selectedItems.reduce((acc, item) => {
+        const invValue = selectedItems.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return Addition(acc, Amount);
@@ -73,7 +77,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
             }
         }, 0);
-    }, [selectedItems, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+
+        return Addition(invValue, invExpencesTotal);
+    }, [selectedItems, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal])
 
     const taxSplitUp = useMemo(() => {
         if (!selectedItems || selectedItems.length === 0) return {};
@@ -99,8 +105,9 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         });
 
         const totalWithTax = Addition(totalTaxable, totalTax);
-        const roundedTotal = Math.round(totalWithTax);
-        const roundOff = RoundNumber(roundedTotal - totalWithTax);
+        const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
+        const roundedTotal = Math.round(totalWithExpenses);
+        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
 
         const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
         const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
@@ -116,7 +123,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             invoiceTotal: roundedTotal
         };
 
-    }, [selectedItems, baseData.products, IS_IGST, isNotTaxableBill, isInclusive]);
+    }, [selectedItems, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
 
     useEffect(() => {
 

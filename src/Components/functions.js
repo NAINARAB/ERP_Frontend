@@ -853,13 +853,13 @@ export const getSessionFiltersByPageId = (pageID) => {
         Fromdate, Todate
     };
 
-    if (!checkIsNumber(pageID)) { return defaultValue };
+    if (!checkIsNumber(pageID)) return defaultValue;
 
     const sessionValue = sessionStorage.getItem('filterValues');
     const parsedValue = isValidJSON(sessionValue) ? JSON.parse(sessionValue) : {};
     const isValidObj = isValidObject(parsedValue);
 
-    if (!isValidObj) { return defaultValue };
+    if (!isValidObj) return defaultValue;
 
     const isEqualPage = isEqualNumber(parsedValue?.pageID, pageID);
 

@@ -217,7 +217,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 )
             );
             setInvoiceProduct(
-                Products_List.map(item => Object.fromEntries(
+                Products_List.sort((a, b) => toNumber(a?.S_No) - toNumber(b?.S_No)).map(item => Object.fromEntries(
                     Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
                         if (key === 'rowId') return [key, rid()]
                         return [key, item[key] ?? value]
@@ -584,7 +584,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     gstNumber: retailerShippingAddress?.gstNumber,
                     stateName: retailerShippingAddress?.stateName
                 },
-                Product_Array: invoiceProducts,
+                Product_Array: invoiceProducts.map((item, index) => ({ ...item, S_No: index + 1 })),
                 Staffs_Array: Array.from(
                     new Map(
                         staffArray.filter(
