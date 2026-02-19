@@ -682,7 +682,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                             <table className="table">
                                 <tbody>
                                     <tr>
-                                        <td className="border p-2" rowSpan={isEqualNumber(invoiceDetails.IS_IGST, 1) ? 4 : 5}>
+                                        <td className="border p-2" rowSpan={isEqualNumber(invoiceDetails.IS_IGST, 1) ? 5 : 6}>
                                             Total in words: {numberToWords(parseInt(Total_Invoice_value))}
                                         </td>
                                         <td className="border p-2">Total Taxable Amount</td>
@@ -714,6 +714,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                         </tr>
                                     )}
+                                    <tr>
+                                        <td className="border p-2">Total Expences</td>
+                                        <td className="border p-2">
+                                            {RoundNumber(invExpencesTotal)}
+                                        </td>
+                                    </tr>
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
