@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, toArray, toNumber, RoundNumber, NumberFormat } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, toArray, toNumber, RoundNumber, NumberFormat, LocalDateWithTime } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import {
@@ -32,18 +32,18 @@ import {
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { reactSelectFilterLogic } from "../../../Components/functions";
-import { 
-    CheckBox, 
-    CheckBoxOutlineBlank, 
-    FilterAlt, 
-    PersonAdd, 
-    Print, 
-    Search, 
-    HourglassEmpty, 
+import {
+    CheckBox,
+    CheckBoxOutlineBlank,
+    FilterAlt,
+    PersonAdd,
+    Print,
+    Search,
+    HourglassEmpty,
     Download,
     PictureAsPdf,
     TableChart,
-    ArrowDropDown 
+    ArrowDropDown
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import KatchathCopy from "./KatchathCopy/katchathCopy";
@@ -116,7 +116,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
     const tableContainerRef = useRef(null);
 
-
     const storage = JSON.parse(localStorage.getItem("user"));
     const [pdfGeneration, setPdfGeneration] = useState({
         loading: false,
@@ -124,7 +123,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         fileName: null,
         error: null
     });
-
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(
         multipleStaffUpdateInitialValues
@@ -134,13 +132,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         multipleStaffRemoveInitialValues
     );
 
-
-
-        const handleDownloadClick = (event) => {
+    const handleDownloadClick = (event) => {
         setDownloadAnchorEl(event.currentTarget);
     };
 
-    
     const [printReady, setPrintReady] = useState(false);
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
@@ -295,15 +290,12 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-
     const fetchTemplates = async () => {
         try {
             const response = await DotPeWhatsAppService.fetchTemplates('APPROVED');
 
-
             if (response.status && response.data) {
                 let templatesData = [];
-
 
                 if (Array.isArray(response.data)) {
                     templatesData = response.data;
@@ -312,7 +304,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 } else if (response.data.templates && Array.isArray(response.data.templates)) {
                     templatesData = response.data.templates;
                 }
-
 
                 if (templatesData.length > 0) {
                     setTemplates(templatesData);
@@ -335,7 +326,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             console.error('Failed to fetch templates:', error);
         }
     };
-
 
     useEffect(() => {
         fetchTemplates();
@@ -384,8 +374,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             setIsLoading(false);
         }
     };
-
-
 
     const toggleViewMode = async () => {
         if (viewMode === 'normal') {
@@ -482,38 +470,26 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const getPDFUrlSimple = (order) => {
         const baseUrl = api;
-
-
         const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
-
-
         const encodedInvoiceNo = btoa(formattedInvoiceNo);
 
         return `${baseUrl}sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}`;
     };
 
-
     const generateInvoicePDF = async (order, companyId) => {
         try {
-
-
             const requestBody = {
                 invoiceId: order.Do_Inv_No,
                 companyId: companyId,
                 invoiceData: {
-
                     Do_Inv_No: order.Do_Inv_No,
                     Total_Invoice_value: order.Total_Invoice_value || 0,
                     retailerNameGet: order.retailerNameGet || order.Retailer_Name || 'Customer',
-
-
                     Do_Date: order.Do_Date || order.So_Date,
                     So_No: order.So_No || order.Do_No || 'N/A',
                     Retailer_Name: order.Retailer_Name || order.retailerNameGet,
                     Retailer_Address: order.Retailer_Address || 'Address not available',
                     Retailer_GSTIN: order.Retailer_GSTIN || 'Not Available',
-
-
                     CSGT_Total: order.CSGT_Total || 0,
                     SGST_Total: order.SGST_Total || 0,
                     IGST_Total: order.IGST_Total || 0,
@@ -521,13 +497,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     CSGT_Percentage: order.CSGT_Percentage || 0,
                     SGST_Percentage: order.SGST_Percentage || 0,
                     IGST_Percentage: order.IGST_Percentage || 0,
-
-
                     stockDetails: order.stockDetails || order.ProductList || []
                 }
             };
-
-
 
             const response = await fetchLink({
                 address: "sales/generatePdf",
@@ -537,8 +509,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 loadingOff,
             });
 
-
-
             return response;
 
         } catch (error) {
@@ -547,19 +517,15 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-
     const generateAndStorePDF = async (order) => {
         try {
             setPdfGeneration({ loading: true, pdfUrl: null, error: null });
-
-
             const storage = JSON.parse(localStorage.getItem("user"));
             const companyId = storage?.Company_id;
 
             if (!companyId) {
                 throw new Error('Company ID not found');
             }
-
 
             const response = await generateInvoicePDF(order, companyId);
 
@@ -595,7 +561,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const handleWhatsAppClick = async (order) => {
         try {
-
             setWhatsappDialog({
                 open: true,
                 order: order,
@@ -603,10 +568,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 method: 'pdf-link'
             });
 
-
             const pdfData = await generateAndStorePDF(order);
-
-
             const recipientPhone = await getRecipientPhone(order);
 
             if (!recipientPhone) {
@@ -614,7 +576,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 closeWhatsAppDialog();
                 return;
             }
-
 
             setWhatsappDialog({
                 open: true,
@@ -628,7 +589,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 loading: false,
                 method: 'pdf-link'
             });
-
         } catch (error) {
             console.error('Error in handleWhatsAppClick:', error);
             showSnackbar(`Failed to prepare PDF: ${error.message}`, 'error');
@@ -636,31 +596,19 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-
-
     const sendWhatsAppMessage = async () => {
         const { order, method } = whatsappDialog;
-
         setWhatsappDialog(prev => ({ ...prev, loading: true }));
-
         try {
-
-
-
             const pdfUrl = getPDFUrlSimple(order);
-
-
             const mainOrder = order.ConvertedInvoice?.[0] || order;
             const invoiceNo = order.Do_Inv_No || 'N/A';
             const customerName = order.retailerNameGet || order.Retailer_Name || 'Customer';
             const formattedDate = new Date(mainOrder.Do_Date || order.Do_Date).toLocaleDateString('en-GB');
             const totalAmount = (mainOrder.Total_Invoice_value || order.Total_Invoice_value || 0).toFixed(2);
 
-
             try {
-
                 const testResponse = await fetch(pdfUrl, { method: 'HEAD' });
-
             } catch (testError) {
                 console.warn('PDF URL test warning:', testError.message);
             }
@@ -689,7 +637,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 }
             };
 
-
             const response = await DotPeWhatsAppService.sendTemplateMessage(payload);
 
             if (response?.status) {
@@ -701,14 +648,11 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             }
 
         } catch (error) {
-
             console.error('Error sending WhatsApp:', error);
             showSnackbar(`Failed to send message: ${error.message}`, 'error');
             setWhatsappDialog(prev => ({ ...prev, loading: false }));
         }
     };
-
-
 
     const renderWhatsAppDialogContent = () => {
         const { order, method } = whatsappDialog;
@@ -940,8 +884,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-
-
     const selectedTotals = useMemo(() => {
         const selectedIds = multipleCostCenterUpdateValues.Do_Id;
 
@@ -1051,7 +993,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         });
     };
 
-
     const fetchSalesInvoices = () => {
         if (viewMode === 'pending') {
             fetchPendingInvoices();
@@ -1062,23 +1003,16 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const getPdfDownloadUrl = (invoiceId, token) => {
         const baseUrl = api;
-
         const cleanInvoiceNo = invoiceId.replace(/\//g, '_');
-
-
         const pdfParam = `${cleanInvoiceNo}`;
-
-
         const url = `${baseUrl}sales/downloadPdf?Do_Inv_No=${pdfParam}`;
-
 
         return url;
     };
+
     const downloadInvoicePDF = async (invoiceId, fileName = null) => {
         try {
-
             const downloadUrl = getPdfDownloadUrl(invoiceId);
-
             const a = document.createElement('a');
             a.href = downloadUrl;
             a.download = fileName || `${invoiceId}.pdf`;
@@ -1093,30 +1027,29 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-const convertToISTShort = (isoString) => {
-    if (!isoString) return '';
-    
-    try {
-        const date = new Date(isoString);
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const istDate = new Date(date.getTime() + istOffset);
-        
-        const day = String(istDate.getUTCDate()).padStart(2, '0');
-        const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-        const year = istDate.getUTCFullYear();
-        const hours = String(istDate.getUTCHours()).padStart(2, '0');
-        const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
-        
-        return `${hours}:${minutes}`;
-    } catch (error) {
-        return isoString;
-    }
-};
+    const convertToISTShort = (isoString) => {
+        if (!isoString) return '';
 
+        try {
+            const date = new Date(isoString);
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            const istDate = new Date(date.getTime() + istOffset);
 
-      const downloadSelectedAsExcel = () => {
+            const day = String(istDate.getUTCDate()).padStart(2, '0');
+            const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+            const year = istDate.getUTCFullYear();
+            const hours = String(istDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+
+            return `${hours}:${minutes}`;
+        } catch (error) {
+            return isoString;
+        }
+    };
+
+    const downloadSelectedAsExcel = () => {
         const selectedIds = multipleCostCenterUpdateValues.Do_Id;
-        
+
         if (selectedIds.length === 0) {
             toast.warning("Please select at least one invoice to download");
             return;
@@ -1124,49 +1057,39 @@ const convertToISTShort = (isoString) => {
 
         setDownloadLoading(true);
         handleDownloadClose();
-        
-        try {
 
-            const selectedInvoices = salesInvoices.filter(inv => 
+        try {
+            const selectedInvoices = salesInvoices.filter(inv =>
                 selectedIds.includes(toNumber(inv.Do_Id))
             );
-            
-            
             const excelData = [];
-            
             selectedInvoices.forEach((invoice, index) => {
-            
                 const mainRow = {
                     'S.No': index + 1,
                     'Invoice No': invoice.Do_Inv_No || '',
                     'Created': convertToISTShort(invoice.createdOn),
                     'Voucher Type': invoice.voucherTypeGet || '',
                     'Customer': invoice.retailerNameGet || '',
-                    'Bill Qty': invoice.stockDetails ? 
+                    'Bill Qty': invoice.stockDetails ?
                         invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Bill_Qty) || 0), 0) : 0,
-                          'Alt Act Qty': invoice.stockDetails ? 
+                    'Alt Act Qty': invoice.stockDetails ?
                         invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
                     'Narration': invoice.Narration || '',
                     'Total Amount': invoice.Total_Invoice_value || 0,
-                   'Delivery Status': invoice.Delivery_Status || '',
+                    'Delivery Status': invoice.Delivery_Status || '',
                 };
-                
-          
                 costTypes
                     .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
                     .forEach(costType => {
                         const names = getCostTypeEmployees(invoice, costType.Cost_Category_Id).join(", ");
                         mainRow[costType.Cost_Category] = names || '-';
                     });
-                
+
                 excelData.push(mainRow);
             });
-            
-           
+
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(excelData);
-            
-           
             const colWidths = [];
             const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
             for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1181,14 +1104,10 @@ const convertToISTShort = (isoString) => {
                 colWidths[C] = { wch: Math.min(maxWidth, 50) };
             }
             ws['!cols'] = colWidths;
-            
-      
             XLSX.utils.book_append_sheet(wb, ws, "Invoices");
-            
-            
             const fileName = `Invoices_${viewMode}_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, fileName);
-            
+
             toast.success(`Downloaded ${selectedIds.length} invoices as Excel`);
         } catch (error) {
             console.error('Error downloading Excel:', error);
@@ -1198,155 +1117,144 @@ const convertToISTShort = (isoString) => {
         }
     };
 
-   const downloadSelectedAsPDF = () => {
-    const selectedIds = multipleCostCenterUpdateValues.Do_Id;
-    
-    if (selectedIds.length === 0) {
-        toast.warning("Please select at least one invoice to download");
-        return;
-    }
+    const downloadSelectedAsPDF = () => {
+        const selectedIds = multipleCostCenterUpdateValues.Do_Id;
+        if (selectedIds.length === 0) {
+            toast.warning("Please select at least one invoice to download");
+            return;
+        }
+        setDownloadLoading(true);
+        handleDownloadClose();
+        try {
+            const selectedInvoices = salesInvoices.filter(inv =>
+                selectedIds.includes(toNumber(inv.Do_Id))
+            );
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+            const tableData = [];
+            selectedInvoices.forEach((invoice, index) => {
+                const row = [
+                    index + 1, // S.No
+                    invoice.Do_Inv_No || 'N/A',
+                    invoice.Do_Date ? invoice.Do_Date.split('T')[0] : '',
+                    invoice.createdOn || '',
+                    invoice.voucherTypeGet || '',
+                    invoice.retailerNameGet || '',
+                    invoice.Retailer_GSTIN || '',
+                    `₹${NumberFormat(invoice.Total_Invoice_value || 0)}`,
+                    invoice.stockDetails ?
+                        invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Bill_Qty) || 0), 0) : 0,
+                    invoice.stockDetails ?
+                        invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
+                    invoice.Narration || '',
+                    invoice.Delivery_Status || '',
+                ];
+                // Add cost type columns
+                costTypes
+                    .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+                    .forEach(costType => {
+                        const names = getCostTypeEmployees(invoice, costType.Cost_Category_Id).join(", ");
+                        row.push(names || '-');
+                    });
 
-    setDownloadLoading(true);
-    handleDownloadClose();
-    
-    try {
+                tableData.push(row);
+            });
 
-        const selectedInvoices = salesInvoices.filter(inv => 
-            selectedIds.includes(toNumber(inv.Do_Id))
-        );
-        
-
-        const doc = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4'
-        });
-        
-
-        const tableData = [];
-        
-        selectedInvoices.forEach((invoice, index) => {
-            const row = [
-                index + 1, // S.No
-                invoice.Do_Inv_No || 'N/A',
-                invoice.Do_Date ? invoice.Do_Date.split('T')[0] : '',
-                invoice.createdOn || '',
-                invoice.voucherTypeGet || '',
-                invoice.retailerNameGet || '',
-                invoice.Retailer_GSTIN || '',
-                `₹${NumberFormat(invoice.Total_Invoice_value || 0)}`,
-                invoice.stockDetails ? 
-                    invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Bill_Qty) || 0), 0) : 0,
-                invoice.stockDetails ? 
-                    invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
-                invoice.Narration || '',
-                invoice.Delivery_Status || '',
+            // Define table columns
+            const tableColumns = [
+                "S.No",
+                "Invoice No",
+                "Invoice Date",
+                "Created On",
+                "Voucher Type",
+                "Customer",
+                "Customer GST",
+                "Total Amount",
+                "Bill Qty",
+                "Alt Act Qty",
+                "Narration",
+                "Delivery Status",
+                ...costTypes
+                    .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
+                    .map(costType => costType.Cost_Category)
             ];
-            
-            // Add cost type columns
-            costTypes
-                .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
-                .forEach(costType => {
-                    const names = getCostTypeEmployees(invoice, costType.Cost_Category_Id).join(", ");
-                    row.push(names || '-');
-                });
-            
-            tableData.push(row);
-        });
-        
-        // Define table columns
-        const tableColumns = [
-            "S.No",
-            "Invoice No",
-            "Invoice Date",
-            "Created On",
-            "Voucher Type",
-            "Customer",
-            "Customer GST",
-            "Total Amount",
-            "Bill Qty",
-            "Alt Act Qty",
-            "Narration",
-            "Delivery Status",
-            ...costTypes
-                .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
-                .map(costType => costType.Cost_Category)
-        ];
-        
-        // Add title
-        doc.setFontSize(16);
-        doc.setTextColor(40, 40, 40);
-        doc.text(`Invoices Report - ${viewMode === 'pending' ? 'Pending' : 'Sales'}`, 14, 15);
-        
-        // Add generation date and summary
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 280, 10, { align: 'right' });
-        doc.text(`Total Invoices: ${selectedIds.length}`, 14, 22);
-        doc.text(`Date Range: ${filters.reqDate}`, 14, 27);
-        
-        // Generate the table
-        doc.autoTable({
-            startY: 32,
-            head: [tableColumns],
-            body: tableData,
-            theme: 'grid',
-            styles: { 
-                fontSize: 7, 
-                cellPadding: 2,
-                overflow: 'linebreak',
-                cellWidth: 'wrap'
-            },
-            headStyles: { 
-                fillColor: [66, 66, 66], 
-                textColor: 255,
-                fontStyle: 'bold',
-                halign: 'center'
-            },
-            columnStyles: {
-                0: { cellWidth: 10 }, // S.No
-                1: { cellWidth: 25 }, // Invoice No
-                2: { cellWidth: 20 }, // Invoice Date
-                3: { cellWidth: 20 }, // Created On
-                4: { cellWidth: 15 }, // Voucher Type
-                5: { cellWidth: 30 }, // Customer
-                6: { cellWidth: 25 }, // Customer GST
-                7: { cellWidth: 20, halign: 'right' }, // Total Amount
-                8: { cellWidth: 15, halign: 'right' }, // Bill Qty
-                9: { cellWidth: 15, halign: 'right' }, // Alt Act Qty
-                10: { cellWidth: 25 }, // Narration
-                11: { cellWidth: 15 }, // Delivery Status
-            },
-            margin: { left: 10, right: 10 },
-            didDrawPage: (data) => {
-                // Add page number at the bottom
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text(
-                    `Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`,
-                    data.settings.margin.left,
-                    doc.internal.pageSize.height - 10
-                );
-            }
-        });
-        
-        // Save PDF
-        const fileName = `Invoices_${viewMode}_${new Date().toISOString().split('T')[0]}.pdf`;
-        doc.save(fileName);
-        
-        toast.success(`Downloaded ${selectedIds.length} invoices as PDF`);
-    } catch (error) {
-        console.error('Error downloading PDF:', error);
-        toast.error(`Failed to download PDF: ${error.message}`);
-    } finally {
-        setDownloadLoading(false);
-    }
-};
 
-  const handleDownloadClose = () => {
-        setDownloadAnchorEl(null);
+            // Add title
+            doc.setFontSize(16);
+            doc.setTextColor(40, 40, 40);
+            doc.text(`Invoices Report - ${viewMode === 'pending' ? 'Pending' : 'Sales'}`, 14, 15);
+
+            // Add generation date and summary
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 280, 10, { align: 'right' });
+            doc.text(`Total Invoices: ${selectedIds.length}`, 14, 22);
+            doc.text(`Date Range: ${filters.reqDate}`, 14, 27);
+
+            // Generate the table
+            doc.autoTable({
+                startY: 32,
+                head: [tableColumns],
+                body: tableData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 7,
+                    cellPadding: 2,
+                    overflow: 'linebreak',
+                    cellWidth: 'wrap'
+                },
+                headStyles: {
+                    fillColor: [66, 66, 66],
+                    textColor: 255,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 10 }, // S.No
+                    1: { cellWidth: 25 }, // Invoice No
+                    2: { cellWidth: 20 }, // Invoice Date
+                    3: { cellWidth: 20 }, // Created On
+                    4: { cellWidth: 15 }, // Voucher Type
+                    5: { cellWidth: 30 }, // Customer
+                    6: { cellWidth: 25 }, // Customer GST
+                    7: { cellWidth: 20, halign: 'right' }, // Total Amount
+                    8: { cellWidth: 15, halign: 'right' }, // Bill Qty
+                    9: { cellWidth: 15, halign: 'right' }, // Alt Act Qty
+                    10: { cellWidth: 25 }, // Narration
+                    11: { cellWidth: 15 }, // Delivery Status
+                },
+                margin: { left: 10, right: 10 },
+                didDrawPage: (data) => {
+                    // Add page number at the bottom
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(
+                        `Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`,
+                        data.settings.margin.left,
+                        doc.internal.pageSize.height - 10
+                    );
+                }
+            });
+
+            // Save PDF
+            const fileName = `Invoices_${viewMode}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            toast.success(`Downloaded ${selectedIds.length} invoices as PDF`);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            toast.error(`Failed to download PDF: ${error.message}`);
+        } finally {
+            setDownloadLoading(false);
+        }
     };
 
+    const handleDownloadClose = () => {
+        setDownloadAnchorEl(null);
+    };
 
     const postAssignCostCenters = async (e) => {
         e.preventDefault();
@@ -1368,7 +1276,7 @@ const convertToISTShort = (isoString) => {
                     if (viewMode === 'pending') {
                         fetchPendingInvoices();
                     } else {
-                        fetchSalesInvoices(); 
+                        fetchSalesInvoices();
                     }
                 } else {
                     toast.error(data.message);
@@ -1742,7 +1650,6 @@ const convertToISTShort = (isoString) => {
         );
     }
 
-
     // Add this near your other functions
     const refreshData = () => {
         if (viewMode === 'pending') {
@@ -1751,6 +1658,7 @@ const convertToISTShort = (isoString) => {
             fetchAllInvoices(true);
         }
     };
+
     return (
         <>
             <FilterableTable
@@ -1794,7 +1702,14 @@ const convertToISTShort = (isoString) => {
                         },
                     },
                     createCol("Do_Inv_No", "string", "Invoice"),
-                    createCol("createdOn", "time", "Created"),
+                    {
+                        Field_Name: "",
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            return row?.createdOn ? LocalDateWithTime(row?.createdOn) : "";
+                        },
+                    },
                     createCol("voucherTypeGet", "string", "Voucher"),
                     createCol("retailerNameGet", "string", "Customer"),
                     {
@@ -1937,42 +1852,42 @@ const convertToISTShort = (isoString) => {
                         >
                             <Search />
                         </IconButton>
-                        { viewMode==='pending' && (
-                        <>
+                        {viewMode === 'pending' && (
+                            <>
 
-                         <div>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<Download />}
-                                endIcon={<ArrowDropDown />}
-                                onClick={handleDownloadClick}
-                                disabled={!multipleCostCenterUpdateValues.Do_Id.length || downloadLoading}
-                                sx={{ ml: 1, textTransform: 'none' }}
-                            >
-                                {downloadLoading ? 'Downloading...' : 'Download'}
-                            </Button>
-                            <Menu
-                                anchorEl={downloadAnchorEl}
-                                open={Boolean(downloadAnchorEl)}
-                                onClose={handleDownloadClose}
-                            >
-                                <MenuItem onClick={downloadSelectedAsExcel} disabled={downloadLoading}>
-                                    <ListItemIcon>
-                                        <TableChart fontSize="small" color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText>Download as Excel</ListItemText>
-                                </MenuItem>
-                                <MenuItem onClick={downloadSelectedAsPDF} disabled={downloadLoading}>
-                                    <ListItemIcon>
-                                        <PictureAsPdf fontSize="small" color="error" />
-                                    </ListItemIcon>
-                                    <ListItemText>Download as PDF</ListItemText>
-                                </MenuItem>
-                            </Menu>
-                        </div>
-</>
-                        )} 
+                                <div>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={<Download />}
+                                        endIcon={<ArrowDropDown />}
+                                        onClick={handleDownloadClick}
+                                        disabled={!multipleCostCenterUpdateValues.Do_Id.length || downloadLoading}
+                                        sx={{ ml: 1, textTransform: 'none' }}
+                                    >
+                                        {downloadLoading ? 'Downloading...' : 'Download'}
+                                    </Button>
+                                    <Menu
+                                        anchorEl={downloadAnchorEl}
+                                        open={Boolean(downloadAnchorEl)}
+                                        onClose={handleDownloadClose}
+                                    >
+                                        <MenuItem onClick={downloadSelectedAsExcel} disabled={downloadLoading}>
+                                            <ListItemIcon>
+                                                <TableChart fontSize="small" color="success" />
+                                            </ListItemIcon>
+                                            <ListItemText>Download as Excel</ListItemText>
+                                        </MenuItem>
+                                        <MenuItem onClick={downloadSelectedAsPDF} disabled={downloadLoading}>
+                                            <ListItemIcon>
+                                                <PictureAsPdf fontSize="small" color="error" />
+                                            </ListItemIcon>
+                                            <ListItemText>Download as PDF</ListItemText>
+                                        </MenuItem>
+                                    </Menu>
+                                </div>
+                            </>
+                        )}
 
                         {/* Date picker - visible in both modes */}
                         <input

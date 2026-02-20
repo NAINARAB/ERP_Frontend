@@ -50,18 +50,18 @@ function VoucherMaster({ loadingOn, loadingOff }) {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        const typesFromData = voucherData
-            .map(item => item?.Type)
-            .filter(Boolean);
+        // const typesFromData = voucherData
+        //     .map(item => item?.Type)
+        //     .filter(Boolean);
 
         const baseOptions = (erpModules || []).map((m) => m?.name).filter(Boolean);
 
         const extras = ["MATERIAL_INWARD", "OTHER_GODOWN", "PROCESSING"];
 
-        const allTypes = Array.from(new Set([...baseOptions, ...extras, ...typesFromData]));
+        const allTypes = Array.from(new Set([...baseOptions, ...extras]));
 
         setTypeOptions(allTypes);
-    }, [erpModules, voucherData]);
+    }, [erpModules]);
 
     useEffect(() => {
         fetchLink({ address: `masters/voucher?showDeleted=1` })
