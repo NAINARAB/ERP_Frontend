@@ -577,20 +577,35 @@ useEffect(() => {
             })
         );
 
+        // if (sortConfig.key) {
+        //     filterableData.sort((a, b) => {
+        //         if (a[sortConfig.key] < b[sortConfig.key]) {
+        //             return sortConfig.direction === "asc" ? -1 : 1;
+        //         }
+        //         if (a[sortConfig.key] > b[sortConfig.key]) {
+        //             return sortConfig.direction === "asc" ? 1 : -1;
+        //         }
+        //         return 0;
+        //     });
+        // }
+    filterableData.sort((a, b) => {
+      
+        if (a.IsUpdated === 0 && b.IsUpdated !== 0) return -1;
+        if (a.IsUpdated !== 0 && b.IsUpdated === 0) return 1;
+        
         if (sortConfig.key) {
-            filterableData.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === "asc" ? -1 : 1;
-                }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === "asc" ? 1 : -1;
-                }
-                return 0;
-            });
+            if (a[sortConfig.key] < b[sortConfig.key]) {
+                return sortConfig.direction === "asc" ? -1 : 1;
+            }
+            if (a[sortConfig.key] > b[sortConfig.key]) {
+                return sortConfig.direction === "asc" ? 1 : -1;
+            }
         }
+        return 0;
+    });
 
-        return filterableData;
-    }, [allData, globalSearch, appliedFilters, sortConfig]);
+    return filterableData;
+}, [allData, globalSearch, appliedFilters, sortConfig]);
 
     const renderTableHeader = () => (
         <TableHead>
