@@ -457,18 +457,20 @@ const ItemWiseStockReport = ({
                 })),
                 reportName,
                 reportUrl: url,
+                reportGroup :'STOCK_IN_HAND_ITEM_WISE'
             },
         })
             .then((data) => {
                 if (data.success) {
                     toast.success(data.message);
-
+                    
                     setReportVisiblity(
                         visibleColumns.map((col) => ({
                             columnName: col.Field_Name,
                             orderNum: col.OrderBy,
                         }))
                     );
+                      setDialog(false);
                 } else {
                     toast.error(data.message);
                 }
