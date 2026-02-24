@@ -5,6 +5,7 @@ import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { IconButton } from "@mui/material";
 import AppDialog from "../../../Components/appDialogComponent";
 import { FilterAlt } from "@mui/icons-material";
+import { defineColumn, defineColumns } from "../../../Components/appTable";
 
 const transformPaymentDueData = (data) => {
     let rows = [];
@@ -16,12 +17,14 @@ const transformPaymentDueData = (data) => {
         // Header row for the invoice
         rows.push({
             SNo: index + 1,
+            invoiceDate: entry.invoiceDate || '',
+            invoiceNumber: entry.invoiceNumber || '',
             Con: entry.branchNameGet || '',
             DueDate: entry.paymentDueDate,
             RetailerName: entry.retailerNameGet || '',
             KGS: '',
             Rate: '',
-            DIS: entry.paymentDueDays || '',
+            DIS: entry.discountValue || '',
             BillAmt: entry.invoiceValue || 0,
             Paid: entry.totalReference || 0,
             Pending: pending,
@@ -34,6 +37,8 @@ const transformPaymentDueData = (data) => {
             rows.push({
                 SNo: '',
                 Con: '',
+                invoiceDate: '',
+                invoiceNumber: '',
                 DueDate: '',
                 RetailerName: prod.productNameGet || '',
                 KGS: prod.kgsValue || '',
@@ -60,7 +65,6 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff }) => {
         Retailer: { value: '', label: 'ALL' },
         VoucherType: { value: '', label: 'ALL' },
         filterItems: { value: '', label: 'ALL' },
-        Cancel_status: '',
         refreshCount: 0,
         filterDialog: false
     })
@@ -80,21 +84,34 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff }) => {
         <>
             <AppTableComponent
                 dataArray={reportData}
-                columns={[
+                columns={defineColumns([
                     { Field_Name: 'SNo', ColumnHeader: 'No', Fied_Data: 'string', isVisible: 1 },
                     { Field_Name: 'Con', ColumnHeader: 'Con', Fied_Data: 'string', isVisible: 1 },
+                    { Field_Name: 'invoiceDate', ColumnHeader: 'Inv Date', Fied_Data: 'date', isVisible: 0 },
                     { Field_Name: 'DueDate', ColumnHeader: 'Due Date', Fied_Data: 'date', isVisible: 1 },
-                    { Field_Name: 'RetailerName', ColumnHeader: 'Retailer Name', Fied_Data: 'string', isVisible: 1 },
+                    { Field_Name: 'invoiceNumber', ColumnHeader: 'Inv-No', Fied_Data: 'string', isVisible: 0 },
+                    {
+                        ColumnHeader: 'Retailer Name',
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            return (
+                                <span className={row._isHeader ? " fw-bold text-primary" : ""}>
+                                    {row.RetailerName}
+                                </span>
+                            )
+                        },
+                        FooterCell: () => ''
+                    },
                     { Field_Name: 'KGS', ColumnHeader: 'KGS', Fied_Data: 'number', isVisible: 1 },
-                    { Field_Name: 'Rate', ColumnHeader: 'Rate', Fied_Data: 'number', isVisible: 1 },
-                    { Field_Name: 'DIS', ColumnHeader: 'DIS', Fied_Data: 'string', isVisible: 1 },
+                    { Field_Name: 'Rate', ColumnHeader: 'Rate', Fied_Data: 'number', isVisible: 1, Aggregation: 'mean' },
+                    { Field_Name: 'DIS', ColumnHeader: 'DIS', Fied_Data: 'string', isVisible: 1, Aggregation: 'mean' },
                     { Field_Name: 'BillAmt', ColumnHeader: 'Bill Amt', Fied_Data: 'number', isVisible: 1 },
                     { Field_Name: 'Paid', ColumnHeader: 'Paid', Fied_Data: 'number', isVisible: 1 },
                     { Field_Name: 'Pending', ColumnHeader: 'Pending', Fied_Data: 'number', isVisible: 1 },
                     { Field_Name: 'Remarks', ColumnHeader: 'Remarks', Fied_Data: 'string', isVisible: 1 },
-                ]}
+                ])}
                 title="Payment Due"
-                // stateName="paymentDue"
                 stateUrl="purchase/invoice/paymentDue"
                 stateGroup="paymentDue"
                 PDFPrintOption={true}
