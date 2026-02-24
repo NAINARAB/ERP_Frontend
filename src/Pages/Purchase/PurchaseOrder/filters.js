@@ -317,11 +317,16 @@ export const displayColumns = ({
                 )).join(', ')
             }
         },
+        LoadingDate = {
+            isVisible: 1,
+            ColumnHeader: 'Loading Date',
+            isCustomCell: true,
+            Cell: ({ row }) => row?.OrderDetails?.LoadingDate ? LocalDate(row?.OrderDetails?.LoadingDate) : ''
+        },
         PartyName = createCol('PartyName', 'string', 'Party'),
         PaymentCondition = createCol('PaymentCondition', 'string', 'Payment Condition'),
         Remarks = createCol('Remarks', 'string'),
         TradeConfirmDate = createCol('TradeConfirmDate', 'date', 'Trade Confirm Date'),
-        LoadingDate = createCol('LoadingDate', 'date', 'Loading Date'),
         Condition = createCol('QualityCondition', 'string', 'Condition'),
         OrderPartyName = {
             isVisible: 1,
@@ -640,14 +645,13 @@ export const displayColumns = ({
         }, StockItem = createCol('Stock_Item', 'string', 'Stock Item'),
         StockGroup = createCol('Stock_Group', 'string', 'Stock Group');
 
-
     switch (OrderStatus) {
         case 'ITEMS':
         case 'ITEMS PENDING':
         case 'ITEMS ARRIVED':
             return [
-                ItemPO_ID, OrderPartyName, ItemTradeConfirmDate, ItemName, WeightWithUOM,
-                ItemArrivedQuantity, PendingItemQuantity, Rate, ItemOwnerName, ItemBrokerName, ItemActions
+                ItemTradeConfirmDate, OrderPartyName, ItemName, WeightWithUOM,
+                ItemArrivedQuantity, PendingItemQuantity, Rate, Discount, LoadingDate, ItemOwnerName, ItemBrokerName, ItemActions
             ];
         case 'ORDERS':
         case 'COMPLETED ORDERS':

@@ -1,6 +1,6 @@
 import { useState, useDeferredValue } from 'react';
 import {
-    Card, Table, TableHead, TableBody,
+    Card, Table, TableHead, TableBody, TableFooter,
     TableRow, TableCell, TableContainer,
     IconButton, TablePagination,
     Select, MenuItem, FormControl, InputLabel, TextField, InputAdornment
@@ -26,6 +26,7 @@ import { useColumnFilters } from './hooks/useColumnFilters';
 import { useTableStateSync } from './hooks/useTableStateSync';
 
 import { groupAndAggregate } from './utils/groupAndAggregate';
+import { computeFooterAggregates } from './utils/computeFooterAggregates';
 import GroupingDialog from './components/GroupingDialog';
 import TableOptionsMenu from './components/TableOptionsMenu';
 import ColumnSettingsDialog from './components/ColumnSettingsDialog';
@@ -60,7 +61,8 @@ const AppTableComponent = ({
     bodyFontSizePx = 12,
     headerFontSizePx = 12,
     enableGlobalSearch = false,
-    loadingOn, 
+    enableColumnFooterRow = true,
+    loadingOn,
     loadingOff
 }) => {
     const [groupDialog, setGroupDialog] = useState(false);
@@ -522,6 +524,55 @@ const AppTableComponent = ({
                             )
                             : null}
                     </TableBody>
+
+                    {/* ── Footer Aggregation Row ── */}
+                    {enableColumnFooterRow && filteredData.length > 0 && (() => {
+                        const footerAgg = computeFooterAggregates(filteredData, dispColumns);
+                        const visibleCols = dispColumns.filter(c => c.isVisible === 1);
+                        return (
+                            <TableFooter>
+                                <TableRow>
+                                    {/* Spacer cells that mirror the header layout */}
+                                    {activeGroups.length > 0 && <TableCell style={{ backgroundColor: '#EDF0F7' }} />}
+                                    {isExpendable && expandableComp && <TableCell style={{ backgroundColor: '#EDF0F7' }} />}
+                                    {EnableSerialNumber && <TableCell style={{ backgroundColor: '#EDF0F7' }} />}
+
+                                    {visibleCols.map((col, i) => {
+                                        const footerCellStyle = {
+                                            fontSize: bodyFontSizePx,
+                                            fontWeight: 'bold',
+                                            backgroundColor: '#EDF0F7',
+                                            position: 'sticky',
+                                            bottom: 0,
+                                            zIndex: 1
+                                        };
+
+                                        // Priority 1: FooterCell prop defined → use it for ANY column type
+                                        if (typeof col.FooterCell === 'function') {
+                                            return (
+                                                <TableCell key={i} style={footerCellStyle}>
+                                                    {col.FooterCell({ data: filteredData })}
+                                                </TableCell>
+                                            );
+                                        }
+
+                                        // Priority 2: Normal (non-custom) column → show default aggregation
+                                        if (!col.isCustomCell) {
+                                            const val = footerAgg[col.Field_Name];
+                                            return (
+                                                <TableCell key={i} style={footerCellStyle}>
+                                                    {val != null ? formatValue(val, col.Fied_Data) : ''}
+                                                </TableCell>
+                                            );
+                                        }
+
+                                        // Priority 3: Custom cell with no FooterCell → blank
+                                        return <TableCell key={i} style={footerCellStyle} />;
+                                    })}
+                                </TableRow>
+                            </TableFooter>
+                        );
+                    })()}
                 </Table>
             </TableContainer>
 

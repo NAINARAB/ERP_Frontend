@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray, getSessionFiltersByPageId, setSessionFilters } from "../../../Components/functions";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt, Search } from '@mui/icons-material';
@@ -11,8 +11,6 @@ import PurchaseOrderPreviewTemplate from "../../DataEntry/purchaseOrderPreviewTe
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -21,7 +19,8 @@ const defaultFilters = {
     vendor: '',
 };
 
-const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights }) => {
+const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
+    const sessionValue = sessionStorage.getItem('filterValues');
     const [purchaseOrderData, setPurchaseOrderData] = useState([]);
     const [orderPreview, setOrderPreview] = useState({
         OrderDetails: {},
@@ -36,8 +35,6 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
 
     const navigate = useNavigate();
     const location = useLocation();
-    const stateDetails = location.state;
-    const query = useQuery();
 
     const [filters, setFilters] = useState({
         ...defaultFilters,
@@ -72,9 +69,10 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
     }, []);
 
     useEffect(() => {
+        const { Fromdate = defaultFilters.Fromdate, Todate = defaultFilters.Todate } = getSessionFiltersByPageId(pageID);
         if (loadingOn) loadingOn();
         fetchLink({
-            address: `dataEntry/purchaseOrderEntry?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
+            address: `dataEntry/purchaseOrderEntry?Fromdate=${Fromdate}&Todate=${Todate}`,
         }).then(data => {
             if (data.success) {
                 setPurchaseOrderData(data.data);
@@ -82,48 +80,30 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         }).catch(e => console.error(e)).finally(() => {
             if (loadingOff) loadingOff();
         });
-    }, [filters.refresh]);
+    }, [filters.refresh, location, sessionValue]);
 
     useEffect(() => {
-        const queryFilters = {
-            Fromdate: query.get("Fromdate") && isValidDate(query.get("Fromdate"))
-                ? query.get("Fromdate")
-                : defaultFilters.Fromdate,
-            Todate: query.get("Todate") && isValidDate(query.get("Todate"))
-                ? query.get("Todate")
-                : defaultFilters.Todate,
-            OrderStatus: query.get("OrderStatus") || defaultFilters.OrderStatus,
-            vendorId: query.get("vendorId") || defaultFilters.vendorId,
-            vendor: query.get("vendor") || defaultFilters.vendor,
-        };
-        setFilters(prev => ({ ...prev, ...queryFilters }));
-    }, [location.search]);
+        const sessionFilters = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate = defaultFilters.Fromdate,
+            Todate = defaultFilters.Todate,
+            OrderStatus = defaultFilters.OrderStatus,
+            vendorId = defaultFilters.vendorId,
+            vendor = defaultFilters.vendor,
+        } = sessionFilters;
+        setFilters(prev => ({ ...prev, Fromdate, Todate, OrderStatus, vendorId, vendor }));
+    }, [sessionValue, pageID, location]);
 
-    useEffect(() => {
-        const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-        const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-        if (Fromdate && Todate) {
-            updateQueryString({ Fromdate, Todate });
-        }
-    }, [stateDetails]);
-
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams();
-        Object.keys(newFilters).forEach(key => {
-            if (newFilters[key]) {
-                params.set(key, newFilters[key]);
-            }
-        });
-        navigate(`?${params.toString()}`, { replace: true });
-    };
+    // useEffect(() => {
+    //     const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
+    //     const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
+    //     if (Fromdate && Todate) {
+    //         updateQueryString({ Fromdate, Todate });
+    //     }
+    // }, [stateDetails]);
 
     const handleFilterChange = (valObj) => {
-        const updatedFilters = {
-            ...filters,
-            ...valObj
-        };
-        setFilters(updatedFilters);
-        updateQueryString(updatedFilters);
+        setFilters(prev => ({ ...prev, ...valObj }));
     };
 
     const deleteOrder = (OrderId) => {
@@ -238,7 +218,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                                                 label: obj?.Retailer_Name
                                             }))
                                         ]}
-                                        styles={customSelectStyles} 
+                                        styles={customSelectStyles}
                                         isSearchable={true}
                                         placeholder={"Select Vendor"}
                                         maxMenuHeight={300}
@@ -299,7 +279,17 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                         variant="outlined"
                     >Close</Button>
                     <Button
-                        onClick={() => setFilters(prev => ({ ...prev, refresh: !prev.refresh }))}
+                        onClick={() => {
+                            setFilters(prev => ({ ...prev, FilterDialog: false, refresh: !prev.refresh }));
+                            setSessionFilters({
+                                pageID,
+                                Fromdate: filters.Fromdate,
+                                Todate: filters.Todate,
+                                OrderStatus: filters.OrderStatus,
+                                vendorId: filters.vendorId,
+                                vendor: filters.vendor,
+                            });
+                        }}
                         variant="outlined"
                         startIcon={<Search />}
                     >Search</Button>
