@@ -51,7 +51,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         expence: [],
         stockInGodown: [],
         stockItemLedgerName: [],
-        batchDetails: []
+        batchDetails: [],
+        moduleConfiguration: []
     });
 
     const [dialog, setDialog] = useState({
@@ -102,7 +103,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     expenceResponse,
                     // godownWiseStock,
                     stockItemLedgerNameResponse,
-                    batchDetailsResponse
+                    batchDetailsResponse,
+                    moduleConfigurationResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -115,7 +117,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/defaultAccountMaster?Type=SALES_INVOICE` }),
                     // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
-                    fetchLink({ address: `inventory/batchMaster/stockBalance` })
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` }),
+                    fetchLink({ address: `authorization/moduleConfiguration?moduleName=SALES_INVOICE` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -148,7 +151,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 // const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
                 //     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
                 // );
-                const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : [])
+                const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : []);
+                const moduleConfiguration = moduleConfigurationResponse.success ? moduleConfigurationResponse.data : [];
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -168,7 +172,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     })),
                     // stockInGodown: stockInGodowns,
                     stockItemLedgerName: stockItemLedgerName,
-                    batchDetails: toArray(batchDetailsResponse.data)
+                    batchDetails: toArray(batchDetailsResponse.data),
+                    moduleConfiguration: moduleConfiguration
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);

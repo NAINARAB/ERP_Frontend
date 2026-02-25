@@ -44,6 +44,7 @@ export { default as AppTableComponent } from './appTableComponent';
  *   isCustomCell?: boolean,
  *   Cell?:        (props: { row: object }) => any,
  *   FooterCell?:  (props: { data: object[] }) => any,
+ *   tdClass?:     (props: { row: object, Field_Name: string, index: number }) => string,
  * }} ColumnDef
  */
 
@@ -62,5 +63,8 @@ export const defineColumn = (columnDef) => columnDef;
  * @param {ReturnType<typeof defineColumn>[]} columnDefs
  * @returns {object[]}
  */
-export const defineColumns = (columnDefs) => columnDefs;
+export const defineColumns = (columnDefs) => columnDefs.map((col, i) => ({
+    ...col,
+    OrderBy: col.OrderBy ?? (i + 1)
+}));
 

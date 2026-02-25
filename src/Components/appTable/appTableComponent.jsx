@@ -1,4 +1,4 @@
-import { useState, useDeferredValue } from 'react';
+import { useState, useDeferredValue, useEffect } from 'react';
 import {
     Card, Table, TableHead, TableBody, TableFooter,
     TableRow, TableCell, TableContainer,
@@ -49,6 +49,7 @@ const AppTableComponent = ({
     MenuButtons = [],
     // New Props
     onClickFun,
+    onFilteredDataChange,
     isExpendable = false,
     expandableComp,
     tableMaxHeight = 550,
@@ -113,6 +114,12 @@ const AppTableComponent = ({
 
     // Column Filters Hook
     const { filteredData, filters, setFilters, updateFilter } = useColumnFilters(dataArray, dispColumns, deferredGlobalSearch);
+
+    useEffect(() => {
+        if (onFilteredDataChange && typeof onFilteredDataChange === 'function') {
+            onFilteredDataChange(filteredData, dispColumns);
+        }
+    }, [filteredData, dispColumns, onFilteredDataChange]);
 
     // State Sync Hook
     const {
@@ -241,7 +248,7 @@ const AppTableComponent = ({
                         .map((col, i) => {
                             if (col.isCustomCell && typeof col.Cell === 'function') {
                                 return (
-                                    <TableCell key={i} style={{ fontSize: bodyFontSizePx }}>
+                                    <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className={col?.tdClass ? ` ${col?.tdClass({ row, Field_Name: col.Field_Name, index: i })} ` : ''}>
                                         {col.Cell({ row })}
                                     </TableCell>
                                 );
@@ -250,7 +257,7 @@ const AppTableComponent = ({
                             return (
                                 <TableCell
                                     key={i}
-                                    style={{ fontSize: bodyFontSizePx }}>
+                                    style={{ fontSize: bodyFontSizePx }} className={col?.tdClass ? ` ${col?.tdClass({ row, Field_Name: col.Field_Name, index: i })} ` : ''}>
                                     {formatValue(row[col.Field_Name], col.Fied_Data) ?? '-'}
                                 </TableCell>
                             );

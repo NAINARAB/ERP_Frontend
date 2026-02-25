@@ -40,7 +40,7 @@ const ColumnSettingsDialog = ({
                                     <input
                                         type="number"
                                         className="border-0"
-                                        value={dc?.OrderBy ?? ''}
+                                        value={dc?.OrderBy || ''}
                                         onChange={e =>
                                             onOrderChange(
                                                 col.Field_Name,

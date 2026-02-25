@@ -1,89 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, ISOString, RoundNumber, stringCompare, toNumber } from "../../../Components/functions";
+import { Addition, ISOString, RoundNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { IconButton } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import DownloadIcon from "@mui/icons-material/Download";
-import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+
 const getStaff = (staffs, type) =>
     staffs
         .filter(s => s.empType === type)
         .map(s => s.empName)
         .join(", ");
-
-// const transformSalesVoucherData = (data) => {
-//     let transformedData = [];
-//     let voucherGroup = [];
-
-//     data.forEach((entry, entryIndex) => {
-
-//         const totalBilledQty = entry.productDetails.reduce(
-//             (sum, item) => Addition(sum, item.billedQuantity),
-//             0
-//         );
-
-//         const totalUnitQty = entry.productDetails.reduce(
-//             (sum, item) => Addition(sum, item.actUnitQuantity),
-//             0
-//         );
-
-//         if (voucherGroup.findIndex(voucher => stringCompare(voucher, entry.voucheGet)) === -1) {
-//             voucherGroup.push(entry.voucheGet);
-//             transformedData.push({
-//                 SNo: '',
-//                 unitDifference: '',
-//                 quantityDifference: '',
-//                 particular: entry.voucheGet,
-//                 voucherNoOrRate: '',
-//                 unitQuantity: '',
-//                 billedQuantity: '',
-//                 broker: '',
-//                 transporter: '',
-//                 loadMan: '',
-//                 rowType: "VOUCHER-HEADER"
-//             });
-//         }
-
-//         // ---------- HEADER ROW (Voucher + Retailer) ----------
-//         transformedData.push({
-//             SNo: entryIndex + 1,
-//             unitDifference: '',
-//             quantityDifference: '',
-//             particular: entry.retailerGet,
-//             voucherNoOrRate: entry.voucherNumber,
-//             unitQuantity: totalUnitQty,
-//             billedQuantity: totalBilledQty,
-//             broker: getStaff(entry.staffDetails || [], "Broker"),
-//             transporter: getStaff(entry.staffDetails || [], "Transport"),
-//             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
-//             rowType: "HEADER"
-//         });
-
-//         // ---------- ITEM ROWS ----------
-//         entry.productDetails.forEach((item) => {
-//             const unitDifference = Math.round(Number(item.actUnitQuantity)) - Number(item.actUnitQuantity);
-
-//             transformedData.push({
-//                 SNo: "",
-//                 unitDifference: unitDifference !== 0 ? RoundNumber(unitDifference) : '',
-//                 quantityDifference: item.quantityDifference || "",
-//                 particular: item.itemNameGet,
-//                 voucherNoOrRate: item.billedRate || "",
-//                 unitQuantity: item.actUnitQuantity || "",
-//                 billedQuantity: item.billedQuantity || "",
-//                 broker: "",
-//                 transporter: "",
-//                 loadMan: "",
-//                 rowType: "ITEM"
-//             });
-//         });
-//     });
-
-//     return transformedData;
-// };
 
 const transformSalesVoucherData = (data = []) => {
     const transformedData = [];
@@ -103,7 +32,7 @@ const transformSalesVoucherData = (data = []) => {
             voucherNoOrRate: '',
             unitQuantity: RoundNumber(totalUnitQuantity),
             billedQuantity: RoundNumber(totalBilledQuantity),
-            tripNUmber:'',
+            tripNUmber: '',
             broker: '',
             transporter: '',
             loadMan: '',
@@ -113,7 +42,7 @@ const transformSalesVoucherData = (data = []) => {
 
     data.forEach((entry, entryIndex) => {
 
-        const tripNumber=entry.tripNumber || ''
+        const tripNumber = entry.tripNumber || ''
 
         if (currentVoucherType && currentVoucherType !== entry.voucheGet) {
             pushCumulativeRow(currentVoucherType);
@@ -167,7 +96,7 @@ const transformSalesVoucherData = (data = []) => {
             broker: getStaff(entry.staffDetails || [], "Broker"),
             transporter: getStaff(entry.staffDetails || [], "Transport"),
             loadMan: getStaff(entry.staffDetails || [], "Load Man"),
-              tripNumber: tripNumber,
+            tripNumber: tripNumber,
             rowType: "HEADER"
         });
 
@@ -212,184 +141,164 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
         // reqDate: '2025-12-29',
     })
 
+    const downloadExcel = async (rows) => {
+        if (!rows || rows.length === 0) {
+            alert("No data to export");
+            return;
+        }
 
-const downloadExcel = async (rows) => {
-    if (!rows || rows.length === 0) {
-        alert("No data to export");
-        return;
-    }
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Sales Invoice Paper");
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Sales Invoice Paper");
+        // 🔹 HEADER ROW
+        const header = [
+            "SNo",
+            "Unit Diff",
+            "Diff",
+            "Particular",
+            "Vou.No / Rate",
+            "Act Qty",
+            "Bill Qty",
+            "Broker",
+            "Transporter",
+            "Load Man",
+            "Trip_No"
+        ];
 
-    // 🔹 HEADER ROW
-    const header = [
-        "SNo",
-        "Unit Diff",
-        "Diff",
-        "Particular",
-        "Vou.No / Rate",
-        "Act Qty",
-        "Bill Qty",
-        "Broker",
-        "Transporter",
-        "Load Man",
-        "Trip_No"
-    ];
+        worksheet.addRow(header);
 
-    worksheet.addRow(header);
-
-    worksheet.getRow(1).eachCell(cell => {
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFF00" } 
-        };
-        cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            right: { style: "thin" },
-            bottom: { style: "thin" }
-        };
-    });
-
-
-    let overallActQty = 0;
-    let overallBillQty = 0;
-
-    rows.forEach(rowData => {
-   if (rowData.rowType === "HEADER") {
-        overallActQty += Number(rowData.unitQuantity || 0);
-        overallBillQty += Number(rowData.billedQuantity || 0);
-    }
-
-
-        const row = worksheet.addRow([
-            rowData.SNo || "",
-            rowData.unitDifference || "",
-            rowData.quantityDifference || "",
-            rowData.particular || "",
-            rowData.voucherNoOrRate || "",
-            rowData.unitQuantity || "",
-            rowData.billedQuantity || "",
-            rowData.broker || "",
-            rowData.transporter || "",
-            rowData.loadMan || "",
-            rowData.tripNumber || ""
-        ]);
-
-        row.eachCell((cell, colNumber) => {
+        worksheet.getRow(1).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFF00" }
+            };
             cell.border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 right: { style: "thin" },
                 bottom: { style: "thin" }
             };
-
-            cell.alignment = {
-                vertical: "middle",
-                horizontal: colNumber === 4 ? "left" : "center"
-            };
-
-     
-            if (rowData.rowType === "VOUCHER-HEADER") {
-                cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "4472C4" } 
-                };
-                cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-            }
-
-    
-            if (rowData.rowType === "HEADER") {
-                cell.font = { bold: true, color: { argb: "1F4E79" } };
-            }
-
-          
-            if (rowData.rowType === "ITEM") {
-                cell.font = { color: { argb: "000000" } };
-            }
-
-       
-            if (rowData.rowType === "VOUCHER-TOTAL") {
-                cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "D9D9D9" }
-                };
-                cell.font = { bold: true };
-            }
         });
-    });
-
-    const totalRow = worksheet.addRow([
-        "",
-        "",
-        "",
-        "OVERALL TOTAL",
-        "",
-        overallActQty,
-        overallBillQty,
-        "",
-        "",
-        ""
-    ]);
-
-    totalRow.eachCell(cell => {
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "C6E0B4" } 
-        };
-        cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            right: { style: "thin" },
-            bottom: { style: "thin" }
-        };
-    });
-
-    // 🔹 COLUMN WIDTHS
-    worksheet.columns = [
-        { width: 6 },
-        { width: 10 },
-        { width: 10 },
-        { width: 45 },
-        { width: 18 },
-        { width: 10 },
-        { width: 10 },
-        { width: 20 },
-        { width: 20 },
-        { width: 20 }
-    ];
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), "Sales_Invoice_Paper.xlsx");
-};
-//     worksheet.columns = [
-//         { width: 6 },
-//         { width: 10 },
-//         { width: 10 },
-//         { width: 45 },
-//         { width: 18 },
-//         { width: 10 },
-//         { width: 10 },
-//         { width: 20 },
-//         { width: 20 },
-//         { width: 20 }
-//     ];
-
-//     const buffer = await workbook.xlsx.writeBuffer();
-//     saveAs(new Blob([buffer]), "Sales_Invoice_Paper.xlsx");
-// };
 
 
+        let overallActQty = 0;
+        let overallBillQty = 0;
 
+        rows.forEach(rowData => {
+            if (rowData.rowType === "HEADER") {
+                overallActQty += Number(rowData.unitQuantity || 0);
+                overallBillQty += Number(rowData.billedQuantity || 0);
+            }
+
+
+            const row = worksheet.addRow([
+                rowData.SNo || "",
+                rowData.unitDifference || "",
+                rowData.quantityDifference || "",
+                rowData.particular || "",
+                rowData.voucherNoOrRate || "",
+                rowData.unitQuantity || "",
+                rowData.billedQuantity || "",
+                rowData.broker || "",
+                rowData.transporter || "",
+                rowData.loadMan || "",
+                rowData.tripNumber || ""
+            ]);
+
+            row.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    right: { style: "thin" },
+                    bottom: { style: "thin" }
+                };
+
+                cell.alignment = {
+                    vertical: "middle",
+                    horizontal: colNumber === 4 ? "left" : "center"
+                };
+
+
+                if (rowData.rowType === "VOUCHER-HEADER") {
+                    cell.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+                        fgColor: { argb: "4472C4" }
+                    };
+                    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+                }
+
+
+                if (rowData.rowType === "HEADER") {
+                    cell.font = { bold: true, color: { argb: "1F4E79" } };
+                }
+
+
+                if (rowData.rowType === "ITEM") {
+                    cell.font = { color: { argb: "000000" } };
+                }
+
+
+                if (rowData.rowType === "VOUCHER-TOTAL") {
+                    cell.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+                        fgColor: { argb: "D9D9D9" }
+                    };
+                    cell.font = { bold: true };
+                }
+            });
+        });
+
+        const totalRow = worksheet.addRow([
+            "",
+            "",
+            "",
+            "OVERALL TOTAL",
+            "",
+            overallActQty,
+            overallBillQty,
+            "",
+            "",
+            ""
+        ]);
+
+        totalRow.eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "C6E0B4" }
+            };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+        });
+
+        // 🔹 COLUMN WIDTHS
+        worksheet.columns = [
+            { width: 6 },
+            { width: 10 },
+            { width: 10 },
+            { width: 45 },
+            { width: 18 },
+            { width: 10 },
+            { width: 10 },
+            { width: 20 },
+            { width: 20 },
+            { width: 20 }
+        ];
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), "Sales_Invoice_Paper.xlsx");
+    };
 
     useEffect(() => {
         fetchLink({
@@ -439,7 +348,7 @@ const downloadExcel = async (rows) => {
                         Fied_Data: 'string',
                         tdClass: ({ row }) => headerColor(row.rowType)
                     },
-                     
+
                     {
                         isVisible: 1,
                         ColumnHeader: 'Vou.No / Rate',
@@ -464,22 +373,22 @@ const downloadExcel = async (rows) => {
                     createCol('broker', 'string', 'Broker Name'),
                     createCol('transporter', 'string', 'Transporter'),
                     createCol('loadMan', 'string', 'Load Man'),
-                     createCol('tripNumber', 'string', 'Trip_No'),
+                    createCol('tripNumber', 'string', 'Trip_No'),
                 ]}
                 ButtonArea={
                     <>
                         <IconButton size="small" onClick={fetchSalesInvoices}>
                             <Search />
                         </IconButton>
-                        
-        <IconButton
-            size="small"
-            color="success"
-            onClick={() => downloadExcel(displayData)}
-            title="Download Excel"
-        >
-            <DownloadIcon />
-        </IconButton>
+
+                        <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => downloadExcel(displayData)}
+                            title="Download Excel"
+                        >
+                            <DownloadIcon />
+                        </IconButton>
 
                         <input
                             className="cus-inpt w-auto"
