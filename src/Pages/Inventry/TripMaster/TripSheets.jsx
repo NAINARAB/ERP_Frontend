@@ -3,11 +3,12 @@ import FilterableTable, { ButtonActions, createCol } from "../../../Components/f
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, reactSelectFilterLogic, Subraction, timeDuration, toNumber } from "../../../Components/functions";
-import { Download, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Download, Edit, FilterAlt, LocalShipping, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
+import DeliveryChallan from "./deliveryChallan";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -29,6 +30,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         refresh: false,
         printPreviewDialog: false,
+        deliveryChallanDialog: false, 
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
@@ -37,7 +39,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     });
     const [selectedRow, setSelectedRow] = useState({});
     const printRef = useRef(null);
-
+    const deliveryChallanPrintRef = useRef(null);
 
     useEffect(() => {
         if (loadingOn) loadingOn();
@@ -113,6 +115,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
+    });
+
+    const handleDeliveryChallanPrint = useReactToPrint({
+        content: () => deliveryChallanPrintRef.current,
     });
 
     const uniqueFromLocations = useMemo(() => {
@@ -197,6 +203,57 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
+  
+    const transformToDeliveryChallan = (tripData) => {
+        const items = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
+            sno: index + 1,
+            description: item.Product_Name || "",
+            hsn: item.HSN_Code || "",
+            rate: item.Product_Rate ? NumberFormat(item.Product_Rate) : 0,
+            bags: item.Bag || 0,
+            qty: item.KGS || item.QTY || 0,
+            amount: item.Product_Rate * item.QTY || 0
+        }));
+
+        const totalBags = items.reduce((sum, item) => sum + (item.bags || 0), 0);
+        const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
+        const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+     
+        const driver = (Array.isArray(tripData?.Employees_Involved) ? tripData.Employees_Involved : [])
+            .find(staff => staff?.Cost_Category === 'Driver');
+
+        return {
+            challanNo: tripData?.Challan_No || tripData?.Trip_No || "",
+            date: tripData?.Trip_Date ? LocalDate(tripData.Trip_Date) : "",
+            company: {
+                name: "S.M TRADERS",
+                address: "746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611",
+                gst: "33AADFS4987M1ZL"
+            },
+            recipient: {
+                name: "S.M TRADERS",
+                address: "157, CHITRAKARA STREET, EAST MASI STREET, MADURAI - 625001",
+                gstin: "33AADFS4987M1ZL"
+            },
+            transport: {
+                mode: "By Road",
+                vehicleNo: tripData?.Vehicle_No || "",
+                driverName: driver?.Emp_Name || "",
+                date: tripData?.Trip_Date ? LocalDate(tripData.Trip_Date) : "",
+                time: tripData?.StartTime ? LocalTime(new Date(tripData.StartTime)) : "",
+                place: "SIVAGANGAI",
+                stateCode: "33"
+            },
+            items: items,
+            totals: {
+                totalBags: totalBags,
+                totalQty: NumberFormat(totalQty),
+                totalAmount: NumberFormat(totalAmount),
+                amountInWords: numberToWords(Math.round(totalAmount)) + " Only"
+            }
+        };
+    };
 
     const statusColor = {
         NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
@@ -286,18 +343,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             )
                         }
                     },
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Total Qty',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => row?.Products_List?.reduce((acc, product) => Addition(product.QTY ?? 0, acc), 0)
-                    // },
-                    // {
-                    //     isVisible: 1,
-                    //     ColumnHeader: 'Total Item',
-                    //     isCustomCell: true,
-                    //     Cell: ({ row }) => NumberFormat(row.Products_List.length ?? 0)
-                    // },
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',
@@ -321,6 +366,14 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                         icon: <Visibility className="fa-14" />,
                                         onclick: () => {
                                             setFilters(pre => ({ ...pre, printPreviewDialog: true }));
+                                            setSelectedRow(row);
+                                        }
+                                    },
+                                    {
+                                        name: 'Delivery Challan',
+                                        icon: <LocalShipping className="fa-14" />,
+                                        onclick: () => {
+                                            setFilters(pre => ({ ...pre, deliveryChallanDialog: true }));
                                             setSelectedRow(row);
                                         }
                                     },
@@ -785,10 +838,41 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+            <Dialog
+                open={filters.deliveryChallanDialog}
+                onClose={() => setFilters(pre => ({ ...pre, deliveryChallanDialog: false }))}
+                maxWidth='lg'
+                fullWidth
+            >
+                <DialogTitle>
+                    Delivery Challan - {selectedRow?.Challan_No || selectedRow?.Trip_No}
+                </DialogTitle>
+                <DialogContent ref={deliveryChallanPrintRef}>
+                    {isValidObject(selectedRow) && (
+                        <DeliveryChallan data={transformToDeliveryChallan(selectedRow)} />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setFilters(pre => ({ ...pre, deliveryChallanDialog: false }))}
+                        variant="outlined"
+                        color="error"
+                    >
+                        Close
+                    </Button>
+                    <Button
+                        startIcon={<Download />}
+                        variant='contained'
+                        color="primary"
+                        onClick={handleDeliveryChallanPrint}
+                    >
+                        Print / Download
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
         </>
     )
 }
-
 
 export default TripSheets;

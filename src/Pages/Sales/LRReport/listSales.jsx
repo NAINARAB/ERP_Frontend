@@ -2124,6 +2124,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <option value={5}>Pending</option>
                             <option value={7}>Delivered</option>
                             <option value={6}>Return</option>
+                             <option value={4}>Canceled</option>
                         </select>
                     </div>
 
@@ -2257,6 +2258,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <option value={5}>Pending</option>
                             <option value={7}>Delivered</option>
                             <option value={6}>Return</option>
+                            <option value={4}>Canceled</option>
                         </select>
                     </div>
 
