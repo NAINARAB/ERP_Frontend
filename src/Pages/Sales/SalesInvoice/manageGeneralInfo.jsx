@@ -26,7 +26,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     staffArray = [],
     setStaffArray,
     loadingOn,
-    loadingOff
+    loadingOff,
+    salesInvoiceAccess = {}
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -157,7 +158,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                     </div>
 
                                     {/* {console.log(retailerSalesStatus)} */}
-                                    {retailerSalesStatus.invoiceCreationStatus === false && (
+                                    {retailerSalesStatus.invoiceCreationStatus === false && (!salesInvoiceAccess.creditAmountLimit || !salesInvoiceAccess.creditDaysLimit) && (
                                         <div className="col-12 alert alert-danger p-2">
                                             The retailer has exceeded the credit limit or credit days.
                                         </div>
@@ -620,6 +621,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         <input
                                             className="cus-inpt p-2"
                                             value={retailerSalesStatus?.outstanding}
+                                            readOnly
                                         />
                                     </div>
                                     {/* credit limit */}
@@ -632,6 +634,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                     ? 'Unlimited'
                                                     : retailerSalesStatus?.creditLimit
                                             }
+                                            readOnly
                                         />
                                     </div>
                                     {/* credit days */}
@@ -644,6 +647,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                     ? 'Unlimited'
                                                     : retailerSalesStatus?.creditDays
                                             }
+                                            readOnly
                                         />
                                     </div>
 
@@ -653,6 +657,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         <input
                                             className="cus-inpt p-2"
                                             value={retailerSalesStatus?.recentDate ? LocalDate(retailerSalesStatus?.recentDate) : ''}
+                                            readOnly
                                         />
                                     </div>
 
@@ -662,11 +667,11 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         <input
                                             className="cus-inpt p-2"
                                             value={
-                                                // (retailerSalesStatus?.recentDate && isValidNumber(retailerSalesStatus?.creditDays)) 
-                                                // ? 
-                                                LocalDate(getNextDate(30, retailerSalesStatus?.recentDate))
-                                                // : ''
+                                                (retailerSalesStatus?.recentDate && isValidNumber(retailerSalesStatus?.creditDays))
+                                                    ? LocalDate(getNextDate(retailerSalesStatus?.creditDays, retailerSalesStatus?.recentDate))
+                                                    : ''
                                             }
+                                            readOnly
                                         />
                                     </div>
                                 </div>

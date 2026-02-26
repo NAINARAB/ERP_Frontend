@@ -150,13 +150,19 @@ export const companyDetails = [
 ]
 
 export const erpModules = [
-    { name: 'PURCHASE_ORDER' },
-    { name: 'PURCHASE_INVOICE' },
-    { name: 'SALE_ORDER' },
-    { name: 'SALE_INVOICE' },
-    { name: 'JOURNAL' },
-    { name: 'STOCK_JOURNAL' },
-    { name: 'PAYMENT' },
-    { name: 'RECEIPT' },
-    { name: 'CONTRA' },
+    { name: 'PURCHASE_ORDER', alias: 'Purchase Order', moduleCode: 'PO' },
+    { name: 'PURCHASE_INVOICE', alias: 'Purchase Invoice', moduleCode: 'PI' },
+    { name: 'SALE_ORDER', alias: 'Sale Order', moduleCode: 'SO' },
+    { name: 'SALE_INVOICE', alias: 'Sale Invoice', moduleCode: 'SI' },
+    { name: 'JOURNAL', alias: 'Journal', moduleCode: 'JO' },
+    { name: 'STOCK_JOURNAL', alias: 'Stock Journal', moduleCode: 'SJ' },
+    { name: 'PAYMENT', alias: 'Payment', moduleCode: 'PAY' },
+    { name: 'RECEIPT', alias: 'Receipt', moduleCode: 'REC' },
+    { name: 'CONTRA', alias: 'Contra', moduleCode: 'CON' },
+]
+
+export const additionalModules = [
+    { name: 'MATERIAL_INWARD', alias: 'Material Inward', moduleCode: 'MI' },
+    { name: 'OTHER_GODOWN', alias: 'Other Godown', moduleCode: 'OG' },
+    { name: 'PROCESSING', alias: 'Processing', moduleCode: 'PRO' },
 ]

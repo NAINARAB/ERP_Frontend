@@ -29,8 +29,7 @@ import AddProductForm from "./addProducts";
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
-
-const storage = getSessionUser().user;
+import { getModuleAccess } from "../../../Components/moduleAccess";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -118,7 +117,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
-                    fetchLink({ address: `authorization/moduleConfiguration?moduleName=SALES_INVOICE` })
+                    fetchLink({ address: `authorization/moduleConfiguration?moduleName=SALE_INVOICE` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -560,7 +559,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             return;
         }
 
-        if (retailerSalesStatus.forceCreateInvoice === false && retailerSalesStatus.invoiceCreationStatus === false) {
+        if (retailerSalesStatus.forceCreateInvoice === false && activeInvoiceCreationStatus === false) {
             setRetailerSalesStatus(pre => ({ ...pre, dialog: true }));
             return;
         }
@@ -626,16 +625,62 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         })
     }
 
+    const salesInvoiceAccess = useMemo(() => {
+        const crudAction = isEdit ? 3 : 1;
+        return {
+            stockSeparation: getModuleAccess(baseData.moduleConfiguration, 'SI_1', crudAction),
+            singleGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_3', crudAction),
+            creditAmountLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_4', crudAction),
+            creditDaysLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_5', crudAction),
+            voucherBasedGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_6', crudAction)
+        };
+    }, [baseData.moduleConfiguration, isEdit]);
+
+    const activeInvoiceCreationStatus = useMemo(() => {
+        const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice } = retailerSalesStatus;
+
+        if (forceCreateInvoice) return true;
+        if (!recentDate) return true;
+
+        const baseDate = new Date(recentDate);
+        const expiryDate = new Date(baseDate);
+        expiryDate.setDate(expiryDate.getDate() + toNumber(creditDays));
+        const today = new Date();
+
+        const currentTotal = taxSplitUp?.invoiceTotal || 0;
+        const isOutstandingExceeded = toNumber(creditLimit) > 0
+            ? Addition(toNumber(outstanding), currentTotal) > toNumber(creditLimit)
+            : false;
+
+        const isCreditDaysCrossed = toNumber(creditDays) > 0
+            ? today > expiryDate
+            : false;
+
+        if (salesInvoiceAccess.creditAmountLimit && isOutstandingExceeded) return false;
+        if (salesInvoiceAccess.creditDaysLimit && isCreditDaysCrossed) return false;
+
+        return true;
+    }, [retailerSalesStatus, salesInvoiceAccess, taxSplitUp?.invoiceTotal]);
+
     const voucherGodownCondition = useMemo(() => {
+        if (!salesInvoiceAccess.voucherBasedGodown) return true;
         if (isEdit) return true;
         const selectedVoucher = baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
         const voucherGodown = toNumber(selectedVoucher?.GodownId);
         const productHasGodown = invoiceProducts.length > 0 && invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, voucherGodown));
         return productHasGodown;
-    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts, isEdit]);
+    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts, isEdit, salesInvoiceAccess.voucherBasedGodown]);
+
+    const isSingleGodownValid = useMemo(() => {
+        if (!salesInvoiceAccess.singleGodown) return true;
+        if (invoiceProducts.length <= 1) return true;
+
+        const firstGodown = invoiceProducts[0]?.GoDown_Id;
+        return invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, firstGodown));
+    }, [invoiceProducts, salesInvoiceAccess.singleGodown]);
 
     const isStockValid = useMemo(() => {
-        if (isEdit) return true;
+        if (!salesInvoiceAccess.stockSeparation) return true;
         if (invoiceProducts.length === 0) return true;
 
         const hasPositive = invoiceProducts.some(item => {
@@ -651,7 +696,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
         });
 
         return !(hasPositive && hasNegative);
-    }, [invoiceProducts, isEdit]);
+    }, [invoiceProducts, salesInvoiceAccess.stockSeparation]);
 
     const cumulativeRow = useMemo(() => {
         if (invoiceProducts.length > 0) {
@@ -725,7 +770,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid}>submit</Button>
+                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid}>submit</Button>
                     </span>
                 </div>
                 <CardContent>
@@ -760,17 +805,27 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                     setRetailerDeliveryAddress={setRetailerDeliveryAddress}
                                     shippingAddress={retailerShippingAddress}
                                     setShippingAddress={setRetailerShippingAddress}
-                                    retailerSalesStatus={retailerSalesStatus}
+                                    retailerSalesStatus={{
+                                        ...retailerSalesStatus,
+                                        invoiceCreationStatus: activeInvoiceCreationStatus
+                                    }}
                                     staffArray={staffArray}
                                     setStaffArray={setStaffArray}
+                                    salesInvoiceAccess={salesInvoiceAccess}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {!isStockValid && (
+                    {!isStockValid && salesInvoiceAccess.stockSeparation && (
                         <div className="alert alert-danger p-2 mb-2">
                             Can't save invoice with mixed stock (positive and negative). Please ensure all items have either positive or negative stock.
+                        </div>
+                    )}
+
+                    {!isSingleGodownValid && salesInvoiceAccess.singleGodown && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            Can't save invoice with multiple godowns. Please ensure all items are from a single godown.
                         </div>
                     )}
 
