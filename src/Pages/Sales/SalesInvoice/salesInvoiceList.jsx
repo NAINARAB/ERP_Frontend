@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo,useRef } from "react";
 import { Button, Dialog, Box, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -15,7 +15,8 @@ import { Close, Print } from "@mui/icons-material";
 import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { allowedUserTypesForPreviousDateSalesEdit } from "./variable";
-
+import TaxInvoicePrint from './taxInvoicePrint'; 
+import { useReactToPrint } from "react-to-print";
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -26,9 +27,14 @@ const defaultFilters = {
     Cancel_status: ''
 };
 
+
+
+
+
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const storage = getSessionUser().user;
+        const printRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
     const [salesInvoice, setSalesInvoice] = useState([]);
@@ -39,6 +45,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
     });
     const [viewOrder, setViewOrder] = useState({});
     const [reload, setReload] = useState(false);
+   
 
     const [filters, setFilters] = useState({
         ...defaultFilters,
@@ -49,7 +56,8 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         filters: false,
         orderDetails: false,
         printInvoice: false,
-        deliverySlip: false
+        deliverySlip: false,
+        taxInvoice: false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -118,6 +126,22 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
 
     }, [sessionValue, pageID, reload, location]);
 
+
+      const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: `Invoice-${selectedInvoice?.Do_Id}`,
+    pageStyle: `
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+        }
+      }
+    `
+  });
     const ExpendableComponent = ({ row }) => {
         return (
             <>
@@ -274,15 +298,23 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                 <ButtonActions
                                     buttonsData={[
                                         {
-                                            name: 'View Order',
-                                            onclick: () => {
-                                                setViewOrder({
-                                                    orderDetails: row,
-                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
-                                                })
-                                            },
-                                            icon: <Visibility fontSize="small" color="primary" />,
+                                          name: 'View Invoice',
+                                          onclick: () => {
+                                            setSelectedInvoice(row);
+                                            setDialog(prev => ({ ...prev, taxInvoice: true }));
+                                          },
+                                          icon: <Visibility fontSize="small" color="primary" />,
                                         },
+                                        // {
+                                        //     name: 'View Order',
+                                        //     onclick: () => {
+                                        //         setViewOrder({
+                                        //             orderDetails: row,
+                                        //             orderProducts: row?.Products_List ? row?.Products_List : [],
+                                        //         })
+                                        //     },
+                                        //     icon: <Visibility fontSize="small" color="primary" />,
+                                        // },
                                         {
                                             name: 'Print Invoice',
                                             onclick: () => {
@@ -591,6 +623,54 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     </Button>
                 </DialogActions>
             </Dialog>
+
+    <Dialog
+  open={dialog.taxInvoice}
+  onClose={() => {
+    setDialog(prev => ({ ...prev, taxInvoice: false }));
+    setSelectedInvoice(null);
+  }}
+  maxWidth="lg"
+  fullWidth
+  scroll="paper"
+>
+    
+  <DialogTitle>
+    
+    <IconButton
+      onClick={() => {
+        setDialog(prev => ({ ...prev, taxInvoice: false }));
+        setSelectedInvoice(null);
+      }}
+      style={{ position: 'absolute', right: 8, top: 8 }}
+    >
+      <Close />
+    </IconButton>
+  </DialogTitle>
+  <DialogContent dividers>
+    {selectedInvoice && (
+      <TaxInvoicePrint
+        Do_Id={selectedInvoice.Do_Id}
+        invoice={selectedInvoice}  
+        loadingOn={loadingOn}
+        loadingOff={loadingOff}
+      />
+    )}
+  </DialogContent>
+  <DialogActions>
+   
+    <Button
+      onClick={() => {
+        setDialog(prev => ({ ...prev, taxInvoice: false }));
+        setSelectedInvoice(null);
+      }}
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+    
+
         </>
     )
 }
