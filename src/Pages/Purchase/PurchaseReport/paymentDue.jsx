@@ -65,23 +65,179 @@ const transformPaymentDueData = (data) => {
     return rows;
 };
 
+const downloadExcel = async (rows, columns) => {
+    if (!rows || rows.length === 0) {
+        alert("No data to export");
+        return;
+    }
+
+    const visibleCols = [...(columns || [])]
+        .filter(col => col.isVisible === 1 || col.isVisible === true)
+        .sort((a, b) => (a.OrderBy || 0) - (b.OrderBy || 0));
+
+    if (visibleCols.length === 0) {
+        alert("No columns visible to export");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Payment Due");
+
+    // 🔹 HEADER ROW
+    const header = visibleCols.map(col => col.ColumnHeader || col.Field_Name);
+
+    worksheet.addRow(header);
+
+    worksheet.getRow(1).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFF00" }
+        };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+            bottom: { style: "thin" }
+        };
+    });
+
+    let totalBillAmt = 0;
+    let totalPaid = 0;
+    let totalPending = 0;
+    let totalKgs = 0;
+    let totalBags = 0;
+
+    rows.forEach(rowData => {
+        if (rowData._isHeader) {
+            totalBillAmt += Number(rowData.BillAmt || 0);
+            totalPaid += Number(rowData.Paid || 0);
+            totalPending += Number(rowData.Pending || 0);
+        } else {
+            totalKgs += Number(rowData.KGS || 0);
+            totalBags += Number(rowData.Bags || 0);
+        }
+
+        const rowValues = visibleCols.map(col => {
+            const val = rowData[col.Field_Name];
+            if (col.Fied_Data === 'number' && val) {
+                return NumberFormat(val);
+            }
+            if (col.Fied_Data === 'date' && val) {
+                return new Date(val).toLocaleDateString('en-GB');
+            }
+            return val !== undefined && val !== null ? val : "";
+        });
+
+        const row = worksheet.addRow(rowValues);
+
+        row.eachCell((cell, colNumber) => {
+            let cellData = rowValues[colNumber - 1]; // To align cell behavior, check type of data
+
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+
+            cell.alignment = {
+                vertical: "middle",
+                horizontal: typeof cellData === 'number' || (visibleCols[colNumber - 1].Fied_Data === "number" && !isNaN(Number(cellData))) ? "right" : "left"
+            };
+
+            if (rowData._isHeader) {
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFD7B5" }
+                };
+            }
+
+            if (rowData._isHeader) {
+                cell.font = { bold: true };
+            } else {
+                cell.font = { color: { argb: "000000" } };
+            }
+        });
+    });
+
+    const totalRowValues = visibleCols.map(col => {
+        if (col.Field_Name === 'KGS') return totalKgs;
+        if (col.Field_Name === 'Bags') return totalBags;
+        if (col.Field_Name === 'BillAmt') return totalBillAmt;
+        if (col.Field_Name === 'Paid') return totalPaid;
+        if (col.Field_Name === 'Pending') return totalPending;
+        return "";
+    });
+
+    const totalIndex = visibleCols.findIndex(c => c.Field_Name === 'RetailerName');
+    if (totalIndex !== -1) {
+        totalRowValues[totalIndex] = "OVERALL TOTAL";
+    } else {
+        const firstNumIdx = visibleCols.findIndex(c => ['KGS', 'Bags', 'BillAmt'].includes(c.Field_Name));
+        if (firstNumIdx > 0) totalRowValues[firstNumIdx - 1] = "OVERALL TOTAL";
+        else totalRowValues[0] = "OVERALL TOTAL";
+    }
+
+    const totalRow = worksheet.addRow(totalRowValues);
+
+    totalRow.eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "C6E0B4" }
+        };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+            bottom: { style: "thin" }
+        };
+    });
+
+    // 🔹 COLUMN WIDTHS
+    worksheet.columns = visibleCols.map(col => {
+        let width = 15;
+        if (col.Field_Name === 'SNo') width = 6;
+        if (col.Field_Name === 'Con') width = 15;
+        if (col.Field_Name === 'DueDate' || col.Field_Name === 'invoiceDate') width = 12;
+        if (col.Field_Name === 'RetailerName') width = 45;
+        if (col.Field_Name === 'KGS' || col.Field_Name === 'Bags' || col.Field_Name === 'Rate' || col.Field_Name === 'DIS') width = 10;
+        if (col.Field_Name === 'invoiceNumber' || col.Field_Name === 'voucherType') width = 18;
+        if (col.Field_Name === 'Remarks') width = 20;
+        return { width };
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), "Payment_Due.xlsx");
+};
+
 const defaultFilterValues = {
     Fromdate: ISOString(),
     Todate: ISOString(),
     Retailer: { value: '', label: 'ALL' },
-    VoucherType: { value: '', label: 'ALL' },
-    filterItems: { value: '', label: 'ALL' }
+    VoucherType: [],
+    Branch: { value: '', label: 'ALL' },
+    CreatedBy: { value: '', label: 'ALL' },
 }
 
 const PurchasePaymentDue = ({ loadingOn, loadingOff, pageID }) => {
     const [reportData, setReportData] = useState([]);
     const [rawReportData, setRawReportData] = useState([]);
+    const [apiData, setApiData] = useState([]);
     const [customOrderDialog, setCustomOrderDialog] = useState(false);
     const location = useLocation()
     const sessionValue = sessionStorage.getItem('filterValues');
     const [filterValues, setFilterValues] = useState({
         voucherType: [],
-        created_by: []
+        created_by: [],
+        branch: [],
+        retailer: []
     })
     const [filters, setFilters] = useState({
         ...defaultFilterValues,
@@ -92,147 +248,6 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff, pageID }) => {
     const [tableDataState, setTableDataState] = useState([])
     const [tableColumnsState, setTableColumnsState] = useState([])
 
-    const downloadExcel = async (rows, columns) => {
-        if (!rows || rows.length === 0) {
-            alert("No data to export");
-            return;
-        }
-
-        const visibleCols = [...(columns || [])]
-            .filter(col => col.isVisible === 1 || col.isVisible === true)
-            .sort((a, b) => (a.OrderBy || 0) - (b.OrderBy || 0));
-
-        if (visibleCols.length === 0) {
-            alert("No columns visible to export");
-            return;
-        }
-
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Payment Due");
-
-        // 🔹 HEADER ROW
-        const header = visibleCols.map(col => col.ColumnHeader || col.Field_Name);
-
-        worksheet.addRow(header);
-
-        worksheet.getRow(1).eachCell(cell => {
-            cell.font = { bold: true };
-            cell.alignment = { horizontal: "center", vertical: "middle" };
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FFFF00" }
-            };
-            cell.border = {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                right: { style: "thin" },
-                bottom: { style: "thin" }
-            };
-        });
-
-        let totalBillAmt = 0;
-        let totalPaid = 0;
-        let totalPending = 0;
-        let totalKgs = 0;
-        let totalBags = 0;
-
-        rows.forEach(rowData => {
-            if (rowData._isHeader) {
-                totalBillAmt += Number(rowData.BillAmt || 0);
-                totalPaid += Number(rowData.Paid || 0);
-                totalPending += Number(rowData.Pending || 0);
-            } else {
-                totalKgs += Number(rowData.KGS || 0);
-                totalBags += Number(rowData.Bags || 0);
-            }
-
-            const rowValues = visibleCols.map(col => {
-                const val = rowData[col.Field_Name];
-                if (col.Fied_Data === 'date' && val) {
-                    return new Date(val).toLocaleDateString('en-GB');
-                }
-                return val !== undefined && val !== null ? val : "";
-            });
-
-            const row = worksheet.addRow(rowValues);
-
-            row.eachCell((cell, colNumber) => {
-                let cellData = rowValues[colNumber - 1]; // To align cell behavior, check type of data
-
-                cell.border = {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    right: { style: "thin" },
-                    bottom: { style: "thin" }
-                };
-
-                cell.alignment = {
-                    vertical: "middle",
-                    horizontal: typeof cellData === 'number' || (visibleCols[colNumber - 1].Fied_Data === "number" && !isNaN(Number(cellData))) ? "right" : "left"
-                };
-
-                if (rowData._isHeader) {
-                    cell.font = { bold: true, color: { argb: "1F4E79" } };
-                } else {
-                    cell.font = { color: { argb: "000000" } };
-                }
-            });
-        });
-
-        const totalRowValues = visibleCols.map(col => {
-            if (col.Field_Name === 'KGS') return totalKgs;
-            if (col.Field_Name === 'Bags') return totalBags;
-            if (col.Field_Name === 'BillAmt') return totalBillAmt;
-            if (col.Field_Name === 'Paid') return totalPaid;
-            if (col.Field_Name === 'Pending') return totalPending;
-            return "";
-        });
-
-        const totalIndex = visibleCols.findIndex(c => c.Field_Name === 'RetailerName');
-        if (totalIndex !== -1) {
-            totalRowValues[totalIndex] = "OVERALL TOTAL";
-        } else {
-            const firstNumIdx = visibleCols.findIndex(c => ['KGS', 'Bags', 'BillAmt'].includes(c.Field_Name));
-            if (firstNumIdx > 0) totalRowValues[firstNumIdx - 1] = "OVERALL TOTAL";
-            else totalRowValues[0] = "OVERALL TOTAL";
-        }
-
-        const totalRow = worksheet.addRow(totalRowValues);
-
-        totalRow.eachCell(cell => {
-            cell.font = { bold: true };
-            cell.alignment = { horizontal: "center", vertical: "middle" };
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "C6E0B4" }
-            };
-            cell.border = {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                right: { style: "thin" },
-                bottom: { style: "thin" }
-            };
-        });
-
-        // 🔹 COLUMN WIDTHS
-        worksheet.columns = visibleCols.map(col => {
-            let width = 15;
-            if (col.Field_Name === 'SNo') width = 6;
-            if (col.Field_Name === 'Con') width = 15;
-            if (col.Field_Name === 'DueDate' || col.Field_Name === 'invoiceDate') width = 12;
-            if (col.Field_Name === 'RetailerName') width = 45;
-            if (col.Field_Name === 'KGS' || col.Field_Name === 'Bags' || col.Field_Name === 'Rate' || col.Field_Name === 'DIS') width = 10;
-            if (col.Field_Name === 'invoiceNumber' || col.Field_Name === 'voucherType') width = 18;
-            if (col.Field_Name === 'Remarks') width = 20;
-            return { width };
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), "Payment_Due.xlsx");
-    };
-
     useEffect(() => {
         fetchLink({
             address: `purchase/invoice/filterValues`
@@ -240,29 +255,67 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff, pageID }) => {
             if (data.success) {
                 setFilterValues({
                     voucherType: data.others?.voucherType,
-                    created_by: data.others?.created_by
+                    created_by: data.others?.created_by,
+                    branch: data.others?.branch,
+                    retailer: data.others?.retailer
                 });
             }
         }).catch(e => console.error(e))
     }, [])
 
     useEffect(() => {
-        const { Fromdate, Todate, VoucherType } = filters
+        const { Fromdate, Todate, Branch, Retailer, CreatedBy } = filters
         fetchLink({
-            address: `purchase/invoice/paymentDue?Fromdate=${Fromdate}&Todate=${Todate}&VoucherType=${VoucherType.value}`,
+            address: `purchase/invoice/paymentDue?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            BranchId=${Branch.value}&
+            RetailerId=${Retailer.value}&
+            CreatedBy=${CreatedBy.value}`,
             loadingOff, loadingOn
         }).then(data => {
             if (data.success) {
                 const dataWithOrder = data.data.map((item) => ({ ...item, customOrder: '' }));
-                setRawReportData(dataWithOrder);
-                setReportData(transformPaymentDueData(dataWithOrder));
+                setApiData(dataWithOrder);
             }
         }).catch(e => console.error(e))
     }, [filters.refreshCount, location]);
 
     useEffect(() => {
-        const { Fromdate, Todate, VoucherType = defaultFilterValues.VoucherType } = getSessionFiltersByPageId(pageID);
-        setFilters(pre => ({ ...pre, Fromdate, Todate, VoucherType, refreshCount: pre.refreshCount + 1 }));
+        let finalData = apiData;
+        if (Array.isArray(filters.VoucherType) && filters.VoucherType.length > 0) {
+            finalData = finalData.filter(item =>
+                filters.VoucherType.some(v => v.label === item.voucherTypeGet)
+            );
+        }
+        setRawReportData(finalData);
+        setReportData(transformPaymentDueData(finalData));
+    }, [apiData, filters.refreshCount]);
+
+    useEffect(() => {
+        const sessionFilters = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            Branch = defaultFilterValues.Branch,
+            Retailer = defaultFilterValues.Retailer,
+            CreatedBy = defaultFilterValues.CreatedBy
+        } = sessionFilters;
+
+        let VoucherType = sessionFilters.VoucherType || defaultFilterValues.VoucherType;
+        if (!Array.isArray(VoucherType)) {
+            VoucherType = [];
+        }
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate,
+            Todate,
+            VoucherType,
+            Branch,
+            Retailer,
+            CreatedBy,
+            refreshCount: pre.refreshCount + 1
+        }));
     }, [sessionValue, pageID, location]);
 
     const getClass = (row) => {
@@ -413,6 +466,9 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff, pageID }) => {
                         Fromdate: filters?.Fromdate,
                         Todate: filters.Todate,
                         VoucherType: filters.VoucherType,
+                        Branch: filters.Branch,
+                        Retailer: filters.Retailer,
+                        CreatedBy: filters.CreatedBy,
                         pageID,
                     });
                     setFilters(pre => ({ ...pre, filterDialog: false }));
@@ -449,9 +505,60 @@ const PurchasePaymentDue = ({ loadingOn, loadingOff, pageID }) => {
                                     <Select
                                         value={filters.VoucherType}
                                         onChange={(e) => setFilters({ ...filters, VoucherType: e })}
+                                        options={filterValues.voucherType}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                        isMulti
+                                        isSearchable={true}
+                                        placeholder={"Select Voucher"}
+                                        filterOption={reactSelectFilterLogic}
+                                        maxMenuHeight={300}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Branch</td>
+                                <td>
+                                    <Select
+                                        value={filters.Branch}
+                                        onChange={(e) => setFilters({ ...filters, Branch: e })}
                                         options={[
                                             { value: '', label: 'ALL' },
-                                            ...filterValues.voucherType
+                                            ...filterValues.branch
+                                        ]}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                        isSearchable={true}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Retailer</td>
+                                <td>
+                                    <Select
+                                        value={filters.Retailer}
+                                        onChange={(e) => setFilters({ ...filters, Retailer: e })}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterValues.retailer
+                                        ]}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                        isSearchable={true}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Created By</td>
+                                <td>
+                                    <Select
+                                        value={filters.CreatedBy}
+                                        onChange={(e) => setFilters({ ...filters, CreatedBy: e })}
+                                        options={[
+                                            { value: '', label: 'ALL' },
+                                            ...filterValues.created_by
                                         ]}
                                         styles={customSelectStyles}
                                         menuPortalTarget={document.body}
