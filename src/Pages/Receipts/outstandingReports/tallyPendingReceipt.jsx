@@ -3,7 +3,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, ISOString, LocalDate, NumberFormat, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, formatDateToCustom, getDaysBetween, isEqualNumber, ISOString, LocalDate, NumberFormat, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { FilterAlt, Print, Search } from "@mui/icons-material";
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-toastify';
@@ -36,14 +36,15 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
         setReportData([]);
 
         const brokerValue = filters?.broker?.value || '';
+        const brokerAccId = filters.customersArray.find(fil => stringCompare(fil?.Actual_Party_Name_with_Brokers, brokerValue))?.Acc_Id;
 
         const ledgers = checkIsNumber(filters?.ledger?.value)
-            ? [{ Ledger_Tally_Id: filters?.ledger?.value }]
+            ? [{ Ledger_Tally_Id: filters?.ledger?.value, Acc_Id: brokerAccId }]
             : brokerValue
                 ? toArray(filters?.customersArray).filter(
                     fil => stringCompare(fil?.Actual_Party_Name_with_Brokers, brokerValue)
                 ).map(
-                    ledger => ({ Ledger_Tally_Id: ledger?.Ledger_Tally_Id })
+                    ledger => ({ Ledger_Tally_Id: ledger?.Ledger_Tally_Id, Acc_Id: ledger?.Acc_Id })
                 )
                 : [];
 
@@ -99,7 +100,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     }, [reportData, filters.dueDays, filters.reqDate]);
 
     const brokersDropDown = useMemo(() => {
-        const allBroker = toArray(filters.customersArray).map(trip => trip?.Actual_Party_Name_with_Brokers);
+        const allBroker = toArray(filters.customersArray).map(cus => cus?.Actual_Party_Name_with_Brokers);
 
         return [...new Set(allBroker)].map((name) => ({
             value: name,
