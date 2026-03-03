@@ -10,7 +10,9 @@ import {
     getSessionUser,
     checkIsNumber,
     toNumber,
-    reactSelectFilterLogic
+    reactSelectFilterLogic,
+    isValidNumber,
+    stringCompare
 } from "../../../Components/functions";
 import { Add, ArrowLeft, Clear, Delete, Download, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -170,6 +172,8 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
     }
 
     const postSaleOrder = () => {
+        if (isValidNumber(orderDetails?.So_Id) && stringCompare(orderDetails?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
+        
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
             loadingOn();
             fetchLink({
@@ -453,6 +457,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
+
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Status</label>
                                         <select
@@ -466,6 +471,19 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             <option value="4">Completed</option>
                                         </select>
                                     </div>
+
+                                    {isValidNumber(orderDetails.So_Id) && (
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                                            <input
+                                                value={orderDetails?.Alter_Reason}
+                                                className="cus-inpt p-2"
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="col-12 p-2">
                                         <label className='fa-13'>Narration</label>
                                         <textarea

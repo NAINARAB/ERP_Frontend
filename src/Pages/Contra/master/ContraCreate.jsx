@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { contraIV, contraStatus } from "./contraVariables";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray, stringCompare } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent } from "@mui/material";
@@ -104,6 +104,7 @@ const ContraScreen = ({
 
     const onSave = async () => {
         if (!canSave) return;
+        if (data?.ContraAutoId && stringCompare(data?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
 
         fetchLink({
             address: `contra/master`,
@@ -226,6 +227,18 @@ const ContraScreen = ({
                                 ))}
                             </select>
                         </div>
+
+                        {data?.ContraAutoId && (
+                            <div className="col-xxl-2 col-lg-3 col-md-4 col-sm-6 p-2">
+                                <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
+                                <input
+                                    value={data.Alter_Reason}
+                                    className="cus-inpt p-2"
+                                    onChange={e => change('Alter_Reason', e.target.value)}
+                                    required
+                                />
+                            </div>
+                        )}
 
                         <div className="col-12 p-0 m-0"></div>
 

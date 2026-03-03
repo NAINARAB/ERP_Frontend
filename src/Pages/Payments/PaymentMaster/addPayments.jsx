@@ -191,6 +191,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                         toast.warn('Select Debit-Acc / Credit-Acc!')
                     } else if (paymentValue.debit_amount < 1 || !paymentValue.debit_amount) {
                         toast.warn('Enter valid amount!')
+                    } else if (checkIsNumber(paymentValue.pay_id) && stringCompare(paymentValue.Alter_Reason, '')) {
+                        toast.error('Enter Alter Reason')
                     } else {
                         savePayment(paymentValue)
                     }
@@ -283,6 +285,18 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                     <option value="0">Canceled</option>
                                 </select>
                             </div>
+
+                            {checkIsNumber(paymentValue.pay_id) && (
+                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                    <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                                    <input
+                                        value={paymentValue.Alter_Reason}
+                                        className="cus-inpt p-2"
+                                        onChange={e => onChangePaymentValue('Alter_Reason', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            )}
 
                             {/* amount */}
                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">

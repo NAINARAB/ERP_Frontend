@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button, Card, CardContent } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject } from "../../../Components/functions";
+import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject, stringCompare } from "../../../Components/functions";
 import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV } from "./variable";
 
 import JournalGeneralInfo from "./journalGeneralInfo";
@@ -204,6 +204,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
 
     const saveJournal = useCallback(async () => {
         if (!saveStatus) return;
+        if (stringCompare(journalGeneralInfo.JournalAutoId, '') && stringCompare(journalGeneralInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         const method =
             journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
         // const entryLineNums = new Set(

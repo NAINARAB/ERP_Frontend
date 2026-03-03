@@ -4,6 +4,7 @@ const userDetails = getSessionUser().user;
 
 export const paymentGeneralInfoInitialValue = {
     pay_id: '',
+    Alter_Reason: '',
     year_id: '',
     payment_voucher_type_id: '',
     payment_sno: '',
@@ -21,12 +22,12 @@ export const paymentGeneralInfoInitialValue = {
     remarks: '',
     status: 1,
     transaction_type: '',
-    
+
     check_no: '',
     check_date: '',
     bank_name: '',
     bank_date: '',
-    
+
     created_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     altered_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     created_on: '',
@@ -42,7 +43,7 @@ export const paymentBillInfoInitialValue = {
     payment_date: '',
     bill_type: '',
     DR_CR_Acc_Id: '',
-    
+
     // form values
     pay_bill_id: '',
     JournalBillType: '',
@@ -65,7 +66,7 @@ export const paymentCostingInfoInitialValue = {
     payment_id: '',
     payment_no: '',
     payment_date: '',
-    bill_type : '',
+    bill_type: '',
     Debit_Ledger_Id: '',
     created_on: '',
 

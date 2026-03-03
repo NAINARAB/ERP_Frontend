@@ -424,6 +424,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     }
 
     const postOrder = () => {
+        if (checkIsNumber(invoiceDetails?.PIN_Id) && stringCompare(invoiceDetails?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         if (loadingOn) loadingOn();
         fetchLink({
             address: 'purchase/purchaseOrder',

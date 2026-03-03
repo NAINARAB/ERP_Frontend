@@ -22,6 +22,7 @@ export const initialStockJournalInfoValues = {
     Total_Reading: '',
     Narration: '',
     PR_Status: 'NEW',
+    Alter_Reason: '',
     Created_By: toNumber(userDetails?.UserId),
     Updated_By: toNumber(userDetails?.UserId),
 }

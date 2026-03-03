@@ -37,6 +37,7 @@ export const saleOrderGeneralInfo = {
     Alterd_on: '',
     Trans_Type: '',
     Alter_Id: '',
+    Alter_Reason: '',
 }
 
 export const saleOrderStockInfo = {

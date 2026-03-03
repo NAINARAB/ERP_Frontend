@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
 import { customSelectStyles } from "../../../../Components/tablecolumn";
 import Select from 'react-select';
 
@@ -137,6 +137,18 @@ const TripSheetGeneralInfo = ({
                                 <option value="Canceled">Canceled</option>
                             </select>
                         </div>
+
+                        {checkIsNumber(tripSheetInfo?.Trip_Id) && (
+                            <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
+                                <input
+                                    value={tripSheetInfo.Alter_Reason}
+                                    className="cus-inpt p-2"
+                                    onChange={e => setTripSheetInfo(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                        )}
 
                         <div className="col-12 px-2 py-1">
                             <label>Narration</label>

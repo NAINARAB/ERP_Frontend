@@ -3,7 +3,7 @@ import {
     Addition, Division, ISOString, Multiplication, checkIsNumber,
     formatSQLDateTimeObjectToInputDateTime,
     isEqualNumber, isGraterNumber, isValidObject,
-    reactSelectFilterLogic,
+    reactSelectFilterLogic, stringCompare,
     toArray
 } from "../../../Components/functions"
 import { Button, Card, CardContent, IconButton } from "@mui/material"
@@ -157,6 +157,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
     }
 
     const saveStockJournal = () => {
+        if (checkIsNumber(stockJorunalInfo?.PR_Id) && stringCompare(stockJorunalInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         if (loadingOn) loadingOn();
 
         fetchLink({
@@ -382,6 +383,18 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                 <option value="Canceled">Canceled</option>
                                             </select>
                                         </div>
+
+                                        {checkIsNumber(stockJorunalInfo?.PR_Id) && (
+                                            <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                                <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
+                                                <input
+                                                    value={stockJorunalInfo.Alter_Reason}
+                                                    className="cus-inpt p-2"
+                                                    onChange={e => setStockJorunalInfo(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                                    required
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Common Details - 2 */}
                                         <div className="col-12 p-2 ">

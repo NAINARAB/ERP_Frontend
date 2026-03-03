@@ -5,6 +5,7 @@ const storage = isValidJSON(user) ? JSON.parse(user) : {};
 
 export const initialInvoiceValue = {
     PIN_Id: '',
+    Alter_Reason: '',
     Po_Inv_No: '',
     Branch_Id: '',
     Voucher_Type: 0,

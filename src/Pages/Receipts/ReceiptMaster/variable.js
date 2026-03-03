@@ -3,6 +3,7 @@ const userDetails = getSessionUser().user;
 
 export const receiptGeneralInfoInitialValue = {
     receipt_id: '',
+    Alter_Reason: '',
     year_id: '',
     receipt_voucher_type_id: '',
     receipt_sno: '',

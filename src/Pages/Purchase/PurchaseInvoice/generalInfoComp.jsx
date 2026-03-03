@@ -1,4 +1,4 @@
-import { reactSelectFilterLogic, stringCompare } from "../../../Components/functions";
+import { reactSelectFilterLogic, stringCompare, checkIsNumber } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from 'react-select';
@@ -196,6 +196,18 @@ const PurchaseInvoiceGeneralInfo = ({
                                 placeholder='ex: 30, 12'
                             />
                         </div>
+
+                        {checkIsNumber(invoiceDetails.PIN_Id) && (
+                            <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                                <input
+                                    value={invoiceDetails?.Alter_Reason}
+                                    className={inputStyle}
+                                    onChange={e => setInvoiceDetails(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                        )}
 
                     </div>
 

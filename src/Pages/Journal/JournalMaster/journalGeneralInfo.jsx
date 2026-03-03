@@ -1,7 +1,8 @@
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
 import { journalStatus } from "./variable";
-import { reactSelectFilterLogic } from "../../../Components/functions";
+import { reactSelectFilterLogic, checkIsNumber, stringCompare } from "../../../Components/functions";
+import RequiredStar from "../../../Components/requiredStar";
 
 
 const JournalGeneralInfo = ({
@@ -89,6 +90,18 @@ const JournalGeneralInfo = ({
                         ))}
                     </select>
                 </div>
+
+                {!stringCompare(journalGeneralInfo.JournalAutoId, '') && (
+                    <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                        <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                        <input
+                            value={journalGeneralInfo.Alter_Reason}
+                            className="cus-inpt p-2"
+                            onChange={e => changeGeneralInfo('Alter_Reason', e.target.value)}
+                            required
+                        />
+                    </div>
+                )}
 
                 <div className="col-12 p-0 m-0"></div>
 

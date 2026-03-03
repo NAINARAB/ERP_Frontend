@@ -95,6 +95,18 @@ const PurchaseOrderGeneralInfo = ({
                             />
                         </div>
 
+                        {checkIsNumber(OrderDetails.Id) && (
+                            <div className="col-md-3 col-sm-6 p-2">
+                                <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
+                                <input
+                                    value={OrderDetails.Alter_Reason}
+                                    className={inputStyle}
+                                    onChange={e => setOrderDetails(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                        )}
+
                         <div className="col-md-4 p-2">
                             <label>Party Address</label>
                             <textarea

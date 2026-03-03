@@ -1,7 +1,7 @@
 import { Button, Card, CardContent } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { fetchLink } from '../../../Components/fetchComponent';
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, toArray } from '../../../Components/functions';
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, stringCompare, toArray } from '../../../Components/functions';
 import { Save, ClearAll } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
@@ -177,6 +177,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     };
 
     const postOrder = () => {
+        if (checkIsNumber(OrderDetails?.Id) && stringCompare(OrderDetails?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         if (loadingOn) {
             loadingOn();
         }
@@ -184,7 +185,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
             address: `dataEntry/purchaseOrderEntry`,
             method: isEdit ? 'PUT' : 'POST',
             bodyData: {
-                OrderDetails: OrderDetails,
+                ...OrderDetails,
                 OrderItems: options.DeliveryEntry ? [] : OrderItemsArray,
                 DelivdryDetails: options.PurchaseOrderOnly ? [] : DeliveryArray,
                 TranspoterDetails: options.PurchaseOrderOnly ? [] : TranspoterArray,

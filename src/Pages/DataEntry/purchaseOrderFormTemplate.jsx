@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../Components/tablecolumn';
 import RequiredStar from '../../Components/requiredStar';
 import { fetchLink } from '../../Components/fetchComponent';
-import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidObject, LocalDate, onlynum, reactSelectFilterLogic, toNumber } from '../../Components/functions';
+import { Addition, checkIsNumber, Division, isEqualNumber, ISOString, isValidNumber, isValidObject, LocalDate, onlynum, reactSelectFilterLogic, stringCompare, toNumber } from '../../Components/functions';
 import { Delete, Add, Save, ClearAll, Edit, Search, Close, Download } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify'
@@ -28,6 +28,7 @@ const initialOrderDetailsValue = {
     PaymentCondition: '',
     Remarks: '',
     OrderStatus: 'New Order',
+    Alter_Reason: '',
     CreatedBy: storage?.UserId,
 }
 
@@ -301,6 +302,7 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
     };
 
     const postOrder = () => {
+        if (checkIsNumber(OrderDetails?.Id) && stringCompare(OrderDetails?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         if (loadingOn) {
             loadingOn();
         }
@@ -731,6 +733,18 @@ const PurchaseOrderFormTemplate = ({ loadingOn, loadingOff }) => {
                                             ))}
                                         </select>
                                     </div>
+{console.log(OrderDetails.Sno)}
+                                    {isValidNumber(OrderDetails.Sno) && (
+                                        <div className="col-md-3 col-sm-6 p-2">
+                                            <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
+                                            <input
+                                                value={OrderDetails.Alter_Reason}
+                                                className={inputStyle + ' bg-light'}
+                                                onChange={e => setOrderDetails(pre => ({ ...pre, Alter_Reason: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="d-flex flex-wrap bg-white">

@@ -167,6 +167,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
     const saveTripSheet = () => {
         if (tripSheetInfo.BillType && tripSheetInfo.VoucherType) {
+            if (checkIsNumber(tripSheetInfo?.Trip_Id) && stringCompare(tripSheetInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
             if (loadingOn) loadingOn();
             fetchLink({
                 address: `inventory/tripSheet`,

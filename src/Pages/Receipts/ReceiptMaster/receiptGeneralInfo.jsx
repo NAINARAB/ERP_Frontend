@@ -133,6 +133,18 @@ const ReceiptGeneralInfo = ({
                     </select>
                 </div>
 
+                {checkIsNumber(receiptValue.receipt_id) && (
+                    <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                        <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                        <input
+                            value={receiptValue.Alter_Reason}
+                            className="cus-inpt p-2"
+                            onChange={e => onChangeReceiptValue('Alter_Reason', e.target.value)}
+                            required
+                        />
+                    </div>
+                )}
+
                 {/* amount */}
                 <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                     <label>Amount<RequiredStar /></label>

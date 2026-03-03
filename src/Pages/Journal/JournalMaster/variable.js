@@ -3,6 +3,7 @@ const userDetails = getSessionUser().user;
 
 export const journalGeneralInfoIV = {
     JournalAutoId: '',
+    Alter_Reason: '',
     JournalId: '',
     Year_Id: '',
     VoucherType: '',

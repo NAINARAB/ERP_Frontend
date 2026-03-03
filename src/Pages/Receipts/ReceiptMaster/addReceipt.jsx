@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { receiptGeneralInfoInitialValue } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
-import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject } from "../../../Components/functions";
+import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject, stringCompare } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
@@ -140,6 +140,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                         toast.warn('Select Debit-Acc / Credit-Acc!')
                     } else if (receiptValue.credit_amount < 1 || !receiptValue.credit_amount) {
                         toast.warn('Enter valid amount!')
+                    } else if (checkIsNumber(receiptValue.receipt_id) && stringCompare(receiptValue.Alter_Reason, '')) {
+                        toast.error('Enter Alter Reason')
                     } else {
                         saveReceipt(receiptValue)
                     }

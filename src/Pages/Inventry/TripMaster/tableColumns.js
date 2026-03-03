@@ -37,6 +37,7 @@ export const tripMasterDetails = {
     VoucherType: '',
     Narration: '',
     TripStatus: 'New',
+    Alter_Reason: '',
     Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
 }
