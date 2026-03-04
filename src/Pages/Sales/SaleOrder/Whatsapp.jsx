@@ -28,6 +28,7 @@ import {
     Menu,
     ListItemIcon,
     ListItemText,
+    CircularProgress
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -46,9 +47,6 @@ import {
     ArrowDropDown
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import KatchathCopy from "./KatchathCopy/katchathCopy";
-import InvoiceTemplate from "./SalesInvPrint/invTemplate";
-import DeliverysSlipPrint from "./deliverySlipPrint"
 import { useReactToPrint } from "react-to-print";
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -59,7 +57,6 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -101,8 +98,9 @@ const getCostTypeEmployees = (invoiceOrRow, costTypeId) => {
         .filter(Boolean);
 };
 
-const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
+const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
     const [salesInvoices, setSalesInvoices] = useState([]);
+    const [allInvoices, setAllInvoices] = useState([]); // Store all invoices before filtering
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
@@ -114,6 +112,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
     const [downloadLoading, setDownloadLoading] = useState(false);
     const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
+    const [phoneMap, setPhoneMap] = useState(new Map()); // Store phone numbers map
+    const [isPhoneMapLoaded, setIsPhoneMapLoaded] = useState(false);
+    const [initialDataLoaded, setInitialDataLoaded] = useState(false); // Track if initial data is fully loaded
     const tableContainerRef = useRef(null);
 
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -140,17 +141,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
 
-    const [printInvoice, setPrintInvoice] = useState({
-        Do_Id: null,
-        Do_Date: null,
-        open: false
-    });
-
-    const [katchathCopyPrint, setKatchathCopyPrint] = useState({
-        Do_Id: null,
-        open: false,
-    });
-
     const [deliverySlipPrint, setDeliverySlipPrint] = useState({
         Do_Id: null,
         Do_Date: null,
@@ -163,7 +153,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         loading: false,
         method: 'template',
     });
-
 
     const [templates, setTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -193,7 +182,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const multiPrintRef = useRef(null);
 
-
     const pdfTemplates = useMemo(() => {
         return (templates || []).filter(t => {
             const templateName = t.templateName || t.name || '';
@@ -202,7 +190,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         });
     }, [templates]);
 
-
     const otherTemplates = useMemo(() => {
         return (templates || []).filter(t => {
             const templateName = t.templateName || t.name || '';
@@ -210,8 +197,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 templateName.toLowerCase().includes('invoice'));
         });
     }, [templates]);
-
-
 
     const columns = useMemo(
         () => [
@@ -241,6 +226,48 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return billQty * conversionFactor;
     };
 
+    // Fetch phone numbers map
+    const fetchPhoneMap = async () => {
+        try {
+            const response = await fetchLink({
+                address: `masters/getlolDetails`
+            });
+
+            if (response && response.success && response.data) {
+                const map = new Map();
+                response.data.forEach(item => {
+                    if (item.A1) { // Only add if A1 exists
+                        map.set(Number(item.Ret_Id), item.A1);
+                    }
+                });
+                setPhoneMap(map);
+                setIsPhoneMapLoaded(true);
+                console.log(`Loaded ${map.size} phone numbers`);
+                return map;
+            }
+            return new Map();
+        } catch (error) {
+            console.error("Error fetching phone numbers:", error);
+            setIsPhoneMapLoaded(true);
+            return new Map();
+        }
+    };
+
+    const filterInvoicesByPhone = (invoices, phoneMapData) => {
+        if (!phoneMapData || phoneMapData.size === 0) {
+            console.log("No phone map data available, showing all invoices");
+            return invoices;
+        }
+
+        const filtered = invoices.filter(invoice => {
+            const retailerId = Number(invoice.Retailer_Id);
+            return phoneMapData.has(retailerId);
+        });
+
+        console.log(`Filtered from ${invoices.length} to ${filtered.length} invoices with phone numbers`);
+        return filtered;
+    };
+
     const fetchAllInvoices = async (refresh = false) => {
         try {
             if (!refresh) {
@@ -252,12 +279,69 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             setViewMode('normal');
 
             const data = await fetchLink({
-                address: `sales/salesInvoice/lrReport?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
+                address: `sales/salesInvoice/lrReportWhatsapp?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`,
                 loadingOn,
                 loadingOff,
             });
 
             const invoices = toArray(data.data);
+            setAllInvoices(invoices); // Store all invoices
+
+            // Process invoices
+            const processedInvoices = invoices.map(invoice => {
+                if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
+                    const processedStockDetails = invoice.stockDetails.map(item => ({
+                        ...item,
+                        Alt_Act_Qty: calculateAltActQty(item)
+                    }));
+
+                    return {
+                        ...invoice,
+                        stockDetails: processedStockDetails
+                    };
+                }
+                return invoice;
+            });
+
+            // Only filter if phone map is loaded, otherwise store unfiltered
+            if (isPhoneMapLoaded) {
+                const filteredInvoices = filterInvoicesByPhone(processedInvoices, phoneMap);
+                setSalesInvoices(filteredInvoices);
+            } else {
+                // Don't set salesInvoices yet - wait for phone map
+                setAllInvoices(processedInvoices);
+            }
+
+            setCostTypes(toArray(data?.others?.costTypes));
+            setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+
+            if (!hasInitialLoading) {
+                setHasInitialLoading(true);
+            }
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+            toast.error("Failed to load invoices");
+        } finally {
+            if (!refresh) {
+                setIsLoading(false);
+            }
+            setIsRefreshing(false);
+        }
+    };
+
+    const fetchPendingInvoices = async () => {
+        try {
+            setIsLoading(true);
+            setViewMode('pending');
+
+            const data = await fetchLink({
+                address: `sales/salesInvoice/pendingDetails?reqDate=${filters.reqDate}`,
+                loadingOn,
+                loadingOff,
+            });
+
+            const invoices = toArray(data.data);
+            setAllInvoices(invoices); // Store all invoices
 
             const processedInvoices = invoices.map(invoice => {
                 if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
@@ -274,19 +358,26 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 return invoice;
             });
 
-            setSalesInvoices(processedInvoices);
-            setCostTypes(toArray(data?.others?.costTypes));
-            setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
+            // Only filter if phone map is loaded, otherwise store unfiltered
+            if (isPhoneMapLoaded) {
+                const filteredInvoices = filterInvoicesByPhone(processedInvoices, phoneMap);
+                setSalesInvoices(filteredInvoices);
+            } else {
+                // Don't set salesInvoices yet - wait for phone map
+                setAllInvoices(processedInvoices);
+            }
 
-            if (!hasInitialLoading) {
-                setHasInitialLoading(true);
+            if (data?.others?.costTypes) {
+                setCostTypes(toArray(data?.others?.costTypes));
+            }
+            if (data?.others?.uniqeInvolvedStaffs) {
+                setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
             }
         } catch (error) {
-            console.error("Error fetching invoices:", error);
-            toast.error("Failed to load invoices");
+            console.error("Error fetching pending invoices:", error);
+            toast.error("Failed to load pending invoices");
         } finally {
             setIsLoading(false);
-            setIsRefreshing(false);
         }
     };
 
@@ -308,10 +399,8 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 if (templatesData.length > 0) {
                     setTemplates(templatesData);
 
-
                     templatesData.forEach(template => {
                         const name = template.templateName || template.name || '';
-
                         if (name.includes('template_text')) {
                             setSelectedTemplate(name);
                         }
@@ -327,62 +416,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
-
-    const fetchPendingInvoices = async () => {
-        try {
-            setIsLoading(true);
-            setViewMode('pending');
-
-            const data = await fetchLink({
-                address: `sales/salesInvoice/pendingDetails?reqDate=${filters.reqDate}`,
-                loadingOn,
-                loadingOff,
-            });
-
-            const invoices = toArray(data.data);
-
-            const processedInvoices = invoices.map(invoice => {
-                if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
-                    const processedStockDetails = invoice.stockDetails.map(item => ({
-                        ...item,
-                        Alt_Act_Qty: calculateAltActQty(item)
-                    }));
-
-                    return {
-                        ...invoice,
-                        stockDetails: processedStockDetails
-                    };
-                }
-                return invoice;
-            });
-
-            setSalesInvoices(processedInvoices);
-
-            if (data?.others?.costTypes) {
-                setCostTypes(toArray(data?.others?.costTypes));
-            }
-            if (data?.others?.uniqeInvolvedStaffs) {
-                setUniqueInvolvedCost(toArray(data?.others?.uniqeInvolvedStaffs));
-            }
-        } catch (error) {
-            console.error("Error fetching pending invoices:", error);
-            toast.error("Failed to load pending invoices");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const toggleViewMode = async () => {
-        if (viewMode === 'normal') {
-            await fetchPendingInvoices();
-        } else {
-            await fetchAllInvoices(true);
-        }
-    };
-
     const fetchCostCenterData = async () => {
         try {
             const costCenterData = await fetchLink({
@@ -395,15 +428,23 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         }
     };
 
-    // Initial data fetch
+    // Initialize all data in correct order
     useEffect(() => {
-        const fetchInitialData = async () => {
+        const initializeData = async () => {
             try {
                 setIsLoading(true);
-                await Promise.all([
-                    fetchAllInvoices(),
-                    fetchCostCenterData()
-                ]);
+                
+                // Step 1: Fetch phone map first
+                const map = await fetchPhoneMap();
+                
+                // Step 2: Fetch invoices
+                await fetchAllInvoices();
+                
+                // Step 3: Fetch other data
+                await fetchCostCenterData();
+                
+                // Step 4: Mark as fully loaded
+                setInitialDataLoaded(true);
             } catch (error) {
                 console.error("Error fetching initial data:", error);
                 toast.error("Failed to load initial data");
@@ -412,29 +453,43 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             }
         };
 
-        fetchInitialData();
-    }, []); // Empty dependency array for initial load only
+        initializeData();
+        fetchTemplates();
+    }, []); // Empty dependency array - only run once on mount
 
-    // Fetch normal invoices when trigger or staffStatus changes, but only in normal mode
+    // Apply phone filter when both invoices and phone map are ready
     useEffect(() => {
-        if (viewMode === 'normal') {
-            fetchAllInvoices(true);
-        }
-    }, [filters.fetchTrigger, filters.staffStatus, viewMode]);
+        if (isPhoneMapLoaded && allInvoices.length > 0 && !initialDataLoaded) {
+            // This runs when phone map loads after invoices were fetched
+            const processedInvoices = allInvoices.map(invoice => {
+                if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
+                    const processedStockDetails = invoice.stockDetails.map(item => ({
+                        ...item,
+                        Alt_Act_Qty: calculateAltActQty(item)
+                    }));
+                    return {
+                        ...invoice,
+                        stockDetails: processedStockDetails
+                    };
+                }
+                return invoice;
+            });
 
-    // Fetch normal invoices when date changes, but only in normal mode
-    useEffect(() => {
-        if (viewMode === 'normal' && hasInitialLoading) {
-            fetchAllInvoices(true);
+            const filteredInvoices = filterInvoicesByPhone(processedInvoices, phoneMap);
+            setSalesInvoices(filteredInvoices);
         }
-    }, [filters.reqDate, viewMode, hasInitialLoading]);
+    }, [isPhoneMapLoaded, allInvoices, initialDataLoaded]);
 
-    // Fetch pending invoices when date changes, but only in pending mode
+    // Separate effect for filter-based fetches
     useEffect(() => {
-        if (viewMode === 'pending' && hasInitialLoading) {
-            fetchPendingInvoices();
+        if (initialDataLoaded) {
+            if (viewMode === 'normal') {
+                fetchAllInvoices(true);
+            } else if (viewMode === 'pending') {
+                fetchPendingInvoices();
+            }
         }
-    }, [filters.reqDate, viewMode, hasInitialLoading]);
+    }, [filters.fetchTrigger, filters.staffStatus, filters.reqDate, viewMode, initialDataLoaded]);
 
     useEffect(() => {
         if (multiPrint.open) {
@@ -510,7 +565,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             });
 
             return response;
-
         } catch (error) {
             console.error('Error generating PDF:', error);
             throw error;
@@ -569,7 +623,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             });
 
             const pdfData = await generateAndStorePDF(order);
-            const recipientPhone = await getRecipientPhone(order);
+            
+            // Get phone from map
+            const retailerId = Number(order?.Retailer_Id);
+            const recipientPhone = phoneMap.get(retailerId) || order?.A1 || order?.Customer_Phone;
 
             if (!recipientPhone) {
                 showSnackbar('Customer phone number not found', 'error');
@@ -582,6 +639,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 order: {
                     ...order,
                     recipientPhone,
+                    A1: recipientPhone,
                     generatedPdfUrl: pdfData.pdfUrl,
                     pdfToken: pdfData.token,
                     pdfFileName: pdfData.fileName
@@ -612,7 +670,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             } catch (testError) {
                 console.warn('PDF URL test warning:', testError.message);
             }
-            //  const data=downloadInvoicePDF(invoiceNo);
 
             const payload = {
                 template: {
@@ -620,12 +677,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     language: "en"
                 },
                 source: "crm",
-                // wabaNumber: "919944888054",
                 wabaNumber: Dot_Pe_Number,
                 recipients: [`91${order.recipientPhone}`],
                 clientRefId: `invoice_${invoiceNo.replace(/\//g, '_')}_${Date.now()}`,
                 params: {
-                    // header: `http://192.168.1.39:9001/uploads/invoices/1/${invoiceNo}.pdf`, 
                     body: [
                         `${customerName}`,
                         `${invoiceNo}`,
@@ -646,7 +701,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 console.error('WhatsApp API error:', response);
                 throw new Error(response?.message || 'Failed to send message');
             }
-
         } catch (error) {
             console.error('Error sending WhatsApp:', error);
             showSnackbar(`Failed to send message: ${error.message}`, 'error');
@@ -656,7 +710,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const renderWhatsAppDialogContent = () => {
         const { order, method } = whatsappDialog;
-
+        const phoneNumber = order?.A1 || order?.recipientPhone || order?.Customer_Phone || 'Not available';
         return (
             <Box>
                 <Box mb={2}>
@@ -667,7 +721,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         Customer: <strong>{order?.retailerNameGet}</strong>
                     </Typography>
                     <Typography variant="subtitle2" color="textSecondary">
-                        Phone: <strong>{order?.Party_Mobile_1 || order?.recipientPhone}</strong>
+                        Phone: <strong>{order?.recipientPhone || order?.A1 || '-'}</strong>
                     </Typography>
                     <Typography variant="subtitle2" color="textSecondary">
                         Amount: <strong>₹{NumberFormat(order?.Total_Invoice_value)}</strong>
@@ -676,10 +730,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* PDF Generation Status */}
                 {pdfGeneration.loading && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-                        {/* <CircularProgress size={20} /> */}
+                        <CircularProgress size={20} />
                         <Typography variant="body2">
                             Generating PDF document...
                         </Typography>
@@ -714,7 +767,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                 Secure URL generated with token
                             </Typography>
 
-
                             <Button
                                 size="small"
                                 variant="outlined"
@@ -745,9 +797,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             label={
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <span>Send PDF Download Link</span>
-                                    {/* {pdfGeneration.pdfUrl && (
-                                    // <CheckCircle fontSize="small" color="success" />
-                                )} */}
                                 </Box>
                             }
                             disabled={!pdfGeneration.pdfUrl && !pdfGeneration.loading}
@@ -875,7 +924,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     Number(item.Ret_Id) === Number(order?.Retailer_Id)
                 );
 
-                return retailerData?.Party_Mobile_1 || order.Customer_Phone;
+                return retailerData?.A1 || order?.A1;
             }
             return order.Customer_Phone;
         } catch (error) {
@@ -954,8 +1003,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     const filterColumns = useMemo(() => [...columns, ...costTypeColumns], [columns, costTypeColumns]);
 
-    // const fetchSalesInvoices = () => setFilters((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
-
     const onCloseAssignDialog = () =>
         setFilters((prev) => ({ ...prev, assignDialog: false, selectedInvoice: null }));
 
@@ -970,12 +1017,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         setMultipleStaffRemoveValues(multipleStaffRemoveInitialValues);
         setFilters((prev) => ({ ...prev, multipleStaffRemoveDialog: false }));
     };
-
-    const onClosePrintDialog = () => setPrintInvoice((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
-
-    const onCloseKatchathDialog = () => setKatchathCopyPrint((prev) => ({ Do_Id: null, open: false }));
-
-    const onCloseDeliverySlipDialog = () => setDeliverySlipPrint((prev) => ({ Do_Id: null, Do_Date: null, open: false }));
 
     const onChangeEmployee = (invoice, selectedOptions, costType) => {
         setFilters((prev) => {
@@ -1067,7 +1108,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 const mainRow = {
                     'S.No': index + 1,
                     'Invoice No': invoice.Do_Inv_No || '',
-                    'Created': invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : '', 
+                    'Created': convertToISTShort(invoice.createdOn),
                     'Voucher Type': invoice.voucherTypeGet || '',
                     'Customer': invoice.retailerNameGet || '',
                     'Bill Qty': invoice.stockDetails ?
@@ -1077,7 +1118,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     'Narration': invoice.Narration || '',
                     'Total Amount': invoice.Total_Invoice_value || 0,
                     'Delivery Status': invoice.Delivery_Status || '',
+                    'Phone Number': phoneMap.get(Number(invoice.Retailer_Id)) || 'Not Available'
                 };
+                
                 costTypes
                     .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
                     .forEach(costType => {
@@ -1140,7 +1183,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     index + 1, // S.No
                     invoice.Do_Inv_No || 'N/A',
                     invoice.Do_Date ? invoice.Do_Date.split('T')[0] : '',
-                    invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : '', 
+                    invoice.createdOn || '',
                     invoice.voucherTypeGet || '',
                     invoice.retailerNameGet || '',
                     invoice.Retailer_GSTIN || '',
@@ -1151,8 +1194,10 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         invoice.stockDetails.reduce((sum, item) => sum + (Number(item.Alt_Act_Qty) || 0), 0) : 0,
                     invoice.Narration || '',
                     invoice.Delivery_Status || '',
+                    phoneMap.get(Number(invoice.Retailer_Id)) || 'No Phone'
                 ];
-                // Add cost type columns
+                
+       
                 costTypes
                     .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
                     .forEach(costType => {
@@ -1163,7 +1208,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 tableData.push(row);
             });
 
-            // Define table columns
+           
             const tableColumns = [
                 "S.No",
                 "Invoice No",
@@ -1177,26 +1222,28 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 "Alt Act Qty",
                 "Narration",
                 "Delivery Status",
+                "Phone Number",
                 ...costTypes
                     .filter((costType) => uniqueInvolvedCost.includes(toNumber(costType.Cost_Category_Id)))
                     .map(costType => costType.Cost_Category)
             ];
 
-            // Add title
+           
             doc.setFontSize(16);
             doc.setTextColor(40, 40, 40);
             doc.text(`Invoices Report - ${viewMode === 'pending' ? 'Pending' : 'Sales'}`, 14, 15);
 
-            // Add generation date and summary
+           
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
             doc.text(`Generated on: ${new Date().toLocaleString()}`, 280, 10, { align: 'right' });
             doc.text(`Total Invoices: ${selectedIds.length}`, 14, 22);
             doc.text(`Date Range: ${filters.reqDate}`, 14, 27);
+            doc.text(`Filtered: Only showing customers with phone numbers`, 14, 32);
 
             // Generate the table
             doc.autoTable({
-                startY: 32,
+                startY: 37,
                 head: [tableColumns],
                 body: tableData,
                 theme: 'grid',
@@ -1216,7 +1263,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     0: { cellWidth: 10 }, // S.No
                     1: { cellWidth: 25 }, // Invoice No
                     2: { cellWidth: 20 }, // Invoice Date
-                    3: { cellWidth: 25 }, // Created On
+                    3: { cellWidth: 20 }, // Created On
                     4: { cellWidth: 15 }, // Voucher Type
                     5: { cellWidth: 30 }, // Customer
                     6: { cellWidth: 25 }, // Customer GST
@@ -1225,6 +1272,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     9: { cellWidth: 15, halign: 'right' }, // Alt Act Qty
                     10: { cellWidth: 25 }, // Narration
                     11: { cellWidth: 15 }, // Delivery Status
+                    12: { cellWidth: 20 }, // Phone Number
                 },
                 margin: { left: 10, right: 10 },
                 didDrawPage: (data) => {
@@ -1638,19 +1686,28 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
         return validDoId && validCostCategory;
     }, [multipleStaffRemoveValues]);
 
-    if (isLoading && !hasInitialLoading) {
-        return (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                    <div className="text-muted">
-                        Loading {viewMode === 'pending' ? 'Pending' : 'Sales'} Invoices...
-                    </div>
-                </Box>
-            </div>
-        );
-    }
+    // Add summary statistics
+    const stats = useMemo(() => {
+        return {
+            totalInvoices: allInvoices.length,
+            filteredInvoices: salesInvoices.length,
+            customersWithPhone: phoneMap.size
+        };
+    }, [allInvoices.length, salesInvoices.length, phoneMap.size]);
 
-    // Add this near your other functions
+    // if (isLoading && !hasInitialLoading) {
+    //     return (
+    //         <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+    //             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+    //                 <CircularProgress />
+    //                 <div className="text-muted">
+    //                     Loading {viewMode === 'pending' ? 'Pending' : 'Sales'} Invoices...
+    //                 </div>
+    //             </Box>
+    //         </div>
+    //     );
+    // }
+
     const refreshData = () => {
         if (viewMode === 'pending') {
             fetchPendingInvoices();
@@ -1661,8 +1718,11 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     return (
         <>
+   
+            
+
             <FilterableTable
-                title={viewMode === 'pending' ? "Pending Invoices" : "Sales Invoice"}
+                title={viewMode === 'pending' ? "Pending Invoices (with Phone Numbers)" : "Sales Invoice (with Phone Numbers)"}
                 columns={[
                     {
                         Field_Name: "Select",
@@ -1703,7 +1763,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     },
                     createCol("Do_Inv_No", "string", "Invoice"),
                     {
-                        Field_Name: "",
+                        Field_Name: "Created",
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {
@@ -1712,6 +1772,20 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     },
                     createCol("voucherTypeGet", "string", "Voucher"),
                     createCol("retailerNameGet", "string", "Customer"),
+                    {
+                        Field_Name: "PhoneNumber",
+                        ColumnHeader: "Phone",
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const phone = phoneMap.get(Number(row.Retailer_Id));
+                            return (
+                                <span style={{ color: phone ? 'green' : 'red' }}>
+                                    {phone || 'No Phone'}
+                                </span>
+                            );
+                        },
+                    },
                     {
                         Field_Name: "BillQty",
                         isVisible: 1,
@@ -1737,60 +1811,95 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             ))
                     },
                     createCol("Narration", "string", "Narration"),
-                    ...costTypeColumns,
                     createCol("Delivery_Status", "string", "Delivery_Status"),
-                    {
-                        Field_Name: "Action",
-                        isVisible: 1,
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-                            return (
-                                <ButtonActions
-                                    buttonsData={[
-                                        {
-                                            name: "Add Employee",
-                                            onclick: () => setFilters((prev) => ({ ...prev, assignDialog: true, selectedInvoice: row })),
-                                            icon: <PersonAdd fontSize="small" color="primary" />,
-                                            disabled: !AddRights && !EditRights,
-                                        },
-                                        {
-                                            name: "Print Invoice",
-                                            onclick: () => {
-                                                setPrintInvoice({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true })
-                                            },
-                                            icon: <Print fontSize="small" color="primary" />,
-                                            disabled: !PrintRights,
-                                        },
-                                        {
-                                            name: "Delivery Slip",
-                                            onclick: () => {
-                                                setDeliverySlipPrint({ Do_Id: row.Do_Id, Do_Date: row.Do_Date, open: true })
-                                            },
-                                            icon: <Print fontSize="small" color="primary" />,
-                                            disabled: !PrintRights,
-                                        },
-                                        {
-                                            name: "Katchath Copy",
-                                            onclick: () => {
-                                                setKatchathCopyPrint({ Do_Id: row.Do_Id, open: true })
-                                            },
-                                            icon: <Print fontSize="small" color="primary" />,
-                                            disabled: !PrintRights,
-                                        },
-                                        // {
-                                        //     name: "Send WhatsApp",
-                                        //     onclick: () => {
+                   {
+    Field_Name: "Action",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) => {
+        const hasPhone = phoneMap.has(Number(row.Retailer_Id));
+        const [sendingState, setSendingState] = useState({ loading: false, invoiceId: null });
+        
+        const handleDirectWhatsApp = async () => {
+            try {
+                setSendingState({ loading: true, invoiceId: row.Do_Id });
+                
+                const retailerId = Number(row?.Retailer_Id);
+                const recipientPhone = phoneMap.get(retailerId) || row?.A1 || row?.Customer_Phone;
 
-                                        //         handleWhatsAppClick(row);
-                                        //     },
-                                        //     icon: <WhatsAppIcon fontSize="small" color="success" />,
-                                        //     disabled: false,
-                                        // }
-                                    ]}
-                                />
-                            )
-                        }
+                if (!recipientPhone) {
+                    toast.error('Customer phone number not found');
+                    setSendingState({ loading: false, invoiceId: null });
+                    return;
+                }
+
+                const pdfData = await generateAndStorePDF(row);
+                
+                const pdfUrl = getPDFUrlSimple(row);
+                
+                const invoiceNo = row.Do_Inv_No || 'N/A';
+                const customerName = row.retailerNameGet || row.Retailer_Name || 'Customer';
+                const formattedDate = new Date(row.Do_Date || row.createdOn).toLocaleDateString('en-GB');
+                const totalAmount = (row.Total_Invoice_value || 0).toFixed(2);
+
+                const payload = {
+                    template: {
+                        name: "template_text", 
+                        language: "en"
                     },
+                    source: "crm",
+                    wabaNumber: Dot_Pe_Number,
+                    recipients: [`91${recipientPhone}`],
+                    clientRefId: `invoice_${invoiceNo.replace(/\//g, '_')}_${Date.now()}`,
+                    params: {
+                        body: [
+                            `${customerName}`,
+                            `${invoiceNo}`,
+                            `${formattedDate}`,
+                            `${totalAmount}`,
+                            'SM TRADERS',
+                            `${pdfUrl}`
+                        ]
+                    }
+                };
+
+                const response = await DotPeWhatsAppService.sendTemplateMessage(payload);
+
+                if (response?.status) {
+                    toast.success('WhatsApp message sent successfully!');
+                } else {
+                    throw new Error(response?.message || 'Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error sending WhatsApp:', error);
+                toast.error(`Failed to send message: ${error.message}`);
+            } finally {
+                setSendingState({ loading: false, invoiceId: null });
+            }
+        };
+
+        return (
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <Tooltip title={hasPhone ? "Send WhatsApp (Direct)" : "No phone number available"}>
+                    <span>
+                        <IconButton
+                            size="small"
+                            onClick={handleDirectWhatsApp}
+                            disabled={!hasPhone || sendingState.loading}
+                            color={hasPhone ? "success" : "default"}
+                        >
+                            {sendingState.loading && sendingState.invoiceId === row.Do_Id ? (
+                                <CircularProgress size={20} />
+                            ) : (
+                                <WhatsAppIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </span>
+                </Tooltip>
+            </Box>
+        );
+    }
+}
                 ]}
                 dataArray={filteredData}
                 EnableSerialNumber
@@ -1800,40 +1909,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             <Checkbox
                                 checked={selectAllCheckBox}
                                 onChange={e => setSelectAllCheckBox(e.target.checked)}
+                                disabled={filteredData.length === 0}
                             />
                         </Tooltip>
-
-                        <button
-                            type="button"
-                            className={`btn btn-sm ${viewMode === 'pending' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                            onClick={toggleViewMode}
-                            disabled={isRefreshing}
-                            style={{
-                                marginRight: '8px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            <HourglassEmpty fontSize="small" style={{ marginRight: '4px' }} />
-                            {viewMode === 'pending' ? "New Invoices" : "Pending Invoice"}
-                        </button>
-
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
-                            disabled={!multipleCostCenterUpdateValues.Do_Id.length}
-                        >
-                            <PersonAdd fontSize="small" />
-                        </IconButton>
-
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters((prev) => ({ ...prev, multipleStaffRemoveDialog: true }))}
-                            disabled={!multipleStaffRemoveValues.Do_Id.length}
-                        >
-                            <PersonRemoveIcon fontSize="small" />
-                        </IconButton>
 
                         <IconButton
                             size="small"
@@ -1845,16 +1923,14 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
                         <IconButton
                             size="small"
-                            onClick={() => {
-                                refreshData(); // Use the refresh function
-                            }}
+                            onClick={refreshData}
                             disabled={isRefreshing}
                         >
                             <Search />
                         </IconButton>
+
                         {viewMode === 'pending' && (
                             <>
-
                                 <div>
                                     <Button
                                         variant="contained"
@@ -1889,7 +1965,6 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             </>
                         )}
 
-                        {/* Date picker - visible in both modes */}
                         <input
                             type="date"
                             className="cus-inpt w-auto"
@@ -1914,141 +1989,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         >
                             <Print />
                         </IconButton>
-
-                        <select
-                            className="cus-inpt w-auto rounded-5 border-0"
-                            disabled={!multipleCostCenterUpdateValues.Do_Id.length}
-                            value={filters.docType}
-                            onChange={(e) => {
-                                const selectedIndex = e.target.selectedIndex;
-                                const selectedText = e.target.options[selectedIndex].text;
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    docType: e.target.value,
-                                    docTypeLabel: selectedText,
-                                }));
-                            }}
-                        >
-                            <option value="">SELECT TYPE</option>
-                            <option value="sales_invoice">SALES INVOICE</option>
-                            <option value="katchath">KATCHATH</option>
-                            <option value="delivery_slip">DELIVERY SLIP</option>
-                        </select>
-
-                        {viewMode === 'normal' && (<select
-                            className="cus-inpt w-auto rounded-5 border-0"
-                            value={filters.staffStatus}
-                            onChange={(e) => {
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    staffStatus: Number(e.target.value)
-                                }));
-                            }}
-                        >
-                            <option value="1">ALL INVOICES</option>
-                            <option value="0">INCOMPLETED INVOICES</option>
-                        </select>)}
-
-                        {viewMode === 'pending' && (
-                            <span className="ms-2 fw-bold text-primary">
-                                Viewing Pending Invoices ({salesInvoices.length} found)
-                            </span>
-                        )}
-
-                        {multipleCostCenterUpdateValues.Do_Id.length > 0 && (
-                            <div className="d-flex gap-4 mb-0 p-0">
-                                <div>
-                                    <strong>Total Bill Qty:</strong>{" "}
-                                    {selectedTotals.billQty}
-                                </div>
-                                <div>
-                                    <strong>Total Alt Act Qty:</strong>{" "}
-                                    {selectedTotals.altActQty}
-                                </div>
-                            </div>
-                        )}
                     </>
                 }
             />
-
-            {/* Assign dialog */}
-            <Dialog open={filters.assignDialog} onClose={onCloseAssignDialog} maxWidth="lg" fullWidth>
-                <DialogTitle>
-                    Assign Cost Centers: <span className="text-primary">{filters.selectedInvoice?.Do_Inv_No}</span>
-                </DialogTitle>
-                <form onSubmit={postAssignCostCenters}>
-                    <DialogContent>
-                        <div className="row">
-                            {costTypes
-                                .filter(
-                                    (costType) =>
-                                        !["Broker", "Transport"].some((keyword) => String(costType?.Cost_Category).includes(keyword))
-                                )
-                                .map((costType, index) => {
-                                    const invoiceEmployee = toArray(filters.selectedInvoice?.involvedStaffs);
-                                    const empCostType = invoiceEmployee
-                                        .filter((emp) => isEqualNumber(emp.Emp_Type_Id, costType.Cost_Category_Id))
-                                        .map((emp) => ({ value: emp.Emp_Id, label: emp.Emp_Name }));
-
-                                    return (
-                                        <div className="col-lg-4 col-md-6 p-2" key={index}>
-                                            <label>{costType.Cost_Category}</label>
-                                            <Select
-                                                value={empCostType}
-                                                isMulti
-                                                styles={customSelectStyles}
-                                                options={costCenterData}
-                                                onChange={(e) => {
-                                                    const values = e.map((option) => ({
-                                                        Do_Id: filters?.selectedInvoice?.Do_Id,
-                                                        Emp_Id: option.value,
-                                                        Emp_Name: option.label,
-                                                        Emp_Type_Id: costType.Cost_Category_Id,
-                                                        Involved_Emp_Type: costType.Cost_Category,
-                                                    }));
-                                                    onChangeEmployee(filters.selectedInvoice, values, costType);
-                                                }}
-                                                placeholder={`Select ${costType.Cost_Category}`}
-                                                filterOption={reactSelectFilterLogic}
-                                                menuPortalTarget={document.body}
-                                            />
-                                        </div>
-                                    );
-                                })}
-
-                            <div className="col-lg-4 col-md-6 p-2 d-flex align-items-end">
-                                <input
-                                    className="form-check-input shadow-none pointer mx-2"
-                                    style={{ padding: "0.7em" }}
-                                    type="checkbox"
-                                    id="removeFromList"
-                                    checked={isEqualNumber(filters.selectedInvoice?.staffInvolvedStatus, 1)}
-                                    onChange={() => {
-                                        setFilters((pre) => ({
-                                            ...pre,
-                                            selectedInvoice: {
-                                                ...pre.selectedInvoice,
-                                                staffInvolvedStatus: isEqualNumber(pre.selectedInvoice?.staffInvolvedStatus, 1) ? 0 : 1,
-                                            },
-                                        }));
-                                    }}
-                                />
-                                <label htmlFor="removeFromList" className="fw-bold">
-                                    Remove invoice from this page
-                                </label>
-                            </div>
-                        </div>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={onCloseAssignDialog} variant="outlined">
-                            Close
-                        </Button>
-                        <Button variant="contained" type="submit">
-                            Save
-                        </Button>
-                    </DialogActions>
-                </form>
-            </Dialog>
 
             {/* Filter dialog */}
             <Dialog open={filters.filterDialog} onClose={onCloseFilterDialog} maxWidth="sm" fullWidth>
@@ -2069,297 +2012,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                 </DialogActions>
             </Dialog>
 
-            {/* Multiple update dialog */}
             <Dialog
-                open={filters.multipleStaffUpdateDialog}
-                onClose={onCloseMultipleUpdateCostCategoryDialog}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Update Cost Category</DialogTitle>
-                <DialogContent>
-                    <div className="py-2">
-                        <label>Cost Category</label>
-                        <Select
-                            value={multipleCostCenterUpdateValues.CostCategory}
-                            styles={customSelectStyles}
-                            options={costTypes
-                                .filter(
-                                    (costType) =>
-                                        !["Broker", "Transport"].some((keyword) => String(costType?.Cost_Category).includes(keyword))
-                                )
-                                .map((costType) => ({
-                                    value: costType.Cost_Category_Id,
-                                    label: costType.Cost_Category,
-                                }))}
-                            onChange={(e) => setMultipleCostCenterUpdateValues((prev) => ({ ...prev, CostCategory: e }))}
-                            placeholder="Select Cost Category"
-                            filterOption={reactSelectFilterLogic}
-                            menuPortalTarget={document.body}
-                        />
-                    </div>
-
-                    <div className="py-2">
-                        <label>Staff</label>
-                        <Select
-                            value={multipleCostCenterUpdateValues.involvedStaffs}
-                            isMulti
-                            styles={customSelectStyles}
-                            options={costCenterData}
-                            onChange={(e) => setMultipleCostCenterUpdateValues((prev) => ({ ...prev, involvedStaffs: e }))}
-                            placeholder="Select Staff"
-                            filterOption={reactSelectFilterLogic}
-                            menuPortalTarget={document.body}
-                            closeMenuOnSelect={false}
-                        />
-                    </div>
-
-                    <div className="py-2">
-                        <label>Delivery Status</label>
-                        <select
-                            className="cus-inpt p-1"
-                            onChange={e => setMultipleCostCenterUpdateValues(pre => ({ ...pre, deliveryStatus: e.target.value }))}
-                            value={multipleCostCenterUpdateValues.deliveryStatus}
-                        >
-                            <option value={5}>Pending</option>
-                            <option value={7}>Delivered</option>
-                            <option value={6}>Return</option>
-                             <option value={4}>Canceled</option>
-                        </select>
-                    </div>
-
-                    <div className="py-2">
-                        <input
-                            className="form-check-input shadow-none pointer mx-2"
-                            style={{ padding: "0.7em" }}
-                            type="checkbox"
-                            id="removeFromList"
-                            checked={isEqualNumber(multipleCostCenterUpdateValues.staffInvolvedStatus, 1)}
-                            onChange={() => {
-                                setMultipleCostCenterUpdateValues((pre) => ({
-                                    ...pre,
-                                    staffInvolvedStatus: isEqualNumber(pre.staffInvolvedStatus, 1) ? 0 : 1,
-                                }));
-                            }}
-                        />
-                        <label htmlFor="removeFromList" className="fw-bold">
-                            Remove invoice from this page
-                        </label>
-                    </div>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={onCloseMultipleUpdateCostCategoryDialog} variant="outlined">
-                        Close
-                    </Button>
-                    <Button variant="contained" onClick={postMultipleCostCenterUpdate} disabled={!saveMultipleInvoiceValidation}>
-                        Save
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* bill print dialog */}
-            <Dialog
-                open={printInvoice.open}
-                onClose={onClosePrintDialog}
-                maxWidth="lg"
-                fullWidth
-            >
-                <DialogTitle>Bill Print Preview</DialogTitle>
-                <DialogContent>
-                    <InvoiceTemplate
-                        Do_Id={printInvoice.Do_Id}
-                        Do_Date={printInvoice.Do_Date}
-                        loadingOn={loadingOn}
-                        loadingOff={loadingOff}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button variant="outlined" onClick={onClosePrintDialog}>Close</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* katchathCopyPrint */}
-            <Dialog
-                open={katchathCopyPrint.open}
-                onClose={onCloseKatchathDialog}
-                maxWidth="lg"
-                fullWidth
-            >
-                <DialogTitle>Bill Print Preview</DialogTitle>
-                <DialogContent>
-                    <KatchathCopy
-                        Do_Id={katchathCopyPrint.Do_Id}
-                        loadingOn={loadingOn}
-                        loadingOff={loadingOff}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button variant="outlined" onClick={onCloseKatchathDialog}>Close</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* delivery slip dialog */}
-            <Dialog
-                open={deliverySlipPrint.open}
-                onClose={onCloseDeliverySlipDialog}
-                maxWidth="lg"
-                fullWidth
-            >
-                <DialogTitle>Delivery Slip Preview</DialogTitle>
-                <DialogContent>
-                    <DeliverysSlipPrint
-                        Do_Id={deliverySlipPrint.Do_Id}
-                        loadingOn={loadingOn}
-                        loadingOff={loadingOff}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button variant="outlined" onClick={onCloseDeliverySlipDialog}>Close</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Multiple Staff Remove Dialog */}
-            <Dialog
-                open={filters.multipleStaffRemoveDialog}
-                onClose={onCloseMultipleStaffRemoveDialog}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Remove Staff from Cost Category</DialogTitle>
-                <DialogContent>
-                    <div className="py-2">
-                        <label>Cost Category to Remove</label>
-                        <Select
-                            value={multipleStaffRemoveValues.CostCategory}
-                            styles={customSelectStyles}
-                            options={costTypes
-                                .filter(
-                                    (costType) =>
-                                        !["Broker", "Transport"].some((keyword) => String(costType?.Cost_Category).includes(keyword))
-                                )
-                                .map((costType) => ({
-                                    value: costType.Cost_Category_Id,
-                                    label: costType.Cost_Category,
-                                }))}
-                            onChange={(e) => setMultipleStaffRemoveValues((prev) => ({ ...prev, CostCategory: e }))}
-                            placeholder="Select Cost Category to Remove"
-                            filterOption={reactSelectFilterLogic}
-                            menuPortalTarget={document.body}
-                        />
-                    </div>
-
-                    <div className="py-2">
-                        <label>Delivery Status</label>
-                        <select
-                            className="cus-inpt p-1"
-                            onChange={e => setMultipleStaffRemoveValues(pre => ({ ...pre, deliveryStatus: e.target.value }))}
-                            value={multipleStaffRemoveValues.deliveryStatus}
-                        >
-                            <option value={5}>Pending</option>
-                            <option value={7}>Delivered</option>
-                            <option value={6}>Return</option>
-                            <option value={4}>Canceled</option>
-                        </select>
-                    </div>
-
-                    <div className="py-2">
-                        <input
-                            className="form-check-input shadow-none pointer mx-2"
-                            style={{ padding: "0.7em" }}
-                            type="checkbox"
-                            id="removeFromListRemove"
-                            checked={isEqualNumber(multipleStaffRemoveValues.staffInvolvedStatus, 1)}
-                            onChange={() => {
-                                setMultipleStaffRemoveValues((pre) => ({
-                                    ...pre,
-                                    staffInvolvedStatus: isEqualNumber(pre.staffInvolvedStatus, 1) ? 0 : 1,
-                                }));
-                            }}
-                        />
-                        <label htmlFor="removeFromListRemove" className="fw-bold">
-                            Remove invoice from this page
-                        </label>
-                    </div>
-
-                    <div className="py-2 text-muted">
-                        <small>
-                            This will remove all staff members of the selected Cost Category from {multipleStaffRemoveValues.Do_Id.length} selected invoices.
-                        </small>
-                    </div>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={onCloseMultipleStaffRemoveDialog} variant="outlined">
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={postMultipleStaffRemove}
-                        disabled={!removeMultipleInvoiceValidation}
-                    >
-                        Remove Staff
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Multiple print dialog */}
-            <Dialog
-                open={multiPrint.open}
-                onClose={() => setMultiPrint({ open: false, doIds: [], docType: "" })}
-                maxWidth="lg"
-                fullWidth
-            >
-                <DialogContent dividers>
-                    <div ref={multiPrintRef}>
-                        {multiPrint.docType === "sales_invoice" && (
-                            <InvoiceTemplate
-                                Do_Ids={multiPrint.doIds}
-                                loadingOn={loadingOn}
-                                loadingOff={loadingOff}
-                                isCombinedPrint={true}
-                            />
-                        )}
-
-                        {multiPrint.docType === "katchath" && (
-                            <KatchathCopy
-                                Do_Ids={multiPrint.doIds}
-                                loadingOn={loadingOn}
-                                loadingOff={loadingOff}
-                                isCombinedPrint={true}
-                            />
-                        )}
-
-                        {multiPrint.docType === "delivery_slip" && (
-                            <DeliverysSlipPrint
-                                Do_Ids={multiPrint.doIds}
-                                loadingOn={loadingOn}
-                                loadingOff={loadingOff}
-                                isCombinedPrint={true}
-                            />
-                        )}
-                    </div>
-                </DialogContent>
-
-                <DialogActions className="no-print">
-                    <Button
-                        variant="contained"
-                        onClick={() => { handleMultiPrint() }}
-                        startIcon={<Print />}
-                    >
-                        Print All
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        onClick={() =>
-                            setMultiPrint({ open: false, doIds: [], docType: "" })
-                        }
-                    >
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* <Dialog
                 open={whatsappDialog.open}
                 onClose={closeWhatsAppDialog}
                 maxWidth="sm"
@@ -2383,13 +2036,14 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                         startIcon={<WhatsAppIcon />}
                         disabled={
                             whatsappDialog.loading ||
-                            (whatsappDialog.method === 'template' && !selectedTemplate)
+                            (whatsappDialog.method === 'template' && !selectedTemplate) ||
+                            !whatsappDialog.order?.recipientPhone
                         }
                     >
                         {whatsappDialog.loading ? 'Sending...' : 'Send WhatsApp'}
                     </Button>
                 </DialogActions>
-            </Dialog> */}
+            </Dialog>
 
             <Snackbar
                 open={snackbar.open}
@@ -2407,4 +2061,4 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
     );
 };
 
-export default SalesInvoiceListLRReport;
+export default Whatsapp;
