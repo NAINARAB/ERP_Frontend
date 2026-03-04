@@ -242,6 +242,8 @@ const ReturnSales = lazy(() => import("./Pages/Reports/returnSales"))
 
 const ProjectSchedule = lazy(() => import("./Pages/Tasks/projectSchedules"))
 
+const Whatsapp = lazy(() => import('./Pages/Sales/SaleOrder/Whatsapp'));
+
 const RoutingArray = [
     { component: <ProjectSchedule />, path: '/taskManagement/master/projectSchedules' },
 
@@ -477,6 +479,7 @@ const RoutingArray = [
     { component: <SalesDelivery />, path: '/erp/sales/salesDelivery' },
 
        { component: <SalesPendingDetails />, path: '/erp/Sales/SalesPendingDetails' },
+           {component:<Whatsapp/>,path:'/erp/Sales/Whatsapp'}
 ];
 
 export default RoutingArray

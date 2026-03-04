@@ -387,7 +387,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                         style={getInlineStyles()}
                         className="print-container"
                     >
-                        <h3 className='text-center mb-2'>{TitleText ?? 'Invoice Details'}</h3>
+                        <h3 className='text-center mb-2'>{'TAX INVOICE'}</h3>
 
                         {/* General Info */}
                      <div className="row">
