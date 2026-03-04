@@ -13,7 +13,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ fromDate: today, toDate: today, FilterDialog: false });
-  const [accountNo, setAccountNo] = useState('002700150950519');
+  const [accountNo, setAccountNo] = useState('002530350870041');
 
   const fetchBankStatement = async () => {
     try {
