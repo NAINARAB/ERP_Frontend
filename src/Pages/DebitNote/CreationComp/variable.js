@@ -2,14 +2,14 @@ import { getSessionUser, ISOString, toArray, toNumber } from "../../../Component
 
 const storage = getSessionUser()?.user || {};
 
-export const creditNoteGeneralInfo = {
-    CR_Id: '',
-    CR_No: '',
-    CR_Year: '',
-    CR_Inv_No: '',
+export const debitNoteGeneralInfo = {
+    DB_Id: '',
+    DB_No: '',
+    DB_Year: '',
+    DB_Inv_No: '',
 
     Voucher_Type: '',
-    CR_Date: ISOString(),
+    DB_Date: ISOString(),
     Retailer_Id: '',
     Retailer_Name: '',      // for Front-end purpose
     Branch_Id: storage.BranchId || '',
@@ -48,11 +48,11 @@ export const creditNoteGeneralInfo = {
     Alterd_on: '',
 }
 
-export const creditNoteDetailsInfo = {
+export const debitNoteDetailsInfo = {
     rowId: '',
-    CR_St_Id: '',
-    CR_Date: '',
-    CR_Id: '',
+    DB_St_Id: '',
+    DB_Date: '',
+    DB_Id: '',
 
     GoDown_Id: '',
     Godown_Stock: 0,
@@ -93,9 +93,9 @@ export const creditNoteDetailsInfo = {
     Created_on: '',
 }
 
-export const creditNoteExpencesInfo = {
+export const debitNoteExpencesInfo = {
     Id: '',
-    CR_Id: '',
+    DB_Id: '',
     Sno: '',
     Expense_Id: '',
     Cgst: 0,
@@ -107,9 +107,9 @@ export const creditNoteExpencesInfo = {
     Expence_Value: 0
 }
 
-export const creditNoteStaffInfo = {
+export const debitNoteStaffInfo = {
     Id: '',
-    CR_Id: '',
+    DB_Id: '',
     Emp_Id: '',
     Emp_Name: '',       // for Front-end purpose
     Emp_Type_Id: '',
@@ -118,7 +118,17 @@ export const creditNoteStaffInfo = {
 export const defaultStaffTypes = (costTypes = []) => {
     const defaultStaffTypes = ['Broker', 'Others5', 'Others6', 'Transport']
     return toArray(costTypes).filter(staff => defaultStaffTypes.includes(staff?.Cost_Category)).map(staff => ({
-        ...creditNoteStaffInfo,
+        ...debitNoteStaffInfo,
         Emp_Type_Id: staff?.Cost_Category_Id
     }))
+}
+
+export const retailerOutstandingDetails = {
+    outstanding: 0,
+    creditLimit: 0,
+    creditDays: 0,
+    recentDate: new Date(),
+    invoiceCreationStatus: null,
+    forceCreateInvoice: false,
+    dialog: false,
 }
