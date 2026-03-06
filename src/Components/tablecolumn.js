@@ -159,6 +159,8 @@ export const erpModules = [
     { name: 'PAYMENT', alias: 'Payment', moduleCode: 'PAY' },
     { name: 'RECEIPT', alias: 'Receipt', moduleCode: 'REC' },
     { name: 'CONTRA', alias: 'Contra', moduleCode: 'CON' },
+    { name: 'CREDIT_NOTE', alias: 'Credit Note', moduleCode: 'CN' },
+    { name: 'DEBIT_NOTE', alias: 'Debit Note', moduleCode: 'DN' },
 ]
 
 export const additionalModules = [
