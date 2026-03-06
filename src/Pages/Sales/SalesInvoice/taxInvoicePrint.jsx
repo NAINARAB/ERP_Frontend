@@ -33,7 +33,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
     const [processedInvoice, setProcessedInvoice] = useState({});
     const [processedProducts, setProcessedProducts] = useState([]);
 
-    // Fetch invoice data by ID if invoice is just an ID
+   
     useEffect(() => {
         if (!invoice || typeof invoice === 'object') return;
         
@@ -52,7 +52,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
         }).catch(e => console.error(e));
     }, [invoice, loadingOn, loadingOff]);
 
-    // Determine which invoice to use
+
     const getInvoiceData = () => {
         if (apiData) return apiData;
         if (typeof invoice === 'object') return invoice;
@@ -61,7 +61,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
 
     const currentInvoice = getInvoiceData();
 
-    // Fetch company info
+
     useEffect(() => {
         fetchLink({
             address: `masters/company?Company_id=${storage?.Company_id}`
@@ -72,7 +72,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
         }).catch(e => console.error(e));
     }, [storage?.Company_id]);
 
-    // Fetch retailer info
+    
     useEffect(() => {
         if (!currentInvoice?.Retailer_Id) return;
 
@@ -170,14 +170,12 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                 SGST_Total: orderDetails?.SGST_Total,
                 IGST_Total: orderDetails?.IGST_Total,
                 
-                // Shipping details from API response
                 shippingName: currentInvoice?.shippingName || '',
                 shippingDeliveryAddress: currentInvoice?.shippingDeliveryAddress || '',
                 shippingGstNumber: currentInvoice?.shippingGstNumber || '',
                 shippingStateName: currentInvoice?.shippingStateName || '',
                 Mobile_No: currentInvoice?.shippingPhoneNumber || '',
                 
-                // Expense and Staff arrays
                 Expence_Array: currentInvoice?.Expence_Array || [],
                 Staffs_Array: currentInvoice?.Staffs_Array || []
             };
@@ -223,7 +221,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
         }
     }, [useProcessedData, orderDetails, orderProducts, retailerInfo, companyInfo, currentInvoice]);
 
-    // Determine which data to use
+    
     const safeInvoice = useProcessedData ? processedInvoice : 
                        (apiData ? apiData : 
                        (typeof invoice === 'object' ? invoice : {}));
@@ -232,7 +230,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         (apiData?.Products_List ? apiData.Products_List : 
                         (Array.isArray(invoice?.Products_List) ? invoice?.Products_List : []));
 
-    // Calculate totals
+    
     const expenseArray = safeInvoice?.Expence_Array || [];
     const totalExpense = expenseArray.reduce((sum, exp) => {
         const debit = Number(exp?.Expence_Value_DR || 0);
@@ -256,7 +254,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
     const totalSGST = safeProducts.reduce((s, p) => s + (Number(p.Sgst_Amo) || 0), 0);
     const totalIGST = safeProducts.reduce((s, p) => s + (Number(p.Igst_Amo) || 0), 0);
     const totalTax = totalCGST + totalSGST + totalIGST;
-    const invoiceTotal = totalTaxable + totalTax + totalExpense + (Number(safeInvoice?.Round_off) || 0);
+    const invoiceTotal = safeInvoice?.Total_Invoice_value;
     const isIGST = safeInvoice?.IS_IGST === 1;
 
     const hsnMap = new Map();
@@ -339,7 +337,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
 
                 <div style={{ ...borderStyle, marginBottom: '15px' }}>
                     <div style={{ display: 'flex' }}>
-                        {/* Left Column - Company and Address Info */}
+                       
                         <div style={{ width: '50%', ...borderRight, padding: '10px' }}>
                             <div style={{ marginBottom: '10px' }}>
                                 <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
@@ -374,7 +372,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                             </div>
                         </div>
 
-                        {/* Right Column - Invoice Details */}
+                      
                         <div style={{ width: '50%' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
@@ -465,7 +463,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         </div>
                     </div>
 
-                    {/* Products Table */}
+          
                     <div style={{ ...borderStyle, marginBottom: '15px', lineHeight: '1' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -505,7 +503,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                                 )}
                                 
                                 {/* Tax rows */}
-                                {!isIGST && totalCGST > 0 && (
+                                {/* {!isIGST && totalCGST > 0 && (
                                     <tr>
                                         <td style={{ padding: '8px', ...borderRight }}></td>
                                         <td style={{ padding: '8px', ...borderRight }}>CGST</td>
@@ -543,7 +541,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                                         <td style={{ padding: '8px', ...borderRight }}></td>
                                         <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(totalIGST)}</td>
                                     </tr>
-                                )}
+                                )} */}
 
                                 {/* Expense rows */}
                                 {expenseArray.length > 0 &&
@@ -572,7 +570,6 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                                         );
                                     })}
                                 
-                                {/* Total row */}
                                 <tr style={{ ...borderTop, backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>
                                     <td style={{ padding: '8px', ...borderRight }} colSpan="3">Total</td>
                                     <td style={{ padding: '8px', ...borderRight, textAlign: 'right' }}>{totalQty} KG</td>
@@ -586,13 +583,13 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         </table>
                     </div>
 
-                    {/* Amount in words */}
+                   
                     <div style={{ marginBottom: '15px' }}>
                         <strong>Amount Chargeable (in words) E. & O.E</strong><br />
                         <strong>INR {numberToWords(Math.round(invoiceTotal))} Only</strong>
                     </div>
 
-                    {/* Tax Summary Table */}
+                  
                     <div style={{ ...borderStyle, marginBottom: '15px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -600,7 +597,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                                     <th style={{ padding: '8px', ...borderRight, backgroundColor: '#f0f0f0' }} rowSpan="2">HSN/SAC</th>
                                     <th style={{ padding: '8px', ...borderRight, backgroundColor: '#f0f0f0' }} rowSpan="2">Taxable Value</th>
                                     <th style={{ padding: '8px', ...borderRight, backgroundColor: '#f0f0f0' }} colSpan="2">CGST</th>
-                                    <th style={{ padding: '8px', ...borderRight, backgroundColor: '#f0f0f0' }} colSpan="2">{isIGST ? 'IGST' : 'SGST/UTGST'}</th>
+                                    <th style={{ padding: '8px', ...borderRight, backgroundColor: '#f0f0f0' }} colSpan="2">{isIGST ? 'IGST' : 'SGST'}</th>
                                     <th style={{ padding: '8px', backgroundColor: '#f0f0f0' }}>Total Tax Amount</th>
                                 </tr>
                                 <tr style={borderBottom}>
@@ -643,7 +640,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         </table>
                     </div>
 
-                    {/* Bank Details and Tax Amount in words */}
+                   
                     <div style={{}}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ width: '50%' }}>
@@ -659,7 +656,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         </div>
                     </div>
 
-                    {/* Declaration */}
+                  
                     <div style={{ display: 'flex', justifyContent: 'space-between', ...borderStyle, padding: '15px', marginTop: '15px' }}>
                         <div style={{ width: '60%' }}>
                             <strong>Declaration</strong>
@@ -673,7 +670,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                         </div>
                     </div>
 
-                    {/* Footer */}
+                    
                     <div style={{ textAlign: 'center', marginTop: '15px', padding: '8px' }}>
                         <p style={{ margin: '0' }}>This is a Computer Generated Invoice</p>
                     </div>
