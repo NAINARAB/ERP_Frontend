@@ -204,7 +204,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
 
     const saveJournal = useCallback(async () => {
         if (!saveStatus) return;
-        if (stringCompare(journalGeneralInfo.JournalAutoId, '') && stringCompare(journalGeneralInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
+        if (!stringCompare(journalGeneralInfo.JournalAutoId, '') && stringCompare(journalGeneralInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
         const method =
             journalGeneralInfo?.JournalAutoId && checkIsNumber(journalGeneralInfo?.JournalId) ? "PUT" : "POST";
         // const entryLineNums = new Set(

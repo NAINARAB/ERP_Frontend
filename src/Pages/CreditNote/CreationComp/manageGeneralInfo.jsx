@@ -1,12 +1,11 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, getNextDate, getPreviousDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidNumber, reactSelectFilterLogic, stringCompare, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
-import AppDialog from "../../../Components/appDialogComponent";
-import { Button, IconButton } from "@mui/material";
-import { InfoOutlined } from "@mui/icons-material";
+import { IconButton } from "@mui/material";
+import { Sync } from "@mui/icons-material";
 
 const ManageCreditNoteGeneralInfo = ({
     invoiceInfo = {},
@@ -16,14 +15,10 @@ const ManageCreditNoteGeneralInfo = ({
     branches = [],
     stockItemLedgerName = [],
     onChangeRetailer,
-    retailerSalesStatus = {},
-    loadingOn,
-    loadingOff,
+    fetchInvoiceProducts
 }) => {
 
     const inputStyle = 'cus-inpt p-2';
-
-    const [open, setOpen] = useState(false);
 
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
@@ -53,10 +48,26 @@ const ManageCreditNoteGeneralInfo = ({
     }
 
     const onChangeRetailerName = (e) => {
+        const retailerDetails = retailers.find(ret => isEqualNumber(ret.Retailer_Id, e.value)) || {};
+        const {
+            lolDeliveryName = '',
+            lolPhoneNumber = '',
+            lolCityName = '',
+            lolDeliveryAddress = '',
+            lolGstNumber = '',
+            lolStateName = ''
+        } = retailerDetails;
+
         setInvoiceInfo(pre => ({
             ...pre,
             Retailer_Id: e.value,
             Retailer_Name: e.label,
+            Mailing_Name: lolDeliveryName,
+            Mailing_Address: lolDeliveryAddress,
+            Mailing_Phone: lolPhoneNumber,
+            Mailing_City: lolCityName,
+            Mailing_GST: lolGstNumber,
+            Mailing_State: lolStateName
         }));
         if (onChangeRetailer) onChangeRetailer();
     }
@@ -96,10 +107,6 @@ const ManageCreditNoteGeneralInfo = ({
                                                     filterOption={reactSelectFilterLogic}
                                                 />
                                             </div>
-                                            <IconButton
-                                                onClick={() => setOpen(true)}
-                                                disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
-                                            ><InfoOutlined /></IconButton>
                                         </div>
                                     </div>
 
@@ -210,16 +217,6 @@ const ManageCreditNoteGeneralInfo = ({
                                         />
                                     </div>
 
-                                    {/* Original Invoice ref */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Original Invoice No</label>
-                                        <input
-                                            value={invoiceInfo?.Ref_Inv_Number}
-                                            className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Number: String(e.target.value).trim() }))}
-                                        />
-                                    </div>
-
                                     {/* Original Invoice Date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Original Invoice Date</label>
@@ -267,6 +264,19 @@ const ManageCreditNoteGeneralInfo = ({
                                             onChange={e => setInvoiceInfo(pre => ({ ...pre, Narration: e.target.value }))}
                                             placeholder='Notes...'
                                         />
+                                    </div>
+
+                                    {/* Original Invoice ref */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Original Invoice No</label>
+                                        <div className="d-flex">
+                                            <input
+                                                value={invoiceInfo?.Ref_Inv_Number}
+                                                className={inputStyle + ' flex-grow-1 '}
+                                                onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Number: String(e.target.value).trim() }))}
+                                            />
+                                            <IconButton onClick={fetchInvoiceProducts}><Sync /></IconButton>
+                                        </div>
                                     </div>
 
                                     {isValidNumber(invoiceInfo?.CR_Id) && (
@@ -408,72 +418,6 @@ const ManageCreditNoteGeneralInfo = ({
                                 </div>
                             )
                         },
-                        {
-                            label: 'Transaction Limit',
-                            children: (
-                                <div className="row">
-                                    {/* outstanding */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Outstanding</label>
-                                        <input
-                                            className="cus-inpt p-2"
-                                            value={retailerSalesStatus?.outstanding}
-                                            readOnly
-                                        />
-                                    </div>
-                                    {/* credit limit */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Credit Limit</label>
-                                        <input
-                                            className="cus-inpt p-2"
-                                            value={
-                                                isEqualNumber(retailerSalesStatus?.creditLimit, 0)
-                                                    ? 'Unlimited'
-                                                    : retailerSalesStatus?.creditLimit
-                                            }
-                                            readOnly
-                                        />
-                                    </div>
-                                    {/* credit days */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Due Days</label>
-                                        <input
-                                            className="cus-inpt p-2"
-                                            value={
-                                                isEqualNumber(retailerSalesStatus?.creditDays, 0)
-                                                    ? 'Unlimited'
-                                                    : retailerSalesStatus?.creditDays
-                                            }
-                                            readOnly
-                                        />
-                                    </div>
-
-                                    {/* previous invoice date */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Recent Sales Date</label>
-                                        <input
-                                            className="cus-inpt p-2"
-                                            value={retailerSalesStatus?.recentDate ? LocalDate(retailerSalesStatus?.recentDate) : ''}
-                                            readOnly
-                                        />
-                                    </div>
-
-                                    {/* due date */}
-                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Due Date</label>
-                                        <input
-                                            className="cus-inpt p-2"
-                                            value={
-                                                (retailerSalesStatus?.recentDate && isValidNumber(retailerSalesStatus?.creditDays))
-                                                    ? LocalDate(getNextDate(retailerSalesStatus?.creditDays, retailerSalesStatus?.recentDate))
-                                                    : ''
-                                            }
-                                            readOnly
-                                        />
-                                    </div>
-                                </div>
-                            )
-                        }
                     ]}
                 />
 
@@ -484,3 +428,71 @@ const ManageCreditNoteGeneralInfo = ({
 }
 
 export default ManageCreditNoteGeneralInfo;
+
+
+// {
+//                             label: 'Transaction Limit',
+//                             children: (
+//                                 <div className="row">
+//                                     {/* outstanding */}
+//                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+//                                         <label className='fa-13'>Outstanding</label>
+//                                         <input
+//                                             className="cus-inpt p-2"
+//                                             value={retailerSalesStatus?.outstanding}
+//                                             readOnly
+//                                         />
+//                                     </div>
+//                                     {/* credit limit */}
+//                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+//                                         <label className='fa-13'>Credit Limit</label>
+//                                         <input
+//                                             className="cus-inpt p-2"
+//                                             value={
+//                                                 isEqualNumber(retailerSalesStatus?.creditLimit, 0)
+//                                                     ? 'Unlimited'
+//                                                     : retailerSalesStatus?.creditLimit
+//                                             }
+//                                             readOnly
+//                                         />
+//                                     </div>
+//                                     {/* credit days */}
+//                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+//                                         <label className='fa-13'>Due Days</label>
+//                                         <input
+//                                             className="cus-inpt p-2"
+//                                             value={
+//                                                 isEqualNumber(retailerSalesStatus?.creditDays, 0)
+//                                                     ? 'Unlimited'
+//                                                     : retailerSalesStatus?.creditDays
+//                                             }
+//                                             readOnly
+//                                         />
+//                                     </div>
+
+//                                     {/* previous invoice date */}
+//                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+//                                         <label className='fa-13'>Recent Sales Date</label>
+//                                         <input
+//                                             className="cus-inpt p-2"
+//                                             value={retailerSalesStatus?.recentDate ? LocalDate(retailerSalesStatus?.recentDate) : ''}
+//                                             readOnly
+//                                         />
+//                                     </div>
+
+//                                     {/* due date */}
+//                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+//                                         <label className='fa-13'>Due Date</label>
+//                                         <input
+//                                             className="cus-inpt p-2"
+//                                             value={
+//                                                 (retailerSalesStatus?.recentDate && isValidNumber(retailerSalesStatus?.creditDays))
+//                                                     ? LocalDate(getNextDate(retailerSalesStatus?.creditDays, retailerSalesStatus?.recentDate))
+//                                                     : ''
+//                                             }
+//                                             readOnly
+//                                         />
+//                                     </div>
+//                                 </div>
+//                             )
+//                         }

@@ -1,11 +1,10 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, getNextDate, getPreviousDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, getNextDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { useMemo, useState } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
-import AppDialog from "../../../Components/appDialogComponent";
-import { Button, IconButton } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { InfoOutlined } from "@mui/icons-material";
 
 const ManageDebitNoteGeneralInfo = ({
@@ -17,8 +16,6 @@ const ManageDebitNoteGeneralInfo = ({
     stockItemLedgerName = [],
     onChangeRetailer,
     retailerSalesStatus = {},
-    loadingOn,
-    loadingOff,
 }) => {
 
     const inputStyle = 'cus-inpt p-2';
@@ -53,10 +50,26 @@ const ManageDebitNoteGeneralInfo = ({
     }
 
     const onChangeRetailerName = (e) => {
+        const retailerDetails = retailers.find(ret => isEqualNumber(ret.Retailer_Id, e.value)) || {};
+        const {
+            lolDeliveryName = '',
+            lolPhoneNumber = '',
+            lolCityName = '',
+            lolDeliveryAddress = '',
+            lolGstNumber = '',
+            lolStateName = ''
+        } = retailerDetails;
+
         setInvoiceInfo(pre => ({
             ...pre,
             Retailer_Id: e.value,
             Retailer_Name: e.label,
+            Mailing_Name: lolDeliveryName,
+            Mailing_Address: lolDeliveryAddress,
+            Mailing_Phone: lolPhoneNumber,
+            Mailing_City: lolCityName,
+            Mailing_GST: lolGstNumber,
+            Mailing_State: lolStateName
         }));
         if (onChangeRetailer) onChangeRetailer();
     }

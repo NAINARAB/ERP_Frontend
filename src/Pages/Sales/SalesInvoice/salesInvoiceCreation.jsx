@@ -328,8 +328,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 lolGstNumber = '',
                 lolStateName = ''
             } = retailerDetails;
-            // const withGstNumber = retailerAddress.find(add => isValidValue(add.gstNumber));
-            // const firstAddress = retailerAddress[0];
 
             const billingAddress = retailerAddress.find(
                 addr => isEqualNumber(addr?.id, invoiceInfo?.deliveryAddressId)
@@ -348,18 +346,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                 }, setRetailerDeliveryAddress)
             }
 
-            // else if (withGstNumber) {
-            //     setAddress(withGstNumber, setRetailerDeliveryAddress)
-            // } else if (firstAddress) {
-            //     setAddress({
-            //         ...firstAddress,
-            //         gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
-            //         id: retailerDetails.Gstno ? null : firstAddress.id
-            //     }, setRetailerDeliveryAddress)
-            // } else {
-            //     setAddress(retailerDeliveryAddressInfo, setRetailerDeliveryAddress)
-            // }
-
             const shippingAddress = retailerAddress.find(
                 addr => isEqualNumber(addr?.id, invoiceInfo?.shipingAddressId)
             ) ?? null;
@@ -376,18 +362,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                     stateName: lolStateName
                 }, setRetailerShippingAddress)
             }
-
-            // else if (withGstNumber) {
-            //     setAddress(withGstNumber, setRetailerShippingAddress)
-            // } else if (firstAddress) {
-            //     setAddress({
-            //         ...firstAddress,
-            //         gstNumber: retailerDetails.Gstno ? String(retailerDetails.Gstno) : '',
-            //         id: retailerDetails.Gstno ? null : firstAddress.id
-            //     }, setRetailerShippingAddress)
-            // } else {
-            //     setAddress(retailerDeliveryAddressInfo, setRetailerShippingAddress)
-            // }
         }
     }, [baseData.retailers, invoiceInfo.Retailer_Id])
 

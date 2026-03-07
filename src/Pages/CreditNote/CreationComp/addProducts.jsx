@@ -102,7 +102,7 @@ const AddProductFormCreditNote = ({
                         case 'Igst': return [key, igstPer ?? 0]
                         case 'Igst_Amo': return [key, isNotTaxableBill ? 0 : Igst_Amo]
                         case 'Final_Amo': return [key, gstInfo.with_tax]
-                        case 'Godown_Stock': return [key, godownStock] // Added this line
+                        case 'Godown_Stock': return [key, godownStock]
 
                         default: return [key, productDetails[key] || value]
                     }

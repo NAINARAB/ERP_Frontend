@@ -83,7 +83,7 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `masters/retailers/dropDown` }),
-                    fetchLink({ address: `masters/voucher` }),
+                    fetchLink({ address: `masters/voucher?module=DEBIT_NOTE` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),

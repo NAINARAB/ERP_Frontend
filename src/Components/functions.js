@@ -404,10 +404,12 @@ export const formatSQLDateTimeObjectToInputDateTime = (date) => {
     }
 };
 
-export const rid = () =>
-    (typeof crypto !== "undefined" && crypto.randomUUID)
+export const rid = () => {
+    const value = (typeof crypto !== "undefined" && crypto.randomUUID)
         ? crypto.randomUUID()
         : `r${Math.random().toString(36).slice(2)}${Date.now()}`;
+    return value
+}
 
 export const convertUTCToLocal = (utcDateString) => {
     const utcDate = new Date(utcDateString + "Z"); // Append 'Z' to indicate UTC time

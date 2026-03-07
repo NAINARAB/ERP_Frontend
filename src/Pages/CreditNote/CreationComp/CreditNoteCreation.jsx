@@ -4,7 +4,8 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, filterableText, Subraction
+    rid, filterableText,
+    stringCompare
 } from "../../../Components/functions";
 import { Add, Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -83,7 +84,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `masters/retailers/dropDown` }),
-                    fetchLink({ address: `masters/voucher` }),
+                    fetchLink({ address: `masters/voucher?module=CREDIT_NOTE` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
@@ -415,6 +416,25 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
         return null;
     }, [invoiceProducts]);
 
+    const fetchInvoiceProducts = () => {
+        if (!stringCompare(invoiceInfo.Ref_Inv_Number, '') && invoiceProducts) {
+            fetchLink({
+                address: `sales/salesInvoiceById?Do_Inv_No=${invoiceInfo.Ref_Inv_Number}`,
+                loadingOn, loadingOff
+            }).then(data => {
+                if (data.success && data.data.length > 0) {
+                    const invoiceData = data.data[0];
+                    setInvoiceProduct(toArray(invoiceData.Products_List).map(item => Object.fromEntries(
+                        Object.entries(creditNoteDetailsInfo).map(([key, value]) => {
+                            if (key === 'rowId') return [key, rid()];
+                            return [key, item[key] ?? value];
+                        })
+                    )));
+                }
+            }).catch(console.error)
+        }
+    }
+
     return (
         <>
             <AddProductFormCreditNote
@@ -479,6 +499,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                                     retailerSalesStatus={retailerSalesStatus}
                                     loadingOn={loadingOn}
                                     loadingOff={loadingOff}
+                                    fetchInvoiceProducts={fetchInvoiceProducts}
                                 />
                             </div>
                         </div>
@@ -517,36 +538,35 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                             createCol('Item_Rate', 'number', 'Rate'),
                             createCol('Unit_Name', 'string', 'UOM'),
                             createCol('Amount', 'number', 'Amount'),
-                            createCol('Action', 'string', 'Action', false, true, (row, ind) => {
-                                if (row?.Item_Id === 'TOTAL_ROW') return null;
-                                return (
-                                    <>
-                                        <IconButton
-                                            size='small'
-                                            onClick={() => {
-                                                setSelectedProductToEdit(row);
-                                                setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                            }}>
-                                            <Edit color='primary' className="fa-16" />
-                                        </IconButton>
-                                        <IconButton size='small' onClick={() => setInvoiceProduct(pre => pre.filter((_, i) => i !== ind))}>
-                                            <Delete color="error" className="fa-16" />
-                                        </IconButton>
-                                    </>
-                                )
-                            })
+                            {
+                                isVisible: 1,
+                                ColumnHeader: '#',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    if (row?.Item_Id === 'TOTAL_ROW') return null;
+                                    return (
+                                        <>
+                                            <IconButton
+                                                size='small'
+                                                onClick={() => {
+                                                    setSelectedProductToEdit(row);
+                                                    setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                                }}>
+                                                <Edit color='primary' className="fa-16" />
+                                            </IconButton>
+                                            <IconButton size='small' onClick={() => setInvoiceProduct(pre => pre.filter(item => item.rowId !== row.rowId))}>
+                                                <Delete color="error" className="fa-16" />
+                                            </IconButton>
+                                        </>
+                                    )
+                                }
+                            }
                         ]}
                     />
 
                     <div className="row mt-3">
-                        {/* tax component */}
-                        <div className="col-md-5 p-2 bg-light border">
-                            <h6 className="border-bottom pb-2">Tax details</h6>
-                            <CreditNoteTaxDetails invoiceProducts={invoiceProducts} />
-                        </div>
 
-                        {/* expences component */}
-                        <div className="col-md-7 p-2">
+                        <div className="col-12 p-2">
                             <ExpencesOfCreditNote
                                 expenceMaster={baseData.expence}
                                 invoiceExpences={invoiceExpences}
@@ -558,7 +578,15 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                                 products={baseData.products}
                                 findProductDetails={findProductDetails}
                             />
+                        </div>
+                        {/* tax component */}
+                        <div className="col-md-5 p-2 bg-light border">
+                            <h6 className="border-bottom pb-2">Tax details</h6>
+                            <CreditNoteTaxDetails invoiceProducts={invoiceProducts} />
+                        </div>
 
+                        {/* expences component */}
+                        <div className="col-md-7 p-2">
                             <div className="d-flex justify-content-end mt-3">
                                 <table className="table-bordered bg-light">
                                     <tbody>
