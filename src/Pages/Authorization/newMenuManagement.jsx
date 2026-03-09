@@ -64,6 +64,11 @@ const DisplaySubMenu = ({ row, setDialog, setInputValues }) => {
                                                                     return [key, row];
                                                                 case 'url':
                                                                     return [key, (row?.ParantData?.url ? (row?.ParantData?.url + '/') : '') + String(row?.url) + '/' + '/'];
+                                                                case 'id':
+                                                                case 'name':
+                                                                case 'tUrl':
+                                                                case 'rUrl':
+                                                                    return [key, ''];
                                                                 default:
                                                                     return [key, row[key] || value];
                                                             }
@@ -103,6 +108,11 @@ const DisplaySubMenu = ({ row, setDialog, setInputValues }) => {
                                                                     return [key, row];
                                                                 case 'url':
                                                                     return [key, (row?.ParantData?.url ? (row?.ParantData?.url + '/') : '') + (row?.url ?? '') + '/'];
+                                                                case 'id':
+                                                                case 'name':
+                                                                case 'tUrl':
+                                                                case 'rUrl':
+                                                                    return [key, ''];
                                                                 default:
                                                                     return [key, row[key] || value];
                                                             }
@@ -246,6 +256,11 @@ const DisplayChildMenu = ({ row, setInputValues, setDialog }) => {
                                                                     return [key, row];
                                                                 case 'url':
                                                                     return [key, String(row?.url) + '/'];
+                                                                case 'id':
+                                                                case 'name':
+                                                                case 'tUrl':
+                                                                case 'rUrl':
+                                                                    return [key, ''];
                                                                 default:
                                                                     return [key, row[key] || value];
                                                             }
@@ -388,6 +403,11 @@ const DisplaySubRoutings = ({ dataSource, setInputValues, setDialog, parantURL }
                                                         return [key, row];
                                                     case 'url':
                                                         return [key, parantURL];
+                                                    case 'id':
+                                                    case 'name':
+                                                    case 'tUrl':
+                                                    case 'rUrl':
+                                                        return [key, ''];
                                                     default:
                                                         return [key, row[key] || value];
                                                 }
@@ -519,8 +539,6 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
         })
     }
 
-    console.log(inputValues)
-
     return (
         <>
             <FilterableTable
@@ -585,6 +603,11 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                                                 return [key, row];
                                                             case 'url':
                                                                 return [key, (row?.url ?? '') + '/'];
+                                                            case 'id':
+                                                            case 'name':
+                                                            case 'tUrl':
+                                                            case 'rUrl':
+                                                                return [key, ''];
                                                             default:
                                                                 return [key, row[key] || value];
                                                         }
@@ -625,6 +648,11 @@ const MenuManagement = ({ loadingOn, loadingOff }) => {
                                                                 return [key, row];
                                                             case 'url':
                                                                 return [key, (row?.url ?? '') + '/'];
+                                                            case 'id':
+                                                            case 'name':
+                                                            case 'tUrl':
+                                                            case 'rUrl':
+                                                                return [key, ''];
                                                             default:
                                                                 return [key, row[key] || value];
                                                         }

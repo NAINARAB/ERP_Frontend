@@ -136,7 +136,9 @@ const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
         <>
             <button className={`sidebutton ${open && " btn-active "}`}
                 onClick={
-                    mainBtn?.url ? () => {
+                    (mainBtn?.actionType === 'external' && mainBtn?.url) ? () => {
+                        window.open(mainBtn?.url, '_blank');
+                    } : mainBtn?.url ? () => {
                         nav(mainBtn?.url);
                         sideClose();
                         setLoclStoreage(mainBtn.id, 1);
@@ -225,7 +227,9 @@ const SubMenu = ({ subBtn, nav, page, sideClose }) => {
             <button
                 className={`rounded-0 sidebutton tes ${open ? ' sub-btn-active ' : ' sidebutton '}`}
                 onClick={() => {
-                    nav(subBtn?.url);
+                    (subBtn?.actionType === 'external' && subBtn?.url) ?
+                        window.open(subBtn?.url, '_blank')
+                        : nav(subBtn?.url);
                     sideClose();
                     setLoclStoreage(subBtn.id, 2);
                 }}
