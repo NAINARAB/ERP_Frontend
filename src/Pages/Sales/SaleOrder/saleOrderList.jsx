@@ -12,7 +12,9 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
     Addition,
+    Division,
     getSessionFiltersByPageId,
+    isEqualNumber,
     ISOString,
     NumberFormat,
     reactSelectFilterLogic,
@@ -21,7 +23,6 @@ import {
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
-import { convertedStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
     const [salesPerson, setSalePerson] = useState([]);
     const [users, setUsers] = useState([]);
     const [voucher, setVoucher] = useState([]);
+    const [products, setProducts] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
 
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -236,6 +238,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 setVoucher(data.data);
             }
         }).catch((e) => console.error(e));
+
+        fetchLink({ address: `masters/products` }).then((data) => {
+            if (data.success) {
+                setProducts(data.data);
+            }
+        }).catch((e) => console.error(e));
+
     }, []);
 
     const fetchSaleOrders = () => {
@@ -325,7 +334,6 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             const delivered = getDeliveredQty(product);
             const remaining = Math.max(ordered - delivered, 0);
 
-            // Use Act_Qty if available, otherwise use calculated remaining
             return product.Act_Qty !== undefined ? product.Act_Qty : remaining;
         };
 
@@ -334,19 +342,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             return remaining > 0;
         });
 
-        const debugProductCalculation = () => {
-            console.group(`Debug Order: ${row.So_Inv_No || row.Do_Inv_No}`);
-
-
-            row?.Products_List?.forEach((product, idx) => {
-                const ordered = getOrderedQty(product);
-                const delivered = getDeliveredQty(product);
-                const remaining = getRemainingQty(product);
-
-
-            });
-            console.groupEnd();
-        };
+        const findProductDetails = (productid) => products?.find(obj => isEqualNumber(obj?.Product_Id, productid)) ?? {};
 
         const handlePendingNavigation = () => {
             const isDeliveryOrder = row.Do_Inv_No && !row.So_Inv_No;
@@ -434,9 +430,12 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     const ordered = getOrderedQtyInternal(product);
                     const delivered = getDeliveredQtyInternal(product);
                     const remaining = getRemainingQtyInternal(product);
+                    const productMaster = findProductDetails(product.Item_Id);
 
                     if (remaining > 0) {
                         const qtyToUse = product.Act_Qty !== undefined ? product.Act_Qty : remaining;
+                        const pack = productMaster?.PackGet;
+                        const Alt_Bill_Qty = Division(qtyToUse, pack);
 
                         return {
                             ...product,
@@ -445,10 +444,12 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                             Item_Name: product.Item_Name || product.Product_Name || product.Product_Short_Name || "",
                             Ordered_Qty: ordered,
                             Delivered_Qty: delivered,
-                            Bill_Qty: qtyToUse,
                             Total_Qty: qtyToUse,
                             Amount: qtyToUse * Number(product.Item_Rate || 0),
-                            Act_Qty: product.Act_Qty || qtyToUse,
+                            Bill_Qty: qtyToUse,
+                            Alt_Bill_Qty: Alt_Bill_Qty, 
+                            Act_Qty: qtyToUse,
+                            Alt_Act_Qty: Alt_Bill_Qty,
                         };
                     }
                     return null;

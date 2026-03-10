@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, LocalDate, rid, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, ISOString, LocalDate, rid, toArray, toNumber } from "../../../Components/functions";
 import { Button, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Done } from "@mui/icons-material";
 import { salesInvoiceDetailsInfo, salesInvoiceStaffInfo } from "./variable";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
-import Select from "react-select";
-import { customSelectStyles } from "../../../Components/tablecolumn";
 
 const validStockValue = (Item_Id, Godown_Id, stockInGodown) => {
     const godownStockValue = toArray(stockInGodown).find(
@@ -98,6 +96,9 @@ const AddProductsInSalesInvoice = ({
                         const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
                         const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
 
+                        const pack = productMaster?.PackGet;
+                        const Alt_Bill_Qty = Division(Bill_Qty, pack);
+
                         switch (key) {
                             case 'rowId': return [key, rid()];
                             case 'S_No': return [key, curIndex + 1 ?? value];
@@ -106,8 +107,9 @@ const AddProductsInSalesInvoice = ({
                             case 'Item_Rate': return [key, toNumber(Item_Rate)];
 
                             case 'Bill_Qty': return [key, toNumber(Bill_Qty)];
+                            case 'Alt_Bill_Qty': return [key, toNumber(Alt_Bill_Qty)];
                             case 'Act_Qty': return [key, toNumber(Bill_Qty)];
-                            case 'Alt_Act_Qty': return [key, toNumber(Bill_Qty)];
+                            case 'Alt_Act_Qty': return [key, toNumber(Alt_Bill_Qty)];
 
                             case 'Amount': return [key, Amount];
                             case 'HSN_Code': return [key, productMaster.HSN_Code ?? value];

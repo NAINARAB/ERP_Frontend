@@ -1,4 +1,4 @@
-import React, { Fragment, useContext, useEffect, useState } from "react";
+import { Fragment, useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { IconButton, Collapse, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import {
@@ -60,7 +60,7 @@ const getIcon = (menuId) => {
     return matchedIcon ? matchedIcon.IconComp : null;
 }
 
-const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
+const DispNavButtons = ({ mainBtn, nav, sideClose, page, Autheticate_Id, Company_id }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -137,7 +137,7 @@ const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
             <button className={`sidebutton ${open && " btn-active "}`}
                 onClick={
                     (mainBtn?.actionType === 'external' && mainBtn?.url) ? () => {
-                        window.open(mainBtn?.url, '_blank');
+                        window.open(String(mainBtn?.url) + `?Auth=${Autheticate_Id}&company_id=${Company_id}`, '_blank');
                     } : mainBtn?.url ? () => {
                         nav(mainBtn?.url);
                         sideClose();
@@ -161,6 +161,8 @@ const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
                                 nav={nav}
                                 sideClose={closeSide}
                                 page={page}
+                                Autheticate_Id={Autheticate_Id}
+                                Company_id={Company_id}
                             />
                         )
                     ))}
@@ -170,7 +172,7 @@ const DispNavButtons = ({ mainBtn, nav, sideClose, page }) => {
     )
 }
 
-const SubMenu = ({ subBtn, nav, page, sideClose }) => {
+const SubMenu = ({ subBtn, nav, page, sideClose, Autheticate_Id, Company_id }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -228,7 +230,7 @@ const SubMenu = ({ subBtn, nav, page, sideClose }) => {
                 className={`rounded-0 sidebutton tes ${open ? ' sub-btn-active ' : ' sidebutton '}`}
                 onClick={() => {
                     (subBtn?.actionType === 'external' && subBtn?.url) ?
-                        window.open(subBtn?.url, '_blank')
+                        window.open(String(subBtn?.url) + `?Auth=${Autheticate_Id}&company_id=${Company_id}`, '_blank')
                         : nav(subBtn?.url);
                     sideClose();
                     setLoclStoreage(subBtn.id, 2);
@@ -246,6 +248,7 @@ const MainComponent = (props) => {
     const nav = useNavigate();
     const location = useLocation();
     const parseData = JSON.parse(localStorage.getItem("user"));
+    const { Autheticate_Id, Company_id } = parseData;
     const loginAt = localStorage.getItem('loginAt')
     const [sidebar, setSidebar] = useState([]);
     const { contextObj, setContextObj } = useContext(MyContext);
@@ -538,6 +541,8 @@ const MainComponent = (props) => {
                                     nav={nav}
                                     sideClose={handleClose}
                                     page={location.pathname}
+                                    Autheticate_Id={Autheticate_Id}
+                                    Company_id={Company_id}
                                 />
                             ))}
 
