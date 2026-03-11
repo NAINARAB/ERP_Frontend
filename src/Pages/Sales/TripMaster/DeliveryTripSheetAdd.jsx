@@ -2512,7 +2512,7 @@ const searchTransaction = (e) => {
                             Total Items: {selectedItems?.reduce((acc, item) => acc + (item.Products_List?.length || 0), 0)}
                         </h6>
                     </div>
-   
+                   
                     <FilterableTable
                         dataArray={selectedItems?.map((item) => item?.Products_List).flat()}
                         expandableComp={ExpendableComponent}
@@ -2535,6 +2535,7 @@ const searchTransaction = (e) => {
                         maxHeightOption
                         columns={[
                             createCol("Do_Inv_No", "string", "Do_Inv_No"),
+                             createCol("Do_Date", "date", "Do_Date"),
                             createCol("Retailer_Name", "string","Retailer_Name"),
                             createCol("Transporter_Name", "string", "Transporter"),
                             createCol("Product_Name", "string", "Product_Name"),
@@ -2952,12 +2953,12 @@ const searchTransaction = (e) => {
                                     },
                                 },
                                 createCol("Do_Inv_No", "string", "Do_Inv_No"),
-                                createCol("So_Date", "date", "So_Date"),
+                                 createCol("Do_Date", "date", "Do_Date"),
                                 createCol("Retailer_Name", "string", "Retailer_Name"),
                                 createCol("Branch_Name", "string", "Branch_Name"),
                                 createCol("AreaName", "string", "AreaName"),
                                 createCol("Transporter_Name", "string", "Transporter_Name"),
-                                createCol("Do_Date", "date", "Do_Date"),
+                               
                                 createCol("Total_Before_Tax", "string", "Total_Before_Tax"),
                                 createCol("Total_Tax", "number", "Total_Tax"),
                                 createCol("Total_Invoice_value", "number", "Total_Invoice_value"),

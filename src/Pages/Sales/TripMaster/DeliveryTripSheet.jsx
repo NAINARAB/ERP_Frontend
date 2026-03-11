@@ -1347,7 +1347,7 @@ const exportToExcel = () => {
 
      
         mainData.push(
-            ['S.No', 'Invoice No', 'Retailer Name', 'Location', 'Item Name', 'HSN Code', 'Bill Qty (KG)', 'Act Qty (Bags)', 'Rate', 'Amount']
+            ['S.No', 'Invoice No','Do_Date' ,'Retailer Name', 'Location', 'Item Name', 'HSN Code', 'Bill Qty (KG)', 'Act Qty (Bags)', 'Rate', 'Amount']
         );
 
         let allProducts = [];
@@ -1371,6 +1371,7 @@ const exportToExcel = () => {
                     allProducts.push({
                         serialNo: serialNo++,
                         invoiceNo: product.Do_Inv_No || "Delivery",
+                        do_date:product.Do_Date.split('T')[0] || '',
                         retailerName: product.Retailer_Name || '',
                         location: product.Party_Location || '',
                         itemName: product.Product_Name || '',
@@ -1393,6 +1394,7 @@ const exportToExcel = () => {
                 mainData.push([
                     product.serialNo,
                     product.invoiceNo,
+                    product.do_date,
                     product.retailerName,
                     product.location,
                     product.itemName,
@@ -1415,7 +1417,7 @@ const exportToExcel = () => {
         
         mainData.push(
             [], 
-            ['Total', '', '', '', '', '', totalBillQty.toFixed(2), totalActQty.toFixed(2), '', totalAmount.toFixed(2)],
+            ['Total', '','', '', '', '', '', totalBillQty.toFixed(2), totalActQty.toFixed(2), '', totalAmount.toFixed(2)],
             [], 
          
             ['HSN / SAC', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Total Tax', '', '', '', '']
@@ -1945,6 +1947,7 @@ const exportToExcel = () => {
                                     isCustomCell: true,
                                     Cell: ({ row }) => row.Do_Inv_No ?? 'Delivery',
                                 },
+                                 createCol('Do_Date', 'date', 'Do_Date'),
                                 createCol('Product_Name', 'string', 'Product_Name'),
                                 createCol('HSN_Code', 'string'),
                                 createCol('Taxable_Rate', 'number', 'Taxable_Rate'),
@@ -2274,6 +2277,7 @@ const exportToExcel = () => {
                                         <th className="fa-12 bg-light">#</th>
                                         {/* <th className="fa-12 bg-light">Reason</th> */}
                                         <th className="fa-12 bg-light">Invoice_No</th>
+                                        <th className="fa-12 bg-light">Do_Date</th>
                                         <th className="fa-12 bg-light">Party</th>
                                         {/* <th className="fa-12 bg-light">Address</th> */}
                                            <th className="fa-12 bg-light">Transporter</th>
@@ -2297,6 +2301,7 @@ const exportToExcel = () => {
 
       <td className="fa-10">{item.Do_Inv_No || "Delivery"}</td>
 
+    <td className="fa-10">{item.Do_Date.split('T')[0] || "-"}</td>
       {/* <td className="fa-10">{item?.Retailer_Name}</td> */}
       <td className="fa-10">{item.Party_Mailing_Name},{item.Party_Location} </td>
 
