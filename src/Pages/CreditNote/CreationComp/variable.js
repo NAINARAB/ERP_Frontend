@@ -57,7 +57,7 @@ export const creditNoteDetailsInfo = {
     GoDown_Id: '',
     Godown_Stock: 0,
     S_No: '',
-    Item_Id: '',                // From front-end
+    Item_Id: '',
     Item_Name: '',
     HSN_Code: '',
     Taxble: '',
@@ -70,11 +70,11 @@ export const creditNoteDetailsInfo = {
     Free_Qty: '',
     Total_Qty: '',
 
-    Item_Rate: '',              // From front-end
+    Item_Rate: '',
     Taxable_Rate: '',
-    Amount: '',                 // From front-end
+    Amount: '',
 
-    Unit_Id: '',                // From front-end
+    Unit_Id: '',
     Unit_Name: '',
     Act_unit_Id: '',
     Alt_Act_Unit_Id: '',

@@ -426,6 +426,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                     const invoiceData = data.data[0];
                     setInvoiceProduct(toArray(invoiceData.Products_List).map(item => Object.fromEntries(
                         Object.entries(creditNoteDetailsInfo).map(([key, value]) => {
+                            if (Object.hasOwn(item, key)) return [key, item[key]];
                             if (key === 'rowId') return [key, rid()];
                             return [key, item[key] ?? value];
                         })
