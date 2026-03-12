@@ -17,7 +17,10 @@ import FilterableTable, { createCol } from "../../Components/filterableTable2";
 
 const initialState = {
     Godown_Id: "",
-    Godown_Name: ""
+    Godown_Name: "",
+    Godown_Address:"",
+    Gst_No:"",
+    Phone_No:""
 };
 
 function Godown() {
@@ -132,14 +135,17 @@ function Godown() {
     const editRow = (row) => {
         setInputValue({
             Godown_Id: row.Godown_Id,
-            Godown_Name: row.Godown_Name
+            Godown_Name: row.Godown_Name,
+            Godown_Address:row.Godown_Address,
+            Gst_No:row.Gst_No,
+            Phone_No:row.Phone_No
         });
         setEditMode(true);
     };
 
     const handleEdit = () => {
-        const { Godown_Id, Godown_Name } = inputValue;
-        if (!Godown_Id || !Godown_Name) {
+        const { Godown_Id, Godown_Name,Godown_Address,Gst_No,Phone_No } = inputValue;
+        if (!Godown_Id || !Godown_Name ) {
             toast.error("All required fields must be filled.");
             return;
         }
@@ -237,6 +243,9 @@ function Godown() {
                     columns={[
                         // createCol("Godown_Id", "string", "Id"),
                         createCol("Godown_Name", "string", "Godown_Name"),
+                        createCol("Godown_Address", "string", "Godown_Address"),
+                        createCol("Gst_No", "string", "Gst_No"),
+                        createCol("Phone_No", "string", "Phone_No"),
                         {
                             ColumnHeader: "Actions",
                             isVisible: 1,
@@ -281,7 +290,42 @@ function Godown() {
                             placeholder="Enter Godown Name"
                         />
                     </div>
-
+                        <div className="p-2">
+                        <label>Godown Address</label>
+                        <input
+                            type="text"
+                            value={inputValue.Godown_Address}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Godown_Address: e.target.value })
+                            }
+                            className="cus-inpt"
+                            placeholder="Enter Godown Address"
+                        />
+                    </div>
+                     <div className="p-2">
+                        <label>Gst_No</label>
+                        <input
+                            type="text"
+                            value={inputValue.Gst_No}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Gst_No: e.target.value })
+                            }
+                            className="cus-inpt"
+                            placeholder="Enter Gst_No"
+                        />
+                    </div>
+                     <div className="p-2">
+                        <label>Phone_No</label>
+                        <input
+                            type="text"
+                            value={inputValue.Phone_No}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Phone_No: e.target.value })
+                            }
+                            className="cus-inpt"
+                            placeholder="Enter Phone_No"
+                        />
+                    </div>
 
                 </DialogContent>
                 <DialogActions>
@@ -318,7 +362,39 @@ function Godown() {
                             className="cus-inpt"
                         />
                     </div>
-
+                     <div className="p-2">
+                        <label>Godown Address</label>
+                        <input
+                            type="text"
+                            value={inputValue.Godown_Address}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Godown_Address: e.target.value })
+                            }
+                            className="cus-inpt"
+                        />
+                    </div>
+                     <div className="p-2">
+                        <label>Gst_No</label>
+                        <input
+                            type="text"
+                            value={inputValue.Gst_No}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Gst_No: e.target.value })
+                            }
+                            className="cus-inpt"
+                        />
+                    </div>
+                     <div className="p-2">
+                        <label>Phone_No</label>
+                        <input
+                            type="text"
+                            value={inputValue.Phone_No}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, Phone_No: e.target.value })
+                            }
+                            className="cus-inpt"
+                        />
+                    </div>
 
                 </DialogContent>
                 <DialogActions>
