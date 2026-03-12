@@ -213,8 +213,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             bags: item.Bag || 0,
             qty: item.KGS || item.QTY || 0,
             amount: item.Product_Rate * item.QTY || 0
+            
         }));
 
+      
         const totalBags = items.reduce((sum, item) => sum + (item.bags || 0), 0);
         const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
         const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -223,19 +225,43 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         const driver = (Array.isArray(tripData?.Employees_Involved) ? tripData.Employees_Involved : [])
             .find(staff => staff?.Cost_Category === 'Driver');
 
+        const receiptDetails = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item) => ({
+                  toAddressId:item.To_Location,
+                  toaddress: item.ToAddress,
+                  toPhone_No: item.ToPhone,
+                  toGst_No: item.ToGst
+              }));
+
+        const firstLocation = receiptDetails[0]?.toAddressId ==35 ? tripData?.Narration : receiptDetails[0]; 
+
+         const companyDetails=(Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
+            fromAddressId:item.From_Location,
+            fromAddress : item.FromAddress,
+            fromPhone_No:item.FromGst,
+            fromGst_No:item.FromPhone
+            
+        }));
+         
+        const lastLocation =companyDetails[0]?.toAddressId ==35 ? tripData?.Narration : companyDetails[0] 
         return {
             challanNo: tripData?.Challan_No || tripData?.Trip_No || "",
             date: tripData?.Trip_Date ? LocalDate(tripData.Trip_Date) : "",
-            company: {
-                name: "S.M TRADERS",
-                address: "746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611",
-                gst: "33AADFS4987M1ZL"
+            // company: {
+            //     name: "S.M TRADERS",
+            //     address: "746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611",
+            //     gst: "33AADFS4987M1ZL"
+            // },
+            company:{
+                  lastLocation
             },
-            recipient: {
-                name: "S.M TRADERS",
-                address: "157, CHITRAKARA STREET, EAST MASI STREET, MADURAI - 625001",
-                gstin: "33AADFS4987M1ZL"
+            recipient:{
+                    firstLocation
             },
+            // recipient: {
+            //     name: "S.M TRADERS",
+            //     address: "157, CHITRAKARA STREET, EAST MASI STREET, MADURAI - 625001",
+            //     gstin: "33AADFS4987M1ZL"
+            // },
             transport: {
                 mode: "By Road",
                 vehicleNo: tripData?.Vehicle_No || "",
@@ -251,7 +277,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 totalQty: NumberFormat(totalQty),
                 totalAmount: NumberFormat(totalAmount),
                 amountInWords: numberToWords(Math.round(totalAmount)) + " Only"
-            }
+            },
         };
     };
 
