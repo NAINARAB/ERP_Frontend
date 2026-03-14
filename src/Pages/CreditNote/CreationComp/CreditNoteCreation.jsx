@@ -419,7 +419,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
     const fetchInvoiceProducts = () => {
         if (!stringCompare(invoiceInfo.Ref_Inv_Number, '') && invoiceProducts) {
             fetchLink({
-                address: `sales/salesInvoiceById?Do_Inv_No=${invoiceInfo.Ref_Inv_Number}`,
+                address: `sales/salesInvoice?Do_Inv_No=${invoiceInfo.Ref_Inv_Number}&Retailer_Id=${invoiceInfo.Retailer_Id}`,
                 loadingOn, loadingOff
             }).then(data => {
                 if (data.success && data.data.length > 0) {

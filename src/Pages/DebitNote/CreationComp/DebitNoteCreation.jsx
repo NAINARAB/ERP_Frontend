@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, filterableText, Subraction
+    rid, filterableText, stringCompare
 } from "../../../Components/functions";
 import { Add, Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -415,6 +415,26 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
         return null;
     }, [invoiceProducts]);
 
+    const fetchInvoiceProducts = () => {
+        if (!stringCompare(invoiceInfo.Ref_Inv_Number, '')) {
+            fetchLink({
+                address: `purchase/purchaseOrder?Po_Inv_No=${invoiceInfo.Ref_Inv_Number}&Retailer_Id=${invoiceInfo.Retailer_Id}`,
+                loadingOn, loadingOff
+            }).then(data => {
+                if (data.success && data.data.length > 0) {
+                    const invoiceData = data.data[0];
+                    setInvoiceProduct(toArray(invoiceData.Products_List).map(item => Object.fromEntries(
+                        Object.entries(debitNoteDetailsInfo).map(([key, value]) => {
+                            if (Object.hasOwn(item, key)) return [key, item[key]];
+                            if (key === 'rowId') return [key, rid()];
+                            return [key, item[key] ?? value];
+                        })
+                    )));
+                }
+            }).catch(console.error)
+        }
+    }
+
     return (
         <>
             <AddProductFormDebitNote
@@ -479,6 +499,7 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                                     retailerSalesStatus={retailerSalesStatus}
                                     loadingOn={loadingOn}
                                     loadingOff={loadingOff}
+                                    fetchInvoiceProducts={fetchInvoiceProducts}
                                 />
                             </div>
                         </div>
@@ -517,24 +538,29 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                             createCol('Item_Rate', 'number', 'Rate'),
                             createCol('Unit_Name', 'string', 'UOM'),
                             createCol('Amount', 'number', 'Amount'),
-                            createCol('Action', 'string', 'Action', false, true, (row, ind) => {
-                                if (row?.Item_Id === 'TOTAL_ROW') return null;
-                                return (
-                                    <>
-                                        <IconButton
-                                            size='small'
-                                            onClick={() => {
-                                                setSelectedProductToEdit(row);
-                                                setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                            }}>
-                                            <Edit color='primary' className="fa-16" />
-                                        </IconButton>
-                                        <IconButton size='small' onClick={() => setInvoiceProduct(pre => pre.filter((_, i) => i !== ind))}>
-                                            <Delete color="error" className="fa-16" />
-                                        </IconButton>
-                                    </>
-                                )
-                            })
+                            {
+                                isVisible: 1,
+                                ColumnHeader: '#',
+                                isCustomCell: true,
+                                Cell: ({ row }) => {
+                                    if (row?.Item_Id === 'TOTAL_ROW') return <></>;
+                                    return (
+                                        <>
+                                            <IconButton
+                                                size='small'
+                                                onClick={() => {
+                                                    setSelectedProductToEdit(row);
+                                                    setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                                }}>
+                                                <Edit color='primary' className="fa-16" />
+                                            </IconButton>
+                                            <IconButton size='small' onClick={() => setInvoiceProduct(pre => pre.filter(item => item.rowId !== row.rowId))}>
+                                                <Delete color="error" className="fa-16" />
+                                            </IconButton>
+                                        </>
+                                    )
+                                }
+                            }
                         ]}
                     />
 

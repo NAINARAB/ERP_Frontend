@@ -30,10 +30,11 @@ import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { getModuleAccess } from "../../../Components/moduleAccess";
+const requestId = crypto.randomUUID();
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
+const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
@@ -528,6 +529,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
 
     const saveSalesInvoice = () => {
 
+        if (isLoading) return;
+
         if (isValidNumber(invoiceInfo?.Do_Id) && filterableText(invoiceInfo?.Alter_Reason).length === 0) {
             toast.warn('Alter reason is required');
             return;
@@ -542,6 +545,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
             loadingOff, loadingOn,
+            headers: {
+                'Idempotency-Key': requestId
+            },
             bodyData: {
                 ...invoiceInfo,
                 deliveryAddressDetails: {
@@ -744,7 +750,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid}>submit</Button>
+                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid || isLoading}>submit</Button>
                     </span>
                 </div>
                 <CardContent>
@@ -995,7 +1001,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff }) => {
                             navigate('/erp/sales/invoice');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid}>submit</Button>
+                    <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid || isLoading}>submit</Button>
                 </CardActions>
             </Card>
 

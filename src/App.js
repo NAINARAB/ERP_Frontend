@@ -73,9 +73,10 @@ const AppContent = () => {
             loadingOn, 
             loadingOff,
             pageID: id,
-            pageName: name
+            pageName: name,
+            isLoading: appLoading
         }
-    }, [contextObj]) 
+    }, [contextObj, appLoading]) 
 
     return (
         <BrowserRouter>
