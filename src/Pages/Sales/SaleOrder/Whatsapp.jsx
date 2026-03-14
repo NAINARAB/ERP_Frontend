@@ -100,7 +100,7 @@ const getCostTypeEmployees = (invoiceOrRow, costTypeId) => {
 
 const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
     const [salesInvoices, setSalesInvoices] = useState([]);
-    const [allInvoices, setAllInvoices] = useState([]); // Store all invoices before filtering
+    const [allInvoices, setAllInvoices] = useState([]); 
     const [costCenterData, setCostCenterData] = useState([]);
     const [costTypes, setCostTypes] = useState([]);
     const [uniqueInvolvedCost, setUniqueInvolvedCost] = useState([]);
@@ -112,9 +112,9 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [selectAllCheckBox, setSelectAllCheckBox] = useState(false);
     const [downloadLoading, setDownloadLoading] = useState(false);
     const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
-    const [phoneMap, setPhoneMap] = useState(new Map()); // Store phone numbers map
+    const [phoneMap, setPhoneMap] = useState(new Map());
     const [isPhoneMapLoaded, setIsPhoneMapLoaded] = useState(false);
-    const [initialDataLoaded, setInitialDataLoaded] = useState(false); // Track if initial data is fully loaded
+    const [initialDataLoaded, setInitialDataLoaded] = useState(false); 
     const tableContainerRef = useRef(null);
 
     const storage = JSON.parse(localStorage.getItem("user"));
@@ -226,7 +226,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         return billQty * conversionFactor;
     };
 
-    // Fetch phone numbers map
+
     const fetchPhoneMap = async () => {
         try {
             const response = await fetchLink({
@@ -236,13 +236,13 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             if (response && response.success && response.data) {
                 const map = new Map();
                 response.data.forEach(item => {
-                    if (item.A1) { // Only add if A1 exists
+                    if (item.A1) {
                         map.set(Number(item.Ret_Id), item.A1);
                     }
                 });
                 setPhoneMap(map);
                 setIsPhoneMapLoaded(true);
-                console.log(`Loaded ${map.size} phone numbers`);
+               
                 return map;
             }
             return new Map();
@@ -255,7 +255,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
     const filterInvoicesByPhone = (invoices, phoneMapData) => {
         if (!phoneMapData || phoneMapData.size === 0) {
-            console.log("No phone map data available, showing all invoices");
+
             return invoices;
         }
 
@@ -264,7 +264,6 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             return phoneMapData.has(retailerId);
         });
 
-        console.log(`Filtered from ${invoices.length} to ${filtered.length} invoices with phone numbers`);
         return filtered;
     };
 
@@ -285,9 +284,9 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             });
 
             const invoices = toArray(data.data);
-            setAllInvoices(invoices); // Store all invoices
+            setAllInvoices(invoices); 
 
-            // Process invoices
+           
             const processedInvoices = invoices.map(invoice => {
                 if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
                     const processedStockDetails = invoice.stockDetails.map(item => ({
@@ -303,12 +302,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 return invoice;
             });
 
-            // Only filter if phone map is loaded, otherwise store unfiltered
+          
             if (isPhoneMapLoaded) {
                 const filteredInvoices = filterInvoicesByPhone(processedInvoices, phoneMap);
                 setSalesInvoices(filteredInvoices);
             } else {
-                // Don't set salesInvoices yet - wait for phone map
+                
                 setAllInvoices(processedInvoices);
             }
 
@@ -341,7 +340,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             });
 
             const invoices = toArray(data.data);
-            setAllInvoices(invoices); // Store all invoices
+            setAllInvoices(invoices); 
 
             const processedInvoices = invoices.map(invoice => {
                 if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
@@ -358,12 +357,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 return invoice;
             });
 
-            // Only filter if phone map is loaded, otherwise store unfiltered
+           
             if (isPhoneMapLoaded) {
                 const filteredInvoices = filterInvoicesByPhone(processedInvoices, phoneMap);
                 setSalesInvoices(filteredInvoices);
             } else {
-                // Don't set salesInvoices yet - wait for phone map
+               
                 setAllInvoices(processedInvoices);
             }
 
@@ -428,22 +427,22 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         }
     };
 
-    // Initialize all data in correct order
+
     useEffect(() => {
         const initializeData = async () => {
             try {
                 setIsLoading(true);
                 
-                // Step 1: Fetch phone map first
+                
                 const map = await fetchPhoneMap();
                 
-                // Step 2: Fetch invoices
+                
                 await fetchAllInvoices();
                 
-                // Step 3: Fetch other data
+                
                 await fetchCostCenterData();
                 
-                // Step 4: Mark as fully loaded
+                
                 setInitialDataLoaded(true);
             } catch (error) {
                 console.error("Error fetching initial data:", error);
@@ -455,12 +454,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
         initializeData();
         fetchTemplates();
-    }, []); // Empty dependency array - only run once on mount
+    }, []); 
 
-    // Apply phone filter when both invoices and phone map are ready
+
     useEffect(() => {
         if (isPhoneMapLoaded && allInvoices.length > 0 && !initialDataLoaded) {
-            // This runs when phone map loads after invoices were fetched
+        
             const processedInvoices = allInvoices.map(invoice => {
                 if (invoice.stockDetails && Array.isArray(invoice.stockDetails)) {
                     const processedStockDetails = invoice.stockDetails.map(item => ({
@@ -480,7 +479,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         }
     }, [isPhoneMapLoaded, allInvoices, initialDataLoaded]);
 
-    // Separate effect for filter-based fetches
+    
     useEffect(() => {
         if (initialDataLoaded) {
             if (viewMode === 'normal') {
@@ -527,8 +526,8 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         const baseUrl = api;
         const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
         const encodedInvoiceNo = btoa(formattedInvoiceNo);
-
-        return `${baseUrl}sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}`;
+        const companyid=btoa(storage?.Company_id)
+        return `https://printapp.erpsmt.in/sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}&Company_id=${companyid}`;
     };
 
     const generateInvoicePDF = async (order, companyId) => {
