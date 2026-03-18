@@ -49,6 +49,7 @@ const DistrictMaster = lazy(() => import('./Pages/Masters/DistrictMaster'));
 const TallyLolSyncDashboard = lazy(() => import('./Pages/Masters/TallyMasters/tallyLolSyncDashboard'));
 const TallyLosSyncDashboard = lazy(() => import('./Pages/Masters/TallyMasters/tallyLosSyncDashboard'));
 const AccountMasterSales = lazy(() => import('./Pages/Masters/AccountMasterSales'));
+const ModuleParameters = lazy(() => import('./Pages/Masters/moduleParameters'));
 
 // -----------------------------------------------------------------------------
 // Authorization
@@ -363,6 +364,7 @@ const RoutingArray = [
     { component: <AccountMaster />, path: '/erp/master/accountMaster' },
     { component: <AccountingGroup />, path: '/erp/master/accountingGroup' },
     { component: <AccountMasterSales />, path: '/erp/master/AccountMasterSales' },
+    { component: <ModuleParameters />, path: '/erp/master/moduleParameters' },
     { component: <AreaMaster />, path: '/erp/master/areaMaster' },
     { component: <BrandMaster />, path: '/erp/master/brand' },
     { component: <CostCenterMap />, path: '/erp/master/CostCenterMap' },

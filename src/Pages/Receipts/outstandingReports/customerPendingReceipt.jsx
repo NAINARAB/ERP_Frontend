@@ -43,11 +43,11 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
-                const repDat = toArray(data.data).map(o => ({
-                    ...o,
-                    receiptPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
-                }))
-                setReportData(repDat);
+                // const repDat = toArray(data.data).map(o => ({
+                //     ...o,
+                //     receiptPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
+                // }))
+                setReportData(data.data);
             }
         }).catch(e => console.error(e))
     }, [filters.ledger.value]);

@@ -1,6 +1,7 @@
 import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat, filterableText, toNumber } from "../../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
-import { Delete, Edit, ShoppingCartCheckout, Visibility } from '@mui/icons-material';
+import { Delete, Edit, ShoppingCartCheckout, Visibility, Settings } from '@mui/icons-material';
+import { ButtonActions } from "../../../Components/filterableTable2";
 
 const isArr = (arr) => Array.isArray(arr)
 
@@ -566,50 +567,51 @@ export const displayColumns = ({
 
                 return (
                     <>
-                        <Tooltip title='Preview Order'>
-                            <span>
-                                <IconButton
-                                    size='small'
-                                    color='primary'
-                                    onClick={() => setOrderPreview(pre => ({
+                        <ButtonActions 
+                            buttonsData={[
+                                {
+                                    name: 'Preview',
+                                    icon: <Visibility />,
+                                    onclick: () => setOrderPreview(pre => ({
                                         ...pre,
                                         OrderDetails,
                                         OrderItemsArray: ItemDetails,
                                         DeliveryArray: DeliveryDetails,
                                         TranspoterArray: TranspoterDetails,
                                         StaffArray: StaffDetails,
+                                        // ConvertedAsInvoices: ConvertedAsInvoices,
                                         display: true,
-                                    }))}
-                                ><Visibility className="fa-16" /></IconButton>
-                            </span>
-                        </Tooltip>
-
-                        {(navigation && !IsConvertedAsInvoice && EditRights) && (
-                            <Tooltip title='Edit'>
-                                <span>
-                                    <IconButton
-                                        size='small'
-                                        onClick={() => navigation({
-                                            page: 'create',
-                                            stateToTransfer: {
-                                                OrderDetails,
-                                                OrderItemsArray: ItemDetails,
-                                                DeliveryArray: DeliveryDetails,
-                                                TranspoterArray: TranspoterDetails,
-                                                StaffArray: StaffDetails,
-                                                editPage: 'PurchaseOderWithDelivery'
-                                            }
-                                        })}
-                                    ><Edit className="fa-16" /></IconButton>
-                                </span>
-                            </Tooltip >
-                        )}
+                                    }))
+                                },
+                                ...((navigation && !IsConvertedAsInvoice && EditRights) ? [{
+                                    name: 'Edit',
+                                    icon: <Edit />,
+                                    onclick: () => navigation({
+                                        page: 'create',
+                                        stateToTransfer: {
+                                            OrderDetails,
+                                            OrderItemsArray: ItemDetails,
+                                            DeliveryArray: DeliveryDetails,
+                                            TranspoterArray: TranspoterDetails,
+                                            StaffArray: StaffDetails,
+                                            // ConvertedAsInvoices: ConvertedAsInvoices,
+                                            display: true,
+                                        }
+                                    })
+                                }] : []),
+                                {
+                                    name: 'Parameters',
+                                    icon: <Settings />,
+                                    onclick: () => dialogs(pre => ({ ...pre, parameterDialogOpen: true, parameterDialogItem: row }))
+                                }
+                            ]}
+                        />
                     </>
                 )
             }
         };
 
-    // Delivery Based Columns 
+    // Delivery Based Columns
     const ArrivedDate = {
         isVisible: 1,
         isCustomCell: true,

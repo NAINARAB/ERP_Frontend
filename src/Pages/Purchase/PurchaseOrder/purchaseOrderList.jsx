@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray, getSessionFiltersByPageId, setSessionFilters } from "../../../Components/functions";
@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "../../DataEntry/purchaseOrderPreviewTemplate";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
+import ParameterAssignDialog from "./parameterAssignDialog";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -32,6 +33,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
     });
     const [vendorList, setVendorList] = useState([]);
     const [products, setProducts] = useState([]);
+    const [moduleParameters, setModuleParameters] = useState([]);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -42,7 +44,9 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         deleteOrderDialog: false,
         deleteOrderId: '',
         refresh: false,
-        view: 'PURCHASE ORDERS'
+        view: 'PURCHASE ORDERS',
+        parameterDialogOpen: false,
+        parameterDialogItem: null
     });
 
     useEffect(() => {
@@ -64,6 +68,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                 setProducts(data.data);
             } else {
                 setProducts([]);
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `masters/moduleParameters?moduleName=PURCHASE_ORDER`
+        }).then(data => {
+            if (data.success) {
+                setModuleParameters(data.data);
             }
         }).catch(e => console.error(e));
     }, []);
@@ -93,14 +105,6 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         } = sessionFilters;
         setFilters(prev => ({ ...prev, Fromdate, Todate, OrderStatus, vendorId, vendor }));
     }, [sessionValue, pageID, location]);
-
-    // useEffect(() => {
-    //     const Fromdate = (stateDetails?.Fromdate && isValidDate(stateDetails?.Fromdate)) ? ISOString(stateDetails?.Fromdate) : null;
-    //     const Todate = (stateDetails?.Todate && isValidDate(stateDetails?.Todate)) ? ISOString(stateDetails?.Todate) : null;
-    //     if (Fromdate && Todate) {
-    //         updateQueryString({ Fromdate, Todate });
-    //     }
-    // }, [stateDetails]);
 
     const handleFilterChange = (valObj) => {
         setFilters(prev => ({ ...prev, ...valObj }));
@@ -138,13 +142,19 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         navigate(page, { state: stateToTransfer });
     };
 
+    const dataToPass = useMemo(() => {
+        return checkIsNumber(filters.vendorId)
+            ? purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
+            : purchaseOrderData
+    }, [purchaseOrderData, filters.vendorId]);
+
+    console.log(filters)
+
     return (
         <>
             <FilterableTable
                 dataArray={purchaseOrderDataSet({
-                    data: checkIsNumber(filters.vendorId)
-                        ? purchaseOrderData.filter(obj => isEqualNumber(obj.PartyId, filters.vendorId))
-                        : purchaseOrderData,
+                    data: dataToPass,
                     status: filters.OrderStatus
                 })}
                 columns={displayColumns({
@@ -178,6 +188,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                         ><FilterAlt /></IconButton>
                     </>
                 }
+            />
+
+            <ParameterAssignDialog
+                open={filters.parameterDialogOpen}
+                onClose={() => setFilters(prev => ({ ...prev, parameterDialogOpen: false, parameterDialogItem: null }))}
+                itemData={filters.parameterDialogItem}
+                moduleParameters={moduleParameters}
+                onSave={() => setFilters(prev => ({ ...prev, refresh: !prev.refresh }))}
             />
 
             {orderPreview.display && (
