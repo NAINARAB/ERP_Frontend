@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, Subraction, filterableText
+    rid, Subraction, filterableText, generateUUID
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
@@ -37,7 +37,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
-    const [requestId, setRequestId] = useState(crypto.randomUUID());
+    const [requestId, setRequestId] = useState(generateUUID());
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -583,7 +583,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             }
         }).then(data => {
             if (!isEqualNumber(data.statusCode, 409)) {
-                setRequestId(crypto.randomUUID());
+                setRequestId(generateUUID());
             }
             if (data.success) {
                 const savedDoId = data.others?.Do_Id;
