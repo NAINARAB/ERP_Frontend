@@ -178,6 +178,10 @@ const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAss
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
 const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverReport'));
 
+const StockJournalAdjustmentCreate = lazy(() => import('./Pages/Inventry/StockJournalAdjustmentCreate'));
+const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment')); 
+
+
 // -----------------------------------------------------------------------------
 // Journal
 // -----------------------------------------------------------------------------
@@ -347,7 +351,9 @@ const RoutingArray = [
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetCreation />, path: '/erp/inventory/tripSheet/searchGodown' },
     { component: <InventoryTrunoverReport />, path: '/erp/inventory/trunOverReport' },
-
+    { component: <StockJournalAdjustmentCreate />, path :'/erp/inventory/StockJournalAdjustment/Create'},
+    
+    {component : <StockJournalAdjustment/> ,path : '/erp/inventory/StockJournalAdjustment'},
     // ---------------------------------------------------------------------------
     // ERP - Journal
     // ---------------------------------------------------------------------------
