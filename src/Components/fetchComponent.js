@@ -49,7 +49,7 @@ export const fetchLink = async ({
 
         if (options.headers["Content-Type"] === "application/json") {
             const json = await response.json();
-            return json;
+            return { ...json, statusCode: response.status };
         } else {
             return response;
         }

@@ -30,7 +30,6 @@ import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { getModuleAccess } from "../../../Components/moduleAccess";
-const requestId = crypto.randomUUID();
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -38,6 +37,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
+    const [requestId, setRequestId] = useState(crypto.randomUUID());
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -582,6 +582,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 Expence_Array: invoiceExpences
             }
         }).then(data => {
+            if (!isEqualNumber(data.statusCode, 409)) {
+                setRequestId(crypto.randomUUID());
+            }
             if (data.success) {
                 const savedDoId = data.others?.Do_Id;
 
