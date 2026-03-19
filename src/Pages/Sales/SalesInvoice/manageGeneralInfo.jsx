@@ -27,7 +27,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     setStaffArray,
     loadingOn,
     loadingOff,
-    salesInvoiceAccess = {}
+    salesInvoiceAccess = {},
+    fetchedAddresses = []
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -43,7 +44,7 @@ const ManageSalesInvoiceGeneralInfo = ({
 
     const onChangeRetailerAddress = (column, value) => {
 
-        const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(add => stringCompare(add[column], value));
+        const retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
 
         if (retailerAddress) {
             setAddress(retailerAddress, setRetailerDeliveryAddress);
@@ -64,7 +65,7 @@ const ManageSalesInvoiceGeneralInfo = ({
 
     const onChangeRetailerShippingAddress = (column, value) => {
 
-        const retailerAddress = toArray(retailerDetails?.deliveryAddresses).find(add => stringCompare(add[column], value));
+        const retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
 
         if (retailerAddress) {
             setAddress(retailerAddress, setShippingAddress);
@@ -311,7 +312,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="billingGSTINData">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option value={addr?.gstNumber} key={i}>{addr?.gstNumber}</option>
                                             ))}
                                         </datalist>
@@ -331,7 +332,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="deliveryName">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.deliveryName}>{addr?.deliveryName}</option>
                                             ))}
                                         </datalist>
@@ -351,7 +352,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="phoneNumber">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.phoneNumber}>{addr?.phoneNumber}</option>
                                             ))}
                                         </datalist>
@@ -371,7 +372,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="cityName">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.cityName}>{addr?.cityName}</option>
                                             ))}
                                         </datalist>
@@ -391,7 +392,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="billingState">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.stateName}>{addr?.stateName}</option>
                                             ))}
                                         </datalist>
@@ -411,7 +412,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="deliveryAddress">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.deliveryAddress}>{addr?.deliveryAddress}</option>
                                             ))}
                                         </datalist>
@@ -437,7 +438,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingGSTINData">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option value={addr?.gstNumber} key={i}>{addr?.gstNumber}</option>
                                             ))}
                                         </datalist>
@@ -457,7 +458,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingName">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.deliveryName}>{addr?.deliveryName}</option>
                                             ))}
                                         </datalist>
@@ -477,7 +478,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingPhoneNumberData">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.phoneNumber}>{addr?.phoneNumber}</option>
                                             ))}
                                         </datalist>
@@ -497,7 +498,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingCityName">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.cityName}>{addr?.cityName}</option>
                                             ))}
                                         </datalist>
@@ -517,7 +518,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingState">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.stateName}>{addr?.stateName}</option>
                                             ))}
                                         </datalist>
@@ -537,7 +538,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             autoComplete="off"
                                         />
                                         <datalist id="shippingAddress">
-                                            {toArray(retailerDetails?.deliveryAddresses).map((addr, i) => (
+                                            {toArray(fetchedAddresses).map((addr, i) => (
                                                 <option key={i} value={addr?.deliveryAddress}>{addr?.deliveryAddress}</option>
                                             ))}
                                         </datalist>

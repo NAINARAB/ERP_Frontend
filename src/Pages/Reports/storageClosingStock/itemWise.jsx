@@ -123,8 +123,6 @@ const ItemWiseStockReport = ({
         api,
         reportName,
         url,
-        loadingOn,
-        loadingOff,
     ]);
 
     const sortedColumns = useMemo(() => {

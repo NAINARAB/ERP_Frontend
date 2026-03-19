@@ -55,6 +55,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         moduleConfiguration: []
     });
 
+    console.log(generateUUID())
+
     const [dialog, setDialog] = useState({
         addProductDialog: false,
         importFromSaleOrder: false,
@@ -70,6 +72,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const [retailerSalesStatus, setRetailerSalesStatus] = useState(retailerOutstandingDetails);
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
+    const [fetchedAddresses, setFetchedAddresses] = useState([]);
 
     const isInclusive = isEqualNumber(invoiceInfo.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(invoiceInfo.GST_Inclusive, 2);
@@ -318,51 +321,68 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         const retailerId = invoiceInfo?.Retailer_Id;
 
         if (isValidNumber(retailerId)) {
-            const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
+            fetchLink({
+                address: `masters/retailers/address?Retailer_Id=${retailerId}`
+            }).then(res => {
+                const retailerAddress = res.success ? toArray(res.data) : [];
+                
+                const seen = new Set();
+                const distinctAddresses = retailerAddress.filter(addr => {
+                    const key = `${addr.deliveryName}|${addr.phoneNumber}|${addr.cityName}|${addr.deliveryAddress}|${addr.gstNumber}|${addr.stateName}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
 
-            const retailerAddress = toArray(retailerDetails?.deliveryAddresses);
-            const {
-                lolDeliveryName = '',
-                lolPhoneNumber = '',
-                lolCityName = '',
-                lolDeliveryAddress = '',
-                lolGstNumber = '',
-                lolStateName = ''
-            } = retailerDetails;
+                setFetchedAddresses(distinctAddresses);
 
-            const billingAddress = retailerAddress.find(
-                addr => isEqualNumber(addr?.id, invoiceInfo?.deliveryAddressId)
-            ) ?? null;
+                const retailerDetails = baseData.retailers.find(ret => isEqualNumber(ret.Retailer_Id, retailerId)) || {};
 
-            if (billingAddress) {
-                setAddress(billingAddress, setRetailerDeliveryAddress)
-            } else {
-                setAddress({
-                    deliveryName: lolDeliveryName,
-                    phoneNumber: lolPhoneNumber,
-                    cityName: lolCityName,
-                    deliveryAddress: lolDeliveryAddress,
-                    gstNumber: lolGstNumber,
-                    stateName: lolStateName
-                }, setRetailerDeliveryAddress)
-            }
+                const {
+                    lolDeliveryName = '',
+                    lolPhoneNumber = '',
+                    lolCityName = '',
+                    lolDeliveryAddress = '',
+                    lolGstNumber = '',
+                    lolStateName = ''
+                } = retailerDetails;
 
-            const shippingAddress = retailerAddress.find(
-                addr => isEqualNumber(addr?.id, invoiceInfo?.shipingAddressId)
-            ) ?? null;
+                const billingAddress = retailerAddress.find(
+                    addr => isEqualNumber(addr?.id, invoiceInfo?.deliveryAddressId)
+                ) ?? null;
 
-            if (shippingAddress) {
-                setAddress(shippingAddress, setRetailerShippingAddress)
-            } else {
-                setAddress({
-                    deliveryName: lolDeliveryName,
-                    phoneNumber: lolPhoneNumber,
-                    cityName: lolCityName,
-                    deliveryAddress: lolDeliveryAddress,
-                    gstNumber: lolGstNumber,
-                    stateName: lolStateName
-                }, setRetailerShippingAddress)
-            }
+                if (billingAddress) {
+                    setAddress(billingAddress, setRetailerDeliveryAddress)
+                } else {
+                    setAddress({
+                        deliveryName: lolDeliveryName,
+                        phoneNumber: lolPhoneNumber,
+                        cityName: lolCityName,
+                        deliveryAddress: lolDeliveryAddress,
+                        gstNumber: lolGstNumber,
+                        stateName: lolStateName
+                    }, setRetailerDeliveryAddress)
+                }
+
+                const shippingAddress = retailerAddress.find(
+                    addr => isEqualNumber(addr?.id, invoiceInfo?.shipingAddressId)
+                ) ?? null;
+
+                if (shippingAddress) {
+                    setAddress(shippingAddress, setRetailerShippingAddress)
+                } else {
+                    setAddress({
+                        deliveryName: lolDeliveryName,
+                        phoneNumber: lolPhoneNumber,
+                        cityName: lolCityName,
+                        deliveryAddress: lolDeliveryAddress,
+                        gstNumber: lolGstNumber,
+                        stateName: lolStateName
+                    }, setRetailerShippingAddress)
+                }
+            }).catch(console.error);
+        } else {
+            setFetchedAddresses([]);
         }
     }, [baseData.retailers, invoiceInfo.Retailer_Id])
 
@@ -795,6 +815,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     staffArray={staffArray}
                                     setStaffArray={setStaffArray}
                                     salesInvoiceAccess={salesInvoiceAccess}
+                                    fetchedAddresses={fetchedAddresses}
                                 />
                             </div>
                         </div>
