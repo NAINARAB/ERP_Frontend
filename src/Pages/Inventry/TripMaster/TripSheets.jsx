@@ -237,8 +237,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
          const companyDetails=(Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
             fromAddressId:item.From_Location,
             fromAddress : item.FromAddress,
-            fromPhone_No:item.FromGst,
-            fromGst_No:item.FromPhone
+            fromPhone_No:item.FromPhone,
+            fromGst_No:item.FromGst    
             
         }));
          
