@@ -50,7 +50,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                 setUseProcessedData(true);
             }
         }).catch(e => console.error(e));
-    }, [invoice, loadingOn, loadingOff]);
+    }, [invoice]);
 
 
     const getInvoiceData = () => {
