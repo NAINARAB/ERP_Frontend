@@ -59,7 +59,8 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
   
     const [adjustmentInfo, setAdjustmentInfo] = useState({
         godownId: null,
-        adjustmentType: null 
+        adjustmentType: null,
+        Adj_date: new Date().toISOString().split('T')[0]
     });
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
@@ -169,6 +170,9 @@ useEffect(() => {
         setAdjustmentInfo({
             godownId: editValues.godown_id != null ? toNumber(editValues.godown_id) : null,  // ✅ 0 is valid
             adjustmentType: editValues.Adjust_Type !== undefined ? editValues.Adjust_Type : null,
+              Adj_date: editValues.Adj_date        // ✅ add this
+        ? new Date(editValues.Adj_date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
         });
 
         setInvoiceInfo(prev => ({
@@ -384,6 +388,7 @@ useEffect(() => {
                 adjustmentDetails: {
                     godownId: adjustmentInfo.godownId,
                     adjustmentType: adjustmentInfo.adjustmentType,
+                    Adj_date: adjustmentInfo.Adj_date,
                     
                 },
                 invoiceNo:editValues?.invoice_no,
@@ -527,6 +532,20 @@ useEffect(() => {
                                             styles={customSelectStyles}
                                         />
                                     </div>
+
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+    <label className='fa-13'>Adjustment Date <RequiredStar /></label>
+    <input
+        type="date"
+        className={inputStyle}
+        value={adjustmentInfo.Adj_date ?? ''}
+        onChange={e => setAdjustmentInfo(prev => ({
+            ...prev,
+            Adj_date: e.target.value
+        }))}
+        style={{ width: '100%' }}
+    />
+</div>
 
                                     
                                 </div>

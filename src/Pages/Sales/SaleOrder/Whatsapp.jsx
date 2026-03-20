@@ -400,7 +400,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
                     templatesData.forEach(template => {
                         const name = template.templateName || template.name || '';
-                        if (name.includes('template_text')) {
+                        if (name.includes('sales_invoice_order')) {
                             setSelectedTemplate(name);
                         }
                     });
@@ -672,7 +672,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
             const payload = {
                 template: {
-                    name: "template_text",
+                    name: "sales_invoice_order",
                     language: "en"
                 },
                 source: "crm",
@@ -1841,9 +1841,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 const formattedDate = new Date(row.Do_Date || row.createdOn).toLocaleDateString('en-GB');
                 const totalAmount = (row.Total_Invoice_value || 0).toFixed(2);
 
+
+                const CompanyName= storage?.Company_id == 1 ? "SM TRADERS" :"MOBITE"
+               
                 const payload = {
                     template: {
-                        name: "template_text", 
+                        name: "sales_invoice_order", 
                         language: "en"
                     },
                     source: "crm",
@@ -1856,7 +1859,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                             `${invoiceNo}`,
                             `${formattedDate}`,
                             `${totalAmount}`,
-                            'SM TRADERS',
+                            `${CompanyName}`,
                             `${pdfUrl}`
                         ]
                     }

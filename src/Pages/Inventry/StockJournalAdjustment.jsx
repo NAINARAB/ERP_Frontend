@@ -150,7 +150,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
             isCustomCell: true,
             Cell: ({ row }) => (
                 <Typography variant="body2">
-                    {row.Adj_date ? new Date(row.Adj_date).toLocaleDateString() : '—'}
+                    {row.Adj_date ? (row.Adj_date).split('T')[0]: '—'}
                 </Typography>
             ),
         },

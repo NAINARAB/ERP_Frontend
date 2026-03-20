@@ -713,12 +713,10 @@
 
 
 
-
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
 import {
-    IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip
+    IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip, Switch, FormControlLabel
 } from "@mui/material";
 import { Search, Edit, Delete, Sync } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -753,6 +751,7 @@ function RateMaster({ loadingOn, loadingOff }) {
     });
     const [addDialog, setAddDialog] = useState(false);
     const [inputValue, setInputValue] = useState({
+        Id: "",
         Rate_Date: new Date().toISOString().split("T")[0],
         Pos_Brand_Id: "",
         Item_Id: "",
@@ -773,9 +772,8 @@ function RateMaster({ loadingOn, loadingOff }) {
     const [bulkData, setBulkData] = useState([]);
     const [reload, setReload] = useState(false);
     const [exportDialog, setExportDialog] = useState(false);
-
-
     const [searchTerm, setSearchTerm] = useState("");
+    const [showActiveOnly, setShowActiveOnly] = useState(true); // Toggle state for Active/Inactive
 
     useEffect(() => {
         const queryFilters = {
@@ -844,6 +842,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                     setAddDialog(false);
                     toast.success(data.message);
                     setInputValue({
+                        Id: "",
                         Rate_Date: new Date().toISOString().split("T")[0],
                         Pos_Brand_Id: "", Item_Id: "", Rate: "",
                         Is_Active_Decative: "-", POS_Brand_Name: "",
@@ -870,6 +869,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                     setAddDialog(false);
                     setReload(!reload);
                     setInputValue({
+                        Id: "",
                         Rate_Date: new Date().toISOString().split("T")[0],
                         Pos_Brand_Id: "", Item_Id: "", Rate: "",
                         Is_Active_Decative: "", POS_Brand_Name: "",
@@ -916,6 +916,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                     setOpen(false);
                     setAddDialog(false);
                     setInputValue({
+                        Id: "",
                         Rate_Date: new Date().toISOString().split("T")[0],
                         Pos_Brand_Id: "", Item_Id: "", Rate: "",
                         Is_Active_Decative: "", POS_Brand_Name: "",
@@ -933,7 +934,9 @@ function RateMaster({ loadingOn, loadingOff }) {
     const handleExportData = async () => {
         if (loadingOn) loadingOn();
         if (!filters?.Fromdate || !filters?.NewDate) {
-            throw new Error("Both 'From Date' and 'New Date' are required.");
+            toast.error("Both 'From Date' and 'New Date' are required.");
+            if (loadingOff) loadingOff();
+            return;
         }
         fetchLink({
             address: `masters/exportRateMaster?FromDate=${filters?.Fromdate}&NewDate=${filters?.NewDate}`,
@@ -963,18 +966,25 @@ function RateMaster({ loadingOn, loadingOff }) {
     };
 
     const handleDownload = async () => {
-        const activePosData = posData.filter(item => item.Is_Active_Decative === 1);
-        if (activePosData.length === 0) {
-            alert("No active data available for download.");
+  
+        const dataToDownload = showActiveOnly 
+            ? posData.filter(item => item.Is_Active_Decative === 1)
+            : posData.filter(item => item.Is_Active_Decative === 0);
+            
+        if (dataToDownload.length === 0) {
+            toast.error(showActiveOnly 
+                ? "No active data available for download."
+                : "No inactive data available for download.");
             return;
         }
-        const groupedData = groupByPosBrandId(activePosData);
+        
+        const groupedData = groupByPosBrandId(dataToDownload);
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("PriceList_Data");
-        const uniqueDate = activePosData.length > 0
-            ? activePosData[0].Rate_Date.split("T")[0].split("-").reverse().join("-")
+        const worksheet = workbook.addWorksheet(`${showActiveOnly ? "Active" : "Inactive"}_PriceList_Data`);
+        const uniqueDate = dataToDownload.length > 0
+            ? dataToDownload[0].Rate_Date.split("T")[0].split("-").reverse().join("-")
             : "";
-        worksheet.addRow([uniqueDate, "PriceList"]).font = { bold: true, size: 14 };
+        worksheet.addRow([uniqueDate, `${showActiveOnly ? "Active" : "Inactive"} PriceList`]).font = { bold: true, size: 14 };
         Object.entries(groupedData).forEach(([brandId, products]) => {
             const brandRow = worksheet.addRow([products[0].POS_Brand_Name]);
             const brandCell = brandRow.getCell(1);
@@ -987,7 +997,8 @@ function RateMaster({ loadingOn, loadingOff }) {
         const blob = new Blob([buffer], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
-        saveAs(blob, "PriceList_Data.xlsx");
+        saveAs(blob, `${showActiveOnly ? "Active" : "Inactive"}_PriceList_Data.xlsx`);
+        toast.success(`Products Successfully downloaded`);
     };
 
     const syncLOS = () => {
@@ -997,17 +1008,150 @@ function RateMaster({ loadingOn, loadingOff }) {
     };
 
 
-    const filteredPosData = posData.filter(item => {
-        const term = searchTerm.toLowerCase();
-        return (
-            !term ||
-            (item.POS_Brand_Name || '').toLowerCase().includes(term) ||
-            (item.Short_Name     || '').toLowerCase().includes(term) ||
-            (item.Product_Name   || '').toLowerCase().includes(term) ||
-            String(item.Rate     || '').includes(term) ||
-            String(item.Max_Rate || '').includes(term)
+    const filteredPosData = useMemo(() => {
+        let data = posData;
+        
+       
+        data = data.filter(item => 
+            showActiveOnly ? item.Is_Active_Decative === 1 : item.Is_Active_Decative === 0
         );
-    });
+        
+ 
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase().trim();
+            data = data.filter(item => {
+                return (
+                    (item.POS_Brand_Name || '').toLowerCase().includes(term) ||
+                    (item.Short_Name || '').toLowerCase().includes(term) ||
+                    (item.Product_Name || '').toLowerCase().includes(term) ||
+                    String(item.Rate || '').includes(term) ||
+                    String(item.Max_Rate || '').includes(term)
+                );
+            });
+        }
+        
+        return data;
+    }, [posData, searchTerm, showActiveOnly]);
+
+const handlePrintActiveProducts = async () => {
+    const dataToPrint = filteredPosData;
+        
+    if (dataToPrint.length === 0) {
+        toast.error(showActiveOnly 
+            ? "No active products available for print."
+            : "No inactive products available for print.");
+        return;
+    }
+    
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(`${showActiveOnly ? "Active" : "Inactive"}_Products_List`);
+        
+        // Group data by Rate_Date
+        const groupedByDate = dataToPrint.reduce((groups, item) => {
+            const dateKey = item.Rate_Date ? new Date(item.Rate_Date).toLocaleDateString('en-GB') : "";
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(item);
+            return groups;
+        }, {});
+        
+        let currentRow = 1;
+        
+        // Iterate through each date group
+        Object.entries(groupedByDate).forEach(([date, items]) => {
+            // Add Date header row
+            const dateRow = worksheet.addRow(["Date", date]);
+            dateRow.font = { bold: true, size: 12 };
+            dateRow.eachCell((cell) => {
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFE0E0E0" }
+                };
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" }
+                };
+                cell.alignment = { horizontal: "left", vertical: "middle" };
+            });
+            
+            // Add column headers row
+            const headers = ["S.No", "Brand", "Product", "Rate", "Max Rate", "Status"];
+            const headerRow = worksheet.addRow(headers);
+            headerRow.font = { bold: true, size: 12 };
+            headerRow.eachCell((cell) => {
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFE0E0E0" }
+                };
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" }
+                };
+                cell.alignment = { horizontal: "center", vertical: "middle" };
+            });
+            
+            // Add data rows for this date group
+            items.forEach((item, idx) => {
+                const dataRow = worksheet.addRow([
+                    idx + 1,                              // S.No
+                    item.POS_Brand_Name || "",            // Brand
+                    item.Short_Name || item.Product_Name || "", // Product
+                    item.Rate || "",                      // Rate
+                    item.Max_Rate || "",                  // Max Rate
+                    showActiveOnly ? "Active" : "Inactive" // Status
+                ]);
+                
+                dataRow.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" }
+                    };
+                    cell.alignment = { horizontal: "center", vertical: "middle" };
+                });
+            });
+            
+            // Add an empty row after each date group for spacing
+            worksheet.addRow([]);
+        });
+        
+        // Set column widths for all columns
+        worksheet.columns = [
+            { width: 8 },   // S.No
+            { width: 25 },  // Brand
+            { width: 35 },  // Product
+            { width: 12 },  // Rate
+            { width: 12 },  // Max Rate
+            { width: 10 },  // Status
+        ];
+        
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        
+        let fileName = `${showActiveOnly ? "Active" : "Inactive"}_Products_${moment().format("YYYY-MM-DD")}`;
+        if (searchTerm.trim()) {
+            fileName += `_${searchTerm}`;
+        }
+        fileName += ".xlsx";
+        
+        saveAs(blob, fileName);
+        toast.success(`Successfully exported ${dataToPrint.length} ${showActiveOnly ? "active" : "inactive"} products!`);
+    } catch (error) {
+        console.error("Error exporting products:", error);
+        toast.error("Failed to export products. Please try again.");
+    }
+};
 
     return (
         <div>
@@ -1022,34 +1166,65 @@ function RateMaster({ loadingOn, loadingOff }) {
                             onClick={handleDownload}>
                             Download Excel
                         </Button>
+                        <Button
+                            className="mx-2 btn btn-success"
+                            style={{ outline: "none", boxShadow: "none" }}
+                            onClick={handlePrintActiveProducts}>
+                            {showActiveOnly ? "Print Active" : "Print Inactive"}
+                        </Button>
                     </h5>
 
-          
-                  <div
-                        className="d-flex align-items-center rounded px-2"
-                        style={{ height: 36, backgroundColor: '#ffffff', border: '1.5px solid #000000' }}
-                    >
-                        <Search style={{ fontSize: 18, color: '#6b7280', marginRight: 4 }} />
-                        <input
-                            type="text"
-                            placeholder="Search brand, product, rate..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            style={{
-                                border: 'none',
-                                outline: 'none',
-                                fontSize: 13,
-                                width: 220,
-                                background: 'transparent',
-                            }}
-                        />
-                        {searchTerm && (
-                            <span
-                                onClick={() => setSearchTerm("")}
-                                style={{ cursor: 'pointer', fontSize: 13, color: '#9ca3af', marginLeft: 4 }}>
-                                ✕
-                            </span>
-                        )}
+                
+                    <div className="d-flex align-items-center gap-2">
+                        <div
+                            className="d-flex align-items-center rounded px-2"
+                            style={{ height: 36, backgroundColor: '#ffffff', border: '1.5px solid #000000' }}
+                        >
+                            <Search style={{ fontSize: 18, color: '#6b7280', marginRight: 4 }} />
+                            <input
+                                type="text"
+                                placeholder={`Search ${showActiveOnly ? "active" : "inactive"} products...`}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{
+                                    border: 'none',
+                                    outline: 'none',
+                                    fontSize: 13,
+                                    width: 220,
+                                    background: 'transparent',
+                                }}
+                            />
+                            {searchTerm && (
+                                <span
+                                    onClick={() => setSearchTerm("")}
+                                    style={{ cursor: 'pointer', fontSize: 13, color: '#9ca3af', marginLeft: 4 }}>
+                                    ✕
+                                </span>
+                            )}
+                        </div>
+                        
+             
+                        <div className="d-flex align-items-center">
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={showActiveOnly}
+                                        onChange={(e) => {
+                                            setShowActiveOnly(e.target.checked);
+                                            setSearchTerm(""); 
+                                        }}
+                                        color="primary"
+                                    />
+                                }
+                                label={
+                                    <span style={{ fontSize: '13px', fontWeight: '500' }}>
+                                        {showActiveOnly ? "Active" : "Inactive"}
+                                    </span>
+                                }
+                                labelPlacement="start"
+                                style={{ marginRight: 0 }}
+                            />
+                        </div>
                     </div>
 
                     <Tooltip title="Sync Data">
@@ -1065,6 +1240,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                             onChange={e => {
                                 const newFromDate = e.target.value;
                                 setFilters({ ...filters, Fromdate: newFromDate, fetchFrom: newFromDate });
+                                setSearchTerm(""); // Reset search when date changes
                             }}
                             className="cus-inpt w-auto p-1"
                         />
@@ -1082,6 +1258,8 @@ function RateMaster({ loadingOn, loadingOff }) {
                     ) : null}
                 </div>
             </div>
+
+          
 
             <FilterableTable
                 dataArray={filteredPosData}
@@ -1122,12 +1300,12 @@ function RateMaster({ loadingOn, loadingOff }) {
                                         <Edit className="fa-in" />
                                     </IconButton>
                                     <IconButton
-                                        onClick={() => { setOpen(true); setInputValue({ Id: row.Id }); }}
+                                        onClick={() => { setOpen(true); setInputValue({ ...inputValue, Id: row.Id }); }}
                                         size="small"
                                         color="error">
                                         <Delete className="fa-in" />
                                     </IconButton>
-                                </td>
+                                   </td>
                             ),
                         }
                         : {
@@ -1140,7 +1318,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                 ]}
             />
 
-   
+            {/* Add/Edit Dialog */}
             <Dialog open={addDialog} onClose={() => setAddDialog(false)} fullWidth maxWidth="sm">
                 <DialogTitle>{inputValue.Id ? "UPDATE" : "CREATE"} RATE MASTER</DialogTitle>
                 <form onSubmit={e => { e.preventDefault(); inputValue.Id ? handleUpdate() : handleRateMasterAdd(); }}>
@@ -1151,6 +1329,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                             value={inputValue.Rate_Date}
                             onChange={e => setInputValue({ ...inputValue, Rate_Date: e.target.value })}
                             className="cus-inpt"
+                            required
                         />
 
                         <label>POS Brand</label>
@@ -1160,7 +1339,8 @@ function RateMaster({ loadingOn, loadingOff }) {
                                 setSelectedPosBrand(e.target.value);
                                 setInputValue({ ...inputValue, Pos_Brand_Id: e.target.value });
                             }}
-                            className="cus-inpt">
+                            className="cus-inpt"
+                            required>
                             <option value="" disabled>Select POS Brand</option>
                             {posBrand.map((o, i) => (
                                 <option key={i} value={o.value}>{o.label}</option>
@@ -1172,7 +1352,8 @@ function RateMaster({ loadingOn, loadingOff }) {
                             className="cus-inpt"
                             disabled={!selectedPosBrand}
                             value={inputValue.Item_Id}
-                            onChange={e => setInputValue({ ...inputValue, Item_Id: e.target.value })}>
+                            onChange={e => setInputValue({ ...inputValue, Item_Id: e.target.value })}
+                            required>
                             <option value="" disabled>Select Product</option>
                             {product.length > 0
                                 ? product.map((p, i) => <option key={i} value={p.value}>{p.label}</option>)
@@ -1183,21 +1364,28 @@ function RateMaster({ loadingOn, loadingOff }) {
                         <TextField
                             value={inputValue.Rate ?? ""}
                             onChange={e => setInputValue({ ...inputValue, Rate: e.target.value })}
-                            fullWidth margin="dense" variant="outlined"
+                            fullWidth 
+                            margin="dense" 
+                            variant="outlined"
+                            type="number"
                         />
 
                         <label>Max Rate</label>
                         <TextField
                             value={inputValue.MaxRate ?? ""}
                             onChange={e => setInputValue({ ...inputValue, MaxRate: e.target.value })}
-                            fullWidth margin="dense" variant="outlined"
+                            fullWidth 
+                            margin="dense" 
+                            variant="outlined"
+                            type="number"
                         />
 
                         <label>Status</label>
                         <select
                             className="cus-inpt"
                             value={inputValue.Is_Active_Decative}
-                            onChange={e => setInputValue({ ...inputValue, Is_Active_Decative: e.target.value })}>
+                            onChange={e => setInputValue({ ...inputValue, Is_Active_Decative: e.target.value })}
+                            required>
                             <option value="" disabled>Select</option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
@@ -1206,11 +1394,13 @@ function RateMaster({ loadingOn, loadingOff }) {
                     <DialogActions>
                         <Button onClick={() => {
                             setInputValue({
+                                Id: "",
                                 Rate_Date: new Date().toISOString().split("T")[0],
                                 Pos_Brand_Id: "", Item_Id: "", Rate: "",
                                 Is_Active_Decative: "", POS_Brand_Name: "",
                                 Product_Name: "", MaxRate: ""
                             });
+                            setSelectedPosBrand("");
                             setAddDialog(false);
                         }}>Cancel</Button>
                         <Button type="submit" variant="contained">Save</Button>
@@ -1218,7 +1408,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                 </form>
             </Dialog>
 
-    
+            {/* Delete Confirmation Dialog */}
             <Dialog open={open} onClose={() => setOpen(false)}>
                 <DialogTitle>Confirmation</DialogTitle>
                 <DialogContent><b>Do you want to delete the RateMaster?</b></DialogContent>
@@ -1230,24 +1420,30 @@ function RateMaster({ loadingOn, loadingOff }) {
 
             {/* Export Dialog */}
             <Dialog open={exportDialog} onClose={() => setExportDialog(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Confirmation</DialogTitle>
+                <DialogTitle>Export Data</DialogTitle>
                 <DialogContent>
                     <b>
                         Do you want to export data from:
-                        <div>
+                        <div style={{ marginTop: "10px" }}>
                             <label>From Date</label>
                             <input
-                                type="date" disabled value={filters.Fromdate}
+                                type="date" 
+                                disabled 
+                                value={filters.Fromdate}
                                 className="cus-inpt w-auto p-1"
+                                style={{ marginLeft: "10px" }}
                             />
                         </div>
                         <br />
                         <div>
                             <label>New Date</label>
                             <input
-                                type="date" value={filters.NewDate}
+                                type="date" 
+                                value={filters.NewDate}
                                 onChange={e => setFilters({ ...filters, NewDate: e.target.value })}
                                 className="cus-inpt w-auto p-1"
+                                style={{ marginLeft: "10px" }}
+                                required
                             />
                         </div>
                     </b>
