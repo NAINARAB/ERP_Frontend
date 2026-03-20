@@ -27,6 +27,7 @@ export const tripMasterDetails = {
     Trip_EN_KM: '',
     Trip_Tot_Kms: '',
     Godownlocation: '',
+    addressGodown: '',
     LoadingLoad: '',
     LoadingEmpty: '',
     UnloadingLoad: '',

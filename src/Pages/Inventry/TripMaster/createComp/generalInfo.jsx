@@ -87,6 +87,27 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                            <label>Address Godown</label>
+                            <Select
+                                value={{
+                                    value: tripSheetInfo.addressGodown,
+                                    label: godown.find(g => isEqualNumber(g.Godown_Id, tripSheetInfo.addressGodown))?.Godown_Name || ''
+                                }}
+                                onChange={e => {
+                                    setTripSheetInfo(pre => ({ ...pre, addressGodown: e.value }));
+                                    // Not clearing selected items for addressGodown unless necessary, keeping it simple
+                                }}
+                                options={
+                                    godown.map(st => ({ value: st.Godown_Id, label: st.Godown_Name }))
+                                }
+                                styles={customSelectStyles}
+                                isSearchable={true}
+                                placeholder={"Address Godown"}
+                                filterOption={reactSelectFilterLogic}
+                            />
+                        </div>
+
+                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                             <label>Bill Type</label>
                             <select
                                 value={tripSheetInfo.BillType}
