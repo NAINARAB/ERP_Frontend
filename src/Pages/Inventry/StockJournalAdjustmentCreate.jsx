@@ -23,7 +23,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import RequiredStar from '../../Components/requiredStar';
 
-const requestId = crypto.randomUUID();
+// const requestId = crypto.randomUUID();
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -72,7 +72,7 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
     const [retailerSalesStatus, setRetailerSalesStatus] = useState(retailerOutstandingDetails);
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
-
+    const [requestId, setRequestId] = useState(() => Math.random().toString(36).slice(2));
     const isInclusive = isEqualNumber(invoiceInfo.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(invoiceInfo.GST_Inclusive, 2);
     const IS_IGST = isEqualNumber(invoiceInfo.IS_IGST, 1);
@@ -86,6 +86,13 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
     });
 
 const isEdit = useMemo(() => isValidNumber(editValues?.Aj_id), [editValues?.Aj_id]);
+
+
+    const generateNewRequestId = () => {
+        const newId = Math.random().toString(36).slice(2);
+        setRequestId(newId);
+        return newId;
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -359,11 +366,12 @@ useEffect(() => {
         setInvoiceExpences([]);
         setStaffArray([]);
         setAdjustmentInfo({ godownId: null, adjustmentType: null });
+        generateNewRequestId();
     };
 
     const saveSalesInvoice = () => {
         if (isLoading) return;
-         const requestId = crypto.randomUUID();
+        const currentRequestId = generateNewRequestId();
     
         if (!checkIsNumber(adjustmentInfo.godownId)) {
             toast.warn('Please select a godown');
@@ -381,7 +389,7 @@ useEffect(() => {
             method: isEdit===true ? 'PUT' : 'POST',
             loadingOff, loadingOn,
             headers: {
-                'Idempotency-Key': requestId
+                'Idempotency-Key': currentRequestId
             },
             bodyData: {
                
