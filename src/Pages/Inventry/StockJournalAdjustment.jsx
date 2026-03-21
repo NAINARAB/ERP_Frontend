@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import FilterableTable, { createCol, ButtonActions } from "../../Components/filterableTable2";
 import {
-    Box, Chip, Typography, Skeleton
+    Box, Chip, Typography, Skeleton, TextField, InputAdornment
 } from '@mui/material';
 import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
 import { fetchLink } from '../../Components/fetchComponent';
 import { Button } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Add, Edit, FilterAlt, Print, Search, Sync, Visibility } from "@mui/icons-material";
-import {  Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+
 const fmtINR = (n) =>
     n == null ? '—' : '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -95,7 +96,9 @@ const canEditNow = (invoiceDate) => {
 
 const StockAdjustmentPage = ({ EditRights }) => {
     const [adjustments, setAdjustments] = useState([]);
+    const [filteredAdjustments, setFilteredAdjustments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [dialog, setDialog] = useState({
         viewDetails: false,
@@ -118,6 +121,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 
                 if (data && data.success) {
                     setAdjustments(data.adjustments || []);
+                    setFilteredAdjustments(data.adjustments || []);
                 }
             } catch (error) {
                 console.error('Error fetching adjustments:', error);
@@ -129,6 +133,51 @@ const StockAdjustmentPage = ({ EditRights }) => {
         fetchAdjustments();
     }, []);
 
+    // Search functionality
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setFilteredAdjustments(adjustments);
+            return;
+        }
+
+        const searchTermLower = searchTerm.toLowerCase().trim();
+        const filtered = adjustments.filter(adjustment => {
+            // Search in invoice number
+            if (adjustment.invoice_no?.toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in narration
+            if (adjustment.narration?.toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in type
+            const typeLabel = TYPE_CONFIG[adjustment.Adjust_Type]?.label || '';
+            if (typeLabel.toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in date (formatted)
+            if (adjustment.Adj_date) {
+                const formattedDate = adjustment.Adj_date.split('T')[0];
+                if (formattedDate.includes(searchTermLower)) {
+                    return true;
+                }
+            }
+            // Search in total value
+            if (fmtINR(adjustment.total_value).toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in product names from details
+            if (adjustment.details?.some(detail => 
+                detail.Product_Name?.toLowerCase().includes(searchTermLower)
+            )) {
+                return true;
+            }
+            return false;
+        });
+        
+        setFilteredAdjustments(filtered);
+    }, [searchTerm, adjustments]);
+
     const columns = [
         {
             ColumnHeader: 'Invoice No',
@@ -139,6 +188,18 @@ const StockAdjustmentPage = ({ EditRights }) => {
             Cell: ({ row }) => (
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#4f46e5' }}>
                     {row.invoice_no}
+                </Typography>
+            ),
+        },
+         {
+            ColumnHeader: 'Godown Name',
+            Field_Name: 'godown_name',
+            isVisible: 1,
+            align: 'left',
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#4f46e5' }}>
+                    {row.godown_name}
                 </Typography>
             ),
         },
@@ -226,21 +287,18 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 return (
                     <ButtonActions
                         buttonsData={[
-                            
-                           
                             {
                                 name: 'Edit',
                                 onclick: () => {
-                                    
-navigate('Create', {
-    state: {
-        ...row,                          
-        Products_List: row?.details || [], 
-        Aj_id:row?.Aj_id,
-        invoice_no:row?.invoice_no,
-        isEdit: true,
-    },
-});
+                                    navigate('Create', {
+                                        state: {
+                                            ...row,                          
+                                            Products_List: row?.details || [], 
+                                            Aj_id:row?.Aj_id,
+                                            invoice_no:row?.invoice_no,
+                                            isEdit: true,
+                                        },
+                                    });
                                 },
                                 icon: <Edit fontSize="small" color="primary" />,
                                 // disabled: !EditRights || !canEditNow(row.Adj_date),
@@ -265,23 +323,40 @@ navigate('Create', {
 
     return (
         <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f9fafb', minHeight: '100vh' }}>
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: '#111827', mb: 0.25 }}>
                         Stock Adjustments
                     </Typography>
+              
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => navigate('/erp/inventory/StockJournalAdjustment/Create')}
-                >
-                    Add Adjustment
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <TextField
+                        placeholder="Search "
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        size="small"
+                        sx={{ minWidth: 300 }}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => navigate('/erp/inventory/StockJournalAdjustment/Create')}
+                    >
+                        Add Adjustment
+                    </Button>
+                </Box>
             </Box>
 
             <FilterableTable
-                dataArray={adjustments}
+                dataArray={filteredAdjustments}
                 columns={columns}
                 isExpendable={true}
                 expandableComp={({ row }) => (

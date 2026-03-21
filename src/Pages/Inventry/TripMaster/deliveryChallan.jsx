@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { LocalDate, LocalTime, NumberFormat, numberToWords } from '../../../Components/functions';
+import { fetchLink } from '../../../Components/fetchComponent';
+import { companyDetails } from '../../../Components/tablecolumn';
 
 const DeliveryChallan = ({ data }) => {
     const {
@@ -25,11 +27,36 @@ const DeliveryChallan = ({ data }) => {
         amountInWords: totals.amountInWords || numberToWords(Math.round(calculatedTotals.totalAmount)) + " Only"
     };
 
-   
     const companyInfo = company?.lastLocation;   
     const recipientInfo = recipient?.firstLocation; 
 
     const emptyRowsCount = Math.max(0, 15 - items.length);
+    const localData = localStorage.getItem("user");
+    let companyId = null;
+
+    if (localData) {
+        try {
+            const parsedData = JSON.parse(localData);
+            companyId = parsedData.Company_id;
+        } catch (error) {
+            console.error("Error parsing user data:", error);
+        }
+    }
+    
+    const [CompanyDetails, setCompanyDetails] = useState([]);
+
+    useEffect(() => {
+        if (companyId) {
+            fetchLink({
+                address: `masters/company/url?Company_id=${companyId}`,
+            }).then(data => {
+                if (data.success) {
+                  
+                    setCompanyDetails(data.data);
+                }
+            }).catch(e => console.error(e));
+        }
+    }, [companyId]);
 
     return (
         <div className="delivery-challan-container" style={{
@@ -70,136 +97,129 @@ const DeliveryChallan = ({ data }) => {
 
             <div className="text-center">DELIVERY CHALLAN</div>
 
-            <table className="table table-bordered">
+            {/* Main Info Table - Fixed nested table issue */}
+            <table className="table table-bordered" style={{ width: '100%', tableLayout: 'fixed' }}>
+                <colgroup>
+                    {[...Array(8)].map((_, i) => (
+                        <col key={i} style={{ width: '12.5%' }} />
+                    ))}
+                </colgroup>
                 <tbody>
-                    <table style={{ width: '100%', tableLayout: 'fixed' }}>
-                        <colgroup>
-                            {[...Array(8)].map((_, i) => (
-                                <col key={i} style={{ width: '12.5%' }} />
-                            ))}
-                        </colgroup>
-                        <tbody>
+                    {/* Row 1: Company Name & Copy Type */}
+                    <tr>
+                        <td colSpan="6" className="text-center">
+                            <div className="company-name">{CompanyDetails?.Company_Name}</div>
+                        </td>
+                        <td colSpan="2" className="text-center">
+                            <span>ORIGINAL / DUPLICATE</span>
+                        </td>
+                    </tr>
 
-                          
-                            <tr>
-                                <td colSpan="6" className="text-center">
-                                    <div className="company-name">S.M TRADERS</div>
-                                </td>
-                                <td colSpan="2" className="text-center">
-                                    <span>ORIGINAL / DUPLICATE</span>
-                                </td>
-                            </tr>
+                    {/* Row 2: Company Address & Challan No */}
+                    <tr>
+                        <td colSpan="6" rowSpan="2">
+                            <div className="text-center">
+                                {typeof companyInfo === 'string'
+                                    ? companyInfo 
+                                    : companyInfo?.fromAddress || ''}
+                            </div>
+                            <div className="text-center">
+                                GSTIN : {typeof companyInfo === 'string'
+                                    ? ''
+                                    : companyInfo?.fromGst_No || ''}
+                            </div>
+                            <div className="text-center">
+                                Phone : {typeof companyInfo === 'string'
+                                    ? ''
+                                    : companyInfo?.fromPhone_No || ''}
+                            </div>
+                        </td>
+                        <td className="fw-bold">Challan No</td>
+                        <td>{challanNo}</td>
+                    </tr>
 
-                   
-                            <tr>
-                                <td colSpan="6" rowSpan="2">
-                                   
-                                    <div className="text-center">
-                                        {typeof companyInfo === 'string'
-                                            ? companyInfo 
-                                            : companyInfo?.fromAddress || ''}
-                                    </div>
-                                    <div className="text-center">
-                                        GSTIN : {typeof companyInfo === 'string'
-                                            ? ''
-                                            : companyInfo?.fromGst_No || ''}
-                                    </div>
-                                    <div className="text-center">
-                                        Phone : {typeof companyInfo === 'string'
-                                            ? ''
-                                            : companyInfo?.fromPhone_No || ''}
-                                    </div>
-                                </td>
-                                <td>Challan No</td>
-                                <td>{challanNo}</td>
-                            </tr>
+                    {/* Row 3: Date */}
+                    <tr>
+                        <td className="fw-bold">Date</td>
+                        <td>{date}</td>
+                    </tr>
 
-                            <tr>
-                                <td>Date</td>
-                                <td>{date}</td>
-                            </tr>
+                    {/* Row 4: Reason for Transfer */}
+                    <tr>
+                        <td colSpan="8" className="text-center">
+                            Reason for Transfer - Branch Transfer / Line Sales / Purchase Return / Job Work
+                        </td>
+                    </tr>
 
-                            
-                            <tr>
-                                <td colSpan="8" className="text-center">
-                                    Reason for Transfer - Branch Transfer / Line Sales / Purchase Return / Job Work
-                                </td>
-                            </tr>
+                    {/* Row 5: Details of Recipient & Mode of Transport */}
+                    <tr>
+                        <td className="fw-bold" colSpan="4">Details of Recipient / Supplier / Consignee</td>
+                        <td className="fw-bold" colSpan="4">Mode of Transport: {transport.mode || 'By Road'}</td>
+                    </tr>
 
-                            
-                            <tr>
-                                <td className="fw-bold" colSpan="4">Details of Recipient / Supplier / Consignee</td>
-                                <td className="fw-bold" colSpan="4">Mode of Transport: {transport.mode || 'By Road'}</td>
-                            </tr>
+                    {/* Row 6: Name & Vehicle No */}
+                    <tr>
+                        <td className="fw-bold">Name</td>
+                        <td colSpan="3">{CompanyDetails?.Company_Name}</td>
+                        <td className="fw-bold">Vehicle No</td>
+                        <td colSpan="3">{transport.vehicleNo || ''}</td>
+                    </tr>
 
-                          
-                            <tr>
-                                <td>Name</td>
-                                <td colSpan="3">S.M TRADERS</td>
-                                <td>Vehicle No</td>
-                                <td colSpan="3">{transport.vehicleNo || ''}</td>
-                            </tr>
+                    {/* Row 7: Address & Driver Name */}
+                    <tr>
+                        <td className="fw-bold">Address</td>
+                        <td colSpan="3">
+                            {typeof recipientInfo === 'string'
+                                ? recipientInfo  
+                                : recipientInfo?.toaddress || ''}
+                        </td>
+                        <td className="fw-bold">Driver Name</td>
+                        <td colSpan="3">{transport.driverName || ''}</td>
+                    </tr>
 
-                          
-                            <tr>
-                                <td>Address</td>
-                                <td colSpan="3">
-                                
-                                    {typeof recipientInfo === 'string'
-                                        ? recipientInfo  
-                                        : recipientInfo?.toaddress || ''}
-                                </td>
-                                <td>Driver Name</td>
-                                <td colSpan="3">{transport.driverName || ''}</td>
-                            </tr>
+                    {/* Row 8: GSTIN & Date Supply */}
+                    <tr>
+                        <td className="fw-bold">GSTIN</td>
+                        <td colSpan="3">
+                            {typeof recipientInfo === 'string'
+                                ? ''
+                                : recipientInfo?.toGst_No || ''}
+                        </td>
+                        <td className="fw-bold">Date Supply</td>
+                        <td colSpan="3">{transport.date || ''}</td>
+                    </tr>
 
-                            
-                            <tr>
-                                <td>GSTIN</td>
-                                <td colSpan="3">
-                                  
-                                    {typeof recipientInfo === 'string'
-                                        ? ''
-                                        : recipientInfo?.toGst_No || ''}
-                                </td>
-                                <td>Date Supply</td>
-                                <td colSpan="3">{transport.date || ''}</td>
-                            </tr>
+                    {/* Row 9: Phone & Time of Supply */}
+                    <tr>
+                        <td className="fw-bold">Phone</td>
+                        <td colSpan="3">
+                            {typeof recipientInfo === 'string'
+                                ? ''
+                                : recipientInfo?.toPhone_No || ''}
+                        </td>
+                        <td className="fw-bold">Time of Supply</td>
+                        <td colSpan="3">{transport.time || ''}</td>
+                    </tr>
 
-                            {/* ── Recipient Phone | Time of Supply ── */}
-                            <tr>
-                                <td>Phone</td>
-                                <td colSpan="3">
-                                    {typeof recipientInfo === 'string'
-                                        ? ''
-                                        : recipientInfo?.toPhone_No || ''}
-                                </td>
-                                <td>Time of Supply</td>
-                                <td colSpan="3">{transport.time || ''}</td>
-                            </tr>
+                    {/* Row 10: Place of Supply */}
+                    <tr>
+                        <td className="fw-bold"></td>
+                        <td colSpan="3"></td>
+                        <td className="fw-bold">Place of Supply</td>
+                        <td colSpan="3">{transport.place || ''}</td>
+                    </tr>
 
-                            {/* ── Place of Supply ── */}
-                            <tr>
-                                <td></td>
-                                <td colSpan="3"></td>
-                                <td>Place of Supply</td>
-                                <td colSpan="3">{transport.place || ''}</td>
-                            </tr>
-
-                            {/* ── State Code ── */}
-                            <tr>
-                                <td></td>
-                                <td colSpan="3"></td>
-                                <td>State Code</td>
-                                <td colSpan="3">{transport.stateCode || ''}</td>
-                            </tr>
-
-                        </tbody>
-                    </table>
+                    {/* Row 11: State Code */}
+                    <tr>
+                        <td className="fw-bold"></td>
+                        <td colSpan="3"></td>
+                        <td className="fw-bold">State Code</td>
+                        <td colSpan="3">{transport.stateCode || ''}</td>
+                    </tr>
                 </tbody>
             </table>
 
-            {/* ── Items Table ── */}
+            {/* Items Table */}
             <table className="table table-bordered" style={{ border: '2px solid #000' }}>
                 <thead>
                     <tr className="bg-light">
@@ -227,7 +247,11 @@ const DeliveryChallan = ({ data }) => {
                     {[...Array(emptyRowsCount)].map((_, index) => (
                         <tr key={`empty-${index}`}>
                             <td className="text-center">{items.length + index + 1}</td>
-                            <td></td><td></td><td></td><td></td><td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td className="text-right">0.00</td>
                         </tr>
                     ))}
@@ -240,7 +264,7 @@ const DeliveryChallan = ({ data }) => {
                 </tbody>
             </table>
 
-            {/* ── Amount in Words + Signatory ── */}
+            {/* Footer Table */}
             <table className="table table-bordered" style={{ border: '2px solid #000' }}>
                 <tbody>
                     <tr>
