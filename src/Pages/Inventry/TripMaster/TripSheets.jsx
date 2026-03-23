@@ -223,10 +223,10 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
 
      
         const driver = (Array.isArray(tripData?.Employees_Involved) ? tripData.Employees_Involved : [])
-            .find(staff => staff?.Cost_Category === 'Driver');
+            .find(staff => staff?.Cost_Category === 'Driver' || staff?.Cost_Category === 'Load Man');
 
         const receiptDetails = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item) => ({
-                  toAddressId:item.To_Location,
+                  toAddressId:item.ToLocation,
                   toaddress: item.ToAddress,
                   toPhone_No: item.ToPhone,
                   toGst_No: item.ToGst
@@ -235,7 +235,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         const firstLocation = receiptDetails[0]?.toAddressId ==35 ? tripData?.Narration : receiptDetails[0]; 
 
          const companyDetails=(Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
-            fromAddressId:item.From_Location,
+            fromAddressId:item.FromLocation,
             fromAddress : item.FromAddress,
             fromPhone_No:item.FromPhone,
             fromGst_No:item.FromGst    
