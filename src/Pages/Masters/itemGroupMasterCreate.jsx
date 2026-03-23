@@ -123,14 +123,11 @@ const ItemGroupMasterCreate = ({ loadingOn, loadingOff, isLoading }) => {
         if (!gstPercentage.toString().trim()) return toast.warn('Please enter GST percentage');
         if (invoiceProducts.length === 0)     return toast.warn('Please add at least one item');
 
-        const requestId = crypto.randomUUID();
-
         fetchLink({
             address: `masters/itemGroup`,
             method:  isEdit ? 'PUT' : 'POST',
             loadingOff,
             loadingOn,
-            headers: { 'Idempotency-Key': requestId },
             bodyData: {
                 Group_Name: groupName.trim(),
                 Group_HSN:  hsnCode.trim(),
