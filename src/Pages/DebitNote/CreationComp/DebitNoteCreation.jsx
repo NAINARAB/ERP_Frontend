@@ -427,6 +427,8 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                         Object.entries(debitNoteDetailsInfo).map(([key, value]) => {
                             if (Object.hasOwn(item, key)) return [key, item[key]];
                             if (key === 'rowId') return [key, rid()];
+                            if (key === 'Item_Name') return [key, item['Product_Name']];
+                            if (key === 'Alt_Bill_Qty') return [key, item['Bill_Alt_Qty']];
                             return [key, item[key] ?? value];
                         })
                     )));

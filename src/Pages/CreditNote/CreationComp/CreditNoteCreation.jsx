@@ -428,6 +428,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                         Object.entries(creditNoteDetailsInfo).map(([key, value]) => {
                             if (Object.hasOwn(item, key)) return [key, item[key]];
                             if (key === 'rowId') return [key, rid()];
+                            if (key === 'Item_Name') return [key, item['Product_Name']];
                             return [key, item[key] ?? value];
                         })
                     )));
