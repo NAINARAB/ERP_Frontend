@@ -10,6 +10,7 @@ import FilterableTable, { createCol, ButtonActions } from "../../Components/filt
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { Close } from "@mui/icons-material";
+import AlterHistoryTable from "../../Components/alterHistoryTable";
 // NOTE: Print components could be added here if needed for Credit/Debit Notes in the future
 
 const defaultFilters = {
@@ -140,6 +141,8 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                         </tr>
                     </tbody>
                 </table>
+                
+                <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
             </>
         )
     }

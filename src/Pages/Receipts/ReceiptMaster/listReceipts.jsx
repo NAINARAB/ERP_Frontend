@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import { receiptStatus, receiptTypes } from "./variable";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -264,6 +265,8 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     }
                 ]}
                 EnableSerialNumber
+                isExpendable={true}
+                expandableComp={({ row }) => <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />}
             />
 
             <AppDialog

@@ -130,6 +130,19 @@ const transformSalesVoucherData = (data = []) => {
         pushCumulativeRow(currentVoucherType);
     }
 
+    const voucherCounts = {};
+    transformedData.forEach(row => {
+        if (row.rowType === "HEADER" && row.voucherNoOrRate) {
+            voucherCounts[row.voucherNoOrRate] = (voucherCounts[row.voucherNoOrRate] || 0) + 1;
+        }
+    });
+
+    transformedData.forEach(row => {
+        if (row.rowType === "HEADER" && row.voucherNoOrRate && voucherCounts[row.voucherNoOrRate] > 1) {
+            row.isDuplicateVoucher = true;
+        }
+    });
+
     return transformedData;
 };
 
@@ -348,13 +361,18 @@ const SalesInvoicePaper = ({ loadingOn, loadingOff }) => {
                         Fied_Data: 'string',
                         tdClass: ({ row }) => headerColor(row.rowType)
                     },
-
                     {
                         isVisible: 1,
                         ColumnHeader: 'Vou.No / Rate',
                         Field_Name: 'voucherNoOrRate',
                         Fied_Data: 'string',
-                        tdClass: ({ row }) => headerColor(row.rowType)
+                        tdClass: ({ row }) => {
+                            let baseClass = headerColor(row.rowType) || '';
+                            if (row.rowType === 'HEADER' && row.isDuplicateVoucher) {
+                                baseClass = baseClass.replace('text-primary', 'text-danger');
+                            }
+                            return baseClass;
+                        }
                     },
                     {
                         isVisible: 1,

@@ -11,6 +11,7 @@ import PurchaseOrderPreviewTemplate from "../../DataEntry/purchaseOrderPreviewTe
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import ParameterAssignDialog from "./parameterAssignDialog";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -148,8 +149,6 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
             : purchaseOrderData
     }, [purchaseOrderData, filters.vendorId]);
 
-    console.log(filters)
-
     return (
         <>
             <FilterableTable
@@ -188,6 +187,8 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                         ><FilterAlt /></IconButton>
                     </>
                 }
+                isExpendable={true}
+                expandableComp={({ row }) => <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />}
             />
 
             <ParameterAssignDialog

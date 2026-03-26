@@ -9,6 +9,7 @@ import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import AlterHistoryTable from "../../Components/alterHistoryTable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -303,6 +304,8 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
                         </tr>
                     </tbody>
                 </table>
+
+                <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
             </>
         )
     }

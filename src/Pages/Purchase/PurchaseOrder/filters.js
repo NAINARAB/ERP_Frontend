@@ -17,6 +17,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
                     const itemDetails = item.ItemDetails.map(o => ({
                         ...o,
+                        alterHistoryDetails: item?.alterHistoryDetails,
                         OrderDetails: {
                             Id: item?.Id,
                             Sno: item?.Sno,
@@ -71,6 +72,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                         );
                     }).map(o => ({
                         ...o,
+                        alterHistoryDetails: item?.alterHistoryDetails,
                         OrderDetails: {
                             Id: item?.Id,
                             Sno: item?.Sno,
@@ -121,6 +123,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                         return Number(WeightTotal) >= Number(fil?.Weight);
                     }).map(o => ({
                         ...o,
+                        alterHistoryDetails: item?.alterHistoryDetails,
                         OrderDetails: {
                             Id: item?.Id,
                             Sno: item?.Sno,
@@ -168,6 +171,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
 
                     const DeliveryDetails = item.DeliveryDetails.map(o => ({
                         ...o,
+                        alterHistoryDetails: item?.alterHistoryDetails,
                         OrderDetails: {
                             Id: item?.Id,
                             Sno: item?.Sno,

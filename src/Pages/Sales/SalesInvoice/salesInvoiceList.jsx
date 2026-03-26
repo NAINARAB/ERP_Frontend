@@ -16,6 +16,7 @@ import { ButtonActions } from "../../../Components/filterableTable2";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { allowedUserTypesForPreviousDateSalesEdit } from "./variable";
 import TaxInvoicePrint from './taxInvoicePrint';
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -155,25 +156,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     </tbody>
                 </table>
 
-                <table className="table table-bordered">
-                    <thead>
-                        <tr>
-                            {['S.No', 'Edited By', 'Edited On', 'Reason'].map((item, index) => (
-                                <th key={index}>{item}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {toArray(row.alterationHistory).map((item, index) => (
-                            <tr key={index}>
-                                <td>{index + 1}</td>
-                                <td>{item.alterByGet}</td>
-                                <td>{LocalDateWithTime(item.alterAt)}</td>
-                                <td>{item.reason}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <AlterHistoryTable alterationHistory={row.alterationHistory} />
             </>
         )
     }

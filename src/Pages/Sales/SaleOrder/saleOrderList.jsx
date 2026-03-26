@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import DirectSaleInvoiceFromPos from "../SalesInvoice/directSaleInvoiceFromPos";
 import { ButtonActions } from "../../../Components/MenuButton";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', isVisible = 1) => ({
     isVisible: isVisible,
@@ -447,7 +448,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                             Total_Qty: qtyToUse,
                             Amount: qtyToUse * Number(product.Item_Rate || 0),
                             Bill_Qty: qtyToUse,
-                            Alt_Bill_Qty: Alt_Bill_Qty, 
+                            Alt_Bill_Qty: Alt_Bill_Qty,
                             Act_Qty: qtyToUse,
                             Alt_Act_Qty: Alt_Bill_Qty,
                         };
@@ -601,6 +602,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                         })}
                     </tbody>
                 </table>
+
+                <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
 
                 {/* {row.ConvertedInvoice && row.ConvertedInvoice.length > 0 && (
                     <div className="mt-3">
