@@ -8,7 +8,7 @@ import AppTabs from "../../../Components/appTabsComponent";
 import LedgerBasedClosingStock from "../../Reports/CRM/ledgerWise";
 import AppDialog from "../../../Components/appDialogComponent";
 import { Button, IconButton } from "@mui/material";
-import { InfoOutlined } from "@mui/icons-material";
+import { InfoOutlined, ReceiptLong } from "@mui/icons-material";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -28,7 +28,9 @@ const ManageSalesInvoiceGeneralInfo = ({
     loadingOn,
     loadingOff,
     salesInvoiceAccess = {},
-    fetchedAddresses = []
+    fetchedAddresses = [],
+    onPreviewOpen,
+    isPreview = false
 }) => {
 
     const tdStyle = 'border fa-14 vctr';
@@ -96,6 +98,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                         {
                             label: 'General Info',
                             children: (
+                                <fieldset disabled={isPreview} style={{ border: 'none', padding: 0, margin: 0 }}>
                                 <div className='row'>
                                     {/* customer name */}
                                     <div className="col-sm-8 p-2">
@@ -127,6 +130,11 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 onClick={() => setOpen(true)}
                                                 disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
                                             ><InfoOutlined /></IconButton>
+                                            <IconButton
+                                                onClick={onPreviewOpen}
+                                                disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
+                                                title="Preview Previous Invoice"
+                                            ><ReceiptLong /></IconButton>
                                         </div>
                                     </div>
 
@@ -292,11 +300,13 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </div>
                                     )}
                                 </div>
+                                </fieldset>
                             )
                         },
                         {
                             label: 'Billing Info',
                             children: (
+                                <fieldset disabled={isPreview} style={{ border: 'none', padding: 0, margin: 0 }}>
                                 <div className='row'>
                                     {/* GSTNO */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -418,11 +428,13 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </datalist>
                                     </div>
                                 </div>
+                                </fieldset>
                             )
                         },
                         {
                             label: 'Shipping Info',
                             children: (
+                                <fieldset disabled={isPreview} style={{ border: 'none', padding: 0, margin: 0 }}>
                                 <div className='row'>
                                     {/* GSTNO */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -544,11 +556,13 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </datalist>
                                     </div>
                                 </div>
+                                </fieldset>
                             )
                         },
                         {
                             label: 'Invoice Status',
                             children: (
+                                <fieldset disabled={isPreview} style={{ border: 'none', padding: 0, margin: 0 }}>
                                 <div className='row'>
 
                                     {/* DELIVERY STATUS */}
@@ -610,11 +624,13 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         </select>
                                     </div>
                                 </div>
+                                </fieldset>
                             )
                         },
                         {
                             label: 'Transaction Limit',
                             children: (
+                                <fieldset disabled={isPreview} style={{ border: 'none', padding: 0, margin: 0 }}>
                                 <div className="row">
                                     {/* outstanding */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -676,6 +692,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         />
                                     </div>
                                 </div>
+                                </fieldset>
                             )
                         }
                     ]}

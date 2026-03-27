@@ -30,6 +30,7 @@ import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
 import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { getModuleAccess } from "../../../Components/moduleAccess";
+import SalesInvoicePreview from "./salesInvoicePreview";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -55,13 +56,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         moduleConfiguration: []
     });
 
-    console.log(generateUUID())
-
     const [dialog, setDialog] = useState({
         addProductDialog: false,
         importFromSaleOrder: false,
         godownMismatch: false
-    })
+    });
+
+    const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+    const [previewData, setPreviewData] = useState(null);
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
     const [retailerDeliveryAddress, setRetailerDeliveryAddress] = useState(retailerDeliveryAddressInfo);
@@ -628,6 +630,73 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         })
     }
 
+    const fetchLastInvoicePreview = async () => {
+        if (!invoiceInfo?.Retailer_Id) return;
+        if (loadingOn) loadingOn();
+        try {
+            const res = await fetchLink({
+                address: `sales/salesInvoice/lastInvoice?Retailer_Id=${invoiceInfo.Retailer_Id}`
+            });
+            if (res.success && res.data && res.data.length > 0) {
+                const data = res.data[0];
+                const Products_List = toArray(data.Products_List);
+                const Expence_Array = toArray(data.Expence_Array);
+                const Staffs_Array = toArray(data.Staffs_Array);
+                
+                const pInvoiceInfo = Object.fromEntries(
+                    Object.entries(salesInvoiceGeneralInfo).map(([key, value]) => {
+                        if (key === 'Do_Date') return [key, data[key] ? ISOString(data[key]) : value]
+                        return [key, data[key] ?? value]
+                    })
+                );
+                
+                const pInvoiceProduct = Products_List.sort((a, b) => toNumber(a?.S_No) - toNumber(b?.S_No)).map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                        if (key === 'rowId') return [key, rid()]
+                        return [key, item[key] ?? value]
+                    })
+                ));
+
+                const pInvoiceExpences = toArray(Expence_Array).map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ));
+
+                const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
+                    Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ));
+
+                const pStaffArray = Array.from(
+                    new Map(
+                        stateOfStaff.map(item => [
+                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                            item
+                        ])
+                    ).values()
+                );
+
+                setPreviewData({
+                    invoiceInfo: pInvoiceInfo,
+                    invoiceProduct: pInvoiceProduct,
+                    invoiceExpences: pInvoiceExpences,
+                    staffArray: pStaffArray,
+                    originalData: data
+                });
+                setPreviewDialogOpen(true);
+            } else {
+                toast.info('No previous invoice found for this retailer.');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to fetch previous invoice');
+        } finally {
+            if (loadingOff) loadingOff();
+        }
+    };
+
     const salesInvoiceAccess = useMemo(() => {
         const crudAction = isEdit ? 3 : 1;
         return {
@@ -816,6 +885,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     setStaffArray={setStaffArray}
                                     salesInvoiceAccess={salesInvoiceAccess}
                                     fetchedAddresses={fetchedAddresses}
+                                    onPreviewOpen={fetchLastInvoicePreview}
                                 />
                             </div>
                         </div>
@@ -1177,6 +1247,15 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <SalesInvoicePreview
+                open={previewDialogOpen}
+                onClose={() => setPreviewDialogOpen(false)}
+                previewData={previewData}
+                baseData={baseData}
+                salesInvoiceAccess={salesInvoiceAccess}
+                fetchedAddresses={fetchedAddresses}
+            />
         </>
     )
 }
