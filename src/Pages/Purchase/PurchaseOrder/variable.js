@@ -37,7 +37,8 @@ export const initialItemDetailsValue = {
     Rate: '',
     DeliveryLocation: '',
     Discount: '',
-    QualityCondition: ''
+    QualityCondition: '',
+    freightCharges: ''
 }
 
 export const initialDeliveryDetailsValue = {

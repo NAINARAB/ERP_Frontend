@@ -38,7 +38,7 @@ const PurchaseOrderOrderedProducts = ({
             <table className="table m-0">
                 <thead>
                     <tr>
-                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={4}>
+                        <td className={tdStyle + ' text-primary fw-bold bg-light'} colSpan={5}>
                             ORDER ITEMS
                         </td>
                         <td className={tdStyle + ' text-end bg-light p-0'}>
@@ -57,6 +57,7 @@ const PurchaseOrderOrderedProducts = ({
                             Rate <br />
                             Deliver/Spot
                         </th>
+                        <th className={tdStyle + ' text-center'}>Freight Charges</th>
                         {/* <th className={tdStyle + ' text-center'}>Discount</th>
                             <th className={tdStyle + ' text-center'}>Quality Condition</th> */}
                         <th className={tdStyle + ' text-center'}>Action</th>
@@ -70,6 +71,7 @@ const PurchaseOrderOrderedProducts = ({
                             <td className={tdStyle}>{o?.ItemName}</td>
                             <td className={tdStyle}>{o?.Weight + ' ' + o?.Units}</td>
                             <td className={tdStyle}>{o?.Rate}</td>
+                            <td className={tdStyle}>{o?.freightCharges}</td>
                             {/* <td className={tdStyle}>{o?.Discount}</td>
                                 <td className={tdStyle}>{o?.QualityCondition}</td> */}
                             <td className={tdStyle + ' p-0 text-center'}>
@@ -198,6 +200,18 @@ const PurchaseOrderOrderedProducts = ({
                                             value={orderItemsInput.DeliveryLocation}
                                             placeholder='Location '
                                             onChange={e => setOrderItemsInput(pre => ({ ...pre, DeliveryLocation: e.target.value }))}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={tdStyle}>Freight Charges</td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            type="number"
+                                            className='cus-inpt p-2'
+                                            value={orderItemsInput.freightCharges}
+                                            placeholder='Freight Charges'
+                                            onChange={e => setOrderItemsInput(pre => ({ ...pre, freightCharges: e.target.value }))}
                                         />
                                     </td>
                                 </tr>
