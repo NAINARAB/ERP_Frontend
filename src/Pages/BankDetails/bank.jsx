@@ -114,11 +114,89 @@ const PaginationContainer = styled("div")({
 
 
 const transactionTypes = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'cheque', label: 'Cheque' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'upi', label: 'UPI' },
-  { value: 'dd', label: 'DD' }
+ {
+        label: 'Select',
+        value: ''
+    },
+    {
+        label: 'ATM',
+        value: 'ATM'
+    },
+    {
+        label: 'Card',
+        value: 'Card'
+    },
+    {
+        label: 'Cash',
+        value: 'Cash'
+    },
+    {
+        label: 'Cheque/DD',
+        value: 'Cheque/DD'
+    },
+    {
+        label: 'ECS',
+        value: 'ECS'
+    },
+    {
+        label: 'e-Fund Transfer',
+        value: 'e-Fund Transfer'
+    },
+    {
+        label: 'Electronic Cheque',
+        value: 'Electronic Cheque'
+    },
+    {
+        label: 'Electronic DD/PO',
+        value: 'Electronic DD/PO'
+    },
+    {
+        label: 'UPI',
+        value: 'UPI'
+    },
+    {
+        label: 'Others',
+        value: 'Others'
+    },
+];
+
+ const paymentStatus = [
+    {
+        label: 'New',
+        value: 1
+    },
+    {
+        label: 'Process',
+        value: 2
+    },
+    {
+        label: 'Completed',
+        value: 3
+    },
+    {
+        label: 'Canceled',
+        value: 0
+    },
+]
+
+
+const receiptStatus = [
+    {
+        label: 'New',
+        value: 1
+    },
+    {
+        label: 'Process',
+        value: 2
+    },
+    {
+        label: 'Completed',
+        value: 3
+    },
+    {
+        label: 'Canceled',
+        value: 0
+    },
 ];
 
 
@@ -193,7 +271,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
     payment_date: today,
     pay_bill_type: '',
     payment_voucher_type_id: '',
-    status: '1',
+    status: '',
     Alter_Reason: '',
     debit_amount: '',
     transaction_type: '',
@@ -213,7 +291,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
     receipt_date: today,
     receipt_bill_type: '',
     receipt_voucher_type_id: '',
-    status: '1',
+    status: '',
     Alter_Reason: '',
     credit_amount: '',
     transaction_type: '',
@@ -1545,6 +1623,24 @@ const Bank = ({ loadingOn, loadingOff }) => {
                 </FormControl>
               </Grid>
 
+                <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="body2" gutterBottom>Status <span style={{ color: 'red' }}>*</span></Typography>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={paymentForm.status}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, status: e.target.value })}
+                    displayEmpty
+                  >
+                    <MenuItem value="" disabled>Select</MenuItem>
+                    {receiptStatus.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+
+
               {/* Ledger Section */}
               <Grid item xs={12}>
                 <Typography variant="h6" sx={{ mt: 2, mb: 1, borderBottom: '1px solid #e0e0e0' }}>
@@ -1707,7 +1803,21 @@ const Bank = ({ loadingOn, loadingOff }) => {
             </Select>
           </FormControl>
         </Grid>
-
+    <Grid item xs={12} sm={6} md={4}>
+          <Typography variant="body2" gutterBottom>Status <span style={{ color: 'red' }}>*</span></Typography>
+          <FormControl fullWidth size="small">
+            <Select
+              value={receiptForm.status}
+              onChange={(e) => setReceiptForm({ ...receiptForm, status: e.target.value })}
+              displayEmpty
+            >
+              <MenuItem value="" disabled>Select</MenuItem>
+              {receiptStatus.map((type) => (
+                <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
       
         <Grid item xs={12}>
           <h5 className="border-start border-primary border-3 p-2 m-0">Ledger Info</h5>
