@@ -38,15 +38,23 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice([]);
 
         fetchLink({
-            address: `payment/paymentPendingInvoices?Acc_Id=${filters.ledger.value}`,
+            address: `journal/accountPendingReference?Acc_Id=${filters.ledger.value}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
-                const repDat = toArray(data.data).map(o => ({
-                    ...o,
-                    paymentPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
-                }))
-                setReportData(repDat);
+                const mappedData = toArray(data.data)
+                    .filter(item => item.accountSide === 'Cr')
+                    .map(item => ({
+                        ...item,
+                        Po_Inv_No: item.voucherNumber,
+                        PIN_Id: item.voucherId,
+                        Po_Inv_Date: item.eventDate,
+                        Total_Invoice_value: item.totalValue,
+                        dataSource: item.actualSource,
+                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        paymentPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                    }));
+                setReportData(mappedData);
             }
         }).catch(e => console.error(e))
     }, [filters.ledger.value]);

@@ -39,15 +39,23 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
         setSelectedInvoice([]);
 
         fetchLink({
-            address: `receipt/receiptMaster/pendingSalesInvoiceReceipt?Acc_Id=${filters.ledger.value}`,
+            address: `journal/accountPendingReference?Acc_Id=${filters.ledger.value}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
-                // const repDat = toArray(data.data).map(o => ({
-                //     ...o,
-                //     receiptPendingAmount: Subraction(o.Total_Invoice_value, o.totalReference)
-                // }))
-                setReportData(data.data);
+                const mappedData = toArray(data.data)
+                    .filter(item => item.accountSide === 'Dr')
+                    .map(item => ({
+                        ...item,
+                        Do_Inv_No: item.voucherNumber,
+                        Do_Id: item.voucherId,
+                        Do_Date: item.eventDate,
+                        Total_Invoice_value: item.totalValue,
+                        dataSource: item.actualSource,
+                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        receiptPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                    }));
+                setReportData(mappedData);
             }
         }).catch(e => console.error(e))
     }, [filters.ledger.value]);

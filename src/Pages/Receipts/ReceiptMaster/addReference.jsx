@@ -88,10 +88,23 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         }
 
         fetchLink({
-            address: `receipt/receiptMaster/pendingSalesInvoiceReceipt?Acc_Id=${receiptValue.credit_ledger}`,
+            address: `journal/accountPendingReference?Acc_Id=${receiptValue.credit_ledger}`,
         }).then(data => {
             if (data.success) {
-                updateBaseData('salesInvoiceSearchResult', toArray(data.data));
+                const mappedData = toArray(data.data)
+                    .filter(item => item.accountSide === 'Dr')
+                    .map(item => ({
+                        ...item,
+                        Do_Inv_No: item.voucherNumber,
+                        Do_Id: item.voucherId,
+                        Do_Date: item.eventDate,
+                        Total_Invoice_value: item.totalValue,
+                        dataSource: item.actualSource,
+                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        Paid_Amount: Addition(item.againstAmount, item.journalAdjustment),
+                        receiptPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                    }));
+                updateBaseData('salesInvoiceSearchResult', mappedData);
             }
         }).catch(e => console.error(e))
     }, [receiptValue.credit_ledger, receiptValue.receipt_bill_type]);

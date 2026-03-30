@@ -86,10 +86,23 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
         }
 
         fetchLink({
-            address: `payment/paymentPendingInvoices?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
+            address: `journal/accountPendingReference?Acc_Id=${paymentGeneralInfo.debit_ledger}`,
         }).then(data => {
             if (data.success) {
-                updateBaseData('purchaseInvoiceSearchResult', toArray(data.data));
+                const mappedData = toArray(data.data)
+                    .filter(item => item.accountSide === 'Cr')
+                    .map(item => ({
+                        ...item,
+                        Po_Inv_No: item.voucherNumber,
+                        PIN_Id: item.voucherId,
+                        Po_Inv_Date: item.eventDate,
+                        Total_Invoice_value: item.totalValue,
+                        dataSource: item.actualSource,
+                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        Paid_Amount: Addition(item.againstAmount, item.journalAdjustment),
+                        paymentPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                    }));
+                updateBaseData('purchaseInvoiceSearchResult', mappedData);
             }
         }).catch(e => console.error(e))
     }, [paymentGeneralInfo.debit_ledger, paymentGeneralInfo.pay_bill_type]);

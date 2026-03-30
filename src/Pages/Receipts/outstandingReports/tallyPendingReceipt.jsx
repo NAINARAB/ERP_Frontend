@@ -19,7 +19,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         dueDays: 0,
         reqDate: ISOString(),
-        source: 'TALLY'
+        source: 'ALL'
     });
 
     useEffect(() => {
@@ -36,23 +36,20 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
         setReportData([]);
 
         const brokerValue = filters?.broker?.value || '';
-        const brokerAccId = filters.customersArray.find(fil => stringCompare(fil?.Actual_Party_Name_with_Brokers, brokerValue))?.Acc_Id;
 
         const ledgers = checkIsNumber(filters?.ledger?.value)
-            ? [{ Ledger_Tally_Id: filters?.ledger?.value, Acc_Id: brokerAccId }]
+            ? [{ Ledger_Tally_Id: filters?.ledger?.value, Acc_Id: filters?.ledger?.value }]
             : brokerValue
                 ? toArray(filters?.customersArray).filter(
                     fil => stringCompare(fil?.Actual_Party_Name_with_Brokers, brokerValue)
                 ).map(
-                    ledger => ({ Ledger_Tally_Id: ledger?.Ledger_Tally_Id, Acc_Id: ledger?.Acc_Id })
+                    ledgers => ({ Ledger_Tally_Id: ledgers?.Ledger_Tally_Id, Acc_Id: ledgers?.Acc_Id })
                 )
                 : [];
 
         const resultLedger = toArray(ledgers);
-        const reqDate = filters?.reqDate;
 
         if (resultLedger === 0) return toast.error('Select any Ledger or Broker');
-        if (!reqDate) return toast.error('Enter Till Date');
 
         fetchLink({
             address: `userModule/customer/paymentInvoiceList/filters`,
@@ -60,9 +57,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
             loadingOff: loadingOff,
             method: 'POST',
             bodyData: {
-                ledgerId: resultLedger,
-                reqDate: reqDate,
-                source: filters.source
+                ledgerId: resultLedger
             }
         }).then(data => {
             if (data.success) {
@@ -73,7 +68,15 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     }, [filters.refresh])
 
     const withDueDays = useMemo(() => {
-        return toArray(reportData).map(
+        return toArray(reportData)
+            .filter(row => {
+                // date ceiling — exclude vouchers after reqDate
+                if (filters.reqDate && row?.invoice_date && row.invoice_date > filters.reqDate) return false;
+                // source filter
+                if (filters.source !== 'ALL' && row?.dataSource !== filters.source) return false;
+                return true;
+            })
+            .map(
             row => {
                 const dueDay = toNumber(row?.invoice_date ? getDaysBetween(row?.invoice_date, filters.reqDate) : '');
 
@@ -84,7 +87,7 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                 }
             }
         ).sort((a, b) => b.dueDays - a.dueDays)
-    }, [reportData, filters.dueDays, filters.reqDate])
+    }, [reportData, filters.dueDays, filters.reqDate, filters.source])
 
     const totalPendingAmount = useMemo(() => {
         return reportData.reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
@@ -229,11 +232,11 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                                         ? toArray(filters.customersArray).filter(
                                                             fil => stringCompare(fil.Actual_Party_Name_with_Brokers, filters.broker.value)
                                                         ).map(obj => ({
-                                                            value: obj?.Ledger_Tally_Id,
+                                                            value: obj?.Acc_Id,
                                                             label: obj?.Ledger_Name
                                                         }))
                                                         : toArray(filters.customersArray).map(obj => ({
-                                                            value: obj?.Ledger_Tally_Id,
+                                                            value: obj?.Acc_Id,
                                                             label: obj?.Ledger_Name
                                                         }))
                                                 )
@@ -281,9 +284,16 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                             value={filters.source}
                                             onChange={e => setFilters(pre => ({ ...pre, source: e.target.value }))}
                                         >
-                                            <option value="TALLY">TALLY</option>
-                                            <option value="ERP">ERP</option>
-                                            <option value="JOURNAL">JOURNAL</option>
+                                            <option value="ALL">ALL</option>
+                                            <option value="SALES">Sales Invoice</option>
+                                            <option value="SALES-OB">Sales Opening Balance</option>
+                                            <option value="RECEIPT">Receipt</option>
+                                            <option value="PURCHASE">Purchase Invoice</option>
+                                            <option value="PURCHASE-OB">Purchase Opening Balance</option>
+                                            <option value="PAYMENT">Payment</option>
+                                            <option value="JOURNAL">Journal</option>
+                                            <option value="CREDIT_NOTE">Credit Note</option>
+                                            <option value="DEBIT_NOTE">Debit Note</option>
                                         </select>
                                     </td>
                                 </tr>
