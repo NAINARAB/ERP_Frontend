@@ -207,6 +207,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         recentDate: data?.others?.recentDate ? new Date(data?.others?.recentDate) : new Date(),
                         invoiceCreationStatus: invoiceCreationStatus
                     }));
+                    setInvoiceInfo(pre => ({...pre, paymentDueDays: toNumber(data?.others?.creditDays) || '' }));
                 }
             }).catch(console.error);
         } else setRetailerSalesStatus(retailerOutstandingDetails)
