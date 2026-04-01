@@ -141,32 +141,63 @@ if (isCombinedPrint) {
                             >
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <p style={{ top: "0", margin: 0, fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap" }}>
-                                        {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
+                                        {/* {invoice.voucherTypeGet} - {invoice.Do_Inv_No} */}
                                     </p>
                                     <p style={{ margin: "0.1cm 0 0 0", fontSize: "13px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                        {invoice.createdByGet}
+                                        {/* {invoice.createdByGet} */}
                                     </p>
                                 </div>
                                 <div style={{ width: "3cm", textAlign: "right", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px", flexShrink: 0 }}>
-                                    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+                                   
                                 </div>
                             </div>
 
                             {/* Date */}
-                            <div
+                            {/* <div
                                 style={{
                                     position: "absolute",
                                     right: "1.7cm",
                                     top: "3.2cm",
-                                    width: "2.2cm",
+                                    width: "5cm",
                                     textAlign: "right",
                                     padding: "2px 4px",
-                                    fontSize: "14px",
+                                    fontSize: "12px",
                                     fontWeight: "bold"
                                 }}
                             >
-                                {invoice.createdOn ? new Date(invoice.createdOn).toLocaleDateString("en-GB") : ""}
-                            </div>
+                                {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+                            </div> */}
+
+                            <div
+    style={{
+        position: "absolute",
+        left: "0.25cm",      // ← CHANGED from right to left
+        top: "3.3cm",
+        width: "6cm",
+        textAlign: "left",    // ← Changed to left align
+        padding: "2px 4px",
+        fontSize: "11px",
+        fontWeight: "bold"
+    }}
+>
+    {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
+</div>
+
+{/* RIGHT SIDE */}
+<div
+    style={{
+        position: "absolute",
+        right: "0.25cm",     // ← Keep on right
+        top: "3.3cm",
+        width: "6cm",
+        textAlign: "right",  // ← Keep right aligned
+        padding: "2px 4px",
+        fontSize: "11px",
+        fontWeight: "bold"
+    }}
+>
+    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+</div>
 
                             {/* Customer Details */}
                             <div
@@ -192,7 +223,7 @@ if (isCombinedPrint) {
                             <div
                                 style={{
                                     position: "absolute",
-                                    top: "6cm",
+                                    top: "6.2cm",
                                     left: "0.25cm",
                                     right: "0.25cm",
                                     bottom: "3.8cm",
@@ -230,7 +261,7 @@ if (isCombinedPrint) {
                             </div>
 
                             {/* Staff Details */}
-                            <div
+                            {/* <div
                                 style={{
                                     position: "absolute",
                                     top: "11cm",
@@ -247,7 +278,40 @@ if (isCombinedPrint) {
                                     .filter(c => c?.empTypeId === 3)
                                     .map(c => c?.empName)
                                     .join(", ")}
-                            </div>
+                            </div> */}
+                            <div
+    style={{
+        position: "absolute",
+        top: "11cm",
+        left: "2.4cm",
+        fontWeight: "bold",
+        fontSize: "12px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+    }}
+>
+    {toArray(invoice.staffDetails)
+        .filter(c => c?.empTypeId === 3)
+        .map(c => c?.empName)
+        .join(", ")}
+</div>
+
+{/* Right side - Created by */}
+<div
+    style={{
+        position: "absolute",
+        top: "11cm",
+        right: "3cm",
+        fontWeight: "bold",
+        fontSize: "12px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+    }}
+>
+    {invoice.createdByGet}
+</div>
                         </div>
                         
                         {/* Page break for next invoice */}
@@ -318,40 +382,87 @@ if (isCombinedPrint) {
                                 >
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <p style={{ top: "0", margin: 0, fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap" }}>
-                                            {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
+                                           
                                         </p>
                                         <p style={{ margin: "0.1cm 0 0 0", fontSize: "13px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {invoice.createdByGet}
+                                           
                                         </p>
                                     </div>
                                     <div style={{ width: "3cm", textAlign: "right", whiteSpace: "nowrap", fontWeight: "bold", fontSize: "12px", flexShrink: 0 }}>
-                                        {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+                                      
                                     </div>
                                 </div>
 
                                 {/* Date */}
-                                <div
+                                     {/* <div
                                     style={{
                                         position: "absolute",
                                         right: "0.25cm",
                                         top: "3.3cm",
-                                        right: "1.7cm",
-                                        width: "2.2cm",
+                                        // right: "1.7cm",
+                                        width: "6cm",
                                         textAlign: "right",
                                         padding: "2px 4px",
                                         fontSize: "14px",
                                         fontWeight: "bold"
                                     }}
                                 >
-                                    {invoice.createdOn ? new Date(invoice.createdOn).toLocaleDateString("en-GB") : ""}
+                                    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
                                 </div>
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        right: "0.25cm",
+                                        top: "3.3cm",
+                                        // right: "1.7cm",
+                                        width: "6cm",
+                                        textAlign: "right",
+                                        padding: "2px 4px",
+                                        fontSize: "14px",
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+                                </div> */}
+
+                                {/* LEFT SIDE */}
+<div
+    style={{
+        position: "absolute",
+        left: "0.25cm",      // ← CHANGED from right to left
+        top: "3.3cm",
+        width: "6cm",
+        textAlign: "left",    // ← Changed to left align
+        padding: "2px 4px",
+        fontSize: "12px",
+        fontWeight: "bold"
+    }}
+>
+    {invoice.voucherTypeGet} - {invoice.Do_Inv_No}
+</div>
+
+{/* RIGHT SIDE */}
+<div
+    style={{
+        position: "absolute",
+        right: "0.25cm",     // ← Keep on right
+        top: "3.3cm",
+        width: "6cm",
+        textAlign: "right",  // ← Keep right aligned
+        padding: "2px 4px",
+        fontSize: "12px",
+        fontWeight: "bold"
+    }}
+>
+    {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
+</div>
 
                                 {/* Customer Details */}
                                 <div
                                     style={{
                                         position: "absolute",
                                         top: "4.1cm",
-                                        left: "2.1cm",
+                                        left: "0.9cm",
                                         right: "0.25cm",
                                         overflow: "hidden"
                                     }}
@@ -370,7 +481,7 @@ if (isCombinedPrint) {
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "6cm",
+                                        top: "6.2cm",
                                         left: "0.25cm",
                                         right: "0.25cm",
                                         bottom: "3.8cm",
@@ -408,25 +519,40 @@ if (isCombinedPrint) {
                             </div>
 
                                 {/* Staff Details */}
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        // bottom: "2.55cm",
-                                        top:"11cm",
-                                        left: "2.4cm",
-                                        right: "0.25cm",
-                                        fontWeight: "bold",
-                                        fontSize: "12px",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis"
-                                    }}
-                                >
-                                    {toArray(invoice.staffDetails)
-                                        .filter(c => c?.empTypeId === 3)
-                                        .map(c => c?.empName)
-                                        .join(", ")}
-                                </div>
+                              {/* Left side - Staff details */}
+<div
+    style={{
+        position: "absolute",
+        top: "11cm",
+        left: "2.4cm",
+        fontWeight: "bold",
+        fontSize: "12px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+    }}
+>
+    {toArray(invoice.staffDetails)
+        .filter(c => c?.empTypeId === 3)
+        .map(c => c?.empName)
+        .join(", ")}
+</div>
+
+{/* Right side - Created by */}
+<div
+    style={{
+        position: "absolute",
+        top: "11cm",
+        right: "3cm",
+        fontWeight: "bold",
+        fontSize: "12px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+    }}
+>
+    {invoice.createdByGet}
+</div>
                             </div>
                         </div>
                     );
