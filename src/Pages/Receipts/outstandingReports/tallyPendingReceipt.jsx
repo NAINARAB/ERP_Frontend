@@ -72,8 +72,8 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
             .filter(row => {
                 // date ceiling — exclude vouchers after reqDate
                 if (filters.reqDate && row?.invoice_date && row.invoice_date > filters.reqDate) return false;
-                // source filter
-                if (filters.source !== 'ALL' && row?.dataSource !== filters.source) return false;
+                // source filter (Dr / Cr / ALL based on accountSide)
+                if (filters.source !== 'ALL' && row?.accountSide !== filters.source) return false;
                 return true;
             })
             .map(
@@ -285,15 +285,8 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
                                             onChange={e => setFilters(pre => ({ ...pre, source: e.target.value }))}
                                         >
                                             <option value="ALL">ALL</option>
-                                            <option value="SALES">Sales Invoice</option>
-                                            <option value="SALES-OB">Sales Opening Balance</option>
-                                            <option value="RECEIPT">Receipt</option>
-                                            <option value="PURCHASE">Purchase Invoice</option>
-                                            <option value="PURCHASE-OB">Purchase Opening Balance</option>
-                                            <option value="PAYMENT">Payment</option>
-                                            <option value="JOURNAL">Journal</option>
-                                            <option value="CREDIT_NOTE">Credit Note</option>
-                                            <option value="DEBIT_NOTE">Debit Note</option>
+                                            <option value="Dr">Dr</option>
+                                            <option value="Cr">Cr</option>
                                         </select>
                                     </td>
                                 </tr>
