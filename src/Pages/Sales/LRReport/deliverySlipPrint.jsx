@@ -301,8 +301,8 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        top: "11cm",
-        right: "3cm",
+        top: "10.2cm",
+        right: "5cm",
         fontWeight: "bold",
         fontSize: "12px",
         whiteSpace: "nowrap",
@@ -445,10 +445,10 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        right: "0.25cm",     // ← Keep on right
+        right: "0.25cm",   
         top: "3.3cm",
         width: "6cm",
-        textAlign: "right",  // ← Keep right aligned
+        textAlign: "right", 
         padding: "2px 4px",
         fontSize: "12px",
         fontWeight: "bold"
@@ -456,8 +456,6 @@ if (isCombinedPrint) {
 >
     {invoice.createdOn ? LocalDateWithTime(invoice.createdOn) : ""}
 </div>
-
-                                {/* Customer Details */}
                                 <div
                                     style={{
                                         position: "absolute",
@@ -492,8 +490,8 @@ if (isCombinedPrint) {
                                         <div key={idx} style={{ display: "flex", marginBottom: "0.1cm", fontSize: "12px", fontWeight: "bold", lineHeight: "1.1" }}>
                                             <div style={{ width: "2.2cm", textAlign: "center" }}>{item.Item_Rate}</div>
                                             <div style={{ width: "5.0cm", paddingLeft: "left" }}>{item.Short_Name}</div>
-                                            <div style={{ width: "1.5cm", textAlign: "center" }}>{item.Bill_Qty}</div>
-                                            <div style={{ width: "1.8cm", textAlign: "center" }}>{item.quantity}</div>
+                                            <div style={{ width: "1.5cm", textAlign: "left" }}>{item.Bill_Qty}</div>
+                                            <div style={{ width: "1.8cm", textAlign: "left" }}>{item.quantity}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -514,8 +512,8 @@ if (isCombinedPrint) {
                                 >
                                     <div style={{ width: "2.2cm" }}></div>
                                  <div style={{ width: "5.0cm", paddingLeft: "0.05cm", fontSize: "16px" }}></div>
-       <div style={{ width: "1.5cm", textAlign: "center", fontSize: "16px" }}>{totalWeight}</div>
-                  <div style={{ width: "1.8cm", textAlign: "center", fontSize: "16px" }}>{totalQty}</div>
+       <div style={{ width: "1.5cm", textAlign: "left", fontSize: "16px" }}>{totalWeight}</div>
+                  <div style={{ width: "1.8cm", textAlign: "left", fontSize: "16px" }}>{totalQty}</div>
                             </div>
 
                                 {/* Staff Details */}
@@ -523,7 +521,7 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        top: "11cm",
+        top: "11.23cm",
         left: "2.4cm",
         fontWeight: "bold",
         fontSize: "12px",
@@ -542,8 +540,8 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        top: "11cm",
-        right: "3cm",
+        top: "10.2cm",
+        right: "5cm",
         fontWeight: "bold",
         fontSize: "12px",
         whiteSpace: "nowrap",
