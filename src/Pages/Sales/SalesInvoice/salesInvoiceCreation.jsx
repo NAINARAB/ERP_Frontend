@@ -64,6 +64,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
+    const [previewNavState, setPreviewNavState] = useState({ currentDoId: null, latestDoId: null });
 
     const [invoiceInfo, setInvoiceInfo] = useState(salesInvoiceGeneralInfo);
     const [retailerDeliveryAddress, setRetailerDeliveryAddress] = useState(retailerDeliveryAddressInfo);
@@ -631,6 +632,55 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         })
     }
 
+    const parseAndSetPreviewData = (data) => {
+        const Products_List = toArray(data.Products_List);
+        const Expence_Array = toArray(data.Expence_Array);
+        const Staffs_Array = toArray(data.Staffs_Array);
+
+        const pInvoiceInfo = Object.fromEntries(
+            Object.entries(salesInvoiceGeneralInfo).map(([key, value]) => {
+                if (key === 'Do_Date') return [key, data[key] ? ISOString(data[key]) : value]
+                return [key, data[key] ?? value]
+            })
+        );
+
+        const pInvoiceProduct = Products_List.sort((a, b) => toNumber(a?.S_No) - toNumber(b?.S_No)).map(item => Object.fromEntries(
+            Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
+                if (key === 'rowId') return [key, rid()]
+                return [key, item[key] ?? value]
+            })
+        ));
+
+        const pInvoiceExpences = toArray(Expence_Array).map(item => Object.fromEntries(
+            Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
+                return [key, item[key] ?? value]
+            })
+        ));
+
+        const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
+            Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                return [key, item[key] ?? value]
+            })
+        ));
+
+        const pStaffArray = Array.from(
+            new Map(
+                stateOfStaff.map(item => [
+                    `${item.Emp_Id}-${item.Emp_Type_Id}`,
+                    item
+                ])
+            ).values()
+        );
+
+        setPreviewData({
+            invoiceInfo: pInvoiceInfo,
+            invoiceProduct: pInvoiceProduct,
+            invoiceExpences: pInvoiceExpences,
+            staffArray: pStaffArray,
+            originalData: data
+        });
+    };
+
     const fetchLastInvoicePreview = async () => {
         if (!invoiceInfo?.Retailer_Id) return;
         if (loadingOn) loadingOn();
@@ -640,52 +690,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             });
             if (res.success && res.data && res.data.length > 0) {
                 const data = res.data[0];
-                const Products_List = toArray(data.Products_List);
-                const Expence_Array = toArray(data.Expence_Array);
-                const Staffs_Array = toArray(data.Staffs_Array);
-                
-                const pInvoiceInfo = Object.fromEntries(
-                    Object.entries(salesInvoiceGeneralInfo).map(([key, value]) => {
-                        if (key === 'Do_Date') return [key, data[key] ? ISOString(data[key]) : value]
-                        return [key, data[key] ?? value]
-                    })
-                );
-                
-                const pInvoiceProduct = Products_List.sort((a, b) => toNumber(a?.S_No) - toNumber(b?.S_No)).map(item => Object.fromEntries(
-                    Object.entries(salesInvoiceDetailsInfo).map(([key, value]) => {
-                        if (key === 'rowId') return [key, rid()]
-                        return [key, item[key] ?? value]
-                    })
-                ));
-
-                const pInvoiceExpences = toArray(Expence_Array).map(item => Object.fromEntries(
-                    Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
-                        return [key, item[key] ?? value]
-                    })
-                ));
-
-                const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
-                    Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
-                        return [key, item[key] ?? value]
-                    })
-                ));
-
-                const pStaffArray = Array.from(
-                    new Map(
-                        stateOfStaff.map(item => [
-                            `${item.Emp_Id}-${item.Emp_Type_Id}`,
-                            item
-                        ])
-                    ).values()
-                );
-
-                setPreviewData({
-                    invoiceInfo: pInvoiceInfo,
-                    invoiceProduct: pInvoiceProduct,
-                    invoiceExpences: pInvoiceExpences,
-                    staffArray: pStaffArray,
-                    originalData: data
-                });
+                parseAndSetPreviewData(data);
+                setPreviewNavState({ currentDoId: data.Do_Id, latestDoId: data.Do_Id });
                 setPreviewDialogOpen(true);
             } else {
                 toast.info('No previous invoice found for this retailer.');
@@ -693,6 +699,28 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         } catch (e) {
             console.error(e);
             toast.error('Failed to fetch previous invoice');
+        } finally {
+            if (loadingOff) loadingOff();
+        }
+    };
+
+    const fetchAdjacentInvoice = async (direction) => {
+        if (!invoiceInfo?.Retailer_Id || !previewNavState.currentDoId) return;
+        if (loadingOn) loadingOn();
+        try {
+            const res = await fetchLink({
+                address: `sales/salesInvoice/adjacentInvoice?Retailer_Id=${invoiceInfo.Retailer_Id}&Do_Id=${previewNavState.currentDoId}&direction=${direction}`
+            });
+            if (res.success && res.data && res.data.length > 0) {
+                const data = res.data[0];
+                parseAndSetPreviewData(data);
+                setPreviewNavState(prev => ({ ...prev, currentDoId: data.Do_Id }));
+            } else {
+                toast.info(direction === 'prev' ? 'No older invoice found.' : 'No newer invoice found.');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to fetch invoice');
         } finally {
             if (loadingOff) loadingOff();
         }
@@ -826,7 +854,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 GST_Inclusive={invoiceInfo.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
-                initialValue={{ ...salesInvoiceDetailsInfo, Pre_Id: invoiceInfo.So_No, rowId: rid() }}
+                initialValue={{ 
+                    ...salesInvoiceDetailsInfo, 
+                    Pre_Id: invoiceInfo.So_No, 
+                    rowId: rid(), 
+                }}
                 batchDetails={baseData.batchDetails}
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
                 voucherType={invoiceInfo}
@@ -1256,6 +1288,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 baseData={baseData}
                 salesInvoiceAccess={salesInvoiceAccess}
                 fetchedAddresses={fetchedAddresses}
+                onPrevInvoice={() => fetchAdjacentInvoice('prev')}
+                onNextInvoice={() => fetchAdjacentInvoice('next')}
+                isLatestInvoice={previewNavState.currentDoId === previewNavState.latestDoId}
             />
         </>
     )

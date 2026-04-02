@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
-import { Addition, checkIsNumber, NumberFormat, reactSelectFilterLogic, Subraction, toNumber } from '../../../Components/functions';
+import { Addition, checkIsNumber, isValidNumber, NumberFormat, reactSelectFilterLogic, Subraction, toNumber } from '../../../Components/functions';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { fetchLink } from '../../../Components/fetchComponent';
 
-const AccountBalance = ({ loadingOn, loadingOff }) => {
+const AccountBalance = ({ loadingOn, loadingOff, propValue = '', propLabel = '' }) => {
     const [reportData, setReportData] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
     const [filters, setFilters] = useState({
@@ -20,17 +20,18 @@ const AccountBalance = ({ loadingOn, loadingOff }) => {
     }, [])
 
     useEffect(() => {
-        if (!checkIsNumber(filters.account.value)) return setReportData([]);
+        const account = isValidNumber(propValue) ? propValue : filters.account.value
+        if (!checkIsNumber(account)) return setReportData([]);
 
         setReportData([]);
         fetchLink({
-            address: `journal/accountPendingReference?Acc_Id=${filters.account.value}`,
+            address: `journal/accountPendingReference?Acc_Id=${account}`,
             loadingOn, loadingOff
         }).then(
             (data) => setReportData(data?.success ? data.data : [])
         ).catch(e => { console.error(e); setReportData([]); });
 
-    }, [filters.account.value]);
+    }, [filters.account.value, propValue]);
 
     const DebitTotal = reportData.filter(
         item => item.accountSide === 'Dr'
@@ -70,7 +71,7 @@ const AccountBalance = ({ loadingOn, loadingOff }) => {
                             <option value="Cr">Cr</option>
                         </select>
                         <div style={{ minWidth: '350px' }}>
-                            <Select
+                            {!isValidNumber(propValue) && <Select
                                 placeholder="Select account"
                                 value={filters.account}
                                 options={accountOptions}
@@ -79,7 +80,7 @@ const AccountBalance = ({ loadingOn, loadingOff }) => {
                                 styles={customSelectStyles}
                                 menuPortalTarget={document.body}
                                 filterOption={reactSelectFilterLogic}
-                            />
+                            />}
                         </div>
 
                         {/* credit */}

@@ -115,6 +115,7 @@ const PaymentCollectionReport = lazy(() => import('./Pages/Reports/paymentCollec
 const CustomerClosingStockReport = lazy(() => import('./Pages/Reports/CRM/customerClosingStockReport'));
 const ClosingStockReportTwo = lazy(() => import('./Pages/Reports/CRM/closingStockReport2'));
 const ReturnSales = lazy(() => import('./Pages/Reports/returnSales'));
+const PartyGroupOutstanding = lazy(() => import('./Pages/Reports/PartyGroupOutstanding/groupOutstanding'));
 
 // -----------------------------------------------------------------------------
 // Attendance
@@ -462,6 +463,7 @@ const RoutingArray = [
     { component: <PendingDetails />, path: '/erp/reports/PendingDetails' },
     { component: <PurchaseBrokerageReport />, path: '/erp/reports/purchaseBrokerage' },
     { component: <ReturnSales />, path: '/erp/reports/returnSales' },
+    { component: <PartyGroupOutstanding />, path: '/erp/reports/groupOutstanding' },
     { component: <StockInHand />, path: '/erp/reports/stockInHand' },
     { component: <StockPaper />, path: '/erp/reports/smstockPaper' },
     { component: <TripReports />, path: '/erp/reports/tripReports' },

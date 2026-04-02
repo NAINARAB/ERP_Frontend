@@ -1,4 +1,6 @@
 import React from 'react';
+import { IconButton, Tooltip } from '@mui/material';
+import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import AppDialog from "../../../Components/appDialogComponent";
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -16,13 +18,46 @@ const SalesInvoicePreview = ({
     previewData,
     baseData,
     salesInvoiceAccess,
-    fetchedAddresses
+    fetchedAddresses,
+    onPrevInvoice,
+    onNextInvoice,
+    isLatestInvoice
 }) => {
+
+    const titleContent = previewData ? (
+        <span className="d-flex align-items-center gap-1">
+            <Tooltip title="Previous Invoice">
+                <span>
+                    <IconButton
+                        size="small"
+                        onClick={onPrevInvoice}
+                        sx={{ mr: 0.5 }}
+                    >
+                        <ArrowBackIos fontSize="small" />
+                    </IconButton>
+                </span>
+            </Tooltip>
+            <span>{`Invoice Preview - ${previewData.invoiceInfo?.Do_Inv_No}`}</span>
+            <Tooltip title={isLatestInvoice ? "This is the latest invoice" : "Next Invoice"}>
+                <span>
+                    <IconButton
+                        size="small"
+                        onClick={onNextInvoice}
+                        disabled={isLatestInvoice}
+                        sx={{ ml: 0.5 }}
+                    >
+                        <ArrowForwardIos fontSize="small" />
+                    </IconButton>
+                </span>
+            </Tooltip>
+        </span>
+    ) : 'Invoice Preview';
+
     return (
         <AppDialog
             open={open}
             onClose={onClose}
-            title={previewData ? `Last Invoice Preview - ${previewData.invoiceInfo?.Do_Inv_No}` : 'Invoice Preview'}
+            title={titleContent}
             maxWidth="xl"
         >
             {previewData && (

@@ -52,7 +52,7 @@ const AppTableComponent = ({
     onFilteredDataChange,
     isExpendable = false,
     expandableComp,
-    tableMaxHeight = 550,
+    tableMaxHeight = 750,
     initialPageCount = 20,
     EnableSerialNumber = false,
     CellSize = 'small',
@@ -375,8 +375,9 @@ const AppTableComponent = ({
         });
 
     // Derived styles
+    const resolvedMaxHeight = typeof tableMaxHeight === 'number' ? `${tableMaxHeight}px` : tableMaxHeight;
     const containerStyle = {
-        maxHeight: (showFullHeight && maxHeightOption) ? 'none' : tableMaxHeight,
+        maxHeight: (showFullHeight && maxHeightOption) ? 'none' : resolvedMaxHeight,
         overflowY: (showFullHeight && maxHeightOption) ? 'visible' : 'auto'
     };
 

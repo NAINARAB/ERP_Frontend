@@ -87,8 +87,10 @@ const AddProductForm = ({
                     const igstPer = IS_IGST ? gstInfo.igst_per : 0;
                     const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
                     const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
+                    const S_No = productDetails.S_No ? productDetails.S_No : pre.length + 1;
 
                     switch (key) {
+                        case 'S_No': return [key, S_No]
                         case 'Item_Name': return [key, productMaster.Product_Name]
                         case 'Taxable_Rate': return [key, itemRateGst.base_amount]
                         case 'Total_Qty': return [key, Bill_Qty]
@@ -235,7 +237,7 @@ const AddProductForm = ({
                         <div className="row pb-5">
 
                             {/* brand */}
-                            <div className="col-6 p-2">
+                            {/*<div className="col-6 p-2">
                                 <label>Brand</label>
                                 <Select
                                     value={{ value: productDetails.BrandID, label: productDetails.Brand }}
@@ -251,10 +253,10 @@ const AddProductForm = ({
                                     maxMenuHeight={200}
                                     filterOption={reactSelectFilterLogic}
                                 />
-                            </div>
+                            </div>*/}
 
                             {/* group */}
-                            <div className="col-6 p-2">
+                            {/* <div className="col-6 p-2">
                                 <label>Group</label>
                                 <Select
                                     value={{ value: productDetails.GroupID, label: productDetails.Group }}
@@ -289,7 +291,7 @@ const AddProductForm = ({
                                     maxMenuHeight={200}
                                     filterOption={reactSelectFilterLogic}
                                 />
-                            </div>
+                            </div>*/}
 
                             {/* item name */}
                             <div className={

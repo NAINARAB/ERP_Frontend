@@ -1,36 +1,38 @@
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
-import PartyOutstandings from "./PartyOutstandings";
+import AccountBalance from "../../Journal/JournalReport/accountBalance";
 
-const PartyGroupOutstanding = ({ loadingOn, loadingOff }) => {
+
+const PartyOutstandings = ({  row }) => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
         fetchLink({
-            address: "journal/groupOutstandings",
-            loadingOn, loadingOff
+            address: `journal/partyOutstanding?Group_Id=${row.Group_Id}`,
+            // loadingOn, loadingOff
         }).then(res => {
             if (res.success) {
                 setReportData(res.data);
             }
         }).catch(console.error)
-    }, [])
+    }, [row.Group_Id])
 
     return (
         <div>
             <AppTableComponent 
-                title="Party Group Outstandings"
+                title="Party Outstandings"
                 EnableSerialNumber
-                isExpendable={true}
-                expandableComp={({row}) => (
-                    <PartyOutstandings row={row} />
-                )}
                 dataArray={reportData}
+                tableMaxHeight={5000}
+                initialPageCount={50}
+                maxHeightOption={true}
+                isExpendable={true}
+                expandableComp={({ row }) => <AccountBalance propValue={row.Acc_Id} propLabel={row.Account_name} />}
                 columns={[
                     {
-                        Field_Name: "Group_Name",
-                        ColumnHeader: "Group Name",
+                        Field_Name: "Account_name",
+                        ColumnHeader: "Party",
                         Fied_Data: "string",
                         isVisible: 1,
                         OrderBy: 1
@@ -92,4 +94,4 @@ const PartyGroupOutstanding = ({ loadingOn, loadingOff }) => {
     );
 };
 
-export default PartyGroupOutstanding;
+export default PartyOutstandings;
