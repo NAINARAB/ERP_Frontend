@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card, Paper, IconButton, Button, TextField, FormControl, 
@@ -5,7 +6,7 @@ import {
   CircularProgress, Typography, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, TablePagination,
   InputAdornment, Tooltip, Checkbox, RadioGroup, Radio, FormControlLabel,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions, Alert
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { 
@@ -18,14 +19,15 @@ import {
   FilterList as FilterIcon, 
   Clear as ClearIcon,
   Receipt as ReceiptIcon,
-  Payment as PaymentIcon
+  Payment as PaymentIcon,
+  Add as AddIcon
 } from "@mui/icons-material";
 import { fetchLink } from '../../Components/fetchComponent';
 import { toast } from 'react-toastify';
 import { checkIsNumber, isArray, ISOString, isValidObject, stringCompare, toArray, toNumber, reactSelectFilterLogic } from "../../Components/functions";
 import RequiredStar from '../../Components/requiredStar';
 import { customSelectStyles } from "../../Components/tablecolumn";
-
+import { useNavigate } from "react-router-dom";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${TableCell.head}`]: {
@@ -85,20 +87,20 @@ const StyledSerialCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
-const StyledTableRow = styled(TableRow)(({ highlight, receiptsynced, paymentsynced }) => ({
-  backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : highlight ? "#e8f5e9" : "#fff",
+const StyledTableRow = styled(TableRow)(({ receiptsynced, paymentsynced }) => ({
+  backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : "#fff",
   "&:hover": {
-    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : highlight ? "#c8e6c9" : "#f5f5f5",
+    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : "#f5f5f5",
   },
   "& td": {
-    backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : highlight ? "#e8f5e9" : "transparent",
+    backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : "transparent",
     borderRight: "1px solid #e0e0e0",
   },
   "& td:last-child": {
     borderRight: "none",
   },
   "&:hover td": {
-    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : highlight ? "#c8e6c9" : "#f5f5f5",
+    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : "#f5f5f5",
   },
 }));
 
@@ -112,93 +114,33 @@ const PaginationContainer = styled("div")({
   borderTop: "1px solid #e0e0e0",
 });
 
-
 const transactionTypes = [
- {
-        label: 'Select',
-        value: ''
-    },
-    {
-        label: 'ATM',
-        value: 'ATM'
-    },
-    {
-        label: 'Card',
-        value: 'Card'
-    },
-    {
-        label: 'Cash',
-        value: 'Cash'
-    },
-    {
-        label: 'Cheque/DD',
-        value: 'Cheque/DD'
-    },
-    {
-        label: 'ECS',
-        value: 'ECS'
-    },
-    {
-        label: 'e-Fund Transfer',
-        value: 'e-Fund Transfer'
-    },
-    {
-        label: 'Electronic Cheque',
-        value: 'Electronic Cheque'
-    },
-    {
-        label: 'Electronic DD/PO',
-        value: 'Electronic DD/PO'
-    },
-    {
-        label: 'UPI',
-        value: 'UPI'
-    },
-    {
-        label: 'Others',
-        value: 'Others'
-    },
+  { label: 'Select', value: '' },
+  { label: 'ATM', value: 'ATM' },
+  { label: 'Card', value: 'Card' },
+  { label: 'Cash', value: 'Cash' },
+  { label: 'Cheque/DD', value: 'Cheque/DD' },
+  { label: 'ECS', value: 'ECS' },
+  { label: 'e-Fund Transfer', value: 'e-Fund Transfer' },
+  { label: 'Electronic Cheque', value: 'Electronic Cheque' },
+  { label: 'Electronic DD/PO', value: 'Electronic DD/PO' },
+  { label: 'UPI', value: 'UPI' },
+  { label: 'Others', value: 'Others' },
 ];
 
- const paymentStatus = [
-    {
-        label: 'New',
-        value: 1
-    },
-    {
-        label: 'Process',
-        value: 2
-    },
-    {
-        label: 'Completed',
-        value: 3
-    },
-    {
-        label: 'Canceled',
-        value: 0
-    },
-]
-
+const paymentStatus = [
+  { label: 'New', value: 1 },
+  { label: 'Process', value: 2 },
+  { label: 'Completed', value: 3 },
+  { label: 'Canceled', value: 0 },
+];
 
 const receiptStatus = [
-    {
-        label: 'New',
-        value: 1
-    },
-    {
-        label: 'Process',
-        value: 2
-    },
-    {
-        label: 'Completed',
-        value: 3
-    },
-    {
-        label: 'Canceled',
-        value: 0
-    },
+  { label: 'New', value: 1 },
+  { label: 'Process', value: 2 },
+  { label: 'Completed', value: 3 },
+  { label: 'Canceled', value: 0 },
 ];
-
 
 const paymentTypes = [
   { value: 1, label: 'VENDOR - PURCHASE INVOICE' },
@@ -207,15 +149,51 @@ const paymentTypes = [
   { value: 4, label: 'ON ACCOUNT' }
 ];
 
-
 const receiptTypes = [
   { value: 1, label: 'CUSTOMER - SALES INVOICE' },
   { value: 2, label: 'EXPENCES - RETURN' },
   { value: 3, label: 'ON ACCOUNT' }
 ];
 
+// Storage utility functions
+const STORAGE_KEY = 'bank_statement_selections';
+const STORAGE_FILTER_KEY = 'bank_statement_filter';
+
+const saveSelectionsToSession = (selections, filter) => {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(selections));
+    sessionStorage.setItem(STORAGE_FILTER_KEY, JSON.stringify(filter));
+  } catch (e) {
+    console.error('Failed to save selections to session:', e);
+  }
+};
+
+const getSelectionsFromSession = () => {
+  try {
+    const selections = sessionStorage.getItem(STORAGE_KEY);
+    const filter = sessionStorage.getItem(STORAGE_FILTER_KEY);
+    return {
+      selections: selections ? JSON.parse(selections) : {},
+      filter: filter ? JSON.parse(filter) : ''
+    };
+  } catch (e) {
+    console.error('Failed to get selections from session:', e);
+    return { selections: {}, filter: '' };
+  }
+};
+
+const clearSelectionsFromSession = () => {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_FILTER_KEY);
+  } catch (e) {
+    console.error('Failed to clear selections from session:', e);
+  }
+};
+
 const Bank = ({ loadingOn, loadingOff }) => {
   const today = new Date().toISOString().split('T')[0];
+  const navigate = useNavigate();
 
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -232,16 +210,11 @@ const Bank = ({ loadingOn, loadingOff }) => {
   const [syncSelectedLoading, setSyncSelectedLoading] = useState(false);
   const [newTransactionKeys, setNewTransactionKeys] = useState(new Set());
   
-
   const [transactionTypeFilter, setTransactionTypeFilter] = useState('');
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   
-
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogType, setDialogType] = useState('');
   const [selectedTransactions, setSelectedTransactions] = useState([]);
   
- 
   const [baseData, setBaseData] = useState({
     accountsList: [],
     accountGroupData: [],
@@ -249,81 +222,19 @@ const Bank = ({ loadingOn, loadingOff }) => {
     defaultBankMaster: [],
   });
   
- 
-  const [paymentFilterData, setPaymentFilterData] = useState({
-    debit_accounts: [],
-    credit_accounts: [],
-    voucherType: [],
-    created_by: [],
-  });
-  
- 
-  const [receiptFilterData, setReceiptFilterData] = useState({
-    debit_accounts: [],
-    credit_accounts: [],
-    voucherType: [],
-    created_by: [],
-  });
-  
-
-  const [paymentForm, setPaymentForm] = useState({
-    pay_id: '',
-    payment_date: today,
-    pay_bill_type: '',
-    payment_voucher_type_id: '',
-    status: '',
-    Alter_Reason: '',
-    debit_amount: '',
-    transaction_type: '',
-    remarks: '',
-    check_no: '',
-    check_date: '',
-    bank_name: '',
-    debit_ledger: '',
-    debit_ledger_name: '',
-    credit_ledger: '',
-    credit_ledger_name: '',
-  });
-  
- 
-  const [receiptForm, setReceiptForm] = useState({
-    receipt_id: '',
-    receipt_date: today,
-    receipt_bill_type: '',
-    receipt_voucher_type_id: '',
-    status: '',
-    Alter_Reason: '',
-    credit_amount: '',
-    transaction_type: '',
-    remarks: '',
-    check_no: '',
-    check_date: '',
-    bank_name: '',
-    debit_ledger: '',
-    debit_ledger_name: '',
-    credit_ledger: '',
-    credit_ledger_name: '',
-  });
-
-
-  const [selectedDebitGroup, setSelectedDebitGroup] = useState({ value: '', label: '' });
-  const [selectedCreditGroup, setSelectedCreditGroup] = useState({ value: '', label: '' });
-  const [filteredDebitAccounts, setFilteredDebitAccounts] = useState([]);
-  const [filteredCreditAccounts, setFilteredCreditAccounts] = useState([]);
-
+  const [selectedDbRows, setSelectedDbRows] = useState({});
+  const [selectedAccount, setSelectedAccount] = useState(null);
   const [dbPage, setDbPage] = useState(0);
   const [dbRowsPerPage, setDbRowsPerPage] = useState(10);
   const [comparePage, setComparePage] = useState(0);
   const [compareRowsPerPage, setCompareRowsPerPage] = useState(10);
-  
-  const [searchValues, setSearchValues] = useState({});
-  const [appliedFilters, setAppliedFilters] = useState({});
   const [globalSearch, setGlobalSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [appliedFilters, setAppliedFilters] = useState({});
+  const [searchValues, setSearchValues] = useState({});
   
-  const [selectedDbRows, setSelectedDbRows] = useState({});
-  const [selectedAccount, setSelectedAccount] = useState(null);
-
+  // State for tracking if selections were restored
+  const [selectionsRestored, setSelectionsRestored] = useState(false);
 
   useEffect(() => {
     const fetchBaseData = async () => {
@@ -360,75 +271,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
     fetchBaseData();
   }, []);
 
- 
-  function getAllChildGroupIds(groupId, groupList, visited = new Set()) {
-    if (visited.has(groupId)) return [];
-    visited.add(groupId);
-    let result = [groupId];
-    const children = groupList.filter(group => group.Parent_AC_id === groupId);
-    for (const child of children) {
-      result = result.concat(getAllChildGroupIds(child.Group_Id, groupList, visited));
-    }
-    return result;
-  }
-
-  function filterAccountsByGroupIds(selectedGroupId, accountGroups, accountsList) {
-    const validGroupIds = getAllChildGroupIds(selectedGroupId, accountGroups);
-    return accountsList.filter(account => validGroupIds.includes(account.Group_Id));
-  }
-
-  const handleDebitGroupSelect = (groupId, groupValue) => {
-    const filtered = filterAccountsByGroupIds(groupId, baseData.accountGroupData, baseData.accountsList);
-    setSelectedDebitGroup({ value: groupId, label: groupValue });
-    setFilteredDebitAccounts(filtered);
-  };
-
-  const handleCreditGroupSelect = (groupId, groupValue) => {
-    const filtered = filterAccountsByGroupIds(groupId, baseData.accountGroupData, baseData.accountsList);
-    setSelectedCreditGroup({ value: groupId, label: groupValue });
-    setFilteredCreditAccounts(filtered);
-  };
-  
- 
-  const fetchPaymentFilterData = async () => {
-    try {
-      const response = await fetchLink({
-        address: `payment/paymentMaster/filtersValues`
-      });
-      
-      if (response.success) {
-        setPaymentFilterData({
-          debit_accounts: response.others?.debit_accounts || [],
-          credit_accounts: response.others?.credit_accounts || [],
-          voucherType: response.others?.voucherType || [],
-          created_by: response.others?.created_by || [],
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching payment filter data:", err);
-    }
-  };
-  
-
-  const fetchReceiptFilterData = async () => {
-    try {
-      const response = await fetchLink({
-        address: `receipt/receiptMaster/filtersValues`
-      });
-      
-      if (response.success) {
-        setReceiptFilterData({
-          debit_accounts: response.others?.debit_accounts || [],
-          credit_accounts: response.others?.credit_accounts || [],
-          voucherType: response.others?.voucherType || [],
-          created_by: response.others?.created_by || [],
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching receipt filter data:", err);
-    }
-  };
-  
   const fetchAccountNumbers = async () => {
     try {
       setAccountsLoading(true);
@@ -439,7 +281,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
       if (response.success) {
         setAccountList(response.data || []);
         if (response.data && response.data.length > 0) {
-          setAccountNo(response.data[0].value);
+          setAccountNo(response.data[0].label);
           setSelectedAccount(response.data[0]);
         }
       } else {
@@ -510,7 +352,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
     setDbPage(0);
   };
 
-  const handleSyncSelectedClick = async () => {
+  const handleSyncSelectedClick = () => {
     const selectedRowsArray = Object.values(selectedDbRows);
     if (selectedRowsArray.length === 0) {
       toast.warning('No rows selected');
@@ -519,290 +361,20 @@ const Bank = ({ loadingOn, loadingOff }) => {
     
     setSelectedTransactions(selectedRowsArray);
     
-    if (transactionTypeFilter === 'C') {
-      setDialogType('receipt');
-      await fetchReceiptFilterData();
-      setOpenDialog(true);
-      const totalAmount = selectedRowsArray.reduce((sum, txn) => sum + parseFloat(txn.Amount.replace(/[^0-9.-]/g, '')), 0);
-      setReceiptForm({
-        ...receiptForm,
-        receipt_date: today,
-        credit_amount: totalAmount.toString(),
-        debit_ledger: '',
-        debit_ledger_name: '',
-        credit_ledger: '',
-        credit_ledger_name: '',
-      });
-      // Reset ledger selections
-      setSelectedDebitGroup({ value: '', label: '' });
-      setSelectedCreditGroup({ value: '', label: '' });
-      setFilteredDebitAccounts([]);
-      setFilteredCreditAccounts([]);
-    } else if (transactionTypeFilter === 'D') {
-      setDialogType('payment');
-      await fetchPaymentFilterData();
-      setOpenDialog(true);
-      const totalAmount = selectedRowsArray.reduce((sum, txn) => sum + parseFloat(txn.Amount.replace(/[^0-9.-]/g, '')), 0);
-      setPaymentForm({
-        ...paymentForm,
-        payment_date: today,
-        debit_amount: totalAmount.toString(),
-        debit_ledger: '',
-        debit_ledger_name: '',
-        credit_ledger: '',
-        credit_ledger_name: '',
-      });
-      // Reset ledger selections
-      setSelectedDebitGroup({ value: '', label: '' });
-      setSelectedCreditGroup({ value: '', label: '' });
-      setFilteredDebitAccounts([]);
-      setFilteredCreditAccounts([]);
-    }
-  };
-  
-
-  const handlePaymentSubmit = async () => {
-
-    if (!paymentForm.payment_voucher_type_id) {
-      toast.warn('Select Voucher Type!');
-      return;
-    }
-    if (!paymentForm.pay_bill_type) {
-      toast.warn('Select Bill Type!');
-      return;
-    }
-    if (!paymentForm.transaction_type) {
-      toast.warn('Select Transaction Type!');
-      return;
-    }
-    if (!paymentForm.debit_ledger) {
-      toast.warn('Select Debit Account!');
-      return;
-    }
-    // if (!paymentForm.credit_ledger) {
-    //   toast.warn('Select Credit Account!');
-    //   return;
-    // }
-    if (paymentForm.debit_amount < 1 || !paymentForm.debit_amount) {
-      toast.warn('Enter valid amount!');
-      return;
-    }
-
-    try {
-      setSyncSelectedLoading(true);
-      if (loadingOn) loadingOn();
-      
-      const selectedTransactionsData = selectedTransactions.map(txn => ({
-        Id:txn.Id,
-        Refno: txn.Refno,
-        TranDate: txn.TranDate,
-        TranParticulars: txn.TranParticulars,
-        ChequeNum: txn.ChequeNum || '',
-        TranType: txn.TranType,
-        Amount: txn.Amount,
-        AcctBal: txn.AcctBal
-      }));
-      
-      const payload = {
-        accountNo,
-        Acc: selectedAccount,
-        transactions: selectedTransactionsData,
-        paymentDetails: {
-          pay_bill_type: paymentForm.pay_bill_type,
-          payment_date: paymentForm.payment_date,
-          payment_voucher_type_id: paymentForm.payment_voucher_type_id,
-          debit_amount: paymentForm.debit_amount,
-          transaction_type: paymentForm.transaction_type,
-          remarks: paymentForm.remarks,
-          check_no: paymentForm.check_no,
-          check_date: paymentForm.check_date,
-          bank_name: paymentForm.bank_name,
-          status: paymentForm.status,
-          debit_ledger: paymentForm.debit_ledger,
-          debit_ledger_name: paymentForm.debit_ledger_name,
-          credit_ledger: paymentForm.credit_ledger,
-          credit_ledger_name: paymentForm.credit_ledger_name,
-        },
-        selectedCheckboxData: {
-          Acc_id: selectedAccount?.Acc_Id,
-          selectedCount: selectedTransactions.length,
-          selectedTransactionIds: selectedTransactions.map(txn => txn.Refno || `${txn.TranDate}_${txn.TranParticulars}`),
-          selectedTransactionKeys: selectedTransactions.map(txn => getTransactionKey(txn)),
-          totalAmount: selectedTransactions.reduce((sum, txn) => sum + parseFloat(txn.Amount.replace(/[^0-9.-]/g, '')), 0),
-          transactionType: 'debit',
-          accountNo: accountNo,
-          fromDate: fromDate,
-          toDate: toDate
-        }
-      };
-      
-      const response = await fetchLink({
-        address: 'payment/syncSelectedWithPayment',
-        method: 'POST',
-        bodyData: payload,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.success) {
-        toast.success(`payment processed successfully`);
-        await fetchBankStatement();
-        setSelectedDbRows({});
-        setTransactionTypeFilter('');
-        setFilteredTransactions(transactions);
-        setShowCheckboxes(false);
-        setOpenDialog(false);
-        
-        setPaymentForm({
-          pay_id: '',
-          payment_date: today,
-          pay_bill_type: '',
-          payment_voucher_type_id: '',
-          status: '1',
-          Alter_Reason: '',
-          debit_amount: '',
-          transaction_type: '',
-          remarks: '',
-          check_no: '',
-          check_date: '',
-          bank_name: '',
-          debit_ledger: '',
-          debit_ledger_name: '',
-          credit_ledger: '',
-          credit_ledger_name: '',
-        });
-      } else {
-        toast.error(response.message || 'Failed to process payments');
+    // Clear session storage when navigating
+    clearSelectionsFromSession();
+    
+    navigate("/erp/bankReports/bankList/convertScreen", {
+      state: {
+        transactions: selectedRowsArray,
+        transactionType: transactionTypeFilter === 'C' ? 'receipt' : 'payment',
+        accountNo: accountNo,
+        selectedAccount: selectedAccount,
+        fromDate: fromDate,
+        toDate: toDate,
+        transactionTypeFilter: transactionTypeFilter
       }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error processing payments');
-    } finally {
-      setSyncSelectedLoading(false);
-      if (loadingOff) loadingOff();
-    }
-  };
-  
-
-  const handleReceiptSubmit = async () => {
-    if (!receiptForm.receipt_voucher_type_id) {
-      toast.warn('Select Voucher Type!');
-      return;
-    }
-    if (!receiptForm.receipt_bill_type) {
-      toast.warn('Select Bill Type!');
-      return;
-    }
-    if (!receiptForm.transaction_type) {
-      toast.warn('Select Transaction Type!');
-      return;
-    }
-    // if (!receiptForm.debit_ledger) {
-    //   toast.warn('Select Debit Account!');
-    //   return;
-    // }
-    if (!receiptForm.credit_ledger) {
-      toast.warn('Select Credit Account!');
-      return;
-    }
-
-    try {
-      setSyncSelectedLoading(true);
-      if (loadingOn) loadingOn();
-      
-      const selectedTransactionsData = selectedTransactions.map(txn => ({
-        Id:txn.Id,
-        Refno: txn.Refno,
-        TranDate: txn.TranDate,
-        TranParticulars: txn.TranParticulars,
-        ChequeNum: txn.ChequeNum || '',
-        TranType: txn.TranType,
-        Amount: txn.Amount,
-        AcctBal: txn.AcctBal
-      }));
-      
-      const payload = {
-        accountNo,
-        Acc: selectedAccount,
-        transactions: selectedTransactionsData,
-        receiptDetails: {
-          receipt_bill_type: receiptForm.receipt_bill_type,
-          receipt_date: receiptForm.receipt_date,
-          receipt_voucher_type_id: receiptForm.receipt_voucher_type_id,
-          credit_amount: receiptForm.credit_amount,
-          transaction_type: receiptForm.transaction_type,
-          remarks: receiptForm.remarks,
-          check_no: receiptForm.check_no,
-          check_date: receiptForm.check_date,
-          bank_name: receiptForm.bank_name,
-          status: receiptForm.status,
-          debit_ledger: receiptForm.debit_ledger,
-          debit_ledger_name: receiptForm.debit_ledger_name,
-          credit_ledger: receiptForm.credit_ledger,
-          credit_ledger_name: receiptForm.credit_ledger_name,
-        },
-        selectedCheckboxData: {
-          selectedCount: selectedTransactions.length,
-          Acc_id: selectedAccount?.Acc_Id,
-          selectedTransactionIds: selectedTransactions.map(txn => txn.Refno || `${txn.TranDate}_${txn.TranParticulars}`),
-          selectedTransactionKeys: selectedTransactions.map(txn => getTransactionKey(txn)),
-          totalAmount: selectedTransactions.reduce((sum, txn) => sum + parseFloat(txn.Amount.replace(/[^0-9.-]/g, '')), 0),
-          transactionType: 'credit',
-          accountNo: accountNo,
-          fromDate: fromDate,
-          toDate: toDate
-        }
-      };
-
-      const response = await fetchLink({
-        address: 'receipt/syncSelectedWithReceipt',
-        method: 'POST',
-        bodyData: payload,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.success) {
-        toast.success(`receipt(s) processed successfully`);
-        await fetchBankStatement();
-        setSelectedDbRows({});
-        setTransactionTypeFilter('');
-        setFilteredTransactions(transactions);
-        setShowCheckboxes(false);
-        setOpenDialog(false);
-        
-        setReceiptForm({
-          receipt_id: '',
-          receipt_date: today,
-          receipt_bill_type: '',
-          receipt_voucher_type_id: '',
-          status: '1',
-          Alter_Reason: '',
-          credit_amount: '',
-          transaction_type: '',
-          remarks: '',
-          check_no: '',
-          check_date: '',
-          bank_name: '',
-          debit_ledger: '',
-          debit_ledger_name: '',
-          credit_ledger: '',
-          credit_ledger_name: '',
-        });
-      } else {
-        toast.error(response.message || 'Failed to process receipts');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error processing receipts');
-    } finally {
-      setSyncSelectedLoading(false);
-      if (loadingOff) loadingOff();
-    }
-  };
-  
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setDialogType('');
-    setSelectedTransactions([]);
+    });
   };
 
   const syncStatement = async () => {
@@ -836,6 +408,8 @@ const Bank = ({ loadingOn, loadingOff }) => {
         setTransactionTypeFilter('');
         setFilteredTransactions(transactions);
         setShowCheckboxes(false);
+        // Clear session storage after sync
+        clearSelectionsFromSession();
       } else {
         toast.error(response.message || 'Sync failed');
       }
@@ -973,6 +547,38 @@ const Bank = ({ loadingOn, loadingOff }) => {
     fetchAccountNumbers();
   }, []);
 
+  // Effect to restore selections when component mounts
+  useEffect(() => {
+    if (filteredTransactions.length > 0 && !selectionsRestored) {
+      const { selections, filter } = getSelectionsFromSession();
+      
+      if (Object.keys(selections).length > 0 && filter) {
+        // Restore filter
+        setTransactionTypeFilter(filter);
+        
+        // Restore selections
+        const restoredSelections = {};
+        Object.keys(selections).forEach(rowId => {
+          const row = filteredTransactions.find(txn => {
+            const txnRowId = txn.Refno || `${txn.TranDate}_${txn.TranParticulars}`;
+            return txnRowId === rowId;
+          });
+          if (row) {
+            restoredSelections[rowId] = row;
+          }
+        });
+        
+        if (Object.keys(restoredSelections).length > 0) {
+          setSelectedDbRows(restoredSelections);
+          setShowCheckboxes(true);
+          toast.success(`Restored ${Object.keys(restoredSelections).length} previously selected transactions`);
+        }
+      }
+      
+      setSelectionsRestored(true);
+    }
+  }, [filteredTransactions, selectionsRestored]);
+
   useEffect(() => {
     if (accountNo) {
       fetchBankStatement();
@@ -980,8 +586,16 @@ const Bank = ({ loadingOn, loadingOff }) => {
       setTransactionTypeFilter('');
       setFilteredTransactions([]);
       setShowCheckboxes(false);
+      setSelectionsRestored(false);
     }
   }, [accountNo]);
+
+  // Save selections when they change
+  useEffect(() => {
+    if (Object.keys(selectedDbRows).length > 0 && transactionTypeFilter) {
+      saveSelectionsToSession(selectedDbRows, transactionTypeFilter);
+    }
+  }, [selectedDbRows, transactionTypeFilter]);
 
   const formatAmount = (amount) => {
     if (!amount) return '-';
@@ -1010,7 +624,17 @@ const Bank = ({ loadingOn, loadingOff }) => {
     return newTransactionKeys.has(rowKey);
   };
 
+  const isRowSynced = (row) => {
+    return (row.receipt_id && !row.pay_id) || (row.pay_id && !row.receipt_id);
+  };
+
   const handleDbRowSelect = (row) => {
+    // Don't allow selection of synced rows
+    if (isRowSynced(row)) {
+      toast.info('Synced transactions cannot be selected');
+      return;
+    }
+    
     setSelectedDbRows(prev => {
       const newSelected = { ...prev };
       const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`; 
@@ -1023,11 +647,9 @@ const Bank = ({ loadingOn, loadingOff }) => {
     });
   };
 
-
-  
   const handleSelectAllDbRows = () => {
-    const currentPageRows = paginatedDbData;
-    const allSelected = currentPageRows.every(row => {
+    const currentPageRows = paginatedDbData.filter(row => !isRowSynced(row)); // Only select non-synced rows
+    const allSelected = currentPageRows.length > 0 && currentPageRows.every(row => {
       const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`;
       return selectedDbRows[rowId];
     });
@@ -1087,10 +709,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
     return data;
   };
 
-  const handleSearchChange = (columnName, value) => {
-    setSearchValues(prev => ({ ...prev, [columnName]: value }));
-  };
-
   const requestSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -1126,7 +744,8 @@ const Bank = ({ loadingOn, loadingOff }) => {
   const paginatedCompareData = filteredData.slice(comparePage * compareRowsPerPage, comparePage * compareRowsPerPage + compareRowsPerPage);
   const paginatedDbData = filteredTransactions.slice(dbPage * dbRowsPerPage, dbPage * dbRowsPerPage + dbRowsPerPage);
   
-  const allSelectedOnPage = paginatedDbData.length > 0 && paginatedDbData.every(row => {
+  const nonSyncedRowsOnPage = paginatedDbData.filter(row => !isRowSynced(row));
+  const allSelectedOnPage = nonSyncedRowsOnPage.length > 0 && nonSyncedRowsOnPage.every(row => {
     const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`;
     return selectedDbRows[rowId];
   });
@@ -1192,7 +811,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
           <StyledCheckboxCell align="center">
             <Checkbox
               checked={allSelectedOnPage}
-              indeterminate={selectedCount > 0 && selectedCount < paginatedDbData.length}
+              indeterminate={selectedCount > 0 && selectedCount < nonSyncedRowsOnPage.length}
               onChange={handleSelectAllDbRows}
               size="small"
               sx={{ padding: "0" }}
@@ -1338,7 +957,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
               )}
               {activeTab === 0 && selectedCount > 0 && showCheckboxes && (
                 <Typography variant="body2" color="primary" sx={{ whiteSpace: 'nowrap', fontWeight: 'bold' }}>
-                  {selectedCount} row(s) selected.
+                  {selectedCount} row(s) selected. Total: ₹{selectedTotalAmount.toLocaleString()}
                 </Typography>
               )}
             </Box>
@@ -1392,7 +1011,8 @@ const Bank = ({ loadingOn, loadingOff }) => {
                     paginatedDbData.map((row, idx) => {
                       const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`;
                       const isReceiptSynced = row.receipt_id && !row.pay_id;  
-                      const isPaymentSynced = row.pay_id    && !row.receipt_id; 
+                      const isPaymentSynced = row.pay_id && !row.receipt_id;
+                      const synced = isReceiptSynced || isPaymentSynced;
                     
                       return (
                         <StyledTableRow
@@ -1400,7 +1020,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
                           receiptsynced={isReceiptSynced ? 1 : 0}  
                           paymentsynced={isPaymentSynced ? 1 : 0}
                         >
-                          {showCheckboxes && (
+                          {showCheckboxes && !synced && (
                             <StyledCheckboxCell align="center">
                               <Checkbox
                                 checked={!!selectedDbRows[rowId]}
@@ -1408,6 +1028,11 @@ const Bank = ({ loadingOn, loadingOff }) => {
                                 size="small"
                                 sx={{ padding: "0" }}
                               />
+                            </StyledCheckboxCell>
+                          )}
+                          {showCheckboxes && synced && (
+                            <StyledCheckboxCell align="center">
+                              {/* Empty cell for synced rows - no checkbox */}
                             </StyledCheckboxCell>
                           )}
                           <StyledSerialCell align="center">
@@ -1543,374 +1168,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
           </>
         )}
       </Card>
-
-      {/* Payment Dialog for Debit Transactions */}
-      <Dialog open={openDialog && dialogType === 'payment'} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ bgcolor: '#ff9800', color: 'white' }}>
-          <PaymentIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Payment Details - Debit Transactions
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Paper sx={{ p: 2, mb: 3, bgcolor: '#fff3e0' }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Selected Transactions: {selectedTransactions.length}
-              </Typography>
-           
-            </Paper>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" gutterBottom>Date <span style={{ color: 'red' }}>*</span></Typography>
-                <TextField
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={paymentForm.payment_date}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" gutterBottom>Bill Type <span style={{ color: 'red' }}>*</span></Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={paymentForm.pay_bill_type}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, pay_bill_type: e.target.value })}
-                    displayEmpty
-                  >
-                    <MenuItem value="" disabled>Select</MenuItem>
-                    {paymentTypes.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" gutterBottom>Voucher <span style={{ color: 'red' }}>*</span></Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={paymentForm.payment_voucher_type_id}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_voucher_type_id: e.target.value })}
-                    displayEmpty
-                  >
-                    <MenuItem value="" disabled>Select</MenuItem>
-                    {paymentFilterData.voucherType.map((voucher) => (
-                      <MenuItem key={voucher.value} value={voucher.value}>
-                        {voucher.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-             
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" gutterBottom>Transaction Type <span style={{ color: 'red' }}>*</span></Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={paymentForm.transaction_type}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, transaction_type: e.target.value })}
-                    displayEmpty
-                  >
-                    <MenuItem value="" disabled>Select</MenuItem>
-                    {transactionTypes.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-                <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" gutterBottom>Status <span style={{ color: 'red' }}>*</span></Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={paymentForm.status}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, status: e.target.value })}
-                    displayEmpty
-                  >
-                    <MenuItem value="" disabled>Select</MenuItem>
-                    {receiptStatus.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-
-
-              {/* Ledger Section */}
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mt: 2, mb: 1, borderBottom: '1px solid #e0e0e0' }}>
-                  Ledger Details
-                </Typography>
-              </Grid>
-
-      
-<Grid item xs={12} sm={6} md={4}>
-  <Typography variant="body2" gutterBottom>Debit Group</Typography>
-  <FormControl fullWidth size="small">
-    <Select
-      value={selectedDebitGroup?.value || ''}
-      onChange={(e) => {
-        const group = baseData.accountGroupData.find(g => g.Group_Id === e.target.value);
-        const selected = group ? { value: group.Group_Id, label: group.Group_Name } : null;
-        setSelectedDebitGroup(selected);
-        setFilteredDebitAccounts(
-          selected
-            ? baseData.accountsList.filter(a => a.Group_Id === selected.value)
-            : []
-        );
-    
-        setPaymentForm(prev => ({ ...prev, debit_ledger: '', debit_ledger_name: '' }));
-      }}
-      displayEmpty
-    >
-      <MenuItem value="">All Groups</MenuItem>
-      {(baseData.accountGroupData || []).map(group => (
-        <MenuItem key={group.Group_Id} value={group.Group_Id}>
-          {group.Group_Name}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
-
-
-<Grid item xs={12} sm={6} md={8}>
-  <Typography variant="body2" gutterBottom>
-    Debit Account <span style={{ color: 'red' }}>*</span>
-  </Typography>
-  <FormControl fullWidth size="small">
-    <Select
-      value={paymentForm.debit_ledger || ''} 
-      onChange={(e) => {
-        const account = (selectedDebitGroup?.value
-          ? filteredDebitAccounts
-          : baseData.accountsList
-        ).find(a => a.Acc_Id === e.target.value);
-      
-        setPaymentForm({
-          ...paymentForm,
-          debit_ledger:      e.target.value,
-          debit_ledger_name: account?.Account_name || ''
-        });
-      }}
-      displayEmpty
-    >
-      <MenuItem value="" disabled>Select Debit Account</MenuItem>
-      {(selectedDebitGroup?.value
-        ? filteredDebitAccounts
-        : (baseData.accountsList || [])
-      ).map(account => (
-        <MenuItem key={account.Acc_Id} value={account.Acc_Id}>
-          {account.Account_name}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handlePaymentSubmit} variant="contained" color="warning" disabled={syncSelectedLoading}>
-            {syncSelectedLoading ? <CircularProgress size={24} /> : 'Submit Payment'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openDialog && dialogType === 'receipt'} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-  <DialogTitle sx={{ bgcolor: '#4caf50', color: 'white' }}>
-    <ReceiptIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-    Receipt Details - Credit Transactions
-  </DialogTitle>
-  <DialogContent>
-    <Box sx={{ mt: 2 }}>
-      <Paper sx={{ p: 2, mb: 3, bgcolor: '#e8f5e9' }}>
-        <Typography variant="subtitle2" gutterBottom>
-          Selected Transactions: {selectedTransactions.length}
-        </Typography>
-      </Paper>
-
-      <Grid container spacing={2}>
-
-        {/* Date */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Date <span style={{ color: 'red' }}>*</span></Typography>
-          <TextField
-            type="date"
-            fullWidth
-            size="small"
-            value={receiptForm.receipt_date}
-            onChange={(e) => setReceiptForm({ ...receiptForm, receipt_date: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-
-        {/* Bill Type */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Bill Type <span style={{ color: 'red' }}>*</span></Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={receiptForm.receipt_bill_type}
-              onChange={(e) => setReceiptForm({ ...receiptForm, receipt_bill_type: e.target.value })}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Select</MenuItem>
-              {receiptTypes.map((type) => (
-                <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Voucher */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Voucher <span style={{ color: 'red' }}>*</span></Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={receiptForm.receipt_voucher_type_id}
-              onChange={(e) => setReceiptForm({ ...receiptForm, receipt_voucher_type_id: e.target.value })}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Select</MenuItem>
-              {receiptFilterData.voucherType.map((voucher) => (
-                <MenuItem key={voucher.value} value={voucher.value}>
-                  {voucher.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Transaction Type */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Transaction Type <span style={{ color: 'red' }}>*</span></Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={receiptForm.transaction_type}
-              onChange={(e) => setReceiptForm({ ...receiptForm, transaction_type: e.target.value })}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Select</MenuItem>
-              {transactionTypes.map((type) => (
-                <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-    <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Status <span style={{ color: 'red' }}>*</span></Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={receiptForm.status}
-              onChange={(e) => setReceiptForm({ ...receiptForm, status: e.target.value })}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Select</MenuItem>
-              {receiptStatus.map((type) => (
-                <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      
-        <Grid item xs={12}>
-          <h5 className="border-start border-primary border-3 p-2 m-0">Ledger Info</h5>
-        </Grid>
-
-      
-        <Grid item xs={12} sm={6} md={4}>
-          
-        </Grid>
-
-       
-        <Grid item xs={12} sm={6} md={8}>
-         
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="body2" gutterBottom>Credit Group</Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={selectedCreditGroup?.value || ''}
-              onChange={(e) => {
-                const group = baseData.accountGroupData.find(g => g.Group_Id === e.target.value);
-                const selected = group ? { value: group.Group_Id, label: group.Group_Name } : null;
-                setSelectedCreditGroup(selected);
-                setFilteredCreditAccounts(
-                  selected
-                    ? baseData.accountsList.filter(a => a.Group_Id === selected.value)
-                    : []
-                );
-                
-                setReceiptForm(prev => ({ ...prev, credit_ledger: '', credit_ledger_name: '' }));
-              }}
-              displayEmpty
-            >
-              <MenuItem value="">All Groups</MenuItem>
-              {(baseData.accountGroupData || []).map(group => (
-                <MenuItem key={group.Group_Id} value={group.Group_Id}>
-                  {group.Group_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-    
-        <Grid item xs={12} sm={6} md={8}>
-          <Typography variant="body2" gutterBottom>
-            Credit Account <span style={{ color: 'red' }}>*</span>
-          </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={receiptForm.credit_ledger || ''}
-              onChange={(e) => {
-                const account = (selectedCreditGroup?.value
-                  ? filteredCreditAccounts
-                  : baseData.accountsList
-                ).find(a => a.Acc_Id === e.target.value);
-                setReceiptForm({
-                  ...receiptForm,
-                  credit_ledger:      e.target.value,
-                  credit_ledger_name: account?.Account_name || ''
-                });
-              }}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Select Credit Account</MenuItem>
-              {(selectedCreditGroup?.value
-                ? filteredCreditAccounts
-                : (baseData.accountsList || [])
-              ).map(account => (
-                <MenuItem key={account.Acc_Id} value={account.Acc_Id}>
-                  {account.Account_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-      </Grid>
-    </Box>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={handleCloseDialog}>Cancel</Button>
-    <Button
-      onClick={handleReceiptSubmit}
-      variant="contained"
-      color="success"
-      disabled={syncSelectedLoading}
-    >
-      {syncSelectedLoading ? <CircularProgress size={24} /> : 'Submit Receipt'}
-    </Button>
-  </DialogActions>
-</Dialog>
     </>
   );
 };

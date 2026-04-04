@@ -1738,6 +1738,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                     },
                     createCol("Narration", "string", "Narration"),
                     ...costTypeColumns,
+                    createCol("Created_BY_Name","string","CreatedBy"),
                     createCol("Delivery_Status", "string", "Delivery_Status"),
                     {
                         Field_Name: "Action",
