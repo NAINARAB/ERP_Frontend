@@ -301,7 +301,7 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        top: "10.2cm",
+        top: "10.3cm",
         right: "5cm",
         fontWeight: "bold",
         fontSize: "12px",
@@ -540,7 +540,7 @@ if (isCombinedPrint) {
 <div
     style={{
         position: "absolute",
-        top: "10.2cm",
+        top: "10.3cm",
         right: "5cm",
         fontWeight: "bold",
         fontSize: "12px",
