@@ -14,7 +14,7 @@ const UserActivities = lazy(() => import('./Pages/Dashboard/userActivities'));
 const ChangePassword = lazy(() => import('./Pages/changePassword'));
 const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations'));
 const BankDetails = lazy(() => import('./Pages/BankDetails/bank'));
-
+const BankDetailsConvert=lazy(()=>import('./Pages/BankDetails/convertScreen'));
 // -----------------------------------------------------------------------------
 // Masters
 // -----------------------------------------------------------------------------
@@ -314,6 +314,7 @@ const RoutingArray = [
     // ERP - Bank
     // ---------------------------------------------------------------------------
     { component: <BankDetails />, path: '/erp/bankReports/bankList' },
+    { component: <BankDetailsConvert />, path: '/erp/bankReports/bankList/convertScreen' },
 
     // ---------------------------------------------------------------------------
     // ERP - Batch Management
