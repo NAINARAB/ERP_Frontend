@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
-import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox } from "@mui/material";
+import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox, Collapse, Box } from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -97,7 +97,7 @@ const TRow = ({ UserTypeId, data, loadingOn, loadingOff }) => {
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
-                    {data.SubMenu.length > 0 && (
+                    {(data?.SubMenu?.length > 0 || data?.SubRoutes?.length > 0) && (
                         <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
                             <UnfoldMore />
                         </IconButton>
@@ -106,37 +106,50 @@ const TRow = ({ UserTypeId, data, loadingOn, loadingOff }) => {
             </TableRow>
             <Dialog open={open} onClose={() => setOpen(!open)} maxWidth="lg" fullWidth>
                 <DialogContent>
-                    <h3 style={{ paddingBottom: '0.5em' }}>
-                        Sub Menu
-                    </h3>
-                    <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
-                        <Table stickyHeader aria-label="simple table">
-                            <TableHead>
-                                <TableRow>
-                                    {MainMenu.map(obj => (
-                                        <TableCell
-                                            key={obj.id}
-                                            variant={obj.variant}
-                                            align={obj.align}
-                                            width={obj.width}
-                                            sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
-                                            {obj.headname}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {data.SubMenu.map((obj, index) => (
-                                    <STrow
-                                        key={index}
-                                        data={obj}
-                                        UserTypeId={UserTypeId}
-                                        loadingOff={loadingOff}
-                                        loadingOn={loadingOn}
-                                    />))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    {data?.SubMenu?.length > 0 && (
+                        <>
+                            <h3 style={{ paddingBottom: '0.5em' }}>
+                                Sub Menu
+                            </h3>
+                            <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+                                <Table stickyHeader aria-label="simple table">
+                                    <TableHead>
+                                        <TableRow>
+                                            {MainMenu.map(obj => (
+                                                <TableCell
+                                                    key={obj.id}
+                                                    variant={obj.variant}
+                                                    align={obj.align}
+                                                    width={obj.width}
+                                                    sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
+                                                    {obj.headname}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {data.SubMenu.map((obj, index) => (
+                                            <STrow
+                                                key={index}
+                                                data={obj}
+                                                UserTypeId={UserTypeId}
+                                                loadingOff={loadingOff}
+                                                loadingOn={loadingOn}
+                                            />))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    )}
+                    {data?.SubRoutes?.length > 0 && (
+                        <>
+                            {data?.SubMenu?.length > 0 && <br />}
+                            <h3 style={{ paddingBottom: '0.5em' }}>
+                                Sub Routings
+                            </h3>
+                            <DisplaySubRoutings dataSource={data} UserTypeId={UserTypeId} loadingOn={loadingOn} loadingOff={loadingOff} />
+                        </>
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpen(!open)} color="primary">
@@ -208,7 +221,7 @@ const STrow = ({ data, UserTypeId, loadingOn, loadingOff }) => {
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
-                    {data.ChildMenu.length > 0 && (
+                    {(data?.ChildMenu?.length > 0 || data?.SubRoutes?.length > 0) && (
                         <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
                             <UnfoldMore />
                         </IconButton>
@@ -217,38 +230,51 @@ const STrow = ({ data, UserTypeId, loadingOn, loadingOff }) => {
             </TableRow>
             <Dialog open={open} onClose={() => setOpen(!open)} maxWidth="lg" fullWidth>
                 <DialogContent>
-                    <h3 style={{ paddingBottom: '0.5em' }}>
-                        Child Menu
-                    </h3>
-                    <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
-                        <Table stickyHeader aria-label="simple table">
-                            <TableHead>
-                                <TableRow>
-                                    {MainMenu.map(obj => (
-                                        <TableCell
-                                            key={obj.id}
-                                            variant={obj.variant}
-                                            align={obj.align}
-                                            width={obj.width}
-                                            sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
-                                            {obj.headname}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {data?.ChildMenu?.map((obj, ind) => (
-                                    <CTrow
-                                        key={ind}
-                                        data={obj}
-                                        UserTypeId={UserTypeId}
-                                        loadingOff={loadingOff}
-                                        loadingOn={loadingOn}
-                                    />
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    {data?.ChildMenu?.length > 0 && (
+                        <>
+                            <h3 style={{ paddingBottom: '0.5em' }}>
+                                Child Menu
+                            </h3>
+                            <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+                                <Table stickyHeader aria-label="simple table">
+                                    <TableHead>
+                                        <TableRow>
+                                            {MainMenu.map(obj => (
+                                                <TableCell
+                                                    key={obj.id}
+                                                    variant={obj.variant}
+                                                    align={obj.align}
+                                                    width={obj.width}
+                                                    sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
+                                                    {obj.headname}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {data?.ChildMenu?.map((obj, ind) => (
+                                            <CTrow
+                                                key={ind}
+                                                data={obj}
+                                                UserTypeId={UserTypeId}
+                                                loadingOff={loadingOff}
+                                                loadingOn={loadingOn}
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    )}
+                    {data?.SubRoutes?.length > 0 && (
+                        <>
+                            {data?.ChildMenu?.length > 0 && <br />}
+                            <h3 style={{ paddingBottom: '0.5em' }}>
+                                Sub Routings
+                            </h3>
+                            <DisplaySubRoutings dataSource={data} UserTypeId={UserTypeId} loadingOn={loadingOn} loadingOff={loadingOff} />
+                        </>
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpen(!open)} color="primary">
@@ -262,6 +288,7 @@ const STrow = ({ data, UserTypeId, loadingOn, loadingOff }) => {
 
 const CTrow = (props) => {
     const { data, UserTypeId, loadingOn, loadingOff } = props;
+    const [open, setOpen] = useState(false);
     const [readRights, setReadRights] = useState(data.Read_Rights === 1)
     const [addRights, setAddRights] = useState(data.Add_Rights === 1)
     const [editRights, setEditRights] = useState(data.Edit_Rights === 1)
@@ -320,11 +347,126 @@ const CTrow = (props) => {
                         onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
                 </TableCell>
                 <TableCell>
+                    {data?.SubRoutes?.length > 0 && (
+                        <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
+                            <UnfoldMore />
+                        </IconButton>
+                    )}
                 </TableCell>
             </TableRow>
+            {data?.SubRoutes?.length > 0 && (
+                <TableRow>
+                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                        <Collapse in={open} timeout="auto" unmountOnExit>
+                            <Box sx={{ margin: 1 }}>
+                                <DisplaySubRoutings dataSource={data} UserTypeId={UserTypeId} loadingOn={loadingOn} loadingOff={loadingOff} />
+                            </Box>
+                        </Collapse>
+                    </TableCell>
+                </TableRow>
+            )}
         </>
     );
 }
+
+const DisplaySubRoutings = ({ dataSource, UserTypeId, loadingOn, loadingOff }) => (
+    <TableContainer component={Paper} sx={{ mb: 2 }}>
+        <Table stickyHeader aria-label="simple table" size="small">
+            <TableHead>
+                <TableRow>
+                    {MainMenu.map(obj => (
+                        <TableCell
+                            key={obj.id}
+                            variant={obj.variant}
+                            align={obj.align}
+                            width={obj.width}
+                            sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
+                            {obj.headname === "Action" ? 'Sub Routings' : obj.headname}
+                        </TableCell>
+                    ))}
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {dataSource?.SubRoutes?.map((obj, ind) => (
+                    <SubRoutingRow
+                        key={ind}
+                        data={obj}
+                        UserTypeId={UserTypeId}
+                        loadingOn={loadingOn}
+                        loadingOff={loadingOff}
+                    />
+                ))}
+            </TableBody>
+        </Table>
+    </TableContainer>
+);
+
+const SubRoutingRow = ({ data, UserTypeId, loadingOn, loadingOff }) => {
+    const [open, setOpen] = useState(false);
+    const [readRights, setReadRights] = useState(data.Read_Rights === 1)
+    const [addRights, setAddRights] = useState(data.Add_Rights === 1)
+    const [editRights, setEditRights] = useState(data.Edit_Rights === 1)
+    const [deleteRights, setDeleteRights] = useState(data.Delete_Rights === 1)
+    const [printRights, setPrintRights] = useState(data.Print_Rights === 1)
+    const [pflag, setpFlag] = useState(false);
+
+    useEffect(() => {
+        setReadRights(data.Read_Rights === 1);
+        setAddRights(data.Add_Rights === 1);
+        setEditRights(data.Edit_Rights === 1);
+        setDeleteRights(data.Delete_Rights === 1);
+        setPrintRights(data.Print_Rights === 1);
+        setpFlag(false)
+    }, [data])
+
+    useEffect(() => {
+        if (pflag === true) {
+            postCheck({ readRights, addRights, editRights, deleteRights, printRights }, data.id, UserTypeId, loadingOn, loadingOff)
+        }
+    }, [readRights, addRights, editRights, deleteRights, printRights])
+
+    return (
+        <>
+            <TableRow hover={true}>
+                <TableCell>{data.id}</TableCell>
+                <TableCell>{data.name}</TableCell>
+                <TableCell>
+                    <Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} checked={readRights} size='small' onChange={() => { setpFlag(true); setReadRights(!readRights) }} />
+                </TableCell>
+                <TableCell>
+                    <Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} checked={addRights} size='small' onChange={() => { setpFlag(true); setAddRights(!addRights) }} />
+                </TableCell>
+                <TableCell>
+                    <Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} checked={editRights} size='small' onChange={() => { setpFlag(true); setEditRights(!editRights) }} />
+                </TableCell>
+                <TableCell>
+                    <Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} checked={deleteRights} size='small' onChange={() => { setpFlag(true); setDeleteRights(!deleteRights) }} />
+                </TableCell>
+                <TableCell>
+                    <Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} checked={printRights} size='small' onChange={() => { setpFlag(true); setPrintRights(!printRights) }} />
+                </TableCell>
+                <TableCell>
+                    {data?.SubRoutes?.length > 0 && (
+                        <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
+                            <UnfoldMore />
+                        </IconButton>
+                    )}
+                </TableCell>
+            </TableRow>
+            {data?.SubRoutes?.length > 0 && (
+                <TableRow>
+                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                        <Collapse in={open} timeout="auto" unmountOnExit>
+                            <Box sx={{ margin: 1 }}>
+                                <DisplaySubRoutings dataSource={data} UserTypeId={UserTypeId} loadingOn={loadingOn} loadingOff={loadingOff} />
+                            </Box>
+                        </Collapse>
+                    </TableCell>
+                </TableRow>
+            )}
+        </>
+    );
+};
 
 const UserTypeBased = ({ loadingOn, loadingOff }) => {
     const localData = localStorage.getItem("user");
@@ -402,40 +544,6 @@ const UserTypeBased = ({ loadingOn, loadingOff }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-
-            <br />
-            <h6 style={{ marginBottom: '0.5em', borderBottom: '2px solid blue', width: 'fit-content' }}>Sub-Routings Access Control</h6>
-
-            <TableContainer component={Paper} sx={{ maxHeight: 650 }} title="Sub-Routings Access Control">
-                <Table stickyHeader aria-label="simple table">
-                    <TableHead>
-                        <TableRow>
-                            {MainMenu.map(obj => (
-                                <TableCell
-                                    key={obj.id}
-                                    variant={obj.variant}
-                                    align={obj.align}
-                                    width={obj.width}
-                                    sx={{ backgroundColor: 'rgb(15, 11, 42)', color: 'white' }}>
-                                    {obj.headname === "Action" ? 'Sub Menu' : obj.headname}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {subRoutings.map((obj, index) => (
-                            <CTrow
-                                key={index}
-                                data={obj}
-                                UserTypeId={currentTypeId.value}
-                                loadingOff={loadingOff}
-                                loadingOn={loadingOn}
-                            />
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
         </>
     )
 }

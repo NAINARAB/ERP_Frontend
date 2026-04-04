@@ -324,6 +324,16 @@ const CreateArrival = ({ loadingOn, loadingOff, children, productValue = {}, onS
                                         />
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td className={tdStyle}>Alter Reason <RequiredStar /></td>
+                                    <td className={tdStyle}>
+                                        <input
+                                            value={productInput.Alter_Reason}
+                                            onChange={e => setProductInput({ ...productInput, Alter_Reason: e.target.value })}
+                                            className="cus-inpt p-2"
+                                        />
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </DialogContent>

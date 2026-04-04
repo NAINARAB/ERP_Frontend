@@ -9,6 +9,7 @@ import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import DeliveryChallan from "./deliveryChallan";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -457,6 +458,9 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             disablePagination
                             ExcelPrintOption
                         />
+
+                        <br />
+                        <AlterHistoryTable alterationHistory={row.Alteration_History} />
                     </>
                 )}
             />

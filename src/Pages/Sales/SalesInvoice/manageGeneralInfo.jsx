@@ -149,9 +149,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             onChange={e => setInvoiceInfo(pre => ({ ...pre, Voucher_Type: e.value }))}
                                             options={[
                                                 { value: '', label: 'Search', isDisabled: true },
-                                                ...toArray(voucherType).filter(
-                                                    fil => fil?.Type === 'SALES'
-                                                ).map(obj => ({
+                                                ...toArray(voucherType).map(obj => ({
                                                     value: obj?.Vocher_Type_Id,
                                                     label: obj?.Voucher_Type
                                                 }))

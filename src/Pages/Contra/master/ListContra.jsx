@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { contraStatus } from "./contraVariables";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
@@ -207,6 +208,8 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                     }
                 ]}
                 EnableSerialNumber
+                isExpendable={true}
+                expandableComp={({ row }) => <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />}
             />
 
             <Dialog

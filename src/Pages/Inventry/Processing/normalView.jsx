@@ -1,5 +1,6 @@
 import FilterableTable, { createCol } from "../../../Components/filterableTable2"
 import { Addition, NumberFormat, RoundNumber } from "../../../Components/functions";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 
 const ProcessingView = ({ dataArray, ButtonArea }) => {
@@ -112,6 +113,7 @@ const ProcessingView = ({ dataArray, ButtonArea }) => {
                             disablePagination
                         />
                     </div>
+                    <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
                 </div>
             )}
         />

@@ -137,7 +137,7 @@ const TripSheetGeneralInfo = ({
                             >
                                 <option value={''} disabled>select voucher</option>
                                 {voucherType.filter(
-                                    v => stringCompare(v.Type, tripSheetInfo.BillType)
+                                    v => (stringCompare(v.Type, 'MATERIAL_INWARD') || stringCompare(v.Type, 'OTHER_GODOWN'))
                                 ).map((voucher, voucherInd) => (
                                     <option value={voucher.Vocher_Type_Id} key={voucherInd}>{voucher.Voucher_Type}</option>
                                 ))}

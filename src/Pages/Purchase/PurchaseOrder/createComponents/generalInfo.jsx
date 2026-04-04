@@ -16,22 +16,22 @@ const PurchaseOrderGeneralInfo = ({
                     <div className="row py-2 px-3">
 
                         <div className="col-md-3 col-sm-6 p-2">
-                            <label>Loading Date</label>
-                            <input
-                                type="date"
-                                className={inputStyle + ' bg-light'}
-                                value={OrderDetails.LoadingDate}
-                                onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
-                            />
-                        </div>
-
-                        <div className="col-md-3 col-sm-6 p-2">
                             <label>Trade Date</label>
                             <input
                                 type="date"
                                 className={inputStyle + ' bg-light'}
                                 value={OrderDetails.TradeConfirmDate}
                                 onChange={e => setOrderDetails(pre => ({ ...pre, TradeConfirmDate: e.target.value }))}
+                            />
+                        </div>
+
+                        <div className="col-md-3 col-sm-6 p-2">
+                            <label>Loading Date</label>
+                            <input
+                                type="date"
+                                className={inputStyle + ' bg-light'}
+                                value={OrderDetails.LoadingDate}
+                                onChange={e => setOrderDetails(pre => ({ ...pre, LoadingDate: e.target.value }))}
                             />
                         </div>
 

@@ -115,12 +115,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `masters/retailers/dropDown` }),
-                    fetchLink({ address: `masters/voucher?module=SALES` }),
+                    fetchLink({ address: `masters/voucher?module=SALE_INVOICE` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `masters/defaultAccountMaster?Type=SALES_INVOICE` }),
+                    fetchLink({ address: `masters/defaultAccountMaster?Type=SALE_INVOICE` }),
                     // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
@@ -763,14 +763,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         return true;
     }, [retailerSalesStatus, salesInvoiceAccess, taxSplitUp?.invoiceTotal]);
 
+    const selectedVoucher = useMemo(() => {
+        return baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
+    }, [baseData.voucherType, invoiceInfo.Voucher_Type]);
+
+    const voucherCrLimitValid = useMemo(() => {
+        const crLimit = toNumber(selectedVoucher?.crLimit);
+        if (crLimit <= 0) return true; // 0 = unlimited
+        const invoiceTotal = toNumber(taxSplitUp?.invoiceTotal);
+        return invoiceTotal <= crLimit;
+    }, [selectedVoucher, taxSplitUp?.invoiceTotal]);
+
     const voucherGodownCondition = useMemo(() => {
         if (!salesInvoiceAccess.voucherBasedGodown) return true;
         if (isEdit) return true;
-        const selectedVoucher = baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
         const voucherGodown = toNumber(selectedVoucher?.GodownId);
         const productHasGodown = invoiceProducts.length > 0 && invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, voucherGodown));
         return productHasGodown;
-    }, [baseData.voucherType, invoiceInfo.Voucher_Type, invoiceProducts, isEdit, salesInvoiceAccess.voucherBasedGodown]);
+    }, [selectedVoucher, invoiceProducts, isEdit, salesInvoiceAccess.voucherBasedGodown]);
 
     const isSingleGodownValid = useMemo(() => {
         if (!salesInvoiceAccess.singleGodown) return true;
@@ -875,7 +885,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid || isLoading}>submit</Button>
+                        
+                        <Button 
+                            onClick={saveFunWithCodition} 
+                            variant="contained" 
+                            disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isLoading}
+                        >submit</Button>
                     </span>
                 </div>
                 <CardContent>
@@ -933,6 +948,17 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     {!isSingleGodownValid && salesInvoiceAccess.singleGodown && (
                         <div className="alert alert-danger p-2 mb-2">
                             Can't save invoice with multiple godowns. Please ensure all items are from a single godown.
+                        </div>
+                    )}
+
+                    {!voucherCrLimitValid && (
+                        <div className="alert alert-warning p-2 mb-2">
+                            ⚠️ Invoice total 
+                            (<b>₹{(taxSplitUp?.invoiceTotal ?? 0).toLocaleString('en-IN')}</b>) 
+                            exceeds the CR limit of 
+                            <b>₹{toNumber(selectedVoucher?.crLimit).toLocaleString('en-IN')}</b> 
+                            set for voucher <b>{selectedVoucher?.Voucher_Type}</b>. 
+                            Please reduce the invoice amount or select a different voucher.
                         </div>
                     )}
 
@@ -997,7 +1023,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                             </>
                         }
                         dataArray={[
-                            ...invoiceProducts,
+                            ...invoiceProducts.sort((a, b) => toNumber(a.S_No) - toNumber(b.S_No)),
                             ...Array.from({
                                 length: dummyRowCount > 0 ? dummyRowCount : 0
                             }).map(d => salesInvoiceDetailsInfo),
@@ -1128,7 +1154,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                             navigate('/erp/sales/invoice');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={saveFunWithCodition} variant="contained" disabled={!isStockValid || !isSingleGodownValid || isLoading}>submit</Button>
+
+                    <Button 
+                        onClick={saveFunWithCodition} 
+                        variant="contained" 
+                        disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isLoading}
+                    >submit</Button>
                 </CardActions>
             </Card>
 

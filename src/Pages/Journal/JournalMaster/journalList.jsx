@@ -9,6 +9,7 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
 import { journalStatus } from "./variable";
 import { useMemo } from "react";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) => {
     const nav = useNavigate();
@@ -16,6 +17,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
     const [generalInfo, setGeneralInfo] = useState([]);
     const [entriesInfo, setEntriesInfo] = useState([]);
     const [billReferenceInfo, setBillReferenceInfo] = useState([]);
+    const [alterDetails, setAlterDetails] = useState([]);
 
     const sessionValue = sessionStorage.getItem('filterValues');
 
@@ -91,6 +93,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 setGeneralInfo(toArray(data.others?.generalInfo));
                 setEntriesInfo(toArray(data.others?.entriesInfo));
                 setBillReferenceInfo(toArray(data.others?.billReferencesInfo));
+                setAlterDetails(toArray(data.others?.alterHistory));
             }
         }).catch(e => console.error(e))
     }, [sessionValue, pageID]);
@@ -116,6 +119,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
 
         generalInfo.forEach((journal, jourInd) => {
             const billRefData = billReferenceInfo.filter(item => item.JournalAutoId === journal.JournalAutoId);
+            const voucherAlteration = alterDetails.filter(item => item?.alteredRowId === journal.JournalAutoId);
 
             const debitSide = entriesInfo.filter(item => (
                 item.JournalAutoId === journal.JournalAutoId
@@ -157,7 +161,8 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 status: statusGet,
                 branch: journal.BranchGet,
                 createdBy: journal.CreatedByGet,
-                journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData }
+                journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData },
+                voucherAlterationHistory: voucherAlteration
             });
 
             for (let i = 0; i < maxRows; i++) {
@@ -180,7 +185,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
         });
 
         return transformedData;
-    }, [generalInfo, entriesInfo])
+    }, [generalInfo, entriesInfo, billReferenceInfo, alterDetails])
 
     const JournalTotal = useMemo(() => entriesInfo.filter(
         item => item.DrCr === 'Dr'
@@ -257,6 +262,8 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                     }
                 }
                 ]}
+                isExpendable={true}
+                expandableComp={({ row }) => row?.journalObject ? <AlterHistoryTable alterationHistory={row.voucherAlterationHistory} /> : <></>}
             />
 
             <Dialog

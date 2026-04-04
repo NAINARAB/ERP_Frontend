@@ -167,4 +167,31 @@ export const additionalModules = [
     { name: 'MATERIAL_INWARD', alias: 'Material Inward', moduleCode: 'MI' },
     { name: 'OTHER_GODOWN', alias: 'Other Godown', moduleCode: 'OG' },
     { name: 'PROCESSING', alias: 'Processing', moduleCode: 'PRO' },
-]
+];
+
+export const tallyModules = [
+    { value: 'Attendance', name: 'Attendance', },
+    { value: 'Contra', name: 'Contra', },
+    { value: 'Credit_Note', name: 'Credit Note', },
+    { value: 'Debit_Note', name: 'Debit Note', },
+    { value: 'Delivery_Note', name: 'Delivery Note', },
+    { value: 'Job_Work_In_Order', name: 'Job Work In Order', },
+    { value: 'Job_Work_Out_Order', name: 'Job Work Out Order', },
+    { value: 'Journal', name: 'Journal', },
+    { value: 'Material_In', name: 'Material In', },
+    { value: 'Material_Out', name: 'Material Out', },
+    { value: 'Memorandum', name: 'Memorandum', },
+    { value: 'Payment', name: 'Payment', },
+    { value: 'Payroll', name: 'Payroll', },
+    { value: 'Physical_Stock', name: 'Physical Stock', },
+    { value: 'Purchase', name: 'Purchase', },
+    { value: 'Purchase_Order', name: 'Purchase Order', },
+    { value: 'Receipt', name: 'Receipt', },
+    { value: 'Receipt_Note', name: 'Receipt Note', },
+    { value: 'Rejections_In', name: 'Rejections In', },
+    { value: 'Rejections_Out', name: 'Rejections Out', },
+    { value: 'Reversing_Journal', name: 'Reversing Journal', },
+    { value: 'Sales', name: 'Sales', },
+    { value: 'Sales_Order', name: 'Sales Order', },
+    { value: 'Stock_Journal', name: 'Stock Journal', },
+].sort((a, b) => a.value.localeCompare(b.value));

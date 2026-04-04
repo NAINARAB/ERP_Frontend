@@ -70,6 +70,7 @@ export const tripDetailsColumns = {
     Taxable_Value: '',
     Round_off: '',
     Total_Value: '',
+    Alter_Reason: '',
 }
 
 export const tripStaffsColumns = {
@@ -108,4 +109,5 @@ export const initialArrivalValue = {
     Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     CreatedAt: '',
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
+    Alter_Reason: '',
 }

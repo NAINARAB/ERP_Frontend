@@ -8,6 +8,7 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import CreateArrival from "./createArrival";
+import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -205,6 +206,8 @@ const ArrivalList = ({ loadingOn, loadingOff, switchDisplay }) => {
                         Cell: ({ row }) => <EditComp row={row} />
                     }
                 ]}
+                isExpendable={true}
+                expandableComp={({ row }) => <AlterHistoryTable alterationHistory={row.alterationHistory} />}
             />
 
             <Dialog

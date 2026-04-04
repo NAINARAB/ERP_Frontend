@@ -14,7 +14,7 @@ import { Button } from "react-bootstrap";
 import { Delete, Edit, Search as SearchIcon } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
-import { erpModules } from "../../Components/tablecolumn";
+import { erpModules, tallyModules } from "../../Components/tablecolumn";
 import { isEqualNumber } from "../../Components/functions";
 
 const EMPTY_FORM = {
@@ -24,7 +24,10 @@ const EMPTY_FORM = {
     Branch_Id: "",
     GodownId: "",
     Type: "",
-    status: ""
+    status: "",
+    crLimit: "",
+    drLimit: "",
+    tallyModule: ""
 };
 
 function VoucherMaster({ loadingOn, loadingOff }) {
@@ -117,7 +120,10 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             Branch_Id: row?.Branch_Id || "",
             GodownId: row?.GodownId || "",
             Type: row?.Type || "",
-            status: Number(row?.isDeleted) || 0
+            status: Number(row?.isDeleted) || 0,
+            crLimit: row?.crLimit ?? "",
+            drLimit: row?.drLimit ?? "",
+            tallyModule: row?.tallyModule || ""
         });
 
         setTallySync(Number(row?.tallySync) === 1);
@@ -155,7 +161,10 @@ function VoucherMaster({ loadingOn, loadingOff }) {
             GodownId: Number(form?.GodownId),
             Type: form.Type,
             tallySync: tallySyncValue,
-            status: Number(form.status) || 0
+            status: Number(form.status) || 0,
+            crLimit: form.crLimit !== "" ? Number(form.crLimit) : null,
+            drLimit: form.drLimit !== "" ? Number(form.drLimit) : null,
+            tallyModule: form.tallyModule || null
         };
 
         const isEdit = formMode === "edit" && form.id;
@@ -265,19 +274,19 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                     </div>
                 </div>
 
-
-
                 <FilterableTable
                     dataArray={filteredData}
                     EnableSerialNumber
                     isExpendable
                     maxHeightOption
                     columns={[
+                        createCol("Voucher_Code", "string", "Voucher Code"),
                         createCol("Voucher_Type", "string", "Voucher Type"),
                         createCol("Type", "string", "Type"),
+                        createCol("crLimit", "number", "Cr Limit"),
+                        createCol("drLimit", "number", "Dr Limit"),
                         createCol("godownNameGet", "string", "Godown Name"),
                         createCol("BranchName", "string", "Branch Name"),
-                        createCol("Voucher_Code", "string", "Voucher Code"),
                         {
                             ColumnHeader: "Tally Sync",
                             isVisible: 1,
@@ -416,6 +425,47 @@ function VoucherMaster({ loadingOn, loadingOff }) {
                             <option value={0}>Active</option>
                             <option value={1}>Inactive</option>
                         </select>
+                    </div>
+
+                    <div className="p-2">
+                        <label className="d-block mb-1">Tally Module</label>
+                        <select
+                            value={form.tallyModule}
+                            onChange={onChange("tallyModule")}
+                            className="cus-inpt w-100"
+                        >
+                            <option value="">Select Tally Module</option>
+                            {tallyModules.map((m) => (
+                                <option key={m.value} value={m.value}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="p-2 row">
+                        <div className="col-6">
+                            <label className="d-block mb-1">CR Limit</label>
+                            <input
+                                type="number"
+                                value={form.crLimit}
+                                onChange={onChange("crLimit")}
+                                className="cus-inpt w-100"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                            />
+                        </div>
+                        <div className="col-6">
+                            <label className="d-block mb-1">DR Limit</label>
+                            <input
+                                type="number"
+                                value={form.drLimit}
+                                onChange={onChange("drLimit")}
+                                className="cus-inpt w-100"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                            />
+                        </div>
                     </div>
 
                     <div className="p-2">
