@@ -33,16 +33,20 @@ const AccountBalance = ({ loadingOn, loadingOff, propValue = '', propLabel = '' 
 
     }, [filters.account.value, propValue]);
 
-    const DebitTotal = reportData.filter(
-        item => item.accountSide === 'Dr'
-    ).reduce(
-        (acc, orders) => Addition(acc, orders?.totalValue), 0
+    const DebitTotal = useMemo(() =>
+        reportData.filter(
+            item => item.accountSide === 'Dr'
+        ).reduce(
+            (acc, orders) => Addition(acc, orders?.BalanceAmount), 0
+        ), [reportData]
     );
 
-    const CreditTotal = reportData.filter(
-        item => item.accountSide === 'Cr'
-    ).reduce(
-        (acc, orders) => Addition(acc, orders?.totalValue), 0
+    const CreditTotal = useMemo(() =>
+        reportData.filter(
+            item => item.accountSide === 'Cr'
+        ).reduce(
+            (acc, orders) => Addition(acc, orders?.BalanceAmount), 0
+        ), [reportData]
     );
 
     const dataArray = useMemo(() => {

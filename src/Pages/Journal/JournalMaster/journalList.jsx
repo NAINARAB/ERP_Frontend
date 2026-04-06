@@ -162,7 +162,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 branch: journal.BranchGet,
                 createdBy: journal.CreatedByGet,
                 journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData },
-                voucherAlterationHistory: voucherAlteration
+                voucherAlterationHistory: voucherAlteration,
             });
 
             for (let i = 0; i < maxRows; i++) {
@@ -233,6 +233,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                     { col: 'creditAmount', type: 'string', title: 'Amount' },
                     { col: 'voucherType', type: 'string', title: 'Voucher' },
                     { col: 'status', type: 'string', title: 'Status' },
+                    { col: 'createdBy', type: 'string', title: 'Created By' },
                 ].map(cel => ({
                     isVisible: 1,
                     ColumnHeader: cel.title,

@@ -336,6 +336,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     createCol('VoucherTypeGet', 'string', 'Voucher'),
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('Branch_Name', 'string', 'Branch'),
+                    createCol('Created_By_User', 'string', 'Created BY'),
                     createCol('StartTime', 'time', 'Start Time'),
                     createCol('EndTime', 'time', 'End Time'),
                     {
