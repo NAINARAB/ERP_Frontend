@@ -2,28 +2,57 @@ import { useEffect, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import PartyOutstandings from "./PartyOutstandings";
+import { ISOString } from "../../../Components/functions";
+import { Button, IconButton } from "@mui/material";
+import { Refresh } from "@mui/icons-material";
 
 const PartyGroupOutstanding = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
+    const [filters, setFilters] = useState({
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        fetchTrigger: 0
+    })
 
     useEffect(() => {
         fetchLink({
-            address: "journal/groupOutstandings",
+            address: `journal/groupOutstandings?Fromdate=${filters.Fromdate}&Todate=${filters.Todate}`,
             loadingOn, loadingOff
         }).then(res => {
             if (res.success) {
                 setReportData(res.data);
             }
         }).catch(console.error)
-    }, [])
+    }, [filters.fetchTrigger])
 
     return (
         <div>
-            <AppTableComponent 
+            <AppTableComponent
                 title="Party Group Outstandings"
                 EnableSerialNumber
                 isExpendable={true}
-                expandableComp={({row}) => (
+                ButtonArea={
+                    <>
+                        <input
+                            className="cus-inpt"
+                            type="date"
+                            value={filters.Fromdate}
+                            onChange={(e) => setFilters(pre => ({ ...pre, Fromdate: e.target.value }))}
+                        />
+                        <label>-</label>
+                        <input
+                            className="cus-inpt"
+                            type="date"
+                            value={filters.Todate}
+                            onChange={(e) => setFilters(pre => ({ ...pre, Todate: e.target.value }))}
+                        />
+                        <IconButton
+                            size="small"
+                            onClick={() => setFilters(pre => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }))}
+                        ><Refresh /></IconButton>
+                    </>
+                }
+                expandableComp={({ row }) => (
                     <PartyOutstandings row={row} />
                 )}
                 dataArray={reportData}
@@ -70,7 +99,7 @@ const PartyGroupOutstanding = ({ loadingOn, loadingOff }) => {
                         isVisible: 1,
                         OrderBy: 6,
                         Aggregation: ''
-                        
+
                     },
                     {
                         Field_Name: "Dr_Amount",

@@ -37,7 +37,8 @@ const transformStockJournalData = (data) => {
             DifferentQTY: Subraction(totalDestinationQty, totalSourceQty),
             DifferentPercentage: diffPercentage,
             Staffs: "",
-            processObjecet: entry
+            processObjecet: entry,
+            createdBy: entry?.createdByGet
         });
 
         for (let i = 0; i < maxRows; i++) {
@@ -55,6 +56,7 @@ const transformStockJournalData = (data) => {
                 DifferentQTY: "",
                 DifferentPercentage: "",
                 Staffs: entry.StaffsDetails[i]?.EmpNameGet || "",
+                createdBy: ''
             });
         }
     });
@@ -274,6 +276,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                         { col: 'DifferentQTY', type: 'number', title: 'Diff' },
                         { col: 'DifferentPercentage', type: 'number', title: 'Diff (%)' },
                         { col: 'Staffs', type: 'string', title: 'Staffs' },
+                        { col: 'createdBy', type: 'string', title: 'Created By' },
                     ].map(cel => ({
                         isVisible: 1,
                         ColumnHeader: cel.title,

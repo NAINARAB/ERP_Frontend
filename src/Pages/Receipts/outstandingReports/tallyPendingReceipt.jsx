@@ -90,8 +90,10 @@ const TallyPendingReceipt = ({ loadingOn, loadingOff }) => {
     }, [reportData, filters.dueDays, filters.reqDate, filters.source])
 
     const totalPendingAmount = useMemo(() => {
-        return reportData.reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
-    }, [reportData]);
+        return reportData.filter(
+            row => filters.source === 'ALL' || row?.accountSide === filters.source
+        ).reduce((acc, inv) => Addition(acc, inv?.Bal_Amount), 0);
+    }, [reportData, filters.source]);
 
     const tillDateAmount = useMemo(() => {
         return reportData.filter(
