@@ -124,7 +124,7 @@ const TripSheetGeneralInfo = ({
                                 <option value={''} disabled>select</option>
                                 <option value={'MATERIAL INWARD'}>MATERIAL INWARD</option>
                                 <option value={'OTHER GODOWN'}>OTHER GODOWN</option>
-                                <option value={'OTHERS'}>OTHERS</option>
+                                {/* <option value={'OTHERS'}>OTHERS</option> */}
                             </select>
                         </div>
 
@@ -137,7 +137,15 @@ const TripSheetGeneralInfo = ({
                             >
                                 <option value={''} disabled>select voucher</option>
                                 {voucherType.filter(
-                                    v => (stringCompare(v.Type, 'MATERIAL_INWARD') || stringCompare(v.Type, 'OTHER_GODOWN'))
+                                    v => {
+                                        if(tripSheetInfo.BillType === 'MATERIAL INWARD'){
+                                            return stringCompare(v.Type, 'MATERIAL_INWARD')
+                                        }else if(tripSheetInfo.BillType === 'OTHER GODOWN'){
+                                            return stringCompare(v.Type, 'OTHER_GODOWN')
+                                        }else{
+                                            return false
+                                        }
+                                    }
                                 ).map((voucher, voucherInd) => (
                                     <option value={voucher.Vocher_Type_Id} key={voucherInd}>{voucher.Voucher_Type}</option>
                                 ))}
