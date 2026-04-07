@@ -572,7 +572,7 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                                 
                                 <tr style={{ ...borderTop, backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>
                                     <td style={{ padding: '8px', ...borderRight }} colSpan="3">Total</td>
-                                    <td style={{ padding: '8px', ...borderRight, textAlign: 'right' }}>{totalQty} KG</td>
+                                    <td style={{ padding: '8px', ...borderRight, textAlign: 'right' }}>{totalQty}</td>
                                     <td style={{ padding: '8px', ...borderRight }}></td>
                                     <td style={{ padding: '8px', ...borderRight }}></td>
                                     <td style={{ padding: '8px', ...borderRight }}></td>
