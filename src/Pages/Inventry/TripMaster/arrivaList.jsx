@@ -199,6 +199,7 @@ const ArrivalList = ({ loadingOn, loadingOff, switchDisplay }) => {
                             )
                         }
                     },
+                    createCol('createdByGet', 'string', 'Created By'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Action',

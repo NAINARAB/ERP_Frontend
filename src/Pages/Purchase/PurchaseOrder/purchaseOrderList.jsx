@@ -5,6 +5,9 @@ import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilter
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt, Search } from '@mui/icons-material';
+import DownloadIcon from "@mui/icons-material/Download";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { purchaseOrderDataSet, displayColumns } from "./filters";
 import { toast } from 'react-toastify';
 import PurchaseOrderPreviewTemplate from "../../DataEntry/purchaseOrderPreviewTemplate";
@@ -149,6 +152,126 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
             : purchaseOrderData
     }, [purchaseOrderData, filters.vendorId]);
 
+    const getStaff = (staffs, category) =>
+        (staffs || [])
+            .filter(s => s.Cost_Category === category)
+            .map(s => s.Emp_Name)
+            .join(", ");
+
+    const downloadExcel = async (rows) => {
+        if (!rows || rows.length === 0) {
+            toast.warn("No data to export");
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Purchase Order Export");
+
+        const header = [
+            "Party Name",
+            "ItemName",
+            "weight",
+            "arrived_quantity",
+            "pending_quantity",
+            "Rate",
+            "Discount",
+            "loading_date",
+            "Lorry Frieght",
+            "owners",
+            "brokers"
+        ];
+
+        worksheet.addRow(header);
+
+        worksheet.getRow(1).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+        });
+
+        const formatDate = (dateString) => {
+            if(!dateString) return '';
+            const d = new Date(dateString);
+            if(isNaN(d)) return '';
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        };
+
+        rows.forEach((po) => {
+            const partyName = po.PartyName || "";
+            const loadingDate = formatDate(po.LoadingDate);
+            const owners = getStaff(po.StaffDetails, "Owners");
+            const brokers = getStaff(po.StaffDetails, "Broker");
+
+            const items = po.ItemDetails || [];
+            
+            items.forEach((item) => {
+                const itemName = item.ItemName || item.Stock_Item || "";
+                const weight = Number(item.Weight) || 0;
+                const rate = item.Rate || "";
+                const discount = item.Discount || "";
+                const freight = item.freightCharges || "";
+
+                const deliveries = (po.DeliveryDetails || []).filter(d => d.ItemId === item.ItemId);
+                
+                let arrivedQuantity = 0;
+                deliveries.forEach(d => {
+                    arrivedQuantity += Number(d.Weight || 0);
+                });
+
+                const pendingQuantity = weight - arrivedQuantity;
+
+                const row = worksheet.addRow([
+                    partyName,
+                    itemName,
+                    weight,
+                    arrivedQuantity,
+                    pendingQuantity,
+                    rate,
+                    discount,
+                    loadingDate,
+                    freight,
+                    owners,
+                    brokers
+                ]);
+
+                row.eachCell((cell, colNumber) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        right: { style: "thin" },
+                        bottom: { style: "thin" }
+                    };
+                    cell.alignment = {
+                        vertical: "middle",
+                        horizontal: [1, 2, 10, 11].includes(colNumber) ? "left" : "center"
+                    };
+                });
+            });
+        });
+
+        worksheet.columns = [
+            { width: 30 },
+            { width: 30 },
+            { width: 12 },
+            { width: 15 },
+            { width: 15 },
+            { width: 10 },
+            { width: 10 },
+            { width: 15 },
+            { width: 15 },
+            { width: 20 },
+            { width: 20 }
+        ];
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), "Purchase_Order_Export.xlsx");
+    };
+
     return (
         <>
             <FilterableTable
@@ -185,6 +308,14 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                             className="me-2"
                             onClick={() => setFilters(prev => ({ ...prev, FilterDialog: true }))}
                         ><FilterAlt /></IconButton>
+                        <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => downloadExcel(dataToPass)}
+                            title="Download Excel"
+                        >
+                            <DownloadIcon />
+                        </IconButton>
                     </>
                 }
                 isExpendable={true}

@@ -176,6 +176,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                     createCol('CreditAccountGet', 'string', 'Credit-Ac'),
                     createCol('VoucherTypeGet', 'string', 'Voucher'),
                     createCol('Narration', 'string'),
+                    createCol('createdByGet', 'string', 'Created By'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Status',

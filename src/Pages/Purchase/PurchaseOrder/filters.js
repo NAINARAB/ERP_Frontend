@@ -50,6 +50,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Discount: item?.Discount,
                             QualityCondition: item?.QualityCondition,
                             PaymentDays: item?.PaymentDays,
+                            createdByGet: item?.createdByGet,
                         }
                     }));
 
@@ -105,6 +106,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Discount: item?.Discount,
                             QualityCondition: item?.QualityCondition,
                             PaymentDays: item?.PaymentDays,
+                            createdByGet: item?.createdByGet,
                         }
                     }));
 
@@ -156,6 +158,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Discount: item?.Discount,
                             QualityCondition: item?.QualityCondition,
                             PaymentDays: item?.PaymentDays,
+                            createdByGet: item?.createdByGet,
                         }
                     }));
 
@@ -204,6 +207,7 @@ export const purchaseOrderDataSet = ({ data = [], status = 'ITEMS' }) => {
                             Discount: item?.Discount,
                             QualityCondition: item?.QualityCondition,
                             PaymentDays: item?.PaymentDays,
+                            createdByGet: item?.createdByGet,
                         }
                     }));
 
@@ -482,7 +486,9 @@ export const displayColumns = ({
         }, OrderPO_ID = createCol('PO_ID', 'string', 'Order ID'),
         Discount = createCol('Discount', 'number', 'Discount'),
         QualityCondition = createCol('QualityCondition', 'string', 'Quality'),
-        PaymentDays = createCol('PaymentDays', 'number', 'Pay-Days')
+        PaymentDays = createCol('PaymentDays', 'number', 'Pay-Days'),
+        orderCreatedBy = createCol('createdByGet', 'string', 'Created By');
+
 
     // Item Based Cells
     const
@@ -613,6 +619,11 @@ export const displayColumns = ({
                     </>
                 )
             }
+        }, itemsCreatedByGet = {
+            isVisible: 1,
+            ColumnHeader: 'Created By',
+            isCustomCell: true,
+            Cell: ({ row }) => row?.OrderDetails.createdByGet
         };
 
     // Delivery Based Columns
@@ -657,13 +668,13 @@ export const displayColumns = ({
         case 'ITEMS ARRIVED':
             return [
                 ItemTradeConfirmDate, OrderPartyName, ItemName, WeightWithUOM,
-                ItemArrivedQuantity, PendingItemQuantity, Rate, Discount, LoadingDate, ItemOwnerName, ItemBrokerName, ItemActions
+                ItemArrivedQuantity, PendingItemQuantity, Rate, Discount, LoadingDate, ItemOwnerName, ItemBrokerName, itemsCreatedByGet, ItemActions
             ];
         case 'ORDERS':
         case 'COMPLETED ORDERS':
         case 'IN-COMPLETED ORDERS':
             return [
-                OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, Discount, QualityCondition, PaymentDays, Remarks, GeneralStatus, OrderActions,
+                OrderPO_ID, TradeConfirmDate, PartyName, BrokerName, Discount, QualityCondition, PaymentDays, Remarks, GeneralStatus, orderCreatedBy, OrderActions,
             ]
         case 'ORDERS PENDING':
         case 'ORDERS ARRIVED':
