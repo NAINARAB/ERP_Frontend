@@ -628,6 +628,14 @@
 
 
 
+
+
+
+
+
+
+
+
 import React, { useState, useEffect, Fragment } from "react";
 import {
   IconButton,
@@ -644,6 +652,7 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  SyncAlt as SyncAltIcon
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -726,11 +735,13 @@ const StockReport = () => {
     try {
       setLoading(true);
       const response = await fetchLink({
-        address: `masters/stockGroupGet`,
+        address: `inventory/stockGroupGet`,
         method: "GET",
       });
       
       let groups = [];
+      
+
       if (response && response.success && response.data) {
         groups = response.data;
       } else if (response && Array.isArray(response)) {
@@ -739,16 +750,14 @@ const StockReport = () => {
         groups = response.data;
       }
       
-      const formattedGroups = groups.map((group, index) => {
-        if (typeof group === 'string') {
-          return { Item_Group_Id: index + 1, Group_Name: group };
-        }
-        if (group.Stock_Group) {
-          return { Item_Group_Id: group.Item_Group_Id || index + 1, Group_Name: group.Stock_Group };
-        }
+      
+      const formattedGroups = groups.map((group) => {
         return {
-          Item_Group_Id: group.Item_Group_Id || group.id || index + 1,
-          Group_Name: group.Group_Name || group.name || group.Stock_Group || 'Unknown',
+          Item_Group_Id: group.Item_Group_Id,
+          Group_Name: group.Group_Name,
+          GST_P: group.GST_P,
+          Group_HSN: group.Group_HSN,
+          Grp: group.Grp
         };
       });
       
@@ -769,7 +778,7 @@ const StockReport = () => {
     try {
       setLoading(true);
       const response = await fetchLink({
-        address: `masters/stockItemGroup`,
+        address: `inventory/stockItemGroup`,
         method: "POST",
         bodyData: { stockGroupId: groupId }
       });
@@ -805,69 +814,185 @@ const StockReport = () => {
       return;
     }
 
+    if (!commonSourceRate && !commonDestinationRate) {
+      toast.warning("Please enter at least one rate (Source or Destination) to sync");
+      return;
+    }
+
     setIsSyncing(true);
     try {
-      let updatedSource = [...originalData.source];
-      let updatedDestination = [...originalData.destination];
+      let sourceRateValue = null;
+      let destinationRateValue = null;
+      let updateType = null;
 
-      if (commonSourceRate && updatedSource.length) {
-        const rate = parseFloat(commonSourceRate);
-        updatedSource = updatedSource.map(item => ({
-          ...item,
-          source_consumt_rate: rate,
-          Source_consumt_amt: (item.source_consumt_qty || 0) * rate
-        }));
+      if (commonSourceRate && commonDestinationRate) {
+        updateType = 'both';
+        sourceRateValue = parseFloat(commonSourceRate);
+        destinationRateValue = parseFloat(commonDestinationRate);
+      } else if (commonSourceRate) {
+        updateType = 'source';
+        sourceRateValue = parseFloat(commonSourceRate);
+      } else if (commonDestinationRate) {
+        updateType = 'destination';
+        destinationRateValue = parseFloat(commonDestinationRate);
       }
 
-      if (commonDestinationRate && updatedDestination.length) {
-        const rate = parseFloat(commonDestinationRate);
-        updatedDestination = updatedDestination.map(item => ({
-          ...item,
-          destina_consumt_rate: rate,
-          destina_consumt_amt: (item.destina_consumt_qty || 0) * rate
-        }));
+      if (updateType === 'source' && (isNaN(sourceRateValue) || sourceRateValue <= 0)) {
+        toast.error("Please enter a valid source rate greater than 0");
+        setIsSyncing(false);
+        return;
       }
 
-      setOriginalData({
-        source: updatedSource,
-        destination: updatedDestination,
-        allTransactions: [...updatedSource, ...updatedDestination]
+      if (updateType === 'destination' && (isNaN(destinationRateValue) || destinationRateValue <= 0)) {
+        toast.error("Please enter a valid destination rate greater than 0");
+        setIsSyncing(false);
+        return;
+      }
+
+      if (updateType === 'both') {
+        if (isNaN(sourceRateValue) || sourceRateValue <= 0) {
+          toast.error("Please enter a valid source rate greater than 0");
+          setIsSyncing(false);
+          return;
+        }
+        if (isNaN(destinationRateValue) || destinationRateValue <= 0) {
+          toast.error("Please enter a valid destination rate greater than 0");
+          setIsSyncing(false);
+          return;
+        }
+      }
+
+      const requestBody = {
+        type: updateType,
+        FromDate: fromDate,
+        ToDate: toDate,
+        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,
+        ItemId: null
+      };
+
+      if (updateType === 'source') {
+        requestBody.sourceRate = sourceRateValue;
+      } else if (updateType === 'destination') {
+        requestBody.destinationRate = destinationRateValue;
+      } else if (updateType === 'both') {
+        requestBody.sourceRate = sourceRateValue;
+        requestBody.destinationRate = destinationRateValue;
+      }
+
+      const response = await fetchLink({
+        address: `inventory/updateProcessingRates`,
+        method: "PUT",
+        bodyData: requestBody
       });
 
-      let displaySource = [...updatedSource];
-      let displayDestination = [...updatedDestination];
-      
-      if (!showZeroEntries) {
-        displaySource = displaySource.filter(item => (item.source_consumt_rate || 0) !== 0);
-        displayDestination = displayDestination.filter(item => (item.destina_consumt_rate || 0) !== 0);
-      }
-      
-      const allTransactions = [...displaySource, ...displayDestination];
-      allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
-      
-      setReportData({
-        source: displaySource,
-        destination: displayDestination,
-        allTransactions: allTransactions
-      });
+      if (response && response.success) {
+        let updatedSource = [...originalData.source];
+        let updatedDestination = [...originalData.destination];
 
-      toast.success("Rates synced successfully!");
-      setCommonSourceRate("");
-      setCommonDestinationRate("");
+        if (updateType === 'source' || updateType === 'both') {
+          updatedSource = updatedSource.map(item => ({
+            ...item,
+            source_consumt_rate: sourceRateValue,
+            Source_consumt_amt: (item.source_consumt_qty || 0) * sourceRateValue
+          }));
+        }
+
+        if (updateType === 'destination' || updateType === 'both') {
+          updatedDestination = updatedDestination.map(item => ({
+            ...item,
+            destina_consumt_rate: destinationRateValue,
+            destina_consumt_amt: (item.destina_consumt_qty || 0) * destinationRateValue
+          }));
+        }
+
+        setOriginalData({
+          source: updatedSource,
+          destination: updatedDestination,
+          allTransactions: [...updatedSource, ...updatedDestination]
+        });
+
+        let displaySource = [...updatedSource];
+        let displayDestination = [...updatedDestination];
+        
+        if (!showZeroEntries) {
+          displaySource = displaySource.filter(item => (item.source_consumt_rate || 0) !== 0);
+          displayDestination = displayDestination.filter(item => (item.destina_consumt_rate || 0) !== 0);
+        }
+        
+        const allTransactions = [...displaySource, ...displayDestination];
+        allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
+        
+        setReportData({
+          source: displaySource,
+          destination: displayDestination,
+          allTransactions: allTransactions
+        });
+
+        if (updateType === 'both') {
+          toast.success(`Source and Destination rates updated successfully!`);
+        } else if (updateType === 'source') {
+          toast.success(`Source rates updated successfully!`);
+          setCommonSourceRate("");
+        } else if (updateType === 'destination') {
+          toast.success(`Destination rates updated successfully!`);
+          setCommonDestinationRate("");
+        }
+      } else {
+        toast.error(response?.message || "Failed to update rates");
+      }
     } catch (err) {
       console.error("Error syncing rates:", err);
-      toast.error("Failed to sync rates");
+      toast.error("Failed to sync rates: " + (err.message || "Unknown error"));
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const handleEditRate = (tab, index, field, currentValue) => {
+  const handleEditRate = async (tab, index, field, currentValue) => {
     setEditingCell({ tab, index, field });
     setEditValue(currentValue.toString());
   };
 
-  const handleSaveRate = () => {
+  const handleOverAllSync = async () => {
+    if (!fromDate || !toDate) {
+      toast.error("Please select both from and to dates");
+      return;
+    }
+
+    if (!selectedGroup) {
+      toast.error("Please select a stock group");
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const requestBody = {
+        FromDate: fromDate,
+        ToDate: toDate,
+        Item_Group: selectedGroup?.Item_Group_Id || 0
+      };
+
+      const response = await fetchLink({
+        address: `inventory/updateOverAllGroupUpdate`,
+        method: "PUT",
+        bodyData: requestBody
+      });
+
+      if (response && response.success) {
+        toast.success(response.message || "Stock journal rates updated successfully using daily closing logic");
+        await handleSearch();
+      } else {
+        toast.error(response?.message || "Failed to update stock journal rates");
+      }
+    } catch (err) {
+      console.error("Error in overall sync:", err);
+      toast.error("Failed to sync rates: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSaveRate = async () => {
     const { tab, index, field } = editingCell;
     const newRate = parseFloat(editValue);
     
@@ -876,51 +1001,104 @@ const StockReport = () => {
       return;
     }
 
-    let updatedOriginalSource = [...originalData.source];
-    let updatedOriginalDestination = [...originalData.destination];
-    
-    if (tab === 'source') {
-      const updatedItem = {
-        ...updatedOriginalSource[index],
-        [field]: newRate,
-        Source_consumt_amt: (updatedOriginalSource[index].source_consumt_qty || 0) * newRate
-      };
-      updatedOriginalSource[index] = updatedItem;
-    } else if (tab === 'destination') {
-      const updatedItem = {
-        ...updatedOriginalDestination[index],
-        [field]: newRate,
-        destina_consumt_amt: (updatedOriginalDestination[index].destina_consumt_qty || 0) * newRate
-      };
-      updatedOriginalDestination[index] = updatedItem;
-    }
+    try {
+      const currentRow = tab === 'source' 
+        ? reportData.source[index] 
+        : reportData.destination[index];
+      
+      if (!currentRow) {
+        toast.error("Row not found");
+        return;
+      }
 
-    setOriginalData({
-      source: updatedOriginalSource,
-      destination: updatedOriginalDestination,
-      allTransactions: [...updatedOriginalSource, ...updatedOriginalDestination]
-    });
+      let originalIndex = -1;
+      let stockJournId = null;
+      
+      if (tab === 'source') {
+        stockJournId = currentRow.stock_journ_sour_id;
+        originalIndex = originalData.source.findIndex(
+          item => item.stock_journ_sour_id === stockJournId
+        );
+      } else {
+        stockJournId = currentRow.stock_journ_dest_id;
+        originalIndex = originalData.destination.findIndex(
+          item => item.stock_journ_dest_id === stockJournId
+        );
+      }
 
-    let displaySource = [...updatedOriginalSource];
-    let displayDestination = [...updatedOriginalDestination];
-    
-    if (!showZeroEntries) {
-      displaySource = displaySource.filter(item => (item.source_consumt_rate || 0) !== 0);
-      displayDestination = displayDestination.filter(item => (item.destina_consumt_rate || 0) !== 0);
+      if (originalIndex === -1) {
+        toast.error("Original record not found");
+        return;
+      }
+
+      let updatedOriginalSource = [...originalData.source];
+      let updatedOriginalDestination = [...originalData.destination];
+      
+      if (tab === 'source') {
+        updatedOriginalSource[originalIndex] = {
+          ...updatedOriginalSource[originalIndex],
+          [field]: newRate,
+          Source_consumt_amt: (updatedOriginalSource[originalIndex].source_consumt_qty || 0) * newRate
+        };
+      } else {
+        updatedOriginalDestination[originalIndex] = {
+          ...updatedOriginalDestination[originalIndex],
+          [field]: newRate,
+          destina_consumt_amt: (updatedOriginalDestination[originalIndex].destina_consumt_qty || 0) * newRate
+        };
+      }
+
+      const updateData = {
+        type: tab,
+        [tab === 'source' ? 'stock_journ_sour_id' : 'stock_journ_dest_id']: stockJournId,
+        [tab === 'source' ? 'sourceRate' : 'destinationRate']: newRate
+      };
+
+      const response = await fetchLink({
+        address: `inventory/updateProcessingRates`,
+        method: "PUT",
+        bodyData: updateData
+      });
+
+      if (response && response.success) {
+        setOriginalData({
+          source: updatedOriginalSource,
+          destination: updatedOriginalDestination,
+          allTransactions: [...updatedOriginalSource, ...updatedOriginalDestination]
+        });
+
+        let displaySource = [...updatedOriginalSource];
+        let displayDestination = [...updatedOriginalDestination];
+        
+        if (!showZeroEntries) {
+          displaySource = displaySource.filter(item => (item.source_consumt_rate || 0) !== 0);
+          displayDestination = displayDestination.filter(item => (item.destina_consumt_rate || 0) !== 0);
+        }
+        
+        const allTransactions = [...displaySource, ...displayDestination];
+        allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
+        
+        setReportData({
+          source: displaySource,
+          destination: displayDestination,
+          allTransactions: allTransactions
+        });
+        
+        toast.success("Rate updated successfully");
+        
+        if (newRate === 0 && !showZeroEntries) {
+          toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
+        }
+      } else {
+        toast.error(response?.message || "Failed to update rate");
+      }
+    } catch (err) {
+      console.error("Error saving rate:", err);
+      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
+    } finally {
+      setEditingCell({ tab: null, index: null, field: null });
+      setEditValue("");
     }
-    
-    const allTransactions = [...displaySource, ...displayDestination];
-    allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
-    
-    setReportData({
-      source: displaySource,
-      destination: displayDestination,
-      allTransactions: allTransactions
-    });
-    
-    setEditingCell({ tab: null, index: null, field: null });
-    setEditValue("");
-    toast.success("Rate updated successfully");
   };
 
   const handleCancelEdit = () => {
@@ -950,7 +1128,7 @@ const StockReport = () => {
       const itemIds = selectedItems.map(item => item.Product_Id);
       
       const response = await fetchLink({
-        address: `masters/stockItemGroupList`,
+        address: `inventory/stockItemGroupList`,
         method: "POST",
         bodyData: {
           fromDate,
@@ -1056,17 +1234,17 @@ const StockReport = () => {
           </div>
           <div>
             <h3>Transaction Details</h3>
-            <table>
+            <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
               <thead>
-                <tr>
+                <tr style="background-color: #4a2c1a; color: white;">
                   <th>Date</th>
                   <th>Journal No</th>
                   <th>Item Name</th>
                   <th>Godown</th>
-                  <th class="text-end">Quantity</th>
+                  <th style="text-align: right">Quantity</th>
                   <th>Unit</th>
-                  <th class="text-end">Rate (₹)</th>
-                  <th class="text-end">Amount (₹)</th>
+                  <th style="text-align: right">Rate (₹)</th>
+                  <th style="text-align: right">Amount (₹)</th>
                 </tr>
               </thead>
               <tbody>
@@ -1076,10 +1254,10 @@ const StockReport = () => {
                     <td>${row.journal_no || '-'}</td>
                     <td>${row.stock_item_name || '-'}</td>
                     <td>${row.godown_name || '-'}</td>
-                    <td class="text-end">${(row.destina_consumt_qty || row.source_consumt_qty || 0).toFixed(2)}</td>
+                    <td style="text-align: right">${(row.destina_consumt_qty || row.source_consumt_qty || 0).toFixed(2)}</td>
                     <td>${row.destina_consumt_unit || row.source_consumt_unit || '-'}</td>
-                    <td class="text-end">${(row.destina_consumt_rate || row.source_consumt_rate || 0).toFixed(2)}</td>
-                    <td class="text-end">${(row.destina_consumt_amt || row.Source_consumt_amt || 0).toFixed(2)}</td>
+                    <td style="text-align: right">${(row.destina_consumt_rate || row.source_consumt_rate || 0).toFixed(2)}</td>
+                    <td style="text-align: right">${(row.destina_consumt_amt || row.Source_consumt_amt || 0).toFixed(2)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1282,8 +1460,8 @@ const StockReport = () => {
                 className="form-select"
                 value={selectedGroup?.Item_Group_Id || ''}
                 onChange={(e) => {
-                  const groupId = parseInt(e.target.value);
-                  const group = stockGroups.find(g => g.Item_Group_Id === groupId);
+                  const groupId = e.target.value;
+                  const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
                   setSelectedGroup(group);
                 }}
               >
@@ -1344,7 +1522,6 @@ const StockReport = () => {
                     </>
                   )}
                 </div>
-               
               </div>
             </div>
           )}
@@ -1361,68 +1538,60 @@ const StockReport = () => {
                 }
                 label="Show Zero Rate Entries"
               />
-              {!showZeroEntries && originalData.allTransactions.length > 0 && (
-                <span className="text-muted ms-2" style={{ fontSize: '12px' }}></span>
-              )}
-              {showZeroEntries && originalData.allTransactions.length > 0 && (
-                <span className="text-muted ms-2" style={{ fontSize: '12px' }}></span>
-              )}
             </div>
-          </div>
-
-          {originalData.allTransactions?.length > 0 && !loading && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="card bg-light">
-                  <div className="card-body py-2">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div className="d-flex gap-3">
-                        <div className="d-flex align-items-center gap-2">
-                          <label className="fw-bold mb-0">Source Rate:</label>
-                          <input
-                            type="number"
-                            className="form-control form-control-sm"
-                            style={{ width: '120px' }}
-                            placeholder="Enter rate"
-                            value={commonSourceRate}
-                            onChange={(e) => setCommonSourceRate(e.target.value)}
-                          />
-                        </div>
-                        <div className="d-flex align-items-center gap-2">
-                          <label className="fw-bold mb-0">Destination Rate:</label>
-                          <input
-                            type="number"
-                            className="form-control form-control-sm"
-                            style={{ width: '120px' }}
-                            placeholder="Enter rate"
-                            value={commonDestinationRate}
-                            onChange={(e) => setCommonDestinationRate(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <Tooltip title="Apply Common Rates to All Rows">
-                        <IconButton 
-                          onClick={handleSyncRates} 
-                          size="small" 
-                          color="primary"
-                          disabled={isSyncing || (!commonSourceRate && !commonDestinationRate)}
-                        >
-                          {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon />}
-                        </IconButton>
-                      </Tooltip>
+            {originalData.allTransactions?.length > 0 && !loading && (
+              <div className="col-12 py-2">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex gap-3">
+                    <div className="d-flex align-items-center gap-2">
+                      <label className="fw-bold mb-0">Source Rate:</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        style={{ width: '120px' }}
+                        placeholder="Enter rate"
+                        value={commonSourceRate}
+                        onChange={(e) => setCommonSourceRate(e.target.value)}
+                      />
                     </div>
-                    <div className="mt-2">
-                      {/* <small className="text-muted">
-                        Click on any rate value to edit it individually, or use common rates above to update all rows at once.
-                      </small> */}
+                    <div className="d-flex align-items-center gap-2">
+                      <label className="fw-bold mb-0">Destination Rate:</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        style={{ width: '120px' }}
+                        placeholder="Enter rate"
+                        value={commonDestinationRate}
+                        onChange={(e) => setCommonDestinationRate(e.target.value)}
+                      />
                     </div>
+                    <Tooltip title="Apply Common Rates to All Rows">
+                      <IconButton 
+                        onClick={handleSyncRates} 
+                        size="small" 
+                        color="primary"
+                        disabled={isSyncing || (!commonSourceRate && !commonDestinationRate)}
+                      >
+                        {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon />}
+                      </IconButton>
+                    </Tooltip>
                   </div>
+                  <Tooltip title="Overall Rate Sync (Daily Closing Logic)">
+                    <IconButton 
+                      onClick={handleOverAllSync} 
+                      size="small" 
+                      color="secondary"
+                      disabled={isSyncing}
+                    >
+                      {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncAltIcon />}
+                    </IconButton>
+                  </Tooltip>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="d-flex justify-content-end gap-2 mb-3">
+          <div className="d-flex justify-content-end gap-2">
             <button
               className="btn btn-primary"
               onClick={handleSearch}
@@ -1430,30 +1599,21 @@ const StockReport = () => {
             >
               {loading ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-1"></span>
+                  <span className="spinner-border spinner-border-sm"></span>
                   Loading...
                 </>
               ) : (
                 <>
-                  <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
+                  <SearchIcon sx={{ fontSize: '18px' }} />
                   Search
                 </>
               )}
             </button>
             <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-              <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
+              <RefreshIcon sx={{ fontSize: '18px' }} />
               Reset
             </button>
           </div>
-
-          {loading && (
-            <div className="text-center my-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <div className="mt-2 text-muted">Fetching report data...</div>
-            </div>
-          )}
 
           {reportData.allTransactions?.length > 0 && !loading && (
             <div className="card mt-3">
@@ -1485,12 +1645,6 @@ const StockReport = () => {
               </div>
             </div>
           )}
-
-          {/* {!loading && reportData.allTransactions?.length === 0 && selectedGroup && selectedItems.length > 0 && (
-            <div className="alert alert-info text-center mt-3">
-              No transactions found for the selected criteria. Please try different dates or items.
-            </div>
-          )} */}
         </div>
       </div>
     </Fragment>
