@@ -93,14 +93,20 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                     .filter(item => item.accountSide === 'Cr')
                     .map(item => ({
                         ...item,
-                        Po_Inv_No: item.voucherNumber,
                         PIN_Id: item.voucherId,
+                        Po_Inv_No: item.voucherNumber,
                         Po_Inv_Date: item.eventDate,
+                        Retailer_Id: item.Acc_Id,
+                        Total_Before_Tax: 0,
+                        Total_Tax: 0,
                         Total_Invoice_value: item.totalValue,
                         dataSource: item.actualSource,
-                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        bill_ref_number: item.BillRefNo,
                         Paid_Amount: Addition(item.againstAmount, item.journalAdjustment),
-                        paymentPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                        journalAdjustment: item.journalAdjustment,
+                        debitNoteAdjustment: 0,
+                        totalReference: Addition(item.againstAmount, item.journalAdjustment),
+                        paymentPendingAmount: item.BalanceAmount
                     }));
                 updateBaseData('purchaseInvoiceSearchResult', mappedData);
             }

@@ -139,7 +139,7 @@ const CustomerList = lazy(() => import('./Pages/UserModule/customerList'));
 const EmployeeMaster = lazy(() => import('./Pages/UserModule/employee'));
 const RetailersMaster = lazy(() => import('./Pages/UserModule/retailer/Retailer'));
 const CostCategory = lazy(() => import('./Pages/UserModule/costCenterType'));
-const VoucherType = lazy(() => import('./Pages/UserModule/voucherMaster'));
+const VoucherType = lazy(() => import('./Pages/Masters/voucherType'));
 const RouteMaster = lazy(() => import('./Pages/UserModule/routeMaster'));
 const AreaMaster = lazy(() => import('./Pages/UserModule/areaMaster'));
 const ActivityTracking = lazy(() => import('./Pages/UserModule/activityTracking'));

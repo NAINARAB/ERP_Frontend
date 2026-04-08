@@ -49,10 +49,11 @@ const PaymentOutstanding = ({ loadingOn, loadingOff, AddRights }) => {
                         Po_Inv_No: item.voucherNumber,
                         PIN_Id: item.voucherId,
                         Po_Inv_Date: item.eventDate,
+                        bill_ref_number: item.BillRefNo,
                         Total_Invoice_value: item.totalValue,
                         dataSource: item.actualSource,
                         totalReference: Addition(item.againstAmount, item.journalAdjustment),
-                        paymentPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                        paymentPendingAmount: item.BalanceAmount
                     }));
                 setReportData(mappedData);
             }
