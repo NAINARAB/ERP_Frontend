@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 
 const storage = getSessionUser().user;
 const voucherTypeColumns = {
-    Vocher_Type_Id: 0,
+    Vocher_Type_Id: '',
     Voucher_Type: '',
     Voucher_Code: '',
     Branch_Id: 0,

@@ -53,7 +53,7 @@ const CustomerPendingReceipt = ({ loadingOn, loadingOff, AddRights }) => {
                         Total_Invoice_value: item.totalValue,
                         dataSource: item.actualSource,
                         totalReference: Addition(item.againstAmount, item.journalAdjustment),
-                        receiptPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                        receiptPendingAmount: item.BalanceAmount
                     }));
                 setReportData(mappedData);
             }
