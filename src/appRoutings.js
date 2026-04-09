@@ -197,7 +197,7 @@ const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverRepo
 const StockJournalAdjustmentCreate = lazy(() => import('./Pages/Inventry/StockJournalAdjustmentCreate'));
 const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment')); 
 
-
+const StockSummaryErpReport=lazy(()=>import('./Pages/Inventry/StockSummaryErpReport'));
 // -----------------------------------------------------------------------------
 // Journal
 // -----------------------------------------------------------------------------
@@ -378,7 +378,7 @@ const RoutingArray = [
     {component:<StockArrivalRate/>,path:'/erp/inventory/stockArrivalRate'},
     {component:<StockValueSync/>,path:'/erp/inventory/stockValueSync'},
     {component:<StockValueErpSync/>,path:'/erp/inventory/stockValueErpSync'},
-
+     {component:<StockSummaryErpReport/>,path:'/erp/inventory/StockSummaryErpReport'},
 
     // ---------------------------------------------------------------------------
     // ERP - Journal
