@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import FilterableTable from "../../../Components/filterableTable2";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray, getSessionFiltersByPageId, setSessionFilters } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, toArray, getSessionFiltersByPageId, setSessionFilters, stringCompare } from "../../../Components/functions";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterAlt, Search } from '@mui/icons-material';
@@ -168,6 +168,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         const worksheet = workbook.addWorksheet("Purchase Order Export");
 
         const header = [
+            "Entry Date",
             "Party Name",
             "ItemName",
             "weight",
@@ -203,6 +204,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
 
         rows.forEach((po) => {
             const partyName = po.PartyName || "";
+            const entryDate = formatDate(po.TradeConfirmDate);
             const loadingDate = formatDate(po.LoadingDate);
             const owners = getStaff(po.StaffDetails, "Owners");
             const brokers = getStaff(po.StaffDetails, "Broker");
@@ -226,6 +228,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                 const pendingQuantity = weight - arrivedQuantity;
 
                 const row = worksheet.addRow([
+                    entryDate,
                     partyName,
                     itemName,
                     weight,
@@ -255,6 +258,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
         });
 
         worksheet.columns = [
+            { width: 30 },
             { width: 30 },
             { width: 30 },
             { width: 12 },
@@ -311,7 +315,10 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                         <IconButton
                             size="small"
                             color="success"
-                            onClick={() => downloadExcel(dataToPass)}
+                            onClick={() => {
+                                const notCanceledOnly = dataToPass.filter(fil => !stringCompare(fil.OrderStatus, 'Canceled'))
+                                downloadExcel(notCanceledOnly);
+                            }}
                             title="Download Excel"
                         >
                             <DownloadIcon />

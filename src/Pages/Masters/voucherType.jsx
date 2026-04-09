@@ -220,7 +220,7 @@ const VoucherTypeMaster = ({ loadingOn, loadingOff }) => {
 
             <AppDialog
                 open={otherControls.dialog}
-                onClose={closeDialog}
+                onClose={() => closeDialog(false)}
                 title="Voucher Type Master"
                 maxWidth="sm"
                 fullWidth
