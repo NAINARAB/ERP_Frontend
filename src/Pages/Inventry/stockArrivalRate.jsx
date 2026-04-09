@@ -34,7 +34,7 @@ const StockArrivalRate = () => {
   const [showZeroEntries, setShowZeroEntries] = useState(false);
   const [commonRate, setCommonRate] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [editingCell, setEditingCell] = useState({ index: null, field: null });
+  const [editingCell, setEditingCell] = useState({ index: null, field: null, originalId: null });
   const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
@@ -80,11 +80,23 @@ const StockArrivalRate = () => {
     setReportData(data);
   };
 
+
+  const getOriginalIndex = (filteredIndex) => {
+    if (filteredIndex >= reportData.length) return -1;
+    
+    const filteredRow = reportData[filteredIndex];
+    const uniqueId = filteredRow.Arr_Id || filteredRow.arrival_id || filteredRow.id;
+    
+    return originalData.findIndex(row => 
+      (row.Arr_Id || row.arrival_id || row.id) === uniqueId
+    );
+  };
+
   const loadStockGroups = async () => {
     try {
       setLoading(true);
       const response = await fetchLink({
-        address: `masters/stockGroupGet`,
+        address: `inventory/stockGroupGet`,
         method: "GET",
       });
       
@@ -97,37 +109,34 @@ const StockArrivalRate = () => {
         groups = response.data;
       }
       
-      const formattedGroups = groups.map((group, index) => {
-        if (typeof group === 'string') {
-          return { Item_Group_Id: index + 1, Group_Name: group };
+     const formattedGroups = groups.map((group) => {
+            return {
+              Item_Group_Id: group.Item_Group_Id,
+              Group_Name: group.Group_Name,
+              GST_P: group.GST_P,
+              Group_HSN: group.Group_HSN,
+              Grp: group.Grp
+            };
+          });
+          
+          setStockGroups(formattedGroups);
+          
+          if (formattedGroups.length === 0) {
+            toast.info("No stock groups found");
+          }
+        } catch (err) {
+          console.error("Error loading stock groups:", err);
+          toast.error("Failed to load stock groups");
+        } finally {
+          setLoading(false);
         }
-        if (group.Stock_Group) {
-          return { Item_Group_Id: group.Item_Group_Id || index + 1, Group_Name: group.Stock_Group };
-        }
-        return {
-          Item_Group_Id: group.Item_Group_Id || group.id || index + 1,
-          Group_Name: group.Group_Name || group.name || group.Stock_Group || 'Unknown',
-        };
-      });
-      
-      setStockGroups(formattedGroups);
-      
-      if (formattedGroups.length === 0) {
-        toast.info("No stock groups found");
-      }
-    } catch (err) {
-      console.error("Error loading stock groups:", err);
-      toast.error("Failed to load stock groups");
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
 
   const loadItemsByGroup = async (groupId) => {
     try {
       setLoading(true);
       const response = await fetchLink({
-        address: `masters/stockItemGroup`,
+        address: `inventory/stockItemGroup`,
         method: "POST",
         bodyData: { stockGroupId: groupId }
       });
@@ -157,52 +166,93 @@ const StockArrivalRate = () => {
     }
   };
 
+ 
   const handleSyncRates = async () => {
     if (!originalData.length) {
       toast.warning("No data to sync rates");
       return;
     }
 
+    if (!commonRate) {
+      toast.warning("Please enter a rate to sync");
+      return;
+    }
+
     setIsSyncing(true);
     try {
-      let updatedData = [...originalData];
+      const rate = parseFloat(commonRate);
+      
+      if (isNaN(rate) || rate <= 0) {
+        toast.error("Please enter a valid rate greater than 0");
+        setIsSyncing(false);
+        return;
+      }
 
-      if (commonRate && updatedData.length) {
-        const rate = parseFloat(commonRate);
-        updatedData = updatedData.map(item => ({
+      const updateData = {
+        type: 'bulk',
+        gstRate: rate,
+        FromDate: fromDate,
+        ToDate: toDate,
+        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,
+        ItemId: null
+      };
+
+    
+      const response = await fetchLink({
+        address: `inventory/updateArrivalList`,
+        method: "PUT",
+        bodyData: updateData
+      });
+
+      if (response && response.success) {
+        let updatedData = originalData.map(item => ({
           ...item,
           Rate: rate,
           Taxable_Value: (item.Arr_qty || 0) * rate
         }));
+
+        setOriginalData(updatedData);
+
+        let displayData = [...updatedData];
+        
+        if (!showZeroEntries) {
+          displayData = displayData.filter(item => (item.Rate || 0) !== 0);
+        }
+        
+        setReportData(displayData);
+
+        toast.success(`Rates synced successfully! Affected rows: ${response.data?.rowsAffected || updatedData.length}`);
+        setCommonRate("");
+      } else {
+        toast.error(response?.message || "Failed to sync rates");
       }
-
-      setOriginalData(updatedData);
-
-      let displayData = [...updatedData];
-      
-      if (!showZeroEntries) {
-        displayData = displayData.filter(item => (item.Rate || 0) !== 0);
-      }
-      
-      setReportData(displayData);
-
-      toast.success("Rates synced successfully!");
-      setCommonRate("");
     } catch (err) {
       console.error("Error syncing rates:", err);
-      toast.error("Failed to sync rates");
+      toast.error("Failed to sync rates: " + (err.message || "Unknown error"));
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const handleEditRate = (index, currentValue) => {
-    setEditingCell({ index, field: 'Rate' });
+
+  const handleEditRate = (filteredIndex, currentValue) => {
+
+    const currentRow = reportData[filteredIndex];
+    if (!currentRow) {
+      toast.error("Row not found");
+      return;
+    }
+    
+    setEditingCell({ 
+      filteredIndex, 
+      field: 'Rate',
+      originalId: currentRow.Arr_Id || currentRow.arrival_id || currentRow.id
+    });
     setEditValue(currentValue.toString());
   };
 
-  const handleSaveRate = () => {
-    const { index } = editingCell;
+  const handleSaveRate = async () => {
+    const { filteredIndex, originalId } = editingCell;
     const newRate = parseFloat(editValue);
     
     if (isNaN(newRate)) {
@@ -210,30 +260,72 @@ const StockArrivalRate = () => {
       return;
     }
 
-    let updatedData = [...originalData];
-    updatedData[index] = {
-      ...updatedData[index],
-      Rate: newRate,
-      Taxable_Value: (updatedData[index].Arr_qty || 0) * newRate
-    };
+    try {
+     
+      const originalIndex = originalData.findIndex(row => 
+        (row.Arr_Id || row.arrival_id || row.id) === originalId
+      );
 
-    setOriginalData(updatedData);
+      if (originalIndex === -1) {
+        toast.error("Original record not found");
+        return;
+      }
 
-    let displayData = [...updatedData];
-    
-    if (!showZeroEntries) {
-      displayData = displayData.filter(item => (item.Rate || 0) !== 0);
+      const currentRow = originalData[originalIndex];
+      
+      const updateData = {
+        type: 'individual',
+        gstRate: newRate,
+        arrival_id: currentRow.Arr_Id || currentRow.arrival_id || currentRow.id
+      };
+
+      
+
+      const response = await fetchLink({
+        address: `inventory/updateArrivalList`,
+        method: "PUT",
+        bodyData: updateData
+      });
+
+      if (response && response.success) {
+      
+        let updatedData = [...originalData];
+        updatedData[originalIndex] = {
+          ...updatedData[originalIndex],
+          Rate: newRate,
+          Taxable_Value: (updatedData[originalIndex].Arr_qty || 0) * newRate
+        };
+
+        setOriginalData(updatedData);
+
+        let displayData = [...updatedData];
+        
+        if (!showZeroEntries) {
+          displayData = displayData.filter(item => (item.Rate || 0) !== 0);
+        }
+        
+        setReportData(displayData);
+        
+        toast.success("Rate updated successfully");
+        
+       
+        if (newRate === 0 && !showZeroEntries) {
+          toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
+        }
+      } else {
+        toast.error(response?.message || "Failed to update rate");
+      }
+    } catch (err) {
+      console.error("Error saving rate:", err);
+      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
+    } finally {
+      setEditingCell({ filteredIndex: null, field: null, originalId: null });
+      setEditValue("");
     }
-    
-    setReportData(displayData);
-    
-    setEditingCell({ index: null, field: null });
-    setEditValue("");
-    toast.success("Rate updated successfully");
   };
 
   const handleCancelEdit = () => {
-    setEditingCell({ index: null, field: null });
+    setEditingCell({ filteredIndex: null, field: null, originalId: null });
     setEditValue("");
   };
 
@@ -259,7 +351,7 @@ const StockArrivalRate = () => {
       const itemIds = selectedItems.map(item => item.Product_Id);
       
       const response = await fetchLink({
-        address: `masters/arrivalList`,
+        address: `inventory/arrivalList`,
         method: "POST",
         bodyData: {
           fromDate,
@@ -271,6 +363,11 @@ const StockArrivalRate = () => {
       
       if (response && response.success) {
         let arrivalData = response.data || [];
+        
+        arrivalData = arrivalData.map(item => ({
+          ...item,
+          Arr_Id: item.Arr_Id || item.arrival_id || item.id
+        }));
         
         const originalArrival = [...arrivalData];
         
@@ -342,9 +439,9 @@ const StockArrivalRate = () => {
           </div>
           <div>
             <h3>Arrival Details</h3>
-            <table>
+            <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
               <thead>
-                <tr>
+                <tr style="background-color: #4a2c1a; color: white;">
                   <th>#</th>
                   <th>Date</th>
                   <th>Arrival ID</th>
@@ -424,8 +521,8 @@ const StockArrivalRate = () => {
     toast.success("Report exported successfully");
   };
 
-  const renderEditableRateCell = (value, index) => {
-    const isEditing = editingCell.index === index && editingCell.field === 'Rate';
+  const renderEditableRateCell = (value, filteredIndex) => {
+    const isEditing = editingCell.filteredIndex === filteredIndex && editingCell.field === 'Rate';
     const isZeroRate = value === 0;
     
     if (isEditing) {
@@ -460,7 +557,7 @@ const StockArrivalRate = () => {
         </span>
         <IconButton 
           size="small" 
-          onClick={() => handleEditRate(index, value)}
+          onClick={() => handleEditRate(filteredIndex, value)}
           sx={{ padding: '2px' }}
         >
           <EditIcon fontSize="small" />
@@ -496,7 +593,7 @@ const StockArrivalRate = () => {
               </tr>
             ) : (
               reportData.map((row, idx) => (
-                <tr key={idx}>
+                <tr key={row.Arr_Id || idx}>
                   <td>{idx + 1}</td>
                   <td>{row.Arrival_Date ? format(new Date(row.Arrival_Date), 'dd/MM/yyyy') : '-'}</td>
                   <td>{row.Arr_Id || '-'}</td>
@@ -566,151 +663,140 @@ const StockArrivalRate = () => {
               />
             </div>
             <div className="col-md-6 mb-2">
-              <label className="form-label fw-bold">Stock Group</label>
-              <select
-                className="form-select"
-                value={selectedGroup?.Item_Group_Id || ''}
-                onChange={(e) => {
-                  const groupId = parseInt(e.target.value);
-                  const group = stockGroups.find(g => g.Item_Group_Id === groupId);
-                  setSelectedGroup(group);
-                }}
-              >
-                <option value="">-- Select Stock Group --</option>
-                {stockGroups.map((group) => (
-                  <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
-                    {group.Group_Name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {selectedGroup && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <label className="form-label fw-bold">Select Items</label>
-                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {items.length === 0 ? (
-                    <div className="text-center text-muted py-2">No items found for this group</div>
-                  ) : (
-                    <>
-                      <div className="mb-2 pb-2 border-bottom">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={selectAll}
-                              onChange={(e) => setSelectAll(e.target.checked)}
-                              size="small"
-                            />
-                          }
-                          label={`Select All (${items.length} items)`}
-                        />
-                      </div>
-                      <div className="row">
-                        {items.map((item) => (
-                          <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedItems([...selectedItems, item]);
-                                    } else {
-                                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
-                                      setSelectAll(false);
-                                    }
-                                  }}
-                                  size="small"
-                                />
-                              }
-                              label={item.stock_item_name}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-                
-              </div>
-            </div>
-          )}
+                       <label className="form-label fw-bold">Stock Group</label>
+                       <select
+                         className="form-select"
+                         value={selectedGroup?.Item_Group_Id || ''}
+                         onChange={(e) => {
+                           const groupId = e.target.value;
+                           const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
+                           setSelectedGroup(group);
+                         }}
+                       >
+                         <option value="">-- Select Stock Group --</option>
+                         {stockGroups.map((group) => (
+                           <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
+                             {group.Group_Name}
+                           </option>
+                         ))}
+                       </select>
+                     </div>
+                   </div>
+         
+                   {selectedGroup && (
+                     <div className="row mb-3">
+                       <div className="col-12">
+                         <label className="form-label fw-bold">Select Items</label>
+                         <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                           {items.length === 0 ? (
+                             <div className="text-center text-muted py-2">No items found for this group</div>
+                           ) : (
+                             <>
+                               <div className="mb-2 pb-2 border-bottom">
+                                 <FormControlLabel
+                                   control={
+                                     <Checkbox
+                                       checked={selectAll}
+                                       onChange={(e) => setSelectAll(e.target.checked)}
+                                       size="small"
+                                     />
+                                   }
+                                   label={`Select All (${items.length} items)`}
+                                 />
+                               </div>
+                               <div className="row">
+                                 {items.map((item) => (
+                                   <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
+                                     <FormControlLabel
+                                       control={
+                                         <Checkbox
+                                           checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
+                                           onChange={(e) => {
+                                             if (e.target.checked) {
+                                               setSelectedItems([...selectedItems, item]);
+                                             } else {
+                                               setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
+                                               setSelectAll(false);
+                                             }
+                                           }}
+                                           size="small"
+                                         />
+                                       }
+                                       label={item.stock_item_name}
+                                     />
+                                   </div>
+                                 ))}
+                               </div>
+                             </>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+                   )}
 
           <div className="row mb-3">
             <div className="col-12">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showZeroEntries}
-                    onChange={(e) => setShowZeroEntries(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label="Show Zero Rate Entries"
-              />
-            
-            </div>
-          </div>
-
-          {originalData.length > 0 && !loading && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="card bg-light">
-                  <div className="card-body py-2">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div className="d-flex align-items-center gap-2">
-                        <label className="fw-bold mb-0">Common Rate:</label>
-                        <input
-                          type="number"
-                          className="form-control form-control-sm"
-                          style={{ width: '120px' }}
-                          placeholder="Enter rate"
-                          value={commonRate}
-                          onChange={(e) => setCommonRate(e.target.value)}
-                        />
-                      </div>
-                      <Tooltip title="Apply Common Rate to All Rows">
-                        <IconButton 
-                          onClick={handleSyncRates} 
-                          size="small" 
-                          color="primary"
-                          disabled={isSyncing || !commonRate}
-                        >
-                          {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon />}
-                        </IconButton>
-                      </Tooltip>
-                    </div>
-                   
+              <div className="d-flex justify-content-between align-items-center">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showZeroEntries}
+                      onChange={(e) => setShowZeroEntries(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label="Show Zero Rate Entries"
+                />
+                
+                {originalData.length > 0 && !loading && (
+                  <div className="d-flex align-items-center gap-2">
+                    <label className="fw-bold mb-0">Common Rate:</label>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      style={{ width: '120px' }}
+                      placeholder="Enter rate"
+                      value={commonRate}
+                      onChange={(e) => setCommonRate(e.target.value)}
+                    />
+                    <Tooltip title="Apply Common Rate to All Rows">
+                      <IconButton 
+                        onClick={handleSyncRates} 
+                        size="small" 
+                        color="primary"
+                        disabled={isSyncing || !commonRate}
+                      >
+                        {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon />}
+                      </IconButton>
+                    </Tooltip>
                   </div>
-                </div>
+                )}
+              </div>
+              
+              <div className="d-flex justify-content-end gap-2 mt-3">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSearch}
+                  disabled={loading || !selectedGroup || selectedItems.length === 0}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1"></span>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
+                      Search
+                    </>
+                  )}
+                </button>
+                <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
+                  <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
+                  Reset
+                </button>
               </div>
             </div>
-          )}
-
-          <div className="d-flex justify-content-end gap-2 mb-3">
-            <button
-              className="btn btn-primary"
-              onClick={handleSearch}
-              disabled={loading || !selectedGroup || selectedItems.length === 0}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-1"></span>
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
-                  Search
-                </>
-              )}
-            </button>
-            <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-              <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
-              Reset
-            </button>
           </div>
 
           {loading && (
@@ -732,8 +818,6 @@ const StockArrivalRate = () => {
               </div>
             </div>
           )}
-
-        
         </div>
       </div>
     </Fragment>

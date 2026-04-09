@@ -59,8 +59,12 @@ const VoucherGroup=lazy(()=>import('./Pages/Masters/VoucherGroup'));
 const VoucherGroupCreate=lazy(()=>import('./Pages/Masters/VoucherGroupCreate'))
 
 
-const StockJournalRate=lazy(()=>import('./Pages/Masters/stockJournalRate'))
-const StockArrivalRate=lazy(()=>import('./Pages/Masters/stockArrivalRate'))
+const StockJournalRate=lazy(()=>import('./Pages/Inventry/stockJournalRate'))
+const StockArrivalRate=lazy(()=>import('./Pages/Inventry/stockArrivalRate'))
+const StockValueSync=lazy(()=>import('./Pages/Inventry/stockValueSync'))
+
+const StockValueErpSync=lazy(()=>import('./Pages/Inventry/stockValueErpSync'))
+
 // -----------------------------------------------------------------------------
 // Authorization
 // -----------------------------------------------------------------------------
@@ -368,6 +372,14 @@ const RoutingArray = [
     { component: <StockJournalAdjustmentCreate />, path :'/erp/inventory/StockJournalAdjustment/Create'},
     
     {component : <StockJournalAdjustment/> ,path : '/erp/inventory/StockJournalAdjustment'},
+
+
+    {component:<StockJournalRate/>,path:'/erp/inventory/stockJournalRate'},
+    {component:<StockArrivalRate/>,path:'/erp/inventory/stockArrivalRate'},
+    {component:<StockValueSync/>,path:'/erp/inventory/stockValueSync'},
+    {component:<StockValueErpSync/>,path:'/erp/inventory/stockValueErpSync'},
+
+
     // ---------------------------------------------------------------------------
     // ERP - Journal
     // ---------------------------------------------------------------------------
@@ -411,9 +423,7 @@ const RoutingArray = [
 
     {component :<VoucherGroup/>,path: '/erp/master/VoucherGroup'},
     {component: <VoucherGroupCreate/>, path: '/erp/master/VoucherGroup/Create' },
-    {component:<StockJournalRate/>,path:'/erp/master/stockJournalRate'},
-    {component:<StockArrivalRate/>,path:'/erp/master/stockArrivalRate'},
- 
+
     // ---------------------------------------------------------------------------
     // ERP - Payments
     // ---------------------------------------------------------------------------
