@@ -635,7 +635,6 @@
 
 
 
-
 import React, { useState, useEffect, Fragment } from "react";
 import {
   IconButton,
@@ -731,6 +730,7 @@ const StockReport = () => {
     });
   };
 
+ 
   const loadStockGroups = async () => {
     try {
       setLoading(true);
@@ -740,7 +740,6 @@ const StockReport = () => {
       });
       
       let groups = [];
-      
 
       if (response && response.success && response.data) {
         groups = response.data;
@@ -749,7 +748,6 @@ const StockReport = () => {
       } else if (response && response.data && Array.isArray(response.data)) {
         groups = response.data;
       }
-      
       
       const formattedGroups = groups.map((group) => {
         return {
@@ -761,9 +759,21 @@ const StockReport = () => {
         };
       });
       
-      setStockGroups(formattedGroups);
+    
+      const groupsWithAll = [
+        {
+          Item_Group_Id: 0,
+          Group_Name: "All Stock Groups",
+          GST_P: 0,
+          Group_HSN: "0",
+          Grp: "ALL"
+        },
+        ...formattedGroups
+      ];
       
-      if (formattedGroups.length === 0) {
+      setStockGroups(groupsWithAll);
+      
+      if (groupsWithAll.length <= 1) {
         toast.info("No stock groups found");
       }
     } catch (err) {
@@ -774,13 +784,20 @@ const StockReport = () => {
     }
   };
 
+
   const loadItemsByGroup = async (groupId) => {
     try {
       setLoading(true);
+      
+      
+      const bodyData = groupId === 0 
+        ? { stockGroupId: 0 }  
+        : { stockGroupId: groupId };
+      
       const response = await fetchLink({
         address: `inventory/stockItemGroup`,
         method: "POST",
-        bodyData: { stockGroupId: groupId }
+        bodyData: bodyData
       });
       
       let itemsList = [];
@@ -795,9 +812,9 @@ const StockReport = () => {
       setItems(itemsList);
       
       if (itemsList.length === 0) {
-        toast.info("No items found for this stock group");
+        toast.info(groupId === 0 ? "No items found for all stock groups" : "No items found for this stock group");
       } else {
-        toast.success(`Found ${itemsList.length} items in this group`);
+        toast.success(`Found ${itemsList.length} items ${groupId === 0 ? 'across all groups' : 'in this group'}`);
       }
     } catch (err) {
       console.error("Error loading items:", err);
@@ -837,36 +854,37 @@ const StockReport = () => {
         destinationRateValue = parseFloat(commonDestinationRate);
       }
 
-      if (updateType === 'source' && (isNaN(sourceRateValue) || sourceRateValue <= 0)) {
+      if (updateType === 'source' && (isNaN(sourceRateValue))) {
         toast.error("Please enter a valid source rate greater than 0");
         setIsSyncing(false);
         return;
       }
 
-      if (updateType === 'destination' && (isNaN(destinationRateValue) || destinationRateValue <= 0)) {
+      if (updateType === 'destination' && (isNaN(destinationRateValue))) {
         toast.error("Please enter a valid destination rate greater than 0");
         setIsSyncing(false);
         return;
       }
 
       if (updateType === 'both') {
-        if (isNaN(sourceRateValue) || sourceRateValue <= 0) {
+        if (isNaN(sourceRateValue)) {
           toast.error("Please enter a valid source rate greater than 0");
           setIsSyncing(false);
           return;
         }
-        if (isNaN(destinationRateValue) || destinationRateValue <= 0) {
+        if (isNaN(destinationRateValue)) {
           toast.error("Please enter a valid destination rate greater than 0");
           setIsSyncing(false);
           return;
         }
       }
 
+    
       const requestBody = {
         type: updateType,
         FromDate: fromDate,
         ToDate: toDate,
-        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,
+        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,  
         ItemId: null
       };
 
@@ -953,6 +971,7 @@ const StockReport = () => {
     setEditValue(currentValue.toString());
   };
 
+
   const handleOverAllSync = async () => {
     if (!fromDate || !toDate) {
       toast.error("Please select both from and to dates");
@@ -969,7 +988,7 @@ const StockReport = () => {
       const requestBody = {
         FromDate: fromDate,
         ToDate: toDate,
-        Item_Group: selectedGroup?.Item_Group_Id || 0
+        Item_Group: selectedGroup?.Item_Group_Id || 0  // ✅ Will be 0 for "All"
       };
 
       const response = await fetchLink({
@@ -1106,6 +1125,7 @@ const StockReport = () => {
     setEditValue("");
   };
 
+  // ✅ MODIFIED: Pass Item_Group_Id to API (0 for all groups)
   const handleSearch = async () => {
     if (!fromDate || !toDate) {
       toast.error("Please select both from and to dates");
@@ -1127,13 +1147,14 @@ const StockReport = () => {
       
       const itemIds = selectedItems.map(item => item.Product_Id);
       
+      // ✅ Pass Item_Group_Id as is (0 for all, or specific ID)
       const response = await fetchLink({
         address: `inventory/stockItemGroupList`,
         method: "POST",
         bodyData: {
           fromDate,
           toDate,
-          stockGroupId: selectedGroup.Item_Group_Id,
+          stockGroupId: selectedGroup.Item_Group_Id,  // Will be 0 for "All"
           itemIds
         }
       });

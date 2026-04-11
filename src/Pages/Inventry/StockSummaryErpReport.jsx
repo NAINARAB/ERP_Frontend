@@ -30,18 +30,36 @@ const StockSummaryReportErp = () => {
   const columns = [
     createCol('Group_Name', 'string', 'Item Group', 'left', 'center', 1),
     createCol('Trans_Date', 'date', 'Date', 'center', 'center', 1),
-    createCol('OB_Bal_Qty', 'number', 'Opening Qty', 'right', 'center', 1),
-    createCol('OB_Rate', 'number', 'Opening Rate', 'right', 'center', 1),
-    createCol('OB_Value', 'number', 'Opening Value', 'right', 'center', 1),
-    createCol('Pur_Qty', 'number', 'Purchase Qty', 'right', 'center', 1),
-    createCol('Pur_Rate', 'number', 'Purchase Rate', 'right', 'center', 1),
-    createCol('Pur_value', 'number', 'Purchase Value', 'right', 'center', 1),
-    createCol('Sal_Qty', 'number', 'Sales Qty', 'right', 'center', 1),
-    createCol('Sal_Rate', 'number', 'Sales Rate', 'right', 'center', 1),
-    createCol('Sal_value', 'number', 'Sales Value', 'right', 'center', 1),
-    createCol('Bal_Qty', 'number', 'Closing Qty', 'right', 'center', 1),
-    createCol('CL_Rate', 'number', 'Closing Rate', 'right', 'center', 1),
-    createCol('CL_Value', 'number', 'Closing Value', 'right', 'center', 1),
+    createCol('OB_Bal_Qty', 'number', 'OB_Bal_Qty', 'right', 'center', 1),
+    createCol('OB_Rate', 'number', 'OB_Rate', 'right', 'center', 1),
+    createCol('OB_Value', 'number', 'OB_Value', 'right', 'center', 1),
+    createCol('Pur_Qty', 'number', 'Pur_Qty', 'right', 'center', 1),
+    createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
+     createCol('Pur_value', 'number', 'Pur_value', 'right', 'center', 1),
+      createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
+       createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
+  createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
+createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
+createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
+createCol('IN_Value', 'number', 'IN_Value', 'right', 'center', 1),
+createCol('Sal_Qty', 'number', 'Sal_Qty', 'right', 'center', 1),
+createCol('Sal_Rate', 'number', 'Sal_Rate', 'right', 'center', 1),
+createCol('Sal_value', 'number', 'Sal_value', 'right', 'center', 1),
+createCol('Adj_Sal_Qty', 'number', 'Adj_Sal_Qty', 'right', 'center', 1),
+createCol('Adj_Sal_Rate', 'number', 'Adj_Sal_Rate', 'right', 'center', 1),
+createCol('Adj_Sal_value', 'number', 'Adj_Sal_value', 'right', 'center', 1),
+createCol('OUT_Qty', 'number', 'OUT_Qty', 'right', 'center', 1),
+createCol('Out_Rate', 'number', 'Out_Rate', 'right', 'center', 1),
+createCol('Out_Value', 'number', 'Out_Value', 'right', 'center', 1),
+createCol('Expense_value', 'number', 'Expense_value', 'right', 'center', 1),
+createCol('Act_Expense', 'number', 'Act_Expense', 'right', 'center', 1),
+createCol('Bal_Qty', 'number', 'Bal_Qty', 'right', 'center', 1),
+createCol('CL_Rate', 'number', 'CL_Rate', 'right', 'center', 1),
+createCol('CL_Value', 'number', 'CL_Value', 'right', 'center', 1),
+createCol('CR_CL_Rate', 'number', 'CR_CL_Rate', 'right', 'center', 1),
+createCol('Pre_Qty', 'number', 'Pre_Qty', 'right', 'center', 1),
+createCol('Pre_Rate', 'number', 'Pre_Rate', 'right', 'center', 1),
+createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
   ];
 
   useEffect(() => {
@@ -100,7 +118,7 @@ const StockSummaryReportErp = () => {
     try {
       setLoading(true);
       
-      // If "All Stock Groups" is selected, pass 0 as stock_group_id
+
       const stockGroupId = selectedGroup.Item_Group_Id === "0" ? 0 : parseInt(selectedGroup.Item_Group_Id);
       
       const response = await fetchLink({
@@ -201,7 +219,7 @@ const StockSummaryReportErp = () => {
         </div>
 
         <div className="card-body">
-          {/* Single row with date, stock group, and buttons */}
+       
           <div className="row mb-3 align-items-end">
             <div className="col-md-3 mb-2">
               <label className="form-label fw-bold">Select Date</label>
