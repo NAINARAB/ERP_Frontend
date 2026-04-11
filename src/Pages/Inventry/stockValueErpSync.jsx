@@ -26,29 +26,46 @@ const StockValueDetails = () => {
   const [reload, setReload] = useState(false);
   const [showZeroEntries, setShowZeroEntries] = useState(false);
 
-  // Add "All" option to stock groups
-  const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "-- All Stock Groups --" }, ...stockGroups];
+  
+  const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "All" }, ...stockGroups];
 
-  // Add "All" option to items
+ 
   const itemsWithAll = [{ Product_Id: "0", stock_item_name: "-- All Items --" }, ...items];
 
-  // Define table columns
+ 
   const columns = [
     createCol('Trans_Date', 'date', 'Date', 'left', 'center', 1),
-    createCol('Item_Group_Id', 'number', 'Item Group ID', 'center', 'center', 1),
+    createCol('Item_Group_Id', 'number', 'Item_ID', 'center', 'center', 1),
     createCol('Group_Name', 'string', 'Group Name', 'left', 'center', 1),
-    createCol('OB_Bal_Qty', 'number', 'OB Qty', 'right', 'center', 1),
-    createCol('OB_Rate', 'number', 'OB Rate', 'right', 'center', 1),
-    createCol('OB_Value', 'number', 'OB Value', 'right', 'center', 1),
-    createCol('Pur_Qty', 'number', 'Pur Qty', 'right', 'center', 1),
-    createCol('Pur_Rate', 'number', 'Pur Rate', 'right', 'center', 1),
-    createCol('Pur_value', 'number', 'Pur Value', 'right', 'center', 1),
-    createCol('Sal_Qty', 'number', 'Sal Qty', 'right', 'center', 1),
-    createCol('Sal_Rate', 'number', 'Sal Rate', 'right', 'center', 1),
-    createCol('Sal_value', 'number', 'Sal Value', 'right', 'center', 1),
-    createCol('Bal_Qty', 'number', 'Bal Qty', 'right', 'center', 1),
-    createCol('CL_Rate', 'number', 'CL Rate', 'right', 'center', 1),
-    createCol('CL_Value', 'number', 'CL Value', 'right', 'center', 1),
+    createCol('OB_Bal_Qty', 'number', 'OB_Bal_Qty', 'right', 'center', 1),
+    createCol('OB_Rate', 'number', 'OB_Rate', 'right', 'center', 1),
+    createCol('OB_Value', 'number', 'OB_Val', 'right', 'center', 1),
+    createCol('Pur_Qty', 'number', 'Pur_Qty', 'right', 'center', 1),
+    createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
+    createCol('Pur_value', 'number', 'Pur_Val', 'right', 'center', 1),
+    createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
+    createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
+    createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
+    createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
+    createCol('IN_Value', 'number', 'IN_Value', 'right', 'center', 1),
+    createCol('Sal_Qty', 'number', 'Sal_Qty', 'right', 'center', 1),
+    createCol('Sal_Rate', 'number', 'Sal_Rate', 'right', 'center', 1),
+    createCol('Sal_value', 'number', 'Sal_value', 'right', 'center', 1),
+    createCol('Adj_Sal_Qty', 'number', 'Adj_Sal_Qty', 'right', 'center', 1),
+    createCol('Adj_Sal_Rate', 'number', 'Adj_Sal_Rate', 'right', 'center', 1),
+    createCol('Adj_Sal_value', 'number', 'Adj_Sal_value', 'right', 'center', 1),
+    createCol('OUT_Qty', 'number', 'OUT_Qty', 'right', 'center', 1),
+    createCol('Out_Rate', 'number', 'Out_Rate', 'right', 'center', 1),
+    createCol('Out_Value', 'number', 'Out_Value', 'right', 'center', 1),
+    createCol('Expense_value', 'number', 'Expense_value', 'right', 'center', 1),
+    createCol('Act_Expense', 'number', 'Act_Expense', 'right', 'center', 1),
+    createCol('Bal_Qty', 'number', 'Bal_Qty', 'right', 'center', 1),
+    createCol('CL_Rate', 'number', 'CL_Rate', 'right', 'center', 1),
+    createCol('CL_Value', 'number', 'CL_Val', 'right', 'center', 1),
+    createCol('CR_CL_Rate', 'number', 'CR_CL_Rate', 'right', 'center', 1),
+    createCol('Pre_Qty', 'number', 'Pre_Qty', 'right', 'center', 1),
+    createCol('Pre_Rate', 'number', 'Pre_Rate', 'right', 'center', 1),
+    createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
   ];
 
   useEffect(() => {

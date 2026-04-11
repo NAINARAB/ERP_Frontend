@@ -109,36 +109,49 @@ const StockArrivalRate = () => {
         groups = response.data;
       }
       
-     const formattedGroups = groups.map((group) => {
-            return {
-              Item_Group_Id: group.Item_Group_Id,
-              Group_Name: group.Group_Name,
-              GST_P: group.GST_P,
-              Group_HSN: group.Group_HSN,
-              Grp: group.Grp
-            };
-          });
-          
-          setStockGroups(formattedGroups);
-          
-          if (formattedGroups.length === 0) {
-            toast.info("No stock groups found");
-          }
-        } catch (err) {
-          console.error("Error loading stock groups:", err);
-          toast.error("Failed to load stock groups");
-        } finally {
-          setLoading(false);
-        }
+      const formattedGroups = groups.map((group) => {
+        return {
+          Item_Group_Id: group.Item_Group_Id,
+          Group_Name: group.Group_Name,
+          GST_P: group.GST_P,
+          Group_HSN: group.Group_HSN,
+          Grp: group.Grp
+        };
+      });
+      
+      // Add "All" option at the beginning with id 0
+      const allOption = {
+        Item_Group_Id: 0,
+        Group_Name: "All",
+        GST_P: null,
+        Group_HSN: null,
+        Grp: null
       };
+      
+      setStockGroups([allOption, ...formattedGroups]);
+      
+      if (formattedGroups.length === 0) {
+        toast.info("No stock groups found");
+      }
+    } catch (err) {
+      console.error("Error loading stock groups:", err);
+      toast.error("Failed to load stock groups");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadItemsByGroup = async (groupId) => {
     try {
       setLoading(true);
+      
+      // Send stockGroupId as 0 for "All" option
+      const bodyData = { stockGroupId: groupId };
+      
       const response = await fetchLink({
         address: `inventory/stockItemGroup`,
         method: "POST",
-        bodyData: { stockGroupId: groupId }
+        bodyData: bodyData
       });
       
       let itemsList = [];
@@ -165,7 +178,6 @@ const StockArrivalRate = () => {
       setLoading(false);
     }
   };
-
  
   const handleSyncRates = async () => {
     if (!originalData.length) {
@@ -193,11 +205,10 @@ const StockArrivalRate = () => {
         gstRate: rate,
         FromDate: fromDate,
         ToDate: toDate,
-        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,
+        StockGroupId: selectedGroup?.Item_Group_Id === 0 ? null : selectedGroup?.Item_Group_Id,
         ItemId: null
       };
 
-    
       const response = await fetchLink({
         address: `inventory/updateArrivalList`,
         method: "PUT",
@@ -236,7 +247,6 @@ const StockArrivalRate = () => {
 
 
   const handleEditRate = (filteredIndex, currentValue) => {
-
     const currentRow = reportData[filteredIndex];
     if (!currentRow) {
       toast.error("Row not found");
@@ -261,7 +271,6 @@ const StockArrivalRate = () => {
     }
 
     try {
-     
       const originalIndex = originalData.findIndex(row => 
         (row.Arr_Id || row.arrival_id || row.id) === originalId
       );
@@ -279,8 +288,6 @@ const StockArrivalRate = () => {
         arrival_id: currentRow.Arr_Id || currentRow.arrival_id || currentRow.id
       };
 
-      
-
       const response = await fetchLink({
         address: `inventory/updateArrivalList`,
         method: "PUT",
@@ -288,7 +295,6 @@ const StockArrivalRate = () => {
       });
 
       if (response && response.success) {
-      
         let updatedData = [...originalData];
         updatedData[originalIndex] = {
           ...updatedData[originalIndex],
@@ -308,7 +314,6 @@ const StockArrivalRate = () => {
         
         toast.success("Rate updated successfully");
         
-       
         if (newRate === 0 && !showZeroEntries) {
           toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
         }
@@ -356,7 +361,7 @@ const StockArrivalRate = () => {
         bodyData: {
           fromDate,
           toDate,
-          stockGroupId: selectedGroup.Item_Group_Id,
+          stockGroupId: selectedGroup.Item_Group_Id === 0 ? null : selectedGroup.Item_Group_Id,
           itemIds
         }
       });
@@ -663,76 +668,81 @@ const StockArrivalRate = () => {
               />
             </div>
             <div className="col-md-6 mb-2">
-                       <label className="form-label fw-bold">Stock Group</label>
-                       <select
-                         className="form-select"
-                         value={selectedGroup?.Item_Group_Id || ''}
-                         onChange={(e) => {
-                           const groupId = e.target.value;
-                           const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
-                           setSelectedGroup(group);
-                         }}
-                       >
-                         <option value="">-- Select Stock Group --</option>
-                         {stockGroups.map((group) => (
-                           <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
-                             {group.Group_Name}
-                           </option>
-                         ))}
-                       </select>
-                     </div>
-                   </div>
+              <label className="form-label fw-bold">Stock Group</label>
+              <select
+                className="form-select"
+                value={selectedGroup?.Item_Group_Id?.toString() || ''}
+                onChange={(e) => {
+                  const groupId = e.target.value;
+                  if (!groupId) {
+                    setSelectedGroup(null);
+                  } else {
+                    const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
+                    console.log("Selected group:", group); // Debug log
+                    setSelectedGroup(group || null);
+                  }
+                }}
+              >
+                <option value="">-- Select Stock Group --</option>
+                {stockGroups.map((group) => (
+                  <option key={group.Item_Group_Id} value={group.Item_Group_Id.toString()}>
+                    {group.Group_Name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
          
-                   {selectedGroup && (
-                     <div className="row mb-3">
-                       <div className="col-12">
-                         <label className="form-label fw-bold">Select Items</label>
-                         <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                           {items.length === 0 ? (
-                             <div className="text-center text-muted py-2">No items found for this group</div>
-                           ) : (
-                             <>
-                               <div className="mb-2 pb-2 border-bottom">
-                                 <FormControlLabel
-                                   control={
-                                     <Checkbox
-                                       checked={selectAll}
-                                       onChange={(e) => setSelectAll(e.target.checked)}
-                                       size="small"
-                                     />
-                                   }
-                                   label={`Select All (${items.length} items)`}
-                                 />
-                               </div>
-                               <div className="row">
-                                 {items.map((item) => (
-                                   <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
-                                     <FormControlLabel
-                                       control={
-                                         <Checkbox
-                                           checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
-                                           onChange={(e) => {
-                                             if (e.target.checked) {
-                                               setSelectedItems([...selectedItems, item]);
-                                             } else {
-                                               setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
-                                               setSelectAll(false);
-                                             }
-                                           }}
-                                           size="small"
-                                         />
-                                       }
-                                       label={item.stock_item_name}
-                                     />
-                                   </div>
-                                 ))}
-                               </div>
-                             </>
-                           )}
-                         </div>
-                       </div>
-                     </div>
-                   )}
+          {selectedGroup && (
+            <div className="row mb-3">
+              <div className="col-12">
+                <label className="form-label fw-bold">Select Items</label>
+                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {items.length === 0 ? (
+                    <div className="text-center text-muted py-2">No items found for this group</div>
+                  ) : (
+                    <>
+                      <div className="mb-2 pb-2 border-bottom">
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={selectAll}
+                              onChange={(e) => setSelectAll(e.target.checked)}
+                              size="small"
+                            />
+                          }
+                          label={`Select All (${items.length} items)`}
+                        />
+                      </div>
+                      <div className="row">
+                        {items.map((item) => (
+                          <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedItems([...selectedItems, item]);
+                                    } else {
+                                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
+                                      setSelectAll(false);
+                                    }
+                                  }}
+                                  size="small"
+                                />
+                              }
+                              label={item.stock_item_name}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="row mb-3">
             <div className="col-12">

@@ -58,7 +58,7 @@ const ItemGroupWiseStockValue = ({
             }
         }).catch(e => console.error(e));
 
-    }, [fetchFilters.reqDate, loadingOn, loadingOff]);
+    }, [fetchFilters.reqDate]);
 
     const sortedColumns = useMemo(() => {
         return [...columns].sort((a, b) =>
