@@ -123,7 +123,7 @@ const BranchwiseSalesReport = ({ loadingOn, loadingOff, Fromdate, Todate }) => {
     };
 
     if (Fromdate && Todate) fetchData();
-  }, [Fromdate, Todate, loadingOn, loadingOff, storage?.Company_id]);
+  }, [Fromdate, Todate, storage?.Company_id]);
 
   // 🔹 Branch Columns
   const branchColumns = [

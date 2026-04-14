@@ -194,7 +194,7 @@ const StockArrivalRate = () => {
     try {
       const rate = parseFloat(commonRate);
       
-      if (isNaN(rate) || rate <= 0) {
+      if (isNaN(rate)) {
         toast.error("Please enter a valid rate greater than 0");
         setIsSyncing(false);
         return;
@@ -678,7 +678,7 @@ const StockArrivalRate = () => {
                     setSelectedGroup(null);
                   } else {
                     const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
-                    console.log("Selected group:", group); // Debug log
+                
                     setSelectedGroup(group || null);
                   }
                 }}
