@@ -53,8 +53,17 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 const OpeningBalance = () => {
   const [activeTab, setActiveTab] = useState(0); // 0: Ledger, 1: Stock
   
+  // Helper function to get current date in YYYY-MM-DD format
+  const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   // Ledger State
-  const [ledgerDate, setLedgerDate] = useState('');
+  const [ledgerDate, setLedgerDate] = useState(getCurrentDate());
   const [ledgerData, setLedgerData] = useState([]);
   const [ledgerFileName, setLedgerFileName] = useState('');
   const [ledgerLoading, setLedgerLoading] = useState(false);
@@ -66,7 +75,7 @@ const OpeningBalance = () => {
   const ledgerFileInputRef = useRef(null);
   
   // Stock State
-  const [stockDate, setStockDate] = useState('');
+  const [stockDate, setStockDate] = useState(getCurrentDate());
   const [stockData, setStockData] = useState([]);
   const [stockFileName, setStockFileName] = useState('');
   const [stockLoading, setStockLoading] = useState(false);
@@ -83,7 +92,7 @@ const OpeningBalance = () => {
   const [fetchingData, setFetchingData] = useState(false);
   const [showStockUploadPopup, setShowStockUploadPopup] = useState(false);
   const [showLedgerUploadPopup, setShowLedgerUploadPopup] = useState(false);
-  const [uploadPopupDate, setUploadPopupDate] = useState('');
+  const [uploadPopupDate, setUploadPopupDate] = useState(getCurrentDate());
   const [tempStockFile, setTempStockFile] = useState(null);
   const [tempLedgerFile, setTempLedgerFile] = useState(null);
   const [tempStockData, setTempStockData] = useState([]);
@@ -93,6 +102,8 @@ const OpeningBalance = () => {
   const [lastObDateLoading, setLastObDateLoading] = useState(false);
   const [lastObDateData, setLastObDateData] = useState(null);
   const [lastObDateDialogOpen, setLastObDateDialogOpen] = useState(false);
+  const [previewDetails, setPreviewDetails] = useState([]);
+  const [selectedObType, setSelectedObType] = useState(null);
 
   // Fetch existing data when date changes
   useEffect(() => {
@@ -106,27 +117,23 @@ const OpeningBalance = () => {
   // Fetch Last OB Date
   const fetchLastObDate = async (type) => {
     setLastObDateLoading(true);
+    setSelectedObType(type);
     try {
       const response = await fetchLink({
         address: `inventory/getLastObDate?type=${type}`,
         method: 'GET'
       });
       
-      
       if (response.success && response.data) {
         setLastObDateData(response.data);
+        // Extract preview details from the response
+        const details = response.data.preview_details || [];
+        setPreviewDetails(details);
         setLastObDateDialogOpen(true);
-        
-        // Auto-fill the date field
-        const formattedDate = new Date(response.data.ob_date).toISOString().split('T')[0];
-        if (type === 'ledger') {
-          setLedgerDate(formattedDate);
-        } else {
-          setStockDate(formattedDate);
-        }
       } else {
         toast.warning(response.message || `No ${type} opening balance found`);
         setLastObDateData(null);
+        setPreviewDetails([]);
       }
     } catch (error) {
       console.error('Error fetching last OB date:', error);
@@ -136,6 +143,21 @@ const OpeningBalance = () => {
     }
   };
 
+  const handleSelectObDate = (selectedDate) => {
+    const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
+    
+    if (selectedObType === 'ledger') {
+      setLedgerDate(formattedDate);
+    } else if (selectedObType === 'stock') {
+      setStockDate(formattedDate);
+    }
+    
+    // Close the dialog
+    setLastObDateDialogOpen(false);
+    setPreviewDetails([]);
+    setLastObDateData(null);
+  };
+
   const fetchExistingStockData = async () => {
     if (!stockDate) return;
     
@@ -143,12 +165,10 @@ const OpeningBalance = () => {
     try {
       const formattedDate = stockDate.split('T')[0];
       
-      
       const response = await fetchLink({
         address: `inventory/getStockOpeningDetails?OB_date=${formattedDate}`,
         method: 'GET'
       });
-      
       
       if (response.success && response.data) {
         setExistingStockData(response.data);
@@ -180,12 +200,10 @@ const OpeningBalance = () => {
     try {
       const formattedDate = ledgerDate.split('T')[0];
       
-      
       const response = await fetchLink({
         address: `inventory/getStockOpeningDetails?OB_date=${formattedDate}`,
         method: 'GET'
       });
-      
       
       if (response.success && response.data) {
         setExistingLedgerData(response.data);
@@ -414,7 +432,7 @@ const OpeningBalance = () => {
           }
         } catch (err) {
           console.error('Parse error:', err);
-          reject(new Error('Failed to parse Excel: ' + err.message));
+          reject(new Error('Failed to parse Excel'));
         }
       };
       reader.onerror = () => reject(new Error('Failed to read file'));
@@ -449,10 +467,10 @@ const OpeningBalance = () => {
     try {
       const data = await parseLedgerExcelFile(file);
       setTempLedgerData(data);
-      toast.success(`✅ Loaded ${data.length} valid records!`);
+      toast.success(`Loaded ${data.length} valid records!`);
     } catch (err) {
       console.error('File parsing error:', err);
-      toast.error('Failed to parse file: ' + err.message);
+      toast.error('Failed to parse file');
       setTempLedgerFile(null);
       setTempLedgerData([]);
     }
@@ -497,7 +515,7 @@ const OpeningBalance = () => {
         setLedgerDate(uploadPopupDate);
         setTempLedgerData([]);
         setTempLedgerFile(null);
-        setUploadPopupDate('');
+        setUploadPopupDate(getCurrentDate());
         await fetchExistingLedgerData();
       } else {
         throw new Error(response.message || 'Upload failed');
@@ -604,7 +622,7 @@ const OpeningBalance = () => {
           }
         } catch (err) {
           console.error('Parse error:', err);
-          reject(new Error('Failed to parse Excel: ' + err.message));
+          reject(new Error('Failed to parse Excel'));
         }
       };
       reader.onerror = () => reject(new Error('Failed to read file'));
@@ -663,10 +681,10 @@ const OpeningBalance = () => {
     try {
       const data = await parseStockExcelFile(file);
       setTempStockData(data);
-      toast.success(`✅ Loaded ${data.length} valid stock records!`);
+      toast.success(`Loaded ${data.length} valid stock records!`);
     } catch (err) {
       console.error('File parsing error:', err);
-      toast.error('Failed to parse stock file: ' + err.message);
+      toast.error('Failed to parse stock file');
       setTempStockFile(null);
       setTempStockData([]);
     }
@@ -708,7 +726,7 @@ const OpeningBalance = () => {
         setStockDate(uploadPopupDate);
         setTempStockData([]);
         setTempStockFile(null);
-        setUploadPopupDate('');
+        setUploadPopupDate(getCurrentDate());
         await fetchExistingStockData();
       } else {
         throw new Error(response.message || 'Upload failed');
@@ -835,21 +853,24 @@ const OpeningBalance = () => {
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={4}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <TextField
-                    label="Opening Date *"
-                    type="date"
-                    value={ledgerDate}
-                    onChange={(e) => setLedgerDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                    size="small"
-                  />
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label fw-bold" style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                      Opening Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={ledgerDate}
+                      onChange={(e) => setLedgerDate(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', fontSize: '0.875rem' }}
+                    />
+                  </div>
                   <Tooltip title="Get Last Ledger Opening Balance Date">
                     <IconButton 
                       color="primary" 
                       onClick={() => fetchLastObDate('ledger')}
                       disabled={lastObDateLoading}
-                      sx={{ bgcolor: '#f0f0f0', '&:hover': { bgcolor: '#e0e0e0' } }}
+                      sx={{ bgcolor: '#f0f0f0', '&:hover': { bgcolor: '#e0e0e0' }, marginTop: '20px' }}
                     >
                       {lastObDateLoading ? <CircularProgress size={24} /> : <HistoryIcon />}
                     </IconButton>
@@ -1044,21 +1065,24 @@ const OpeningBalance = () => {
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={4}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <TextField
-                    label="Opening Date *"
-                    type="date"
-                    value={stockDate}
-                    onChange={(e) => setStockDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                    size="small"
-                  />
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label fw-bold" style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                      Opening Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={stockDate}
+                      onChange={(e) => setStockDate(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', fontSize: '0.875rem' }}
+                    />
+                  </div>
                   <Tooltip title="Get Last Stock Opening Balance Date">
                     <IconButton 
                       color="success" 
                       onClick={() => fetchLastObDate('stock')}
                       disabled={lastObDateLoading}
-                      sx={{ bgcolor: '#f0f0f0', '&:hover': { bgcolor: '#e0e0e0' } }}
+                      sx={{ bgcolor: '#f0f0f0', '&:hover': { bgcolor: '#e0e0e0' }, marginTop: '20px' }}
                     >
                       {lastObDateLoading ? <CircularProgress size={24} /> : <HistoryIcon />}
                     </IconButton>
@@ -1131,7 +1155,28 @@ const OpeningBalance = () => {
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="h6">Stock Opening Balance Summary</Typography>
                 </AccordionSummary>
-              
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#e3f2fd' }}>
+                        <Typography variant="caption" color="textSecondary">Total Records</Typography>
+                        <Typography variant="h5">{stockSummary.total_records || 0}</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#e8f5e9' }}>
+                        <Typography variant="caption" color="textSecondary">Total Quantity</Typography>
+                        <Typography variant="h5">{(stockSummary.total_quantity || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#fff3e0' }}>
+                        <Typography variant="caption" color="textSecondary">Total Amount</Typography>
+                        <Typography variant="h5">₹{(stockSummary.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
               </Accordion>
             </Box>
           )}
@@ -1220,48 +1265,67 @@ const OpeningBalance = () => {
       )}
 
       {/* Last OB Date Preview Dialog */}
-      <Dialog open={lastObDateDialogOpen} onClose={() => setLastObDateDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog open={lastObDateDialogOpen} onClose={() => setLastObDateDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          Last Opening Balance Details
+          {selectedObType === 'ledger' ? 'Last Ledger Opening Balance Dates' : 'Last Stock Opening Balance Dates'}
           <IconButton onClick={() => setLastObDateDialogOpen(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          {lastObDateData && (
-            <>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="primary">
-                  Date: {(lastObDateData.ob_date).split('T')[0]}
-                </Typography>
-             
-              </Box>
-              
-         
-            </>
+          {previewDetails && previewDetails.length > 0 ? (
+            <Box>
+              <TableContainer sx={{ maxHeight: 400 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center">S.No</TableCell>
+                      <TableCell align="center">Opening Balance Date</TableCell>
+                      <TableCell align="center">Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {previewDetails.map((item, index) => {
+                      const dateStr = item.ob_date ? new Date(item.ob_date).toLocaleDateString('en-IN') : 'N/A';
+                      return (
+                        <TableRow key={index} hover>
+                          <TableCell align="center">{index + 1}</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 500 }}>
+                            {dateStr}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="primary"
+                              onClick={() => handleSelectObDate(item.ob_date)}
+                              sx={{ textTransform: 'none' }}
+                            >
+                              Select
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Typography color="textSecondary">
+                No previous opening balance dates found
+              </Typography>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setLastObDateDialogOpen(false)}>Close</Button>
-          <Button 
-            variant="contained" 
-            onClick={() => {
-              setLastObDateDialogOpen(false);
-              // Fetch the full data after setting the date
-              if (lastObDateData?.type === 'ledger') {
-                fetchExistingLedgerData();
-              } else if (lastObDateData?.type === 'stock') {
-                fetchExistingStockData();
-              }
-            }}
-          >
-            Load Full Data
-          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Ledger Upload Popup Dialog */}
-      <Dialog open={showLedgerUploadPopup} onClose={() => setShowLedgerUploadPopup(false)} maxWidth="md" fullWidth>
+      <Dialog open={showLedgerUploadPopup} onClose={() => setShowLedgerUploadPopup(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           Upload Ledger Opening Balance
           <IconButton onClick={() => setShowLedgerUploadPopup(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -1271,15 +1335,18 @@ const OpeningBalance = () => {
         <DialogContent dividers>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <TextField
-                label="Opening Date *"
-                type="date"
-                value={uploadPopupDate}
-                onChange={(e) => setUploadPopupDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-              />
+              <div>
+                <label className="form-label fw-bold" style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                  Opening Date *
+                </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={uploadPopupDate}
+                  onChange={(e) => setUploadPopupDate(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', fontSize: '0.875rem' }}
+                />
+              </div>
             </Grid>
             <Grid item xs={12}>
               <Divider>Upload Excel File</Divider>
@@ -1335,7 +1402,7 @@ const OpeningBalance = () => {
       </Dialog>
 
       {/* Stock Upload Popup Dialog */}
-      <Dialog open={showStockUploadPopup} onClose={() => setShowStockUploadPopup(false)} maxWidth="md" fullWidth>
+      <Dialog open={showStockUploadPopup} onClose={() => setShowStockUploadPopup(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           Upload Stock Opening Balance
           <IconButton onClick={() => setShowStockUploadPopup(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -1345,15 +1412,18 @@ const OpeningBalance = () => {
         <DialogContent dividers>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <TextField
-                label="Opening Date *"
-                type="date"
-                value={uploadPopupDate}
-                onChange={(e) => setUploadPopupDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-              />
+              <div>
+                <label className="form-label fw-bold" style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                  Opening Date *
+                </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={uploadPopupDate}
+                  onChange={(e) => setUploadPopupDate(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', fontSize: '0.875rem' }}
+                />
+              </div>
             </Grid>
             <Grid item xs={12}>
               <Divider>Upload Excel File</Divider>
