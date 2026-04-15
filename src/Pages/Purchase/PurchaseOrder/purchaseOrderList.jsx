@@ -316,7 +316,26 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                             size="small"
                             color="success"
                             onClick={() => {
-                                const notCanceledOnly = dataToPass.filter(fil => !stringCompare(fil.OrderStatus, 'Canceled'))
+                                const tableData = purchaseOrderDataSet({
+                                    data: dataToPass,
+                                    status: filters.OrderStatus
+                                });
+
+                                let formattedData = tableData;
+                                if (['ITEMS', 'ITEMS PENDING', 'ITEMS ARRIVED'].includes(filters.OrderStatus)) {
+                                    const poMap = new Map();
+                                    tableData.forEach(itemRow => {
+                                        const poId = itemRow.OrderDetails.Id;
+                                        if (!poMap.has(poId)) {
+                                            const po = { ...itemRow.OrderDetails, ItemDetails: [] };
+                                            poMap.set(poId, po);
+                                        }
+                                        poMap.get(poId).ItemDetails.push(itemRow);
+                                    });
+                                    formattedData = Array.from(poMap.values());
+                                }
+
+                                const notCanceledOnly = formattedData.filter(fil => !stringCompare(fil.OrderStatus, 'Canceled'));
                                 downloadExcel(notCanceledOnly);
                             }}
                             title="Download Excel"
