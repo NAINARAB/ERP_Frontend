@@ -180,41 +180,53 @@ const TaxInvoiceFull = ({ invoice, isDialog = false, loadingOn, loadingOff }) =>
                 Staffs_Array: currentInvoice?.Staffs_Array || []
             };
 
-            const processedProds = includedProducts.map((product) => {
-                const percentage = (IS_IGST ? product?.Igst : (product?.Cgst + product?.Sgst)) ?? 0;
-                const quantity = Number(product?.Bill_Qty || 0);
-                const Item_Rate = Number(product?.Item_Rate || 0);
-                const itemTax = taxCalc(orderDetails.GST_Inclusive, Item_Rate, percentage);
+         const processedProds = includedProducts.map((product) => {
+    const percentage = (IS_IGST ? product?.Igst : (product?.Cgst + product?.Sgst)) ?? 0;
 
-                let rateInclusiveTax = Item_Rate;
-                if (isEqualNumber(orderDetails.GST_Inclusive, 0)) {
-                    rateInclusiveTax = Item_Rate + itemTax;
-                } else if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
-                    rateInclusiveTax = Item_Rate;
-                } else {
-                    rateInclusiveTax = Item_Rate;
-                }
+    const quantity = Number(product?.Bill_Qty || 0);
+    const Item_Rate = Number(product?.Item_Rate || 0);
 
-                return {
-                    Product_Name: product?.Product_Name,
-                    Short_Name: product?.Short_Name || product?.Product_Name,
-                    HSN_Code: product?.HSN_Code,
-                    Bill_Qty: quantity,
-                    Unit: product?.Unit_Name || '',
-                    Unit_Name: product?.Unit_Name || 'KG',
-                    Item_Rate: Item_Rate,
-                    Bag: product?.Bag || 0,
-                    Taxable_Rate: isEqualNumber(orderDetails.GST_Inclusive, 1) ? (Item_Rate - itemTax) : Item_Rate,
-                    Rate_Inclusive_Tax: rateInclusiveTax,
-                    Taxable_Amount: product?.Taxable_Amount || 0,
-                    Cgst: product?.Cgst || 0,
-                    Sgst: product?.Sgst || 0,
-                    Igst: product?.Igst || 0,
-                    Cgst_Amo: product?.Cgst_Amo || 0,
-                    Sgst_Amo: product?.Sgst_Amo || 0,
-                    Igst_Amo: product?.Igst_Amo || 0,
-                };
-            });
+    let taxableRate = 0;
+    let rateInclusiveTax = 0;
+    let itemTax = 0;
+
+    if (isEqualNumber(orderDetails.GST_Inclusive, 1)) {
+        // GST Inclusive
+        taxableRate = Item_Rate * (100 / (100 + percentage));
+        itemTax = Item_Rate - taxableRate;
+        rateInclusiveTax = Item_Rate;
+    } else {
+        // GST Exclusive
+        itemTax = Item_Rate * (percentage / 100);
+        taxableRate = Item_Rate;
+        rateInclusiveTax = Item_Rate + itemTax;
+    }
+
+    const taxableAmount = taxableRate * quantity;
+
+    return {
+        Product_Name: product?.Product_Name,
+        Short_Name: product?.Short_Name || product?.Product_Name,
+        HSN_Code: product?.HSN_Code,
+        Bill_Qty: quantity,
+        Unit: product?.Unit_Name || '',
+        Unit_Name: product?.Unit_Name || 'KG',
+        Item_Rate: Item_Rate,
+        Bag: product?.Bag || 0,
+
+        Taxable_Rate: RoundNumber(taxableRate),
+        Rate_Inclusive_Tax: RoundNumber(rateInclusiveTax),
+        Taxable_Amount: RoundNumber(taxableAmount),
+
+        Cgst: product?.Cgst || 0,
+        Sgst: product?.Sgst || 0,
+        Igst: product?.Igst || 0,
+
+        Cgst_Amo: product?.Cgst_Amo || 0,
+        Sgst_Amo: product?.Sgst_Amo || 0,
+        Igst_Amo: product?.Igst_Amo || 0,
+    };
+});
 
             setProcessedInvoice(processedInv);
             setProcessedProducts(processedProds);
