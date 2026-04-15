@@ -282,7 +282,7 @@ const ReportsTemplateMobCreation = lazy(() => import('./Pages/Analytics/reportsT
 // -----------------------------------------------------------------------------
 const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
 
-
+const LedgerOpeningBalance =lazy(()=>import('./Pages/Inventry/openingBalance'))
 const RoutingArray = [
     // ---------------------------------------------------------------------------
     // Root
@@ -372,6 +372,7 @@ const RoutingArray = [
     { component: <StockJournalAdjustmentCreate />, path :'/erp/inventory/StockJournalAdjustment/Create'},
     
     {component : <StockJournalAdjustment/> ,path : '/erp/inventory/StockJournalAdjustment'},
+    {component : <LedgerOpeningBalance/> ,path : '/erp/inventory/LedgerOpeningBalance'},
 
 
     {component:<StockJournalRate/>,path:'/erp/inventory/stockJournalRate'},
