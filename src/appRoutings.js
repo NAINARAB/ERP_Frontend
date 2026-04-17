@@ -379,7 +379,7 @@ const RoutingArray = [
     {component:<StockArrivalRate/>,path:'/erp/inventory/stockArrivalRate'},
     {component:<StockValueSync/>,path:'/erp/inventory/stockValueSync'},
     {component:<StockValueErpSync/>,path:'/erp/inventory/stockValueErpSync'},
-     {component:<StockSummaryErpReport/>,path:'/erp/inventory/StockSummaryErpReport'},
+    {component:<StockSummaryErpReport/>,path:'/erp/inventory/StockSummaryErpReport'},
 
     // ---------------------------------------------------------------------------
     // ERP - Journal
