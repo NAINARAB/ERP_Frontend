@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useCallback, memo } from "react";
 import {
   IconButton,
   Tooltip,
@@ -11,13 +11,88 @@ import {
   Refresh as RefreshIcon,
   Print as PrintIcon,
   Sync as SyncIcon,
-  Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
+
+// ✅ Memoized Row Component to prevent re-rendering all rows
+const ArrivalRow = memo(({ row, index, onSaveRate, onStartEdit, editingCell, editValue, setEditValue }) => {
+  const isEditing = editingCell.index === index && editingCell.field === 'Rate';
+  const isZeroRate = (row.Rate || 0) === 0;
+  
+  const handleSave = useCallback((newRate) => {
+    onSaveRate(index, newRate);
+  }, [index, onSaveRate]);
+
+  const handleEdit = useCallback(() => {
+    onStartEdit(index, row.Rate || 0);
+  }, [index, row.Rate, onStartEdit]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter') {
+      handleSave(parseFloat(e.target.value));
+    }
+    if (e.key === 'Escape') {
+      onStartEdit(null, null);
+    }
+  }, [handleSave, onStartEdit]);
+
+  return (
+    <tr>
+      <td>{index + 1}</td>
+      <td>{row.Arrival_Date ? format(new Date(row.Arrival_Date), 'dd/MM/yyyy') : '-'}</td>
+      <td>{row.Arr_Id || '-'}</td>
+      <td>{row.stock_item_name || '-'}</td>
+      <td>{row.godown_name || '-'}</td>
+      <td className="text-end">{(row.Arr_qty || 0).toFixed(2)}</td>
+      <td>{row.Units || '-'}</td>
+      <td className="text-end">
+        {isEditing ? (
+          <div className="d-flex align-items-center gap-1 justify-content-end">
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              style={{ width: '100px' }}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyPress}
+              autoFocus
+              step="0.01"
+              min="0"
+            />
+            <IconButton size="small" onClick={() => handleSave(parseFloat(editValue))} color="primary">
+              <SaveIcon fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={() => onStartEdit(null, null)} color="secondary">
+              <CancelIcon fontSize="small" />
+            </IconButton>
+          </div>
+        ) : (
+          <span 
+            onClick={handleEdit}
+            style={{ 
+              color: isZeroRate ? '#dc3545' : 'inherit', 
+              fontWeight: isZeroRate ? 'bold' : 'normal',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              display: 'inline-block',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4edda'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ₹{(row.Rate || 0).toFixed(2)}
+          </span>
+        )}
+      </td>
+      <td className="text-end">{(row.Taxable_Value || 0).toFixed(2)}</td>
+    </tr>
+  );
+});
 
 const StockArrivalRate = () => {
   const [fromDate, setFromDate] = useState(format(new Date().setDate(1), 'yyyy-MM-dd'));
@@ -34,8 +109,9 @@ const StockArrivalRate = () => {
   const [showZeroEntries, setShowZeroEntries] = useState(false);
   const [commonRate, setCommonRate] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [editingCell, setEditingCell] = useState({ index: null, field: null, originalId: null });
+  const [editingCell, setEditingCell] = useState({ index: null, field: null });
   const [editValue, setEditValue] = useState("");
+  const [pendingUpdates, setPendingUpdates] = useState(new Map());
 
   useEffect(() => {
     loadStockGroups();
@@ -70,7 +146,54 @@ const StockArrivalRate = () => {
     }
   }, [showZeroEntries]);
 
-  const applyZeroRateFilter = () => {
+  // Process pending updates in background
+  useEffect(() => {
+    const processPendingUpdates = async () => {
+      for (const [key, update] of pendingUpdates) {
+        if (!update.processing) {
+          setPendingUpdates(prev => {
+            const newMap = new Map(prev);
+            newMap.set(key, { ...update, processing: true });
+            return newMap;
+          });
+
+          try {
+            const response = await fetchLink({
+              address: `inventory/updateArrivalList`,
+              method: "PUT",
+              bodyData: update.updateData
+            });
+
+            if (!response || !response.success) {
+              revertOptimisticUpdate(update);
+              toast.error(response?.message || "Failed to update rate");
+            }
+            
+            setPendingUpdates(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(key);
+              return newMap;
+            });
+          } catch (err) {
+            console.error("Error saving rate:", err);
+            revertOptimisticUpdate(update);
+            toast.error("Failed to update rate: " + (err.message || "Unknown error"));
+            setPendingUpdates(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(key);
+              return newMap;
+            });
+          }
+        }
+      }
+    };
+
+    if (pendingUpdates.size > 0) {
+      processPendingUpdates();
+    }
+  }, [pendingUpdates]);
+
+  const applyZeroRateFilter = useCallback(() => {
     let data = [...originalData];
     
     if (!showZeroEntries) {
@@ -78,19 +201,20 @@ const StockArrivalRate = () => {
     }
     
     setReportData(data);
-  };
+  }, [originalData, showZeroEntries]);
 
-
-  const getOriginalIndex = (filteredIndex) => {
-    if (filteredIndex >= reportData.length) return -1;
-    
-    const filteredRow = reportData[filteredIndex];
-    const uniqueId = filteredRow.Arr_Id || filteredRow.arrival_id || filteredRow.id;
-    
-    return originalData.findIndex(row => 
-      (row.Arr_Id || row.arrival_id || row.id) === uniqueId
-    );
-  };
+  const revertOptimisticUpdate = useCallback((update) => {
+    setOriginalData(prev => {
+      const updatedData = [...prev];
+      const index = updatedData.findIndex(item => 
+        (item.Arr_Id || item.arrival_id || item.id) === update.arrivalId
+      );
+      if (index !== -1) {
+        updatedData[index] = update.oldRow;
+      }
+      return updatedData;
+    });
+  }, []);
 
   const loadStockGroups = async () => {
     try {
@@ -109,17 +233,14 @@ const StockArrivalRate = () => {
         groups = response.data;
       }
       
-      const formattedGroups = groups.map((group) => {
-        return {
-          Item_Group_Id: group.Item_Group_Id,
-          Group_Name: group.Group_Name,
-          GST_P: group.GST_P,
-          Group_HSN: group.Group_HSN,
-          Grp: group.Grp
-        };
-      });
+      const formattedGroups = groups.map((group) => ({
+        Item_Group_Id: group.Item_Group_Id,
+        Group_Name: group.Group_Name,
+        GST_P: group.GST_P,
+        Group_HSN: group.Group_HSN,
+        Grp: group.Grp
+      }));
       
-      // Add "All" option at the beginning with id 0
       const allOption = {
         Item_Group_Id: 0,
         Group_Name: "All",
@@ -145,7 +266,6 @@ const StockArrivalRate = () => {
     try {
       setLoading(true);
       
-      // Send stockGroupId as 0 for "All" option
       const bodyData = { stockGroupId: groupId };
       
       const response = await fetchLink({
@@ -245,94 +365,88 @@ const StockArrivalRate = () => {
     }
   };
 
-
-  const handleEditRate = (filteredIndex, currentValue) => {
+  
+  const handleSaveRate = useCallback(async (filteredIndex, newRate) => {
     const currentRow = reportData[filteredIndex];
+    
     if (!currentRow) {
       toast.error("Row not found");
       return;
     }
-    
-    setEditingCell({ 
-      filteredIndex, 
-      field: 'Rate',
-      originalId: currentRow.Arr_Id || currentRow.arrival_id || currentRow.id
-    });
-    setEditValue(currentValue.toString());
-  };
 
-  const handleSaveRate = async () => {
-    const { filteredIndex, originalId } = editingCell;
-    const newRate = parseFloat(editValue);
-    
     if (isNaN(newRate)) {
       toast.error("Please enter a valid number");
       return;
     }
 
-    try {
-      const originalIndex = originalData.findIndex(row => 
-        (row.Arr_Id || row.arrival_id || row.id) === originalId
-      );
+    const arrivalId = currentRow.Arr_Id || currentRow.arrival_id || currentRow.id;
 
-      if (originalIndex === -1) {
-        toast.error("Original record not found");
-        return;
-      }
+    // Find original index
+    const originalIndex = originalData.findIndex(row => 
+      (row.Arr_Id || row.arrival_id || row.id) === arrivalId
+    );
 
-      const currentRow = originalData[originalIndex];
-      
-      const updateData = {
-        type: 'individual',
-        gstRate: newRate,
-        arrival_id: currentRow.Arr_Id || currentRow.arrival_id || currentRow.id
-      };
-
-      const response = await fetchLink({
-        address: `inventory/updateArrivalList`,
-        method: "PUT",
-        bodyData: updateData
-      });
-
-      if (response && response.success) {
-        let updatedData = [...originalData];
-        updatedData[originalIndex] = {
-          ...updatedData[originalIndex],
-          Rate: newRate,
-          Taxable_Value: (updatedData[originalIndex].Arr_qty || 0) * newRate
-        };
-
-        setOriginalData(updatedData);
-
-        let displayData = [...updatedData];
-        
-        if (!showZeroEntries) {
-          displayData = displayData.filter(item => (item.Rate || 0) !== 0);
-        }
-        
-        setReportData(displayData);
-        
-        toast.success("Rate updated successfully");
-        
-        if (newRate === 0 && !showZeroEntries) {
-          toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
-        }
-      } else {
-        toast.error(response?.message || "Failed to update rate");
-      }
-    } catch (err) {
-      console.error("Error saving rate:", err);
-      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
-    } finally {
-      setEditingCell({ filteredIndex: null, field: null, originalId: null });
-      setEditValue("");
+    if (originalIndex === -1) {
+      toast.error("Original record not found");
+      return;
     }
-  };
 
-  const handleCancelEdit = () => {
-    setEditingCell({ filteredIndex: null, field: null, originalId: null });
+    // Store old row for potential rollback
+    const oldRow = originalData[originalIndex];
+
+    // ✅ IMMEDIATE UI UPDATE - Update both originalData and reportData
+    setOriginalData(prev => {
+      const updatedData = [...prev];
+      updatedData[originalIndex] = {
+        ...updatedData[originalIndex],
+        Rate: newRate,
+        Taxable_Value: (updatedData[originalIndex].Arr_qty || 0) * newRate
+      };
+      return updatedData;
+    });
+
+    setReportData(prev => {
+      const updatedData = [...prev];
+      updatedData[filteredIndex] = {
+        ...updatedData[filteredIndex],
+        Rate: newRate,
+        Taxable_Value: (updatedData[filteredIndex].Arr_qty || 0) * newRate
+      };
+      return updatedData;
+    });
+
+    // Clear editing state
+    setEditingCell({ index: null, field: null });
     setEditValue("");
-  };
+
+    // Prepare API update data
+    const updateData = {
+      type: 'individual',
+      gstRate: newRate,
+      arrival_id: arrivalId
+    };
+
+    // Queue the API update for background processing
+    const updateKey = `arrival_${arrivalId}`;
+    setPendingUpdates(prev => new Map(prev).set(updateKey, {
+      updateData,
+      arrivalId,
+      oldRow,
+      newRate,
+      processing: false
+    }));
+
+    toast.success("Rate updated successfully");
+    
+    if (newRate === 0 && !showZeroEntries) {
+      toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
+    }
+  }, [reportData, originalData, showZeroEntries]);
+
+  const handleStartEdit = useCallback((index, currentValue) => {
+    setEditingCell({ index, field: 'Rate' });
+    setEditValue(currentValue.toString());
+  }, []);
 
   const handleSearch = async () => {
     if (!fromDate || !toDate) {
@@ -526,52 +640,8 @@ const StockArrivalRate = () => {
     toast.success("Report exported successfully");
   };
 
-  const renderEditableRateCell = (value, filteredIndex) => {
-    const isEditing = editingCell.filteredIndex === filteredIndex && editingCell.field === 'Rate';
-    const isZeroRate = value === 0;
-    
-    if (isEditing) {
-      return (
-        <div className="d-flex align-items-center gap-1">
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            style={{ width: '100px' }}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            autoFocus
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') handleSaveRate();
-              if (e.key === 'Escape') handleCancelEdit();
-            }}
-          />
-          <IconButton size="small" onClick={handleSaveRate} color="primary">
-            <SaveIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={handleCancelEdit} color="secondary">
-            <CancelIcon fontSize="small" />
-          </IconButton>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="d-flex align-items-center justify-content-between gap-2">
-        <span style={{ color: isZeroRate ? '#dc3545' : 'inherit', fontWeight: isZeroRate ? 'bold' : 'normal' }}>
-          ₹{value.toFixed(2)}
-        </span>
-        <IconButton 
-          size="small" 
-          onClick={() => handleEditRate(filteredIndex, value)}
-          sx={{ padding: '2px' }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </div>
-    );
-  };
-
-  const renderTransactionTable = () => {
+  // ✅ Optimized table renderer with memoized rows
+  const renderTransactionTable = useCallback(() => {
     const totalQty = reportData.reduce((sum, row) => sum + (row.Arr_qty || 0), 0);
     const totalAmount = reportData.reduce((sum, row) => sum + (row.Taxable_Value || 0), 0);
     
@@ -598,17 +668,16 @@ const StockArrivalRate = () => {
               </tr>
             ) : (
               reportData.map((row, idx) => (
-                <tr key={row.Arr_Id || idx}>
-                  <td>{idx + 1}</td>
-                  <td>{row.Arrival_Date ? format(new Date(row.Arrival_Date), 'dd/MM/yyyy') : '-'}</td>
-                  <td>{row.Arr_Id || '-'}</td>
-                  <td>{row.stock_item_name || '-'}</td>
-                  <td>{row.godown_name || '-'}</td>
-                  <td className="text-end">{(row.Arr_qty || 0).toFixed(2)}</td>
-                  <td>{row.Units || '-'}</td>
-                  <td className="text-end">{renderEditableRateCell(row.Rate || 0, idx)}</td>
-                  <td className="text-end">{(row.Taxable_Value || 0).toFixed(2)}</td>
-                </tr>
+                <ArrivalRow
+                  key={row.Arr_Id || row.arrival_id || row.id || idx}
+                  row={row}
+                  index={idx}
+                  onSaveRate={handleSaveRate}
+                  onStartEdit={handleStartEdit}
+                  editingCell={editingCell}
+                  editValue={editValue}
+                  setEditValue={setEditValue}
+                />
               ))
             )}
           </tbody>
@@ -626,7 +695,7 @@ const StockArrivalRate = () => {
         </table>
       </div>
     );
-  };
+  }, [reportData, handleSaveRate, handleStartEdit, editingCell, editValue]);
 
   return (
     <Fragment>
@@ -678,7 +747,6 @@ const StockArrivalRate = () => {
                     setSelectedGroup(null);
                   } else {
                     const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
-                
                     setSelectedGroup(group || null);
                   }
                 }}

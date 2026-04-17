@@ -16,20 +16,19 @@ import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
 
 const StockValueSync = () => {
-  const [fromDate, setFromDate] = useState(format(new Date().setDate(1), 'yyyy-MM-dd'));
-  const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+const [fromDate, setFromDate] = useState(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
+const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [stockGroups, setStockGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [items, setItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [closingBalances, setClosingBalances] = useState([]);
-  const [historyList, setHistoryList] = useState([]); // Store history of all fetched closing balances
+  const [historyList, setHistoryList] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
 
-  // Add "All" option to stock groups
   const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "-- All Stock Groups --" }, ...stockGroups];
 
   useEffect(() => {
@@ -41,7 +40,7 @@ const StockValueSync = () => {
       loadItemsByGroup(selectedGroup.Item_Group_Id);
       setSelectedItems([]);
       setSelectAll(false);
-      // Don't clear closing balances when selecting a group
+   
     } else if (selectedGroup && selectedGroup.Item_Group_Id === "0") {
       setItems([]);
       setSelectedItems([]);
@@ -141,7 +140,7 @@ const StockValueSync = () => {
     }
   };
 
-  // Function to fetch closing balance for a single stock group
+ 
   const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
     try {
       const requestBody = {
@@ -405,17 +404,17 @@ const StockValueSync = () => {
     }
   };
 
-  const handleReset = () => {
-    setSelectedGroup(null);
-    setSelectedItems([]);
-    setSelectAll(false);
-    setClosingBalances([]);
-    setFromDate(format(new Date().setDate(1), 'yyyy-MM-dd'));
-    setToDate(format(new Date(), 'yyyy-MM-dd'));
-    setProgress({ current: 0, total: 0, status: '' });
-    setReload(prev => !prev);
-    toast.info("Filters reset");
-  };
+const handleReset = () => {
+  setSelectedGroup(null);
+  setSelectedItems([]);
+  setSelectAll(false);
+  setClosingBalances([]); 
+  setHistoryList([]);      
+  setFromDate(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
+  setToDate(format(new Date(), 'yyyy-MM-dd'));
+  setReload(prev => !prev);
+  toast.info("Filters reset");
+};
 
   const handleClearHistory = () => {
     setHistoryList([]);

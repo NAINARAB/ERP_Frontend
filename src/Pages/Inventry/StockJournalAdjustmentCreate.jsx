@@ -469,9 +469,9 @@ useEffect(() => {
                     setSelectedProductToEdit(null);
                 }}
                 products={baseData.products}
-                brands={baseData.brand}
+                // brands={baseData.brand}
                 uom={baseData.uom}
-                godowns={baseData.godown}
+                // godowns={baseData.godown}
                 GST_Inclusive={invoiceInfo.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
