@@ -634,8 +634,7 @@
 
 
 
-
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useCallback } from "react";
 import {
   IconButton,
   Tooltip,
@@ -648,7 +647,6 @@ import {
   Refresh as RefreshIcon,
   Print as PrintIcon,
   Sync as SyncIcon,
-  Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
   SyncAlt as SyncAltIcon
@@ -676,6 +674,8 @@ const StockReport = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingCell, setEditingCell] = useState({ tab: null, index: null, field: null });
   const [editValue, setEditValue] = useState("");
+  // ✅ NEW: Temp value for instant UI feedback
+  const [tempEditValue, setTempEditValue] = useState("");
 
   useEffect(() => {
     loadStockGroups();
@@ -966,11 +966,18 @@ const StockReport = () => {
     }
   };
 
-  const handleEditRate = async (tab, index, field, currentValue) => {
+  // ✅ OPTIMIZED: Start editing without API call, just set local state
+  const handleStartEdit = useCallback((tab, index, field, currentValue) => {
     setEditingCell({ tab, index, field });
     setEditValue(currentValue.toString());
-  };
+    setTempEditValue(currentValue.toString());
+  }, []);
 
+  // ✅ OPTIMIZED: Use temp value for instant feedback
+  const handleEditInputChange = useCallback((e) => {
+    setTempEditValue(e.target.value);
+    setEditValue(e.target.value);
+  }, []);
 
   const handleOverAllSync = async () => {
     if (!fromDate || !toDate) {
@@ -1117,13 +1124,15 @@ const StockReport = () => {
     } finally {
       setEditingCell({ tab: null, index: null, field: null });
       setEditValue("");
+      setTempEditValue("");
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingCell({ tab: null, index: null, field: null });
     setEditValue("");
-  };
+    setTempEditValue("");
+  }, []);
 
   // ✅ MODIFIED: Pass Item_Group_Id to API (0 for all groups)
   const handleSearch = async () => {
@@ -1193,7 +1202,7 @@ const StockReport = () => {
           allTransactions: displayAll
         });
         
-        toast.success(`Report loaded successfully. Found ${displayAll.length} transactions`);
+        toast.success(`Report loaded successfully`);
       } else {
         toast.error(response?.message || "Failed to fetch report data");
         setOriginalData({ source: [], destination: [], allTransactions: [] });
@@ -1329,6 +1338,7 @@ const StockReport = () => {
     toast.success("Report exported successfully");
   };
 
+
   const renderEditableRateCell = (value, tab, index, field) => {
     const isEditing = editingCell.tab === tab && editingCell.index === index && editingCell.field === field;
     const isZeroRate = value === 0;
@@ -1340,13 +1350,15 @@ const StockReport = () => {
             type="number"
             className="form-control form-control-sm"
             style={{ width: '100px' }}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            value={tempEditValue}
+            onChange={handleEditInputChange}
             autoFocus
             onKeyPress={(e) => {
               if (e.key === 'Enter') handleSaveRate();
               if (e.key === 'Escape') handleCancelEdit();
             }}
+            step="0.01"
+            min="0"
           />
           <IconButton size="small" onClick={handleSaveRate} color="primary">
             <SaveIcon fontSize="small" />
@@ -1359,18 +1371,22 @@ const StockReport = () => {
     }
     
     return (
-      <div className="d-flex align-items-center justify-content-between gap-2">
-        <span style={{ color: isZeroRate ? '#dc3545' : 'inherit', fontWeight: isZeroRate ? 'bold' : 'normal' }}>
-          ₹{value.toFixed(2)}
-        </span>
-        <IconButton 
-          size="small" 
-          onClick={() => handleEditRate(tab, index, field, value)}
-          sx={{ padding: '2px' }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </div>
+      <span 
+        onClick={() => handleStartEdit(tab, index, field, value)}
+        style={{ 
+          color: isZeroRate ? '#dc3545' : 'inherit', 
+          fontWeight: isZeroRate ? 'bold' : 'normal',
+          cursor: 'pointer',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          display: 'inline-block',
+          transition: 'background-color 0.2s ease'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4edda'} // Light green
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        ₹{value.toFixed(2)}
+      </span>
     );
   };
 

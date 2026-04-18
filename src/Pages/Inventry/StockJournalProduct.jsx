@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, toArray, toNumber } from "../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../Components/requiredStar";
 import { calculateGSTDetails } from "../../Components/taxCalculator";
@@ -46,77 +46,76 @@ const StockJournalProduct = ({
 
     const lastEditedRef = useRef(null);
 
+    const findProductDetails = (productid) => products?.find(obj => isEqualNumber(obj?.Product_Id, productid)) ?? {};
 
     useEffect(() => {
         if (isValidObject(editValues) && open) {
-           
+          
             
             setProductDetails(prev => {
-   
                 const updatedDetails = { ...prev };
                 
-          
-                Object.keys(editValues).forEach(key => {
-    
-                    switch(key) {
-                        case 'Adj_Payment':
-                        case 'adjPayment':
-                        case 'adjustmentPayment':
-                            updatedDetails.Adj_Payment = editValues[key];
+                // Map all possible field names from editValues
+                const fieldMappings = {
+                    Item_Id: ['Item_Id', 'itemId', 'productId', 'Product_Id', 'name_item_id'],
+                    Item_Name: ['Item_Name', 'itemName', 'Product_Name', 'productName'],
+                    Act_Qty: ['Act_Qty', 'act_qty', 'actQty', 'actualQuantity'],
+                    Bill_Qty: ['Bill_Qty', 'bill_qty', 'billQty', 'quantity'],
+                    Alt_Act_Qty: ['Alt_Act_Qty', 'alt_act_qty', 'altActQty'],
+                    Alt_Bill_Qty: ['Alt_Bill_Qty', 'alt_bill_qty', 'altBillQty'],
+                    Item_Rate: ['Item_Rate', 'itemRate', 'rate'],
+                    Amount: ['Amount', 'amount'],
+                    Adj_Payment: ['Adj_Payment', 'adjPayment', 'adjustmentPayment'],
+                    GoDown_Id: ['GoDown_Id', 'godownId', 'Godown_Id', 'godown_id'],
+                    BrandID: ['BrandID', 'brandId'],
+                    Brand: ['Brand', 'brand'],
+                    GroupID: ['GroupID', 'groupId'],
+                    Group: ['Group', 'group'],
+                    Unit_Id: ['Unit_Id', 'unitId'],
+                    Unit_Name: ['Unit_Name', 'unitName'],
+                };
+                
+                // Apply mappings
+                Object.entries(fieldMappings).forEach(([targetField, sourceFields]) => {
+                    for (const sourceField of sourceFields) {
+                        if (editValues[sourceField] !== undefined && editValues[sourceField] !== null) {
+                            updatedDetails[targetField] = editValues[sourceField];
                             break;
-                        case 'Item_Id':
-                        case 'itemId':
-                        case 'productId':
-                            updatedDetails.Item_Id = editValues[key];
-                            break;
-                        case 'Bill_Qty':
-                        case 'billQty':
-                        case 'quantity':
-                            updatedDetails.Bill_Qty = editValues[key];
-                            break;
-                        case 'Act_Qty':
-                        case 'actQty':
-                        case 'actualQuantity':
-                            updatedDetails.Act_Qty = editValues[key];
-                            break;
-                        case 'Item_Rate':
-                        case 'itemRate':
-                        case 'rate':
-                            updatedDetails.Item_Rate = editValues[key];
-                            break;
-                        case 'Amount':
-                        case 'amount':
-                            updatedDetails.Amount = editValues[key];
-                            break;
-                        case 'GoDown_Id':
-                        case 'godownId':
-                        case 'Godown_Id':
-                            updatedDetails.GoDown_Id = editValues[key];
-                            break;
-                        default:
-                           
-                            updatedDetails[key] = editValues[key];
+                        }
                     }
                 });
-
-          
+                
+                // Also copy any other fields that might be needed
+                Object.keys(editValues).forEach(key => {
+                    if (!updatedDetails.hasOwnProperty(key) && 
+                        !Object.values(fieldMappings).flat().includes(key)) {
+                        updatedDetails[key] = editValues[key];
+                    }
+                });
+                
+                // Ensure numeric values are numbers
+                if (updatedDetails.Act_Qty !== undefined) updatedDetails.Act_Qty = Number(updatedDetails.Act_Qty);
+                if (updatedDetails.Bill_Qty !== undefined) updatedDetails.Bill_Qty = Number(updatedDetails.Bill_Qty);
+                if (updatedDetails.Item_Rate !== undefined) updatedDetails.Item_Rate = Number(updatedDetails.Item_Rate);
+                if (updatedDetails.Amount !== undefined) updatedDetails.Amount = Number(updatedDetails.Amount);
+                if (updatedDetails.Adj_Payment !== undefined) updatedDetails.Adj_Payment = Number(updatedDetails.Adj_Payment);
+                
+                // Calculate alternate quantities based on pack
                 const productInfo = findProductDetails(updatedDetails.Item_Id);
                 const pack = productInfo?.PackGet || 1;
                 
-                if (updatedDetails.Act_Qty) {
+                if (updatedDetails.Act_Qty !== undefined && updatedDetails.Act_Qty !== null) {
                     updatedDetails.Alt_Act_Qty = Division(updatedDetails.Act_Qty, pack);
                 }
-                if (updatedDetails.Bill_Qty) {
+                if (updatedDetails.Bill_Qty !== undefined && updatedDetails.Bill_Qty !== null) {
                     updatedDetails.Alt_Bill_Qty = Division(updatedDetails.Bill_Qty, pack);
                 }
-
-          
+                
+               
                 return updatedDetails;
             });
         }
-    }, [editValues, open]);
-
-    const findProductDetails = (productid) => products?.find(obj => isEqualNumber(obj?.Product_Id, productid)) ?? {};
+    }, [editValues, open, products]);
 
     const closeDialog = () => {
         setProductDetails(initialValue);
@@ -162,7 +161,6 @@ const StockJournalProduct = ({
                         case 'Final_Amo':      return [key, gstInfo.with_tax];
                         case 'Godown_Stock':   return [key, godownStock];
                         case 'GoDown_Id':      return [key, productDetails.GoDown_Id ?? 0];
-                   
                         case 'Adj_Payment':    return [key, productDetails.Adj_Payment || 0];
                         default:               return [key, productDetails[key] ?? value];
                     }
@@ -244,7 +242,7 @@ const StockJournalProduct = ({
                     : { ...prev, Item_Rate: rate }
             );
         }
-    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty, productDetails.Act_Qty]);
+    }, [productDetails.Item_Rate, productDetails.Amount, productDetails.Bill_Qty]);
 
     const godownOptions = useMemo(() => {
         if (!checkIsNumber(productDetails.Item_Id)) return [];
@@ -288,12 +286,11 @@ const StockJournalProduct = ({
                 maxWidth='md' fullWidth
             >
                 <DialogTitle className="border-bottom">
-                    <span>Add Products Details</span>
+                    <span>{editValues ? "Edit" : "Add"} Products Details</span>
                 </DialogTitle>
                 <form onSubmit={e => handleFormSubmit(e, true)}>
                     <DialogContent>
                         <div className="row pb-5">
-
                             {/* brand */}
                             <div className="col-6 p-2">
                                 <label>Brand</label>
@@ -309,7 +306,6 @@ const StockJournalProduct = ({
                                     isSearchable={true}
                                     placeholder={"Select Brand"}
                                     maxMenuHeight={200}
-                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -347,7 +343,6 @@ const StockJournalProduct = ({
                                     isSearchable={true}
                                     placeholder={"Select Group"}
                                     maxMenuHeight={200}
-                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
@@ -409,16 +404,14 @@ const StockJournalProduct = ({
                                     isSearchable={true}
                                     placeholder={"Select Product"}
                                     maxMenuHeight={200}
-                                    filterOption={reactSelectFilterLogic}
                                 />
                             </div>
 
-                            {/* act qty */}
+                            {/* act qty - Allow negative values */}
                             <div className="col-md-6 p-2">
                                 <label>Actual Quantity </label>
                                 <input
-                                    value={productDetails.Act_Qty ? productDetails.Act_Qty : ''}
-                                    onInput={onlynum}
+                                    value={productDetails.Act_Qty !== undefined && productDetails.Act_Qty !== null ? productDetails.Act_Qty : ''}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
                                         lastEditedRef.current = 'QTY';
@@ -434,16 +427,19 @@ const StockJournalProduct = ({
                                     }}
                                     required
                                     className="cus-inpt"
+                                    type="number"
+                                    step="any"
                                 />
                             </div>
 
-                            {/* alter actual quantity */}
+                            {/* alter actual quantity - Allow negative values */}
                             <div className="col-md-6 p-2">
                                 <label>Alt Act Quantity</label>
                                 <input
-                                    value={productDetails.Alt_Act_Qty || ''}
+                                    value={productDetails.Alt_Act_Qty !== undefined && productDetails.Alt_Act_Qty !== null ? productDetails.Alt_Act_Qty : ''}
                                     className="cus-inpt"
                                     type="number"
+                                    step="any"
                                     onChange={e => {
                                         lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
@@ -459,13 +455,12 @@ const StockJournalProduct = ({
                                 />
                             </div>
 
-                            {/* bill quantity */}
+                            {/* bill quantity - Allow negative values */}
                             <div className="col-md-6 p-2">
                                 <label>Bill Quantity <RequiredStar /></label>
                                 <input
                                     required
-                                    value={productDetails.Bill_Qty ? productDetails.Bill_Qty : ''}
-                                    onInput={onlynum}
+                                    value={productDetails.Bill_Qty !== undefined && productDetails.Bill_Qty !== null ? productDetails.Bill_Qty : ''}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => {
                                         lastEditedRef.current = 'QTY';
@@ -478,17 +473,19 @@ const StockJournalProduct = ({
                                         }));
                                     }}
                                     className="cus-inpt"
-                                    min={1}
+                                    type="number"
+                                    step="any"
                                 />
                             </div>
 
-                            {/* alt bill qty */}
+                            {/* alt bill qty - Allow negative values */}
                             <div className="col-md-6 p-2">
                                 <label>Alt Bill Quantity</label>
                                 <input
-                                    value={productDetails.Alt_Bill_Qty || ''}
+                                    value={productDetails.Alt_Bill_Qty !== undefined && productDetails.Alt_Bill_Qty !== null ? productDetails.Alt_Bill_Qty : ''}
                                     className="cus-inpt"
                                     type="number"
+                                    step="any"
                                     onChange={e => {
                                         lastEditedRef.current = 'QTY';
                                         const pack = productInfo?.PackGet;
@@ -501,16 +498,17 @@ const StockJournalProduct = ({
                                 />
                             </div>
 
-                            {/* Rate */}
+                            {/* Rate - Allow negative values */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Rate </label>
                                 <input
-                                    value={productDetails.Item_Rate || ''}
-                                    onInput={onlynum}
+                                    value={productDetails.Item_Rate !== undefined && productDetails.Item_Rate !== null ? productDetails.Item_Rate : ''}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => onRateChange(e.target.value)}
                                     required
                                     className="cus-inpt"
+                                    type="number"
+                                    step="any"
                                 />
                             </div>
 
@@ -544,26 +542,25 @@ const StockJournalProduct = ({
                                 </select>
                             </div>
 
-                            {/* Amount */}
+                            {/* Amount - Allow negative values */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Amount</label>
                                 <input
                                     required
-                                    value={productDetails.Amount || ''}
-                                    onInput={onlynum}
+                                    value={productDetails.Amount !== undefined && productDetails.Amount !== null ? productDetails.Amount : ''}
                                     disabled={!checkIsNumber(productDetails.Item_Id)}
                                     onChange={e => onAmountChange(e.target.value)}
                                     className="cus-inpt"
-                                    min={1}
+                                    type="number"
+                                    step="any"
                                 />
                             </div>
 
-                            {/* Batch */}
-                           <div className="col-md-6 p-2">
+                            {/* Adj Payment - Allow negative values */}
+                            <div className="col-md-6 p-2">
                                 <label>Adj Payment</label>
                                 <input
-                                    value={productDetails.Adj_Payment || ''}
-                                    onInput={onlynum}
+                                    value={productDetails.Adj_Payment !== undefined && productDetails.Adj_Payment !== null ? productDetails.Adj_Payment : ''}
                                     disabled={!checkIsNumber(productDetails.Item_Id)} 
                                     onChange={e => {
                                         setProductDetails(pre => ({
@@ -572,18 +569,18 @@ const StockJournalProduct = ({
                                         }));
                                     }}
                                     className="cus-inpt"
-                                    min={0}  
+                                    type="number"
+                                    step="any"
                                 />
                             </div>
                         </div>
-
                     </DialogContent>
                     <DialogActions className="d-flex justify-content-between align-items-center">
                         <Button onClick={() => setProductDetails(initialValue)} type='button' startIcon={<ClearAll />}>Clear</Button>
                         <span>
-                            <Button type="button" onClick={closeDialog}>cancel</Button>
+                            <Button type="button" onClick={closeDialog}>Cancel</Button>
                             <Button type='button' onClick={e => handleFormSubmit(e, false)} variant="outlined" className="me-2">Next</Button>
-                            <Button type='submit' variant="contained">Add</Button>
+                            <Button type='submit' variant="contained">{editValues ? "Update" : "Add"}</Button>
                         </span>
                     </DialogActions>
                 </form>
