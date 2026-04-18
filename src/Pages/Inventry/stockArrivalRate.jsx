@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment, useCallback, memo } from "react";
+import React, { useState, useEffect, Fragment, useCallback, memo, useRef } from "react";
 import {
   IconButton,
   Tooltip,
@@ -11,35 +11,28 @@ import {
   Refresh as RefreshIcon,
   Print as PrintIcon,
   Sync as SyncIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
 
-// ✅ Memoized Row Component to prevent re-rendering all rows
-const ArrivalRow = memo(({ row, index, onSaveRate, onStartEdit, editingCell, editValue, setEditValue }) => {
-  const isEditing = editingCell.index === index && editingCell.field === 'Rate';
+// ✅ Memoized Row Component with inline textbox
+const ArrivalRow = memo(({ row, index, onRateChange, onSaveRate, savingRow }) => {
+  const isSaving = savingRow.index === index;
   const isZeroRate = (row.Rate || 0) === 0;
   
-  const handleSave = useCallback((newRate) => {
-    onSaveRate(index, newRate);
-  }, [index, onSaveRate]);
-
-  const handleEdit = useCallback(() => {
-    onStartEdit(index, row.Rate || 0);
-  }, [index, row.Rate, onStartEdit]);
-
-  const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleSave(parseFloat(e.target.value));
+  const handleRateChange = (e) => {
+    const newRate = e.target.value;
+    onRateChange(index, newRate);
+  };
+  
+  const handleBlur = (e) => {
+    const newRate = parseFloat(e.target.value);
+    if (!isNaN(newRate)) {
+      onSaveRate(index, newRate);
     }
-    if (e.key === 'Escape') {
-      onStartEdit(null, null);
-    }
-  }, [handleSave, onStartEdit]);
-
+  };
+  
   return (
     <tr>
       <td>{index + 1}</td>
@@ -50,44 +43,29 @@ const ArrivalRow = memo(({ row, index, onSaveRate, onStartEdit, editingCell, edi
       <td className="text-end">{(row.Arr_qty || 0).toFixed(2)}</td>
       <td>{row.Units || '-'}</td>
       <td className="text-end">
-        {isEditing ? (
-          <div className="d-flex align-items-center gap-1 justify-content-end">
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              style={{ width: '100px' }}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyPress}
-              autoFocus
-              step="0.01"
-              min="0"
-            />
-            <IconButton size="small" onClick={() => handleSave(parseFloat(editValue))} color="primary">
-              <SaveIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" onClick={() => onStartEdit(null, null)} color="secondary">
-              <CancelIcon fontSize="small" />
-            </IconButton>
-          </div>
-        ) : (
-          <span 
-            onClick={handleEdit}
+        <div className="d-flex align-items-center gap-1 justify-content-end">
+          <input
+            type="number"
+            className="form-control form-control-sm"
             style={{ 
-              color: isZeroRate ? '#dc3545' : 'inherit', 
-              fontWeight: isZeroRate ? 'bold' : 'normal',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              display: 'inline-block',
-              transition: 'background-color 0.2s ease'
+              width: '110px',
+              backgroundColor: isZeroRate ? '#fff3cd' : 'white',
+              borderColor: isZeroRate ? '#ffc107' : '#ced4da',
+              textAlign: 'right'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4edda'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            ₹{(row.Rate || 0).toFixed(2)}
-          </span>
-        )}
+            value={row.Rate || 0}
+            onChange={handleRateChange}
+            onBlur={handleBlur}
+            disabled={isSaving}
+            step="0.01"
+            min="0"
+          />
+          {isSaving && (
+            <span className="spinner-border spinner-border-sm text-primary" role="status">
+              <span className="visually-hidden">Saving...</span>
+            </span>
+          )}
+        </div>
       </td>
       <td className="text-end">{(row.Taxable_Value || 0).toFixed(2)}</td>
     </tr>
@@ -109,9 +87,23 @@ const StockArrivalRate = () => {
   const [showZeroEntries, setShowZeroEntries] = useState(false);
   const [commonRate, setCommonRate] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [editingCell, setEditingCell] = useState({ index: null, field: null });
-  const [editValue, setEditValue] = useState("");
+  const [savingRow, setSavingRow] = useState({ index: null });
   const [pendingUpdates, setPendingUpdates] = useState(new Map());
+  
+  // ✅ New state for dropdown item selection
+  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
+  const itemDropdownRef = useRef(null);
+
+  // ✅ Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target)) {
+        setIsItemDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     loadStockGroups();
@@ -243,7 +235,7 @@ const StockArrivalRate = () => {
       
       const allOption = {
         Item_Group_Id: 0,
-        Group_Name: "All",
+        Group_Name: "All Stock Groups",
         GST_P: null,
         Group_HSN: null,
         Grp: null
@@ -299,6 +291,140 @@ const StockArrivalRate = () => {
     }
   };
  
+  // ✅ Toggle item selection
+  const toggleItemSelection = (item) => {
+    setSelectedItems(prev => {
+      const isSelected = prev.some(i => i.Product_Id === item.Product_Id);
+      if (isSelected) {
+        const newSelected = prev.filter(i => i.Product_Id !== item.Product_Id);
+        setSelectAll(false);
+        return newSelected;
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  // ✅ Toggle select all
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems([]);
+      setSelectAll(false);
+    } else {
+      setSelectedItems([...items]);
+      setSelectAll(true);
+    }
+  };
+
+  // ✅ Remove selected item
+  const removeSelectedItem = (itemId) => {
+    setSelectedItems(prev => prev.filter(item => item.Product_Id !== itemId));
+    setSelectAll(false);
+  };
+
+  // ✅ Handle real-time rate change (immediate UI update)
+  const handleRateChange = useCallback((filteredIndex, newRateValue) => {
+    const currentRow = reportData[filteredIndex];
+    if (!currentRow) return;
+    
+    const arrivalId = currentRow.Arr_Id || currentRow.arrival_id || currentRow.id;
+    const originalIndex = originalData.findIndex(row => 
+      (row.Arr_Id || row.arrival_id || row.id) === arrivalId
+    );
+    
+    if (originalIndex === -1) return;
+    
+    const newRate = parseFloat(newRateValue) || 0;
+    
+    // Update both originalData and reportData instantly
+    setOriginalData(prev => {
+      const updatedData = [...prev];
+      updatedData[originalIndex] = {
+        ...updatedData[originalIndex],
+        Rate: newRate,
+        Taxable_Value: (updatedData[originalIndex].Arr_qty || 0) * newRate
+      };
+      return updatedData;
+    });
+    
+    setReportData(prev => {
+      const updatedData = [...prev];
+      updatedData[filteredIndex] = {
+        ...updatedData[filteredIndex],
+        Rate: newRate,
+        Taxable_Value: (updatedData[filteredIndex].Arr_qty || 0) * newRate
+      };
+      return updatedData;
+    });
+  }, [reportData, originalData]);
+
+  // ✅ Save rate to backend on blur
+  const handleSaveRate = useCallback(async (filteredIndex, newRate) => {
+    const currentRow = reportData[filteredIndex];
+    
+    if (!currentRow) {
+      toast.error("Row not found");
+      return;
+    }
+
+    if (isNaN(newRate)) {
+      toast.error("Please enter a valid number");
+      return;
+    }
+
+    const arrivalId = currentRow.Arr_Id || currentRow.arrival_id || currentRow.id;
+    
+    // Find original index
+    const originalIndex = originalData.findIndex(row => 
+      (row.Arr_Id || row.arrival_id || row.id) === arrivalId
+    );
+
+    if (originalIndex === -1) {
+      toast.error("Original record not found");
+      return;
+    }
+
+    // Store old row for potential rollback
+    const oldRow = originalData[originalIndex];
+    
+    // Set saving state for this row
+    setSavingRow({ index: filteredIndex });
+
+    // Prepare API update data
+    const updateData = {
+      type: 'individual',
+      gstRate: newRate,
+      arrival_id: arrivalId
+    };
+
+    try {
+      const response = await fetchLink({
+        address: `inventory/updateArrivalList`,
+        method: "PUT",
+        bodyData: updateData
+      });
+
+      if (response && response.success) {
+        toast.success("Rate updated successfully");
+        
+        if (newRate === 0 && !showZeroEntries) {
+          toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
+        }
+      } else {
+        // Revert on failure
+        revertOptimisticUpdate({ arrivalId, oldRow });
+        toast.error(response?.message || "Failed to update rate");
+      }
+    } catch (err) {
+      console.error("Error saving rate:", err);
+      // Revert on error
+      revertOptimisticUpdate({ arrivalId, oldRow });
+      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
+    } finally {
+      setSavingRow({ index: null });
+    }
+  }, [reportData, originalData, showZeroEntries, revertOptimisticUpdate]);
+
   const handleSyncRates = async () => {
     if (!originalData.length) {
       toast.warning("No data to sync rates");
@@ -364,89 +490,6 @@ const StockArrivalRate = () => {
       setIsSyncing(false);
     }
   };
-
-  
-  const handleSaveRate = useCallback(async (filteredIndex, newRate) => {
-    const currentRow = reportData[filteredIndex];
-    
-    if (!currentRow) {
-      toast.error("Row not found");
-      return;
-    }
-
-    if (isNaN(newRate)) {
-      toast.error("Please enter a valid number");
-      return;
-    }
-
-    const arrivalId = currentRow.Arr_Id || currentRow.arrival_id || currentRow.id;
-
-    // Find original index
-    const originalIndex = originalData.findIndex(row => 
-      (row.Arr_Id || row.arrival_id || row.id) === arrivalId
-    );
-
-    if (originalIndex === -1) {
-      toast.error("Original record not found");
-      return;
-    }
-
-    // Store old row for potential rollback
-    const oldRow = originalData[originalIndex];
-
-    // ✅ IMMEDIATE UI UPDATE - Update both originalData and reportData
-    setOriginalData(prev => {
-      const updatedData = [...prev];
-      updatedData[originalIndex] = {
-        ...updatedData[originalIndex],
-        Rate: newRate,
-        Taxable_Value: (updatedData[originalIndex].Arr_qty || 0) * newRate
-      };
-      return updatedData;
-    });
-
-    setReportData(prev => {
-      const updatedData = [...prev];
-      updatedData[filteredIndex] = {
-        ...updatedData[filteredIndex],
-        Rate: newRate,
-        Taxable_Value: (updatedData[filteredIndex].Arr_qty || 0) * newRate
-      };
-      return updatedData;
-    });
-
-    // Clear editing state
-    setEditingCell({ index: null, field: null });
-    setEditValue("");
-
-    // Prepare API update data
-    const updateData = {
-      type: 'individual',
-      gstRate: newRate,
-      arrival_id: arrivalId
-    };
-
-    // Queue the API update for background processing
-    const updateKey = `arrival_${arrivalId}`;
-    setPendingUpdates(prev => new Map(prev).set(updateKey, {
-      updateData,
-      arrivalId,
-      oldRow,
-      newRate,
-      processing: false
-    }));
-
-    toast.success("Rate updated successfully");
-    
-    if (newRate === 0 && !showZeroEntries) {
-      toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
-    }
-  }, [reportData, originalData, showZeroEntries]);
-
-  const handleStartEdit = useCallback((index, currentValue) => {
-    setEditingCell({ index, field: 'Rate' });
-    setEditValue(currentValue.toString());
-  }, []);
 
   const handleSearch = async () => {
     if (!fromDate || !toDate) {
@@ -640,7 +683,7 @@ const StockArrivalRate = () => {
     toast.success("Report exported successfully");
   };
 
-  // ✅ Optimized table renderer with memoized rows
+  // ✅ Optimized table renderer with inline textboxes
   const renderTransactionTable = useCallback(() => {
     const totalQty = reportData.reduce((sum, row) => sum + (row.Arr_qty || 0), 0);
     const totalAmount = reportData.reduce((sum, row) => sum + (row.Taxable_Value || 0), 0);
@@ -672,11 +715,9 @@ const StockArrivalRate = () => {
                   key={row.Arr_Id || row.arrival_id || row.id || idx}
                   row={row}
                   index={idx}
+                  onRateChange={handleRateChange}
                   onSaveRate={handleSaveRate}
-                  onStartEdit={handleStartEdit}
-                  editingCell={editingCell}
-                  editValue={editValue}
-                  setEditValue={setEditValue}
+                  savingRow={savingRow}
                 />
               ))
             )}
@@ -695,7 +736,7 @@ const StockArrivalRate = () => {
         </table>
       </div>
     );
-  }, [reportData, handleSaveRate, handleStartEdit, editingCell, editValue]);
+  }, [reportData, handleRateChange, handleSaveRate, savingRow]);
 
   return (
     <Fragment>
@@ -717,29 +758,35 @@ const StockArrivalRate = () => {
         </div>
 
         <div className="card-body">
-          <div className="row mb-3">
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">From Date</label>
+          {/* ✅ ALL FILTERS IN ONE LINE */}
+          <div className="d-flex align-items-center gap-2 flex-wrap mb-3">
+            {/* From Date */}
+            <div style={{ minWidth: '150px' }}>
+              <label className="form-label fw-bold mb-0 small">From Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">To Date</label>
+
+            {/* To Date */}
+            <div style={{ minWidth: '150px' }}>
+              <label className="form-label fw-bold mb-0 small">To Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
               />
             </div>
-            <div className="col-md-6 mb-2">
-              <label className="form-label fw-bold">Stock Group</label>
+
+            {/* Stock Group */}
+            <div style={{ minWidth: '180px' }}>
+              <label className="form-label fw-bold mb-0 small">Stock Group</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={selectedGroup?.Item_Group_Id?.toString() || ''}
                 onChange={(e) => {
                   const groupId = e.target.value;
@@ -748,6 +795,7 @@ const StockArrivalRate = () => {
                   } else {
                     const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
                     setSelectedGroup(group || null);
+                    setIsItemDropdownOpen(false);
                   }
                 }}
               >
@@ -759,122 +807,125 @@ const StockArrivalRate = () => {
                 ))}
               </select>
             </div>
-          </div>
-         
-          {selectedGroup && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <label className="form-label fw-bold">Select Items</label>
-                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {items.length === 0 ? (
-                    <div className="text-center text-muted py-2">No items found for this group</div>
-                  ) : (
-                    <>
-                      <div className="mb-2 pb-2 border-bottom">
+
+            {/* Item Selection Dropdown */}
+            <div ref={itemDropdownRef} style={{ minWidth: '500px' }}>
+              <label className="form-label fw-bold mb-0 small">Select Items</label>
+              <div className="dropdown w-100">
+                <button
+                  className="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+                  type="button"
+                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
+                  disabled={!selectedGroup || items.length === 0}
+                
+                >
+                  <span className="small">
+                    {selectedItems.length === 0 
+                      ? "-- Select Items --" 
+                      : `${selectedItems.length} item(s) selected`}
+                  </span>
+                
+                </button>
+                
+                {isItemDropdownOpen && selectedGroup && items.length > 0 && (
+                  <div className="dropdown-menu show w-100 p-2" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    <div className="dropdown-item p-0 mb-2">
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectAll}
+                            onChange={toggleSelectAll}
+                            size="small"
+                          />
+                        }
+                        label={`Select All (${items.length} items)`}
+                        style={{ margin: 0, width: '100%' }}
+                      />
+                    </div>
+                    <hr className="my-1" />
+                    {items.map((item) => (
+                      <div key={item.Product_Id} className="dropdown-item p-0">
                         <FormControlLabel
                           control={
                             <Checkbox
-                              checked={selectAll}
-                              onChange={(e) => setSelectAll(e.target.checked)}
+                              checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
+                              onChange={() => toggleItemSelection(item)}
                               size="small"
                             />
                           }
-                          label={`Select All (${items.length} items)`}
+                          label={item.stock_item_name}
+                          style={{ margin: 0, width: '100%' }}
                         />
                       </div>
-                      <div className="row">
-                        {items.map((item) => (
-                          <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedItems([...selectedItems, item]);
-                                    } else {
-                                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
-                                      setSelectAll(false);
-                                    }
-                                  }}
-                                  size="small"
-                                />
-                              }
-                              label={item.stock_item_name}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="row mb-3">
-            <div className="col-12">
-              <div className="d-flex justify-content-between align-items-center">
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={showZeroEntries}
-                      onChange={(e) => setShowZeroEntries(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label="Show Zero Rate Entries"
-                />
-                
-                {originalData.length > 0 && !loading && (
-                  <div className="d-flex align-items-center gap-2">
-                    <label className="fw-bold mb-0">Common Rate:</label>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      style={{ width: '120px' }}
-                      placeholder="Enter rate"
-                      value={commonRate}
-                      onChange={(e) => setCommonRate(e.target.value)}
-                    />
-                    <Tooltip title="Apply Common Rate to All Rows">
-                      <IconButton 
-                        onClick={handleSyncRates} 
-                        size="small" 
-                        color="primary"
-                        disabled={isSyncing || !commonRate}
-                      >
-                        {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon />}
-                      </IconButton>
-                    </Tooltip>
+                    ))}
                   </div>
                 )}
               </div>
-              
-              <div className="d-flex justify-content-end gap-2 mt-3">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSearch}
-                  disabled={loading || !selectedGroup || selectedItems.length === 0}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-1"></span>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
-                      Search
-                    </>
-                  )}
-                </button>
-                <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-                  <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
-                  Reset
-                </button>
-              </div>
             </div>
+
+            {/* Search and Reset Buttons */}
+            <div style={{ marginTop: '20px' }}>
+              <button
+                className="btn btn-primary btn-sm me-2"
+                onClick={handleSearch}
+                disabled={loading || !selectedGroup || selectedItems.length === 0}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm"></span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <SearchIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                    Search
+                  </>
+                )}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={handleReset} disabled={loading}>
+                <RefreshIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                Reset
+              </button>
+            </div>
+          </div>
+
+     
+          {/* Show Zero Rate Entries and Common Rate Sync */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showZeroEntries}
+                  onChange={(e) => setShowZeroEntries(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Show Zero Rate Entries"
+            />
+            
+            {originalData.length > 0 && !loading && (
+              <div className="d-flex align-items-center gap-2">
+                <label className="fw-bold mb-0 small">Common Rate:</label>
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  style={{ width: '100px' }}
+                  placeholder="Enter rate"
+                  value={commonRate}
+                  onChange={(e) => setCommonRate(e.target.value)}
+                />
+                <Tooltip title="Apply Common Rate to All Rows">
+                  <IconButton 
+                    onClick={handleSyncRates} 
+                    size="small" 
+                    color="primary"
+                    disabled={isSyncing || !commonRate}
+                  >
+                    {isSyncing ? <span className="spinner-border spinner-border-sm" /> : <SyncIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              </div>
+            )}
           </div>
 
           {loading && (

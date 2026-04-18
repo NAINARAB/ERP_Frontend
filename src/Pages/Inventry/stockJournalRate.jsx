@@ -633,8 +633,7 @@
 
 
 
-
-import React, { useState, useEffect, Fragment, useCallback } from "react";
+import React, { useState, useEffect, Fragment, useCallback, useRef } from "react";
 import {
   IconButton,
   Tooltip,
@@ -647,7 +646,6 @@ import {
   Refresh as RefreshIcon,
   Print as PrintIcon,
   Sync as SyncIcon,
-  Save as SaveIcon,
   Cancel as CancelIcon,
   SyncAlt as SyncAltIcon
 } from "@mui/icons-material";
@@ -672,10 +670,10 @@ const StockReport = () => {
   const [commonSourceRate, setCommonSourceRate] = useState("");
   const [commonDestinationRate, setCommonDestinationRate] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [editingCell, setEditingCell] = useState({ tab: null, index: null, field: null });
-  const [editValue, setEditValue] = useState("");
-  // ✅ NEW: Temp value for instant UI feedback
-  const [tempEditValue, setTempEditValue] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const [savingRow, setSavingRow] = useState({ tab: null, index: null });
 
   useEffect(() => {
     loadStockGroups();
@@ -730,7 +728,18 @@ const StockReport = () => {
     });
   };
 
- 
+
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      setDropdownOpen(false);
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
+
+
   const loadStockGroups = async () => {
     try {
       setLoading(true);
@@ -759,7 +768,6 @@ const StockReport = () => {
         };
       });
       
-    
       const groupsWithAll = [
         {
           Item_Group_Id: 0,
@@ -784,11 +792,9 @@ const StockReport = () => {
     }
   };
 
-
   const loadItemsByGroup = async (groupId) => {
     try {
       setLoading(true);
-      
       
       const bodyData = groupId === 0 
         ? { stockGroupId: 0 }  
@@ -822,6 +828,94 @@ const StockReport = () => {
       setItems([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  const handleRateChange = (tab, index, field, newValue) => {
+    const updatedReportData = { ...reportData };
+    const updatedOriginalData = { ...originalData };
+    
+    if (tab === 'source') {
+      updatedReportData.source[index][field] = parseFloat(newValue) || 0;
+      // Also update amount
+      const qty = updatedReportData.source[index].source_consumt_qty || 0;
+      updatedReportData.source[index].Source_consumt_amt = qty * (parseFloat(newValue) || 0);
+      
+      // Find and update original data
+      const stockJournId = updatedReportData.source[index].stock_journ_sour_id;
+      const originalIndex = originalData.source.findIndex(
+        item => item.stock_journ_sour_id === stockJournId
+      );
+      if (originalIndex !== -1) {
+        updatedOriginalData.source[originalIndex][field] = parseFloat(newValue) || 0;
+        updatedOriginalData.source[originalIndex].Source_consumt_amt = qty * (parseFloat(newValue) || 0);
+      }
+    } else {
+      updatedReportData.destination[index][field] = parseFloat(newValue) || 0;
+      // Also update amount
+      const qty = updatedReportData.destination[index].destina_consumt_qty || 0;
+      updatedReportData.destination[index].destina_consumt_amt = qty * (parseFloat(newValue) || 0);
+      
+      // Find and update original data
+      const stockJournId = updatedReportData.destination[index].stock_journ_dest_id;
+      const originalIndex = originalData.destination.findIndex(
+        item => item.stock_journ_dest_id === stockJournId
+      );
+      if (originalIndex !== -1) {
+        updatedOriginalData.destination[originalIndex][field] = parseFloat(newValue) || 0;
+        updatedOriginalData.destination[originalIndex].destina_consumt_amt = qty * (parseFloat(newValue) || 0);
+      }
+    }
+    
+    const allTransactions = [...updatedOriginalData.source, ...updatedOriginalData.destination];
+    allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
+    updatedOriginalData.allTransactions = allTransactions;
+    
+    setReportData(updatedReportData);
+    setOriginalData(updatedOriginalData);
+  };
+
+  const handleSaveRate = async (tab, index, field, value) => {
+    setSavingRow({ tab, index });
+    
+    try {
+      const currentRow = tab === 'source' 
+        ? reportData.source[index] 
+        : reportData.destination[index];
+      
+      if (!currentRow) {
+        toast.error("Row not found");
+        return;
+      }
+
+      const stockJournId = tab === 'source' 
+        ? currentRow.stock_journ_sour_id 
+        : currentRow.stock_journ_dest_id;
+      
+      const updateData = {
+        type: tab,
+        [tab === 'source' ? 'stock_journ_sour_id' : 'stock_journ_dest_id']: stockJournId,
+        [tab === 'source' ? 'sourceRate' : 'destinationRate']: parseFloat(value)
+      };
+
+      const response = await fetchLink({
+        address: `inventory/updateProcessingRates`,
+        method: "PUT",
+        bodyData: updateData
+      });
+
+      if (response && response.success) {
+        toast.success("Rate updated successfully");
+      } else {
+        toast.error(response?.message || "Failed to update rate");
+ 
+      }
+    } catch (err) {
+      console.error("Error saving rate:", err);
+      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
+    } finally {
+      setSavingRow({ tab: null, index: null });
     }
   };
 
@@ -879,12 +973,11 @@ const StockReport = () => {
         }
       }
 
-    
       const requestBody = {
         type: updateType,
         FromDate: fromDate,
         ToDate: toDate,
-        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,  
+        StockGroupId: selectedGroup?.Item_Group_Id?.toString() || null,
         ItemId: null
       };
 
@@ -966,19 +1059,6 @@ const StockReport = () => {
     }
   };
 
-  // ✅ OPTIMIZED: Start editing without API call, just set local state
-  const handleStartEdit = useCallback((tab, index, field, currentValue) => {
-    setEditingCell({ tab, index, field });
-    setEditValue(currentValue.toString());
-    setTempEditValue(currentValue.toString());
-  }, []);
-
-  // ✅ OPTIMIZED: Use temp value for instant feedback
-  const handleEditInputChange = useCallback((e) => {
-    setTempEditValue(e.target.value);
-    setEditValue(e.target.value);
-  }, []);
-
   const handleOverAllSync = async () => {
     if (!fromDate || !toDate) {
       toast.error("Please select both from and to dates");
@@ -995,7 +1075,7 @@ const StockReport = () => {
       const requestBody = {
         FromDate: fromDate,
         ToDate: toDate,
-        Item_Group: selectedGroup?.Item_Group_Id || 0  // ✅ Will be 0 for "All"
+        Item_Group: selectedGroup?.Item_Group_Id || 0
       };
 
       const response = await fetchLink({
@@ -1018,123 +1098,6 @@ const StockReport = () => {
     }
   };
 
-  const handleSaveRate = async () => {
-    const { tab, index, field } = editingCell;
-    const newRate = parseFloat(editValue);
-    
-    if (isNaN(newRate)) {
-      toast.error("Please enter a valid number");
-      return;
-    }
-
-    try {
-      const currentRow = tab === 'source' 
-        ? reportData.source[index] 
-        : reportData.destination[index];
-      
-      if (!currentRow) {
-        toast.error("Row not found");
-        return;
-      }
-
-      let originalIndex = -1;
-      let stockJournId = null;
-      
-      if (tab === 'source') {
-        stockJournId = currentRow.stock_journ_sour_id;
-        originalIndex = originalData.source.findIndex(
-          item => item.stock_journ_sour_id === stockJournId
-        );
-      } else {
-        stockJournId = currentRow.stock_journ_dest_id;
-        originalIndex = originalData.destination.findIndex(
-          item => item.stock_journ_dest_id === stockJournId
-        );
-      }
-
-      if (originalIndex === -1) {
-        toast.error("Original record not found");
-        return;
-      }
-
-      let updatedOriginalSource = [...originalData.source];
-      let updatedOriginalDestination = [...originalData.destination];
-      
-      if (tab === 'source') {
-        updatedOriginalSource[originalIndex] = {
-          ...updatedOriginalSource[originalIndex],
-          [field]: newRate,
-          Source_consumt_amt: (updatedOriginalSource[originalIndex].source_consumt_qty || 0) * newRate
-        };
-      } else {
-        updatedOriginalDestination[originalIndex] = {
-          ...updatedOriginalDestination[originalIndex],
-          [field]: newRate,
-          destina_consumt_amt: (updatedOriginalDestination[originalIndex].destina_consumt_qty || 0) * newRate
-        };
-      }
-
-      const updateData = {
-        type: tab,
-        [tab === 'source' ? 'stock_journ_sour_id' : 'stock_journ_dest_id']: stockJournId,
-        [tab === 'source' ? 'sourceRate' : 'destinationRate']: newRate
-      };
-
-      const response = await fetchLink({
-        address: `inventory/updateProcessingRates`,
-        method: "PUT",
-        bodyData: updateData
-      });
-
-      if (response && response.success) {
-        setOriginalData({
-          source: updatedOriginalSource,
-          destination: updatedOriginalDestination,
-          allTransactions: [...updatedOriginalSource, ...updatedOriginalDestination]
-        });
-
-        let displaySource = [...updatedOriginalSource];
-        let displayDestination = [...updatedOriginalDestination];
-        
-        if (!showZeroEntries) {
-          displaySource = displaySource.filter(item => (item.source_consumt_rate || 0) !== 0);
-          displayDestination = displayDestination.filter(item => (item.destina_consumt_rate || 0) !== 0);
-        }
-        
-        const allTransactions = [...displaySource, ...displayDestination];
-        allTransactions.sort((a, b) => new Date(a.stock_journal_date) - new Date(b.stock_journal_date));
-        
-        setReportData({
-          source: displaySource,
-          destination: displayDestination,
-          allTransactions: allTransactions
-        });
-        
-        toast.success("Rate updated successfully");
-        
-        if (newRate === 0 && !showZeroEntries) {
-          toast.info("Row with zero rate is now hidden. Check 'Show Zero Rate Entries' to view it.");
-        }
-      } else {
-        toast.error(response?.message || "Failed to update rate");
-      }
-    } catch (err) {
-      console.error("Error saving rate:", err);
-      toast.error("Failed to update rate: " + (err.message || "Unknown error"));
-    } finally {
-      setEditingCell({ tab: null, index: null, field: null });
-      setEditValue("");
-      setTempEditValue("");
-    }
-  };
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingCell({ tab: null, index: null, field: null });
-    setEditValue("");
-    setTempEditValue("");
-  }, []);
-
-  // ✅ MODIFIED: Pass Item_Group_Id to API (0 for all groups)
   const handleSearch = async () => {
     if (!fromDate || !toDate) {
       toast.error("Please select both from and to dates");
@@ -1156,14 +1119,13 @@ const StockReport = () => {
       
       const itemIds = selectedItems.map(item => item.Product_Id);
       
-      // ✅ Pass Item_Group_Id as is (0 for all, or specific ID)
       const response = await fetchLink({
         address: `inventory/stockItemGroupList`,
         method: "POST",
         bodyData: {
           fromDate,
           toDate,
-          stockGroupId: selectedGroup.Item_Group_Id,  // Will be 0 for "All"
+          stockGroupId: selectedGroup.Item_Group_Id,
           itemIds
         }
       });
@@ -1338,55 +1300,34 @@ const StockReport = () => {
     toast.success("Report exported successfully");
   };
 
-
+  // ✅ MODIFIED: Render inline editable textbox for each rate
   const renderEditableRateCell = (value, tab, index, field) => {
-    const isEditing = editingCell.tab === tab && editingCell.index === index && editingCell.field === field;
+    const isSaving = savingRow.tab === tab && savingRow.index === index;
     const isZeroRate = value === 0;
     
-    if (isEditing) {
-      return (
-        <div className="d-flex align-items-center gap-1">
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            style={{ width: '100px' }}
-            value={tempEditValue}
-            onChange={handleEditInputChange}
-            autoFocus
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') handleSaveRate();
-              if (e.key === 'Escape') handleCancelEdit();
-            }}
-            step="0.01"
-            min="0"
-          />
-          <IconButton size="small" onClick={handleSaveRate} color="primary">
-            <SaveIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={handleCancelEdit} color="secondary">
-            <CancelIcon fontSize="small" />
-          </IconButton>
-        </div>
-      );
-    }
-    
     return (
-      <span 
-        onClick={() => handleStartEdit(tab, index, field, value)}
-        style={{ 
-          color: isZeroRate ? '#dc3545' : 'inherit', 
-          fontWeight: isZeroRate ? 'bold' : 'normal',
-          cursor: 'pointer',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          display: 'inline-block',
-          transition: 'background-color 0.2s ease'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4edda'} // Light green
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        ₹{value.toFixed(2)}
-      </span>
+      <div className="d-flex align-items-center gap-1">
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          style={{ 
+            width: '100px',
+            backgroundColor: isZeroRate ? '#fff3cd' : 'white',
+            borderColor: isZeroRate ? '#ffc107' : '#ced4da'
+          }}
+          value={value}
+          onChange={(e) => handleRateChange(tab, index, field, e.target.value)}
+          onBlur={(e) => handleSaveRate(tab, index, field, e.target.value)}
+          disabled={isSaving}
+          step="0.01"
+          min="0"
+        />
+        {isSaving && (
+          <span className="spinner-border spinner-border-sm text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -1472,96 +1413,177 @@ const StockReport = () => {
         </div>
 
         <div className="card-body">
-          <div className="row mb-3">
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">From Date</label>
-              <input
-                type="date"
-                className="form-control"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
-            </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">To Date</label>
-              <input
-                type="date"
-                className="form-control"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
-            </div>
-            <div className="col-md-6 mb-2">
-              <label className="form-label fw-bold">Stock Group</label>
-              <select
-                className="form-select"
-                value={selectedGroup?.Item_Group_Id || ''}
-                onChange={(e) => {
-                  const groupId = e.target.value;
-                  const group = stockGroups.find(g => g.Item_Group_Id.toString() === groupId);
-                  setSelectedGroup(group);
-                }}
-              >
-                <option value="">-- Select Stock Group --</option>
-                {stockGroups.map((group) => (
-                  <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
-                    {group.Group_Name}
-                  </option>
-                ))}
-              </select>
-            </div>
+ <div className="d-flex align-items-end gap-2 flex-wrap mb-3">
+    {/* From Date */}
+    <div style={{ minWidth: '140px' }}>
+      <label className="form-label fw-bold mb-0 small">From Date</label>
+      <input 
+        type="date" 
+        className="form-control form-control-sm" 
+        value={fromDate}
+        onChange={(e) => setFromDate(e.target.value)} 
+      />
+    </div>
+
+    {/* To Date */}
+    <div style={{ minWidth: '140px' }}>
+      <label className="form-label fw-bold mb-0 small">To Date</label>
+      <input 
+        type="date" 
+        className="form-control form-control-sm" 
+        value={toDate}
+        onChange={(e) => setToDate(e.target.value)} 
+      />
+    </div>
+
+    {/* Stock Group */}
+    <div style={{ minWidth: '170px' }}>
+      <label className="form-label fw-bold mb-0 small">Stock Group</label>
+      <select 
+        className="form-select form-select-sm"
+        value={selectedGroup?.Item_Group_Id !== undefined ? String(selectedGroup.Item_Group_Id) : ''}
+        onChange={(e) => {
+          const groupId = e.target.value;
+          if (groupId === "") {
+            setSelectedGroup(null);
+          } else {
+            const group = stockGroups.find(g => String(g.Item_Group_Id) === groupId);
+            setSelectedGroup(group);
+          }
+        }}
+      >
+        <option value="">-- Select Stock Group --</option>
+        {stockGroups.map((group) => (
+          <option key={group.Item_Group_Id} value={String(group.Item_Group_Id)}>
+            {group.Group_Name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Items Dropdown */}
+    <div style={{ minWidth: '190px', position: 'relative' }} ref={dropdownRef}>
+      <label className="form-label fw-bold mb-0 small">
+        Items{' '}
+        {selectedItems.length > 0 && (
+          <span className="text-muted fw-normal" style={{ fontSize: '10px' }}>
+            ({selectedItems.length} selected)
+          </span>
+        )}
+      </label>
+      <div
+        className="form-select form-select-sm"
+        style={{ cursor: selectedGroup ? 'pointer' : 'not-allowed', opacity: selectedGroup ? 1 : 0.6 }}
+        onClick={() => selectedGroup && setDropdownOpen(prev => !prev)}
+      >
+        {!selectedGroup
+          ? 'Select a group first'
+          : selectedItems.length === 0
+          ? 'Select items...'
+          : selectedItems.length === items.length
+          ? `All items (${items.length})`
+          : `${selectedItems.length} of ${items.length} items`}
+      </div>
+
+      {dropdownOpen && selectedGroup && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+          background: 'white', border: '1px solid #dee2e6',
+          borderRadius: '0.375rem', marginTop: '2px',
+          maxHeight: '220px', overflowY: 'auto',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <div
+            className="px-3 py-2 border-bottom d-flex align-items-center gap-2"
+            style={{ cursor: 'pointer', fontWeight: 500, fontSize: '12px' }}
+            onClick={() => {
+              if (selectedItems.length === items.length) {
+                setSelectedItems([]);
+                setSelectAll(false);
+              } else {
+                setSelectedItems([...items]);
+                setSelectAll(true);
+              }
+            }}
+          >
+            <input
+              type="checkbox"
+              readOnly
+              checked={selectedItems.length === items.length && items.length > 0}
+              ref={el => { if (el) el.indeterminate = selectedItems.length > 0 && selectedItems.length < items.length; }}
+            />
+            Select All ({items.length} items)
           </div>
 
-          {selectedGroup && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <label className="form-label fw-bold">Select Items</label>
-                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {items.length === 0 ? (
-                    <div className="text-center text-muted py-2">No items found for this group</div>
-                  ) : (
-                    <>
-                      <div className="mb-2 pb-2 border-bottom">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={selectAll}
-                              onChange={(e) => setSelectAll(e.target.checked)}
-                              size="small"
-                            />
-                          }
-                          label={`Select All (${items.length} items)`}
-                        />
-                      </div>
-                      <div className="row">
-                        {items.map((item) => (
-                          <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedItems([...selectedItems, item]);
-                                    } else {
-                                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
-                                      setSelectAll(false);
-                                    }
-                                  }}
-                                  size="small"
-                                />
-                              }
-                              label={item.stock_item_name}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+          {items.length === 0 ? (
+            <div className="px-3 py-2 text-muted" style={{ fontSize: '12px' }}>No items found</div>
+          ) : (
+            items.map((item) => {
+              const isChecked = selectedItems.some(i => i.Product_Id === item.Product_Id);
+              return (
+                <div
+                  key={item.Product_Id}
+                  className="px-3 py-1 d-flex align-items-center gap-2"
+                  style={{ cursor: 'pointer', fontSize: '12px' }}
+                  onClick={() => {
+                    if (isChecked) {
+                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
+                      setSelectAll(false);
+                    } else {
+                      const updated = [...selectedItems, item];
+                      setSelectedItems(updated);
+                      setSelectAll(updated.length === items.length);
+                    }
+                  }}
+                >
+                  <input type="checkbox" readOnly checked={isChecked} />
+                  {item.stock_item_name}
                 </div>
-              </div>
-            </div>
+              );
+            })
           )}
+        </div>
+      )}
+    </div>
+
+    {/* Search Button - Now in same line */}
+    <div>
+      <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={handleSearch}
+        disabled={loading || !selectedGroup || selectedItems.length === 0}
+        style={{ padding: '5px 12px', whiteSpace: 'nowrap' }}
+      >
+        {loading ? (
+          <>
+            <span className="spinner-border spinner-border-sm"></span>
+            Loading...
+          </>
+        ) : (
+          <>
+            <SearchIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+            Search
+          </>
+        )}
+      </button>
+    </div>
+
+    {/* Reset Button - Now in same line */}
+    <div>
+      <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+      <button 
+        className="btn btn-secondary btn-sm" 
+        onClick={handleReset} 
+        disabled={loading}
+        style={{ padding: '5px 12px', whiteSpace: 'nowrap' }}
+      >
+        <RefreshIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+        Reset
+      </button>
+    </div>
+  </div>
+
 
           <div className="row mb-3">
             <div className="col-12">
@@ -1628,29 +1650,7 @@ const StockReport = () => {
             )}
           </div>
 
-          <div className="d-flex justify-content-end gap-2">
-            <button
-              className="btn btn-primary"
-              onClick={handleSearch}
-              disabled={loading || !selectedGroup || selectedItems.length === 0}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm"></span>
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <SearchIcon sx={{ fontSize: '18px' }} />
-                  Search
-                </>
-              )}
-            </button>
-            <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-              <RefreshIcon sx={{ fontSize: '18px' }} />
-              Reset
-            </button>
-          </div>
+      
 
           {reportData.allTransactions?.length > 0 && !loading && (
             <div className="card mt-3">
