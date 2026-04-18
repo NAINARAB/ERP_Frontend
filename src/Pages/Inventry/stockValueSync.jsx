@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useRef } from "react";
 import {
   IconButton,
   Tooltip,
@@ -28,8 +28,23 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
+  
+  // ✅ Dropdown state
+  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
+  const itemDropdownRef = useRef(null);
 
   const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "-- All Stock Groups --" }, ...stockGroups];
+
+  // ✅ Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target)) {
+        setIsItemDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     loadStockGroups();
@@ -40,11 +55,12 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
       loadItemsByGroup(selectedGroup.Item_Group_Id);
       setSelectedItems([]);
       setSelectAll(false);
-   
+      setIsItemDropdownOpen(false);
     } else if (selectedGroup && selectedGroup.Item_Group_Id === "0") {
       setItems([]);
       setSelectedItems([]);
       setSelectAll(false);
+      setIsItemDropdownOpen(false);
     } else {
       setItems([]);
       setSelectedItems([]);
@@ -52,13 +68,36 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     }
   }, [selectedGroup]);
 
-  useEffect(() => {
-    if (selectAll && items.length > 0) {
-      setSelectedItems([...items]);
-    } else {
+  // ✅ Toggle item selection
+  const toggleItemSelection = (item) => {
+    setSelectedItems(prev => {
+      const isSelected = prev.some(i => i.Product_Id === item.Product_Id);
+      if (isSelected) {
+        const newSelected = prev.filter(i => i.Product_Id !== item.Product_Id);
+        setSelectAll(false);
+        return newSelected;
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  // ✅ Toggle select all
+  const toggleSelectAll = () => {
+    if (selectAll) {
       setSelectedItems([]);
+      setSelectAll(false);
+    } else {
+      setSelectedItems([...items]);
+      setSelectAll(true);
     }
-  }, [selectAll, items]);
+  };
+
+  // ✅ Remove selected item
+  const removeSelectedItem = (itemId) => {
+    setSelectedItems(prev => prev.filter(item => item.Product_Id !== itemId));
+    setSelectAll(false);
+  };
 
   const loadStockGroups = async () => {
     try {
@@ -150,8 +189,6 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         stock_group_id: parseInt(groupId)
       };
 
-     
-
       const response = await fetchLink({
         address: `inventory/stockValueSync`,
         method: "POST",
@@ -164,7 +201,7 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         let closingBalance = null;
         if (data.closingBalance) {
           closingBalance = {
-            id: Date.now() + Math.random(), // Unique ID for history
+            id: Date.now() + Math.random(),
             itemGroupId: data.closingBalance.Item_Group_Id || groupId,
             groupName: data.closingBalance.Group_Name || groupName,
             transDate: data.closingBalance.Trans_Date,
@@ -280,7 +317,6 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
       return;
     }
 
-    // For specific group, need items selection
     if (selectedGroup.Item_Group_Id !== "0" && selectedItems.length === 0) {
       toast.error("Please select at least one item");
       return;
@@ -289,10 +325,8 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     try {
       setLoading(true);
       
-      // Calculate Pre_date as fromDate - 1 day
       const preDate = format(subDays(new Date(fromDate), 1), 'yyyy-MM-dd');
       
-      // If "All" is selected, fetch data for all groups one by one
       if (selectedGroup.Item_Group_Id === "0") {
         const allGroups = stockGroups;
         const totalGroups = allGroups.length;
@@ -321,7 +355,6 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
           if (result.success && result.closingBalance) {
             closingBalancesList.push(result.closingBalance);
             totalClosingValue += result.closingBalance.stockValue || 0;
-        
           } else {
             failedGroups.push(group.Group_Name);
             if (result.closingBalance) {
@@ -330,16 +363,13 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
             console.error(`✗ Failed: ${group.Group_Name} - ${result.error}`);
           }
           
-        
           await new Promise(resolve => setTimeout(resolve, 300));
         }
         
         setProgress({ current: totalGroups, total: totalGroups, status: 'Complete!' });
         
-
         closingBalancesList.sort((a, b) => a.groupName.localeCompare(b.groupName));
         
-      
         const searchRecord = {
           id: Date.now(),
           searchDate: new Date().toISOString(),
@@ -357,7 +387,6 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         setHistoryList(prev => [searchRecord, ...prev]);
         setClosingBalances(closingBalancesList);
         
-
         const successCount = closingBalancesList.filter(b => b.fetchStatus === 'Success').length;
         const noDataCount = closingBalancesList.filter(b => b.fetchStatus === 'No Data').length;
         const failCount = closingBalancesList.filter(b => b.fetchStatus === 'Failed').length;
@@ -369,11 +398,9 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         }
         
       } else {
-   
         const result = await fetchClosingBalanceForGroup(selectedGroup.Item_Group_Id, selectedGroup.Group_Name, preDate);
         
         if (result.success && result.closingBalance) {
-          // Add to history for single group search
           const searchRecord = {
             id: Date.now(),
             searchDate: new Date().toISOString(),
@@ -422,7 +449,6 @@ const handleReset = () => {
   };
 
   const handleLoadHistory = (historyItem) => {
-    // Load a previous search result
     if (historyItem.searchType === 'All Groups') {
       setClosingBalances(historyItem.results);
       setFromDate(historyItem.fromDate);
@@ -556,61 +582,58 @@ const handleReset = () => {
 
   const renderClosingBalanceTable = () => {
     const totalClosingValue = closingBalances.reduce((sum, row) => sum + (row.stockValue || 0), 0);
-    const successCount = closingBalances.filter(b => b.fetchStatus === 'Success').length;
-    const noDataCount = closingBalances.filter(b => b.fetchStatus === 'No Data').length;
-    const failedCount = closingBalances.filter(b => b.fetchStatus === 'Failed').length;
     
-    return (
-      <div className="table-responsive">
-        <table className="table table-sm table-bordered mb-0">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>Group ID</th>
-              <th>Group Name</th>
-              <th>Transaction Date</th>
-              <th className="text-end">Closing Rate (₹)</th>
-              <th className="text-end">Closing Value (₹)</th>
-              <th className="text-end">Stock Value (₹)</th>
-            
+   return (
+  <div className="table-responsive">
+    <table className="table table-sm table-bordered mb-0">
+      <thead className="table-light">
+        <tr>
+          <th>#</th>
+          <th>Group ID</th>
+          <th>Group Name</th>
+          <th>Transaction Date</th>
+          <th className="text-end">Closing Rate (₹)</th>
+          <th className="text-end">Closing Value (₹)</th>
+          <th className="text-end">Stock Value (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {closingBalances.length === 0 ? (
+          <tr>
+            <td colSpan="7" className="text-center">No closing balance data available</td>
+          </tr>
+        ) : (
+          closingBalances.map((balance, idx) => (
+            <tr 
+              key={idx} 
+              className={
+                balance.fetchStatus === 'Failed' ? 'table-danger' : 
+                balance.fetchStatus === 'No Data' ? 'table-warning' : ''
+              }
+            >
+              <td>{idx + 1}</td>
+              <td>{balance.itemGroupId}</td>
+              <td><strong>{balance.groupName}</strong></td>
+              <td>{balance.transDate ? format(new Date(balance.transDate), 'dd/MM/yyyy') : '-'}</td>
+              <td className="text-end">
+                <span style={{ 
+                  color: (balance.closingRate || 0) === 0 ? '#dc3545' : 'inherit',
+                  fontWeight: (balance.closingRate || 0) === 0 ? 'bold' : 'normal'
+                }}>
+                  ₹{(balance.closingRate || 0).toFixed(2)}
+                </span>
+              </td>
+              <td className="text-end">₹{(balance.closingValue || 0).toFixed(2)}</td>
+              <td className="text-end">
+                <strong>₹{(balance.stockValue || 0).toFixed(2)}</strong>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {closingBalances.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center">No closing balance data available</td>
-              </tr>
-            ) : (
-              closingBalances.map((balance, idx) => (
-                <tr key={idx} className={
-                  balance.fetchStatus === 'Failed' ? 'table-danger' : 
-                  balance.fetchStatus === 'No Data' ? 'table-warning' : ''
-                }>
-                  <td>{idx + 1}</td>
-                  <td>{balance.itemGroupId}</td>
-                  <td><strong>{balance.groupName}</strong></td>
-                  <td>{balance.transDate ? format(new Date(balance.transDate), 'dd/MM/yyyy') : '-'}</td>
-                  <td className="text-end">
-                    <span style={{ 
-                      color: (balance.closingRate || 0) === 0 ? '#dc3545' : 'inherit',
-                      fontWeight: (balance.closingRate || 0) === 0 ? 'bold' : 'normal'
-                    }}>
-                      ₹{(balance.closingRate || 0).toFixed(2)}
-                    </span>
-                  </td>
-                  <td className="text-end">₹{(balance.closingValue || 0).toFixed(2)}</td>
-                  <td className="text-end">
-                    <strong>₹{(balance.stockValue || 0).toFixed(2)}</strong>
-                  </td>
-                 
-                </tr>
-              ))
-            )}
-          </tbody>
-        
-        </table>
-      </div>
-    );
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+);
   };
 
 
@@ -630,39 +653,45 @@ const handleReset = () => {
                 <PrintIcon />
               </IconButton>
             </Tooltip>
-           
           </div>
         </div>
 
         <div className="card-body">
-          <div className="row mb-3">
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">From Date</label>
+        
+          <div className="d-flex align-items-end gap-2 flex-wrap mb-3">
+            {/* From Date */}
+            <div style={{ minWidth: '140px' }}>
+              <label className="form-label fw-bold mb-0 small">From Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">To Date</label>
+
+            {/* To Date */}
+            <div style={{ minWidth: '140px' }}>
+              <label className="form-label fw-bold mb-0 small">To Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
               />
             </div>
-            <div className="col-md-6 mb-2">
-              <label className="form-label fw-bold">Stock Group</label>
+
+            {/* Stock Group */}
+            <div style={{ minWidth: '180px' }}>
+              <label className="form-label fw-bold mb-0 small">Stock Group</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={selectedGroup?.Item_Group_Id || ''}
                 onChange={(e) => {
                   const groupId = e.target.value;
                   const group = stockGroupsWithAll.find(g => g.Item_Group_Id.toString() === groupId);
                   setSelectedGroup(group);
+                  setIsItemDropdownOpen(false);
                 }}
               >
                 <option value="">-- Select Stock Group --</option>
@@ -673,140 +702,166 @@ const handleReset = () => {
                 ))}
               </select>
             </div>
+
+            {selectedGroup && selectedGroup.Item_Group_Id !== "0" && (
+              <div ref={itemDropdownRef} style={{ minWidth: '200px' }}>
+                <label className="form-label fw-bold mb-0 small">
+                  Items{' '}
+                  {selectedItems.length > 0 && (
+                    <span className="text-muted fw-normal" style={{ fontSize: '10px' }}>
+                      ({selectedItems.length} selected)
+                    </span>
+                  )}
+                </label>
+                <div
+                  className="form-select form-select-sm"
+                  style={{ 
+                    cursor: 'pointer', 
+                    backgroundColor: 'white',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
+                >
+                  <span>
+                    {selectedItems.length === 0
+                      ? '-- Select Items --'
+                      : selectedItems.length === items.length
+                      ? `All items (${items.length})`
+                      : `${selectedItems.length} of ${items.length} items`}
+                  </span>
+                 
+                </div>
+
+                {isItemDropdownOpen && (
+                  <div style={{
+                    position: 'absolute', zIndex: 1000,
+                    background: 'white', border: '1px solid #dee2e6',
+                    borderRadius: '0.375rem', marginTop: '2px',
+                    maxHeight: '250px', overflowY: 'auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    width: '200px'
+                  }}>
+                    <div
+                      className="px-3 py-2 border-bottom d-flex align-items-center gap-2"
+                      style={{ cursor: 'pointer', fontWeight: 500, fontSize: '12px', backgroundColor: '#f8f9fa' }}
+                      onClick={toggleSelectAll}
+                    >
+                      <input
+                        type="checkbox"
+                        readOnly
+                        checked={selectAll}
+                        ref={el => { if (el) el.indeterminate = selectedItems.length > 0 && selectedItems.length < items.length; }}
+                      />
+                      <span>Select All ({items.length} items)</span>
+                    </div>
+
+                    {items.length === 0 ? (
+                      <div className="px-3 py-2 text-muted" style={{ fontSize: '12px' }}>No items found</div>
+                    ) : (
+                      items.map((item) => {
+                        const isChecked = selectedItems.some(i => i.Product_Id === item.Product_Id);
+                        return (
+                          <div
+                            key={item.Product_Id}
+                            className="px-3 py-1 d-flex align-items-center gap-2"
+                            style={{ cursor: 'pointer', fontSize: '12px', padding: '6px 12px' }}
+                            onClick={() => toggleItemSelection(item)}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <input type="checkbox" readOnly checked={isChecked} />
+                            <span>{item.stock_item_name}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Search Button */}
+            <div>
+              <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSearch}
+                disabled={loading || !selectedGroup || (selectedGroup?.Item_Group_Id !== "0" && selectedItems.length === 0)}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm"></span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <SearchIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                    Search
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Reset Button */}
+            <div>
+              <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={handleReset} 
+                disabled={loading}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                <RefreshIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                Reset
+              </button>
+            </div>
           </div>
 
-          {selectedGroup && selectedGroup.Item_Group_Id !== "0" && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <label className="form-label fw-bold">Select Items</label>
-                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {items.length === 0 ? (
-                    <div className="text-center text-muted py-2">No items found for this group</div>
-                  ) : (
-                    <>
-                      <div className="mb-2 pb-2 border-bottom">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={selectAll}
-                              onChange={(e) => setSelectAll(e.target.checked)}
-                              size="small"
-                            />
-                          }
-                          label={`Select All (${items.length} items)`}
-                        />
-                      </div>
-                      <div className="row">
-                        {items.map((item) => (
-                          <div key={item.Product_Id} className="col-md-4 col-sm-6 mb-1">
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={selectedItems.some(i => i.Product_Id === item.Product_Id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedItems([...selectedItems, item]);
-                                    } else {
-                                      setSelectedItems(selectedItems.filter(i => i.Product_Id !== item.Product_Id));
-                                      setSelectAll(false);
-                                    }
-                                  }}
-                                  size="small"
-                                />
-                              }
-                              label={item.stock_item_name}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {selectedGroup && selectedGroup.Item_Group_Id === "0" && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="alert alert-info">
-                  <strong>All Groups Selected:</strong> This will fetch closing balance for all {stockGroups.length} stock groups one by one. This may take a few moments.
-                </div>
-              </div>
+            <div className="alert alert-info py-2 mb-3">
+              <small>📊 <strong>All Groups Selected:</strong> This will fetch closing balance for all {stockGroups.length} stock groups one by one. This may take a few moments.</small>
             </div>
           )}
 
           {/* Progress Bar for All Groups */}
           {progress.total > 0 && (
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="card bg-light">
-                  <div className="card-body py-2">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="flex-grow-1">
-                        <div className="progress" style={{ height: '20px' }}>
-                          <div 
-                            className="progress-bar progress-bar-striped progress-bar-animated bg-success" 
-                            role="progressbar" 
-                            style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                          >
-                            {Math.round((progress.current / progress.total) * 100)}%
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <small className="text-muted">
-                          {progress.current} / {progress.total} groups
-                        </small>
-                      </div>
+            <div className="mb-3">
+              <div className="d-flex align-items-center gap-3">
+                <div className="flex-grow-1">
+                  <div className="progress" style={{ height: '20px' }}>
+                    <div 
+                      className="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                      role="progressbar" 
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    >
+                      {Math.round((progress.current / progress.total) * 100)}%
                     </div>
-                  
                   </div>
+                </div>
+                <div>
+                  <small className="text-muted">
+                    {progress.current} / {progress.total} groups
+                  </small>
                 </div>
               </div>
             </div>
           )}
-
-          <div className="row mb-3">
-            <div className="col-12">
-              <div className="d-flex justify-content-end gap-2 mt-3">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSearch}
-                  disabled={loading || !selectedGroup || (selectedGroup.Item_Group_Id !== "0" && selectedItems.length === 0)}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-1"></span>
-                      {progress.total > 0 ? 'Processing...' : 'Loading...'}
-                    </>
-                  ) : (
-                    <>
-                      <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
-                      Search
-                    </>
-                  )}
-                </button>
-                <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-                  <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
-                  Reset
-                </button>
-              </div>
-            </div>
-          </div>
 
           {loading && progress.total === 0 && (
             <div className="text-center my-4">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <div className="mt-2 text-muted">Fetching closing balance data...</div>
+              <div className="mt-2 text-muted small">Fetching closing balance data...</div>
             </div>
           )}
 
           {closingBalances.length > 0 && !loading && (
             <div className="card mt-3">
-              <div className="card-header bg-white fw-bold">
+              <div className="card-header bg-white fw-bold small">
                 Current Search Results ({closingBalances.length} groups)
               </div>
               <div className="card-body p-0">
@@ -815,11 +870,8 @@ const handleReset = () => {
             </div>
           )}
 
-  
-      
-
           {!loading && closingBalances.length === 0 && selectedGroup && (
-            <div className="alert alert-info text-center mt-3">
+            <div className="alert alert-info text-center mt-3 small">
               No closing balance data available. Please select a stock group and click Search.
             </div>
           )}

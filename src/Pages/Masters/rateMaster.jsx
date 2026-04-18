@@ -4,7 +4,7 @@ import {
     IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip, Switch, FormControlLabel,
     Popover, Box, Typography, Accordion, AccordionSummary, AccordionDetails, Grid, Paper
 } from "@mui/material";
-import { Search, Edit, Delete, Sync, ExpandMore, History } from "@mui/icons-material";
+import { Search, Edit, Delete, Sync, ExpandMore, History, ArrowUpward, ArrowDownward } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Button } from "react-bootstrap";
@@ -12,8 +12,7 @@ import { ISOString, isValidDate } from "../../Components/functions";
 import moment from "moment/moment";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import {memo} from 'react'
-
+import { memo } from 'react'
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -50,7 +49,9 @@ function RateMaster({ loadingOn, loadingOff }) {
         Product_Name: "",
         MaxRate: "",
         Brand_Level: "",
-        Item_Level: ""
+        Item_Level: "",
+        Short_Name: "",
+        Rate_Time: moment().format("HH:mm")
     });
     const [open, setOpen] = useState(false);
     const [posBrand, setPosBrand] = useState([]);
@@ -66,16 +67,16 @@ function RateMaster({ loadingOn, loadingOff }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showActiveOnly, setShowActiveOnly] = useState(true);
     
-
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const user = JSON.parse(localStorage.getItem("user"))
     const editedRatesRef = useRef({});
     const editedMaxRatesRef = useRef({});
     const [, forceUpdate] = useState({});
     
     const [rateGenInfo, setRateGenInfo] = useState(null);
-    const [selectedTime, setSelectedTime] = useState(moment().format("HH:mm:ss"));
+    const [selectedTime, setSelectedTime] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    
     const [orderPopoverAnchor, setOrderPopoverAnchor] = useState(null);
     const [orderData, setOrderData] = useState({});
     const [brandLevels, setBrandLevels] = useState({});
@@ -102,7 +103,6 @@ function RateMaster({ loadingOn, loadingOff }) {
     }, [location.search]);
 
     useEffect(() => {
-        // Fetch rate master data
         fetchLink({
             address: `masters/posRateMaster?FromDate=${filters?.Fromdate}`,
         })
@@ -119,7 +119,6 @@ function RateMaster({ loadingOn, loadingOff }) {
                         records = arrayProp || [];
                     }
                     setPosData(records);
-                    // Reset edited values when data changes
                     editedRatesRef.current = {};
                     editedMaxRatesRef.current = {};
                     forceUpdate({});
@@ -132,7 +131,6 @@ function RateMaster({ loadingOn, loadingOff }) {
                 setPosData([]);
             });
 
-      
         if (filters?.Fromdate) {
             fetchRateGenInfo(filters.Fromdate);
         }
@@ -150,20 +148,31 @@ function RateMaster({ loadingOn, loadingOff }) {
                 address: `masters/rateGen?Rate_Date=${date}`,
                 method: "GET",
             });
-            if (response && response.success && response.data) {
-                setRateGenInfo(response.data);
-                if (response.data.Rate_time) {
-                    setSelectedTime(response.data.Rate_time);
+            if (response && response.success && response.data && response.data.length > 0) {
+                setRateGenInfo(response.data[0]);
+                if (response.data[0].Rate_Time) {
+                    const timeStr = response.data[0].Rate_Time;
+                    const timePart = timeStr.split('T')[1]?.split('.')[0] || timeStr;
+                    const formattedTime = timePart.length >= 5 ? timePart.substring(0, 5) : timePart;
+                    setSelectedTime(formattedTime);
                 }
             } else {
                 setRateGenInfo(null);
+                setSelectedTime(moment().format("HH:mm"));
             }
         } catch (error) {
             console.error("Error fetching rate gen info:", error);
             setRateGenInfo(null);
+            setSelectedTime(moment().format("HH:mm"));
         }
     };
 
+    const handleSort = useCallback((key) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    }, []);
 
     const handleRateChange = useCallback((rowId, value) => {
         editedRatesRef.current[rowId] = value;
@@ -173,104 +182,78 @@ function RateMaster({ loadingOn, loadingOff }) {
         editedMaxRatesRef.current[rowId] = value;
     }, []);
 
-const handleUpdateTimeAndRates = async () => {
-    const hasChanges = Object.keys(editedRatesRef.current).length > 0 || Object.keys(editedMaxRatesRef.current).length > 0;
-    
-    if (!hasChanges) {
-        toast.warning("No changes to update. Please edit some rates first.");
-        return;
-    }
-
-    setIsUpdating(true);
-    if (loadingOn) loadingOn();
-
-    try {
-        const updates = [];
-        const allRowIds = new Set([...Object.keys(editedRatesRef.current), ...Object.keys(editedMaxRatesRef.current)]);
+    const handleUpdateTimeAndRates = async () => {
+        const hasChanges = Object.keys(editedRatesRef.current).length > 0 || Object.keys(editedMaxRatesRef.current).length > 0;
         
-        for (const rowId of allRowIds) {
-            const originalRow = posData.find(r => r.Id.toString() === rowId);
-            if (originalRow) {
-                const newRate = editedRatesRef.current[rowId] !== undefined ? parseFloat(editedRatesRef.current[rowId]) : originalRow.Rate;
-                const newMaxRate = editedMaxRatesRef.current[rowId] !== undefined ? parseFloat(editedMaxRatesRef.current[rowId]) : originalRow.Max_Rate;
-                
-              
-                if (newRate !== originalRow.Rate || newMaxRate !== originalRow.Max_Rate) {
-                    updates.push({
-                        Id: originalRow.Id,
-                        Item_Id: originalRow.Item_Id,
-                        Rate: newRate,
-                        Max_Rate: newMaxRate,
-                        Old_Rate: originalRow.Rate,
-                        Old_Max_Rate: originalRow.Max_Rate,
-                        Rate_Date: filters.Fromdate,
-                        Rate_time: selectedTime,
-                        Updated_By: localStorage.getItem("username")
-                    });
-                }
-            }
-        }
-        
-       
-        if (updates.length === 0) {
-            toast.warning("No changes detected. The values are the same as before.");
-            setIsUpdating(false);
-            if (loadingOff) loadingOff();
+        if (!hasChanges) {
+            toast.warning("No changes to update. Please edit some rates first.");
             return;
         }
 
-        const response = await fetchLink({
-            address: `masters/posRateMaster/bulkUpdate`,
-            method: "PUT",
-            bodyData: {
-                updates: updates,
-                Rate_Date: filters.Fromdate,
-                Rate_time: selectedTime
+        setIsUpdating(true);
+        if (loadingOn) loadingOn();
+
+        try {
+            const updates = [];
+            const allRowIds = new Set([...Object.keys(editedRatesRef.current), ...Object.keys(editedMaxRatesRef.current)]);
+            
+            for (const rowId of allRowIds) {
+                const originalRow = posData.find(r => r.Id.toString() === rowId);
+                if (originalRow) {
+                    const newRate = editedRatesRef.current[rowId] !== undefined ? parseFloat(editedRatesRef.current[rowId]) : originalRow.Rate;
+                    const newMaxRate = editedMaxRatesRef.current[rowId] !== undefined ? parseFloat(editedMaxRatesRef.current[rowId]) : originalRow.Max_Rate;
+                    
+                    if (newRate !== originalRow.Rate || newMaxRate !== originalRow.Max_Rate) {
+                        updates.push({
+                            Id: originalRow.Id,
+                            Item_Id: originalRow.Item_Id,
+                            Rate: newRate,
+                            Max_Rate: newMaxRate,
+                            Old_Rate: originalRow.Rate,
+                            Old_Max_Rate: originalRow.Max_Rate,
+                            Rate_Date: filters.Fromdate,
+                            Rate_time: selectedTime,
+                            // Updated_By: JSON.stringify(user?.UserId)
+                            Updated_By: user?.UserId || null
+                        });
+                    }
+                }
             }
-        });
+            
+            if (updates.length === 0) {
+                toast.warning("No changes detected. The values are the same as before.");
+                setIsUpdating(false);
+                if (loadingOff) loadingOff();
+                return;
+            }
 
-        if (response && response.success) {
-            toast.success(`Successfully updated ${updates.length} rate(s) and time`);
-            editedRatesRef.current = {};
-            editedMaxRatesRef.current = {};
-            setReload(!reload);
-            fetchRateGenInfo(filters.Fromdate);
-        } else {
-            toast.error(response?.message || "Failed to update rates");
+            const response = await fetchLink({
+                address: `masters/posRateMaster/bulkUpdate`,
+                method: "PUT",
+                bodyData: {
+                    updates: updates,
+                    Rate_Date: filters.Fromdate,
+                    Rate_time: selectedTime
+                }
+            });
+
+            if (response && response.success) {
+                toast.success(`Successfully updated ${updates.length} rate(s) and time`);
+                editedRatesRef.current = {};
+                editedMaxRatesRef.current = {};
+                setReload(!reload);
+                fetchRateGenInfo(filters.Fromdate);
+            } else {
+                toast.error(response?.message || "Failed to update rates");
+            }
+        } catch (error) {
+            console.error("Error updating rates:", error);
+            toast.error("Failed to update rates");
+        } finally {
+            setIsUpdating(false);
+            if (loadingOff) loadingOff();
         }
-    } catch (error) {
-        console.error("Error updating rates:", error);
-        toast.error("Failed to update rates");
-    } finally {
-        setIsUpdating(false);
-        if (loadingOff) loadingOff();
-    }
-};
-
-    // const updateTimeOnly = async () => {
-    //     setIsUpdating(true);
-    //     try {
-    //         const response = await fetchLink({
-    //             address: `masters/rateGen/updateTime`,
-    //             method: "PUT",
-    //             bodyData: {
-    //                 Rate_Date: filters.Fromdate,
-    //                 Rate_time: selectedTime
-    //             }
-    //         });
-    //         if (response && response.success) {
-    //             toast.success("Rate generation time updated successfully");
-    //             fetchRateGenInfo(filters.Fromdate);
-    //         } else {
-    //             toast.error(response?.message);
-    //         }
-    //     } catch (error) {
-    //         console.error("Error updating time:", error);
-    //         toast.error("Failed to update time");
-    //     } finally {
-    //         setIsUpdating(false);
-    //     }
-    // };
+    };
 
     const fetchProducts = async posBrandId => {
         fetchLink({
@@ -286,86 +269,165 @@ const handleUpdateTimeAndRates = async () => {
         if (selectedPosBrand) fetchProducts(selectedPosBrand);
     }, [selectedPosBrand]);
 
-    const handleRateMasterAdd = () => {
-        fetchLink({
-            address: `masters/posRateMaster`,
-            method: "POST",
-            bodyData: {
-                ...inputValue,
-                Pos_Brand_Id: selectedPosBrand,
-                Item_Id: inputValue.Item_Id,
-                Rate_Date: formatDateToYMD(inputValue.Rate_Date),
-                Rate_time: selectedTime
-            },
-        })
-            .then(data => {
-                if (data.success) {
-                    setAddDialog(false);
-                    toast.success(data.message);
-                    setInputValue({
-                        Id: "",
-                        Rate_Date: new Date().toISOString().split("T")[0],
-                        Pos_Brand_Id: "", Item_Id: "", Rate: "",
-                        Is_Active_Decative: "-", POS_Brand_Name: "",
-                        Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: ""
-                    });
-                    setSelectedPosBrand("");
-                    setReload(!reload);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .catch(e => console.error(e));
+const handleRateMasterAdd = () => {
+    const requestData = {
+        Rate_Date: formatDateToYMD(inputValue.Rate_Date),
+        Pos_Brand_Id: parseInt(selectedPosBrand),  
+        Item_Id: parseInt(inputValue.Item_Id), 
+        Rate: parseFloat(inputValue.Rate) || 0,
+        MaxRate: parseFloat(inputValue.MaxRate) || 0,
+        Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+        Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
+        Created_By: localStorage.getItem("username") || "System",
+        Short_Name: inputValue.Short_Name || "",
+        Brand_Level: inputValue.Brand_Level || "",
+        Item_Level: inputValue.Item_Level || ""
     };
+    
+    
+    fetchLink({
+        address: `masters/posRateMaster`,
+        method: "POST",
+        bodyData: requestData,
+    })
+        .then(data => {
+            if (data.success) {
+                setAddDialog(false);
+                toast.success(data.message);
+                setInputValue({
+                    Id: "",
+                    Rate_Date: new Date().toISOString().split("T")[0],
+                    Pos_Brand_Id: "", Item_Id: "", Rate: "",
+                    Is_Active_Decative: "1", 
+                    POS_Brand_Name: "",
+                    Product_Name: "", 
+                    MaxRate: "", 
+                    Brand_Level: "", 
+                    Item_Level: "",
+                    Short_Name: "", 
+                    Rate_Time: moment().format("HH:mm")
+                });
+                setSelectedPosBrand("");
+                setReload(!reload);
+            } else {
+                toast.error(data.message);
+            }
+        })
+        .catch(e => console.error(e));
+};
 
-    const handleUpdate = () => {
-        fetchLink({
-            address: `masters/posRateMaster`,
-            method: "PUT",
-            bodyData: { ...inputValue, Rate_Date: formatDateToYMD(inputValue.Rate_Date) },
-        })
-            .then(data => {
-                if (data.success) {
-                    toast.success("Rate Master updated successfully!");
-                    setAddDialog(false);
-                    setReload(!reload);
-                    setInputValue({
-                        Id: "",
-                        Rate_Date: new Date().toISOString().split("T")[0],
-                        Pos_Brand_Id: "", Item_Id: "", Rate: "",
-                        Is_Active_Decative: "", POS_Brand_Name: "",
-                        Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: ""
-                    });
-                    setSelectedPosBrand("");
-                } else {
-                    toast.error("Failed to update Rate Master:", data.message);
-                }
-            })
-            .catch(e => { throw e; });
+
+// Add this helper function to get user ID
+const getUserId = () => {
+    try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            return user?.UserId || user?.id || "System";
+        }
+    } catch (e) {
+        console.error("Error parsing user:", e);
+    }
+    return 0 ;
+};
+const handleUpdate = () => {
+    const originalRow = posData.find(r => r.Id === inputValue.Id);
+    
+    const requestData = {
+        Id: parseInt(inputValue.Id),
+        Rate_Date: formatDateToYMD(inputValue.Rate_Date),
+        Pos_Brand_Id: parseInt(selectedPosBrand),  
+        Item_Id: parseInt(inputValue.Item_Id),  
+        Rate: parseFloat(inputValue.Rate) || 0,
+        MaxRate: parseFloat(inputValue.MaxRate) || 0,
+        Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+        Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
+        Updated_By: getUserId()  
     };
+    
+    if (inputValue.Brand_Level?.trim()) requestData.Brand_Level = inputValue.Brand_Level;
+    if (inputValue.Item_Level?.trim()) requestData.Item_Level = inputValue.Item_Level;
+    if (inputValue.Short_Name?.trim()) requestData.Short_Name = inputValue.Short_Name;
+    
+    if (originalRow) {
+        if (parseFloat(inputValue.Rate) !== parseFloat(originalRow.Rate)) {
+            requestData.Old_Rate = parseFloat(originalRow.Rate);
+        }
+        if (parseFloat(inputValue.MaxRate) !== parseFloat(originalRow.Max_Rate)) {
+            requestData.Old_Max_Rate = parseFloat(originalRow.Max_Rate);
+        }
+    }
+    
+    fetchLink({
+        address: `masters/posRateMaster`,
+        method: "PUT",
+        bodyData: requestData,
+    })
+        .then(data => {
+            if (data.success) {
+                toast.success( "Rate Master updated successfully!");
+                setAddDialog(false);
+                
+            
+                setPosData(prev => prev.map(row => 
+                    row.Id === parseInt(inputValue.Id)
+                        ? {
+                            ...row,
+                            Rate: parseFloat(inputValue.Rate) || 0,
+                            Max_Rate: parseFloat(inputValue.MaxRate) || 0,
+                            Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+                            Brand_Level: inputValue.Brand_Level || row.Brand_Level,
+                            Item_Level: inputValue.Item_Level || row.Item_Level,
+                            Short_Name: inputValue.Short_Name || row.Short_Name,
+                            Rate_time: inputValue.Rate_Time || row.Rate_time,
+                          }
+                        : row
+                ));
+                
+              
+                
+                setInputValue({
+                    Id: "", Rate_Date: new Date().toISOString().split("T")[0],
+                    Pos_Brand_Id: "", Item_Id: "", Rate: "",
+                    Is_Active_Decative: "", POS_Brand_Name: "",
+                    Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
+                    Short_Name: "", Rate_Time: moment().format("HH:mm")
+                });
+                setSelectedPosBrand("");
+            } else {
+                toast.error(data.message || "Failed to update Rate Master");
+            }
+        })
+        .catch(e => { 
+            console.error(e);
+            toast.error("Failed to update Rate Master");
+        });
+};
 
     const updateQueryString = newFilters => {
         const params = new URLSearchParams(newFilters);
         navigate(`?${params.toString()}`, { replace: true });
     };
 
-    const editRow = data => {
-        setAddDialog(true);
-        setInputValue({
-            Id: data?.Id,
-            Rate_Date: formatDateToYMD(data.Rate_Date),
-            Pos_Brand_Id: data.Pos_Brand_Id,
-            Item_Id: data.Item_Id,
-            Rate: data.Rate,
-            MaxRate: data.Max_Rate,
-            Is_Active_Decative: data.Is_Active_Decative,
-            POS_Brand_Name: data.POS_Brand_Name,
-            Product_Name: data.Product_Name,
-            Brand_Level: data.Brand_Level || "",
-            Item_Level: data.Item_Level || ""
-        });
-        setSelectedPosBrand(data.Pos_Brand_Id);
-    };
+const editRow = data => {
+    setAddDialog(true);
+    setInputValue({
+        Id: data?.Id ? parseInt(data.Id) : "",  // ✅ Store as number
+        Rate_Date: data.Rate_Date ? formatDateToYMD(data.Rate_Date) : new Date().toISOString().split("T")[0],
+        Pos_Brand_Id: data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "",  // Keep as string for select
+        Item_Id: data.Item_Id ? data.Item_Id.toString() : "",  // Keep as string for select
+        Rate: data.Rate || "",
+        MaxRate: data.Max_Rate || "",
+        Is_Active_Decative: data.Is_Active_Decative !== undefined ? data.Is_Active_Decative.toString() : "1",
+        POS_Brand_Name: data.POS_Brand_Name || "",
+        Product_Name: data.Product_Name || "",
+        Brand_Level: data.Brand_Level || "",
+        Item_Level: data.Item_Level || "",
+        Short_Name: data.Short_Name || data.Product_Name || "",
+        Rate_Time: data.Rate_time ? moment(data.Rate_time).format("HH:mm") : moment().format("HH:mm")
+    });
+    setSelectedPosBrand(data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "");
+};
 
     const handleDelete = () => {
         fetchLink({
@@ -383,7 +445,8 @@ const handleUpdateTimeAndRates = async () => {
                         Rate_Date: new Date().toISOString().split("T")[0],
                         Pos_Brand_Id: "", Item_Id: "", Rate: "",
                         Is_Active_Decative: "", POS_Brand_Name: "",
-                        Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: ""
+                        Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
+                        Short_Name: "", Rate_Time: moment().format("HH:mm")
                     });
                     setSelectedPosBrand("");
                     toast.success("Rate Master deleted successfully!");
@@ -490,11 +553,31 @@ const handleUpdateTimeAndRates = async () => {
         
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(`${showActiveOnly ? "Active" : "Inactive"}_PriceList_Data`);
-        
+        const convertToAMPM = (timeStr) => {
+            if (!timeStr) return '';
+            
+            let hours, minutes;
+            
+            if (timeStr.includes(':')) {
+                const parts = timeStr.split(':');
+                hours = parseInt(parts[0]);
+                minutes = parts[1];
+            } else {
+                return timeStr;
+            }
+            
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const formattedHours = hours.toString().padStart(2, '0');
+            
+            return `${formattedHours}:${minutes} ${ampm}`;
+        };
+
         const uniqueDate = sortedData.length > 0
-            ? sortedData[0].Rate_Date.split("T")[0].split("-").reverse().join("-")
+            ? `${sortedData[0].Rate_Date.split("T")[0].split("-").reverse().join("-")} - ${convertToAMPM(selectedTime)}`
             : "";
-        
+
         worksheet.addRow([uniqueDate, `${showActiveOnly ? "Active" : "Inactive"} PriceList`]).font = { bold: true, size: 14 };
         
         brandOrder.forEach(brandId => {
@@ -525,7 +608,7 @@ const handleUpdateTimeAndRates = async () => {
             .catch(e => console.error(e));
     };
 
-    const filteredPosData = useMemo(() => {
+    const filteredAndSortedData = useMemo(() => {
         if (!Array.isArray(posData)) {
             return [];
         }
@@ -549,11 +632,38 @@ const handleUpdateTimeAndRates = async () => {
             });
         }
         
+        if (sortConfig.key) {
+            data.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+                
+                if (sortConfig.key === 'Rate_Date') {
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                } else if (sortConfig.key === 'Rate' || sortConfig.key === 'Max_Rate' || 
+                           sortConfig.key === 'Brand_Level' || sortConfig.key === 'Item_Level') {
+                    aValue = parseFloat(aValue) || 0;
+                    bValue = parseFloat(bValue) || 0;
+                } else {
+                    aValue = (aValue || '').toString().toLowerCase();
+                    bValue = (bValue || '').toString().toLowerCase();
+                }
+                
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        
         return data;
-    }, [posData, searchTerm, showActiveOnly]);
+    }, [posData, searchTerm, showActiveOnly, sortConfig]);
 
     const handlePrintActiveProducts = async () => {
-        const dataToPrint = filteredPosData;
+        const dataToPrint = filteredAndSortedData;
             
         if (dataToPrint.length === 0) {
             toast.error(showActiveOnly 
@@ -799,32 +909,59 @@ const handleUpdateTimeAndRates = async () => {
 
     const editedRowsCount = Object.keys(editedRatesRef.current).length + Object.keys(editedMaxRatesRef.current).length;
 
-    // Render table directly without FilterableTable for editable columns
+const SortableHeader = ({ columnKey, label, align = "left" }) => {
+    const isActive = sortConfig.key === columnKey;
+    const direction = isActive ? sortConfig.direction : 'asc';
+    
+    return (
+        <th 
+            style={{ 
+                cursor: 'pointer', 
+                userSelect: 'none',
+                textAlign: align,
+                backgroundColor: isActive ? '#e8e8e8' : 'transparent'
+            }}
+            onClick={() => handleSort(columnKey)}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', gap: '4px' }}>
+                {label}
+                {isActive ? (
+                    direction === 'asc' ? 
+                        <ArrowUpward fontSize="small" style={{ fontSize: '14px' }} /> : 
+                        <ArrowDownward fontSize="small" style={{ fontSize: '14px' }} />
+                ) : (
+                    <span style={{ opacity: 0.8, fontSize: '14px' }}>↕</span>
+                )}
+            </div>
+        </th>
+    );
+};
+
     const renderTable = () => {
         return (
             <div className="table-responsive">
                 <table className="table table-sm table-bordered">
                     <thead className="table-light">
                         <tr>
-                            <th>#</th>
-                            <th>Rate Date</th>
-                            <th>Brand</th>
-                            <th>Product</th>
-                            <th>Rate (₹)</th>
-                            <th>Max Rate (₹)</th>
-                            <th>Brand Level</th>
-                            <th>Item Level</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <SortableHeader columnKey="sno" label="#" align="center" />
+                            <SortableHeader columnKey="Rate_Date" label="Rate Date" />
+                            <SortableHeader columnKey="POS_Brand_Name" label="Brand" />
+                            <SortableHeader columnKey="Short_Name" label="Product" />
+                            <SortableHeader columnKey="Rate" label="Rate (₹)" align="right" />
+                            <SortableHeader columnKey="Max_Rate" label="Max Rate (₹)" align="right" />
+                            <SortableHeader columnKey="Brand_Level" label="Brand Level" align="center" />
+                            <SortableHeader columnKey="Item_Level" label="Item Level" align="center" />
+                            <SortableHeader columnKey="Is_Active_Decative" label="Status" align="center" />
+                            <th style={{ textAlign: 'center', minWidth: '100px' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredPosData.length === 0 ? (
+                        {filteredAndSortedData.length === 0 ? (
                             <tr>
                                 <td colSpan="10" className="text-center">No data available</td>
                             </tr>
                         ) : (
-                            filteredPosData.map((row, idx) => (
+                            filteredAndSortedData.map((row, idx) => (
                                 <TableRow 
                                     key={row.Id}
                                     row={row}
@@ -847,7 +984,6 @@ const handleUpdateTimeAndRates = async () => {
 
     return (
         <div>
-            {/* Rate Generation Time Header with Update Button */}
             <div className="card mb-3" style={{ backgroundColor: '#f8f9fa' }}>
                 <div className="card-body py-2">
                     <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -857,7 +993,7 @@ const handleUpdateTimeAndRates = async () => {
                                 <span className="fw-bold">Rate Generation Time:</span>
                                 <input
                                     type="time"
-                                    value={selectedTime}
+                                    value={selectedTime || ""}
                                     onChange={(e) => setSelectedTime(e.target.value)}
                                     className="form-control form-control-sm"
                                     style={{ width: '130px' }}
@@ -887,6 +1023,11 @@ const handleUpdateTimeAndRates = async () => {
                         
                         <div className="text-muted small">
                             Selected Date: {moment(filters.Fromdate).format('DD-MM-YYYY')}
+                            {selectedTime && (
+                                <span className="ms-2">
+                                    <strong>Time:</strong> {selectedTime}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1178,10 +1319,9 @@ const handleUpdateTimeAndRates = async () => {
                 </Box>
             </Popover>
 
-      
             {renderTable()}
 
-          
+            {/* Add/Update Dialog */}
             <Dialog open={addDialog} onClose={() => setAddDialog(false)} fullWidth maxWidth="sm">
                 <DialogTitle>{inputValue.Id ? "UPDATE" : "CREATE"} RATE MASTER</DialogTitle>
                 <form onSubmit={e => { e.preventDefault(); inputValue.Id ? handleUpdate() : handleRateMasterAdd(); }}>
@@ -1191,6 +1331,15 @@ const handleUpdateTimeAndRates = async () => {
                             type="date"
                             value={inputValue.Rate_Date}
                             onChange={e => setInputValue({ ...inputValue, Rate_Date: e.target.value })}
+                            className="cus-inpt"
+                            required
+                        />
+
+                        <label>Rate Time</label>
+                        <input
+                            type="time"
+                            value={inputValue.Rate_Time}
+                            onChange={e => setInputValue({ ...inputValue, Rate_Time: e.target.value })}
                             className="cus-inpt"
                             required
                         />
@@ -1222,6 +1371,15 @@ const handleUpdateTimeAndRates = async () => {
                                 ? product.map((p, i) => <option key={i} value={p.value}>{p.label}</option>)
                                 : <option value="" disabled>No products available</option>}
                         </select>
+
+                        <label>Short Name / Product Name</label>
+                        <TextField
+                            value={inputValue.Short_Name ?? ""}
+                            onChange={e => setInputValue({ ...inputValue, Short_Name: e.target.value })}
+                            fullWidth 
+                            margin="dense" 
+                            variant="outlined"
+                        />
 
                         <label>Rate</label>
                         <TextField
@@ -1281,7 +1439,8 @@ const handleUpdateTimeAndRates = async () => {
                                 Rate_Date: new Date().toISOString().split("T")[0],
                                 Pos_Brand_Id: "", Item_Id: "", Rate: "",
                                 Is_Active_Decative: "", POS_Brand_Name: "",
-                                Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: ""
+                                Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
+                                Short_Name: "", Rate_Time: moment().format("HH:mm")
                             });
                             setSelectedPosBrand("");
                             setAddDialog(false);
@@ -1291,7 +1450,7 @@ const handleUpdateTimeAndRates = async () => {
                 </form>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
+   
             <Dialog open={open} onClose={() => setOpen(false)}>
                 <DialogTitle>Confirmation</DialogTitle>
                 <DialogContent><b>Do you want to delete the RateMaster?</b></DialogContent>
@@ -1301,7 +1460,7 @@ const handleUpdateTimeAndRates = async () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Export Dialog */}
+        
             <Dialog open={exportDialog} onClose={() => setExportDialog(false)} fullWidth maxWidth="sm">
                 <DialogTitle>Export Data</DialogTitle>
                 <DialogContent>
@@ -1357,12 +1516,11 @@ const handleUpdateTimeAndRates = async () => {
     );
 }
 
-// Separate Table Row Component to isolate re-renders
+// Table Row Component
 const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateChange, onMaxRateChange, onEdit, onDelete, showActions }) => {
     const [localRate, setLocalRate] = useState(editedRatesRef.current[row.Id] !== undefined ? editedRatesRef.current[row.Id] : row.Rate);
     const [localMaxRate, setLocalMaxRate] = useState(editedMaxRatesRef.current[row.Id] !== undefined ? editedMaxRatesRef.current[row.Id] : row.Max_Rate);
 
-    // Update local state when ref changes (after bulk update)
     useEffect(() => {
         if (editedRatesRef.current[row.Id] !== undefined) {
             setLocalRate(editedRatesRef.current[row.Id]);
@@ -1396,37 +1554,37 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateCh
             <td>{index + 1}</td>
             <td>{row.Rate_Date ? moment(row.Rate_Date).format('DD/MM/YYYY') : '-'}</td>
             <td>{row.POS_Brand_Name || '-'}</td>
-            <td>{row.Short_Name || '-'}</td>
-            <td style={{ minWidth: '130px' }}>
+            <td>{row.Short_Name || row.Product_Name || '-'}</td>
+            <td style={{ minWidth: '130px', textAlign: 'right' }}>
                 <input
                     type="number"
                     className="form-control form-control-sm"
-                    style={{ width: '120px' }}
+                    style={{ width: '120px', textAlign: 'right' }}
                     value={localRate}
                     onChange={handleRateInputChange}
                     step="0.01"
                     min="0"
                 />
             </td>
-            <td style={{ minWidth: '130px' }}>
+            <td style={{ minWidth: '130px', textAlign: 'right' }}>
                 <input
                     type="number"
                     className="form-control form-control-sm"
-                    style={{ width: '120px' }}
+                    style={{ width: '120px', textAlign: 'right' }}
                     value={localMaxRate}
                     onChange={handleMaxRateInputChange}
                     step="0.01"
                     min="0"
                 />
             </td>
-            <td>{row.Brand_Level || '-'}</td>
-            <td>{row.Item_Level || '-'}</td>
-            <td>
+            <td style={{ textAlign: 'center' }}>{row.Brand_Level || '-'}</td>
+            <td style={{ textAlign: 'center' }}>{row.Item_Level || '-'}</td>
+            <td style={{ textAlign: 'center' }}>
                 <span className="badge" style={{ backgroundColor: statusColor, color: 'white', padding: '5px 10px' }}>
                     {statusText}
                 </span>
             </td>
-            <td style={{ minWidth: '100px' }}>
+            <td style={{ minWidth: '100px', textAlign: 'center' }}>
                 <IconButton onClick={() => onEdit(row)} size="small">
                     <Edit fontSize="small" />
                 </IconButton>

@@ -25,14 +25,25 @@ const StockValueDetails = () => {
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
   const [showZeroEntries, setShowZeroEntries] = useState(false);
-
   
-  const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "All" }, ...stockGroups];
-
  
-  const itemsWithAll = [{ Product_Id: "0", stock_item_name: "-- All Items --" }, ...items];
+  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
+  const itemDropdownRef = React.useRef(null);
 
- 
+  const stockGroupsWithAll = [ ...stockGroups];
+  const itemsWithAll = [ ...items];
+
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target)) {
+        setIsItemDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const columns = [
     createCol('Trans_Date', 'date', 'Date', 'left', 'center', 1),
     createCol('Item_Group_Id', 'number', 'Item_ID', 'center', 'center', 1),
@@ -44,6 +55,7 @@ const StockValueDetails = () => {
     createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
     createCol('Pur_value', 'number', 'Pur_Val', 'right', 'center', 1),
     createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
+     createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
     createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
     createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
     createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
@@ -78,8 +90,14 @@ const StockValueDetails = () => {
     } else {
       setItems([]);
       setSelectedItem(null);
+      setIsItemDropdownOpen(false);
     }
   }, [selectedGroup]);
+
+  const toggleItemSelection = (item) => {
+    setSelectedItem(item);
+    setIsItemDropdownOpen(false);
+  };
 
   const loadStockGroups = async () => {
     try {
@@ -139,8 +157,9 @@ const StockValueDetails = () => {
         itemsList = response.data;
       }
       
-      setItems(itemsList);
-      setSelectedItem(null);
+      const itemsWithAllOption = [{ Product_Id: "0", stock_item_name: "-- All Items --" }, ...itemsList];
+      setItems(itemsWithAllOption);
+      setSelectedItem(itemsWithAllOption[0]);
       
       if (itemsList.length === 0) {
         toast.info("No items found for this stock group");
@@ -156,59 +175,258 @@ const StockValueDetails = () => {
     }
   };
 
-  const handleSearch = async () => {
-    if (!fromDate || !toDate) {
-      toast.error("Please select both from and to dates");
-      return;
-    }
+  // const handleSearch = async () => {
+  //   if (!fromDate || !toDate) {
+  //     toast.error("Please select both from and to dates");
+  //     return;
+  //   }
 
-    if (!selectedGroup) {
-      toast.error("Please select a stock group");
-      return;
-    }
+  //   if (!selectedGroup) {
+  //     toast.error("Please select a stock group");
+  //     return;
+  //   }
 
-    try {
-      setLoading(true);
+  //   try {
+  //     setLoading(true);
       
+  //     const requestBody = {
+  //       FromDate: fromDate,
+  //       ToDate: toDate,
+  //       StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
+  //       ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
+  //     };
+
+  //     const response = await fetchLink({
+  //       address: `inventory/stockValueErp`,
+  //       method: "POST",
+  //       bodyData: requestBody
+  //     });
+      
+  //     if (response && response.success) {
+  //       let data = response.data?.records || [];
+        
+  //       let displayData = [...data];
+  //       if (!showZeroEntries) {
+  //         displayData = displayData.filter(item => (item.CL_Rate || 0) !== 0);
+  //       }
+        
+  //       setReportData(displayData);
+        
+  //       toast.success(`Report loaded successfully. Found ${displayData.length} records`);
+  //     } else {
+  //       toast.error(response?.message || "Failed to fetch stock value data");
+  //       setReportData([]);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error fetching stock value details:", err);
+  //     toast.error("Failed to fetch stock value data: " + (err.message || "Unknown error"));
+  //     setReportData([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
+    try {
       const requestBody = {
+        Pre_date: preDate,
         FromDate: fromDate,
         ToDate: toDate,
-        StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
-        ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
+        stock_group_id: parseInt(groupId)
       };
 
-
-
       const response = await fetchLink({
-        address: `inventory/stockValueErp`,
+        address: `inventory/stockValueSync`,
         method: "POST",
         bodyData: requestBody
       });
       
-      if (response && response.success) {
-        let data = response.data?.records || [];
+      if (response && response.success && response.data) {
+        const data = response.data;
         
-        // Apply zero rate filter
-        let displayData = [...data];
-        if (!showZeroEntries) {
-          displayData = displayData.filter(item => (item.CL_Rate || 0) !== 0);
+        let closingBalance = null;
+        if (data.closingBalance) {
+          closingBalance = {
+            id: Date.now() + Math.random(),
+            itemGroupId: data.closingBalance.Item_Group_Id || groupId,
+            groupName: data.closingBalance.Group_Name || groupName,
+            transDate: data.closingBalance.Trans_Date,
+            closingRate: data.closingBalance.CL_Rate || 0,
+            closingValue: data.closingBalance.CL_Value || 0,
+            stockValue: data.closingBalance.Stock_Value || 0,
+            fromDate: fromDate,
+            toDate: toDate,
+            fetchDate: new Date().toISOString(),
+            fetchStatus: 'Success',
+            searchCriteria: {
+              fromDate: fromDate,
+              toDate: toDate,
+              groupId: groupId,
+              groupName: groupName
+            }
+          };
+        } else {
+          closingBalance = {
+            id: Date.now() + Math.random(),
+            itemGroupId: groupId,
+            groupName: groupName,
+            transDate: toDate,
+            closingRate: 0,
+            closingValue: 0,
+            stockValue: 0,
+            fromDate: fromDate,
+            toDate: toDate,
+            fetchDate: new Date().toISOString(),
+            fetchStatus: 'No Data',
+            searchCriteria: {
+              fromDate: fromDate,
+              toDate: toDate,
+              groupId: groupId,
+              groupName: groupName
+            }
+          };
         }
         
-        setReportData(displayData);
-        
-        toast.success(`Report loaded successfully. Found ${displayData.length} records`);
+        return {
+          success: true,
+          closingBalance: closingBalance,
+          groupName: groupName,
+          groupId: groupId
+        };
       } else {
-        toast.error(response?.message || "Failed to fetch stock value data");
-        setReportData([]);
+        return {
+          success: false,
+          error: response?.message || `Failed to fetch data for ${groupName}`,
+          groupName: groupName,
+          groupId: groupId,
+          closingBalance: {
+            id: Date.now() + Math.random(),
+            itemGroupId: groupId,
+            groupName: groupName,
+            transDate: toDate,
+            closingRate: 0,
+            closingValue: 0,
+            stockValue: 0,
+            fromDate: fromDate,
+            toDate: toDate,
+            fetchDate: new Date().toISOString(),
+            fetchStatus: 'Failed',
+            error: response?.message,
+            searchCriteria: {
+              fromDate: fromDate,
+              toDate: toDate,
+              groupId: groupId,
+              groupName: groupName
+            }
+          }
+        };
       }
     } catch (err) {
-      console.error("Error fetching stock value details:", err);
-      toast.error("Failed to fetch stock value data: " + (err.message || "Unknown error"));
-      setReportData([]);
-    } finally {
-      setLoading(false);
+      console.error(`Error fetching data for group ${groupName}:`, err);
+      return {
+        success: false,
+        error: err.message || `Error fetching data for ${groupName}`,
+        groupName: groupName,
+        groupId: groupId,
+        closingBalance: {
+          id: Date.now() + Math.random(),
+          itemGroupId: groupId,
+          groupName: groupName,
+          transDate: toDate,
+          closingRate: 0,
+          closingValue: 0,
+          stockValue: 0,
+          fromDate: fromDate,
+          toDate: toDate,
+          fetchDate: new Date().toISOString(),
+          fetchStatus: 'Failed',
+          error: err.message,
+          searchCriteria: {
+            fromDate: fromDate,
+            toDate: toDate,
+            groupId: groupId,
+            groupName: groupName
+          }
+        }
+      };
     }
   };
+
+
+  const handleSearch = async () => {
+  if (!fromDate || !toDate) {
+    toast.error("Please select both from and to dates");
+    return;
+  }
+
+  if (!selectedGroup) {
+    toast.error("Please select a stock group");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // Pre_date = previous day of fromDate
+    const preDate = format(
+      new Date(new Date(fromDate).setDate(new Date(fromDate).getDate() - 1)),
+      'yyyy-MM-dd'
+    );
+
+    const requestBody = {
+      FromDate: fromDate,
+      ToDate: toDate,
+      StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
+      ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
+    };
+
+
+    const [syncResult, reportResponse] = await Promise.all([
+      fetchClosingBalanceForGroup(
+        selectedGroup.Item_Group_Id,
+        selectedGroup.Group_Name,
+        preDate
+      ),
+      fetchLink({
+        address: `inventory/stockValueErp`,
+        method: "POST",
+        bodyData: requestBody
+      })
+    ]);
+
+    // Handle sync API result
+    if (syncResult.success) {
+      toast.success(`Sync done for ${syncResult.groupName}`);
+    } else {
+      toast.warning(`Sync issue for ${syncResult.groupName}: ${syncResult.error}`);
+    }
+
+    // Handle report API result
+    if (reportResponse && reportResponse.success) {
+      let data = reportResponse.data?.records || [];
+
+      let displayData = [...data];
+      if (!showZeroEntries) {
+        displayData = displayData.filter(item => (item.CL_Rate || 0) !== 0);
+      }
+
+      setReportData(displayData);
+      toast.success(`Report loaded. Found ${displayData.length} records`);
+    } else {
+      toast.error(reportResponse?.message || "Failed to fetch stock value data");
+      setReportData([]);
+    }
+
+  } catch (err) {
+    console.error("Error during search:", err);
+    toast.error("Failed to fetch data: " + (err.message || "Unknown error"));
+    setReportData([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleReset = () => {
     setSelectedGroup(null);
@@ -220,7 +438,6 @@ const StockValueDetails = () => {
     setReload(prev => !prev);
     toast.info("Filters reset");
   };
-
 
   const TableButtonArea = () => {
     return (
@@ -238,34 +455,39 @@ const StockValueDetails = () => {
         </div>
 
         <div className="card-body">
-          <div className="row mb-3">
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">From Date</label>
+          <div className="d-flex align-items-end gap-2 flex-wrap mb-3">
+            {/* From Date */}
+            <div style={{ minWidth: '140px' }}>
+              <label className="form-label fw-bold mb-0 small">From Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label fw-bold">To Date</label>
+
+            {/* To Date */}
+            <div style={{ minWidth: '140px' }}>
+              <label className="form-label fw-bold mb-0 small">To Date</label>
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-sm"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
               />
             </div>
-            <div className="col-md-6 mb-2">
-              <label className="form-label fw-bold">Stock Group</label>
+
+            <div style={{ minWidth: '180px' }}>
+              <label className="form-label fw-bold mb-0 small">Stock Group</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={selectedGroup?.Item_Group_Id || ''}
                 onChange={(e) => {
                   const groupId = e.target.value;
                   const group = stockGroupsWithAll.find(g => g.Item_Group_Id.toString() === groupId);
                   setSelectedGroup(group);
+                  setIsItemDropdownOpen(false);
                 }}
               >
                 <option value="">-- Select Stock Group --</option>
@@ -276,37 +498,112 @@ const StockValueDetails = () => {
                 ))}
               </select>
             </div>
-          </div>
+
+            {selectedGroup && selectedGroup.Item_Group_Id !== "0" && (
+              <div ref={itemDropdownRef} style={{ minWidth: '180px', position: 'relative' }}>
+                <label className="form-label fw-bold mb-0 small">Items</label>
+                <div
+                  className="form-select form-select-sm"
+                  style={{ 
+                    cursor: 'pointer', 
+                    backgroundColor: 'white',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
+                >
+                  <span>
+                    {selectedItem ? selectedItem.stock_item_name : '-- Select Item --'}
+                  </span>
+                </div>
+
+                {isItemDropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                    background: 'white', border: '1px solid #dee2e6',
+                    borderRadius: '0.375rem', marginTop: '2px',
+                    maxHeight: '250px', overflowY: 'auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}>
+                    {items.map((item) => (
+                      <div
+                        key={item.Product_Id}
+                        className="px-3 py-2"
+                        style={{ 
+                          cursor: 'pointer', 
+                          fontSize: '13px',
+                          backgroundColor: selectedItem?.Product_Id === item.Product_Id ? '#e3f2fd' : 'transparent',
+                          fontWeight: selectedItem?.Product_Id === item.Product_Id ? '500' : 'normal'
+                        }}
+                        onClick={() => toggleItemSelection(item)}
+                        onMouseEnter={(e) => {
+                          if (selectedItem?.Product_Id !== item.Product_Id) {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedItem?.Product_Id !== item.Product_Id) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {item.stock_item_name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div>
+              <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSearch}
+                disabled={loading || !selectedGroup}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm"></span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <SearchIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                    Search
+                  </>
+                )}
+              </button>
+            </div>
 
     
-
-        
-          <div className="row mb-3">
-            <div className="col-12">
-              <div className="d-flex justify-content-end gap-2">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSearch}
-                  disabled={loading || !selectedGroup}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-1"></span>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <SearchIcon sx={{ fontSize: '18px', mr: 1 }} />
-                      Search
-                    </>
-                  )}
-                </button>
-                <button className="btn btn-secondary" onClick={handleReset} disabled={loading}>
-                  <RefreshIcon sx={{ fontSize: '18px', mr: 1 }} />
-                  Reset
-                </button>
-              </div>
+            <div>
+              <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={handleReset} 
+                disabled={loading}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                <RefreshIcon sx={{ fontSize: '16px', mr: 0.5 }} />
+                Reset
+              </button>
             </div>
+          </div>
+
+         
+          <div className="mb-3">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showZeroEntries}
+                  onChange={(e) => setShowZeroEntries(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Show Zero Rate Entries"
+            />
           </div>
 
           {loading && (

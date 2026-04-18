@@ -23,6 +23,22 @@ const StockSummaryReportErp = () => {
   const [commonRate, setCommonRate] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Calculate summary values
+  const calculateSummaries = () => {
+    const totalAdjPurQty = reportData.reduce((sum, item) => sum + (parseFloat(item.Adj_Pur_Qty) || 0), 0);
+    const totalAdjSalQty = reportData.reduce((sum, item) => sum + (parseFloat(item.Adj_Sal_Qty) || 0), 0);
+    const totalCLValue = reportData.reduce((sum, item) => sum + (parseFloat(item.CL_Value) || 0), 0);
+    const totalExpenseValue = reportData.reduce((sum, item) => sum + (parseFloat(item.Expense_value) || 0), 0);
+    
+    return {
+      adjPurQty: totalAdjPurQty,
+      adjSalQty: totalAdjSalQty,
+      clValue: totalCLValue,
+      expenseValue: totalExpenseValue
+    };
+  };
+
+  const summaries = calculateSummaries();
  
   const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "All" }, ...stockGroups];
 
@@ -35,31 +51,31 @@ const StockSummaryReportErp = () => {
     createCol('OB_Value', 'number', 'OB_Value', 'right', 'center', 1),
     createCol('Pur_Qty', 'number', 'Pur_Qty', 'right', 'center', 1),
     createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
-     createCol('Pur_value', 'number', 'Pur_value', 'right', 'center', 1),
-      createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
-       createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
-  createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
-createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
-createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
-createCol('IN_Value', 'number', 'IN_Value', 'right', 'center', 1),
-createCol('Sal_Qty', 'number', 'Sal_Qty', 'right', 'center', 1),
-createCol('Sal_Rate', 'number', 'Sal_Rate', 'right', 'center', 1),
-createCol('Sal_value', 'number', 'Sal_value', 'right', 'center', 1),
-createCol('Adj_Sal_Qty', 'number', 'Adj_Sal_Qty', 'right', 'center', 1),
-createCol('Adj_Sal_Rate', 'number', 'Adj_Sal_Rate', 'right', 'center', 1),
-createCol('Adj_Sal_value', 'number', 'Adj_Sal_value', 'right', 'center', 1),
-createCol('OUT_Qty', 'number', 'OUT_Qty', 'right', 'center', 1),
-createCol('Out_Rate', 'number', 'Out_Rate', 'right', 'center', 1),
-createCol('Out_Value', 'number', 'Out_Value', 'right', 'center', 1),
-createCol('Expense_value', 'number', 'Expense_value', 'right', 'center', 1),
-createCol('Act_Expense', 'number', 'Act_Expense', 'right', 'center', 1),
-createCol('Bal_Qty', 'number', 'Bal_Qty', 'right', 'center', 1),
-createCol('CL_Rate', 'number', 'CL_Rate', 'right', 'center', 1),
-createCol('CL_Value', 'number', 'CL_Value', 'right', 'center', 1),
-createCol('CR_CL_Rate', 'number', 'CR_CL_Rate', 'right', 'center', 1),
-createCol('Pre_Qty', 'number', 'Pre_Qty', 'right', 'center', 1),
-createCol('Pre_Rate', 'number', 'Pre_Rate', 'right', 'center', 1),
-createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
+    createCol('Pur_value', 'number', 'Pur_value', 'right', 'center', 1),
+    createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
+    createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
+    createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
+    createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
+    createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
+    createCol('IN_Value', 'number', 'IN_Value', 'right', 'center', 1),
+    createCol('Sal_Qty', 'number', 'Sal_Qty', 'right', 'center', 1),
+    createCol('Sal_Rate', 'number', 'Sal_Rate', 'right', 'center', 1),
+    createCol('Sal_value', 'number', 'Sal_value', 'right', 'center', 1),
+    createCol('Adj_Sal_Qty', 'number', 'Adj_Sal_Qty', 'right', 'center', 1),
+    createCol('Adj_Sal_Rate', 'number', 'Adj_Sal_Rate', 'right', 'center', 1),
+    createCol('Adj_Sal_value', 'number', 'Adj_Sal_value', 'right', 'center', 1),
+    createCol('OUT_Qty', 'number', 'OUT_Qty', 'right', 'center', 1),
+    createCol('Out_Rate', 'number', 'Out_Rate', 'right', 'center', 1),
+    createCol('Out_Value', 'number', 'Out_Value', 'right', 'center', 1),
+    createCol('Expense_value', 'number', 'Expense_value', 'right', 'center', 1),
+    createCol('Act_Expense', 'number', 'Act_Expense', 'right', 'center', 1),
+    createCol('Bal_Qty', 'number', 'Bal_Qty', 'right', 'center', 1),
+    createCol('CL_Rate', 'number', 'CL_Rate', 'right', 'center', 1),
+    createCol('CL_Value', 'number', 'CL_Value', 'right', 'center', 1),
+    createCol('CR_CL_Rate', 'number', 'CR_CL_Rate', 'right', 'center', 1),
+    createCol('Pre_Qty', 'number', 'Pre_Qty', 'right', 'center', 1),
+    createCol('Pre_Rate', 'number', 'Pre_Rate', 'right', 'center', 1),
+    createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
   ];
 
   useEffect(() => {
@@ -197,19 +213,44 @@ createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
     }
   };
 
-  const TableButtonArea = () => {
-    return (
-      <div className="d-flex align-items-center gap-2">
-        {reportData.length > 0 && !loading && (
-          <div className="d-flex align-items-center gap-2">
-           
-          
-           
+const TableButtonArea = () => {
+  return (
+    <div className="d-flex align-items-center gap-2">
+      {reportData.length > 0 && !loading && (
+        <>
+          {/* Summary Cards */}
+          <div className="d-flex w-100 mb-3 gap-3" style={{ marginTop: '10px' }}>
+            <div className="border rounded p-2 bg-light" style={{ width: '100px', flexShrink: 0 }}>
+              <div className="text-muted small fw-bold" style={{ whiteSpace: 'nowrap', fontSize: '11px' }}>ADJ PUR QTY</div>
+              <div className="fw-bold text-primary" style={{ fontSize: '12px' }}>
+                {summaries.adjPurQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}
+              </div>
+            </div>
+            <div className="border rounded p-2 bg-light" style={{ width: '100px', flexShrink: 0 }}>
+              <div className="text-muted small fw-bold" style={{ whiteSpace: 'nowrap', fontSize: '11px' }}>ADJ SAL QTY</div>
+              <div className="fw-bold text-warning" style={{ fontSize: '12px' }}>
+                {summaries.adjSalQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}
+              </div>
+            </div>
+            <div className="border rounded p-2 bg-light" style={{ width: '100px', flexShrink: 0 }}>
+              <div className="text-muted small fw-bold" style={{ whiteSpace: 'nowrap', fontSize: '11px' }}>CURRENT VALUE</div>
+              <div className="fw-bold text-success" style={{ fontSize: '12px' }}>
+                {summaries.clValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}
+              </div>
+            </div>
+            <div className="border rounded p-2 bg-light" style={{ width: '100px', flexShrink: 0 }}>
+              <div className="text-muted small fw-bold" style={{ whiteSpace: 'nowrap', fontSize: '11px' }}>EXPENSE</div>
+              <div className="fw-bold text-danger" style={{ fontSize: '12px' }}>
+                {summaries.expenseValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-    );
-  };
+        </>
+      )}
+    </div>
+  );
+};
+
 
   return (
     <Fragment>
