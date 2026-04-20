@@ -1,6 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, isEqualNumber, LocalDate, NumberFormat, stringCompare, Subraction, } from "../../../Components/functions";
-import { Close, Delete } from "@mui/icons-material";
+import { Addition, LocalDate, NumberFormat } from "../../../Components/functions";
 
 const AdjesmentsList = ({
     cellHeadStype = { width: '150px' },

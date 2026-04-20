@@ -1,7 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, onlynum, RoundNumber, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, LocalDate, NumberFormat, RoundNumber, stringCompare, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { Close, Delete } from "@mui/icons-material";
-import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { receiptBillInfoInitialValue } from "./variable";
 
 

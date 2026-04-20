@@ -215,7 +215,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                 const itemName = item.ItemName || item.Stock_Item || "";
                 const weight = Number(item.Weight) || 0;
                 const rate = item.Rate || "";
-                const discount = item.Discount || "";
+                const discount = item?.OrderDetails?.Discount || "";
                 const freight = item.freightCharges || "";
 
                 const deliveries = (po.DeliveryDetails || []).filter(d => d.ItemId === item.ItemId);

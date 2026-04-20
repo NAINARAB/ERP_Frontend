@@ -160,7 +160,7 @@ const SalesPendingDetails = lazy(() => import('./Pages/Sales/SaleOrder/SalesPend
 const SalesDelivery = lazy(() => import('./Pages/Sales/SalesReportComponent/SalesDeliveryConvert'));
 const SalesReportBranch = lazy(() => import('./Pages/Sales/salesInvoiceReportBranch'));
 const SalesOrderBranch = lazy(() => import('./Pages/Sales/salesOrderReportBranch'));
-const LrReport = lazy(() => import('./Pages/Sales/lrReport'));
+// const LrReport = lazy(() => import('./Pages/Sales/lrReport'));
 const Whatsapp = lazy(() => import('./Pages/Sales/SaleOrder/Whatsapp'));
 
 const DeliveryTripSheet = lazy(() => import('./Pages/Sales/TripMaster/DeliveryTripSheet'));

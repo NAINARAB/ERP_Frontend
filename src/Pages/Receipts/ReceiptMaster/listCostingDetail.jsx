@@ -1,6 +1,6 @@
-import { Delete, KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 // Local utility functions
 const toNumber = (val) => Number(val) || 0;

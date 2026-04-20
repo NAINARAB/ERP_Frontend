@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Edit, LocalMallOutlined } from '@mui/icons-material';
-import { IconButton, Box, Tooltip, Button } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Edit } from '@mui/icons-material';
+import { IconButton, Tooltip, Button } from "@mui/material";
 import CustomerAddScreen from "./customerCreation";
 import { fetchLink } from '../../Components/fetchComponent';
 import FilterableTable, { createCol } from '../../Components/filterableTable2';

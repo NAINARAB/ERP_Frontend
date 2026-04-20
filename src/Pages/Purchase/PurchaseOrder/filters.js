@@ -1,4 +1,4 @@
-import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, Division, checkIsNumber, NumberFormat, filterableText, toNumber } from "../../../Components/functions";
+import { Addition, isEqualNumber, isGraterNumber, ISOString, LocalDate, Multiplication, Subraction, checkIsNumber, NumberFormat, filterableText, toNumber } from "../../../Components/functions";
 import { IconButton, Tooltip } from '@mui/material';
 import { Delete, Edit, ShoppingCartCheckout, Visibility, Settings } from '@mui/icons-material';
 import { ButtonActions } from "../../../Components/filterableTable2";
@@ -624,6 +624,11 @@ export const displayColumns = ({
             ColumnHeader: 'Created By',
             isCustomCell: true,
             Cell: ({ row }) => row?.OrderDetails.createdByGet
+        }, itemDiscount = {
+            isVisible: 1,
+            ColumnHeader: 'Discount',
+            isCustomCell: true,
+            Cell: ({ row }) => row?.OrderDetails?.Discount
         };
 
     // Delivery Based Columns
@@ -668,7 +673,7 @@ export const displayColumns = ({
         case 'ITEMS ARRIVED':
             return [
                 ItemTradeConfirmDate, OrderPartyName, ItemName, WeightWithUOM,
-                ItemArrivedQuantity, PendingItemQuantity, Rate, Discount, LoadingDate, ItemOwnerName, ItemBrokerName, itemsCreatedByGet, ItemActions
+                ItemArrivedQuantity, PendingItemQuantity, Rate, itemDiscount, LoadingDate, ItemOwnerName, ItemBrokerName, itemsCreatedByGet, ItemActions
             ];
         case 'ORDERS':
         case 'COMPLETED ORDERS':
