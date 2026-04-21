@@ -2,8 +2,6 @@ import React, { useState, useEffect, Fragment } from "react";
 import {
   IconButton,
   Tooltip,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -24,15 +22,12 @@ const StockValueDetails = () => {
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
-  const [showZeroEntries, setShowZeroEntries] = useState(false);
   
- 
   const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
   const itemDropdownRef = React.useRef(null);
 
   const stockGroupsWithAll = [ ...stockGroups];
   const itemsWithAll = [ ...items];
-
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,7 +50,7 @@ const StockValueDetails = () => {
     createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
     createCol('Pur_value', 'number', 'Pur_Val', 'right', 'center', 1),
     createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
-     createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
+    createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
     createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
     createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
     createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
@@ -92,11 +87,15 @@ const StockValueDetails = () => {
       setSelectedItem(null);
       setIsItemDropdownOpen(false);
     }
+    // Clear report data when stock group changes
+    setReportData([]);
   }, [selectedGroup]);
 
   const toggleItemSelection = (item) => {
     setSelectedItem(item);
     setIsItemDropdownOpen(false);
+    // Clear report data when item selection changes
+    setReportData([]);
   };
 
   const loadStockGroups = async () => {
@@ -174,58 +173,6 @@ const StockValueDetails = () => {
       setLoading(false);
     }
   };
-
-  // const handleSearch = async () => {
-  //   if (!fromDate || !toDate) {
-  //     toast.error("Please select both from and to dates");
-  //     return;
-  //   }
-
-  //   if (!selectedGroup) {
-  //     toast.error("Please select a stock group");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-      
-  //     const requestBody = {
-  //       FromDate: fromDate,
-  //       ToDate: toDate,
-  //       StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
-  //       ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
-  //     };
-
-  //     const response = await fetchLink({
-  //       address: `inventory/stockValueErp`,
-  //       method: "POST",
-  //       bodyData: requestBody
-  //     });
-      
-  //     if (response && response.success) {
-  //       let data = response.data?.records || [];
-        
-  //       let displayData = [...data];
-  //       if (!showZeroEntries) {
-  //         displayData = displayData.filter(item => (item.CL_Rate || 0) !== 0);
-  //       }
-        
-  //       setReportData(displayData);
-        
-  //       toast.success(`Report loaded successfully. Found ${displayData.length} records`);
-  //     } else {
-  //       toast.error(response?.message || "Failed to fetch stock value data");
-  //       setReportData([]);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error fetching stock value details:", err);
-  //     toast.error("Failed to fetch stock value data: " + (err.message || "Unknown error"));
-  //     setReportData([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
 
   const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
     try {
@@ -353,80 +300,72 @@ const StockValueDetails = () => {
     }
   };
 
-
   const handleSearch = async () => {
-  if (!fromDate || !toDate) {
-    toast.error("Please select both from and to dates");
-    return;
-  }
-
-  if (!selectedGroup) {
-    toast.error("Please select a stock group");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    // Pre_date = previous day of fromDate
-    const preDate = format(
-      new Date(new Date(fromDate).setDate(new Date(fromDate).getDate() - 1)),
-      'yyyy-MM-dd'
-    );
-
-    const requestBody = {
-      FromDate: fromDate,
-      ToDate: toDate,
-      StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
-      ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
-    };
-
-
-    const [syncResult, reportResponse] = await Promise.all([
-      fetchClosingBalanceForGroup(
-        selectedGroup.Item_Group_Id,
-        selectedGroup.Group_Name,
-        preDate
-      ),
-      fetchLink({
-        address: `inventory/stockValueErp`,
-        method: "POST",
-        bodyData: requestBody
-      })
-    ]);
-
-    // Handle sync API result
-    if (syncResult.success) {
-      toast.success(`Sync done for ${syncResult.groupName}`);
-    } else {
-      toast.warning(`Sync issue for ${syncResult.groupName}: ${syncResult.error}`);
+    if (!fromDate || !toDate) {
+      toast.error("Please select both from and to dates");
+      return;
     }
 
-    // Handle report API result
-    if (reportResponse && reportResponse.success) {
-      let data = reportResponse.data?.records || [];
+    if (!selectedGroup) {
+      toast.error("Please select a stock group");
+      return;
+    }
 
-      let displayData = [...data];
-      if (!showZeroEntries) {
-        displayData = displayData.filter(item => (item.CL_Rate || 0) !== 0);
+    try {
+      setLoading(true);
+
+      // Pre_date = previous day of fromDate
+      const preDate = format(
+        new Date(new Date(fromDate).setDate(new Date(fromDate).getDate() - 1)),
+        'yyyy-MM-dd'
+      );
+
+      const requestBody = {
+        FromDate: fromDate,
+        ToDate: toDate,
+        StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
+        ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
+      };
+
+      const [syncResult, reportResponse] = await Promise.all([
+        fetchClosingBalanceForGroup(
+          selectedGroup.Item_Group_Id,
+          selectedGroup.Group_Name,
+          preDate
+        ),
+        fetchLink({
+          address: `inventory/stockValueErp`,
+          method: "POST",
+          bodyData: requestBody
+        })
+      ]);
+
+      // Handle sync API result
+      if (syncResult.success) {
+        toast.success(`Sync done for ${syncResult.groupName}`);
+      } else {
+        toast.warning(`Sync issue for ${syncResult.groupName}: ${syncResult.error}`);
       }
 
-      setReportData(displayData);
-      toast.success(`Report loaded. Found ${displayData.length} records`);
-    } else {
-      toast.error(reportResponse?.message || "Failed to fetch stock value data");
+      if (reportResponse && reportResponse.success) {
+        let data = reportResponse.data?.records || [];
+        
+        // Always show all data (no zero entry filtering)
+        setReportData(data);
+        toast.success(`Report loaded. Found ${data.length} records`);
+      } else {
+        toast.error(reportResponse?.message || "Failed to fetch stock value data");
+        setReportData([]);
+      }
+
+    } catch (err) {
+      console.error("Error during search:", err);
+      toast.error("Failed to fetch data: " + (err.message || "Unknown error"));
       setReportData([]);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err) {
-    console.error("Error during search:", err);
-    toast.error("Failed to fetch data: " + (err.message || "Unknown error"));
-    setReportData([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleReset = () => {
     setSelectedGroup(null);
@@ -434,7 +373,6 @@ const StockValueDetails = () => {
     setReportData([]);
     setFromDate(format(new Date().setDate(1), 'yyyy-MM-dd'));
     setToDate(format(new Date(), 'yyyy-MM-dd'));
-    setShowZeroEntries(false);
     setReload(prev => !prev);
     toast.info("Filters reset");
   };
@@ -577,7 +515,6 @@ const StockValueDetails = () => {
               </button>
             </div>
 
-    
             <div>
               <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
               <button 
@@ -590,20 +527,6 @@ const StockValueDetails = () => {
                 Reset
               </button>
             </div>
-          </div>
-
-         
-          <div className="mb-3">
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={showZeroEntries}
-                  onChange={(e) => setShowZeroEntries(e.target.checked)}
-                  size="small"
-                />
-              }
-              label="Show Zero Rate Entries"
-            />
           </div>
 
           {loading && (
@@ -632,7 +555,13 @@ const StockValueDetails = () => {
 
           {!loading && reportData.length === 0 && selectedGroup && (
             <div className="alert alert-info text-center mt-3">
-              No stock value details found for the selected criteria.
+              No stock value details found for the selected criteria. Please click Search to load data.
+            </div>
+          )}
+          
+          {!loading && reportData.length === 0 && !selectedGroup && (
+            <div className="alert alert-info text-center mt-3">
+              Please select a stock group and click Search to view stock value details.
             </div>
           )}
         </div>
