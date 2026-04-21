@@ -3,12 +3,11 @@ import FilterableTable, { createCol, ButtonActions } from "../../Components/filt
 import {
     Box, Chip, Typography, Skeleton, TextField, InputAdornment
 } from '@mui/material';
-import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
+import { getSessionUser, toNumber } from "../../Components/functions";
 import { fetchLink } from '../../Components/fetchComponent';
 import { Button } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Add, Edit, FilterAlt, Print, Search, Sync, Visibility } from "@mui/icons-material";
-import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Add, Edit, Search } from "@mui/icons-material";
 
 const fmtINR = (n) =>
     n == null ? '—' : '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -23,92 +22,13 @@ const TypeBadge = ({ type }) => {
     return <Chip label={cfg.label} color={cfg.color} size="small" sx={{ fontWeight: 600, fontSize: 11 }} />;
 };
 
-const DetailsTable = ({ details = [] }) => {
-    const columns = [
-        createCol('Product_Name', 'string', 'Product Name', 'left'),
-        createCol('bill_qty', 'number', 'Bill Qty', 'right'),
-        createCol('act_qty', 'number', 'Actual Qty', 'right'),
-        {
-            ...createCol('rate', 'number', 'Rate (₹)', 'right'),
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                    {fmtINR(row.rate)}
-                </Typography>
-            ),
-        },
-        {
-            ...createCol('amount', 'number', 'Amount (₹)', 'right'),
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-                    {fmtINR(row.amount)}
-                </Typography>
-            ),
-        },
-        {
-            ...createCol('Adj_Payment', 'number', 'Adj Payment', 'right'),
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                    {fmtINR(row.Adj_Payment)}
-                </Typography>
-            ),
-        },
-    ];
-
-    if (!details.length) {
-        return (
-            <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary', bgcolor: '#f5f5f5' }}>
-                No details found for this adjustment
-            </Box>
-        );
-    }
-
-    return (
-        <Box sx={{ p: 2, bgcolor: '#f5f5f5' }}>
-            <FilterableTable
-                dataArray={details}
-                columns={columns}
-                disablePagination
-                EnableSerialNumber
-                bodyFontSizePx={12}
-                headerFontSizePx={12}
-                CellSize="small"
-                title="Adjustment Details"
-            />
-        </Box>
-    );
-};
-
-const canEditNow = (invoiceDate) => {
-    const storage = getSessionUser().user;
-    const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
-    const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(toNumber(storage.UserTypeId));
-    if (isAllowedUser) {
-        return true;
-    }
-    const invoiceDateObj = new Date(invoiceDate);
-    const today = new Date();
-    const diffInDays = Math.floor((today - invoiceDateObj) / (1000 * 60 * 60 * 24));
-    return diffInDays <= 3;
-};
-
 const StockAdjustmentPage = ({ EditRights }) => {
     const [adjustments, setAdjustments] = useState([]);
     const [filteredAdjustments, setFilteredAdjustments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedInvoice, setSelectedInvoice] = useState(null);
-    const [dialog, setDialog] = useState({
-        viewDetails: false,
-        printInvoice: false,
-        deliverySlip: false
-    });
     
     const navigate = useNavigate();
-    const location = useLocation();
-    const stateDetails = location.state;
     const storage = getSessionUser().user;
 
     useEffect(() => {
@@ -120,8 +40,9 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 });
                 
                 if (data && data.success) {
-                    setAdjustments(data.adjustments || []);
-                    setFilteredAdjustments(data.adjustments || []);
+                    // API now returns flat data array instead of grouped adjustments
+                    setAdjustments(data.data || []);
+                    setFilteredAdjustments(data.data || []);
                 }
             } catch (error) {
                 console.error('Error fetching adjustments:', error);
@@ -141,36 +62,34 @@ const StockAdjustmentPage = ({ EditRights }) => {
         }
 
         const searchTermLower = searchTerm.toLowerCase().trim();
-        const filtered = adjustments.filter(adjustment => {
+        const filtered = adjustments.filter(item => {
             // Search in invoice number
-            if (adjustment.invoice_no?.toLowerCase().includes(searchTermLower)) {
+            if (item.invoice_no?.toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in product name
+            if (item.Product_Name?.toLowerCase().includes(searchTermLower)) {
                 return true;
             }
             // Search in narration
-            if (adjustment.narration?.toLowerCase().includes(searchTermLower)) {
+            if (item.narration?.toLowerCase().includes(searchTermLower)) {
+                return true;
+            }
+            // Search in godown name
+            if (item.godown_name?.toLowerCase().includes(searchTermLower)) {
                 return true;
             }
             // Search in type
-            const typeLabel = TYPE_CONFIG[adjustment.Adjust_Type]?.label || '';
+            const typeLabel = TYPE_CONFIG[item.Adjust_Type]?.label || '';
             if (typeLabel.toLowerCase().includes(searchTermLower)) {
                 return true;
             }
-            // Search in date (formatted)
-            if (adjustment.Adj_date) {
-                const formattedDate = adjustment.Adj_date.split('T')[0];
+            // Search in date
+            if (item.Adj_date) {
+                const formattedDate = item.Adj_date.split('T')[0];
                 if (formattedDate.includes(searchTermLower)) {
                     return true;
                 }
-            }
-            // Search in total value
-            if (fmtINR(adjustment.total_value).toLowerCase().includes(searchTermLower)) {
-                return true;
-            }
-            // Search in product names from details
-            if (adjustment.details?.some(detail => 
-                detail.Product_Name?.toLowerCase().includes(searchTermLower)
-            )) {
-                return true;
             }
             return false;
         });
@@ -180,10 +99,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
 
     const columns = [
         {
-            ColumnHeader: 'Invoice No',
-            Field_Name: 'invoice_no',
-            isVisible: 1,
-            align: 'left',
+            ...createCol('invoice_no', 'string', 'Invoice No', 'left'),
             isCustomCell: true,
             Cell: ({ row }) => (
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#4f46e5' }}>
@@ -191,97 +107,103 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 </Typography>
             ),
         },
-         {
-            ColumnHeader: 'Godown Name',
-            Field_Name: 'godown_name',
-            isVisible: 1,
-            align: 'left',
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#4f46e5' }}>
-                    {row.godown_name}
-                </Typography>
-            ),
-        },
         {
-            ColumnHeader: 'Date',
-            Field_Name: 'Adj_date',
-            isVisible: 1,
-            align: 'left',
+            ...createCol('Adj_date', 'date', 'Date', 'left'),
             isCustomCell: true,
             Cell: ({ row }) => (
                 <Typography variant="body2">
-                    {row.Adj_date ? (row.Adj_date).split('T')[0]: '—'}
+                    {row.Adj_date ? row.Adj_date.split('T')[0] : '—'}
                 </Typography>
             ),
         },
-        // {
-        //     ColumnHeader: 'Godown',
-        //     Field_Name: 'godown_name',
-        //     isVisible: 1,
-        //     align: 'left',
-        //     isCustomCell: true,
-        //     Cell: ({ row }) => (
-        //         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        //             <Typography variant="body2">
-        //                 {row.godown_name || 'Main Godown'}
-        //             </Typography>
-        //         </Box>
-        //     ),
-        // },
         {
-            ColumnHeader: 'Type',
-            Field_Name: 'Adjust_Type',
-            isVisible: 1,
-            align: 'center',
+            ...createCol('godown_name', 'string', 'Godown', 'left'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2">
+                    {row.godown_name || '—'}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('Adjust_Type', 'string', 'Type', 'center'),
             isCustomCell: true,
             Cell: ({ row }) => <TypeBadge type={row.Adjust_Type} />,
         },
         {
-            ColumnHeader: 'Total Value',
-            Field_Name: 'total_value',
-            isVisible: 1,
-            align: 'right',
+            ...createCol('Product_Name', 'string', 'Product Name', 'left'),
             isCustomCell: true,
             Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                <Typography variant="body2">
+                    {row.Product_Name || '—'}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('bill_qty', 'number', 'Bill Qty', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    {row.bill_qty?.toFixed(2) || '0.00'}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('act_qty', 'number', 'Actual Qty', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    {row.act_qty?.toFixed(2) || '0.00'}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('rate', 'number', 'Rate (₹)', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    {fmtINR(row.rate)}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('amount', 'number', 'Amount (₹)', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
+                    {fmtINR(row.amount)}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('Adj_Payment', 'number', 'Adj Payment (₹)', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    {fmtINR(row.Adj_Payment)}
+                </Typography>
+            ),
+        },
+        {
+            ...createCol('total_value', 'number', 'Total Value (₹)', 'right'),
+            isCustomCell: true,
+            Cell: ({ row }) => (
+                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
                     {fmtINR(row.total_value)}
                 </Typography>
             ),
         },
         {
-            ColumnHeader: 'Items',
-            Field_Name: 'details',
-            isVisible: 1,
-            align: 'center',
+            ...createCol('narration', 'string', 'Narration', 'left'),
             isCustomCell: true,
             Cell: ({ row }) => (
-                <Chip 
-                    label={`${row.details?.length || 0} items`}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                    sx={{ fontSize: 11 }}
-                />
-            ),
-        },
-        {
-            ColumnHeader: 'Narration',
-            Field_Name: 'narration',
-            isVisible: 1,
-            align: 'left',
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ maxWidth: 200 }}>
                     {row.narration || '—'}
                 </Typography>
             ),
         },
         {
-            ColumnHeader: 'Action',
-            Field_Name: 'action',
-            isVisible: 1,
-            align: 'center',
+            ...createCol('action', 'string', 'Action', 'center'),
             isCustomCell: true,
             Cell: ({ row }) => {
                 return (
@@ -292,16 +214,14 @@ const StockAdjustmentPage = ({ EditRights }) => {
                                 onclick: () => {
                                     navigate('Create', {
                                         state: {
-                                            ...row,                          
-                                            Products_List: row?.details || [], 
-                                            Aj_id:row?.Aj_id,
-                                            invoice_no:row?.invoice_no,
+                                            ...row,
+                                            Aj_id: row.Aj_id,
+                                            invoice_no: row.invoice_no,
                                             isEdit: true,
                                         },
                                     });
                                 },
                                 icon: <Edit fontSize="small" color="primary" />,
-                                // disabled: !EditRights || !canEditNow(row.Adj_date),
                             },
                         ]}
                     />
@@ -332,7 +252,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <TextField
-                        placeholder="Search "
+                        placeholder="Search by invoice, product, godown..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         size="small"
@@ -358,10 +278,6 @@ const StockAdjustmentPage = ({ EditRights }) => {
             <FilterableTable
                 dataArray={filteredAdjustments}
                 columns={columns}
-                isExpendable={true}
-                expandableComp={({ row }) => (
-                    <DetailsTable details={row?.details || []} />
-                )}
                 EnableSerialNumber={true}
                 CellSize="medium"
                 bodyFontSizePx={13}
@@ -372,46 +288,8 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 PDFPrintOption={true}
                 maxHeightOption={true}
                 tableMaxHeight={600}
+                // Removed isExpendable since data is now flat
             />
-
-            {/* View Details Dialog */}
-            <Dialog
-                open={dialog.viewDetails}
-                onClose={() => setDialog(prev => ({ ...prev, viewDetails: false }))}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>Adjustment Details - {selectedInvoice?.invoice_no}</DialogTitle>
-                <DialogContent>
-                    {selectedInvoice && (
-                        <DetailsTable details={selectedInvoice.details || []} />
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialog(prev => ({ ...prev, viewDetails: false }))}>
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Print Dialog */}
-            <Dialog
-                open={dialog.printInvoice}
-                onClose={() => setDialog(prev => ({ ...prev, printInvoice: false }))}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>Print Invoice - {selectedInvoice?.invoice_no}</DialogTitle>
-                <DialogContent>
-                    {/* Add your print component here */}
-                    <Typography>Print functionality to be implemented</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialog(prev => ({ ...prev, printInvoice: false }))}>
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

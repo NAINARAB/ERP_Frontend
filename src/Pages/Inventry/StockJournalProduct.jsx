@@ -50,12 +50,9 @@ const StockJournalProduct = ({
 
     useEffect(() => {
         if (isValidObject(editValues) && open) {
-          
-            
             setProductDetails(prev => {
                 const updatedDetails = { ...prev };
                 
-                // Map all possible field names from editValues
                 const fieldMappings = {
                     Item_Id: ['Item_Id', 'itemId', 'productId', 'Product_Id', 'name_item_id'],
                     Item_Name: ['Item_Name', 'itemName', 'Product_Name', 'productName'],
@@ -73,9 +70,9 @@ const StockJournalProduct = ({
                     Group: ['Group', 'group'],
                     Unit_Id: ['Unit_Id', 'unitId'],
                     Unit_Name: ['Unit_Name', 'unitName'],
+                    rowId: ['rowId', 'row_id', 'id'],
                 };
                 
-                // Apply mappings
                 Object.entries(fieldMappings).forEach(([targetField, sourceFields]) => {
                     for (const sourceField of sourceFields) {
                         if (editValues[sourceField] !== undefined && editValues[sourceField] !== null) {
@@ -85,7 +82,6 @@ const StockJournalProduct = ({
                     }
                 });
                 
-                // Also copy any other fields that might be needed
                 Object.keys(editValues).forEach(key => {
                     if (!updatedDetails.hasOwnProperty(key) && 
                         !Object.values(fieldMappings).flat().includes(key)) {
@@ -93,14 +89,12 @@ const StockJournalProduct = ({
                     }
                 });
                 
-                // Ensure numeric values are numbers
                 if (updatedDetails.Act_Qty !== undefined) updatedDetails.Act_Qty = Number(updatedDetails.Act_Qty);
                 if (updatedDetails.Bill_Qty !== undefined) updatedDetails.Bill_Qty = Number(updatedDetails.Bill_Qty);
                 if (updatedDetails.Item_Rate !== undefined) updatedDetails.Item_Rate = Number(updatedDetails.Item_Rate);
                 if (updatedDetails.Amount !== undefined) updatedDetails.Amount = Number(updatedDetails.Amount);
                 if (updatedDetails.Adj_Payment !== undefined) updatedDetails.Adj_Payment = Number(updatedDetails.Adj_Payment);
                 
-                // Calculate alternate quantities based on pack
                 const productInfo = findProductDetails(updatedDetails.Item_Id);
                 const pack = productInfo?.PackGet || 1;
                 
@@ -111,7 +105,6 @@ const StockJournalProduct = ({
                     updatedDetails.Alt_Bill_Qty = Division(updatedDetails.Bill_Qty, pack);
                 }
                 
-               
                 return updatedDetails;
             });
         }
@@ -124,8 +117,10 @@ const StockJournalProduct = ({
 
     const handleProductInputChange = (shouldClose = true) => {
         setOrderProducts(pre => {
-            const existingProducts = pre.filter(ordered => ordered.rowId !== productDetails.rowId);
-
+            // Check if this is an edit operation (product has a rowId that exists in the current list)
+            const isEdit = isValidNumber(productDetails.rowId) && 
+                          pre.some(p => p.rowId === productDetails.rowId);
+            
             const currentProductDetails = Object.fromEntries(
                 Object.entries(productDetails).map(([key, value]) => {
                     const productMaster = findProductDetails(productDetails.Item_Id);
@@ -167,7 +162,27 @@ const StockJournalProduct = ({
                 })
             );
 
-            return [...existingProducts, currentProductDetails];
+            if (isEdit) {
+                // Update existing product
+                return pre.map(item => 
+                    item.rowId === productDetails.rowId ? currentProductDetails : item
+                );
+            } else {
+                // Add new product (ensure it doesn't already exist)
+                const existingIndex = pre.findIndex(p => 
+                    isEqualNumber(p.Item_Id, currentProductDetails.Item_Id) && 
+                    !isValidNumber(p.rowId) // Only check for non-edited items
+                );
+                
+                if (existingIndex !== -1 && !isValidNumber(pre[existingIndex].rowId)) {
+                    // Replace the existing placeholder or duplicate
+                    const updated = [...pre];
+                    updated[existingIndex] = currentProductDetails;
+                    return updated;
+                }
+                
+                return [...pre, currentProductDetails];
+            }
         });
 
         if (shouldClose) {
@@ -358,7 +373,7 @@ const StockJournalProduct = ({
                                             findProductDetails(productDetails.Item_Id)?.Product_Name
                                         )
                                     }}
-                                    isDisabled={checkIsNumber(productDetails.Pre_Id)}
+                                    isDisabled={checkIsNumber(productDetails.Pre_Id) || isValidNumber(productDetails.rowId)}
                                     menuPortalTarget={document.body}
                                     onChange={e => {
                                         const productInfo = findProductDetails(e.value);
@@ -393,11 +408,11 @@ const StockJournalProduct = ({
                                         ].map(obj => ({
                                             value: obj?.Product_Id,
                                             label: obj?.Product_Name,
-                                            isDisabled: (
-                                                orderProducts.findIndex(ind => isEqualNumber(
+                                            isDisabled: isValidNumber(productDetails.rowId) 
+                                                ? false // Allow same product when editing
+                                                : orderProducts.findIndex(ind => isEqualNumber(
                                                     ind?.Item_Id, obj?.Product_Id
-                                                ))
-                                            ) === -1 ? false : true
+                                                )) === -1 ? false : true
                                         }))
                                     ]}
                                     styles={customSelectStyles}

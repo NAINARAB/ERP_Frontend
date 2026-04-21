@@ -13,17 +13,14 @@ import { calculateGSTDetails } from '../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     salesInvoiceGeneralInfo, salesInvoiceDetailsInfo, salesInvoiceExpencesInfo,
-     retailerDeliveryAddressInfo,
+    retailerDeliveryAddressInfo,
     retailerOutstandingDetails,
-    
     defaultStaffTypes
 } from '../Sales/SalesInvoice/variable';
 import AddProductForm from "./StockJournalProduct";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import RequiredStar from '../../Components/requiredStar';
-
-// const requestId = crypto.randomUUID();
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -32,6 +29,7 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
+    
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -56,7 +54,6 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
         godownMismatch: false
     });
 
-  
     const [adjustmentInfo, setAdjustmentInfo] = useState({
         godownId: null,
         adjustmentType: null,
@@ -85,8 +82,7 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
         deliverySlipDialog: false
     });
 
-const isEdit = useMemo(() => isValidNumber(editValues?.Aj_id), [editValues?.Aj_id]);
-
+    const isEdit = useMemo(() => isValidNumber(editValues?.Aj_id), [editValues?.Aj_id]);
 
     const generateNewRequestId = () => {
         const newId = Math.random().toString(36).slice(2);
@@ -158,55 +154,118 @@ const isEdit = useMemo(() => isValidNumber(editValues?.Aj_id), [editValues?.Aj_i
         return checkIsNumber(adjustmentInfo.godownId) && checkIsNumber(adjustmentInfo.adjustmentType);
     }, [adjustmentInfo.godownId, adjustmentInfo.adjustmentType]);
 
-
     useEffect(() => {
-    if (adjustmentInfo.godownId == null) return;
-    
-    setInvoiceProduct(pre => 
-        pre.map(item => ({
-            ...item,
-            GoDown_Id: adjustmentInfo.godownId
-        }))
-    );
-}, [adjustmentInfo.godownId]);
-
-useEffect(() => {
-    if (isValidObject(editValues) && Array.isArray(editValues?.Products_List)) {
-        const { Products_List } = editValues;
-
-        setAdjustmentInfo({
-            godownId: editValues.godown_id != null ? toNumber(editValues.godown_id) : null,  // ✅ 0 is valid
-            adjustmentType: editValues.Adjust_Type !== undefined ? editValues.Adjust_Type : null,
-              Adj_date: editValues.Adj_date        // ✅ add this
-        ? new Date(editValues.Adj_date).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
-        });
-
-        setInvoiceInfo(prev => ({
-            ...prev,
-            Do_Id: editValues.Aj_id ?? prev.Do_Id,
-            Narration: editValues.narration ?? '',
-            Alter_Reason: '',
-        }));
-
-        setInvoiceProduct(
-            Products_List.map(item => ({
-                ...salesInvoiceDetailsInfo,
-                rowId: rid(),
-                Item_Id: item.Item_Id || item.name_item_id || 0,
-                Item_Name: item.Product_Name ?? '',
-                Act_Qty: item.act_qty ?? 0,
-                Alt_Act_Qty: item.act_qty ?? 0,
-                Bill_Qty: item.bill_qty ?? 0,
-                Alt_Bill_Qty: item.bill_qty ?? 0,
-                Item_Rate: item.rate ?? 0,
-                Amount: item.amount ?? 0,
-                Adj_Payment: item.Adj_Payment ?? 0,
-                GoDown_Id: editValues.godown_id != null ? toNumber(editValues.godown_id) : 0, 
+        if (adjustmentInfo.godownId == null) return;
+        
+        setInvoiceProduct(pre => 
+            pre.map(item => ({
+                ...item,
+                GoDown_Id: adjustmentInfo.godownId
             }))
         );
-    }
-}, [editValues]);
+    }, [adjustmentInfo.godownId]);
+
+    // Updated useEffect to handle edit values from flat list structure
+    useEffect(() => {
+        if (isValidObject(editValues) && editValues?.isEdit) {
+            const { 
+                Aj_id, 
+                invoice_no, 
+                Adj_date, 
+                godown_id, 
+                Adjust_Type, 
+                narration,
+                // These are the detail fields from the flat list
+                name_item_id,
+                Item_Id,
+                Product_Name,
+                bill_qty,
+                act_qty,
+                rate,
+                amount,
+                Adj_Payment
+            } = editValues;
+
+            // Set adjustment info
+            setAdjustmentInfo({
+                godownId: godown_id != null ? toNumber(godown_id) : null,
+                adjustmentType: Adjust_Type !== undefined ? Adjust_Type : null,
+                Adj_date: Adj_date 
+                    ? new Date(Adj_date).toISOString().split('T')[0]
+                    : new Date().toISOString().split('T')[0],
+            });
+
+            // Set invoice info
+            setInvoiceInfo(prev => ({
+                ...prev,
+                Do_Id: Aj_id ?? prev.Do_Id,
+                Narration: narration ?? '',
+                Alter_Reason: '',
+            }));
+
+            // Set product details - since it's a flat list, we need to fetch all items for this adjustment
+            // For now, we'll set the single item that was passed
+            if (Item_Id || name_item_id) {
+                setInvoiceProduct([{
+                    ...salesInvoiceDetailsInfo,
+                    rowId: rid(),
+                    Item_Id: Item_Id || name_item_id || 0,
+                    Item_Name: Product_Name ?? '',
+                    Act_Qty: act_qty ?? 0,
+                    Alt_Act_Qty: act_qty ?? 0,
+                    Bill_Qty: bill_qty ?? 0,
+                    Alt_Bill_Qty: bill_qty ?? 0,
+                    Item_Rate: rate ?? 0,
+                    Amount: amount ?? 0,
+                    Adj_Payment: Adj_Payment ?? 0,
+                    GoDown_Id: godown_id != null ? toNumber(godown_id) : 0,
+                }]);
+            }
+        }
+    }, [editValues]);
+
+    // Fetch all items for the adjustment when editing
+    useEffect(() => {
+        const fetchAdjustmentDetails = async () => {
+            if (isEdit && editValues?.Aj_id) {
+                try {
+                    if (loadingOn) loadingOn();
+                    
+                    const response = await fetchLink({
+                        address: `inventory/getStockAdjustmentById/${editValues.Aj_id}`,
+                        method: "GET"
+                    });
+                    
+                    if (response?.success && response?.data) {
+                        // If the API returns all items for this adjustment
+                        const items = toArray(response.data).map(item => ({
+                            ...salesInvoiceDetailsInfo,
+                            rowId: rid(),
+                            Item_Id: item.Item_Id || item.name_item_id || 0,
+                            Item_Name: item.Product_Name ?? '',
+                            Act_Qty: item.act_qty ?? 0,
+                            Alt_Act_Qty: item.act_qty ?? 0,
+                            Bill_Qty: item.bill_qty ?? 0,
+                            Alt_Bill_Qty: item.bill_qty ?? 0,
+                            Item_Rate: item.rate ?? 0,
+                            Amount: item.amount ?? 0,
+                            Adj_Payment: item.Adj_Payment ?? 0,
+                            GoDown_Id: item.godown_id != null ? toNumber(item.godown_id) : 0,
+                        }));
+                        
+                        setInvoiceProduct(items);
+                    }
+                } catch (error) {
+                    console.error("Error fetching adjustment details:", error);
+                    toast.error("Failed to load adjustment details");
+                } finally {
+                    if (loadingOff) loadingOff();
+                }
+            }
+        };
+        
+        fetchAdjustmentDetails();
+    }, [isEdit, editValues?.Aj_id]);
 
     useEffect(() => {
         const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
@@ -287,7 +346,6 @@ useEffect(() => {
         });
     }, [baseData.expence, IS_IGST, taxType]);
 
-
     const invExpencesTotal = useMemo(() => {
         return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0);
     }, [invoiceExpences]);
@@ -365,7 +423,7 @@ useEffect(() => {
         setInvoiceProduct([]);
         setInvoiceExpences([]);
         setStaffArray([]);
-        setAdjustmentInfo({ godownId: null, adjustmentType: null });
+        setAdjustmentInfo({ godownId: null, adjustmentType: null, Adj_date: new Date().toISOString().split('T')[0] });
         generateNewRequestId();
     };
 
@@ -382,26 +440,26 @@ useEffect(() => {
             return;
         }
 
-   
-
         fetchLink({
-            address: `inventory/getStockAdjustments`,
-            method: isEdit===true ? 'PUT' : 'POST',
-            loadingOff, loadingOn,
+            address: `inventory/getstockAdjustments`,
+            method: isEdit ? 'PUT' : 'POST',
+            loadingOff, 
+            loadingOn,
             headers: {
                 'Idempotency-Key': currentRequestId
             },
             bodyData: {
-               
                 adjustmentDetails: {
                     godownId: adjustmentInfo.godownId,
                     adjustmentType: adjustmentInfo.adjustmentType,
                     Adj_date: adjustmentInfo.Adj_date,
-                    
+                    Narration: invoiceInfo.Narration
                 },
-                invoiceNo:editValues?.invoice_no,
-                Aj_id:editValues?.Aj_id,
-                Product_Array: invoiceProducts.map((item, index) => ({ ...item, S_No: index + 1 })),
+                Aj_id: editValues?.Aj_id,
+                Product_Array: invoiceProducts.map((item, index) => ({ 
+                    ...item, 
+                    S_No: index + 1 
+                })),
                 Staffs_Array: Array.from(
                     new Map(
                         staffArray.filter(
@@ -416,7 +474,6 @@ useEffect(() => {
             }
         }).then(data => {
             if (data.success) {
-                const savedId = data.others?.Id;
                 toast.success(data.message);
                 clearValues();
                 navigate('/erp/inventory/StockJournalAdjustment');
@@ -438,6 +495,7 @@ useEffect(() => {
                     Bill_Qty: Addition(acc.Bill_Qty, item.Bill_Qty),
                     Alt_Bill_Qty: Addition(acc.Alt_Bill_Qty, item.Alt_Bill_Qty),
                     Amount: Addition(acc.Amount, item.Amount),
+                    Adj_Payment: Addition(acc.Adj_Payment || 0, item.Adj_Payment || 0),
                 }),
                 {
                     Act_Qty: 0,
@@ -445,6 +503,7 @@ useEffect(() => {
                     Bill_Qty: 0,
                     Alt_Bill_Qty: 0,
                     Amount: 0,
+                    Adj_Payment: 0,
                 }
             );
 
@@ -469,9 +528,7 @@ useEffect(() => {
                     setSelectedProductToEdit(null);
                 }}
                 products={baseData.products}
-                // brands={baseData.brand}
                 uom={baseData.uom}
-                // godowns={baseData.godown}
                 GST_Inclusive={invoiceInfo.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
@@ -482,11 +539,14 @@ useEffect(() => {
                 }}
                 batchDetails={baseData.batchDetails}
                 voucherType={invoiceInfo}
+                adjustmentType={adjustmentInfo.adjustmentType}
             />
 
             <Card>
                 <div className='d-flex flex-wrap align-items-center border-bottom py-2 px-3'>
-                    <span className="flex-grow-1 fa-16 fw-bold">Stock Journal Adjustment</span>
+                    <span className="flex-grow-1 fa-16 fw-bold">
+                        {isEdit ? 'Edit Stock Journal Adjustment' : 'Stock Journal Adjustment'}
+                    </span>
                     <span>
                         <Button type='button' onClick={() => {
                             if (window.history.length > 1) {
@@ -495,7 +555,9 @@ useEffect(() => {
                                 navigate('/erp/inventory/StockJournalAdjustment');
                             }
                         }}>Cancel</Button>
-                        <Button onClick={saveSalesInvoice} variant="contained" disabled={isLoading}>Submit</Button>
+                        <Button onClick={saveSalesInvoice} variant="contained" disabled={isLoading}>
+                            {isEdit ? 'Update' : 'Submit'}
+                        </Button>
                     </span>
                 </div>
                 <CardContent>
@@ -506,24 +568,25 @@ useEffect(() => {
                                 <div className='row'>
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Godown <RequiredStar /></label>
-                                       <Select
-                                           options={baseData.godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
-                                           value={
-                                               adjustmentInfo.godownId != null
-                                                   ? {
-                                                       value: adjustmentInfo.godownId,
-                                                       label: baseData.godown.find(g => isEqualNumber(g.Godown_Id, adjustmentInfo.godownId))?.Godown_Name
-                                                     }
-                                                   : null
-                                           }
-                                           onChange={(selected) => setAdjustmentInfo(prev => ({
-                                               ...prev,
-                                               godownId: selected?.value ?? null  
-                                           }))}
-                                           placeholder="Select Godown"
-                                           isClearable
-                                           styles={customSelectStyles}
-                                       />
+                                        <Select
+                                            options={baseData.godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
+                                            value={
+                                                adjustmentInfo.godownId != null
+                                                    ? {
+                                                        value: adjustmentInfo.godownId,
+                                                        label: baseData.godown.find(g => isEqualNumber(g.Godown_Id, adjustmentInfo.godownId))?.Godown_Name
+                                                      }
+                                                    : null
+                                            }
+                                            onChange={(selected) => setAdjustmentInfo(prev => ({
+                                                ...prev,
+                                                godownId: selected?.value ?? null  
+                                            }))}
+                                            placeholder="Select Godown"
+                                            isClearable
+                                            styles={customSelectStyles}
+                                            isDisabled={isEdit}
+                                        />
                                     </div>
                                 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
@@ -538,24 +601,23 @@ useEffect(() => {
                                             placeholder="Select Adjustment Type"
                                             isClearable
                                             styles={customSelectStyles}
+                                            isDisabled={isEdit}
                                         />
                                     </div>
 
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-    <label className='fa-13'>Adjustment Date <RequiredStar /></label>
-    <input
-        type="date"
-        className={inputStyle}
-        value={adjustmentInfo.Adj_date ?? ''}
-        onChange={e => setAdjustmentInfo(prev => ({
-            ...prev,
-            Adj_date: e.target.value
-        }))}
-        style={{ width: '100%' }}
-    />
-</div>
-
-                                    
+                                        <label className='fa-13'>Adjustment Date <RequiredStar /></label>
+                                        <input
+                                            type="date"
+                                            className={inputStyle}
+                                            value={adjustmentInfo.Adj_date ?? ''}
+                                            onChange={e => setAdjustmentInfo(prev => ({
+                                                ...prev,
+                                                Adj_date: e.target.value
+                                            }))}
+                                            style={{ width: '100%' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -585,18 +647,18 @@ useEffect(() => {
                             ...invoiceProducts,
                             ...Array.from({
                                 length: dummyRowCount > 0 ? dummyRowCount : 0
-                            }).map(d => salesInvoiceDetailsInfo),
+                            }).map(() => salesInvoiceDetailsInfo),
                             ...(cumulativeRow ? [cumulativeRow] : []),
                         ]}
                         columns={[
-                            createCol('Item_Name', 'string'),
-                            createCol('Batch_Name', 'string'),
+                            createCol('Item_Name', 'string', 'Product Name', 'left'),
+                            createCol('Batch_Name', 'string', 'Batch', 'left'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Available Qty',
                                 isCustomCell: true,
                                 Cell: ({ row }) => {
-                                    return row?.Act_Qty ? `${row?.Act_Qty} (${row?.Alt_Act_Qty})` : '';
+                                    return checkIsNumber(row?.Item_Id) ? `${row?.Act_Qty || 0} (${row?.Alt_Act_Qty || 0})` : '';
                                 }
                             },
                             {
@@ -604,10 +666,10 @@ useEffect(() => {
                                 ColumnHeader: 'Adjustment Qty',
                                 isCustomCell: true,
                                 Cell: ({ row }) => {
-                                    return row?.Bill_Qty ? `${row?.Bill_Qty} (${row?.Alt_Bill_Qty})` : '';
+                                    return checkIsNumber(row?.Item_Id) ? `${row?.Bill_Qty || 0} (${row?.Alt_Bill_Qty || 0})` : '';
                                 }
                             },
-                            createCol('Item_Rate', 'number'),
+                            createCol('Item_Rate', 'number', 'Rate', 'right'),
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Tax',
@@ -628,19 +690,19 @@ useEffect(() => {
                                     godown => isEqualNumber(godown.Godown_Id, row?.GoDown_Id)
                                 )?.Godown_Name ?? ''
                             },
-                            createCol('Amount', 'number'),
-                             {
+                            createCol('Amount', 'number', 'Amount', 'right'),
+                            {
                                 isVisible: 1,
-                                ColumnHeader: 'Adjustment Payment',
+                                ColumnHeader: 'Adj Payment',
                                 isCustomCell: true,
                                 Cell: ({ row }) => {
-                                    return row?.Adj_Payment;
+                                    return checkIsNumber(row?.Item_Id) ? (row?.Adj_Payment || 0) : '';
                                 }
                             },
                             {
                                 isCustomCell: true,
                                 Cell: ({ row }) => {
-                                    return (
+                                    return checkIsNumber(row?.Item_Id) ? (
                                         <>
                                             <IconButton
                                                 onClick={() => {
@@ -649,7 +711,6 @@ useEffect(() => {
                                                 }}
                                                 size="small"
                                                 type="button"
-                                                disabled={!checkIsNumber(row?.Item_Id)}
                                             >
                                                 <Edit />
                                             </IconButton>
@@ -660,12 +721,11 @@ useEffect(() => {
                                                     pre => pre.filter(obj => obj.rowId !== row.rowId)
                                                 )}
                                                 color='error'
-                                                disabled={!checkIsNumber(row?.Item_Id)}
                                             >
                                                 <Delete />
                                             </IconButton>
                                         </>
-                                    );
+                                    ) : null;
                                 },
                                 ColumnHeader: 'Action',
                                 isVisible: 1,
@@ -690,7 +750,9 @@ useEffect(() => {
                             navigate('/erp/inventory/StockJournalAdjustment');
                         }
                     }}>Cancel</Button>
-                    <Button onClick={saveSalesInvoice} variant="contained" disabled={isLoading}>Submit</Button>
+                    <Button onClick={saveSalesInvoice} variant="contained" disabled={isLoading}>
+                        {isEdit ? 'Update' : 'Submit'}
+                    </Button>
                 </CardActions>
             </Card>
         </>
