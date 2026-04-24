@@ -203,8 +203,7 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
                 Alter_Reason: '',
             }));
 
-            // Set product details - since it's a flat list, we need to fetch all items for this adjustment
-            // For now, we'll set the single item that was passed
+            
             if (Item_Id || name_item_id) {
                 setInvoiceProduct([{
                     ...salesInvoiceDetailsInfo,
@@ -225,47 +224,47 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
     }, [editValues]);
 
     // Fetch all items for the adjustment when editing
-    useEffect(() => {
-        const fetchAdjustmentDetails = async () => {
-            if (isEdit && editValues?.Aj_id) {
-                try {
-                    if (loadingOn) loadingOn();
+    // useEffect(() => {
+    //     const fetchAdjustmentDetails = async () => {
+    //         if (isEdit && editValues?.Aj_id) {
+    //             try {
+    //                 if (loadingOn) loadingOn();
                     
-                    const response = await fetchLink({
-                        address: `inventory/getStockAdjustmentById/${editValues.Aj_id}`,
-                        method: "GET"
-                    });
+    //                 const response = await fetchLink({
+    //                     address: `inventory/getStockAdjustmentById/${editValues.Aj_id}`,
+    //                     method: "GET"
+    //                 });
                     
-                    if (response?.success && response?.data) {
-                        // If the API returns all items for this adjustment
-                        const items = toArray(response.data).map(item => ({
-                            ...salesInvoiceDetailsInfo,
-                            rowId: rid(),
-                            Item_Id: item.Item_Id || item.name_item_id || 0,
-                            Item_Name: item.Product_Name ?? '',
-                            Act_Qty: item.act_qty ?? 0,
-                            Alt_Act_Qty: item.act_qty ?? 0,
-                            Bill_Qty: item.bill_qty ?? 0,
-                            Alt_Bill_Qty: item.bill_qty ?? 0,
-                            Item_Rate: item.rate ?? 0,
-                            Amount: item.amount ?? 0,
-                            Adj_Payment: item.Adj_Payment ?? 0,
-                            GoDown_Id: item.godown_id != null ? toNumber(item.godown_id) : 0,
-                        }));
+    //                 if (response?.success && response?.data) {
+    //                     // If the API returns all items for this adjustment
+    //                     const items = toArray(response.data).map(item => ({
+    //                         ...salesInvoiceDetailsInfo,
+    //                         rowId: rid(),
+    //                         Item_Id: item.Item_Id || item.name_item_id || 0,
+    //                         Item_Name: item.Product_Name ?? '',
+    //                         Act_Qty: item.act_qty ?? 0,
+    //                         Alt_Act_Qty: item.act_qty ?? 0,
+    //                         Bill_Qty: item.bill_qty ?? 0,
+    //                         Alt_Bill_Qty: item.bill_qty ?? 0,
+    //                         Item_Rate: item.rate ?? 0,
+    //                         Amount: item.amount ?? 0,
+    //                         Adj_Payment: item.Adj_Payment ?? 0,
+    //                         GoDown_Id: item.godown_id != null ? toNumber(item.godown_id) : 0,
+    //                     }));
                         
-                        setInvoiceProduct(items);
-                    }
-                } catch (error) {
-                    console.error("Error fetching adjustment details:", error);
-                    toast.error("Failed to load adjustment details");
-                } finally {
-                    if (loadingOff) loadingOff();
-                }
-            }
-        };
+    //                     setInvoiceProduct(items);
+    //                 }
+    //             } catch (error) {
+    //                 console.error("Error fetching adjustment details:", error);
+    //                 toast.error("Failed to load adjustment details");
+    //             } finally {
+    //                 if (loadingOff) loadingOff();
+    //             }
+    //         }
+    //     };
         
-        fetchAdjustmentDetails();
-    }, [isEdit, editValues?.Aj_id]);
+    //     fetchAdjustmentDetails();
+    // }, [isEdit, editValues?.Aj_id]);
 
     useEffect(() => {
         const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
