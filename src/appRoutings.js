@@ -283,6 +283,8 @@ const ReportsTemplateMobCreation = lazy(() => import('./Pages/Analytics/reportsT
 const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
 
 const LedgerOpeningBalance =lazy(()=>import('./Pages/Inventry/openingBalance'))
+ const ShetSheetUploadPage=lazy(()=>import('./Pages/Inventry/shetSheetUpload'))
+
 const RoutingArray = [
     // ---------------------------------------------------------------------------
     // Root
@@ -380,6 +382,7 @@ const RoutingArray = [
     {component:<StockValueSync/>,path:'/erp/inventory/stockValueSync'},
     {component:<StockValueErpSync/>,path:'/erp/inventory/stockValueErpSync'},
     {component:<StockSummaryErpReport/>,path:'/erp/inventory/StockSummaryErpReport'},
+     {component:<ShetSheetUploadPage/>,path:'/erp/inventory/shetSheetupload'},
 
     // ---------------------------------------------------------------------------
     // ERP - Journal
