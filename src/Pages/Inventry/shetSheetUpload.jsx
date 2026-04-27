@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Button, Dialog, IconButton, DialogTitle,
-  DialogContent, DialogActions, Tooltip
+  DialogContent, DialogActions, Tooltip, Card, Paper, CardContent
 } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
@@ -14,14 +14,11 @@ import {
 } from "../../Components/functions";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol, ButtonActions } from "../../Components/filterableTable2";
-import { FilterAlt, Search, Sync, Upload, Visibility } from "@mui/icons-material";
-import { Close } from "@mui/icons-material";
+import { FilterAlt, Search, Sync, Upload, Visibility, Close } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import api from "../../API";
 import ImagePreviewDialog from "../../Components/imagePreview";
-
-
 
 const defaultFilters = {
   Fromdate: ISOString(),
@@ -50,42 +47,47 @@ const UPLOAD_STATUS_OPTIONS = [
 
 const uploadStatusBadge = {
   yes: { label: "Uploaded", cls: "bg-success text-white" },
-  no: { label: "Not Uploaded", cls: "bg-danger  text-white" },
+  no: { label: "Not Uploaded", cls: "bg-danger text-white" },
   pending: { label: "Pending", cls: "bg-warning text-dark" },
 };
+
+const BASE_URL = (typeof api === "string" ? api : "").replace(/\/$/, "");
 
 
 const getFullImageUrl = (imageUrl) => {
   if (!imageUrl) return null;
+  
 
-  let fullImageUrl = imageUrl;
+  
 
-
-  if (imageUrl.startsWith('uploads/') || imageUrl.startsWith('uploads\\')) {
-    const normalizedPath = imageUrl.replace(/\\/g, '/');
-    fullImageUrl = `${api}/${normalizedPath}`;
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
   }
+  
 
-  else if (!imageUrl.includes('/') && !imageUrl.includes('\\') && !imageUrl.startsWith('http')) {
-    fullImageUrl = `${api}/uploads/LRReport/${imageUrl}`;
+  let cleaned = imageUrl.replace(/\\/g, "/");
+  
+  
+
+  const match = cleaned.match(/uploads\/(.+)/i);
+  if (match) {
+    const relativePath = match[0];
+    const fullUrl = `${BASE_URL}/${relativePath}`;
+    
+    return fullUrl;
   }
+  
+  
+  const filename = cleaned.split("/").pop();
+  if (filename) {
+    const fullUrl = `${BASE_URL}/uploads/LRReport/${filename}`;
 
-  else if (imageUrl.includes(':\\')) {
-    const uploadsIndex = imageUrl.indexOf('uploads');
-    if (uploadsIndex !== -1) {
-      const relativePath = imageUrl.substring(uploadsIndex).replace(/\\/g, '/');
-      fullImageUrl = `${api}/${relativePath}`;
-    }
+    return fullUrl;
   }
+  
 
-  else if (!imageUrl.startsWith('http')) {
-    fullImageUrl = `${api}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-  }
-
-  return fullImageUrl;
+  return null;
 };
-
-
 
 const StockDetailsExpand = ({ row }) => {
   const stocks = toArray(row?.stockDetails);
@@ -121,10 +123,8 @@ const StockDetailsExpand = ({ row }) => {
             isCustomCell: true,
             Cell: ({ row: r }) => {
               const diff = r.quantityDifference ?? 0;
-              const cls =
-                diff === 0 ? "bg-success text-white" :
-                  diff > 0 ? "bg-warning text-dark" :
-                    "bg-danger  text-white";
+              const cls = diff === 0 ? "bg-success text-white" :
+                         diff > 0 ? "bg-warning text-dark" : "bg-danger text-white";
               return (
                 <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${cls}`}>
                   {diff}
@@ -139,24 +139,86 @@ const StockDetailsExpand = ({ row }) => {
 };
 
 
+const PreviewImage = ({ imageUrl, invoiceNo, imageName }) => {
+  const [imgError, setImgError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Construct URL properly
+  let fullUrl = null;
+  
+  if (imageUrl && imageUrl.trim() !== '') {
+    fullUrl = getFullImageUrl(imageUrl);
+  } else if (imageName && imageName.trim() !== '') {
 
+    fullUrl = `${BASE_URL}/imageURL/LRReport/${imageName}`;
+  }
+  
+
+  
+  if (!fullUrl) {
+    return <span className="text-muted fa-12">No Image</span>;
+  }
+  
+  if (imgError) {
+    return (
+      <Tooltip title={`Failed to load: ${fullUrl}`}>
+        <span className="text-danger fa-12 d-flex align-items-center gap-1">
+          {/* <BrokenImage fontSize="small" /> */}
+          Error
+        </span>
+      </Tooltip>
+    );
+  }
+  
+  return (
+    <div className="d-flex align-items-center flex-column">
+      {isLoading && (
+        <div className="text-muted fa-12">Loading...</div>
+      )}
+      <ImagePreviewDialog url={fullUrl}>
+        <img
+          src={fullUrl}
+          alt={`Invoice ${invoiceNo}`}
+          style={{
+            maxWidth: '60px',
+            maxHeight: '60px',
+            objectFit: 'cover',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+            cursor: 'pointer'
+          }}
+          onLoad={() => {
+  
+            setIsLoading(false);
+          }}
+          onError={(e) => {
+            console.error('Failed to load image:', fullUrl);
+            console.error('Error event:', e);
+            setImgError(true);
+            setIsLoading(false);
+          }}
+        />
+        <Visibility fontSize="small" />
+      </ImagePreviewDialog>
+    </div>
+  );
+};
 const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
   const sessionValue = sessionStorage.getItem("filterValues");
   const location = useLocation();
-
+const parseData = JSON.parse(localStorage.getItem("user"));
+   const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?.UserId;
   const [tableData, setTableData] = useState([]);
   const [reload, setReload] = useState(false);
   const [filters, setFilters] = useState({ ...defaultFilters });
   const [uploadForm, setUploadForm] = useState({ ...initialUploadForm });
-
   const [dialog, setDialog] = useState({
     filters: false,
     upload: false,
-    preview: false,
   });
 
-
-
+ 
   const partyOptions = useMemo(() => {
     const unique = [...new Map(
       tableData
@@ -167,54 +229,41 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
   }, [tableData]);
 
   const godownOptions = useMemo(() => {
-    const unique = [...new Set(
-      tableData.map((r) => r.godown).filter(Boolean)
-    )].map((g) => ({ value: g, label: g }));
+    const unique = [...new Set(tableData.map((r) => r.godown).filter(Boolean))]
+      .map((g) => ({ value: g, label: g }));
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
   const driverOptions = useMemo(() => {
-    const unique = [...new Set(
-      tableData.map((r) => r.driver).filter(Boolean)
-    )].map((d) => ({ value: d, label: d }));
+    const unique = [...new Set(tableData.map((r) => r.driver).filter(Boolean))]
+      .map((d) => ({ value: d, label: d }));
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
-
+  
   const filteredData = useMemo(() => {
     return tableData.filter((row) => {
       const matchParty = !filters.Party?.value || row.Retailer_Id === filters.Party.value;
       const matchGodown = !filters.Godown?.value || row.godown === filters.Godown.value;
       const matchDriver = !filters.Driver?.value || row.driver === filters.Driver.value;
 
-
       let matchUpload = true;
       if (filters.UploadStatus?.value) {
-        const hasImage = row.Imageurl && row.Imageurl !== "";
-        if (filters.UploadStatus.value === "yes") {
-          matchUpload = hasImage;
-        } else if (filters.UploadStatus.value === "no") {
-          matchUpload = !hasImage;
-        } else if (filters.UploadStatus.value === "pending") {
-          matchUpload = row.imageStatus === "pending" && !hasImage;
-        }
+        const hasImage = Boolean(row.Imageurl);
+        if (filters.UploadStatus.value === "yes") matchUpload = hasImage;
+        else if (filters.UploadStatus.value === "no") matchUpload = !hasImage;
+        else if (filters.UploadStatus.value === "pending") matchUpload = row.imageStatus === "pending" && !hasImage;
       }
 
       return matchParty && matchGodown && matchDriver && matchUpload;
     });
-  }, [tableData, filters.Party, filters.Godown, filters.Driver, filters.UploadStatus]);
+  }, [tableData, filters]);
 
-
+  
   useEffect(() => {
     const saved = getSessionFiltersByPageId(pageID);
-    const {
-      Fromdate,
-      Todate,
-      Party = defaultFilters.Party,
-      Godown = defaultFilters.Godown,
-      Driver = defaultFilters.Driver,
-      UploadStatus = defaultFilters.UploadStatus,
-    } = saved;
+    const { Fromdate, Todate, Party = defaultFilters.Party, Godown = defaultFilters.Godown, 
+            Driver = defaultFilters.Driver, UploadStatus = defaultFilters.UploadStatus } = saved;
 
     setFilters((pre) => ({
       ...pre,
@@ -224,13 +273,10 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     }));
   }, [sessionValue, pageID]);
 
-
+  // Fetch table data
   useEffect(() => {
     const saved = getSessionFiltersByPageId(pageID);
-    const {
-      Fromdate = defaultFilters.Fromdate,
-      Todate = defaultFilters.Todate,
-    } = saved;
+    const { Fromdate = defaultFilters.Fromdate, Todate = defaultFilters.Todate } = saved;
 
     fetchLink({
       address: `sales/lrreportUpload?reqDate=${Fromdate}&Todate=${Todate}`,
@@ -238,7 +284,8 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
       loadingOff,
     })
       .then((data) => {
-        if (data.success) {
+         if (data.success) {
+    
           setTableData(data?.data || []);
         } else {
           setTableData([]);
@@ -255,7 +302,6 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
 
   const handlePost = (e) => {
     e.preventDefault();
-
     if (!uploadForm.uploadFile) {
       toast.warning("Please select a file to upload");
       return;
@@ -264,15 +310,12 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     const formData = new FormData();
     formData.append("Do_Id", uploadForm.Do_Id);
     formData.append("Do_Inv_No", uploadForm.invoiceNo);
-    formData.append("Uploaded_By", uploadForm.Uploaded_By || "");
+    formData.append("Uploaded_By", userId || "");
     formData.append("LRReport", uploadForm.uploadFile);
 
     if (loadingOn) loadingOn();
 
-    fetch(`${api}sales/lrreportUpload`, {
-      method: "POST",
-      body: formData
-    })
+    fetch(`${BASE_URL}/sales/lrreportUpload`, { method: "POST", body: formData })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -283,15 +326,11 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
           toast.error(data.message || "Upload failed");
         }
       })
-      .catch((e) => {
-        console.error(e);
-        toast.error("Upload error");
-      })
-      .finally(() => {
-        if (loadingOff) loadingOff();
-      });
+      .catch((e) => { console.error(e); toast.error("Upload error"); })
+      .finally(() => { if (loadingOff) loadingOff(); });
   };
 
+  // Update PUT
   const handlePut = (e) => {
     e.preventDefault();
 
@@ -299,18 +338,12 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     formData.append("Id", uploadForm.Id);
     formData.append("Do_Id", uploadForm.Do_Id);
     formData.append("Do_Inv_No", uploadForm.invoiceNo);
-    formData.append("Uploaded_By", uploadForm.Uploaded_By || "");
-
-    if (uploadForm.uploadFile) {
-      formData.append("LRReport", uploadForm.uploadFile);
-    }
+    formData.append("Uploaded_By", userId || "");
+    if (uploadForm.uploadFile) formData.append("LRReport", uploadForm.uploadFile);
 
     if (loadingOn) loadingOn();
 
-    fetch(`${api}sales/lrreportUpload`, {
-      method: "PUT",
-      body: formData
-    })
+    fetch(`${BASE_URL}/sales/lrreportUpload`, { method: "PUT", body: formData })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -321,17 +354,13 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
           toast.error(data.message || "Update failed");
         }
       })
-      .catch((e) => {
-        console.error(e);
-        toast.error("Update error");
-      })
-      .finally(() => {
-        if (loadingOff) loadingOff();
-      });
+      .catch((e) => { console.error(e); toast.error("Update error"); })
+      .finally(() => { if (loadingOff) loadingOff(); });
   };
 
+  // Dialog helpers
   const openUploadDialog = (row) => {
-    const hasImage = row.Imageurl && row.Imageurl !== "";
+    const hasImage = Boolean(row.Imageurl);
     setUploadForm({
       Id: row?.Id || "",
       Do_Id: row?.Do_Id || "",
@@ -350,194 +379,171 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     setUploadForm({ ...initialUploadForm });
   };
 
-  const closeFilterDialog = () => {
-    setDialog((pre) => ({ ...pre, filters: false }));
-  };
-
+  const closeFilterDialog = () => setDialog((pre) => ({ ...pre, filters: false }));
   const isUpdate = Boolean(uploadForm.existingFile);
 
 
+  const DriverCell = ({ row }) => {
+    const staffs = toArray(row?.involvedStaffs);
+    const driverTypes = staffs.filter(
+      (s) => s.Involved_Emp_Type == "Delivery Man" || s.Involved_Emp_Type == "Load Man"
+    );
+    if (driverTypes.length ==0 ) return <span className="text-muted fa-12">—</span>;
+    return (
+      <div className="fa-12">
+        {driverTypes.map((staff, i) => (
+          <div key={staff.Id || i} className="mb-1">
+            <span className="text-primary fw-bold">{staff.Emp_Name}</span>
+            <span className="text-muted ms-1">({staff.Involved_Emp_Type})</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  
+  const UploadStatusCell = ({ row }) => {
+    const hasImage = Boolean(row.Image_Name);
+    const status = hasImage ? "yes" : (row.imageStatus == "pending" ? "pending" : "no");
+    const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
+    return (
+      <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
+        {st.label}
+      </span>
+    );
+  };
+
   return (
-    <>
-      {/* ── Main Table ── */}
-      <FilterableTable
-        title="Shet Sheet Upload"
-        dataArray={filteredData}
-        EnableSerialNumber
-        tableMaxHeight={550}
-        isExpendable={true}
-        expandableComp={StockDetailsExpand}
-        columns={[
-          createCol("Do_Date", "date", "Date"),
-          createCol("Do_Inv_No", "string", "Invoice No"),
-          createCol("retailerNameGet", "string", "Party Name"),
-          {
-            ColumnHeader: "Items",
-            isVisible: 1,
-            align: "center",
-            isCustomCell: true,
-            Cell: ({ row }) => (
-              <span className="fw-bold">
-                {toArray(row?.stockDetails).length}
-              </span>
-            ),
-          },
-          {
-            ColumnHeader: "Preview",
-            isVisible: 1,
-            align: "center",
-            isCustomCell: true,
-            Cell: ({ row }) => {
+    <Card component={Paper}>
+      <div className="p-3 pb-1 d-flex align-items-center flex-wrap">
+        <h6 className="flex-grow-1 fa-18">Shet Sheet Upload</h6>
+        
+        <Tooltip title="Refresh">
+          <Button
+            variant="outlined"
+            startIcon={<Sync />}
+            onClick={() => setReload((pre) => !pre)}
+            size="small"
+          >
+            Refresh
+          </Button>
+        </Tooltip>
+        
+        <Tooltip title="Filters">
+          <IconButton
+            size="small"
+            onClick={() => setDialog((pre) => ({ ...pre, filters: true }))}
+          >
+            <FilterAlt />
+          </IconButton>
+        </Tooltip>
+      </div>
 
-              const imageUrl = row.Imageurl;
-
-              if (!imageUrl || imageUrl === "" || imageUrl === null) {
-                return <span className="text-muted fa-12">—-</span>;
-              }
-
-              return (
-                <div className="d-flex align-items-center flex-column">
-                  <ImagePreviewDialog url={imageUrl}>
-                    <img
-                      src={imageUrl}
-                      alt={`Invoice ${row.Do_Inv_No}`}
-                      style={{
-                        maxWidth: '60px',
-                        maxHeight: '60px',
-                        objectFit: 'cover',
-                        borderRadius: '4px',
-                        border: '1px solid #ddd',
-                        cursor: 'pointer'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                    <Visibility />
-                  </ImagePreviewDialog>
-                </div>
-              );
-            },
-          },
-          {
-            ColumnHeader: "Driver",
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => {
-              const staffs = toArray(row?.involvedStaffs);
-
-              if (!staffs.length) {
-                return <span className="text-muted fa-12">—</span>;
-              }
-
-              const driverTypes = staffs.filter(staff =>
-                staff.Involved_Emp_Type === "Delivery Man" ||
-                staff.Involved_Emp_Type === "Load Man"
-              );
-
-              if (!driverTypes.length) {
-                return <span className="text-muted fa-12">—</span>;
-              }
-
-              return (
-                <div className="fa-12">
-                  {driverTypes.map((staff, index) => (
-                    <div key={staff.Id || index} className="mb-1">
-                      <span className="text-primary fw-bold">
-                        {staff.Emp_Name}
-                      </span>
-                      <span className="text-muted ms-1">
-                        ({staff.Involved_Emp_Type})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            },
-          },
-          {
-            ColumnHeader: "File",
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) =>
-              row.Image_Name ? (
-                <span className="text-primary fa-12">📎 {row.Image_Name}</span>
-              ) : (
-                <span className="text-muted fa-12">—</span>
+      <CardContent sx={{ p: 0 }}>
+        <FilterableTable
+          dataArray={filteredData}
+          EnableSerialNumber
+          tableMaxHeight={550}
+          isExpendable={true}
+          expandableComp={StockDetailsExpand}
+          columns={[
+            createCol("Do_Date", "date", "Date"),
+            createCol("Do_Inv_No", "string", "Invoice No"),
+            createCol("retailerNameGet", "string", "Party Name"),
+            {
+              ColumnHeader: "Items",
+              isVisible: 1,
+              align: "center",
+              isCustomCell: true,
+              Cell: ({ row }) => (
+                <span className="fw-bold">{toArray(row?.stockDetails).length}</span>
               ),
-          },
-          {
-            ColumnHeader: "Upload Status",
-            isVisible: 1,
-            align: "center",
-            isCustomCell: true,
-            Cell: ({ row }) => {
-
-              const hasImage = row.Imageurl && row.Imageurl !== "";
-              const status = hasImage ? "yes" : (row.imageStatus === "pending" ? "pending" : "no");
-              const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
-
-              return (
-                <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
-                  {st.label}
-                </span>
-              );
             },
-          },
           {
-            Field_Name: "Action",
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => (
-              <ButtonActions
-                buttonsData={[
-                  // {
-                  //     name: "Preview Invoice",
-                  //     onclick: () => {
-                  //         setUploadForm((pre) => ({
-                  //             ...pre,
-                  //             invoiceNo: row.Do_Inv_No,
-                  //             Do_Id:     row.Do_Id,
-                  //         }));
-                  //         setDialog((pre) => ({ ...pre, preview: true }));
-                  //     },
-                  //     icon: <Visibility fontSize="small" color="primary" />,
-                  // },
-                  {
-                    name: row?.Image_Name ? "Update Upload" : "Upload",
-                    onclick: () => openUploadDialog(row),
-                    icon: <Upload fontSize="small" color="primary" />,
-                  },
-                ]}
-              />
-            ),
-          },
-        ]}
-        ButtonArea={
-          <>
-            <Tooltip title="Refresh">
-              <Button
-                variant="outlined"
-                startIcon={<Sync />}
-                onClick={() => setReload((pre) => !pre)}
-              >
-                Refresh
-              </Button>
-            </Tooltip>
+  ColumnHeader: "Preview",
+  isVisible: 1,
+  align: "center",
+  isCustomCell: true,
+  Cell: ({ row }) => {
+  const [imgError, setImgError] = useState(false);
 
-            <Tooltip title="Filters">
-              <IconButton
-                size="small"
-                onClick={() => setDialog((pre) => ({ ...pre, filters: true }))}
-              >
-                <FilterAlt />
-              </IconButton>
-            </Tooltip>
-          </>
-        }
-      />
+  const Imageurl = row.Imageurl;
 
+  if (!Imageurl || imgError) {
+    return <span className="text-muted fa-12">No Image</span>;
+  }
 
+  return (
+    <div className="d-flex align-items-center justify-content-center">
+      <ImagePreviewDialog url={Imageurl}>
+        <img
+          src={Imageurl}
+          alt={`Invoice ${row.Do_Inv_No}`}
+          style={{
+            width: '50px',
+            height: '50px',
+            objectFit: 'cover',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+            cursor: 'pointer'
+          }}
+          onError={() => setImgError(true)}
+        />
+      </ImagePreviewDialog>
+    </div>
+  );
+}},
+            {
+              ColumnHeader: "Driver",
+              isVisible: 1,
+              isCustomCell: true,
+              Cell: DriverCell,
+            },
+             {
+              ColumnHeader: "UploadedBy",
+              isVisible: 1,
+              align: "center",
+              isCustomCell: true,
+              Cell: ({ row }) => (
+                <span className="fw-bold">{row?.LR_Uploaded_By_Name}</span>
+              ),
+            },
+            {
+              ColumnHeader: "File",
+              isVisible: 1,
+              isCustomCell: true,
+              Cell: ({ row }) => row.Image_Name
+                ? <span className="text-primary fa-12">📎 {row.Image_Name}</span>
+                : <span className="text-muted fa-12">—</span>,
+            },
+            {
+              ColumnHeader: "Upload Status",
+              isVisible: 1,
+              align: "center",
+              isCustomCell: true,
+              Cell: UploadStatusCell,
+            },
+            {
+              Field_Name: "Action",
+              isVisible: 1,
+              isCustomCell: true,
+              Cell: ({ row }) => (
+                <ButtonActions
+                  buttonsData={[
+                    {
+                      name: row?.Image_Name ? "Update Upload" : "Upload",
+                      onclick: () => openUploadDialog(row),
+                      icon: <Upload fontSize="small" color="primary" />,
+                    },
+                  ]}
+                />
+              ),
+            },
+          ]}
+        />
+      </CardContent>
+
+      {/* Filter Dialog */}
       <Dialog open={dialog.filters} onClose={closeFilterDialog} fullWidth maxWidth="sm">
         <DialogTitle>Filters</DialogTitle>
         <DialogContent>
@@ -550,28 +556,22 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                     <input
                       type="date"
                       value={filters.Fromdate}
-                      onChange={(e) =>
-                        setFilters((pre) => ({ ...pre, Fromdate: e.target.value }))
-                      }
+                      onChange={(e) => setFilters((pre) => ({ ...pre, Fromdate: e.target.value }))}
                       className="cus-inpt"
                     />
                   </td>
                 </tr>
-
                 <tr>
                   <td style={{ verticalAlign: "middle" }}>To</td>
                   <td>
                     <input
                       type="date"
                       value={filters.Todate}
-                      onChange={(e) =>
-                        setFilters((pre) => ({ ...pre, Todate: e.target.value }))
-                      }
+                      onChange={(e) => setFilters((pre) => ({ ...pre, Todate: e.target.value }))}
                       className="cus-inpt"
                     />
                   </td>
                 </tr>
-
                 <tr>
                   <td style={{ verticalAlign: "middle" }}>Party</td>
                   <td>
@@ -587,7 +587,6 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                     />
                   </td>
                 </tr>
-
                 <tr>
                   <td style={{ verticalAlign: "middle" }}>Godown</td>
                   <td>
@@ -603,7 +602,6 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                     />
                   </td>
                 </tr>
-
                 <tr>
                   <td style={{ verticalAlign: "middle" }}>Driver</td>
                   <td>
@@ -619,15 +617,12 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                     />
                   </td>
                 </tr>
-
                 <tr>
                   <td style={{ verticalAlign: "middle" }}>Upload Status</td>
                   <td>
                     <Select
                       value={filters.UploadStatus}
-                      onChange={(e) =>
-                        setFilters((pre) => ({ ...pre, UploadStatus: e }))
-                      }
+                      onChange={(e) => setFilters((pre) => ({ ...pre, UploadStatus: e }))}
                       options={UPLOAD_STATUS_OPTIONS}
                       styles={customSelectStyles}
                       placeholder="Upload Status"
@@ -662,7 +657,7 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
         </DialogActions>
       </Dialog>
 
-      {/* ── Upload / Update Dialog ── */}
+      {/* Upload/Update Dialog */}
       <Dialog open={dialog.upload} onClose={closeUploadDialog} fullWidth maxWidth="xs">
         <DialogTitle>
           {isUpdate ? "Update Upload" : "Upload File"} — {uploadForm.invoiceNo}
@@ -685,14 +680,12 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                       <input className="cus-inpt" value={uploadForm.invoiceNo} readOnly />
                     </td>
                   </tr>
-
                   <tr>
                     <td style={{ verticalAlign: "middle" }}>Party Name</td>
                     <td>
                       <input className="cus-inpt" value={uploadForm.partyName} readOnly />
                     </td>
                   </tr>
-
                   <tr>
                     <td style={{ verticalAlign: "middle" }}>Upload Status</td>
                     <td>
@@ -700,10 +693,7 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                         className="cus-inpt"
                         value={uploadForm.uploadStatus}
                         onChange={(e) =>
-                          setUploadForm((pre) => ({
-                            ...pre,
-                            uploadStatus: e.target.value,
-                          }))
+                          setUploadForm((pre) => ({ ...pre, uploadStatus: e.target.value }))
                         }
                       >
                         <option value="yes">Uploaded</option>
@@ -711,7 +701,6 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                       </select>
                     </td>
                   </tr>
-
                   <tr>
                     <td style={{ verticalAlign: "middle" }}>
                       {isUpdate ? "Replace File" : "Select File"}
@@ -732,21 +721,49 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
                           Current: {uploadForm.existingFile}
                         </small>
                       )}
-                      {uploadForm.uploadFile &&
-                        uploadForm.uploadFile.type?.startsWith("image/") && (
-                          <img
-                            src={URL.createObjectURL(uploadForm.uploadFile)}
-                            alt="Preview"
-                            style={{ maxWidth: "100%", maxHeight: 140, marginTop: 8 }}
-                          />
-                        )}
+                      {uploadForm.uploadFile?.type?.startsWith("image/") && (
+                        <img
+                          src={URL.createObjectURL(uploadForm.uploadFile)}
+                          alt="Preview"
+                          style={{ maxWidth: "100%", maxHeight: 140, marginTop: 8 }}
+                        />
+                      )}
                     </td>
                   </tr>
+
+                  {isUpdate && uploadForm.existingFile && !uploadForm.uploadFile && (
+                    <tr>
+                      <td style={{ verticalAlign: "middle" }}>Current Image</td>
+                      <td>
+                        {(() => {
+                          const existingRow = tableData.find(
+                            (r) => r.Do_Inv_No === uploadForm.invoiceNo
+                          );
+                          const existingUrl = existingRow?.Imageurl
+                            ? getFullImageUrl(existingRow.Imageurl)
+                            : null;
+                          return existingUrl ? (
+                            <img
+                              src={existingUrl}
+                              alt="Current upload"
+                              style={{
+                                maxWidth: "100%",
+                                maxHeight: 140,
+                                marginTop: 4,
+                                borderRadius: 4,
+                                border: "1px solid #ddd",
+                              }}
+                              onError={(e) => { e.target.style.display = "none"; }}
+                            />
+                          ) : null;
+                        })()}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </DialogContent>
-
           <DialogActions>
             <Button type="button" onClick={closeUploadDialog}>Cancel</Button>
             <Button type="submit" variant="outlined" startIcon={<Upload />}>
@@ -755,34 +772,7 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
           </DialogActions>
         </form>
       </Dialog>
-
-      {/* ── Preview Dialog ── */}
-      <Dialog
-        open={dialog.preview}
-        onClose={() => setDialog((pre) => ({ ...pre, preview: false }))}
-        fullWidth maxWidth="lg" scroll="paper"
-      >
-        <DialogTitle>
-          Invoice Preview — {uploadForm.invoiceNo}
-          <IconButton
-            onClick={() => setDialog((pre) => ({ ...pre, preview: false }))}
-            style={{ position: "absolute", right: 8, top: 8 }}
-          >
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <p className="text-muted text-center py-5">
-            Invoice preview for <strong>{uploadForm.invoiceNo}</strong>
-          </p>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialog((pre) => ({ ...pre, preview: false }))}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    </Card>
   );
 };
 
