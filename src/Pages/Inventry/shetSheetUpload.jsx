@@ -27,6 +27,7 @@ const defaultFilters = {
   Godown: { value: "", label: "ALL" },
   Driver: { value: "", label: "ALL" },
   UploadStatus: { value: "", label: "ALL" },
+  Voucher: { value: "", label: "ALL" }
 };
 
 const initialUploadForm = {
@@ -53,38 +54,27 @@ const uploadStatusBadge = {
 
 const BASE_URL = (typeof api === "string" ? api : "").replace(/\/$/, "");
 
-
 const getFullImageUrl = (imageUrl) => {
   if (!imageUrl) return null;
-  
-
-  
 
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
-  
 
   let cleaned = imageUrl.replace(/\\/g, "/");
-  
-  
 
   const match = cleaned.match(/uploads\/(.+)/i);
   if (match) {
     const relativePath = match[0];
     const fullUrl = `${BASE_URL}/${relativePath}`;
-    
     return fullUrl;
   }
-  
   
   const filename = cleaned.split("/").pop();
   if (filename) {
     const fullUrl = `${BASE_URL}/uploads/LRReport/${filename}`;
-
     return fullUrl;
   }
-  
 
   return null;
 };
@@ -138,77 +128,11 @@ const StockDetailsExpand = ({ row }) => {
   );
 };
 
-
-const PreviewImage = ({ imageUrl, invoiceNo, imageName }) => {
-  const [imgError, setImgError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Construct URL properly
-  let fullUrl = null;
-  
-  if (imageUrl && imageUrl.trim() !== '') {
-    fullUrl = getFullImageUrl(imageUrl);
-  } else if (imageName && imageName.trim() !== '') {
-
-    fullUrl = `${BASE_URL}/imageURL/LRReport/${imageName}`;
-  }
-  
-
-  
-  if (!fullUrl) {
-    return <span className="text-muted fa-12">No Image</span>;
-  }
-  
-  if (imgError) {
-    return (
-      <Tooltip title={`Failed to load: ${fullUrl}`}>
-        <span className="text-danger fa-12 d-flex align-items-center gap-1">
-          {/* <BrokenImage fontSize="small" /> */}
-          Error
-        </span>
-      </Tooltip>
-    );
-  }
-  
-  return (
-    <div className="d-flex align-items-center flex-column">
-      {isLoading && (
-        <div className="text-muted fa-12">Loading...</div>
-      )}
-      <ImagePreviewDialog url={fullUrl}>
-        <img
-          src={fullUrl}
-          alt={`Invoice ${invoiceNo}`}
-          style={{
-            maxWidth: '60px',
-            maxHeight: '60px',
-            objectFit: 'cover',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer'
-          }}
-          onLoad={() => {
-  
-            setIsLoading(false);
-          }}
-          onError={(e) => {
-            console.error('Failed to load image:', fullUrl);
-            console.error('Error event:', e);
-            setImgError(true);
-            setIsLoading(false);
-          }}
-        />
-        <Visibility fontSize="small" />
-      </ImagePreviewDialog>
-    </div>
-  );
-};
 const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
   const sessionValue = sessionStorage.getItem("filterValues");
   const location = useLocation();
-const parseData = JSON.parse(localStorage.getItem("user"));
-   const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user?.UserId;
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.UserId;
   const [tableData, setTableData] = useState([]);
   const [reload, setReload] = useState(false);
   const [filters, setFilters] = useState({ ...defaultFilters });
@@ -218,7 +142,6 @@ const parseData = JSON.parse(localStorage.getItem("user"));
     upload: false,
   });
 
- 
   const partyOptions = useMemo(() => {
     const unique = [...new Map(
       tableData
@@ -228,48 +151,95 @@ const parseData = JSON.parse(localStorage.getItem("user"));
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
+  // Updated Godown options - extracting from stockDetails Godown_Name
   const godownOptions = useMemo(() => {
-    const unique = [...new Set(tableData.map((r) => r.godown).filter(Boolean))]
-      .map((g) => ({ value: g, label: g }));
+    const godowns = new Set();
+    tableData.forEach(row => {
+      const stocks = toArray(row?.stockDetails);
+      stocks.forEach(stock => {
+        if (stock.Godown_Name) {
+          godowns.add(stock.Godown_Name);
+        }
+      });
+    });
+    const unique = Array.from(godowns).map(g => ({ value: g, label: g }));
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
+  // Updated Driver options - filtering involvedStaffs for Load Man or Delivery Man
   const driverOptions = useMemo(() => {
-    const unique = [...new Set(tableData.map((r) => r.driver).filter(Boolean))]
-      .map((d) => ({ value: d, label: d }));
+    const drivers = new Set();
+    tableData.forEach(row => {
+      const staffs = toArray(row?.involvedStaffs);
+      staffs.forEach(staff => {
+        const empType = staff.Involved_Emp_Type;
+        if (empType === "Load Man" || empType === "Delivery Man" || empType === "Delivery_Person") {
+          if (staff.Emp_Name) {
+            drivers.add(staff.Emp_Name);
+          }
+        }
+      });
+    });
+    const unique = Array.from(drivers).map(d => ({ value: d, label: d }));
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
-  
+  // Updated Voucher options - using voucherTypeGet field
+  const voucherOptions = useMemo(() => {
+    const unique = [...new Set(
+      tableData
+        .filter((r) => r.voucherTypeGet)
+        .map((r) => r.voucherTypeGet)
+    )].map(v => ({ value: v, label: v }));
+    return [{ value: "", label: "ALL" }, ...unique];
+  }, [tableData]);
+
   const filteredData = useMemo(() => {
     return tableData.filter((row) => {
       const matchParty = !filters.Party?.value || row.Retailer_Id === filters.Party.value;
-      const matchGodown = !filters.Godown?.value || row.godown === filters.Godown.value;
-      const matchDriver = !filters.Driver?.value || row.driver === filters.Driver.value;
+      
+      // Match Godown - check if any stock detail has matching godown
+      let matchGodown = true;
+      if (filters.Godown?.value) {
+        const stocks = toArray(row?.stockDetails);
+        matchGodown = stocks.some(stock => stock.Godown_Name === filters.Godown.value);
+      }
+      
+      // Match Driver - check if any involved staff matches
+      let matchDriver = true;
+      if (filters.Driver?.value) {
+        const staffs = toArray(row?.involvedStaffs);
+        matchDriver = staffs.some(staff => 
+          (staff.Involved_Emp_Type === "Load Man" || staff.Involved_Emp_Type === "Delivery Man" || staff.Involved_Emp_Type === "Delivery_Person") &&
+          staff.Emp_Name === filters.Driver.value
+        );
+      }
+      
+      const matchVoucher = !filters.Voucher?.value || row.voucherTypeGet === filters.Voucher.value;
 
       let matchUpload = true;
       if (filters.UploadStatus?.value) {
-        const hasImage = Boolean(row.Imageurl);
+        const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
         if (filters.UploadStatus.value === "yes") matchUpload = hasImage;
         else if (filters.UploadStatus.value === "no") matchUpload = !hasImage;
         else if (filters.UploadStatus.value === "pending") matchUpload = row.imageStatus === "pending" && !hasImage;
       }
 
-      return matchParty && matchGodown && matchDriver && matchUpload;
+      return matchParty && matchGodown && matchDriver && matchVoucher && matchUpload;
     });
   }, [tableData, filters]);
 
-  
   useEffect(() => {
     const saved = getSessionFiltersByPageId(pageID);
     const { Fromdate, Todate, Party = defaultFilters.Party, Godown = defaultFilters.Godown, 
-            Driver = defaultFilters.Driver, UploadStatus = defaultFilters.UploadStatus } = saved;
+            Driver = defaultFilters.Driver, UploadStatus = defaultFilters.UploadStatus,
+            Voucher = defaultFilters.Voucher } = saved;
 
     setFilters((pre) => ({
       ...pre,
       Fromdate: Fromdate || defaultFilters.Fromdate,
       Todate: Todate || defaultFilters.Todate,
-      Party, Godown, Driver, UploadStatus,
+      Party, Godown, Driver, UploadStatus, Voucher,
     }));
   }, [sessionValue, pageID]);
 
@@ -285,7 +255,6 @@ const parseData = JSON.parse(localStorage.getItem("user"));
     })
       .then((data) => {
          if (data.success) {
-    
           setTableData(data?.data || []);
         } else {
           setTableData([]);
@@ -298,7 +267,6 @@ const parseData = JSON.parse(localStorage.getItem("user"));
         setTableData([]);
       });
   }, [sessionValue, pageID, reload, location]);
-
 
   const handlePost = (e) => {
     e.preventDefault();
@@ -360,7 +328,7 @@ const parseData = JSON.parse(localStorage.getItem("user"));
 
   // Dialog helpers
   const openUploadDialog = (row) => {
-    const hasImage = Boolean(row.Imageurl);
+    const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
     setUploadForm({
       Id: row?.Id || "",
       Do_Id: row?.Do_Id || "",
@@ -382,13 +350,14 @@ const parseData = JSON.parse(localStorage.getItem("user"));
   const closeFilterDialog = () => setDialog((pre) => ({ ...pre, filters: false }));
   const isUpdate = Boolean(uploadForm.existingFile);
 
-
   const DriverCell = ({ row }) => {
     const staffs = toArray(row?.involvedStaffs);
     const driverTypes = staffs.filter(
-      (s) => s.Involved_Emp_Type == "Delivery Man" || s.Involved_Emp_Type == "Load Man"
+      (s) => s.Involved_Emp_Type === "Load Man" || 
+             s.Involved_Emp_Type === "Delivery Man" ||
+             s.Involved_Emp_Type === "Delivery_Person"
     );
-    if (driverTypes.length ==0 ) return <span className="text-muted fa-12">—</span>;
+    if (driverTypes.length === 0) return <span className="text-muted fa-12">—</span>;
     return (
       <div className="fa-12">
         {driverTypes.map((staff, i) => (
@@ -401,8 +370,7 @@ const parseData = JSON.parse(localStorage.getItem("user"));
     );
   };
 
-  
-  const UploadStatusCell = ({ row }) => {
+ const UploadStatusCell = ({ row }) => {
     const hasImage = Boolean(row.Image_Name);
     const status = hasImage ? "yes" : (row.imageStatus == "pending" ? "pending" : "no");
     const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
@@ -410,6 +378,19 @@ const parseData = JSON.parse(localStorage.getItem("user"));
       <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
         {st.label}
       </span>
+    );
+  };
+  // Get Godown names for a row to display in table
+  const GodownCell = ({ row }) => {
+    const stocks = toArray(row?.stockDetails);
+    const godowns = [...new Set(stocks.map(s => s.Godown_Name).filter(Boolean))];
+    if (godowns.length === 0) return <span className="text-muted fa-12">—</span>;
+    return (
+      <div className="fa-12">
+        {godowns.map((godown, i) => (
+          <div key={i}>{godown}</div>
+        ))}
+      </div>
     );
   };
 
@@ -451,6 +432,20 @@ const parseData = JSON.parse(localStorage.getItem("user"));
             createCol("Do_Inv_No", "string", "Invoice No"),
             createCol("retailerNameGet", "string", "Party Name"),
             {
+              ColumnHeader: "Voucher Type",
+              isVisible: 1,
+              isCustomCell: true,
+              Cell: ({ row }) => (
+                <span className="fa-12">{row.voucherTypeGet || "—"}</span>
+              ),
+            },
+            {
+              ColumnHeader: "Godown",
+              isVisible: 1,
+              isCustomCell: true,
+              Cell: GodownCell,
+            },
+            {
               ColumnHeader: "Items",
               isVisible: 1,
               align: "center",
@@ -459,53 +454,53 @@ const parseData = JSON.parse(localStorage.getItem("user"));
                 <span className="fw-bold">{toArray(row?.stockDetails).length}</span>
               ),
             },
-          {
-  ColumnHeader: "Preview",
-  isVisible: 1,
-  align: "center",
-  isCustomCell: true,
-  Cell: ({ row }) => {
-  const [imgError, setImgError] = useState(false);
-
-  const Imageurl = row.Imageurl;
-
-  if (!Imageurl || imgError) {
-    return <span className="text-muted fa-12">No Image</span>;
-  }
-
-  return (
-    <div className="d-flex align-items-center justify-content-center">
-      <ImagePreviewDialog url={Imageurl}>
-        <img
-          src={Imageurl}
-          alt={`Invoice ${row.Do_Inv_No}`}
-          style={{
-            width: '50px',
-            height: '50px',
-            objectFit: 'cover',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer'
-          }}
-          onError={() => setImgError(true)}
-        />
-      </ImagePreviewDialog>
-    </div>
-  );
-}},
+            {
+              ColumnHeader: "Preview",
+              isVisible: 1,
+              align: "center",
+              isCustomCell: true,
+              Cell: ({ row }) => {
+                const [imgError, setImgError] = useState(false);
+                const Imageurl = row.Imageurl;
+                const isNotFoundImage = Imageurl === "http://192.168.1.6:9001/imageURL/imageNotFound";
+                
+                if (!Imageurl || imgError || isNotFoundImage) {
+                  return <span className="text-muted fa-12">No Image</span>;
+                }
+                return (
+                  <div className="d-flex align-items-center justify-content-center">
+                    <ImagePreviewDialog url={Imageurl}>
+                      <img
+                        src={Imageurl}
+                        alt={`Invoice ${row.Do_Inv_No}`}
+                        style={{
+                          width: '50px',
+                          height: '50px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '1px solid #ddd',
+                          cursor: 'pointer'
+                        }}
+                        onError={() => setImgError(true)}
+                      />
+                    </ImagePreviewDialog>
+                  </div>
+                );
+              },
+            },
             {
               ColumnHeader: "Driver",
               isVisible: 1,
               isCustomCell: true,
               Cell: DriverCell,
             },
-             {
+            {
               ColumnHeader: "UploadedBy",
               isVisible: 1,
               align: "center",
               isCustomCell: true,
               Cell: ({ row }) => (
-                <span className="fw-bold">{row?.LR_Uploaded_By_Name}</span>
+                <span className="fw-bold">{row?.LR_Uploaded_By_Name || "—"}</span>
               ),
             },
             {
@@ -596,7 +591,7 @@ const parseData = JSON.parse(localStorage.getItem("user"));
                       options={godownOptions}
                       styles={customSelectStyles}
                       isSearchable
-                      placeholder="Godown"
+                      placeholder="Select Godown"
                       menuPortalTarget={document.body}
                       filterOption={reactSelectFilterLogic}
                     />
@@ -611,7 +606,22 @@ const parseData = JSON.parse(localStorage.getItem("user"));
                       options={driverOptions}
                       styles={customSelectStyles}
                       isSearchable
-                      placeholder="Driver Name"
+                      placeholder="Select Driver"
+                      menuPortalTarget={document.body}
+                      filterOption={reactSelectFilterLogic}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ verticalAlign: "middle" }}>Voucher Type</td>
+                  <td>
+                    <Select
+                      value={filters.Voucher}
+                      onChange={(e) => setFilters((pre) => ({ ...pre, Voucher: e }))}
+                      options={voucherOptions}
+                      styles={customSelectStyles}
+                      isSearchable
+                      placeholder="Select Voucher Type"
                       menuPortalTarget={document.body}
                       filterOption={reactSelectFilterLogic}
                     />
@@ -649,6 +659,7 @@ const parseData = JSON.parse(localStorage.getItem("user"));
                 Godown: filters.Godown,
                 Driver: filters.Driver,
                 UploadStatus: filters.UploadStatus,
+                Voucher: filters.Voucher,
               });
             }}
           >
@@ -739,7 +750,7 @@ const parseData = JSON.parse(localStorage.getItem("user"));
                           const existingRow = tableData.find(
                             (r) => r.Do_Inv_No === uploadForm.invoiceNo
                           );
-                          const existingUrl = existingRow?.Imageurl
+                          const existingUrl = existingRow?.Imageurl && existingRow.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound"
                             ? getFullImageUrl(existingRow.Imageurl)
                             : null;
                           return existingUrl ? (
