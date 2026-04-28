@@ -204,6 +204,7 @@ const ReceiptList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) =
                     createCol('debit_ledger_name', 'string', 'Debit-Acc'),
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
                     createCol('CreatedByGet', 'string', 'Created By'),
+                    createCol('approved_by_get', 'string', 'Approved By'),
                     createCol('Voucher_Type', 'string', 'Voucher'),
                     {
                         isVisible: 1,

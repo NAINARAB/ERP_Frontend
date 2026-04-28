@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button, Card, CardContent } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject, stringCompare } from "../../../Components/functions";
-import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV } from "./variable";
+import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject, stringCompare, toNumber } from "../../../Components/functions";
+import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV, journalStaffInvolvedInfo } from "./variable";
 
 import JournalGeneralInfo from "./journalGeneralInfo";
 import JournalEntriesPanel from "./JournalEntries";
 import BillRefDialog from "./addBillReference";
+import InvolvedStaffs from "./staffInvolved";
 import { useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
 
@@ -29,11 +30,15 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     ]);
 
     const [journalBillReference, setJournalBillReference] = useState([]);
+    const [journalStaffInvolved, setJournalStaffInvolved] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
         voucherType: [],
         branch: [],
+        costCategory: [],
+        costCenter: [],
+        owners: [],
     });
 
     const [refModal, setRefModal] = useState({ open: false, line: null });
@@ -43,10 +48,13 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         (async () => {
             try {
-                const [accountsRes, voucherRes, branchRes] = await Promise.all([
+                const [accountsRes, voucherRes, branchRes, ownersRes, costCenterRes, costCategoryRes] = await Promise.all([
                     fetchLink({ address: `journal/accounts` }),
                     fetchLink({ address: `masters/voucher?module=JOURNAL` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
+                    fetchLink({ address: `masters/user/dropDown` }),
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
                 ]);
 
                 const accountsList = (accountsRes.success ? accountsRes.data : [])
@@ -55,8 +63,16 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                     .sort((a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type));
                 const branch = (branchRes.success ? branchRes.data : [])
                     .sort((a, b) => String(a?.BranchName).localeCompare(b?.BranchName));
+                const owners = (ownersRes.success ? ownersRes.data : []).map(owner => ({
+                    ...owner, value: owner.UserId, label: owner.Name
+                }));
 
-                setBaseData({ accountsList, voucherType, branch });
+                const costCategory = (costCategoryRes.success ? costCategoryRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name));
+                const costCenter = (costCenterRes.success ? costCenterRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
+
+                setBaseData({ accountsList, voucherType, branch, owners, costCategory, costCenter });
             } catch (e) {
                 console.error("Base data fetch error", e);
             }
@@ -66,6 +82,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         const Entries = stateDetails?.Entries;
         const billReferenceInfoData = stateDetails?.billReferenceInfo;
+        const staffInvolvedData = stateDetails?.staffDetails;
         if (
             isValidObject(stateDetails)
             && Array.isArray(Entries)
@@ -92,6 +109,14 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 billReferenceInfoData.map(journalBillRef => Object.fromEntries(
                     Object.entries(journalBillReferenceIV).map(([key, value]) => {
                         return [key, journalBillRef[key] ?? value]
+                    })
+                ))
+            );
+
+            setJournalStaffInvolved(
+                staffInvolvedData.map(jsi => Object.fromEntries(
+                    Object.entries(journalStaffInvolvedInfo).map(([key, value]) => {
+                        return [key, jsi[key] ?? value]
                     })
                 ))
             );
@@ -200,6 +225,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             { ...journalEntriesInfoIV, LineId: rid(), DrCr: "Cr" },
         ]);
         setJournalBillReference([]);
+        setJournalStaffInvolved([]);
     }
 
     const saveJournal = useCallback(async () => {
@@ -213,7 +239,10 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
 
         const bodyData = {
             ...journalGeneralInfo,
+            approved_by: Number(journalGeneralInfo?.approved_by) || null,
+            cost_center_mapping: Number(journalGeneralInfo?.cost_center_mapping) || 0,
             Entries: [...debitLines, ...creditLines],
+            journalStaffInvolved: journalStaffInvolved
             // BillReferences: journalBillReference.filter(ref =>
             //     entryLineNums.has(ref.LineNum)
             // )
@@ -235,7 +264,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         }).catch(e => {
             console.error("Save journal error", e);
         });
-    }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, loadingOn, loadingOff]);
+    }, [saveStatus, journalGeneralInfo, journalEntriesInfo, journalBillReference, journalStaffInvolved, loadingOn, loadingOff]);
 
     return (
         <Card>
@@ -255,19 +284,36 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 </span>
             </h5>
 
-            <CardContent>
+            <CardContent >
 
-                <JournalGeneralInfo
-                    {...baseData}
-                    journalGeneralInfo={journalGeneralInfo}
-                    setJournalGeneralInfo={setJournalGeneralInfo}
-                    journalEntriesInfo={journalEntriesInfo}
-                    setJournalEntriesInfo={setJournalEntriesInfo}
-                    journalBillReference={journalBillReference}
-                    setJournalBillReference={setJournalBillReference}
-                    saveStatus={saveStatus}
-                    saveFun={saveJournal}
-                />
+                <div className="row p-0">
+                    <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                        <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                            <InvolvedStaffs
+                                StaffArray={journalStaffInvolved}
+                                setStaffArray={setJournalStaffInvolved}
+                                costCenter={baseData.costCenter}
+                                costCategory={baseData.costCategory}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                        <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+                            <JournalGeneralInfo
+                                {...baseData}
+                                journalGeneralInfo={journalGeneralInfo}
+                                setJournalGeneralInfo={setJournalGeneralInfo}
+                                journalEntriesInfo={journalEntriesInfo}
+                                setJournalEntriesInfo={setJournalEntriesInfo}
+                                journalBillReference={journalBillReference}
+                                setJournalBillReference={setJournalBillReference}
+                                saveStatus={saveStatus}
+                                saveFun={saveJournal}
+                                owners={baseData.owners}
+                            />
+                        </div>
+                    </div>
+                </div>
 
                 <div className="my-2" />
 

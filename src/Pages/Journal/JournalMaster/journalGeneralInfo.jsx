@@ -1,15 +1,15 @@
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
 import { journalStatus } from "./variable";
-import { reactSelectFilterLogic, checkIsNumber, stringCompare } from "../../../Components/functions";
+import { reactSelectFilterLogic, stringCompare } from "../../../Components/functions";
 import RequiredStar from "../../../Components/requiredStar";
-
 
 const JournalGeneralInfo = ({
     journalGeneralInfo = {},
     setJournalGeneralInfo,
     voucherType = [],
     branch = [],
+    owners = []
 }) => {
 
     const changeGeneralInfo = (key, value) => {
@@ -91,6 +91,41 @@ const JournalGeneralInfo = ({
                     </select>
                 </div>
 
+                {/* approved by */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Approved By</label>
+                    <Select
+                        value={{ label: journalGeneralInfo?.approved_by_get, value: journalGeneralInfo?.approved_by }}
+                        options={[{ value: null, label: 'Select' }, ...owners]}
+                        menuPortalTarget={document.body}
+                        onChange={e => {
+                            changeGeneralInfo('approved_by_get', e.label);
+                            changeGeneralInfo('approved_by', e.value);
+                        }}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
+                    >
+                        <option value={null}>Select</option>
+                        {owners.map((s, i) => (
+                            <option value={s.value} key={i}>{s.label}</option>
+                        ))}
+                    </Select>
+                </div>
+
+                {/* cost center mapping */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Cost Center Mapping</label>
+                    <select
+                        className="cus-inpt p-2"
+                        value={journalGeneralInfo.cost_center_mapping || 0}
+                        onChange={e => changeGeneralInfo('cost_center_mapping', e.target.value)}
+                    >
+                        <option value={1}>Yes</option>
+                        <option value={0}>No</option>
+                    </select>
+                </div>
+
                 {!stringCompare(journalGeneralInfo.JournalAutoId, '') && (
                     <div className="col-lg-3 col-md-4 col-sm-6 p-2">
                         <label className='fa-13'>Alter Reason <RequiredStar /></label>
@@ -102,7 +137,7 @@ const JournalGeneralInfo = ({
                         />
                     </div>
                 )}
-
+    
                 <div className="col-12 p-0 m-0"></div>
 
                 {/* narration */}

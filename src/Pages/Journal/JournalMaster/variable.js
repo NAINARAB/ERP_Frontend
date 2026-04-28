@@ -17,6 +17,9 @@ export const journalGeneralInfoIV = {
     CreatedBy: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     CreatedAt: '',
     UpdatedAt: '',
+    approved_by: null,
+    approved_by_get: '',
+    cost_center_mapping: 0,
     AlterId: '',
 }
 
@@ -51,6 +54,15 @@ export const journalBillReferenceIV = {
     RefType: '',
     BillRefNo: '',
     Amount: '',
+}
+
+export const journalStaffInvolvedInfo = {
+    id: '',
+    JournalAutoId: '',
+    Emp_Id: '',
+    Emp_Name: '',
+    Emp_Type_Id: '',
+    Emp_Type_Name: '',
 }
 
 export const journalStatus = [

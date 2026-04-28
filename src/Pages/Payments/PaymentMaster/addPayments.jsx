@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { paymentGeneralInfoInitialValue, paymentTypes } from "./variable";
+import { paymentGeneralInfoInitialValue, paymentStaffInvolvedStaffInitialValue, paymentTypes } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -9,6 +9,7 @@ import RequiredStar from '../../../Components/requiredStar';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
+import InvolvedStaffs from "./staffInvolved";
 
 
 const initialSelectValue = { value: '', label: '' };
@@ -21,6 +22,8 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     const [paymentValue, setPaymentValue] = useState(paymentGeneralInfoInitialValue);
     const [paymentBillDetails, setPaymentBillDetails] = useState([]);
+    const [paymentStaffInvolved, setPaymentStaffInvolved] = useState([]);
+
     const [baseData, setBaseData] = useState({
         accountsList: [],
         accountGroupData: [],
@@ -28,6 +31,9 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         debit_ledger: [],
         defaultBankMaster: [],
         creditLedgers: [],
+        costCategory: [],
+        costCenter: [],
+        users: []
     });
 
     // to filter group, account
@@ -52,6 +58,13 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                 )
             );
 
+            setPaymentStaffInvolved(
+                editValues.staffDetails.map(staffDetails => ({
+                    ...paymentStaffInvolvedStaffInitialValue,
+                    ...staffDetails,
+                }))
+            )
+
             if (isArray(editValues?.BillsDetails) && editValues?.BillsDetails?.length > 0) {
                 setPaymentBillDetails(editValues?.BillsDetails);
             }
@@ -67,11 +80,17 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     accountsGroupResponse,
                     voucherTypeResponse,
                     defaultBankMaster,
+                    costCenterRes,
+                    costCategoryRes,
+                    usersRes
                 ] = await Promise.all([
                     fetchLink({ address: `payment/accounts` }),
                     fetchLink({ address: `payment/accountGroup` }),
                     fetchLink({ address: `masters/voucher?module=PAYMENT` }),
                     fetchLink({ address: `masters/defaultBanks` }),
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `masters/user/dropDown` }),
                 ]);
 
                 const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
@@ -84,6 +103,14 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
                 );
                 const bankDetails = (defaultBankMaster.success ? defaultBankMaster.data : []);
+                const userDetails = (usersRes.success ? usersRes.data : []).map(userDet => ({
+                    ...userDet, value: userDet.UserId, label: userDet.Name
+                }));
+
+                const costCategory = (costCategoryRes.success ? costCategoryRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name));
+                const costCenter = (costCenterRes.success ? costCenterRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -91,6 +118,9 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     accountGroupData: accountGroupData,
                     voucherType: voucherType,
                     defaultBankMaster: bankDetails,
+                    costCategory: costCategory,
+                    costCenter: costCenter,
+                    users: userDetails
                 }));
 
             } catch (e) {
@@ -142,7 +172,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
         }
     };
 
-    const clearValues = () => setPaymentValue(paymentGeneralInfoInitialValue);
+    const clearValues = () => {
+        setPaymentValue(paymentGeneralInfoInitialValue);
+        setPaymentStaffInvolved([]);
+    };
 
     const savePayment = (postValues = {}) => {
         fetchLink({
@@ -150,9 +183,12 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(postValues?.pay_id) ? 'PUT' : 'POST',
             bodyData: {
                 ...postValues,
+                approved_by: Number(paymentValue?.approved_by) || null,
+                cost_center_mapping: Number(paymentValue?.cost_center_mapping) || 0,
                 created_by: createrOrModifier,
                 altered_by: createrOrModifier,
-                BillsDetails: paymentBillDetails
+                BillsDetails: paymentBillDetails,
+                staffDetails: paymentStaffInvolved
             },
             loadingOn, loadingOff
         }).then(data => {
@@ -218,143 +254,202 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
 
                     <CardContent className="pb-0">
-                        <div className="row p-2 pb-0">
 
-                            {/* date */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Date<RequiredStar /></label>
-                                <input
-                                    type="date"
-                                    required
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.payment_date}
-                                    onChange={e => onChangePaymentValue('payment_date', e.target.value)}
-                                />
-                            </div>
+                        <>
+                            <div className="row p-0">
 
-                            {/* bill type */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Bill Type<RequiredStar /></label>
-                                <select
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.pay_bill_type}
-                                    onChange={e => onChangePaymentValue('pay_bill_type', toNumber(e.target.value))}
-                                    required
-                                    disabled={checkIsNumber(paymentValue.pay_id)}
-                                >
-                                    <option value="" disabled>Select</option>
-                                    {paymentTypes.map(
-                                        (type, ind) => <option value={type.value} key={ind}>{type.label}</option>
-                                    )}
-                                </select>
-                            </div>
-
-                            {/* voucher type */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Voucher<RequiredStar /></label>
-                                <select
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.payment_voucher_type_id}
-                                    onChange={e => onChangePaymentValue('payment_voucher_type_id', e.target.value)}
-                                    required
-                                    disabled={checkIsNumber(paymentValue.pay_id)}
-                                >
-                                    <option value="" disabled>Select</option>
-                                    {toArray(baseData.voucherType).filter(
-                                        fil => stringCompare(fil.Type, 'PAYMENT')
-                                    ).map(
-                                        (voucher, vouInd) => (
-                                            <option value={voucher.Vocher_Type_Id} key={vouInd}>{voucher.Voucher_Type}</option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-
-                            {/* Status */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Status</label>
-                                <select
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.status}
-                                    onChange={e => onChangePaymentValue('status', e.target.value)}
-                                >
-                                    <option value="" disabled>Select</option>
-                                    <option value="1">New</option>
-                                    <option value="2">Progess</option>
-                                    <option value="3">Completed</option>
-                                    <option value="0">Canceled</option>
-                                </select>
-                            </div>
-
-                            {checkIsNumber(paymentValue.pay_id) && (
-                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                    <label className='fa-13'>Alter Reason <RequiredStar /></label>
-                                    <input
-                                        value={paymentValue.Alter_Reason}
-                                        className="cus-inpt p-2"
-                                        onChange={e => onChangePaymentValue('Alter_Reason', e.target.value)}
-                                        required
-                                    />
+                                <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                                    <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                        <InvolvedStaffs
+                                            staffArray={paymentStaffInvolved}
+                                            setStaffArray={setPaymentStaffInvolved}
+                                            costCenter={baseData.costCenter}
+                                            costCategory={baseData.costCategory}
+                                            initialValue={paymentStaffInvolvedStaffInitialValue}
+                                        />
+                                    </div>
                                 </div>
-                            )}
 
-                            {/* amount */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Amount<RequiredStar /></label>
-                                <input
-                                    type="number"
-                                    required
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.debit_amount || ''}
-                                    onChange={e => onChangePaymentValue('debit_amount', e.target.value)}
-                                />
+                                <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                                    <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+                                        <div className="row">
+                                            {/* date */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Date<RequiredStar /></label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.payment_date}
+                                                    onChange={e => onChangePaymentValue('payment_date', e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* bill type */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Bill Type<RequiredStar /></label>
+                                                <select
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.pay_bill_type}
+                                                    onChange={e => onChangePaymentValue('pay_bill_type', toNumber(e.target.value))}
+                                                    required
+                                                    disabled={checkIsNumber(paymentValue.pay_id)}
+                                                >
+                                                    <option value="" disabled>Select</option>
+                                                    {paymentTypes.map(
+                                                        (type, ind) => <option value={type.value} key={ind}>{type.label}</option>
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            {/* voucher type */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Voucher<RequiredStar /></label>
+                                                <select
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.payment_voucher_type_id}
+                                                    onChange={e => onChangePaymentValue('payment_voucher_type_id', e.target.value)}
+                                                    required
+                                                    disabled={checkIsNumber(paymentValue.pay_id)}
+                                                >
+                                                    <option value="" disabled>Select</option>
+                                                    {toArray(baseData.voucherType).filter(
+                                                        fil => stringCompare(fil.Type, 'PAYMENT')
+                                                    ).map(
+                                                        (voucher, vouInd) => (
+                                                            <option value={voucher.Vocher_Type_Id} key={vouInd}>{voucher.Voucher_Type}</option>
+                                                        )
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            {/* Status */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Status</label>
+                                                <select
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.status}
+                                                    onChange={e => onChangePaymentValue('status', e.target.value)}
+                                                >
+                                                    <option value="" disabled>Select</option>
+                                                    <option value="1">New</option>
+                                                    <option value="2">Progess</option>
+                                                    <option value="3">Completed</option>
+                                                    <option value="0">Canceled</option>
+                                                </select>
+                                            </div>
+
+                                            {checkIsNumber(paymentValue.pay_id) && (
+                                                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                    <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                                                    <input
+                                                        value={paymentValue.Alter_Reason}
+                                                        className="cus-inpt p-2"
+                                                        onChange={e => onChangePaymentValue('Alter_Reason', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* amount */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Amount<RequiredStar /></label>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.debit_amount || ''}
+                                                    onChange={e => onChangePaymentValue('debit_amount', e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* transaction type */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Transaction Type</label>
+                                                <select
+                                                    value={paymentValue.transaction_type || ''}
+                                                    onChange={e => onChangePaymentValue('transaction_type', e.target.value)}
+                                                    className="cus-inpt p-2"
+                                                    required
+                                                >
+                                                    {transactionTypes.map((type, ind) => (
+                                                        <option value={type.value} key={ind}>{type.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* approved by */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Approved By</label>
+                                                <Select
+                                                    value={{ label: paymentValue?.approved_by_get, value: paymentValue?.approved_by }}
+                                                    options={[{ value: null, label: 'Select' }, ...baseData.users]}
+                                                    menuPortalTarget={document.body}
+                                                    onChange={e => {
+                                                        onChangePaymentValue('approved_by_get', e.label);
+                                                        onChangePaymentValue('approved_by', e.value);
+                                                    }}
+                                                    styles={customSelectStyles}
+                                                    isSearchable={true}
+                                                    filterOption={reactSelectFilterLogic}
+                                                >
+                                                    <option value={null}>Select</option>
+                                                    {baseData.users.map((s, i) => (
+                                                        <option value={s.value} key={i}>{s.label}</option>
+                                                    ))}
+                                                </Select>
+                                            </div>
+
+                                            {/* cost center mapping */}
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                                                <label>Cost Center Mapping</label>
+                                                <select
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.cost_center_mapping || 0}
+                                                    onChange={e => onChangePaymentValue('cost_center_mapping', e.target.value)}
+                                                >
+                                                    <option value={1}>Yes</option>
+                                                    <option value={0}>No</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
+                                                <input
+                                                    className="form-check-input shadow-none pointer mx-2"
+                                                    style={{ padding: '0.7em' }}
+                                                    type="checkbox"
+                                                    id="isNewRef"
+                                                    checked={isEqualNumber(paymentValue?.is_new_ref, 1)}
+                                                    onChange={() => {
+                                                        if (isEqualNumber(paymentValue?.is_new_ref, 1))
+                                                            onChangePaymentValue('is_new_ref', 0)
+                                                        else
+                                                            onChangePaymentValue('is_new_ref', 1)
+                                                    }}
+                                                />
+                                                <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
+                                            </div>
+
+                                            <div className="col-12"></div>
+
+                                            {/* Narration */}
+                                            <div className="col-sm-8 p-2">
+                                                <label>Narration </label>
+                                                <textarea
+                                                    className="cus-inpt p-2"
+                                                    value={paymentValue.remarks}
+                                                    onChange={e => onChangePaymentValue('remarks', e.target.value)}
+                                                    rows={3}
+                                                />
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        </>
 
-                            {/* transaction type */}
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                <label>Transaction Type</label>
-                                <select
-                                    value={paymentValue.transaction_type || ''}
-                                    onChange={e => onChangePaymentValue('transaction_type', e.target.value)}
-                                    className="cus-inpt p-2"
-                                    required
-                                >
-                                    {transactionTypes.map((type, ind) => (
-                                        <option value={type.value} key={ind}>{type.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="col-lg-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
-                                <input
-                                    className="form-check-input shadow-none pointer mx-2"
-                                    style={{ padding: '0.7em' }}
-                                    type="checkbox"
-                                    id="isNewRef"
-                                    checked={isEqualNumber(paymentValue?.is_new_ref, 1)}
-                                    onChange={() => {
-                                        if (isEqualNumber(paymentValue?.is_new_ref, 1))
-                                            onChangePaymentValue('is_new_ref', 0)
-                                        else
-                                            onChangePaymentValue('is_new_ref', 1)
-                                    }}
-                                />
-                                <label htmlFor="isNewRef" className="fw-bold">is New-Ref?</label>
-                            </div>
-
-
-                            <div className="col-12"></div>
-
-                            {/* Narration */}
-                            <div className="col-sm-8 p-2">
-                                <label>Narration </label>
-                                <textarea
-                                    className="cus-inpt p-2"
-                                    value={paymentValue.remarks}
-                                    onChange={e => onChangePaymentValue('remarks', e.target.value)}
-                                    rows={3}
-                                />
-                            </div>
+                        <div className="row p-2 pb-0">
 
                             <div className="col-12">
                                 <hr className=" text-dark" />
@@ -559,6 +654,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                             </div>
 
                         </div>
+
                     </CardContent>
 
                     <hr className="my-2" />

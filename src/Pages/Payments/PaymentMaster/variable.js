@@ -28,6 +28,10 @@ export const paymentGeneralInfoInitialValue = {
     bank_name: '',
     bank_date: '',
 
+    approved_by: null,
+    approved_by_get: '',
+    cost_center_mapping: 0,
+
     created_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     altered_by: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     created_on: '',
@@ -81,6 +85,14 @@ export const paymentCostingInfoInitialValue = {
     // to show previous payment (frontend only).
     itemQuantity: 0,
     PaidAmount: 0,
+}
+
+export const paymentStaffInvolvedStaffInitialValue = {
+    payment_id: '',
+    Emp_Id: '',
+    Emp_Name: '',
+    Emp_Type_Id: '',
+    Emp_Type_Name: ''
 }
 
 export const paymentTypes = [

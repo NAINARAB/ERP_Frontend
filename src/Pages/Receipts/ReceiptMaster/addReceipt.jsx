@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { receiptGeneralInfoInitialValue } from "./variable";
+import { useEffect, useState, useMemo } from "react";
+import { receiptGeneralInfoInitialValue, receiptStaffInvolvedStaffInitialValue } from "./variable";
 import { Button, Card, CardContent } from '@mui/material';
-import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject, stringCompare } from "../../../Components/functions";
+import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject, stringCompare, toNumber, getSessionUser } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
 import ReceiptGeneralInfo from "./receiptGeneralInfo";
+import InvolvedStaffs from "../../Payments/PaymentMaster/staffInvolved";
 
 
 const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
@@ -15,12 +16,16 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
     const [receiptBillDetails, setReceiptBillDetails] = useState([]);
+    const [receiptStaffInvolved, setReceiptStaffInvolved] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
         accountGroupData: [],
         voucherType: [],
         defaultBankMaster: [],
+        costCategory: [],
+        costCenter: [],
+        users: []
     });
 
     useEffect(() => {
@@ -39,6 +44,13 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             );
         }
 
+        setReceiptStaffInvolved(
+            (editValues?.staffDetails || []).map(staffDetails => ({
+                ...receiptStaffInvolvedStaffInitialValue,
+                ...staffDetails,
+            }))
+        )
+
         if (isArray(editValues?.BillsDetails) && editValues?.BillsDetails?.length > 0) {
             setReceiptBillDetails(editValues?.BillsDetails);
         }
@@ -53,11 +65,17 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     accountsGroupResponse,
                     voucherTypeResponse,
                     defaultBankMaster,
+                    costCenterRes,
+                    costCategoryRes,
+                    usersRes
                 ] = await Promise.all([
                     fetchLink({ address: `payment/accounts` }),
                     fetchLink({ address: `payment/accountGroup` }),
                     fetchLink({ address: `masters/voucher?module=RECEIPT` }),
                     fetchLink({ address: `masters/defaultBanks` }),
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `masters/user/dropDown` }),
                 ]);
 
                 const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
@@ -70,6 +88,14 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
                 );
                 const bankDetails = (defaultBankMaster.success ? defaultBankMaster.data : []);
+                const userDetails = (usersRes.success ? usersRes.data : []).map(userDet => ({
+                    ...userDet, value: userDet.UserId, label: userDet.Name
+                }));
+
+                const costCategory = (costCategoryRes.success ? costCategoryRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name));
+                const costCenter = (costCenterRes.success ? costCenterRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -77,6 +103,9 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                     accountGroupData: accountGroupData,
                     voucherType: voucherType,
                     defaultBankMaster: bankDetails,
+                    costCategory: costCategory,
+                    costCenter: costCenter,
+                    users: userDetails
                 }));
 
             } catch (e) {
@@ -90,6 +119,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
     const clearValues = () => {
         setReceiptValue(receiptGeneralInfoInitialValue);
+        setReceiptStaffInvolved([]);
     };
 
     const saveReceipt = (postValues = {}) => {
@@ -98,7 +128,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             method: checkIsNumber(postValues?.receipt_id) ? 'PUT' : 'POST',
             bodyData: {
                 ...postValues,
-                BillsDetails: receiptBillDetails
+                approved_by: Number(receiptValue?.approved_by) || null,
+                cost_center_mapping: Number(receiptValue?.cost_center_mapping) || 0,
+                BillsDetails: receiptBillDetails,
+                staffDetails: receiptStaffInvolved
             },
             loadingOn, loadingOff
         }).then(data => {
@@ -168,14 +201,33 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                     <CardContent className="pb-0">
 
-                        <ReceiptGeneralInfo
-                            receiptValue={receiptValue}
-                            setReceiptValue={setReceiptValue}
-                            accountGroupData={baseData.accountGroupData}
-                            accountsList={baseData.accountsList}
-                            voucherType={baseData.voucherType}
-                            defaultBankMaster={baseData.defaultBankMaster}
-                        />
+                        <div className="row p-0">
+                            <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                                <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                    <InvolvedStaffs
+                                        staffArray={receiptStaffInvolved}
+                                        setStaffArray={setReceiptStaffInvolved}
+                                        costCenter={baseData.costCenter}
+                                        costCategory={baseData.costCategory}
+                                        initialValue={receiptStaffInvolvedStaffInitialValue}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                                <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+                                    <ReceiptGeneralInfo
+                                        receiptValue={receiptValue}
+                                        setReceiptValue={setReceiptValue}
+                                        accountGroupData={baseData.accountGroupData}
+                                        accountsList={baseData.accountsList}
+                                        voucherType={baseData.voucherType}
+                                        defaultBankMaster={baseData.defaultBankMaster}
+                                        users={baseData.users}
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
                     </CardContent>
 

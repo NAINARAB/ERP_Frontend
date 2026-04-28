@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import FilterableTable, { ButtonActions, createCol } from '../../../Components/filterableTable2';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
-import { ClearAll, Edit, FilterAlt, FilterList, Search, Timeline } from "@mui/icons-material";
+import { ClearAll, Edit, FilterAlt, Search, Timeline } from "@mui/icons-material";
 import { useMemo } from "react";
 import { paymentStatus, paymentTypes } from "./variable";
 import Select from "react-select";
@@ -18,25 +18,36 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
     const location = useLocation();
     const locationState = location.state || {};
 
+    // const defaultFilters = {
+    //     Fromdate: locationState.Fromdate || ISOString(),
+    //     Todate: locationState.Todate || ISOString(),
+    //     voucherType_Filter: locationState.VoucherType
+    //         ? { label: locationState.VoucherType?.label || locationState.Voucher_Type || 'Selected', value: locationState.VoucherType?.value || locationState.Voucher_Type_Id || '' }
+    //         : { label: 'ALL', value: '' },
+    //     debit_accounts_Filter: { label: 'ALL', value: '' },
+    //     credit_accounts_Filter: { label: 'ALL', value: '' },
+    //     created_by_Filter: { label: 'ALL', value: '' },
+    //     payment_status: '',
+    //     payment_type: ''
+    // };
+
     const defaultFilters = {
-        Fromdate: locationState.Fromdate || ISOString(),
-        Todate: locationState.Todate || ISOString(),
-        voucherType_Filter: locationState.VoucherType
-            ? { label: locationState.VoucherType?.label || locationState.Voucher_Type || 'Selected', value: locationState.VoucherType?.value || locationState.Voucher_Type_Id || '' }
-            : { label: 'ALL', value: '' },
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        voucherType_Filter: { label: 'ALL', value: '' },
         debit_accounts_Filter: { label: 'ALL', value: '' },
         credit_accounts_Filter: { label: 'ALL', value: '' },
         created_by_Filter: { label: 'ALL', value: '' },
         payment_status: '',
         payment_type: ''
     };
+
     const [filters, setFilters] = useState({
         ...defaultFilters,
         filterDialog: false,
     });
+
     const [paymentData, setPaymentData] = useState([]);
-
-
 
     const [filterDropDown, setFilterDropDown] = useState({
         voucherType: [],
@@ -45,103 +56,100 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
         created_by: [],
     })
 
+    useEffect(() => {
+
+        const otherSessionFiler = getSessionFiltersByPageId(pageID);
+        const {
+            Fromdate, Todate,
+            voucherType_Filter = defaultFilters.voucherType_Filter,
+            debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+            credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+            created_by_Filter = defaultFilters.created_by_Filter,
+            payment_status = defaultFilters.payment_status,
+            payment_type = defaultFilters.payment_type
+        } = otherSessionFiler;
+
+        setFilters(pre => ({
+            ...pre,
+            Fromdate: Fromdate,
+            Todate: Todate,
+            voucherType_Filter: voucherType_Filter,
+            debit_accounts_Filter: debit_accounts_Filter,
+            credit_accounts_Filter: credit_accounts_Filter,
+            created_by_Filter: created_by_Filter,
+            payment_status,
+            payment_type,
+        }));
+
+    }, [sessionValue, pageID]);
+
 
     // useEffect(() => {
 
-    //     const otherSessionFiler = getSessionFiltersByPageId(pageID);
-    //     const {
-    //         Fromdate, Todate,
-    //         voucherType_Filter = defaultFilters.voucherType_Filter,
-    //         debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-    //         credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-    //         created_by_Filter = defaultFilters.created_by_Filter,
-    //         payment_status = defaultFilters.payment_status,
-    //         payment_type = defaultFilters.payment_type
-    //     } = otherSessionFiler;
+    //     if (locationState.VoucherType) {
+    //         const otherSessionFiler = getSessionFiltersByPageId(pageID);
+    //         const {
+    //             debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+    //             credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+    //             created_by_Filter = defaultFilters.created_by_Filter,
+    //             payment_status = defaultFilters.payment_status,
+    //             payment_type = defaultFilters.payment_type
+    //         } = otherSessionFiler;
 
-    //     setFilters(pre => ({
-    //         ...pre,
-    //         Fromdate: Fromdate,
-    //         Todate: Todate,
-    //         voucherType_Filter: voucherType_Filter,
-    //         debit_accounts_Filter: debit_accounts_Filter,
-    //         credit_accounts_Filter: credit_accounts_Filter,
-    //         created_by_Filter: created_by_Filter,
-    //         payment_status,
-    //         payment_type,
-    //     }));
+    //         setFilters(pre => ({
+    //             ...pre,
+    //             Fromdate: locationState.Fromdate || pre.Fromdate,
+    //             Todate: locationState.Todate || pre.Todate,
+    //             voucherType_Filter: locationState.VoucherType
+    //                 ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+    //                 : pre.voucherType_Filter,
+    //             debit_accounts_Filter,
+    //             credit_accounts_Filter,
+    //             created_by_Filter,
+    //             payment_status,
+    //             payment_type,
+    //         }));
 
-    // }, [sessionValue, pageID]);
+    //         setSessionFilters({
+    //             Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
+    //             Todate: locationState.Todate || defaultFilters.Todate,
+    //             pageID,
+    //             voucherType_Filter: locationState.VoucherType
+    //                 ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
+    //                 : defaultFilters.voucherType_Filter,
+    //             debit_accounts_Filter,
+    //             credit_accounts_Filter,
+    //             created_by_Filter,
+    //             payment_status,
+    //             payment_type,
+    //         });
+    //     } else {
 
+    //         const otherSessionFiler = getSessionFiltersByPageId(pageID);
+    //         const {
+    //             Fromdate, Todate,
+    //             voucherType_Filter = defaultFilters.voucherType_Filter,
+    //             debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
+    //             credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
+    //             created_by_Filter = defaultFilters.created_by_Filter,
+    //             payment_status = defaultFilters.payment_status,
+    //             payment_type = defaultFilters.payment_type
+    //         } = otherSessionFiler;
 
-    useEffect(() => {
+    //         setFilters(pre => ({
+    //             ...pre,
+    //             Fromdate: Fromdate,
+    //             Todate: Todate,
+    //             voucherType_Filter: voucherType_Filter,
+    //             debit_accounts_Filter: debit_accounts_Filter,
+    //             credit_accounts_Filter: credit_accounts_Filter,
+    //             created_by_Filter: created_by_Filter,
+    //             payment_status,
+    //             payment_type,
+    //         }));
+    //     }
 
-        if (locationState.VoucherType) {
-            const otherSessionFiler = getSessionFiltersByPageId(pageID);
-            const {
-                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-                created_by_Filter = defaultFilters.created_by_Filter,
-                payment_status = defaultFilters.payment_status,
-                payment_type = defaultFilters.payment_type
-            } = otherSessionFiler;
-
-            setFilters(pre => ({
-                ...pre,
-                Fromdate: locationState.Fromdate || pre.Fromdate,
-                Todate: locationState.Todate || pre.Todate,
-                voucherType_Filter: locationState.VoucherType
-                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
-                    : pre.voucherType_Filter,
-                debit_accounts_Filter,
-                credit_accounts_Filter,
-                created_by_Filter,
-                payment_status,
-                payment_type,
-            }));
-
-
-            setSessionFilters({
-                Fromdate: locationState.Fromdate || defaultFilters.Fromdate,
-                Todate: locationState.Todate || defaultFilters.Todate,
-                pageID,
-                voucherType_Filter: locationState.VoucherType
-                    ? { label: locationState.VoucherType?.label || 'Selected', value: locationState.VoucherType?.value || '' }
-                    : defaultFilters.voucherType_Filter,
-                debit_accounts_Filter,
-                credit_accounts_Filter,
-                created_by_Filter,
-                payment_status,
-                payment_type,
-            });
-        } else {
-
-            const otherSessionFiler = getSessionFiltersByPageId(pageID);
-            const {
-                Fromdate, Todate,
-                voucherType_Filter = defaultFilters.voucherType_Filter,
-                debit_accounts_Filter = defaultFilters.debit_accounts_Filter,
-                credit_accounts_Filter = defaultFilters.credit_accounts_Filter,
-                created_by_Filter = defaultFilters.created_by_Filter,
-                payment_status = defaultFilters.payment_status,
-                payment_type = defaultFilters.payment_type
-            } = otherSessionFiler;
-
-            setFilters(pre => ({
-                ...pre,
-                Fromdate: Fromdate,
-                Todate: Todate,
-                voucherType_Filter: voucherType_Filter,
-                debit_accounts_Filter: debit_accounts_Filter,
-                credit_accounts_Filter: credit_accounts_Filter,
-                created_by_Filter: created_by_Filter,
-                payment_status,
-                payment_type,
-            }));
-        }
-
-    }, [sessionValue, pageID, location.state]);
-
+    // }, [sessionValue, pageID, location.state]);
 
     useEffect(() => {
         fetchLink({
@@ -275,6 +283,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                     createCol('credit_ledger_name', 'string', 'Credit-Acc'),
                     createCol('Voucher_Type', 'string', 'Voucher'),
                     createCol('getCreatedBy', 'string', 'CreatedBy'),
+                    createCol('approved_by_get', 'string', 'Approved By'),
                     {
                         isVisible: 1,
                         ColumnHeader: 'Bill Type',

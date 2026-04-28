@@ -17,6 +17,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
     const [generalInfo, setGeneralInfo] = useState([]);
     const [entriesInfo, setEntriesInfo] = useState([]);
     const [billReferenceInfo, setBillReferenceInfo] = useState([]);
+    const [staffInvolved, setStaffInvolved] = useState([]);
     const [alterDetails, setAlterDetails] = useState([]);
 
     const sessionValue = sessionStorage.getItem('filterValues');
@@ -93,6 +94,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 setGeneralInfo(toArray(data.others?.generalInfo));
                 setEntriesInfo(toArray(data.others?.entriesInfo));
                 setBillReferenceInfo(toArray(data.others?.billReferencesInfo));
+                setStaffInvolved(toArray(data.others?.staffInvolved));
                 setAlterDetails(toArray(data.others?.alterHistory));
             }
         }).catch(e => console.error(e))
@@ -145,6 +147,8 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 ))
             }));
 
+            const staffDetails = staffInvolved.filter(item => item.JournalAutoId === journal.JournalAutoId);
+
             const maxRows = Math.max(debitSide.length, creditSide.length);
             const sNo = ++jourInd;
             const statusGet = journalStatus.find(sts => isEqualNumber(sts.value, journal.JournalStatus))?.label || '';
@@ -161,8 +165,10 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 status: statusGet,
                 branch: journal.BranchGet,
                 createdBy: journal.CreatedByGet,
-                journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData },
+                approved_by_get: journal.approved_by_get,
+                journalObject: { ...journal, Entries: [...debitSide, ...creditSide], billReferenceInfo: billRefData, staffDetails },
                 voucherAlterationHistory: voucherAlteration,
+                staffDetails
             });
 
             for (let i = 0; i < maxRows; i++) {
@@ -185,7 +191,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
         });
 
         return transformedData;
-    }, [generalInfo, entriesInfo, billReferenceInfo, alterDetails])
+    }, [generalInfo, entriesInfo, billReferenceInfo, alterDetails, staffInvolved])
 
     const JournalTotal = useMemo(() => entriesInfo.filter(
         item => item.DrCr === 'Dr'
@@ -234,6 +240,7 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                     { col: 'voucherType', type: 'string', title: 'Voucher' },
                     { col: 'status', type: 'string', title: 'Status' },
                     { col: 'createdBy', type: 'string', title: 'Created By' },
+                    { col: 'approved_by_get', type: 'string', title: 'Approved By' },
                 ].map(cel => ({
                     isVisible: 1,
                     ColumnHeader: cel.title,

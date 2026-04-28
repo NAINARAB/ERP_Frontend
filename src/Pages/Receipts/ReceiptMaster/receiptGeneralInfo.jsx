@@ -12,7 +12,8 @@ const ReceiptGeneralInfo = ({
     accountGroupData = [],
     accountsList = [],
     voucherType = [],
-    defaultBankMaster = []
+    defaultBankMaster = [],
+    users = []
 }) => {
 
     const [selectedDebitGroup, setSelectedDebitGroup] = useState(initialSelectValue);
@@ -169,6 +170,41 @@ const ReceiptGeneralInfo = ({
                         {transactionTypes.map((type, ind) => (
                             <option value={type.value} key={ind}>{type.label}</option>
                         ))}
+                    </select>
+                </div>
+
+                {/* approved by */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Approved By</label>
+                    <Select
+                        value={{ label: receiptValue?.approved_by_get, value: receiptValue?.approved_by }}
+                        options={[{ value: null, label: 'Select' }, ...users]}
+                        menuPortalTarget={document.body}
+                        onChange={e => {
+                            onChangeReceiptValue('approved_by_get', e.label);
+                            onChangeReceiptValue('approved_by', e.value);
+                        }}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
+                    >
+                        <option value={null}>Select</option>
+                        {users.map((s, i) => (
+                            <option value={s.value} key={i}>{s.label}</option>
+                        ))}
+                    </Select>
+                </div>
+
+                {/* cost center mapping */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Cost Center Mapping</label>
+                    <select
+                        className="cus-inpt p-2"
+                        value={receiptValue.cost_center_mapping || 0}
+                        onChange={e => onChangeReceiptValue('cost_center_mapping', e.target.value)}
+                    >
+                        <option value={1}>Yes</option>
+                        <option value={0}>No</option>
                     </select>
                 </div>
 
