@@ -584,7 +584,7 @@ const StockJournalAdjustment = ({ loadingOn, loadingOff, isLoading }) => {
                                             placeholder="Select Godown"
                                             isClearable
                                             styles={customSelectStyles}
-                                            isDisabled={isEdit}
+                                            // isDisabled={isEdit}
                                         />
                                     </div>
                                 

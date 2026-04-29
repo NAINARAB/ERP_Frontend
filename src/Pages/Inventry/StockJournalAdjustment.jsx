@@ -684,38 +684,41 @@ const StockAdjustmentPage = ({ EditRights }) => {
 
     const navigate = useNavigate();
     const storage = getSessionUser().user;
+    const [totalAmount, setTotalAmount] = useState(0);
+    const [totalAdjPayment, setTotalAdjPayment] = useState(0);
 
+const fetchAdjustments = async () => {
+    setLoading(true);
+    try {
+        let address = `inventory/getStockAdjustments`;
 
-    // Fetch adjustments with date filters
-    const fetchAdjustments = async () => {
-        setLoading(true);
-        try {
-            let address = `inventory/getStockAdjustments`;
+        const queryParams = [];
+        if (fromDate) queryParams.push(`fromdate=${fromDate}`);
+        if (toDate) queryParams.push(`todate=${toDate}`);
 
-            // Build query string manually
-            const queryParams = [];
-            if (fromDate) queryParams.push(`fromdate=${fromDate}`);
-            if (toDate) queryParams.push(`todate=${toDate}`);
-
-            if (queryParams.length > 0) {
-                address += `?${queryParams.join('&')}`;
-            }
-
-
-            const data = await fetchLink({
-                address: address
-            });
-
-            if (data && data.success) {
-                setAdjustments(data.data || []);
-                setFilteredAdjustments(data.data || []);
-            }
-        } catch (error) {
-            console.error('Error fetching adjustments:', error);
-        } finally {
-            setLoading(false);
+        if (queryParams.length > 0) {
+            address += `?${queryParams.join('&')}`;
         }
-    };
+
+        const data = await fetchLink({ address: address });
+
+        if (data && data.success) {
+            const list = data.data || [];
+            setAdjustments(list);
+            setFilteredAdjustments(list);
+
+            // Sum calculations
+            const amount = list.reduce((acc, row) => acc + (parseFloat(row.amount) || 0), 0);
+            const adjPayment = list.reduce((acc, row) => acc + (parseFloat(row.Adj_Payment) || 0), 0);
+            setTotalAmount(amount);
+            setTotalAdjPayment(adjPayment);
+        }
+    } catch (error) {
+        console.error('Error fetching adjustments:', error);
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchAdjustments();
@@ -824,15 +827,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
                 </Typography>
             ),
         },
-        {
-            ...createCol('total_value', 'number', 'Total Value (₹)', 'right'),
-            isCustomCell: true,
-            Cell: ({ row }) => (
-                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-                    {fmtINR(row.total_value)}
-                </Typography>
-            ),
-        },
+       
         {
             ...createCol('narration', 'string', 'Narration', 'left'),
             isCustomCell: true,
@@ -931,6 +926,7 @@ const StockAdjustmentPage = ({ EditRights }) => {
                                 ),
                             }}
                         />
+                        
                         <Button
                             variant="contained"
                             startIcon={<Refresh />}
@@ -949,8 +945,11 @@ const StockAdjustmentPage = ({ EditRights }) => {
                         >
                             Add Adjustment
                         </Button>
+                        <Typography variant="body2" sx={{ ml: 'auto', fontWeight: 'bold', color: 'text.primary' }}>
+                              Total Amount: ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </Typography>
                     </Box>
-                )}
+                )}  
             </Box>
 
             {/* Tabs */}
