@@ -124,7 +124,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
-                    fetchLink({ address: `authorization/moduleConfiguration?moduleName=SALE_INVOICE` })
+                    fetchLink({ address: `authorization/moduleRules?moduleName=SALE_INVOICE` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(

@@ -14,7 +14,7 @@ const UserActivities = lazy(() => import('./Pages/Dashboard/userActivities'));
 const ChangePassword = lazy(() => import('./Pages/changePassword'));
 const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations'));
 const BankDetails = lazy(() => import('./Pages/BankDetails/bank'));
-const BankDetailsConvert=lazy(()=>import('./Pages/BankDetails/convertScreen'));
+const BankDetailsConvert = lazy(() => import('./Pages/BankDetails/convertScreen'));
 // -----------------------------------------------------------------------------
 // Masters
 // -----------------------------------------------------------------------------
@@ -50,20 +50,20 @@ const TallyLolSyncDashboard = lazy(() => import('./Pages/Masters/TallyMasters/ta
 const TallyLosSyncDashboard = lazy(() => import('./Pages/Masters/TallyMasters/tallyLosSyncDashboard'));
 const AccountMasterSales = lazy(() => import('./Pages/Masters/AccountMasterSales'));
 const ModuleParameters = lazy(() => import('./Pages/Masters/moduleParameters'));
-const ItemGroupMaster=lazy(()=>import('./Pages/Masters/itemGroupMaster'));
+const ItemGroupMaster = lazy(() => import('./Pages/Masters/itemGroupMaster'));
 
-const ItemGroupMasterCreate=lazy(()=>import('./Pages/Masters/itemGroupMasterCreate'))
-
-
-const VoucherGroup=lazy(()=>import('./Pages/Masters/VoucherGroup'));
-const VoucherGroupCreate=lazy(()=>import('./Pages/Masters/VoucherGroupCreate'))
+const ItemGroupMasterCreate = lazy(() => import('./Pages/Masters/itemGroupMasterCreate'))
 
 
-const StockJournalRate=lazy(()=>import('./Pages/Inventry/stockJournalRate'))
-const StockArrivalRate=lazy(()=>import('./Pages/Inventry/stockArrivalRate'))
-const StockValueSync=lazy(()=>import('./Pages/Inventry/stockValueSync'))
+const VoucherGroup = lazy(() => import('./Pages/Masters/VoucherGroup'));
+const VoucherGroupCreate = lazy(() => import('./Pages/Masters/VoucherGroupCreate'))
 
-const StockValueErpSync=lazy(()=>import('./Pages/Inventry/stockValueErpSync'))
+
+const StockJournalRate = lazy(() => import('./Pages/Inventry/stockJournalRate'))
+const StockArrivalRate = lazy(() => import('./Pages/Inventry/stockArrivalRate'))
+const StockValueSync = lazy(() => import('./Pages/Inventry/stockValueSync'))
+
+const StockValueErpSync = lazy(() => import('./Pages/Inventry/stockValueErpSync'))
 
 // -----------------------------------------------------------------------------
 // Authorization
@@ -193,11 +193,11 @@ const ArrivalMaster = lazy(() => import('./Pages/Inventry/TripMaster/arrivalMast
 const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAssign'));
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
 const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverReport'));
-
 const StockJournalAdjustmentCreate = lazy(() => import('./Pages/Inventry/StockJournalAdjustmentCreate'));
-const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment')); 
-
-const StockSummaryErpReport=lazy(()=>import('./Pages/Inventry/StockSummaryErpReport'));
+const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment'));
+const StockSummaryErpReport = lazy(() => import('./Pages/Inventry/StockSummaryErpReport'));
+const LedgerOpeningBalance = lazy(() => import('./Pages/Inventry/openingBalance'))
+const ShetSheetUploadPage = lazy(() => import('./Pages/Inventry/shetSheetUpload'));
 // -----------------------------------------------------------------------------
 // Journal
 // -----------------------------------------------------------------------------
@@ -280,10 +280,9 @@ const ReportsTemplateMobCreation = lazy(() => import('./Pages/Analytics/reportsT
 // -----------------------------------------------------------------------------
 // Project Reports
 // -----------------------------------------------------------------------------
-const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
 
-const LedgerOpeningBalance =lazy(()=>import('./Pages/Inventry/openingBalance'))
- const ShetSheetUploadPage=lazy(()=>import('./Pages/Inventry/shetSheetUpload'))
+const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
+const ModuleRuleComponent = lazy(() => import('./Components/moduleRules'))
 
 const RoutingArray = [
     // ---------------------------------------------------------------------------
@@ -371,18 +370,18 @@ const RoutingArray = [
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
     { component: <TripSheetCreation />, path: '/erp/inventory/tripSheet/searchGodown' },
     { component: <InventoryTrunoverReport />, path: '/erp/inventory/trunOverReport' },
-    { component: <StockJournalAdjustmentCreate />, path :'/erp/inventory/StockJournalAdjustment/Create'},
-    
-    {component : <StockJournalAdjustment/> ,path : '/erp/inventory/StockJournalAdjustment'},
-    {component : <LedgerOpeningBalance/> ,path : '/erp/inventory/LedgerOpeningBalance'},
+    { component: <StockJournalAdjustmentCreate />, path: '/erp/inventory/StockJournalAdjustment/Create' },
+
+    { component: <StockJournalAdjustment />, path: '/erp/inventory/StockJournalAdjustment' },
+    { component: <LedgerOpeningBalance />, path: '/erp/inventory/LedgerOpeningBalance' },
 
 
-    {component:<StockJournalRate/>,path:'/erp/inventory/stockJournalRate'},
-    {component:<StockArrivalRate/>,path:'/erp/inventory/stockArrivalRate'},
-    {component:<StockValueSync/>,path:'/erp/inventory/stockValueSync'},
-    {component:<StockValueErpSync/>,path:'/erp/inventory/stockValueErpSync'},
-    {component:<StockSummaryErpReport/>,path:'/erp/inventory/StockSummaryErpReport'},
-     {component:<ShetSheetUploadPage/>,path:'/erp/inventory/shetSheetupload'},
+    { component: <StockJournalRate />, path: '/erp/inventory/stockJournalRate' },
+    { component: <StockArrivalRate />, path: '/erp/inventory/stockArrivalRate' },
+    { component: <StockValueSync />, path: '/erp/inventory/stockValueSync' },
+    { component: <StockValueErpSync />, path: '/erp/inventory/stockValueErpSync' },
+    { component: <StockSummaryErpReport />, path: '/erp/inventory/StockSummaryErpReport' },
+    { component: <ShetSheetUploadPage />, path: '/erp/inventory/shetSheetupload' },
 
     // ---------------------------------------------------------------------------
     // ERP - Journal
@@ -423,10 +422,10 @@ const RoutingArray = [
     { component: <UomMaster />, path: '/erp/master/uomMaster' },
     { component: <VoucherType />, path: '/erp/master/voucherMaster' },
     { component: <ItemGroupMaster />, path: '/erp/master/itemGroupMaster' },
-    { component: <ItemGroupMasterCreate/>, path: '/erp/master/itemGroupMaster/Create' },
+    { component: <ItemGroupMasterCreate />, path: '/erp/master/itemGroupMaster/Create' },
 
-    {component :<VoucherGroup/>,path: '/erp/master/VoucherGroup'},
-    {component: <VoucherGroupCreate/>, path: '/erp/master/VoucherGroup/Create' },
+    { component: <VoucherGroup />, path: '/erp/master/VoucherGroup' },
+    { component: <VoucherGroupCreate />, path: '/erp/master/VoucherGroup/Create' },
 
     // ---------------------------------------------------------------------------
     // ERP - Payments
@@ -561,6 +560,7 @@ const RoutingArray = [
     { component: <EmployeeDayAbstract />, path: '/taskManagement/report/todayActivity' },
     { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
+    
 
     // ---------------------------------------------------------------------------
     // User Control
@@ -577,6 +577,7 @@ const RoutingArray = [
     { component: <UserType />, path: '/userControl/userType' },
     { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
     { component: <Users />, path: '/userControl/users' },
+    { component: <ModuleRuleComponent />, path: '/userControl/moduleConfiguration' },
 ];
 
 export default RoutingArray;

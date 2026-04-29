@@ -150,10 +150,10 @@ export const companyDetails = [
 ]
 
 export const erpModules = [
+    { name: 'SALE_INVOICE', alias: 'Sale Invoice', moduleCode: 'SI' },
+    { name: 'SALE_ORDER', alias: 'Sale Order', moduleCode: 'SO' },
     { name: 'PURCHASE_ORDER', alias: 'Purchase Order', moduleCode: 'PO' },
     { name: 'PURCHASE_INVOICE', alias: 'Purchase Invoice', moduleCode: 'PI' },
-    { name: 'SALE_ORDER', alias: 'Sale Order', moduleCode: 'SO' },
-    { name: 'SALE_INVOICE', alias: 'Sale Invoice', moduleCode: 'SI' },
     { name: 'JOURNAL', alias: 'Journal', moduleCode: 'JO' },
     { name: 'STOCK_JOURNAL', alias: 'Stock Journal', moduleCode: 'SJ' },
     { name: 'PAYMENT', alias: 'Payment', moduleCode: 'PAY' },
@@ -168,6 +168,8 @@ export const additionalModules = [
     { name: 'OTHER_GODOWN', alias: 'Other Godown', moduleCode: 'OG' },
     { name: 'PROCESSING', alias: 'Processing', moduleCode: 'PRO' },
 ];
+
+export const allERPModules = [...erpModules, ...additionalModules];
 
 export const tallyModules = [
     { value: 'Attendance', name: 'Attendance', },

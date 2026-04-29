@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, filterableText, stringCompare
+    rid, filterableText, stringCompare, onlynumAndNegative
 } from "../../../Components/functions";
 import { Add, Delete, Edit } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -622,11 +622,20 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                                         </tr>
                                         <tr>
                                             <td className="p-2 fa-14 text-end">Round off</td>
-                                            <td className="p-2 fa-14 text-end">{taxSplitUp?.roundOff || 0}</td>
+                                            <td className="p-2 fa-14 text-end">
+                                                <input
+                                                    value={invoiceInfo?.Round_off ?? ''}
+                                                    defaultValue={taxSplitUp?.roundOff ?? 0}
+                                                    style={{ minWidth: '100px', maxWidth: '150px' }}
+                                                    className="cus-inpt p-2 text-end"
+                                                    onInput={onlynumAndNegative}
+                                                    onChange={e => setInvoiceInfo(pre => ({ ...pre, Round_off: e.target.value }))}
+                                                />
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td className="p-2 fa-15 fw-bold text-end">Total Invoice Value</td>
-                                            <td className="p-2 fa-15 fw-bold text-end">₹ {taxSplitUp?.invoiceTotal || 0}</td>
+                                            <td className="p-2 fa-15 fw-bold text-end">₹ {RoundNumber(Number(taxSplitUp?.totalTaxable || 0) + Number(taxSplitUp?.totalTax || 0) + Number(invExpencesTotal || 0) + Number(invoiceInfo?.Round_off || 0))}</td>
                                         </tr>
                                     </tbody>
                                 </table>
