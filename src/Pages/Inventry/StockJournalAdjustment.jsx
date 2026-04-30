@@ -384,9 +384,7 @@ const PendingDetailsTab = () => {
         }
     };
 
-    // ─── Core filter logic ────────────────────────────────────────────────────
-    // showZero OFF (default) → hide rows where bill_qty OR amount is 0/null
-    // showZero ON            → show ALL rows (zeros included)
+    
     const displayedList = (() => {
         let result = pendingList;
 
@@ -397,7 +395,7 @@ const PendingDetailsTab = () => {
             );
         }
 
-        // Default: strip out zero/null rows — only show rows with actual values
+       
         if (!showZero) {
             result = result.filter(
                 (row) =>
@@ -405,12 +403,23 @@ const PendingDetailsTab = () => {
                     (row.amount != null && Number(row.amount) !== 0)
             );
         }
-        // showZero ON: no additional filter — all rows (zeros + non-zeros) shown
+
 
         return result;
     })();
 
-    // Badge: how many zero records exist in the fetched list
+   
+        const valueAdjSummary = displayedList.reduce(
+    (acc, row) => {
+        if (row.Adjustment_Type === 'Value Adjustment') {
+            acc.totalQty += Number(row.bill_qty) || 0;
+            acc.totalAmount += Number(row.amount) || 0;
+        }
+        return acc;
+    },
+    { totalQty: 0, totalAmount: 0 }
+);
+ 
     const zeroCount = pendingList.filter(
         (row) =>
             (row.bill_qty == null || Number(row.bill_qty) === 0) ||
@@ -566,7 +575,45 @@ const PendingDetailsTab = () => {
                         }
                         sx={{ m: 0 }}
                     />
+{hasFetched && !loadingData && (
+    <Paper
+        elevation={0}
+        sx={{
+            p: 1.5,
+            mb: 2,
+            border: '1px solid #d1fae5',
+            borderRadius: 2,
+            bgcolor: '#f0fdf4',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 3,
+            alignItems: 'center',
+        }}
+    >
 
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ color: '#374151' }}>
+                Total Bill Qty:
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1d4ed8' }}>
+                {valueAdjSummary.totalQty.toFixed(2)}
+            </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ color: '#374151' }}>
+                Total Rate (₹):
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#065f46' }}>
+                {fmtINR(valueAdjSummary.totalAmount)}
+            </Typography>
+        </Box>
+
+        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: 11 }}>
+            ({displayedList.filter(r => r.Adjustment_Type === 'Value Adjustment').length} items)
+        </Typography>
+    </Paper>
+)}
 
                     <Button
                         variant="contained"
@@ -597,6 +644,8 @@ const PendingDetailsTab = () => {
                     )}
                 </Box>
             </Paper>
+       
+
 
             {/* ── Table area ── */}
             {loadingData ? (
