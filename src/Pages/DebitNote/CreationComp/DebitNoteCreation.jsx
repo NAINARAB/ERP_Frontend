@@ -81,7 +81,7 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                     batchDetailsResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
-                    fetchLink({ address: `masters/products` }),
+                    fetchLink({ address: `masters/products/allProducts` }),
                     fetchLink({ address: `masters/retailers/dropDown` }),
                     fetchLink({ address: `masters/voucher?module=DEBIT_NOTE` }),
                     fetchLink({ address: `masters/uom` }),
