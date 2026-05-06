@@ -4,10 +4,13 @@ import { contraIV, contraStatus } from "./contraVariables";
 import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray, stringCompare } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Button, Card, CardContent } from "@mui/material";
+import { Button, Card, CardContent, Checkbox, IconButton } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
+import AppDialog from "../../../Components/appDialogComponent";
+import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import { Add, Search } from "@mui/icons-material";
 
 
 const ContraScreen = ({
@@ -18,6 +21,12 @@ const ContraScreen = ({
     const location = useLocation();
     const editValues = location.state;
     const [data, setData] = useState(contraIV);
+    const [refDialog, setRefDialog] = useState({
+        open: false,
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+    });
+    const [referenceData, setReferenceData] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
@@ -100,6 +109,7 @@ const ContraScreen = ({
             ...contraIV,
             ContraDate: ISOString()
         }));
+        setReferenceData([]);
     };
 
     const onSave = async () => {
@@ -144,6 +154,22 @@ const ContraScreen = ({
     };
 
     const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
+
+    const refHandle = async () => {
+        const url = data.dr_cr === 'Cr'
+            ? `contra/receiptReference?Fromdate=${refDialog.Fromdate}&Todate=${refDialog.Todate}`
+            : ''
+        fetchLink({
+            address: url,
+            method: "GET",
+            loadingOn,
+            loadingOff
+        }).then(res => {
+            if (res.success) {
+                setReferenceData(res.data);
+            }
+        }).catch(console.error)
+    };
 
     return (
         <>
@@ -242,58 +268,74 @@ const ContraScreen = ({
 
                         <div className="col-12 p-0 m-0"></div>
 
+                        {/* DR - CR */}
                         <div className="row p-0 m-0">
+                            {/* debit account */}
                             <div className="col-md-6 p-2">
-                                <h6 className="mb-2 text-center">Debit</h6>
+                                <div className="mb-2 d-flex justify-content-between align-items-center">
+                                    <h6>Debit</h6>
+                                    <Button
+                                        onClick={() => {
+                                            setData(pre => ({ ...pre, dr_cr: 'Dr' }));
+                                            setRefDialog(pre => ({ ...pre, open: true }))
+                                        }}
+                                        startIcon={<Add />}
+                                        disabled={true}
+                                    >Debit Ref</Button>
+                                </div>
                                 <div className="border rounded-3 p-3">
-                                    <div className="row p-0 m-0">
-                                        <div className="col-12 p-0 m-0">
-                                            <label>Debit Account</label>
-                                            <Select
-                                                placeholder="Select debit account"
-                                                value={selDebit}
-                                                options={options}
-                                                isOptionDisabled={disableOption("Dr")}
-                                                onChange={(opt) => setData((p) => ({
-                                                    ...p,
-                                                    DebitAccount: !opt ? null : toNum(opt.value),
-                                                    DebitAccountName: !opt ? "" : opt.label
-                                                }))}
-                                                isClearable
-                                                isSearchable
-                                                styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
-                                                menuPortalTarget={document.body}
-                                                filterOption={reactSelectFilterLogic}
-                                            />
-                                        </div>
-                                    </div>
+                                    <label>Debit Account</label>
+                                    <Select
+                                        placeholder="Select debit account"
+                                        value={selDebit}
+                                        options={options}
+                                        isOptionDisabled={disableOption("Dr")}
+                                        onChange={(opt) => setData((p) => ({
+                                            ...p,
+                                            DebitAccount: !opt ? null : toNum(opt.value),
+                                            DebitAccountName: !opt ? "" : opt.label
+                                        }))}
+                                        isClearable
+                                        isSearchable
+                                        styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                    {(data.bill_no && data.dr_cr === 'Dr') && <p className="m-0 mt-2">Ref: {data.bill_no}</p>}
                                 </div>
                             </div>
 
+                            {/* credit account */}
                             <div className="col-md-6 p-2">
-                                <h6 className="mb-2 text-center">Credit</h6>
+                                <div className="mb-2 d-flex justify-content-between align-items-center">
+                                    <h6>Credit</h6>
+                                    <Button
+                                        onClick={() => {
+                                            setData(pre => ({ ...pre, dr_cr: 'Cr' }));
+                                            setRefDialog(pre => ({ ...pre, open: true }))
+                                        }}
+                                        startIcon={<Add />}
+                                    >Credit Ref</Button>
+                                </div>
                                 <div className="border rounded-3 p-3">
-                                    <div className="row p-0 m-0">
-                                        <div className="col-12 p-0 m-0">
-                                            <label>Credit Account</label>
-                                            <Select
-                                                placeholder="Select credit account"
-                                                value={selCredit}
-                                                options={options}
-                                                isOptionDisabled={disableOption("Cr")}
-                                                onChange={(opt) => setData((p) => ({
-                                                    ...p,
-                                                    CreditAccount: !opt ? null : toNum(opt.value),
-                                                    CreditAccountName: !opt ? "" : opt.label
-                                                }))}
-                                                isClearable
-                                                isSearchable
-                                                styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
-                                                menuPortalTarget={document.body}
-                                                filterOption={reactSelectFilterLogic}
-                                            />
-                                        </div>
-                                    </div>
+                                    <label>Credit Account</label>
+                                    <Select
+                                        placeholder="Select credit account"
+                                        value={selCredit}
+                                        options={options}
+                                        isOptionDisabled={disableOption("Cr")}
+                                        onChange={(opt) => setData((p) => ({
+                                            ...p,
+                                            CreditAccount: !opt ? null : toNum(opt.value),
+                                            CreditAccountName: !opt ? "" : opt.label
+                                        }))}
+                                        isClearable
+                                        isSearchable
+                                        styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
+                                        menuPortalTarget={document.body}
+                                        filterOption={reactSelectFilterLogic}
+                                    />
+                                    {(data.bill_no && data.dr_cr === 'Cr') && <p className="m-0 mt-2">Ref: {data.bill_no}</p>}
                                 </div>
                             </div>
 
@@ -395,6 +437,72 @@ const ContraScreen = ({
 
                 </CardContent>
             </Card>
+
+            <AppDialog
+                open={refDialog.open}
+                onClose={() => {
+                    setRefDialog(p => ({ ...p, open: false }));
+                    setReferenceData([])
+                }}
+                title="Contra Reference"
+                fullScreen
+                submitText="Select"
+                closeText="close"
+            >
+                <FilterableTable
+                    dataArray={referenceData}
+                    columns={[
+                        createCol('receipt_invoice_no', 'string', 'Voucher No'),
+                        createCol('voucherTypeGet', 'string', 'Voucher Type'),
+                        createCol('receipt_date', 'date', 'Date'),
+                        createCol('debitAccountGet', 'string', 'Debit'),
+                        createCol('creditAccountGet', 'string', 'Credit'),
+                        createCol('debit_amount', 'number', 'Debit Amount'),
+                        createCol('credit_amount', 'number', 'Credit Amount'),
+                        {
+                            isVisible: 1,
+                            ColumnHeader: '#',
+                            isCustomCell: true,
+                            Cell: ({ row }) => (
+                                <IconButton size="small">
+                                    <Checkbox
+                                        checked={isEqualNumber(row.receipt_id, data.bill_id) && stringCompare(row.receipt_invoice_no, data.bill_no)}
+                                        onChange={e => {
+                                            console.log(e.target.checked)
+                                            if (e.target.checked) {
+                                                setData(pre => ({ ...pre, bill_id: row.receipt_id, bill_no: row.receipt_invoice_no }))
+                                            } else {
+                                                setData(pre => ({ ...pre, bill_id: null, bill_no: null }))
+                                            }
+                                        }}
+                                    />
+                                </IconButton>
+                            ),
+                        },
+                    ]}
+                    ButtonArea={
+                        <>
+                            <IconButton
+                                onClick={refHandle}
+                                size="small"
+                            ><Search /></IconButton>
+                            <input
+                                type="date"
+                                value={refDialog.Todate}
+                                onChange={e => setRefDialog(pre => ({ ...pre, Todate: e.target.value }))}
+                                className="cus-inpt p-2 w-auto"
+                            />
+                            -
+                            <input
+                                type="date"
+                                value={refDialog.Fromdate}
+                                onChange={e => setRefDialog(pre => ({ ...pre, Fromdate: e.target.value }))}
+                                className="cus-inpt p-2 w-auto"
+                            />
+                        </>
+                    }
+                />
+            </AppDialog>
         </>
     );
 };

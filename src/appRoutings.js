@@ -241,6 +241,7 @@ const ReceiptList = lazy(() => import('./Pages/Receipts/ReceiptMaster/listReceip
 const ReceiptsCreate = lazy(() => import('./Pages/Receipts/ReceiptMaster/addReceipt'));
 const ReceiptReferenceCreation = lazy(() => import('./Pages/Receipts/ReceiptMaster/addReference'));
 const CustomerPendingReceipt = lazy(() => import('./Pages/Receipts/outstandingReports/customerPendingReceipt'));
+const ReceiptChequeTransaction = lazy(() => import('./Pages/Receipts/outstandingReports/chequeTransaction'));
 
 // -----------------------------------------------------------------------------
 // Contra
@@ -465,6 +466,7 @@ const RoutingArray = [
     { component: <ReceiptsCreate />, path: '/erp/receipts/listReceipts/create' },
     { component: <ReceiptReferenceCreation />, path: '/erp/receipts/listReceipts/addReference' },
     { component: <ReceiptList />, path: '/erp/receipts/listReceipts' },
+    { component: <ReceiptChequeTransaction />, path: '/erp/receipt/chequeTransction' },
 
     // ---------------------------------------------------------------------------
     // ERP - Reports

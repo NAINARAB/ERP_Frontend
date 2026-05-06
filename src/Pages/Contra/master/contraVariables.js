@@ -23,7 +23,14 @@ export const contraIV = {
     Chequeno: '',
     ChequeDate: '',
     TransactionType: '',
+    Narration: '',
     CreatedBy: checkIsNumber(user?.UserId) ? user.UserId : "",
+    
+    // reference column
+    dr_cr: 'Cr',
+    bill_id: null,
+    bill_no: null,
+
     CreatedAt: "",
     UpdatedAt: "",
     AlterId: ""
@@ -47,3 +54,14 @@ export const contraStatus = [
         value: 0
     },
 ]
+
+export const contrarReference = {
+    id: '',
+    contra_id: '',
+    contra_no: '',
+    dr_cr: '',
+    bill_id: '',
+    bill_no: '',
+    created_at: '',
+    created_by: checkIsNumber(user?.UserId) ? user.UserId : ""
+}

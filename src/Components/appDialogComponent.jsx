@@ -1,4 +1,3 @@
-import React from "react";
 import PropTypes from "prop-types";
 import {
     Dialog,
@@ -18,6 +17,7 @@ const AppDialog = ({
     closeText = "Close",
     maxWidth = "sm",
     fullWidth = true,
+    fullScreen = false,
     isSubmit = false,
     startAction
 }) => {
@@ -27,6 +27,7 @@ const AppDialog = ({
             onClose={onClose}
             fullWidth={fullWidth}
             maxWidth={maxWidth}
+            fullScreen={fullScreen}
         >
             {title && <DialogTitle>{title}</DialogTitle>}
 
