@@ -4,8 +4,10 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button
+    Button,
+    IconButton
 } from "@mui/material";
+import { Close } from "@mui/icons-material";
 
 const AppDialog = ({
     open = false,
@@ -19,7 +21,8 @@ const AppDialog = ({
     fullWidth = true,
     fullScreen = false,
     isSubmit = false,
-    startAction
+    startAction,
+    disableSubmit = false
 }) => {
     return (
         <Dialog
@@ -29,7 +32,14 @@ const AppDialog = ({
             maxWidth={maxWidth}
             fullScreen={fullScreen}
         >
-            {title && <DialogTitle>{title}</DialogTitle>}
+            {title && (
+                <DialogTitle>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <span>{title}</span>
+                        <IconButton onClick={onClose} color='error'><Close /></IconButton>
+                    </div>
+                </DialogTitle>
+            )}
 
             <DialogContent>
                 {children}
@@ -52,6 +62,7 @@ const AppDialog = ({
                             onClick={onSubmit}
                             type={isSubmit ? "submit" : "button"}
                             className="ms-2"
+                            disabled={disableSubmit}
                         >
                             {submitText}
                         </Button>

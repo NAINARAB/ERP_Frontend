@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ISOString, NumberFormat, LocalDate, reactSelectFilterLogic, getSessionFiltersByPageId, setSessionFilters, isEqualNumber, toNumber, Addition } from "../../../Components/functions";
+import { ISOString, NumberFormat, LocalDate, reactSelectFilterLogic, isEqualNumber, toNumber, Addition, isValidNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { Tooltip, IconButton } from "@mui/material";
@@ -7,16 +7,8 @@ import { FilterAlt } from "@mui/icons-material";
 import AppDialog from "../../../Components/appDialogComponent";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 
-const defaultFilters = {
-    Fromdate: ISOString(),
-    Todate: ISOString(),
-    debitAccount: { value: "", label: "ALL" },
-    creditAccount: { value: "", label: "ALL" },
-    voucherType: { value: '', label: 'ALL' },
-    partyType: 'ALL',
-};
 
 const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', isVisible = 1) => ({
     isVisible: isVisible,
@@ -56,6 +48,8 @@ const ExpendableComponent = ({ row }) => {
                 </tbody>
             </table>
 
+            <br />
+            <h6 className="fw-bold mb-2">Contra Reference</h6>
             <table className="table table-bordered table-sm mt-2 fa-12">
                 <thead>
                     <tr>
@@ -81,70 +75,53 @@ const ExpendableComponent = ({ row }) => {
     );
 };
 
-const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
-    const sessionValue = sessionStorage.getItem('filterValues');
+const ReceiptChequeTransaction = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
-    const location = useLocation();
 
     const [filters, setFilters] = useState({
-        ...defaultFilters,
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        debitAccount: { value: "", label: "ALL" },
+        creditAccount: { value: "", label: "ALL" },
+        voucherType: { value: '', label: 'ALL' },
+        partyType: 'ALL',
         filterDailog: false,
-        refresh: 0
+        chequeAccounts: []
     })
 
     useEffect(() => {
+        fetchLink({
+            address: `contra/receiptReference/chequeAccounts`,
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                setFilters(pre => ({ ...pre, chequeAccounts: data.data }));
+            }
+        }).catch(e => console.error(e));
+    }, []);
 
-        const otherSessionFiler = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate,
-            debitAccount = defaultFilters.debitAccount,
-            creditAccount = defaultFilters.creditAccount,
-            voucherType = defaultFilters.voucherType,
-            partyType = defaultFilters.partyType
-        } = otherSessionFiler;
-
-        setFilters(pre => ({
-            ...pre,
-            Fromdate: Fromdate,
-            Todate: Todate,
-            debitAccount, creditAccount, voucherType, partyType
-        }));
-
-    }, [sessionValue, pageID]);
-
-    useEffect(() => {
-        const otherSessionFiler = getSessionFiltersByPageId(pageID);
-        const {
-            Fromdate, Todate
-        } = otherSessionFiler;
+    const fetchData = () => {
+        const { Fromdate, Todate, debitAccount } = filters;
+        if (!isValidNumber(debitAccount.value)) return toast.error("Please Select Debit Account");
 
         fetchLink({
-            address: `receipt/chequeTransaction?Fromdate=${Fromdate}&Todate=${Todate}`,
+            address: `receipt/chequeTransaction?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            debitAccount=${debitAccount.value}`,
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
                 setReportData(data.data)
             }
         }).catch(e => console.error(e))
-    }, [sessionValue, pageID, location, filters.refresh]);
+    }
 
     const closeDialog = () => {
         setFilters(pre => ({ ...pre, filterDailog: false }));
     }
 
-    const fetchData = () => {
-        setFilters(pre => ({ ...pre, refresh: pre.refresh + 1 }))
-    }
-
     const uniqueDropDown = useMemo(() => {
-        const debitAccount = Array.from(
-            new Map(
-                reportData.map(item => [
-                    item.debit_ledger,
-                    { value: item.debit_ledger, label: item.debitAccountGet }
-                ])
-            ).values()
-        );
 
         const creditAccount = Array.from(
             new Map(
@@ -165,7 +142,6 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
         );
 
         return {
-            debitAccount,
             creditAccount,
             voucherType
         }
@@ -173,7 +149,6 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
 
     const filteredData = useMemo(() => {
         return reportData.filter(item => {
-            const matchesDebit = filters.debitAccount.value === '' || isEqualNumber(item.debit_ledger, filters.debitAccount.value);
             const matchesCredit = filters.creditAccount.value === '' || isEqualNumber(item.credit_ledger, filters.creditAccount.value);
             const matchesVoucher = filters.voucherType.value === '' || isEqualNumber(item.receipt_voucher_type_id, filters.voucherType.value);
             const matchesPartyType =
@@ -186,7 +161,7 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
                     && toNumber(item?.contraRef?.length) > 0
                 )
 
-            return matchesDebit && matchesCredit && matchesVoucher && matchesPartyType;
+            return matchesCredit && matchesVoucher && matchesPartyType;
         });
     }, [reportData, filters])
 
@@ -196,6 +171,8 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
                 title="Cheque Transaction Details"
                 dataArray={filteredData}
                 EnableSerialNumber
+                ExcelPrintOption={true}
+                PDFPrintOption={true}
                 columns={[
                     createCol("receipt_date", "date", "Rec.Date"),
                     createCol("receipt_invoice_no", "string", "Rec.No"),
@@ -234,17 +211,9 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
                 fullWidth
                 onSubmit={() => {
                     closeDialog();
-                    setSessionFilters({
-                        Fromdate: filters.Fromdate,
-                        Todate: filters.Todate,
-                        pageID,
-                        debitAccount: filters.debitAccount,
-                        creditAccount: filters.creditAccount,
-                        voucherType: filters.voucherType,
-                        partyType: filters.partyType
-                    });
                     fetchData();
                 }}
+                disableSubmit={!isValidNumber(filters.debitAccount.value)}
             >
                 <div className="table-responsive pb-4">
                     <table className="table">
@@ -285,7 +254,7 @@ const ReceiptChequeTransaction = ({ loadingOn, loadingOff, pageID }) => {
                                         onChange={(e) => setFilters({ ...filters, debitAccount: e })}
                                         options={[
                                             { value: "", label: "ALL" },
-                                            ...uniqueDropDown.debitAccount,
+                                            ...filters.chequeAccounts,
                                         ]}
                                         styles={customSelectStyles}
                                         isSearchable={true}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { contraIV, contraStatus } from "./contraVariables";
-import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray, stringCompare } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray, stringCompare, isValidNumber } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Button, Card, CardContent, Checkbox, IconButton } from "@mui/material";
@@ -9,9 +9,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 import AppDialog from "../../../Components/appDialogComponent";
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import { createCol } from "../../../Components/filterableTable2";
 import { Add, Search } from "@mui/icons-material";
-
+import AppTableComponent from "../../../Components/appTable/appTableComponent";
 
 const ContraScreen = ({
     loadingOn, loadingOff
@@ -155,9 +155,11 @@ const ContraScreen = ({
 
     const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 
-    const refHandle = async () => {
+    const refHandle = async (acc) => {
+        if (!isValidNumber(acc)) return toast.error('Select Debit and Credit Accounts');
+
         const url = data.dr_cr === 'Cr'
-            ? `contra/receiptReference?Fromdate=${refDialog.Fromdate}&Todate=${refDialog.Todate}`
+            ? `contra/receiptReference?Fromdate=${refDialog.Fromdate}&Todate=${refDialog.Todate}&accId=${acc}`
             : ''
         fetchLink({
             address: url,
@@ -315,6 +317,7 @@ const ContraScreen = ({
                                             setRefDialog(pre => ({ ...pre, open: true }))
                                         }}
                                         startIcon={<Add />}
+                                        disabled={!isValidNumber(data.CreditAccount)}
                                     >Credit Ref</Button>
                                 </div>
                                 <div className="border rounded-3 p-3">
@@ -449,16 +452,20 @@ const ContraScreen = ({
                 submitText="Select"
                 closeText="close"
             >
-                <FilterableTable
+                <AppTableComponent
+                    EnableSerialNumber={true}
                     dataArray={referenceData}
                     columns={[
                         createCol('receipt_invoice_no', 'string', 'Voucher No'),
                         createCol('voucherTypeGet', 'string', 'Voucher Type'),
                         createCol('receipt_date', 'date', 'Date'),
-                        createCol('debitAccountGet', 'string', 'Debit'),
+                        // createCol('debitAccountGet', 'string', 'Debit'),
                         createCol('creditAccountGet', 'string', 'Credit'),
-                        createCol('debit_amount', 'number', 'Debit Amount'),
                         createCol('credit_amount', 'number', 'Credit Amount'),
+                        createCol('check_no', 'string', 'Cheque No'),
+                        createCol('check_date', 'date', 'Cheque Date'),
+                        createCol('bank_name', 'string', 'Bank Name'),
+                        // createCol('debit_amount', 'number', 'Debit Amount'),
                         {
                             isVisible: 1,
                             ColumnHeader: '#',
@@ -468,13 +475,31 @@ const ContraScreen = ({
                                     <Checkbox
                                         checked={isEqualNumber(row.receipt_id, data.bill_id) && stringCompare(row.receipt_invoice_no, data.bill_no)}
                                         onChange={e => {
-                                            console.log(e.target.checked)
                                             if (e.target.checked) {
-                                                setData(pre => ({ ...pre, bill_id: row.receipt_id, bill_no: row.receipt_invoice_no }))
+                                                setData(pre => ({ 
+                                                    ...pre, 
+                                                    bill_id: row.receipt_id, 
+                                                    bill_no: row.receipt_invoice_no,
+                                                    Amount: row.credit_amount,
+                                                    TransactionType: row.transaction_type, 
+                                                    BankName: row.bank_name,
+                                                    Chequeno: row.check_no,
+                                                    ChequeDate: row.check_date,
+                                                }))
                                             } else {
-                                                setData(pre => ({ ...pre, bill_id: null, bill_no: null }))
+                                                setData(pre => ({ 
+                                                    ...pre, 
+                                                    bill_id: null, 
+                                                    bill_no: null, 
+                                                    Amount: 0, 
+                                                    TransactionType: '', 
+                                                    BankName: '',
+                                                    Chequeno: '',
+                                                    ChequeDate: '',
+                                                }))
                                             }
                                         }}
+                                        size='small'
                                     />
                                 </IconButton>
                             ),
@@ -482,23 +507,24 @@ const ContraScreen = ({
                     ]}
                     ButtonArea={
                         <>
-                            <IconButton
-                                onClick={refHandle}
-                                size="small"
-                            ><Search /></IconButton>
-                            <input
-                                type="date"
-                                value={refDialog.Todate}
-                                onChange={e => setRefDialog(pre => ({ ...pre, Todate: e.target.value }))}
-                                className="cus-inpt p-2 w-auto"
-                            />
-                            -
                             <input
                                 type="date"
                                 value={refDialog.Fromdate}
                                 onChange={e => setRefDialog(pre => ({ ...pre, Fromdate: e.target.value }))}
                                 className="cus-inpt p-2 w-auto"
                             />
+                            -
+                            <input
+                                type="date"
+                                value={refDialog.Todate}
+                                onChange={e => setRefDialog(pre => ({ ...pre, Todate: e.target.value }))}
+                                className="cus-inpt p-2 w-auto"
+                            />
+                            
+                            <IconButton
+                                onClick={() => refHandle(data.dr_cr === 'Dr' ? data.DebitAccount : data.CreditAccount)}
+                                size="small"
+                            ><Search /></IconButton>
                         </>
                     }
                 />
