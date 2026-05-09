@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useMemo } from 'react';
 import FilterableTable, { createCol, ButtonActions } from "../../Components/filterableTable2";
 import {
     Box, Chip, Typography, Skeleton, TextField, InputAdornment,
@@ -49,14 +49,25 @@ const PendingDetailsTab = () => {
     const [hasFetched, setHasFetched] = useState(false);
     const [showZero, setShowZero] = useState(false);
     const [selectedAdjustmentType, setSelectedAdjustmentType] = useState(null);
-    const [selectedGodown, setSelectedGodown] = useState(null); // New state for godown filter
-    const [godownOptions, setGodownOptions] = useState([]); // New state for godown dropdown options
+    const [selectedGodown, setSelectedGodown] = useState(null);
+    const [godownOptions, setGodownOptions] = useState([]);
 
     // Adjustment type options
     const adjustmentTypes = [
         { value: 'Value Adjustment', label: 'Value Adjustment' },
         { value: 'Wastage Adjustment', label: 'Wastage Adjustment' }
     ];
+
+    // fmtINR function for currency formatting
+    const fmtINR = (amount) => {
+        if (amount == null) return '₹0.00';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount);
+    };
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -95,7 +106,7 @@ const PendingDetailsTab = () => {
                 // Extract unique godown names from the fetched data
                 const uniqueGodowns = [...new Map(
                     data.data
-                        .filter(item => item.Godown_Name) // Filter out null/undefined
+                        .filter(item => item.Godown_Name)
                         .map(item => [item.Godown_Name, { value: item.Godown_Name, label: item.Godown_Name }])
                 ).values()];
                 
@@ -143,6 +154,21 @@ const PendingDetailsTab = () => {
 
         return result;
     })();
+
+
+    const totals = useMemo(() => {
+        const totalBillQty = displayedList.reduce((sum, row) => {
+            const qty = row.bill_qty != null ? Number(row.bill_qty) : 0;
+            return sum + qty;
+        }, 0);
+        
+        const totalAmount = displayedList.reduce((sum, row) => {
+            const amount = row.amount != null ? Number(row.amount) : 0;
+            return sum + amount;
+        }, 0);
+        
+        return { totalBillQty, totalAmount };
+    }, [displayedList]);
 
     const zeroCount = pendingList.filter(
         (row) =>
@@ -385,6 +411,49 @@ const PendingDetailsTab = () => {
                 </Box>
             </Paper>
 
+            {/* Summary Bar with Totals */}
+            {hasFetched && !loadingData && displayedList.length > 0 && (
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 2,
+                        mb: 2,
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 2,
+                        bgcolor: '#f8fafc',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 2,
+                    }}
+                >
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                        Total Records: {displayedList.length}
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                                Total Bill Quantity
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2563eb' }}>
+                                {totals.totalBillQty.toFixed(2)}
+                            </Typography>
+                        </Box>
+                        
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                                Total Amount (₹)
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#16a34a' }}>
+                                {fmtINR(totals.totalAmount)}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Paper>
+            )}
+
             {loadingData ? (
                 <Box sx={{ p: 2 }}>
                     {[...Array(5)].map((_, i) => (
@@ -454,7 +523,6 @@ const PendingDetailsTab = () => {
         </Box>
     );
 };
-
 const StockAdjustmentPage = ({ EditRights }) => {
     const [adjustments, setAdjustments] = useState([]);
     const [filteredAdjustments, setFilteredAdjustments] = useState([]);
