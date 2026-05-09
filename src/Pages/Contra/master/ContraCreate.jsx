@@ -473,26 +473,29 @@ const ContraScreen = ({
                             Cell: ({ row }) => (
                                 <IconButton size="small">
                                     <Checkbox
-                                        checked={isEqualNumber(row.receipt_id, data.bill_id) && stringCompare(row.receipt_invoice_no, data.bill_no)}
+                                        checked={
+                                            isEqualNumber(row.receipt_id, data.bill_id) && 
+                                            stringCompare(row.receipt_invoice_no, data.bill_no)
+                                        }
                                         onChange={e => {
                                             if (e.target.checked) {
-                                                setData(pre => ({ 
-                                                    ...pre, 
-                                                    bill_id: row.receipt_id, 
-                                                    bill_no: row.receipt_invoice_no,
+                                                setData(pre => ({
+                                                    ...pre,
+                                                    bill_id: Number(row?.receipt_id),
+                                                    bill_no: row?.receipt_invoice_no || '',
                                                     Amount: row.credit_amount,
-                                                    TransactionType: row.transaction_type, 
+                                                    TransactionType: row.transaction_type,
                                                     BankName: row.bank_name,
                                                     Chequeno: row.check_no,
-                                                    ChequeDate: row.check_date,
+                                                    ChequeDate: row.check_date ? ISOString(row.check_date) : '',
                                                 }))
                                             } else {
-                                                setData(pre => ({ 
-                                                    ...pre, 
-                                                    bill_id: null, 
-                                                    bill_no: null, 
-                                                    Amount: 0, 
-                                                    TransactionType: '', 
+                                                setData(pre => ({
+                                                    ...pre,
+                                                    bill_id: null,
+                                                    bill_no: null,
+                                                    Amount: 0,
+                                                    TransactionType: '',
                                                     BankName: '',
                                                     Chequeno: '',
                                                     ChequeDate: '',
@@ -520,7 +523,7 @@ const ContraScreen = ({
                                 onChange={e => setRefDialog(pre => ({ ...pre, Todate: e.target.value }))}
                                 className="cus-inpt p-2 w-auto"
                             />
-                            
+
                             <IconButton
                                 onClick={() => refHandle(data.dr_cr === 'Dr' ? data.DebitAccount : data.CreditAccount)}
                                 size="small"

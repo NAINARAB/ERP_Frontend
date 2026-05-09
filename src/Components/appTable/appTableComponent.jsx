@@ -246,10 +246,15 @@ const AppTableComponent = ({
                     {dispColumns
                         .filter(c => c.isVisible === 1)
                         .map((col, i) => {
-                            if (col.isCustomCell && typeof col.Cell === 'function') {
+                            const latestCol = columns.find(c => 
+                                (c.Field_Name && c.Field_Name === col.Field_Name) || 
+                                (!c.Field_Name && c.ColumnHeader === col.ColumnHeader)
+                            ) || col;
+
+                            if (latestCol.isCustomCell && typeof latestCol.Cell === 'function') {
                                 return (
-                                    <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className={col?.tdClass ? ` ${col?.tdClass({ row, Field_Name: col.Field_Name, index: i })} ` : ''}>
-                                        {col.Cell({ row })}
+                                    <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className={latestCol?.tdClass ? ` ${latestCol?.tdClass({ row, Field_Name: latestCol.Field_Name, index: i })} ` : ''}>
+                                        {latestCol.Cell({ row })}
                                     </TableCell>
                                 );
                             }
@@ -257,8 +262,8 @@ const AppTableComponent = ({
                             return (
                                 <TableCell
                                     key={i}
-                                    style={{ fontSize: bodyFontSizePx }} className={col?.tdClass ? ` ${col?.tdClass({ row, Field_Name: col.Field_Name, index: i })} ` : ''}>
-                                    {formatValue(row[col.Field_Name], col.Fied_Data) ?? '-'}
+                                    style={{ fontSize: bodyFontSizePx }} className={latestCol?.tdClass ? ` ${latestCol?.tdClass({ row, Field_Name: latestCol.Field_Name, index: i })} ` : ''}>
+                                    {formatValue(row[latestCol.Field_Name], latestCol.Fied_Data) ?? '-'}
                                 </TableCell>
                             );
                         })}
@@ -312,7 +317,12 @@ const AppTableComponent = ({
                             {dispColumns
                                 .filter(c => c.isVisible === 1)
                                 .map((col, i) => {
-                                    if (col.Field_Name === row.__groupField) {
+                                    const latestCol = columns.find(c => 
+                                        (c.Field_Name && c.Field_Name === col.Field_Name) || 
+                                        (!c.Field_Name && c.ColumnHeader === col.ColumnHeader)
+                                    ) || col;
+
+                                    if (latestCol.Field_Name === row.__groupField) {
                                         return (
                                             <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className=''>
                                                 <strong>{row.__groupValue}</strong>
@@ -320,13 +330,13 @@ const AppTableComponent = ({
                                         );
                                     }
 
-                                    if (col.isCustomCell) {
+                                    if (latestCol.isCustomCell) {
                                         return <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className='' />;
                                     }
 
                                     return (
                                         <TableCell key={i} style={{ fontSize: bodyFontSizePx }} className=''>
-                                            {formatValue(row.__aggregates[col.Field_Name], col.Fied_Data) ?? ''}
+                                            {formatValue(row.__aggregates[latestCol.Field_Name], latestCol.Fied_Data) ?? ''}
                                         </TableCell>
                                     );
                                 })}
@@ -513,15 +523,22 @@ const AppTableComponent = ({
 
                             {dispColumns
                                 .filter(c => c.isVisible === 1)
-                                .map(col => (
-                                    <TableCell
-                                        key={randomNumber()}
-                                        style={{ fontSize: headerFontSizePx, backgroundColor: '#EDF0F7' }}
-                                        className="fw-bold"
-                                    >
-                                        {col.ColumnHeader || col.Field_Name}
-                                    </TableCell>
-                                ))}
+                                .map(col => {
+                                    const latestCol = columns.find(c => 
+                                        (c.Field_Name && c.Field_Name === col.Field_Name) || 
+                                        (!c.Field_Name && c.ColumnHeader === col.ColumnHeader)
+                                    ) || col;
+                                    
+                                    return (
+                                        <TableCell
+                                            key={randomNumber()}
+                                            style={{ fontSize: headerFontSizePx, backgroundColor: '#EDF0F7' }}
+                                            className="fw-bold"
+                                        >
+                                            {latestCol.ColumnHeader || latestCol.Field_Name}
+                                        </TableCell>
+                                    );
+                                })}
                         </TableRow>
                     </TableHead>
 
@@ -555,21 +572,26 @@ const AppTableComponent = ({
                                             zIndex: 1
                                         };
 
+                                        const latestCol = columns.find(c => 
+                                            (c.Field_Name && c.Field_Name === col.Field_Name) || 
+                                            (!c.Field_Name && c.ColumnHeader === col.ColumnHeader)
+                                        ) || col;
+
                                         // Priority 1: FooterCell prop defined → use it for ANY column type
-                                        if (typeof col.FooterCell === 'function') {
+                                        if (typeof latestCol.FooterCell === 'function') {
                                             return (
                                                 <TableCell key={i} style={footerCellStyle}>
-                                                    {col.FooterCell({ data: filteredData })}
+                                                    {latestCol.FooterCell({ data: filteredData })}
                                                 </TableCell>
                                             );
                                         }
 
                                         // Priority 2: Normal (non-custom) column → show default aggregation
-                                        if (!col.isCustomCell) {
-                                            const val = footerAgg[col.Field_Name];
+                                        if (!latestCol.isCustomCell) {
+                                            const val = footerAgg[latestCol.Field_Name];
                                             return (
                                                 <TableCell key={i} style={footerCellStyle}>
-                                                    {val != null ? formatValue(val, col.Fied_Data) : ''}
+                                                    {val != null ? formatValue(val, latestCol.Fied_Data) : ''}
                                                 </TableCell>
                                             );
                                         }

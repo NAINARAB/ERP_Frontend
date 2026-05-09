@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import { CiCalendarDate } from "react-icons/ci";
-import { CgSandClock } from "react-icons/cg";
-import { HiUsers } from "react-icons/hi2";
-import { RxLapTimer } from "react-icons/rx";
-import { TbTargetArrow } from "react-icons/tb";
-import { BiTask } from "react-icons/bi";
+// import { CiCalendarDate } from "react-icons/ci";
+// import { CgSandClock } from "react-icons/cg";
+// import { HiUsers } from "react-icons/hi2";
+// import { RxLapTimer } from "react-icons/rx";
+// import { TbTargetArrow } from "react-icons/tb";
+// import { BiTask } from "react-icons/bi";
 import PieChartComp from "./chartComp";
 import { Card, CardHeader, CardContent, Paper, FormControlLabel, Switch } from '@mui/material'
 import SOAComp from "./erp/SOA";
@@ -16,7 +16,7 @@ import StaffInvolvedCostCenterDetails from "./staffInvolvedCostCenter";
 
 const CommonDashboard = ({ loadingOn, loadingOff }) => {
     const parseData = JSON.parse(localStorage.getItem("user"));
-    const [dashboardData, setDashboardData] = useState({});
+    // const [dashboardData, setDashboardData] = useState({});
     const [workedDetais, setWorkedDetais] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
     const [tallyDetails, setTallyDetails] = useState([]);
@@ -26,23 +26,23 @@ const CommonDashboard = ({ loadingOn, loadingOff }) => {
     const isCustomer = Number(parseData?.UserTypeId) === 4 || Number(parseData?.UserTypeId) === 5;
     const [dispTask, setDispTask] = useState(false)
 
-    useEffect(() => {
-        if (isAdmin || isEmp || isMangement) {
-            fetchLink({
-                address: `dashboard/dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`
-            })
-                .then(data => {
-                    if (data.success) {
-                        setDashboardData(data.data[0]);
-                    } else {
-                        setDashboardData({});
-                    }
-                })
-                .catch(e => {
-                    console.error(e);
-                });
-        }
-    }, [parseData?.UserId, parseData?.UserTypeId, isAdmin, isMangement, isEmp]);
+    // useEffect(() => {
+    //     if (isAdmin || isEmp || isMangement) {
+    //         fetchLink({
+    //             address: `dashboard/dashboardData?UserType=${parseData?.UserTypeId}&Emp_Id=${parseData?.UserId}`
+    //         })
+    //             .then(data => {
+    //                 if (data.success) {
+    //                     setDashboardData(data.data[0]);
+    //                 } else {
+    //                     setDashboardData({});
+    //                 }
+    //             })
+    //             .catch(e => {
+    //                 console.error(e);
+    //             });
+    //     }
+    // }, [parseData?.UserId, parseData?.UserTypeId, isAdmin, isMangement, isEmp]);
 
     useEffect(() => {
         if (isEmp) {
@@ -90,33 +90,33 @@ const CommonDashboard = ({ loadingOn, loadingOff }) => {
         }
     }, [isEmp, parseData?.UserId])
 
-    const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
-        return (
-            <>
-                <div className={`${(isAdmin || isMangement) && 'col-xxl-3'} col-lg-4 col-md-6 col-sm-12 p-2`}>
-                    <div className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
-                        <div className="flex-grow-1 p-3">
-                            <h5 className="text-uppercase">{title}</h5>
-                            <h3 className="fa-16 text-end pe-3">
-                                <span style={{ fontSize: '30px' }}>{firstVal ? firstVal : 0} </span>
-                                {secondVal && '/' + secondVal}
-                            </h3>
-                        </div>
-                        {icon}
-                    </div>
-                </div>
-            </>
-        )
-    }
+    // const CardComp = ({ title, icon, firstVal, secondVal, classCount }) => {
+    //     return (
+    //         <>
+    //             <div className={`${(isAdmin || isMangement) && 'col-xxl-3'} col-lg-4 col-md-6 col-sm-12 p-2`}>
+    //                 <div className={"coloredDiv d-flex align-items-center text-light cus-shadow coloredDiv" + classCount}>
+    //                     <div className="flex-grow-1 p-3">
+    //                         <h5 className="text-uppercase">{title}</h5>
+    //                         <h3 className="fa-16 text-end pe-3">
+    //                             <span style={{ fontSize: '30px' }}>{firstVal ? firstVal : 0} </span>
+    //                             {secondVal && '/' + secondVal}
+    //                         </h3>
+    //                     </div>
+    //                     {icon}
+    //                 </div>
+    //             </div>
+    //         </>
+    //     )
+    // }
 
-    const minFormat = (val) => {
-        const hour = Math.floor(Number(val) / 60);
-        const minutes = Number(val) % 60;
-        const formatHour = hour < 10 ? '0' + hour : hour;
-        const formatMinute = minutes < 10 ? '0' + minutes : minutes;
+    // const minFormat = (val) => {
+    //     const hour = Math.floor(Number(val) / 60);
+    //     const minutes = Number(val) % 60;
+    //     const formatHour = hour < 10 ? '0' + hour : hour;
+    //     const formatMinute = minutes < 10 ? '0' + minutes : minutes;
 
-        return (formatHour && formatMinute) ? formatHour + ':' + formatMinute : '00:00';
-    }
+    //     return (formatHour && formatMinute) ? formatHour + ':' + formatMinute : '00:00';
+    // }
 
     const statusColor = (id) => {
         const numId = Number(id);
@@ -143,7 +143,7 @@ const CommonDashboard = ({ loadingOn, loadingOff }) => {
                 />
             )}
 
-            <div className="px-1">
+            {/* <div className="px-1">
                 {((isAdmin || isMangement) && dispTask) && (
                     <div className="row">
                         <CardComp
@@ -210,7 +210,7 @@ const CommonDashboard = ({ loadingOn, loadingOff }) => {
                             classCount={'3'} />
                     </div>
                 )}
-            </div>
+            </div> */}
 
             <br />
 
