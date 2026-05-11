@@ -48,6 +48,7 @@ function RateMaster({ loadingOn, loadingOff }) {
         POS_Brand_Name: "",
         Product_Name: "",
         MaxRate: "",
+        MinRate: "",
         Brand_Level: "",
         Item_Level: "",
         Short_Name: "",
@@ -68,9 +69,10 @@ function RateMaster({ loadingOn, loadingOff }) {
     const [showActiveOnly, setShowActiveOnly] = useState(true);
     
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const user = JSON.parse(localStorage.getItem("user"))
+    const user = JSON.parse(localStorage.getItem("user"))
     const editedRatesRef = useRef({});
     const editedMaxRatesRef = useRef({});
+    const editedMinRatesRef = useRef({});
     const [, forceUpdate] = useState({});
     
     const [rateGenInfo, setRateGenInfo] = useState(null);
@@ -121,6 +123,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                     setPosData(records);
                     editedRatesRef.current = {};
                     editedMaxRatesRef.current = {};
+                    editedMinRatesRef.current = {};
                     forceUpdate({});
                 } else {
                     setPosData([]);
@@ -181,9 +184,15 @@ function RateMaster({ loadingOn, loadingOff }) {
     const handleMaxRateChange = useCallback((rowId, value) => {
         editedMaxRatesRef.current[rowId] = value;
     }, []);
+    
+    const handleMinRateChange = useCallback((rowId, value) => {
+        editedMinRatesRef.current[rowId] = value;
+    }, []);
 
     const handleUpdateTimeAndRates = async () => {
-        const hasChanges = Object.keys(editedRatesRef.current).length > 0 || Object.keys(editedMaxRatesRef.current).length > 0;
+        const hasChanges = Object.keys(editedRatesRef.current).length > 0 || 
+                          Object.keys(editedMaxRatesRef.current).length > 0 || 
+                          Object.keys(editedMinRatesRef.current).length > 0;
         
         if (!hasChanges) {
             toast.warning("No changes to update. Please edit some rates first.");
@@ -195,25 +204,31 @@ function RateMaster({ loadingOn, loadingOff }) {
 
         try {
             const updates = [];
-            const allRowIds = new Set([...Object.keys(editedRatesRef.current), ...Object.keys(editedMaxRatesRef.current)]);
+            const allRowIds = new Set([
+                ...Object.keys(editedRatesRef.current), 
+                ...Object.keys(editedMaxRatesRef.current),
+                ...Object.keys(editedMinRatesRef.current)
+            ]);
             
             for (const rowId of allRowIds) {
                 const originalRow = posData.find(r => r.Id.toString() === rowId);
                 if (originalRow) {
                     const newRate = editedRatesRef.current[rowId] !== undefined ? parseFloat(editedRatesRef.current[rowId]) : originalRow.Rate;
                     const newMaxRate = editedMaxRatesRef.current[rowId] !== undefined ? parseFloat(editedMaxRatesRef.current[rowId]) : originalRow.Max_Rate;
+                    const newMinRate = editedMinRatesRef.current[rowId] !== undefined ? parseFloat(editedMinRatesRef.current[rowId]) : originalRow.Min_Rate;
                     
-                    if (newRate !== originalRow.Rate || newMaxRate !== originalRow.Max_Rate) {
+                    if (newRate !== originalRow.Rate || newMaxRate !== originalRow.Max_Rate || newMinRate !== originalRow.Min_Rate) {
                         updates.push({
                             Id: originalRow.Id,
                             Item_Id: originalRow.Item_Id,
                             Rate: newRate,
                             Max_Rate: newMaxRate,
+                            Min_Rate: newMinRate,
                             Old_Rate: originalRow.Rate,
                             Old_Max_Rate: originalRow.Max_Rate,
+                            Old_Min_Rate: originalRow.Min_Rate, // Added missing Old_Min_Rate
                             Rate_Date: filters.Fromdate,
                             Rate_time: selectedTime,
-                            // Updated_By: JSON.stringify(user?.UserId)
                             Updated_By: user?.UserId || null
                         });
                     }
@@ -241,6 +256,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                 toast.success(`Successfully updated ${updates.length} rate(s) and time`);
                 editedRatesRef.current = {};
                 editedMaxRatesRef.current = {};
+                editedMinRatesRef.current = {};
                 setReload(!reload);
                 fetchRateGenInfo(filters.Fromdate);
             } else {
@@ -269,165 +285,168 @@ function RateMaster({ loadingOn, loadingOff }) {
         if (selectedPosBrand) fetchProducts(selectedPosBrand);
     }, [selectedPosBrand]);
 
-const handleRateMasterAdd = () => {
-    const requestData = {
-        Rate_Date: formatDateToYMD(inputValue.Rate_Date),
-        Pos_Brand_Id: parseInt(selectedPosBrand),  
-        Item_Id: parseInt(inputValue.Item_Id), 
-        Rate: parseFloat(inputValue.Rate) || 0,
-        MaxRate: parseFloat(inputValue.MaxRate) || 0,
-        Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
-        Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
-        Created_By: localStorage.getItem("username") || "System",
-        Short_Name: inputValue.Short_Name || "",
-        Brand_Level: inputValue.Brand_Level || "",
-        Item_Level: inputValue.Item_Level || ""
-    };
-    
-    
-    fetchLink({
-        address: `masters/posRateMaster`,
-        method: "POST",
-        bodyData: requestData,
-    })
-        .then(data => {
-            if (data.success) {
-                setAddDialog(false);
-                toast.success(data.message);
-                setInputValue({
-                    Id: "",
-                    Rate_Date: new Date().toISOString().split("T")[0],
-                    Pos_Brand_Id: "", Item_Id: "", Rate: "",
-                    Is_Active_Decative: "1", 
-                    POS_Brand_Name: "",
-                    Product_Name: "", 
-                    MaxRate: "", 
-                    Brand_Level: "", 
-                    Item_Level: "",
-                    Short_Name: "", 
-                    Rate_Time: moment().format("HH:mm")
-                });
-                setSelectedPosBrand("");
-                setReload(!reload);
-            } else {
-                toast.error(data.message);
-            }
+    const handleRateMasterAdd = () => {
+        const requestData = {
+            Rate_Date: formatDateToYMD(inputValue.Rate_Date),
+            Pos_Brand_Id: parseInt(selectedPosBrand),  
+            Item_Id: parseInt(inputValue.Item_Id), 
+            Rate: parseFloat(inputValue.Rate) || 0,
+            MaxRate: parseFloat(inputValue.MaxRate) || 0,
+            MinRate: parseFloat(inputValue.MinRate) || 0,
+            Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+            Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
+            Created_By: localStorage.getItem("username") || "System",
+            Short_Name: inputValue.Short_Name || "",
+            Brand_Level: inputValue.Brand_Level || "",
+            Item_Level: inputValue.Item_Level || ""
+        };
+        
+        fetchLink({
+            address: `masters/posRateMaster`,
+            method: "POST",
+            bodyData: requestData,
         })
-        .catch(e => console.error(e));
-};
-
-
-// Add this helper function to get user ID
-const getUserId = () => {
-    try {
-        const userStr = localStorage.getItem("user");
-        if (userStr) {
-            const user = JSON.parse(userStr);
-            return user?.UserId || user?.id || "System";
-        }
-    } catch (e) {
-        console.error("Error parsing user:", e);
-    }
-    return 0 ;
-};
-const handleUpdate = () => {
-    const originalRow = posData.find(r => r.Id === inputValue.Id);
-    
-    const requestData = {
-        Id: parseInt(inputValue.Id),
-        Rate_Date: formatDateToYMD(inputValue.Rate_Date),
-        Pos_Brand_Id: parseInt(selectedPosBrand),  
-        Item_Id: parseInt(inputValue.Item_Id),  
-        Rate: parseFloat(inputValue.Rate) || 0,
-        MaxRate: parseFloat(inputValue.MaxRate) || 0,
-        Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
-        Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
-        Updated_By: getUserId()  
+            .then(data => {
+                if (data.success) {
+                    setAddDialog(false);
+                    toast.success(data.message);
+                    setInputValue({
+                        Id: "",
+                        Rate_Date: new Date().toISOString().split("T")[0],
+                        Pos_Brand_Id: "", Item_Id: "", Rate: "",
+                        Is_Active_Decative: "1", 
+                        POS_Brand_Name: "",
+                        Product_Name: "", 
+                        MaxRate: "", 
+                        MinRate: "",
+                        Brand_Level: "", 
+                        Item_Level: "",
+                        Short_Name: "", 
+                        Rate_Time: moment().format("HH:mm")
+                    });
+                    setSelectedPosBrand("");
+                    setReload(!reload);
+                } else {
+                    toast.error(data.message);
+                }
+            })
+            .catch(e => console.error(e));
     };
-    
-    if (inputValue.Brand_Level?.trim()) requestData.Brand_Level = inputValue.Brand_Level;
-    if (inputValue.Item_Level?.trim()) requestData.Item_Level = inputValue.Item_Level;
-    if (inputValue.Short_Name?.trim()) requestData.Short_Name = inputValue.Short_Name;
-    
-    if (originalRow) {
-        if (parseFloat(inputValue.Rate) !== parseFloat(originalRow.Rate)) {
-            requestData.Old_Rate = parseFloat(originalRow.Rate);
-        }
-        if (parseFloat(inputValue.MaxRate) !== parseFloat(originalRow.Max_Rate)) {
-            requestData.Old_Max_Rate = parseFloat(originalRow.Max_Rate);
-        }
-    }
-    
-    fetchLink({
-        address: `masters/posRateMaster`,
-        method: "PUT",
-        bodyData: requestData,
-    })
-        .then(data => {
-            if (data.success) {
-                toast.success( "Rate Master updated successfully!");
-                setAddDialog(false);
-                
-            
-                setPosData(prev => prev.map(row => 
-                    row.Id === parseInt(inputValue.Id)
-                        ? {
-                            ...row,
-                            Rate: parseFloat(inputValue.Rate) || 0,
-                            Max_Rate: parseFloat(inputValue.MaxRate) || 0,
-                            Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
-                            Brand_Level: inputValue.Brand_Level || row.Brand_Level,
-                            Item_Level: inputValue.Item_Level || row.Item_Level,
-                            Short_Name: inputValue.Short_Name || row.Short_Name,
-                            Rate_time: inputValue.Rate_Time || row.Rate_time,
-                          }
-                        : row
-                ));
-                
-              
-                
-                setInputValue({
-                    Id: "", Rate_Date: new Date().toISOString().split("T")[0],
-                    Pos_Brand_Id: "", Item_Id: "", Rate: "",
-                    Is_Active_Decative: "", POS_Brand_Name: "",
-                    Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
-                    Short_Name: "", Rate_Time: moment().format("HH:mm")
-                });
-                setSelectedPosBrand("");
-            } else {
-                toast.error(data.message || "Failed to update Rate Master");
+
+    const getUserId = () => {
+        try {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return user?.UserId || user?.id || "System";
             }
+        } catch (e) {
+            console.error("Error parsing user:", e);
+        }
+        return 0;
+    };
+
+    const handleUpdate = () => {
+        const originalRow = posData.find(r => r.Id === inputValue.Id);
+        
+        const requestData = {
+            Id: parseInt(inputValue.Id),
+            Rate_Date: formatDateToYMD(inputValue.Rate_Date),
+            Pos_Brand_Id: parseInt(selectedPosBrand),  
+            Item_Id: parseInt(inputValue.Item_Id),  
+            Rate: parseFloat(inputValue.Rate) || 0,
+            MaxRate: parseFloat(inputValue.MaxRate) || 0,
+            MinRate: parseFloat(inputValue.MinRate) || 0,
+            Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+            Rate_time: inputValue.Rate_Time || moment().format("HH:mm:ss"),
+            Updated_By: getUserId()  
+        };
+        
+        if (inputValue.Brand_Level?.trim()) requestData.Brand_Level = inputValue.Brand_Level;
+        if (inputValue.Item_Level?.trim()) requestData.Item_Level = inputValue.Item_Level;
+        if (inputValue.Short_Name?.trim()) requestData.Short_Name = inputValue.Short_Name;
+        
+        if (originalRow) {
+            if (parseFloat(inputValue.Rate) !== parseFloat(originalRow.Rate)) {
+                requestData.Old_Rate = parseFloat(originalRow.Rate);
+            }
+            if (parseFloat(inputValue.MaxRate) !== parseFloat(originalRow.Max_Rate)) {
+                requestData.Old_Max_Rate = parseFloat(originalRow.Max_Rate);
+            }
+            if (parseFloat(inputValue.MinRate) !== parseFloat(originalRow.Min_Rate)) {
+                requestData.Old_Min_Rate = parseFloat(originalRow.Min_Rate);
+            }
+        }
+        
+        fetchLink({
+            address: `masters/posRateMaster`,
+            method: "PUT",
+            bodyData: requestData,
         })
-        .catch(e => { 
-            console.error(e);
-            toast.error("Failed to update Rate Master");
-        });
-};
+            .then(data => {
+                if (data.success) {
+                    toast.success("Rate Master updated successfully!");
+                    setAddDialog(false);
+                    
+                    setPosData(prev => prev.map(row => 
+                        row.Id === parseInt(inputValue.Id)
+                            ? {
+                                ...row,
+                                Rate: parseFloat(inputValue.Rate) || 0,
+                                Max_Rate: parseFloat(inputValue.MaxRate) || 0,
+                                Min_Rate: parseFloat(inputValue.MinRate) || 0,
+                                Is_Active_Decative: inputValue.Is_Active_Decative === "1" ? 1 : 0,
+                                Brand_Level: inputValue.Brand_Level || row.Brand_Level,
+                                Item_Level: inputValue.Item_Level || row.Item_Level,
+                                Short_Name: inputValue.Short_Name || row.Short_Name,
+                                Rate_time: inputValue.Rate_Time || row.Rate_time,
+                              }
+                            : row
+                    ));
+                    
+                    setInputValue({
+                        Id: "", Rate_Date: new Date().toISOString().split("T")[0],
+                        Pos_Brand_Id: "", Item_Id: "", Rate: "",
+                        Is_Active_Decative: "", POS_Brand_Name: "",
+                        Product_Name: "", MaxRate: "", MinRate: "", Brand_Level: "", Item_Level: "",
+                        Short_Name: "", Rate_Time: moment().format("HH:mm")
+                    });
+                    setSelectedPosBrand("");
+                } else {
+                    toast.error(data.message || "Failed to update Rate Master");
+                }
+            })
+            .catch(e => { 
+                console.error(e);
+                toast.error("Failed to update Rate Master");
+            });
+    };
 
     const updateQueryString = newFilters => {
         const params = new URLSearchParams(newFilters);
         navigate(`?${params.toString()}`, { replace: true });
     };
 
-const editRow = data => {
-    setAddDialog(true);
-    setInputValue({
-        Id: data?.Id ? parseInt(data.Id) : "",  // ✅ Store as number
-        Rate_Date: data.Rate_Date ? formatDateToYMD(data.Rate_Date) : new Date().toISOString().split("T")[0],
-        Pos_Brand_Id: data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "",  // Keep as string for select
-        Item_Id: data.Item_Id ? data.Item_Id.toString() : "",  // Keep as string for select
-        Rate: data.Rate || "",
-        MaxRate: data.Max_Rate || "",
-        Is_Active_Decative: data.Is_Active_Decative !== undefined ? data.Is_Active_Decative.toString() : "1",
-        POS_Brand_Name: data.POS_Brand_Name || "",
-        Product_Name: data.Product_Name || "",
-        Brand_Level: data.Brand_Level || "",
-        Item_Level: data.Item_Level || "",
-        Short_Name: data.Short_Name || data.Product_Name || "",
-        Rate_Time: data.Rate_time ? moment(data.Rate_time).format("HH:mm") : moment().format("HH:mm")
-    });
-    setSelectedPosBrand(data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "");
-};
+    const editRow = data => {
+        setAddDialog(true);
+        setInputValue({
+            Id: data?.Id ? parseInt(data.Id) : "", 
+            Rate_Date: data.Rate_Date ? formatDateToYMD(data.Rate_Date) : new Date().toISOString().split("T")[0],
+            Pos_Brand_Id: data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "",  
+            Item_Id: data.Item_Id ? data.Item_Id.toString() : "",  
+            Rate: data.Rate || "",
+            MinRate: data.Min_Rate || "",
+            MaxRate: data.Max_Rate || "",
+            Is_Active_Decative: data.Is_Active_Decative !== undefined ? data.Is_Active_Decative.toString() : "1",
+            POS_Brand_Name: data.POS_Brand_Name || "",
+            Product_Name: data.Product_Name || "",
+            Brand_Level: data.Brand_Level || "",
+            Item_Level: data.Item_Level || "",
+            Short_Name: data.Short_Name || data.Product_Name || "",
+            Rate_Time: data.Rate_time ? moment(data.Rate_time).format("HH:mm") : moment().format("HH:mm")
+        });
+        setSelectedPosBrand(data.Pos_Brand_Id ? data.Pos_Brand_Id.toString() : "");
+    };
 
     const handleDelete = () => {
         fetchLink({
@@ -445,7 +464,7 @@ const editRow = data => {
                         Rate_Date: new Date().toISOString().split("T")[0],
                         Pos_Brand_Id: "", Item_Id: "", Rate: "",
                         Is_Active_Decative: "", POS_Brand_Name: "",
-                        Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
+                        Product_Name: "", MaxRate: "", MinRate: "", Brand_Level: "", Item_Level: "",
                         Short_Name: "", Rate_Time: moment().format("HH:mm")
                     });
                     setSelectedPosBrand("");
@@ -627,7 +646,8 @@ const editRow = data => {
                     (item.Short_Name || '').toLowerCase().includes(term) ||
                     (item.Product_Name || '').toLowerCase().includes(term) ||
                     String(item.Rate || '').includes(term) ||
-                    String(item.Max_Rate || '').includes(term)
+                    String(item.Max_Rate || '').includes(term) || 
+                    String(item.Min_Rate || '').includes(term)
                 );
             });
         }
@@ -640,7 +660,7 @@ const editRow = data => {
                 if (sortConfig.key === 'Rate_Date') {
                     aValue = new Date(aValue);
                     bValue = new Date(bValue);
-                } else if (sortConfig.key === 'Rate' || sortConfig.key === 'Max_Rate' || 
+                } else if (sortConfig.key === 'Rate' || sortConfig.key === 'Max_Rate' || sortConfig.key === 'Min_Rate' ||
                            sortConfig.key === 'Brand_Level' || sortConfig.key === 'Item_Level') {
                     aValue = parseFloat(aValue) || 0;
                     bValue = parseFloat(bValue) || 0;
@@ -703,7 +723,7 @@ const editRow = data => {
                     cell.alignment = { horizontal: "left", vertical: "middle" };
                 });
                 
-                const headers = ["S.No", "Brand", "Product", "Rate", "Max Rate","Status"];
+                const headers = ["S.No", "Brand", "Product", "Rate", "Min Rate", "Max Rate", "Status"];
                 const headerRow = worksheet.addRow(headers);
                 headerRow.font = { bold: true, size: 12 };
                 headerRow.eachCell((cell) => {
@@ -727,6 +747,7 @@ const editRow = data => {
                         item.POS_Brand_Name || "",
                         item.Short_Name || item.Product_Name || "",
                         item.Rate || "",
+                        item.Min_Rate || "",
                         item.Max_Rate || "",
                         showActiveOnly ? "Active" : "Inactive"
                     ]);
@@ -749,6 +770,7 @@ const editRow = data => {
                 { width: 8 },
                 { width: 25 },
                 { width: 35 },
+                { width: 12 },
                 { width: 12 },
                 { width: 12 },
                 { width: 10 },
@@ -797,6 +819,7 @@ const editRow = data => {
                     name: product.Short_Name || product.Product_Name,
                     rate: product.Rate,
                     maxRate: product.Max_Rate,
+                    minRate: product.Min_Rate,
                     level: product.Item_Level || ''
                 });
             });
@@ -907,35 +930,37 @@ const editRow = data => {
     const orderPopoverOpen = Boolean(orderPopoverAnchor);
     const orderPopoverId = orderPopoverOpen ? 'order-popover' : undefined;
 
-    const editedRowsCount = Object.keys(editedRatesRef.current).length + Object.keys(editedMaxRatesRef.current).length;
+    const editedRowsCount = Object.keys(editedRatesRef.current).length + 
+                           Object.keys(editedMaxRatesRef.current).length + 
+                           Object.keys(editedMinRatesRef.current).length;
 
-const SortableHeader = ({ columnKey, label, align = "left" }) => {
-    const isActive = sortConfig.key === columnKey;
-    const direction = isActive ? sortConfig.direction : 'asc';
-    
-    return (
-        <th 
-            style={{ 
-                cursor: 'pointer', 
-                userSelect: 'none',
-                textAlign: align,
-                backgroundColor: isActive ? '#e8e8e8' : 'transparent'
-            }}
-            onClick={() => handleSort(columnKey)}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', gap: '4px' }}>
-                {label}
-                {isActive ? (
-                    direction === 'asc' ? 
-                        <ArrowUpward fontSize="small" style={{ fontSize: '14px' }} /> : 
-                        <ArrowDownward fontSize="small" style={{ fontSize: '14px' }} />
-                ) : (
-                    <span style={{ opacity: 0.8, fontSize: '14px' }}>↕</span>
-                )}
-            </div>
-        </th>
-    );
-};
+    const SortableHeader = ({ columnKey, label, align = "left" }) => {
+        const isActive = sortConfig.key === columnKey;
+        const direction = isActive ? sortConfig.direction : 'asc';
+        
+        return (
+            <th 
+                style={{ 
+                    cursor: 'pointer', 
+                    userSelect: 'none',
+                    textAlign: align,
+                    backgroundColor: isActive ? '#e8e8e8' : 'transparent'
+                }}
+                onClick={() => handleSort(columnKey)}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', gap: '4px' }}>
+                    {label}
+                    {isActive ? (
+                        direction === 'asc' ? 
+                            <ArrowUpward fontSize="small" style={{ fontSize: '14px' }} /> : 
+                            <ArrowDownward fontSize="small" style={{ fontSize: '14px' }} />
+                    ) : (
+                        <span style={{ opacity: 0.8, fontSize: '14px' }}>↕</span>
+                    )}
+                </div>
+            </th>
+        );
+    };
 
     const renderTable = () => {
         return (
@@ -948,6 +973,7 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                             <SortableHeader columnKey="POS_Brand_Name" label="Brand" />
                             <SortableHeader columnKey="Short_Name" label="Product" />
                             <SortableHeader columnKey="Rate" label="Rate (₹)" align="right" />
+                            <SortableHeader columnKey="Min_Rate" label="Min Rate (₹)" align="right" />
                             <SortableHeader columnKey="Max_Rate" label="Max Rate (₹)" align="right" />
                             <SortableHeader columnKey="Brand_Level" label="Brand Level" align="center" />
                             <SortableHeader columnKey="Item_Level" label="Item Level" align="center" />
@@ -958,7 +984,7 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                     <tbody>
                         {filteredAndSortedData.length === 0 ? (
                             <tr>
-                                <td colSpan="10" className="text-center">No data available</td>
+                                <td colSpan="11" className="text-center">No data available</td>
                             </tr>
                         ) : (
                             filteredAndSortedData.map((row, idx) => (
@@ -968,8 +994,10 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                                     index={idx}
                                     editedRatesRef={editedRatesRef}
                                     editedMaxRatesRef={editedMaxRatesRef}
+                                    editedMinRatesRef={editedMinRatesRef}
                                     onRateChange={handleRateChange}
                                     onMaxRateChange={handleMaxRateChange}
+                                    onMinRateChange={handleMinRateChange}
                                     onEdit={editRow}
                                     onDelete={() => { setOpen(true); setInputValue({ ...inputValue, Id: row.Id }); }}
                                     showActions={filters?.Fromdate === moment().format("YYYY-MM-DD")}
@@ -1125,6 +1153,7 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                                 setSearchTerm("");
                                 editedRatesRef.current = {};
                                 editedMaxRatesRef.current = {};
+                                editedMinRatesRef.current = {};
                                 fetchRateGenInfo(newFromDate);
                             }}
                             className="cus-inpt w-auto p-1"
@@ -1276,7 +1305,7 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                                                                 {product.name}
                                                             </Typography>
                                                             <Typography variant="caption" color="text.secondary" display="block">
-                                                                Rate: ₹{product.rate} | Max: ₹{product.maxRate}
+                                                                Rate: ₹{product.rate} | Min: ₹{product.minRate} | Max: ₹{product.maxRate}
                                                             </Typography>
                                                         </Grid>
                                                         <Grid item xs={7}>
@@ -1381,26 +1410,47 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                             variant="outlined"
                         />
 
-                        <label>Rate</label>
-                        <TextField
-                            value={inputValue.Rate ?? ""}
-                            onChange={e => setInputValue({ ...inputValue, Rate: e.target.value })}
-                            fullWidth 
-                            margin="dense" 
-                            variant="outlined"
-                            type="number"
-                        />
-
-                        <label>Max Rate</label>
-                        <TextField
-                            value={inputValue.MaxRate ?? ""}
-                            onChange={e => setInputValue({ ...inputValue, MaxRate: e.target.value })}
-                            fullWidth 
-                            margin="dense" 
-                            variant="outlined"
-                            type="number"
-                        />
-
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '1fr 1fr 1fr', 
+                            gap: '16px',
+                            marginBottom: '16px'
+                        }}>
+                            <div>
+                                <label>Rate</label>
+                                <TextField
+                                    value={inputValue.Rate ?? ""}
+                                    onChange={e => setInputValue({ ...inputValue, Rate: e.target.value })}
+                                    fullWidth 
+                                    margin="dense" 
+                                    variant="outlined"
+                                    type="number"
+                                />
+                            </div>
+                            <div>
+                                <label>Min Rate</label>
+                                <TextField
+                                    value={inputValue.MinRate ?? ""}
+                                    onChange={e => setInputValue({ ...inputValue, MinRate: e.target.value })}
+                                    fullWidth 
+                                    margin="dense" 
+                                    variant="outlined"
+                                    type="number"
+                                />
+                            </div>
+                            <div>
+                                <label>Max Rate</label>
+                                <TextField
+                                    value={inputValue.MaxRate ?? ""}
+                                    onChange={e => setInputValue({ ...inputValue, MaxRate: e.target.value })}
+                                    fullWidth 
+                                    margin="dense" 
+                                    variant="outlined"
+                                    type="number"
+                                />
+                            </div>
+                        </div>
+                        
                         <label>Brand Level</label>
                         <TextField
                             value={inputValue.Brand_Level ?? ""}
@@ -1439,7 +1489,7 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                                 Rate_Date: new Date().toISOString().split("T")[0],
                                 Pos_Brand_Id: "", Item_Id: "", Rate: "",
                                 Is_Active_Decative: "", POS_Brand_Name: "",
-                                Product_Name: "", MaxRate: "", Brand_Level: "", Item_Level: "",
+                                Product_Name: "", MaxRate: "", MinRate: "", Brand_Level: "", Item_Level: "",
                                 Short_Name: "", Rate_Time: moment().format("HH:mm")
                             });
                             setSelectedPosBrand("");
@@ -1450,7 +1500,6 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                 </form>
             </Dialog>
 
-   
             <Dialog open={open} onClose={() => setOpen(false)}>
                 <DialogTitle>Confirmation</DialogTitle>
                 <DialogContent><b>Do you want to delete the RateMaster?</b></DialogContent>
@@ -1460,7 +1509,6 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
                 </DialogActions>
             </Dialog>
 
-        
             <Dialog open={exportDialog} onClose={() => setExportDialog(false)} fullWidth maxWidth="sm">
                 <DialogTitle>Export Data</DialogTitle>
                 <DialogContent>
@@ -1517,9 +1565,10 @@ const SortableHeader = ({ columnKey, label, align = "left" }) => {
 }
 
 // Table Row Component
-const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateChange, onMaxRateChange, onEdit, onDelete, showActions }) => {
+const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, editedMinRatesRef, onRateChange, onMaxRateChange, onMinRateChange, onEdit, onDelete, showActions }) => {
     const [localRate, setLocalRate] = useState(editedRatesRef.current[row.Id] !== undefined ? editedRatesRef.current[row.Id] : row.Rate);
     const [localMaxRate, setLocalMaxRate] = useState(editedMaxRatesRef.current[row.Id] !== undefined ? editedMaxRatesRef.current[row.Id] : row.Max_Rate);
+    const [localMinRate, setLocalMinRate] = useState(editedMinRatesRef.current[row.Id] !== undefined ? editedMinRatesRef.current[row.Id] : row.Min_Rate);
 
     useEffect(() => {
         if (editedRatesRef.current[row.Id] !== undefined) {
@@ -1532,7 +1581,12 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateCh
         } else {
             setLocalMaxRate(row.Max_Rate);
         }
-    }, [row.Rate, row.Max_Rate, row.Id, editedRatesRef, editedMaxRatesRef]);
+        if (editedMinRatesRef.current[row.Id] !== undefined) {
+            setLocalMinRate(editedMinRatesRef.current[row.Id]);
+        } else {
+            setLocalMinRate(row.Min_Rate);
+        }
+    }, [row.Rate, row.Max_Rate, row.Min_Rate, row.Id, editedRatesRef, editedMaxRatesRef, editedMinRatesRef]);
 
     const handleRateInputChange = (e) => {
         const newValue = e.target.value;
@@ -1546,6 +1600,12 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateCh
         onMaxRateChange(row.Id, newValue);
     };
 
+    const handleMinRateInputChange = (e) => {
+        const newValue = e.target.value;
+        setLocalMinRate(newValue);
+        onMinRateChange(row.Id, newValue);
+    };
+
     const statusText = row.Is_Active_Decative === 1 ? "Active" : "Inactive";
     const statusColor = row.Is_Active_Decative === 1 ? "green" : "red";
 
@@ -1555,22 +1615,33 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, onRateCh
             <td>{row.Rate_Date ? moment(row.Rate_Date).format('DD/MM/YYYY') : '-'}</td>
             <td>{row.POS_Brand_Name || '-'}</td>
             <td>{row.Short_Name || row.Product_Name || '-'}</td>
-            <td style={{ minWidth: '130px', textAlign: 'right' }}>
+            <td style={{ minWidth: '100px', textAlign: 'right' }}>
                 <input
                     type="number"
                     className="form-control form-control-sm"
-                    style={{ width: '120px', textAlign: 'right' }}
+                    style={{ width: '100px', textAlign: 'right' }}
                     value={localRate}
                     onChange={handleRateInputChange}
                     step="0.01"
                     min="0"
                 />
             </td>
-            <td style={{ minWidth: '130px', textAlign: 'right' }}>
+            <td style={{ minWidth: '100px', textAlign: 'right' }}>
                 <input
                     type="number"
                     className="form-control form-control-sm"
-                    style={{ width: '120px', textAlign: 'right' }}
+                    style={{ width: '100px', textAlign: 'right' }}
+                    value={localMinRate}
+                    onChange={handleMinRateInputChange}
+                    step="0.01"
+                    min="0"
+                />
+            </td>
+            <td style={{ minWidth: '100px', textAlign: 'right' }}>
+                <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    style={{ width: '100px', textAlign: 'right' }}
                     value={localMaxRate}
                     onChange={handleMaxRateInputChange}
                     step="0.01"
