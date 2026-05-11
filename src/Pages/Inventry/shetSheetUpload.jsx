@@ -42,13 +42,11 @@ const initialUploadForm = {
 const UPLOAD_STATUS_OPTIONS = [
   { value: "", label: "ALL" },
   { value: "yes", label: "Uploaded" },
-  { value: "no", label: "Not Uploaded" },
   { value: "pending", label: "Pending" },
 ];
 
 const uploadStatusBadge = {
   yes: { label: "Uploaded", cls: "bg-success text-white" },
-  no: { label: "Not Uploaded", cls: "bg-danger text-white" },
   pending: { label: "Pending", cls: "bg-warning text-dark" },
 };
 
@@ -194,40 +192,47 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     return [{ value: "", label: "ALL" }, ...unique];
   }, [tableData]);
 
-  const filteredData = useMemo(() => {
-    return tableData.filter((row) => {
-      const matchParty = !filters.Party?.value || row.Retailer_Id === filters.Party.value;
-      
-      // Match Godown - check if any stock detail has matching godown
-      let matchGodown = true;
-      if (filters.Godown?.value) {
-        const stocks = toArray(row?.stockDetails);
-        matchGodown = stocks.some(stock => stock.Godown_Name === filters.Godown.value);
-      }
-      
-      // Match Driver - check if any involved staff matches
-      let matchDriver = true;
-      if (filters.Driver?.value) {
-        const staffs = toArray(row?.involvedStaffs);
-        matchDriver = staffs.some(staff => 
-          (staff.Involved_Emp_Type === "Load Man" || staff.Involved_Emp_Type === "Delivery Man" || staff.Involved_Emp_Type === "Delivery_Person") &&
-          staff.Emp_Name === filters.Driver.value
-        );
-      }
-      
-      const matchVoucher = !filters.Voucher?.value || row.voucherTypeGet === filters.Voucher.value;
+const filteredData = useMemo(() => {
+  return tableData.filter((row) => {
+    const matchParty = !filters.Party?.value || row.Retailer_Id === filters.Party.value;
+    
+    // Match Godown - check if any stock detail has matching godown
+    let matchGodown = true;
+    if (filters.Godown?.value) {
+      const stocks = toArray(row?.stockDetails);
+      matchGodown = stocks.some(stock => stock.Godown_Name === filters.Godown.value);
+    }
+    
+    // Match Driver - check if any involved staff matches
+    let matchDriver = true;
+    if (filters.Driver?.value) {
+      const staffs = toArray(row?.involvedStaffs);
+      matchDriver = staffs.some(staff => 
+        (staff.Involved_Emp_Type === "Load Man" || staff.Involved_Emp_Type === "Delivery Man" || staff.Involved_Emp_Type === "Delivery_Person") &&
+        staff.Emp_Name === filters.Driver.value
+      );
+    }
+    
+    const matchVoucher = !filters.Voucher?.value || row.voucherTypeGet === filters.Voucher.value;
 
-      let matchUpload = true;
-      if (filters.UploadStatus?.value) {
-        const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
-        if (filters.UploadStatus.value === "yes") matchUpload = hasImage;
-        else if (filters.UploadStatus.value === "no") matchUpload = !hasImage;
-        else if (filters.UploadStatus.value === "pending") matchUpload = row.imageStatus === "pending" && !hasImage;
+    let matchUpload = true;
+    if (filters.UploadStatus?.value) {
+      // FIXED: Use imageStatus and Image_Name to determine upload status
+      const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
+      const isUploaded = row.imageStatus === "uploaded";
+      
+      if (filters.UploadStatus.value === "yes") {
+        matchUpload = hasImage && isUploaded;
+      } else if (filters.UploadStatus.value === "no") {
+        matchUpload = !hasImage && !isUploaded;
+      } else if (filters.UploadStatus.value === "pending") {
+        matchUpload = row.imageStatus === "pending" && !hasImage;
       }
+    }
 
-      return matchParty && matchGodown && matchDriver && matchVoucher && matchUpload;
-    });
-  }, [tableData, filters]);
+    return matchParty && matchGodown && matchDriver && matchVoucher && matchUpload;
+  });
+}, [tableData, filters]);
 
   useEffect(() => {
     const saved = getSessionFiltersByPageId(pageID);
@@ -327,20 +332,39 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
   };
 
   // Dialog helpers
-  const openUploadDialog = (row) => {
-    const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
-    setUploadForm({
-      Id: row?.Id || "",
-      Do_Id: row?.Do_Id || "",
-      invoiceNo: row?.Do_Inv_No || "",
-      partyName: row?.retailerNameGet || "",
-      uploadStatus: hasImage ? "uploaded" : "pending",
-      uploadFile: null,
-      existingFile: row?.Image_Name || "",
-      Uploaded_By: localStorage.getItem("userId") || "",
-    });
-    setDialog((pre) => ({ ...pre, upload: true }));
-  };
+  // const openUploadDialog = (row) => {
+  //   const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
+  //   setUploadForm({
+  //     Id: row?.Id || "",
+  //     Do_Id: row?.Do_Id || "",
+  //     invoiceNo: row?.Do_Inv_No || "",
+  //     partyName: row?.retailerNameGet || "",
+  //     uploadStatus: hasImage ? "uploaded" : "pending",
+  //     uploadFile: null,
+  //     existingFile: row?.Image_Name || "",
+  //     Uploaded_By: localStorage.getItem("userId") || "",
+  //   });
+  //   setDialog((pre) => ({ ...pre, upload: true }));
+  // };
+
+const openUploadDialog = (row) => {
+  const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
+  const isUploaded = row.imageStatus == "uploaded";
+  const status = (hasImage && isUploaded) ? "uploaded" : "pending";
+  
+  setUploadForm({
+    Id: row?.Id || "",
+    Do_Id: row?.Do_Id || "",
+    invoiceNo: row?.Do_Inv_No || "",
+    partyName: row?.retailerNameGet || "",
+    uploadStatus: status,
+    uploadFile: null,
+    existingFile: row?.Image_Name || "",
+    Uploaded_By: localStorage.getItem("userId") || "",
+  });
+  setDialog((pre) => ({ ...pre, upload: true }));
+};
+
 
   const closeUploadDialog = () => {
     setDialog((pre) => ({ ...pre, upload: false }));
@@ -370,17 +394,27 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
     );
   };
 
- const UploadStatusCell = ({ row }) => {
-    const hasImage = Boolean(row.Image_Name);
-    const status = hasImage ? "yes" : (row.imageStatus == "pending" ? "pending" : "no");
-    const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
-    return (
-      <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
-        {st.label}
-      </span>
-    );
-  };
-  // Get Godown names for a row to display in table
+const UploadStatusCell = ({ row }) => {
+  const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
+  const isUploaded = row.imageStatus === "uploaded";
+  
+  let status = "pending";
+  if (hasImage && isUploaded) {
+    status = "yes";
+  } else if (!hasImage && !isUploaded && row.imageStatus !== "pending") {
+    status = "no";
+  } else if (row.imageStatus === "pending" && !hasImage) {
+    status = "pending";
+  }
+  
+  const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
+  return (
+    <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
+      {st.label}
+    </span>
+  );
+};
+
   const GodownCell = ({ row }) => {
     const stocks = toArray(row?.stockDetails);
     const godowns = [...new Set(stocks.map(s => s.Godown_Name).filter(Boolean))];
