@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { contraIV, contraStatus } from "./contraVariables";
+import { contraIV, contraStatus, contrarReference } from "./contraVariables";
 import { checkIsNumber, isEqualNumber, ISOString, isValidObject, onlynum, reactSelectFilterLogic, toArray, stringCompare, isValidNumber } from "../../../Components/functions";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -10,8 +10,39 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 import AppDialog from "../../../Components/appDialogComponent";
 import { createCol } from "../../../Components/filterableTable2";
-import { Add, Search } from "@mui/icons-material";
+import { Add, Delete, Search } from "@mui/icons-material";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
+
+const ListReference = ({ data = [], onDelete, title = 'Payment Reference' }) => data.length > 0 && (
+    <div className="table-responsive mt-2">
+        <h6 className="m-0">{title}</h6>
+        <table className="table fa-12 table-bordered">
+            <thead>
+                <tr>
+                    {['Sno', 'voucher', 'Dr / Cr', '#'].map(
+                        col => <th key={col}>{col}</th>
+                    )}
+                </tr>
+            </thead>
+            <tbody>
+                {data.map(
+                    (item, i) => (
+                        <tr key={i}>
+                            <td>{i + 1}</td>
+                            <td>{item?.bill_no ?? ''}</td>
+                            <td>{item?.dr_cr}</td>
+                            <td>
+                                <IconButton onClick={() => onDelete(item)} size="small" color="error">
+                                    <Delete className="fa-16" />
+                                </IconButton>
+                            </td>
+                        </tr>
+                    )
+                )}
+            </tbody>
+        </table>
+    </div>
+)
 
 const ContraScreen = ({
     loadingOn, loadingOff
@@ -27,6 +58,7 @@ const ContraScreen = ({
         Todate: ISOString(),
     });
     const [referenceData, setReferenceData] = useState([]);
+    const [references, setReferences] = useState([]);
 
     const [baseData, setBaseData] = useState({
         accountsList: [],
@@ -50,6 +82,9 @@ const ContraScreen = ({
                     })
                 )
             );
+            if (Array.isArray(editValues.bill_references)) {
+                setReferences(editValues.bill_references);
+            }
         }
     }, [editValues])
 
@@ -110,6 +145,7 @@ const ContraScreen = ({
             ContraDate: ISOString()
         }));
         setReferenceData([]);
+        setReferences([]);
     };
 
     const onSave = async () => {
@@ -119,7 +155,7 @@ const ContraScreen = ({
         fetchLink({
             address: `contra/master`,
             method: data?.ContraAutoId ? 'PUT' : 'POST',
-            bodyData: data,
+            bodyData: { ...data, bill_references: references },
             loadingOn, loadingOff
         }).then((res) => {
             if (res.success) {
@@ -160,7 +196,7 @@ const ContraScreen = ({
 
         const url = data.dr_cr === 'Cr'
             ? `contra/receiptReference?Fromdate=${refDialog.Fromdate}&Todate=${refDialog.Todate}&accId=${acc}`
-            : ''
+            : `contra/paymentReference?Fromdate=${refDialog.Fromdate}&Todate=${refDialog.Todate}&accId=${acc}`
         fetchLink({
             address: url,
             method: "GET",
@@ -282,7 +318,10 @@ const ContraScreen = ({
                                             setRefDialog(pre => ({ ...pre, open: true }))
                                         }}
                                         startIcon={<Add />}
-                                        disabled={true}
+                                        disabled={
+                                            !isValidNumber(data.DebitAccount)
+                                            || references.some(r => stringCompare(r.dr_cr, "Cr"))
+                                        }
                                     >Debit Ref</Button>
                                 </div>
                                 <div className="border rounded-3 p-3">
@@ -292,18 +331,33 @@ const ContraScreen = ({
                                         value={selDebit}
                                         options={options}
                                         isOptionDisabled={disableOption("Dr")}
-                                        onChange={(opt) => setData((p) => ({
-                                            ...p,
-                                            DebitAccount: !opt ? null : toNum(opt.value),
-                                            DebitAccountName: !opt ? "" : opt.label
-                                        }))}
+                                        onChange={(opt) => {
+                                            setData((p) => ({
+                                                ...p,
+                                                DebitAccount: !opt ? null : toNum(opt.value),
+                                                DebitAccountName: !opt ? "" : opt.label
+                                            }));
+                                            setReferences(pre => pre.filter(r => !stringCompare(r.dr_cr, "Dr")));
+                                        }}
                                         isClearable
                                         isSearchable
                                         styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                                         menuPortalTarget={document.body}
                                         filterOption={reactSelectFilterLogic}
                                     />
-                                    {(data.bill_no && data.dr_cr === 'Dr') && <p className="m-0 mt-2">Ref: {data.bill_no}</p>}
+                                    <ListReference
+                                        data={references.filter(r => r.dr_cr === 'Dr')}
+                                        onDelete={(item) => {
+                                            setReferences(pre => pre.filter(r => !(
+                                                isEqualNumber(r.bill_id, item.bill_id) || stringCompare(r.bill_no, item.bill_no)
+                                            )));
+                                            setData(pre => ({
+                                                ...pre,
+                                                Amount: Math.max(0, Number(pre.Amount || 0) - Number(item.amount || 0))
+                                            }));
+                                        }}
+                                        title="Payment Reference"
+                                    />
                                 </div>
                             </div>
 
@@ -317,7 +371,10 @@ const ContraScreen = ({
                                             setRefDialog(pre => ({ ...pre, open: true }))
                                         }}
                                         startIcon={<Add />}
-                                        disabled={!isValidNumber(data.CreditAccount)}
+                                        disabled={
+                                            !isValidNumber(data.CreditAccount)
+                                            || references.some(r => stringCompare(r.dr_cr, "Dr"))
+                                        }
                                     >Credit Ref</Button>
                                 </div>
                                 <div className="border rounded-3 p-3">
@@ -327,18 +384,33 @@ const ContraScreen = ({
                                         value={selCredit}
                                         options={options}
                                         isOptionDisabled={disableOption("Cr")}
-                                        onChange={(opt) => setData((p) => ({
-                                            ...p,
-                                            CreditAccount: !opt ? null : toNum(opt.value),
-                                            CreditAccountName: !opt ? "" : opt.label
-                                        }))}
+                                        onChange={(opt) => {
+                                            setData((p) => ({
+                                                ...p,
+                                                CreditAccount: !opt ? null : toNum(opt.value),
+                                                CreditAccountName: !opt ? "" : opt.label
+                                            }));
+                                            setReferences(pre => pre.filter(r => !stringCompare(r.dr_cr, "Cr")));
+                                        }}
                                         isClearable
                                         isSearchable
                                         styles={{ ...customSelectStyles, menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                                         menuPortalTarget={document.body}
                                         filterOption={reactSelectFilterLogic}
                                     />
-                                    {(data.bill_no && data.dr_cr === 'Cr') && <p className="m-0 mt-2">Ref: {data.bill_no}</p>}
+                                    <ListReference
+                                        data={references.filter(r => r.dr_cr === 'Cr')}
+                                        onDelete={(item) => {
+                                            setReferences(pre => pre.filter(r => !(
+                                                isEqualNumber(r.bill_id, item.bill_id) || stringCompare(r.bill_no, item.bill_no)
+                                            )));
+                                            setData(pre => ({
+                                                ...pre,
+                                                Amount: Math.max(0, Number(pre.Amount || 0) - Number(item.amount || 0))
+                                            }));
+                                        }}
+                                        title="Receipt Reference"
+                                    />
                                 </div>
                             </div>
 
@@ -456,12 +528,12 @@ const ContraScreen = ({
                     EnableSerialNumber={true}
                     dataArray={referenceData}
                     columns={[
-                        createCol('receipt_invoice_no', 'string', 'Voucher No'),
+                        createCol('uniqueNumber', 'string', 'Voucher No'),
                         createCol('voucherTypeGet', 'string', 'Voucher Type'),
-                        createCol('receipt_date', 'date', 'Date'),
+                        createCol('entryDate', 'date', 'Date'),
                         // createCol('debitAccountGet', 'string', 'Debit'),
-                        createCol('creditAccountGet', 'string', 'Credit'),
-                        createCol('credit_amount', 'number', 'Credit Amount'),
+                        createCol('displayAccount', 'string', 'Party'),
+                        createCol('amount', 'number', 'Amount'),
                         createCol('check_no', 'string', 'Cheque No'),
                         createCol('check_date', 'date', 'Cheque Date'),
                         createCol('bank_name', 'string', 'Bank Name'),
@@ -474,32 +546,41 @@ const ContraScreen = ({
                                 <IconButton size="small">
                                     <Checkbox
                                         checked={
-                                            isEqualNumber(row.receipt_id, data.bill_id) && 
-                                            stringCompare(row.receipt_invoice_no, data.bill_no)
+                                            references.some(
+                                                r => isEqualNumber(r.bill_id, row.uniqueId)
+                                                    && stringCompare(r.bill_no, row.uniqueNumber)
+                                            )
                                         }
                                         onChange={e => {
                                             if (e.target.checked) {
-                                                setData(pre => ({
-                                                    ...pre,
-                                                    bill_id: Number(row?.receipt_id),
-                                                    bill_no: row?.receipt_invoice_no || '',
-                                                    Amount: row.credit_amount,
-                                                    TransactionType: row.transaction_type,
-                                                    BankName: row.bank_name,
-                                                    Chequeno: row.check_no,
-                                                    ChequeDate: row.check_date ? ISOString(row.check_date) : '',
-                                                }))
+                                                setReferences(pre => [...pre, {
+                                                    ...contrarReference,
+                                                    dr_cr: data.dr_cr,
+                                                    bill_id: Number(row?.uniqueId),
+                                                    bill_no: row?.uniqueNumber || '',
+                                                    amount: row.amount,
+                                                }]);
+                                                if (references.length === 0) {
+                                                    setData(pre => ({
+                                                        ...pre,
+                                                        Amount: row.amount,
+                                                        TransactionType: row.transaction_type,
+                                                        BankName: row.bank_name,
+                                                        Chequeno: row.check_no,
+                                                        ChequeDate: row.check_date ? ISOString(row.check_date) : '',
+                                                    }));
+                                                } else {
+                                                    setData(pre => ({
+                                                        ...pre,
+                                                        Amount: Number(pre.Amount || 0) + Number(row.amount),
+                                                    }));
+                                                }
                                             } else {
+                                                setReferences(pre => pre.filter(r => !(isEqualNumber(r.bill_id, row.uniqueId) && stringCompare(r.bill_no, row.uniqueNumber))));
                                                 setData(pre => ({
                                                     ...pre,
-                                                    bill_id: null,
-                                                    bill_no: null,
-                                                    Amount: 0,
-                                                    TransactionType: '',
-                                                    BankName: '',
-                                                    Chequeno: '',
-                                                    ChequeDate: '',
-                                                }))
+                                                    Amount: Math.max(0, Number(pre.Amount || 0) - Number(row.amount)),
+                                                }));
                                             }
                                         }}
                                         size='small'
