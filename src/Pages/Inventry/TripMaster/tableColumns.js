@@ -111,3 +111,13 @@ export const initialArrivalValue = {
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     Alter_Reason: '',
 }
+export const tripCreditNoteColumns = {
+    CR_Id: '',
+    CR_Inv_No: '',
+    CR_Date: '',
+    Voucher_Type: '',
+    VoucherTypeGet: '',
+    Retailer_Id: '',
+    Retailer_Name: '',
+    Total_Invoice_value: '',
+};

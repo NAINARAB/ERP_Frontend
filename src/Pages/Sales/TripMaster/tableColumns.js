@@ -59,3 +59,14 @@ export const tripStaffsColumns = {
     Cost_Center_Type_Id: '',
     Emp_Name: '',
 }
+
+export const tripCreditNoteColumns = {
+    CR_Id: '',
+    CR_Inv_No: '',
+    CR_Date: '',
+    Voucher_Type: '',
+    Voucher_Type_Get: '',
+    Retailer_Id: '',
+    Retailer_Name: '',
+    Total_Invoice_value: '',
+}

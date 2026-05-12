@@ -12,7 +12,7 @@ import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns } from './tableColumns'
+import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns, tripCreditNoteColumns } from './tableColumns'
 import { toast } from 'react-toastify'
 import { useLocation } from "react-router-dom";
 import TripSheetGeneralInfo from "./createComp/generalInfo";
@@ -54,6 +54,21 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [selectedItems, setSelectedItems] = useState([]);
     const [staffInvolvedList, setStaffInvolvedList] = useState([]);
 
+    const [creditNoteData, setCreditNoteData] = useState([]);
+    const [cnFilters, setCnFilters] = useState({
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        Retailer: { value: '', label: 'ALL' },
+        CreatedBy: { value: '', label: 'ALL' },
+        VoucherType: { value: '', label: 'ALL' },
+        dialog: false,
+    });
+    const [filtersDropDown, setFiltersDropDown] = useState({
+        voucherType: [],
+        retailers: [],
+        createdBy: []
+    });
+
     useEffect(() => {
 
         const fetchData = async () => {
@@ -67,7 +82,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     staffCategory,
                     uomResponse,
                     voucherTypeResponse,
-                    batchStockResponse
+                    batchStockResponse,
+                    creditNoteFilterResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -76,7 +92,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `masters/voucher` }),
-                    fetchLink({ address: `inventory/batchMaster/stockBalance` })
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` }),
+                    fetchLink({ address: `creditNote/filterValues` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -110,6 +127,15 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 setVoucherType(voucherOrdered);
                 setBatchDetails(toArray(batchStockResponse.data));
 
+                const creditNoteFilterData = creditNoteFilterResponse.success ? creditNoteFilterResponse.data : null;
+                if (creditNoteFilterData) {
+                    setFiltersDropDown({
+                        voucherType: toArray(creditNoteFilterData?.others?.voucherType),
+                        retailers: toArray(creditNoteFilterData?.others?.retailers),
+                        createdBy: toArray(creditNoteFilterData?.others?.createdBy)
+                    });
+                }
+
             } catch (e) {
                 console.error("Error fetching data:", e);
             } finally {
@@ -121,7 +147,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }, [])
 
     useEffect(() => {
-        const productsArray = stateDetails?.Products_List;
+        const isCreditNote = stateDetails?.BillType === 'CREDIT_NOTE';
+        const productsArray = isCreditNote ? stateDetails?.Credit_Note_List : stateDetails?.Products_List;
         const employeesArray = stateDetails?.Employees_Involved;
         if (
             isValidObject(stateDetails)
@@ -142,7 +169,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
             setSelectedItems(
                 productsArray.map(productsData => Object.fromEntries(
-                    Object.entries(tripDetailsColumns).map(([key, value]) => {
+                    Object.entries(isCreditNote ? tripCreditNoteColumns : tripDetailsColumns).map(([key, value]) => {
                         return [key, productsData[key] ?? value]
                     })
                 ))
@@ -219,6 +246,39 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.log(e));
     }
 
+    const searchCreditNote = (e) => {
+        if(e) e.preventDefault();
+        fetchLink({
+            address: `creditNote?Fromdate=${cnFilters.Fromdate}&Todate=${cnFilters.Todate}&Retailer_Id=${cnFilters.Retailer?.value || ''}&Created_by=${cnFilters.CreatedBy?.value || ''}&VoucherType=${cnFilters.VoucherType?.value || ''}`,
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                setCreditNoteData(data?.data || []);
+            } else {
+                setCreditNoteData([]);
+                toast.error(data.message || 'Failed to load credit notes');
+            }
+        }).catch(e => console.error(e));
+    }
+
+    const changeCreditNoteDetails = (itemDetail, deleteRow = false) => {
+        setSelectedItems(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.CR_Id, itemDetail.CR_Id));
+
+            if (deleteRow) {
+                return preItems;
+            } else {
+                const currentCreditNote = { ...itemDetail };
+                const mappedCN = Object.fromEntries(
+                    Object.entries(tripCreditNoteColumns).map(([key, value]) => {
+                        return [key, currentCreditNote[key] ?? value];
+                    })
+                );
+                return [...preItems, mappedCN];
+            }
+        });
+    }
+
     const changeTripDetails = (itemDetail, deleteRow = false) => {
         setSelectedItems(prev => {
             const preItems = prev.filter(o => !isEqualNumber(o?.Arrival_Id, itemDetail.Arr_Id));
@@ -285,11 +345,15 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             <>
                                 <Button
                                     onClick={() => {
-                                        checkIsNumber(tripSheetInfo.Godownlocation)
-                                            ? setFilters(pre => ({ ...pre, importDialog: true }))
-                                            : toast.warn('Select Godown Location')
+                                        if (tripSheetInfo.BillType === 'CREDIT_NOTE') {
+                                            setCnFilters(pre => ({ ...pre, dialog: true }));
+                                        } else {
+                                            checkIsNumber(tripSheetInfo.Godownlocation)
+                                                ? setFilters(pre => ({ ...pre, importDialog: true }))
+                                                : toast.warn('Select Godown Location')
+                                        }
                                     }}
-                                >Import Arrivals</Button>
+                                >{tripSheetInfo.BillType === 'CREDIT_NOTE' ? 'Import Credit Notes' : 'Import Arrivals'}</Button>
                                 <Button
                                     onClick={() => setSelectedItems([])}
                                     className="me-2"
@@ -303,7 +367,27 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             QTY: ${selectedItems?.reduce((acc, o) => Addition(acc, o?.QTY ?? 0), 0)}`
                         }
                         maxHeightOption
-                        columns={[
+                        columns={tripSheetInfo.BillType === 'CREDIT_NOTE' ? [
+                            createCol('CR_Date', 'date', 'Date'),
+                            createCol('CR_Inv_No', 'string', 'ID'),
+                            createCol('Retailer_Name', 'string', 'Customer'),
+                            createCol('VoucherTypeGet', 'string', 'Voucher'),
+                            createCol('Total_Invoice_value', 'number', 'Invoice Value'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: '#',
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <IconButton
+                                        color="error"
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedItems(prev => prev.filter(pro => !isEqualNumber(pro.CR_Id, row.CR_Id)));
+                                        }}
+                                    ><Delete className="fa-20" /></IconButton>
+                                )
+                            }
+                        ] : [
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Item',
@@ -529,6 +613,97 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeDialog}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={cnFilters.dialog}
+                onClose={() => setCnFilters(pre => ({ ...pre, dialog: false }))} fullScreen
+            >
+                <DialogTitle className="d-flex align-items-center">
+                    <span className="flex-grow-1">Import From Credit Note</span>
+                    <IconButton size="small" color="error" onClick={() => setCnFilters(pre => ({ ...pre, dialog: false }))}>
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <form className="p-2" onSubmit={searchCreditNote}>
+                        <div className="d-flex flex-wrap align-items-end gap-2">
+                            <div>
+                                <label className='d-block ms-2'>From Date</label>
+                                <input type="date" value={cnFilters.Fromdate} onChange={e => setCnFilters(pre => ({ ...pre, Fromdate: e.target.value }))} className="cus-inpt p-2 w-auto" />
+                            </div>
+                            <div>
+                                <label className='d-block ms-2'>To Date</label>
+                                <input type="date" value={cnFilters.Todate} onChange={e => setCnFilters(pre => ({ ...pre, Todate: e.target.value }))} className="cus-inpt p-2 w-auto" />
+                            </div>
+                            <div className="col-2">
+                                <label className='d-block ms-2'>Retailer</label>
+                                <Select
+                                    value={cnFilters?.Retailer}
+                                    onChange={(e) => setCnFilters(pre => ({ ...pre, Retailer: e }))}
+                                    options={[{ value: '', label: 'ALL' }, ...filtersDropDown.retailers.map(o => ({ value: o.Retailer_Id, label: o.Retailer_Name }))]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Retailer Name"}
+                                />
+                            </div>
+                            <div className="col-2">
+                                <label className='d-block ms-2'>Voucher</label>
+                                <Select
+                                    value={cnFilters?.VoucherType}
+                                    onChange={(e) => setCnFilters(pre => ({ ...pre, VoucherType: e }))}
+                                    options={[{ value: '', label: 'ALL' }, ...filtersDropDown.voucherType.map(o => ({ value: o.Vocher_Type_Id, label: o.Voucher_Type }))]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Voucher Name"}
+                                />
+                            </div>
+                            <Button variant="outlined" type="submit">search</Button>
+                        </div>
+                    </form>
+                    <div className="table-responsive mt-3">
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {['#', 'SNo', 'Date', 'ID', 'Customer', 'Voucher', 'Invoice Value', 'Created By'].map((o, i) => (
+                                        <th className="fa-13" key={i}>{o}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {creditNoteData.map((cn, cnIndex) => {
+                                    const isChecked = selectedItems.findIndex(o => isEqualNumber(o?.CR_Id, cn.CR_Id)) !== -1;
+                                    return (
+                                        <tr key={cnIndex}>
+                                            <td className='fa-12'>
+                                                <input
+                                                    className="form-check-input shadow-none pointer"
+                                                    style={{ padding: '0.7em' }}
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        if (isChecked) changeCreditNoteDetails(cn, true);
+                                                        else changeCreditNoteDetails(cn);
+                                                    }}
+                                                />
+                                            </td>
+                                            <td className='fa-12'>{cnIndex + 1}</td>
+                                            <td className='fa-12'>{cn?.CR_Date ? LocalDate(cn.CR_Date) : ''}</td>
+                                            <td className='fa-12'>{cn?.CR_Inv_No}</td>
+                                            <td className='fa-12'>{cn?.Retailer_Name}</td>
+                                            <td className='fa-12'>{cn?.VoucherTypeGet}</td>
+                                            <td className='fa-12'>{cn?.Total_Invoice_value}</td>
+                                            <td className='fa-12'>{cn?.Created_BY_Name}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCnFilters(pre => ({ ...pre, dialog: false }))}>Close</Button>
                 </DialogActions>
             </Dialog>
         </>
