@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogActions, DialogContent, Button } from '@mui/material';
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, IconButton, Checkbox, Collapse, Box } from "@mui/material";
 import { UnfoldMore } from '@mui/icons-material'
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
-import { MyContext } from "../../Components/context/contextProvider";
 import { customSelectStyles, MainMenu } from "../../Components/tablecolumn";
 import { fetchLink } from "../../Components/fetchComponent";
 
@@ -463,45 +462,32 @@ const SubRoutingRow = ({ data, UserId, loadingOn, loadingOff }) => {
 
 const UserBased = (props) => {
     const [authData, setAuthData] = useState([]);
-    const [subRoutings, setSubRoutings] = useState([])
     const [users, setUsers] = useState([])
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
-    const [currentAuthId, setCurrentAuthId] = useState({ value: parseData?.Autheticate_Id, label: parseData?.Name });
-    const [currentUserId, setCurrentUserId] = useState(parseData?.UserId)
-    const { contextObj } = useContext(MyContext);
+    const [currentUserId, setCurrentUserId] = useState({ value: parseData?.UserId, label: parseData?.Name })
 
     useEffect(() => {
         fetchLink({
-            address: `authorization/userRights`,
-            headers: {
-                Authorization: currentAuthId.value
-            }
+            address: `authorization/userRights/userBased?UserId=${currentUserId.value}`,
+            loadingOn: props.loadingOn,
+            loadingOff: props.loadingOff
         }).then(data => {
             if (data.success) {
                 setAuthData(data.data);
-                setSubRoutings(data.others.subRoutings)
             }
         })
-    }, [currentAuthId])
+    }, [currentUserId.value])
 
     useEffect(() => {
         fetchLink({
-            address: `masters/users?Company_id=${parseData?.Company_id}`
+            address: `masters/users`
         }).then((data) => {
             if (data.success) {
                 setUsers(data.data);
             }
         }).catch(e => console.log(e))
-    }, [parseData?.Company_id])
-
-    const handleUserChange = (selectedOption) => {
-        if (selectedOption) {
-            const selectedUser = users.find(user => user.Autheticate_Id === selectedOption.value);
-            setCurrentAuthId({ value: selectedUser?.Autheticate_Id, label: selectedUser.Name } || { value: parseData?.Autheticate_Id, label: parseData?.Name });
-            setCurrentUserId(selectedUser?.UserId || parseData.UserId);
-        }
-    };
+    }, [])
 
     return (
         <>
@@ -509,9 +495,9 @@ const UserBased = (props) => {
             <div className="row">
                 <div className="col-sm-4 pt-1">
                     <Select
-                        value={currentAuthId}
-                        onChange={(e) => handleUserChange(e)}
-                        options={[...users.map(obj => ({ value: obj.Autheticate_Id, label: obj.Name }))]}
+                        value={currentUserId}
+                        onChange={(e) => setCurrentUserId(e)}
+                        options={[...users.map(obj => ({ value: obj.UserId, label: obj.Name }))]}
                         styles={customSelectStyles}
                         isSearchable={true}
                         placeholder={"Select User"}
@@ -542,7 +528,7 @@ const UserBased = (props) => {
                             <TRow
                                 key={index}
                                 data={obj}
-                                UserId={currentUserId}
+                                UserId={currentUserId.value}
                                 loadingOn={props.loadingOn}
                                 loadingOff={props.loadingOff}
                             />
