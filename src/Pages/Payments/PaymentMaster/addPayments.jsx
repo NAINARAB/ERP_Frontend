@@ -309,10 +309,10 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                                     className="cus-inpt p-2"
                                                     value={paymentValue.payment_voucher_type_id}
                                                     onChange={e => onChangePaymentValue('payment_voucher_type_id', e.target.value)}
-                                                    required
+                                                    // required
                                                     disabled={checkIsNumber(paymentValue.pay_id)}
                                                 >
-                                                    <option value="" disabled>Select</option>
+                                                    <option value={null}>Select</option>
                                                     {toArray(baseData.voucherType).filter(
                                                         fil => stringCompare(fil.Type, 'PAYMENT')
                                                     ).map(

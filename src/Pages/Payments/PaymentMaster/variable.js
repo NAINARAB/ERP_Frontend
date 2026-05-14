@@ -6,7 +6,7 @@ export const paymentGeneralInfoInitialValue = {
     pay_id: '',
     Alter_Reason: '',
     year_id: '',
-    payment_voucher_type_id: '',
+    payment_voucher_type_id: null,
     payment_sno: '',
     payment_invoice_no: '',
 
