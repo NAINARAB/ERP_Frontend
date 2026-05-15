@@ -51,12 +51,10 @@ const TallyLosSyncDashboard = lazy(() => import('./Pages/Masters/TallyMasters/ta
 const AccountMasterSales = lazy(() => import('./Pages/Masters/AccountMasterSales'));
 const ModuleParameters = lazy(() => import('./Pages/Masters/moduleParameters'));
 const ItemGroupMaster = lazy(() => import('./Pages/Masters/itemGroupMaster'));
-
 const ItemGroupMasterCreate = lazy(() => import('./Pages/Masters/itemGroupMasterCreate'))
-
-
 const VoucherGroup = lazy(() => import('./Pages/Masters/VoucherGroup'));
-const VoucherGroupCreate = lazy(() => import('./Pages/Masters/VoucherGroupCreate'))
+const VoucherGroupCreate = lazy(() => import('./Pages/Masters/VoucherGroupCreate'));
+const UserAccountMapping = lazy(() => import('./Pages/Masters/useraccountMapping'));
 
 
 const StockJournalRate = lazy(() => import('./Pages/Inventry/stockJournalRate'))
@@ -424,6 +422,7 @@ const RoutingArray = [
     { component: <VoucherType />, path: '/erp/master/voucherMaster' },
     { component: <ItemGroupMaster />, path: '/erp/master/itemGroupMaster' },
     { component: <ItemGroupMasterCreate />, path: '/erp/master/itemGroupMaster/Create' },
+    { component: <UserAccountMapping />, path: '/erp/master/userAccountMapping' },
 
     { component: <VoucherGroup />, path: '/erp/master/VoucherGroup' },
     { component: <VoucherGroupCreate />, path: '/erp/master/VoucherGroup/Create' },
