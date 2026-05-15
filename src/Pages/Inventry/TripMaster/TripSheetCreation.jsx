@@ -3,16 +3,17 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import {
     Addition, checkIsNumber, combineDateTime, isEqualNumber,
-    isValidDate, isValidObject, onlynum, ISOString,
-    Subraction, stringCompare, LocalDate, formatDateForTimeLocal,
+    isValidDate, isValidObject, ISOString,
+    stringCompare, LocalDate, formatDateForTimeLocal,
     toArray,
-    toNumber
+    toNumber,
+    isValidNumber
 } from "../../../Components/functions";
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
-import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns, tripCreditNoteColumns } from './tableColumns'
+import { tripDetailsColumns, tripMasterDetails, tripStaffsColumns, tripCreditNoteColumns, tripDebitNoteColumns } from './tableColumns'
 import { toast } from 'react-toastify'
 import { useLocation } from "react-router-dom";
 import TripSheetGeneralInfo from "./createComp/generalInfo";
@@ -69,6 +70,16 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
         createdBy: []
     });
 
+    const [debitNoteData, setDebitNoteData] = useState([]);
+    const [dnFilters, setDnFilters] = useState({
+        Fromdate: ISOString(),
+        Todate: ISOString(),
+        Retailer: { value: '', label: 'ALL' },
+        CreatedBy: { value: '', label: 'ALL' },
+        VoucherType: { value: '', label: 'ALL' },
+        dialog: false,
+    });
+
     useEffect(() => {
 
         const fetchData = async () => {
@@ -93,7 +104,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `masters/voucher` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
-                    fetchLink({ address: `creditNote/filterValues` })
+                    fetchLink({ address: `creditNote/filterValues` }),
+                    fetchLink({ address: `debitNote/filterValues` })
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -148,7 +160,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
     useEffect(() => {
         const isCreditNote = stateDetails?.BillType === 'CREDIT_NOTE';
-        const productsArray = isCreditNote ? stateDetails?.Credit_Note_List : stateDetails?.Products_List;
+        const isDebitNote = stateDetails?.BillType === 'DEBIT_NOTE';
+        const productsArray = isCreditNote ? stateDetails?.Credit_Note_List : (isDebitNote ? stateDetails?.Debit_Note_List : stateDetails?.Products_List);
         const employeesArray = stateDetails?.Employees_Involved;
         if (
             isValidObject(stateDetails)
@@ -169,7 +182,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
 
             setSelectedItems(
                 productsArray.map(productsData => Object.fromEntries(
-                    Object.entries(isCreditNote ? tripCreditNoteColumns : tripDetailsColumns).map(([key, value]) => {
+                    Object.entries(isCreditNote ? tripCreditNoteColumns : (isDebitNote ? tripDebitNoteColumns : tripDetailsColumns)).map(([key, value]) => {
                         return [key, productsData[key] ?? value]
                     })
                 ))
@@ -247,7 +260,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     }
 
     const searchCreditNote = (e) => {
-        if(e) e.preventDefault();
+        if (e) e.preventDefault();
         fetchLink({
             address: `creditNote?Fromdate=${cnFilters.Fromdate}&Todate=${cnFilters.Todate}&Retailer_Id=${cnFilters.Retailer?.value || ''}&Created_by=${cnFilters.CreatedBy?.value || ''}&VoucherType=${cnFilters.VoucherType?.value || ''}`,
             loadingOn, loadingOff
@@ -275,6 +288,39 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     })
                 );
                 return [...preItems, mappedCN];
+            }
+        });
+    }
+
+    const searchDebitNote = (e) => {
+        if (e) e.preventDefault();
+        fetchLink({
+            address: `debitNote?Fromdate=${dnFilters.Fromdate}&Todate=${dnFilters.Todate}&Retailer_Id=${dnFilters.Retailer?.value || ''}&Created_by=${dnFilters.CreatedBy?.value || ''}&VoucherType=${dnFilters.VoucherType?.value || ''}`,
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                setDebitNoteData(data?.data || []);
+            } else {
+                setDebitNoteData([]);
+                toast.error(data.message || 'Failed to load debit notes');
+            }
+        }).catch(e => console.error(e));
+    }
+
+    const changeDebitNoteDetails = (itemDetail, deleteRow = false) => {
+        setSelectedItems(prev => {
+            const preItems = prev.filter(o => !isEqualNumber(o?.DB_Id, itemDetail.DB_Id));
+
+            if (deleteRow) {
+                return preItems;
+            } else {
+                const currentDebitNote = { ...itemDetail };
+                const mappedDN = Object.fromEntries(
+                    Object.entries(tripDebitNoteColumns).map(([key, value]) => {
+                        return [key, currentDebitNote[key] ?? value];
+                    })
+                );
+                return [...preItems, mappedDN];
             }
         });
     }
@@ -347,13 +393,15 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                     onClick={() => {
                                         if (tripSheetInfo.BillType === 'CREDIT_NOTE') {
                                             setCnFilters(pre => ({ ...pre, dialog: true }));
+                                        } else if (tripSheetInfo.BillType === 'DEBIT_NOTE') {
+                                            setDnFilters(pre => ({ ...pre, dialog: true }));
                                         } else {
                                             checkIsNumber(tripSheetInfo.Godownlocation)
                                                 ? setFilters(pre => ({ ...pre, importDialog: true }))
                                                 : toast.warn('Select Godown Location')
                                         }
                                     }}
-                                >{tripSheetInfo.BillType === 'CREDIT_NOTE' ? 'Import Credit Notes' : 'Import Arrivals'}</Button>
+                                >{tripSheetInfo.BillType === 'CREDIT_NOTE' ? 'Import Credit Notes' : tripSheetInfo.BillType === 'DEBIT_NOTE' ? 'Import Debit Notes' : 'Import Arrivals'}</Button>
                                 <Button
                                     onClick={() => setSelectedItems([])}
                                     className="me-2"
@@ -383,6 +431,26 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                         size="small"
                                         onClick={() => {
                                             setSelectedItems(prev => prev.filter(pro => !isEqualNumber(pro.CR_Id, row.CR_Id)));
+                                        }}
+                                    ><Delete className="fa-20" /></IconButton>
+                                )
+                            }
+                        ] : tripSheetInfo.BillType === 'DEBIT_NOTE' ? [
+                            createCol('DB_Date', 'date', 'Date'),
+                            createCol('DB_Inv_No', 'string', 'ID'),
+                            createCol('Retailer_Name', 'string', 'Customer'),
+                            createCol('VoucherTypeGet', 'string', 'Voucher'),
+                            createCol('Total_Invoice_value', 'number', 'Invoice Value'),
+                            {
+                                isVisible: 1,
+                                ColumnHeader: '#',
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <IconButton
+                                        color="error"
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedItems(prev => prev.filter(pro => !isEqualNumber(pro.DB_Id, row.DB_Id)));
                                         }}
                                     ><Delete className="fa-20" /></IconButton>
                                 )
@@ -672,7 +740,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {creditNoteData.map((cn, cnIndex) => {
+                                {creditNoteData.filter(o => !isValidNumber(o.Trip_Id)).map((cn, cnIndex) => {
                                     const isChecked = selectedItems.findIndex(o => isEqualNumber(o?.CR_Id, cn.CR_Id)) !== -1;
                                     return (
                                         <tr key={cnIndex}>
@@ -704,6 +772,97 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setCnFilters(pre => ({ ...pre, dialog: false }))}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={dnFilters.dialog}
+                onClose={() => setDnFilters(pre => ({ ...pre, dialog: false }))} fullScreen
+            >
+                <DialogTitle className="d-flex align-items-center">
+                    <span className="flex-grow-1">Import From Debit Note</span>
+                    <IconButton size="small" color="error" onClick={() => setDnFilters(pre => ({ ...pre, dialog: false }))}>
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <form className="p-2" onSubmit={searchDebitNote}>
+                        <div className="d-flex flex-wrap align-items-end gap-2">
+                            <div>
+                                <label className='d-block ms-2'>From Date</label>
+                                <input type="date" value={dnFilters.Fromdate} onChange={e => setDnFilters(pre => ({ ...pre, Fromdate: e.target.value }))} className="cus-inpt p-2 w-auto" />
+                            </div>
+                            <div>
+                                <label className='d-block ms-2'>To Date</label>
+                                <input type="date" value={dnFilters.Todate} onChange={e => setDnFilters(pre => ({ ...pre, Todate: e.target.value }))} className="cus-inpt p-2 w-auto" />
+                            </div>
+                            <div className="col-2">
+                                <label className='d-block ms-2'>Retailer</label>
+                                <Select
+                                    value={dnFilters?.Retailer}
+                                    onChange={(e) => setDnFilters(pre => ({ ...pre, Retailer: e }))}
+                                    options={[{ value: '', label: 'ALL' }, ...filtersDropDown.retailers.map(o => ({ value: o.Retailer_Id, label: o.Retailer_Name }))]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Retailer Name"}
+                                />
+                            </div>
+                            <div className="col-2">
+                                <label className='d-block ms-2'>Voucher</label>
+                                <Select
+                                    value={dnFilters?.VoucherType}
+                                    onChange={(e) => setDnFilters(pre => ({ ...pre, VoucherType: e }))}
+                                    options={[{ value: '', label: 'ALL' }, ...filtersDropDown.voucherType.map(o => ({ value: o.Vocher_Type_Id, label: o.Voucher_Type }))]}
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    placeholder={"Voucher Name"}
+                                />
+                            </div>
+                            <Button variant="outlined" type="submit">search</Button>
+                        </div>
+                    </form>
+                    <div className="table-responsive mt-3">
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {['#', 'SNo', 'Date', 'ID', 'Customer', 'Voucher', 'Invoice Value', 'Created By'].map((o, i) => (
+                                        <th className="fa-13" key={i}>{o}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {debitNoteData.filter(o => !isValidNumber(o.Trip_Id)).map((dn, dnIndex) => {
+                                    const isChecked = selectedItems.findIndex(o => isEqualNumber(o?.DB_Id, dn.DB_Id)) !== -1;
+                                    return (
+                                        <tr key={dnIndex}>
+                                            <td className='fa-12'>
+                                                <input
+                                                    className="form-check-input shadow-none pointer"
+                                                    style={{ padding: '0.7em' }}
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        if (isChecked) changeDebitNoteDetails(dn, true);
+                                                        else changeDebitNoteDetails(dn);
+                                                    }}
+                                                />
+                                            </td>
+                                            <td className='fa-12'>{dnIndex + 1}</td>
+                                            <td className='fa-12'>{dn?.DB_Date ? LocalDate(dn.DB_Date) : ''}</td>
+                                            <td className='fa-12'>{dn?.DB_Inv_No}</td>
+                                            <td className='fa-12'>{dn?.Retailer_Name}</td>
+                                            <td className='fa-12'>{dn?.VoucherTypeGet}</td>
+                                            <td className='fa-12'>{dn?.Total_Invoice_value}</td>
+                                            <td className='fa-12'>{dn?.Created_BY_Name}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDnFilters(pre => ({ ...pre, dialog: false }))}>Close</Button>
                 </DialogActions>
             </Dialog>
         </>

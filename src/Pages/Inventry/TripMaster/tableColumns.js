@@ -121,3 +121,14 @@ export const tripCreditNoteColumns = {
     Retailer_Name: '',
     Total_Invoice_value: '',
 };
+
+export const tripDebitNoteColumns = {
+    DB_Id: '',
+    DB_Inv_No: '',
+    DB_Date: '',
+    Voucher_Type: '',
+    VoucherTypeGet: '',
+    Retailer_Id: '',
+    Retailer_Name: '',
+    Total_Invoice_value: '',
+};

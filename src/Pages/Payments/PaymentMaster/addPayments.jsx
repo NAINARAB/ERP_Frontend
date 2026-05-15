@@ -304,13 +304,13 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
 
                                             {/* voucher type */}
                                             <div className="col-lg-3 col-md-4 col-sm-6 p-2">
-                                                <label>Voucher<RequiredStar /></label>
+                                                <label>Voucher</label>
                                                 <select
                                                     className="cus-inpt p-2"
                                                     value={paymentValue.payment_voucher_type_id}
                                                     onChange={e => onChangePaymentValue('payment_voucher_type_id', e.target.value)}
                                                     // required
-                                                    disabled={checkIsNumber(paymentValue.pay_id)}
+                                                    // disabled={checkIsNumber(paymentValue.pay_id)}
                                                 >
                                                     <option value={null}>Select</option>
                                                     {toArray(baseData.voucherType).filter(

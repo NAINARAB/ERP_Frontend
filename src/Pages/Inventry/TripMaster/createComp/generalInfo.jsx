@@ -125,6 +125,7 @@ const TripSheetGeneralInfo = ({
                                 <option value={'MATERIAL INWARD'}>MATERIAL INWARD</option>
                                 <option value={'OTHER GODOWN'}>OTHER GODOWN</option>
                                 <option value={'CREDIT_NOTE'}>CREDIT NOTE</option>
+                                <option value={'DEBIT_NOTE'}>DEBIT NOTE</option>
                                 {/* <option value={'OTHERS'}>OTHERS</option> */}
                             </select>
                         </div>
@@ -145,6 +146,8 @@ const TripSheetGeneralInfo = ({
                                             return stringCompare(v.Type, 'OTHER_GODOWN')
                                         }else if(tripSheetInfo.BillType === 'CREDIT_NOTE'){
                                             return stringCompare(v.Type, 'CREDIT_NOTE')
+                                        }else if(tripSheetInfo.BillType === 'DEBIT_NOTE'){
+                                            return stringCompare(v.Type, 'DEBIT_NOTE')
                                         }else{
                                             return false
                                         }
