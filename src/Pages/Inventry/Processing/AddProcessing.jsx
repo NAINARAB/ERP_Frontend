@@ -384,6 +384,20 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                             </select>
                                         </div>
 
+                                        <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
+                                            <label>Source Type</label>
+                                            <select
+                                                className="cus-inpt p-2"
+                                                value={stockJorunalInfo?.sourceType}
+                                                onChange={e => setStockJorunalInfo(pre => ({ ...pre, sourceType: e.target.value }))}
+                                                disabled={isViewOnly}
+                                            >
+                                                <option value="BOTH">BOTH</option>
+                                                <option value="CONSUMPTION_ONLY">CONSUMPTION_ONLY</option>
+                                                <option value="PRODUCTION_ONLY">PRODUCTION_ONLY</option>
+                                            </select>
+                                        </div>
+
                                         {checkIsNumber(stockJorunalInfo?.PR_Id) && (
                                             <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
                                                 <label className='fa-13'>Alter Reason <span style={{ color: "red" }}>*</span></label>
