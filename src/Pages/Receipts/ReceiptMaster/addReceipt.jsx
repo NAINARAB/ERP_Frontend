@@ -1,0 +1,257 @@
+import { useEffect, useState, useMemo } from "react";
+import { receiptGeneralInfoInitialValue, receiptStaffInvolvedStaffInitialValue } from "./variable";
+import { Button, Card, CardContent } from '@mui/material';
+import { checkIsNumber, isArray, isEqualNumber, ISOString, isValidObject, stringCompare, toNumber, getSessionUser } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
+import { toast } from 'react-toastify';
+import { useLocation, useNavigate } from "react-router-dom";
+import ReceiptGeneralInfo from "./receiptGeneralInfo";
+import InvolvedStaffs from "../../Payments/PaymentMaster/staffInvolved";
+
+
+const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const editValues = location.state;
+
+    const [receiptValue, setReceiptValue] = useState(receiptGeneralInfoInitialValue);
+    const [receiptBillDetails, setReceiptBillDetails] = useState([]);
+    const [receiptStaffInvolved, setReceiptStaffInvolved] = useState([]);
+
+    const [baseData, setBaseData] = useState({
+        accountsList: [],
+        accountGroupData: [],
+        voucherType: [],
+        defaultBankMaster: [],
+        costCategory: [],
+        costCenter: [],
+        users: []
+    });
+
+    useEffect(() => {
+        if (
+            isValidObject(editValues)
+        ) {
+            setReceiptValue(
+                Object.fromEntries(
+                    Object.entries(receiptGeneralInfoInitialValue).map(([key, value]) => {
+                        if (key === 'receipt_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        if (key === 'check_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        if (key === 'bank_date') return [key, editValues[key] ? ISOString(editValues[key]) : value]
+                        return [key, editValues[key] ?? value]
+                    })
+                )
+            );
+        }
+
+        setReceiptStaffInvolved(
+            (editValues?.staffDetails || []).map(staffDetails => ({
+                ...receiptStaffInvolvedStaffInitialValue,
+                ...staffDetails,
+            }))
+        )
+
+        if (isArray(editValues?.BillsDetails) && editValues?.BillsDetails?.length > 0) {
+            setReceiptBillDetails(editValues?.BillsDetails);
+        }
+    }, [editValues])
+
+    useEffect(() => {
+
+        const fetchData = async () => {
+            try {
+                const [
+                    accountsResponse,
+                    accountsGroupResponse,
+                    voucherTypeResponse,
+                    defaultBankMaster,
+                    costCenterRes,
+                    costCategoryRes,
+                    usersRes
+                ] = await Promise.all([
+                    fetchLink({ address: `payment/accounts` }),
+                    fetchLink({ address: `payment/accountGroup` }),
+                    fetchLink({ address: `masters/voucher?module=RECEIPT` }),
+                    fetchLink({ address: `masters/defaultBanks` }),
+                    fetchLink({ address: `dataEntry/costCenter` }),
+                    fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `masters/user/dropDown` }),
+                ]);
+
+                const accountsList = (accountsResponse.success ? accountsResponse.data : []).sort(
+                    (a, b) => String(a?.Account_name).localeCompare(b?.Account_name)
+                );
+                const accountGroupData = (accountsGroupResponse.success ? accountsGroupResponse.data : []).sort(
+                    (a, b) => String(a?.Group_Name).localeCompare(b?.Group_Name)
+                );
+                const voucherType = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
+                    (a, b) => String(a?.Voucher_Type).localeCompare(b?.Voucher_Type)
+                );
+                const bankDetails = (defaultBankMaster.success ? defaultBankMaster.data : []);
+                const userDetails = (usersRes.success ? usersRes.data : []).map(userDet => ({
+                    ...userDet, value: userDet.UserId, label: userDet.Name
+                }));
+
+                const costCategory = (costCategoryRes.success ? costCategoryRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name));
+                const costCenter = (costCenterRes.success ? costCenterRes.data : [])
+                    .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
+
+                setBaseData((pre) => ({
+                    ...pre,
+                    accountsList: accountsList,
+                    accountGroupData: accountGroupData,
+                    voucherType: voucherType,
+                    defaultBankMaster: bankDetails,
+                    costCategory: costCategory,
+                    costCenter: costCenter,
+                    users: userDetails
+                }));
+
+            } catch (e) {
+                console.error("Error fetching data:", e);
+            }
+        };
+
+        fetchData();
+
+    }, [])
+
+    const clearValues = () => {
+        setReceiptValue(receiptGeneralInfoInitialValue);
+        setReceiptStaffInvolved([]);
+    };
+
+    const saveReceipt = (postValues = {}) => {
+        fetchLink({
+            address: `receipt/receiptMaster`,
+            method: checkIsNumber(postValues?.receipt_id) ? 'PUT' : 'POST',
+            bodyData: {
+                ...postValues,
+                approved_by: Number(receiptValue?.approved_by) || null,
+                cost_center_mapping: Number(receiptValue?.cost_center_mapping) || 0,
+                BillsDetails: receiptBillDetails,
+                staffDetails: receiptStaffInvolved
+            },
+            loadingOn, loadingOff
+        }).then(data => {
+            if (data.success) {
+                clearValues();
+                toast.success(data?.message || 'post successfully');
+
+                if (
+                    data.data[0]
+                    && isValidObject(data.data[0])
+                    && (
+                        isEqualNumber(data?.data[0]?.receipt_bill_type, 1)
+                        || isEqualNumber(data?.data[0]?.receipt_bill_type, 2)
+                    )
+                ) {
+                    navigate('/erp/receipts/listReceipts/addReference', {
+                        state: {
+                            ...data.data[0],
+                            ...editValues
+                        }
+                    })
+                } else {
+                    navigate('/erp/receipts/listReceipts', { state: editValues })
+                }
+
+            } else {
+                toast.error(data?.message || 'post failed')
+            }
+        }).catch(e => console.error(e))
+    }
+
+    return (
+        <>
+            <Card>
+
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    if (!checkIsNumber(receiptValue.debit_ledger) || !checkIsNumber(receiptValue.credit_ledger)) {
+                        toast.warn('Select Debit-Acc / Credit-Acc!')
+                    } else if (receiptValue.credit_amount < 1 || !receiptValue.credit_amount) {
+                        toast.warn('Enter valid amount!')
+                    } else if (checkIsNumber(receiptValue.receipt_id) && stringCompare(receiptValue.Alter_Reason, '')) {
+                        toast.error('Enter Alter Reason')
+                    } else {
+                        saveReceipt(receiptValue)
+                    }
+                }}>
+
+                    <div className="p-2 px-3 d-flex align-items-center">
+                        <h5 className="m-0 flex-grow-1">Receipt Creation</h5>
+
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            className="mx-1"
+                            onClick={() => navigate('/erp/receipts/listReceipts', { state: editValues })}
+                        >back</Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            className="mx-1"
+                        >Save</Button>
+                    </div>
+
+                    <hr className="my-2" />
+
+
+                    <CardContent className="pb-0">
+
+                        <div className="row p-0">
+                            <div className="col-xxl-3 col-lg-4 col-md-5 p-2">
+                                <div className="border p-2" style={{ minHeight: '30vh', height: '100%' }}>
+                                    <InvolvedStaffs
+                                        staffArray={receiptStaffInvolved}
+                                        setStaffArray={setReceiptStaffInvolved}
+                                        costCenter={baseData.costCenter}
+                                        costCategory={baseData.costCategory}
+                                        initialValue={receiptStaffInvolvedStaffInitialValue}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="col-xxl-9 col-lg-8 col-md-7 py-2 px-0">
+                                <div className="border px-3 py-1" style={{ minHeight: '30vh', height: '100%' }}>
+                                    <ReceiptGeneralInfo
+                                        receiptValue={receiptValue}
+                                        setReceiptValue={setReceiptValue}
+                                        accountGroupData={baseData.accountGroupData}
+                                        accountsList={baseData.accountsList}
+                                        voucherType={baseData.voucherType}
+                                        defaultBankMaster={baseData.defaultBankMaster}
+                                        users={baseData.users}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                    </CardContent>
+
+                    <hr className="my-2" />
+
+                    <div className="d-flex justify-content-end p-2">
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            onClick={clearValues}
+                            className="mx-1"
+                        >Clear</Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            className="mx-1"
+                        >Save</Button>
+                    </div>
+
+                </form>
+            </Card>
+
+        </>
+    )
+}
+
+export default AddPaymentMaster;

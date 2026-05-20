@@ -1,0 +1,63 @@
+import api from "../API";
+
+export const fetchLink = async ({
+    address,
+    method = "GET",
+    headers,
+    bodyData = null,
+    others = {},
+    autoHeaders = false,
+    loadingOn,
+    loadingOff
+}) => {
+
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const token = storage?.Autheticate_Id;
+
+    const isFormData = bodyData instanceof FormData;
+
+    const defaultHeaders = {
+        "Content-Type": "application/json",
+        'Authorization': token,
+    }
+
+    const finalHeaders = autoHeaders
+        ? defaultHeaders
+        : { ...defaultHeaders, ...headers };
+
+    const options = {
+        method,
+        headers: finalHeaders,
+        ...others
+    };
+
+    if (["POST", "PUT", "DELETE"].includes(method)) {
+        if (!isFormData) {
+            options.body = JSON.stringify(bodyData || {});
+        } else {
+            options.body = bodyData;  // FormData should be passed as is
+        }
+    }
+
+    try {
+        if (loadingOn) loadingOn();
+        const response = await fetch(api + address.replace(/\s+/g, ''), options);
+
+        // if (!response.ok) {
+        //     throw new Error(`HTTP error! status: ${response.status}`);
+        // }
+
+        if (options.headers["Content-Type"] === "application/json") {
+            const json = await response.json();
+            return { ...json, statusCode: response.status };
+        } else {
+            return response;
+        }
+    } catch (e) {
+        console.error('Fetch Error', e);
+        throw e;
+    } finally {
+        if (loadingOff) loadingOff();
+    }
+};
+

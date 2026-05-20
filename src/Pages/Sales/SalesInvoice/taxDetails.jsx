@@ -1,0 +1,167 @@
+// import { useEffect, useMemo } from "react";
+import { 
+    isEqualNumber, NumberFormat, numberToWords, 
+    onlynumAndNegative, RoundNumber,
+    toNumber, 
+    // toArray, Addition,  
+} from "../../../Components/functions";
+// import { calculateGSTDetails } from "../../../Components/taxCalculator";
+
+const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
+
+const SalesInvoiceTaxDetails = ({
+    // invoiceProducts = [],
+    // invoiceExpences = [],
+    // isNotTaxableBill,
+    // isInclusive,
+    // products = [],
+    IS_IGST,
+    invoiceInfo = {},
+    setInvoiceInfo,
+    invExpencesTotal,
+    Total_Invoice_value,
+    taxSplitUp,
+}) => {
+
+    // const invExpencesTotal = useMemo(() => {
+    //     return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    // }, [invoiceExpences]);
+
+    // const Total_Invoice_value = useMemo(() => {
+    //     const invValue = invoiceProducts.reduce((acc, item) => {
+    //         const Amount = RoundNumber(item?.Amount);
+
+    //         if (isNotTaxableBill) return Addition(acc, Amount);
+
+    //         const product = findProductDetails(products, item.Item_Id);
+    //         const gstPercentage = IS_IGST ? product.Igst_P : product.Gst_P;
+
+    //         if (isInclusive) {
+    //             return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'remove').with_tax);
+    //         } else {
+    //             return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
+    //         }
+    //     }, 0);
+
+    //     return Addition(invValue, invExpencesTotal);
+    // }, [invoiceProducts, isNotTaxableBill, products, IS_IGST, isInclusive, invExpencesTotal])
+
+    // const taxSplitUp = useMemo(() => {
+    //     if (!invoiceProducts || invoiceProducts.length === 0) return {};
+
+    //     let totalTaxable = 0;
+    //     let totalTax = 0;
+
+    //     invoiceProducts.forEach(item => {
+    //         const Amount = RoundNumber(item?.Amount || 0);
+
+    //         if (isNotTaxableBill) {
+    //             totalTaxable = Addition(totalTaxable, Amount);
+    //             return;
+    //         }
+
+    //         const product = findProductDetails(products, item.Item_Id);
+    //         const gstPercentage = isEqualNumber(IS_IGST, 1) ? product.Igst_P : product.Gst_P;
+
+    //         const taxInfo = calculateGSTDetails(Amount, gstPercentage, isInclusive ? 'remove' : 'add');
+
+    //         totalTaxable = Addition(totalTaxable, parseFloat(taxInfo.without_tax));
+    //         totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
+    //     });
+
+    //     const totalWithTax = Addition(totalTaxable, totalTax);
+    //     const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
+    //     const roundedTotal = Math.round(totalWithExpenses);
+    //     const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
+
+    //     const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+    //     const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
+    //     const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
+
+    //     return {
+    //         totalTaxable: RoundNumber(totalTaxable),
+    //         totalTax: RoundNumber(totalTax),
+    //         cgst,
+    //         sgst,
+    //         igst,
+    //         roundOff,
+    //         invoiceTotal: roundedTotal
+    //     };
+
+    // }, [invoiceProducts, products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
+
+    // useEffect(() => {
+    //     if (taxSplitUp.roundOff !== undefined && taxSplitUp.roundOff !== invoiceInfo.Round_off) {
+    //         setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
+    //     }
+    // }, [taxSplitUp.roundOff]);
+
+    return (
+        <>
+            <table className="table">
+                <tbody>
+                    <tr>
+                        <td className="border p-2" rowSpan={IS_IGST ? 5 : 6}>
+                            Total in words: {numberToWords(parseInt(Total_Invoice_value))}
+                        </td>
+                        <td className="border p-2">Total Taxable Amount</td>
+                        <td className="border p-2">
+                            {toNumber(taxSplitUp?.totalTaxable)}
+                        </td>
+                    </tr>
+                    {!IS_IGST ? (
+                        <>
+                            <tr>
+                                <td className="border p-2">CGST</td>
+                                <td className="border p-2">
+                                    {toNumber(taxSplitUp?.cgst)}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="border p-2">SGST</td>
+                                <td className="border p-2">
+                                    {toNumber(taxSplitUp?.sgst)}
+                                </td>
+                            </tr>
+                        </>
+                    ) : (
+                        <tr>
+                            <td className="border p-2">IGST</td>
+                            <td className="border p-2">
+                                {toNumber(taxSplitUp?.igst)}
+                            </td>
+                        </tr>
+                    )}
+                    <tr>
+                        <td className="border p-2">Total Expences</td>
+                        <td className="border p-2">
+                            {RoundNumber(invExpencesTotal)}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td className="border p-2">Round Off</td>
+                        <td className="border p-0">
+                            <input
+                                value={invoiceInfo?.Round_off || taxSplitUp?.roundOff || 0}
+                                className="cus-inpt p-2 m-0 border-0"
+                                onInput={onlynumAndNegative}
+                                onChange={e => setInvoiceInfo(pre => ({ 
+                                    ...pre, 
+                                    Round_off: parseFloat(e.target.value) || 0 
+                                }))}
+                            />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td className="border p-2">Total</td>
+                        <td className="border p-2">
+                            {NumberFormat(Math.round(Total_Invoice_value))}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </>
+    )
+}
+
+export default SalesInvoiceTaxDetails;

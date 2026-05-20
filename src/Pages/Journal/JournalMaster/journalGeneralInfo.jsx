@@ -1,0 +1,160 @@
+import { customSelectStyles } from "../../../Components/tablecolumn";
+import Select from "react-select";
+import { journalStatus } from "./variable";
+import { reactSelectFilterLogic, stringCompare } from "../../../Components/functions";
+import RequiredStar from "../../../Components/requiredStar";
+
+const JournalGeneralInfo = ({
+    journalGeneralInfo = {},
+    setJournalGeneralInfo,
+    voucherType = [],
+    branch = [],
+    owners = []
+}) => {
+
+    const changeGeneralInfo = (key, value) => {
+        setJournalGeneralInfo(pre => ({
+            ...pre,
+            [key]: value
+        }))
+    }
+
+    return (
+        <>
+
+            <div className="row p-0 m-0">
+
+                {/* Date */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Date</label>
+                    <input
+                        type="date"
+                        value={journalGeneralInfo.JournalDate}
+                        className="cus-inpt p-2"
+                        onChange={e => changeGeneralInfo('JournalDate', e.target.value)}
+                    />
+                </div>
+
+                {/* status */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Branch</label>
+                    <select
+                        className="cus-inpt p-2"
+                        value={journalGeneralInfo.BranchId}
+                        onChange={e => changeGeneralInfo('BranchId', e.target.value)}
+                    >
+                        <option value="" disabled>Select</option>
+                        {branch.map((br, bi) => (
+                            <option key={bi} value={br.BranchId}>{br.BranchName}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* vouchertype */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Voucher Type</label>
+                    <Select
+                        value={{
+                            label: journalGeneralInfo.VoucherTypeGet,
+                            value: journalGeneralInfo.VoucherType
+                        }}
+                        options={[
+                            { value: '', label: 'select' },
+                            ...voucherType.map(voucher => ({
+                                value: voucher.Vocher_Type_Id,
+                                label: voucher.Voucher_Type
+                            }))
+                        ]}
+                        menuPortalTarget={document.body}
+                        onChange={e => {
+                            changeGeneralInfo('VoucherTypeGet', e.label);
+                            changeGeneralInfo('VoucherType', e.value);
+                        }}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
+                    />
+                </div>
+
+                {/* status */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Status</label>
+                    <select
+                        className="cus-inpt p-2"
+                        value={journalGeneralInfo.JournalStatus}
+                        onChange={e => changeGeneralInfo('JournalStatus', e.target.value)}
+                    >
+                        <option value="" disabled>Select</option>
+                        {journalStatus.map((s, i) => (
+                            <option value={s.value} key={i}>{s.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* approved by */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Approved By</label>
+                    <Select
+                        value={{ label: journalGeneralInfo?.approved_by_get, value: journalGeneralInfo?.approved_by }}
+                        options={[{ value: null, label: 'Select' }, ...owners]}
+                        menuPortalTarget={document.body}
+                        onChange={e => {
+                            changeGeneralInfo('approved_by_get', e.label);
+                            changeGeneralInfo('approved_by', e.value);
+                        }}
+                        styles={customSelectStyles}
+                        isSearchable={true}
+                        filterOption={reactSelectFilterLogic}
+                    >
+                        <option value={null}>Select</option>
+                        {owners.map((s, i) => (
+                            <option value={s.value} key={i}>{s.label}</option>
+                        ))}
+                    </Select>
+                </div>
+
+                {/* cost center mapping */}
+                <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                    <label>Cost Center Mapping</label>
+                    <select
+                        className="cus-inpt p-2"
+                        value={journalGeneralInfo.cost_center_mapping || 0}
+                        onChange={e => changeGeneralInfo('cost_center_mapping', e.target.value)}
+                    >
+                        <option value={1}>Yes</option>
+                        <option value={0}>No</option>
+                    </select>
+                </div>
+
+                {!stringCompare(journalGeneralInfo.JournalAutoId, '') && (
+                    <div className="col-lg-3 col-md-4 col-sm-6 p-2">
+                        <label className='fa-13'>Alter Reason <RequiredStar /></label>
+                        <input
+                            value={journalGeneralInfo.Alter_Reason}
+                            className="cus-inpt p-2"
+                            onChange={e => changeGeneralInfo('Alter_Reason', e.target.value)}
+                            required
+                        />
+                    </div>
+                )}
+    
+                <div className="col-12 p-0 m-0"></div>
+
+                {/* narration */}
+                <div className="col-md-8 p-2">
+                    <label>Narration</label>
+                    <textarea
+                        type="text"
+                        value={journalGeneralInfo.Narration}
+                        className="cus-inpt p-2"
+                        onChange={e => changeGeneralInfo('Narration', e.target.value)}
+                    />
+                </div>
+
+            </div>
+
+        </>
+    )
+}
+
+export default JournalGeneralInfo;

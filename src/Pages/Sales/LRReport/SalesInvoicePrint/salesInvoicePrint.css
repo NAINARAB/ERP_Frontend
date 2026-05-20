@@ -1,0 +1,162 @@
+:root {
+  --inv-green: #0b6b3a;     /* header/border green */
+  --inv-border: 1px solid var(--inv-green);
+}
+
+.invoice-sheet {
+  width: 19cm;                 /* image shows ~19cm */
+  max-width: 100%;
+  background: #fff;
+  border: 2px solid var(--inv-green);
+  margin: 0 auto;
+}
+
+/* Top blank band (≈2.1cm in image) */
+.invoice-top-blank {
+  height: 2.1cm;
+  border-bottom: var(--inv-border);
+}
+
+/* Header band */
+.invoice-header {
+  min-height: 2.2cm;           /* image shows ~2.2cm */
+}
+
+.invoice-cell {
+  border-right: var(--inv-border);
+  border-bottom: var(--inv-border);
+  padding: 0.25rem 0.35rem;
+}
+
+.invoice-header .invoice-cell:last-child {
+  border-right: none;
+}
+
+.invoice-to {
+  width: 9.5cm;                /* image shows ~9.5cm */
+}
+
+.invoice-label {
+  font-size: 0.85rem;
+  color: #2b2b2b;
+}
+
+.invoice-value {
+  min-height: 1.4cm;
+  white-space: pre-wrap;
+}
+
+.invoice-meta-line {
+  display: flex;
+  gap: 0.4rem;
+  line-height: 1.25;
+  margin-bottom: 0.25rem;
+}
+.invoice-label-inline {
+  min-width: 3.2rem;
+  color: #2b2b2b;
+}
+.invoice-value-inline {
+  flex: 1;
+}
+
+/* Table */
+.invoice-items {
+  border-bottom: var(--inv-border);
+}
+
+.invoice-table {
+  table-layout: fixed;
+  margin: 0;
+}
+
+.invoice-th th {
+  background: var(--inv-green) !important;
+  color: #fff !important;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.25rem !important;
+  border-color: var(--inv-green) !important;
+}
+
+/* Column widths from your markings */
+.c-no   { width: 0.8cm;  text-align: center; }
+.c-items{ width: 6.3cm; }
+.c-hsn  { width: 1.9cm; text-align: center; }
+.c-gst  { width: 0.9cm; text-align: center; }
+.c-bags { width: 1.3cm; text-align: center; }
+.c-rate { width: 2.4cm; }
+.c-qty  { width: 1.8cm; }
+.c-amt  { width: 2.5cm; }
+
+.invoice-table td {
+  border-color: var(--inv-green) !important;
+  padding: 0.25rem 0.35rem !important;
+  vertical-align: top;
+  height: 1cm;                 /* adjust row height */
+}
+
+.invoice-table tr.is-empty td {
+  color: transparent;          /* keeps row height without visible text */
+}
+
+/* Bottom area */
+.invoice-bottom-left {
+  min-height: 3.5cm;           /* image shows ~3.5cm */
+  border-right: var(--inv-border);
+}
+
+.invoice-bottom-right {
+  width: 8.2cm;                /* right-side block feels ~8.2cm in image */
+}
+
+.invoice-rounded {
+  height: 2cm;                 /* image shows ~2cm */
+}
+
+.invoice-net {
+  height: 3.2cm;               /* image shows ~3.2cm */
+  gap: 0.35rem;
+}
+
+.invoice-qr {
+  width: 3.2cm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: var(--inv-border);
+  padding-right: 0.35rem;
+}
+
+.invoice-qr-img {
+  width: 2.8cm;
+  height: 2.8cm;
+  object-fit: contain;
+}
+
+.invoice-qr-placeholder {
+  width: 2.8cm;
+  height: 2.8cm;
+  border: var(--inv-border);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--inv-green);
+}
+
+.invoice-net-box {
+  padding-left: 0.35rem;
+}
+
+.invoice-net-value {
+  margin-top: 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Print-friendly */
+@media print {
+  .invoice-sheet {
+    box-shadow: none !important;
+  }
+}
