@@ -202,6 +202,7 @@ const ShetSheetUploadPage = lazy(() => import('./Pages/Inventry/shetSheetUpload'
 const JournalListing = lazy(() => import('./Pages/Journal/JournalMaster/journalList'));
 const JournalCreate = lazy(() => import('./Pages/Journal/JournalMaster/journalCreate'));
 const AccountBalance = lazy(() => import('./Pages/Journal/JournalReport/accountBalance'));
+const AccountTransaction = lazy(() => import('./Pages/Journal/JournalReport/accountTransaction'))
 
 // -----------------------------------------------------------------------------
 // Purchase
@@ -389,6 +390,7 @@ const RoutingArray = [
     { component: <AccountBalance />, path: '/erp/journal/accountBalance' },
     { component: <JournalListing />, path: '/erp/journal/journalList' },
     { component: <JournalCreate />, path: '/erp/journal/journalList/create' },
+    { component: <AccountTransaction />, path: '/erp/journal/accountTransaction' },
 
     // ---------------------------------------------------------------------------
     // ERP - Master
