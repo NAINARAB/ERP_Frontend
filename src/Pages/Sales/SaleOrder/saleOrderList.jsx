@@ -1,35 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-    Button,
-    Dialog,
-    Tooltip,
-    IconButton,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-} from "@mui/material";
+import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions, Checkbox } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
-    Addition,
-    Division,
-    getSessionFiltersByPageId,
-    isEqualNumber,
-    ISOString,
-    NumberFormat,
-    reactSelectFilterLogic,
-    setSessionFilters,
-    toNumber,
+    Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, ReceiptLong, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { useNavigate } from "react-router-dom";
-import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
-import DirectSaleInvoiceFromPos from "../SalesInvoice/directSaleInvoiceFromPos";
 import { ButtonActions } from "../../../Components/MenuButton";
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
+import BulkInvoiceConvertDialog from "./BulkInvoiceConvertDialog";
 
 const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left', verticalAlign = 'center', isVisible = 1) => ({
     isVisible: isVisible,
@@ -40,36 +23,40 @@ const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left
     ...(ColumnHeader && { ColumnHeader })
 });
 
-const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
-    const sessionValue = sessionStorage.getItem("filterValues");
-    const defaultFilters = {
-        Fromdate: ISOString(),
-        Todate: ISOString(),
-        Retailer: { value: "", label: "ALL" },
-        CreatedBy: { value: "", label: "ALL" },
-        SalesPerson: { value: "", label: "ALL" },
-        VoucherType: { value: "", label: "ALL" },
-        Cancel_status: '',
-        OrderStatus: { value: "", label: "ALL" },
-    };
+const defaultFilters = {
+    Fromdate: ISOString(),
+    Todate: ISOString(),
+    Retailer: { value: "", label: "ALL" },
+    CreatedBy: { value: "", label: "ALL" },
+    SalesPerson: { value: "", label: "ALL" },
+    VoucherType: { value: "", label: "ALL" },
+    Cancel_status: '',
+    OrderStatus: { value: "", label: "ALL" },
+};
 
+const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+    const [filterVersion, setFilterVersion] = useState(0);
     const storage = JSON.parse(localStorage.getItem("user"));
     const navigate = useNavigate();
     const [saleOrders, setSaleOrders] = useState([]);
-    const [retailers, setRetailers] = useState([]);
-    const [salesPerson, setSalePerson] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [voucher, setVoucher] = useState([]);
-    const [products, setProducts] = useState([]);
+    const [baseData, setBaseData] = useState({
+        retailers: [],
+        salesPerson: [],
+        users: [],
+        voucher: [],
+        products: [],
+        godowns: [],
+        stockItemLedgers: [],
+    });
     const [viewOrder, setViewOrder] = useState({});
+    const [selectedOrders, setSelectedOrders] = useState([]);
 
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [modalOpen, setModalOpen] = useState(false);
     const [filters, setFilters] = useState(defaultFilters);
 
     const [dialog, setDialog] = useState({
         filters: false,
         orderDetails: false,
+        bulkConvert: false,
     });
 
     useEffect(() => {
@@ -96,156 +83,47 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             Cancel_status,
             OrderStatus,
         }));
-    }, [sessionValue, pageID]);
-
-    const buildSaleOrderPayload = (data) => {
-        const extractWeightFromName = (name) => {
-            const match = name?.match(/(\d+)\s?kg/i);
-            return match ? parseInt(match[1]) : 1;
-        };
-
-        const validProducts = Array.isArray(data.ProductList)
-            ? data.ProductList
-                .filter((p) => Number(p?.Bill_Qty) > 0)
-                .map((p) => {
-                    const weight = extractWeightFromName(p?.Product_Name);
-                    return {
-                        ...p,
-                        Pre_Id: data?.Pre_Id,
-                        Bill_Qty: (Number(p?.Bill_Qty) || 0) * (Number(p?.PackValue) || 1),
-                        Act_Qty: Number(p?.Act_Qty) || Number(p?.Total_Qty) || 0,
-                        Total_Qty: Number(p?.Bill_Qty) || 0,
-                    };
-                })
-            : [];
-
-        const transformStaffData = (orderData) => {
-            const staffs = [];
-            if (orderData.Broker_Id && orderData.Broker_Id !== 0) {
-                staffs.push({
-                    Id: "",
-                    So_Id: "",
-                    Emp_Id: orderData.Broker_Id,
-                    Emp_Type_Id: orderData.Broker_Type || 0,
-                });
-            }
-            if (orderData.Transporter_Id && orderData.Transporter_Id !== 0) {
-                staffs.push({
-                    Id: "",
-                    Do_Id: "",
-                    Emp_Id: orderData.Transporter_Id,
-                    Emp_Type_Id: orderData.TrasnportType || 0,
-                });
-            }
-            return staffs.filter((s) => s.Emp_Type_Id !== 0);
-        };
-
-        return {
-            ...data,
-            Product_Array: validProducts,
-            Retailer_Id: Number(data?.Retailer_Id) || 0,
-            Retailer_Name: data?.Retailer_Name || "",
-            Staffs_Array: transformStaffData(data),
-        };
-    };
-
-    const handleOpenModal = (row) => {
-        const payload = buildSaleOrderPayload(row);
-
-        const productChanges = (row?.ProductList || row?.Products_List || []).map(
-            (item) => {
-                const orderedQty = Number(item.Bill_Qty) || 0;
-                const totalQty = Number(item?.Total_Qty) || 0;
-
-                const deliveredQty = (row?.ConvertedInvoice || [])
-                    .flatMap((inv) => inv?.InvoicedProducts || [])
-                    .filter((p) => p.Item_Id === item.Item_Id)
-                    .reduce((sum, p) => sum + (Number(p?.Bill_Qty) || 0), 0);
-
-                const remainingQty = Math.max(orderedQty - deliveredQty, 0);
-
-                // Use Act_Qty if available, otherwise use remainingQty
-                const finalQty = item.Act_Qty !== undefined ? item.Act_Qty : remainingQty;
-
-                return {
-                    ...item,
-                    Ordered_Qty: orderedQty,
-                    Delivered_Qty: deliveredQty,
-                    Act_Qty: item.Act_Qty || totalQty,
-                    Bill_Qty: finalQty, // Set as Act_Qty or remaining
-                    Total_Qty: finalQty, // Set as Act_Qty or remaining
-                    Amount: finalQty * (Number(item.Item_Rate) || 0),
-                };
-            }
-        );
-
-        const updatedRow = {
-            ...row,
-            Do_Date: row?.So_Date,
-            ProductList: productChanges,
-            Staffs_Array:
-                row?.Staff_Involved_List?.map((item) => ({
-                    Staff_Id: item.Involved_Emp_Id,
-                    Cost_Cat_Id: item.Cost_Center_Type_Id,
-                    Cost_Cat_Name: item.Cost_Center_Type,
-                })) || [],
-            Retailer_Id: Number(row?.Retailer_Id) || 0,
-            Retailer_Name: row?.Retailer_Name || "",
-        };
-
-        setSelectedOrder({
-            row: updatedRow,
-            payload,
-        });
-
-        setModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setModalOpen(false);
-        setSelectedOrder(null);
-    };
+    }, [filterVersion, pageID]);
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                if (loadingOn) loadingOn();
+                const [
+                    retailersRes,
+                    salesPersonRes,
+                    usersRes,
+                    voucherRes,
+                    productsRes,
+                    godownRes,
+                    ledgerRes
+                ] = await Promise.all([
+                    fetchLink({ address: `sales/saleOrder/retailers` }),
+                    fetchLink({ address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}` }),
+                    fetchLink({ address: `masters/user/dropDown?Company_id=${storage?.Company_id}` }),
+                    fetchLink({ address: `masters/voucher` }),
+                    fetchLink({ address: `masters/products` }),
+                    fetchLink({ address: `dataEntry/godownLocationMaster` }),
+                    fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` })
+                ]);
 
-        fetchLink({
-            address: `sales/saleOrder/retailers`,
-        }).then((data) => {
-            if (data.success) {
-                setRetailers(data.data);
+                setBaseData({
+                    retailers: retailersRes.success ? retailersRes.data : [],
+                    salesPerson: salesPersonRes.success ? salesPersonRes.data : [],
+                    users: usersRes.success ? usersRes.data : [],
+                    voucher: voucherRes.success ? voucherRes.data : [],
+                    products: productsRes.success ? productsRes.data : [],
+                    godowns: godownRes.success ? godownRes.data : [],
+                    stockItemLedgers: ledgerRes.success ? ledgerRes.data : [],
+                });
+            } catch (e) {
+                console.error("Error fetching data:", e);
+            } finally {
+                if (loadingOff) loadingOff();
             }
-        }).catch((e) => console.error(e));
+        };
 
-        fetchLink({
-            address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}`,
-        }).then((data) => {
-            if (data.success) {
-                setSalePerson(data.data);
-            }
-        }).catch((e) => console.error(e));
-
-        fetchLink({
-            address: `masters/user/dropDown?Company_id=${storage?.Company_id}`,
-        }).then((data) => {
-            if (data.success) {
-                setUsers(data.data);
-            }
-        }).catch((e) => console.error(e));
-
-        fetchLink({
-            address: `masters/voucher`,
-        }).then((data) => {
-            if (data.success) {
-                setVoucher(data.data);
-            }
-        }).catch((e) => console.error(e));
-
-        fetchLink({ address: `masters/products` }).then((data) => {
-            if (data.success) {
-                setProducts(data.data);
-            }
-        }).catch((e) => console.error(e));
-
+        fetchData();
     }, []);
 
     const fetchSaleOrders = () => {
@@ -267,10 +145,10 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             `Cancel_status=${Cancel_status}`
         ];
 
-        if (Retailer?.value) queryParams.push(`Retailer_Id=${Retailer.value}`);
-        if (SalesPerson?.value) queryParams.push(`Sales_Person_Id=${SalesPerson.value}`);
-        if (CreatedBy?.value) queryParams.push(`Created_by=${CreatedBy.value}`);
-        if (VoucherType?.value) queryParams.push(`VoucherType=${VoucherType.value}`);
+        if (isValidNumber(Retailer.value)) queryParams.push(`Retailer_Id=${Retailer.value}`);
+        if (isValidNumber(SalesPerson.value)) queryParams.push(`Sales_Person_Id=${SalesPerson.value}`);
+        if (isValidNumber(CreatedBy.value)) queryParams.push(`Created_by=${CreatedBy.value}`);
+        if (isValidNumber(VoucherType.value)) queryParams.push(`VoucherType=${VoucherType.value}`);
 
         if (OrderStatus?.value) {
             queryParams.push(`OrderStatus=${OrderStatus.value}`);
@@ -289,351 +167,131 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
 
     useEffect(() => {
         fetchSaleOrders();
-    }, [sessionValue, pageID]);
-
-    const transformStaffInvolvedListToStaffsArray = (staffInvolvedList = [], doId = "") => {
-        return staffInvolvedList.map((staff, index) => ({
-            Id: `temp_${Date.now()}_${index}`,
-            Do_Id: doId,
-            Emp_Id: staff.Involved_Emp_Id,
-            Emp_Name: staff.EmpName,
-            Emp_Type_Id: staff.Cost_Center_Type_Id,
-            Involved_Emp_Type: staff.EmpType
-        }));
-    };
+    }, [filterVersion, pageID]);
 
     const ExpendableComponent = ({ row }) => {
-        const getDeliveredQty = (product) => {
-            let deliveredQty = 0;
-
-            if (!row?.ConvertedInvoice || !Array.isArray(row.ConvertedInvoice)) {
-                return deliveredQty;
-            }
-
-            row.ConvertedInvoice.forEach((invoice) => {
-                const invoiceProducts = invoice?.InvoicedProducts || invoice?.Products || invoice?.ProductList || [];
-
-                invoiceProducts.forEach((ip) => {
-                    if (Number(ip.Item_Id) === Number(product.Item_Id)) {
-                        deliveredQty += Number(ip.Bill_Qty || ip.Quantity || ip.Qty || 0);
-                    }
-                    else if (ip.Product_Id && product.Product_Id && Number(ip.Product_Id) === Number(product.Product_Id)) {
-                        deliveredQty += Number(ip.Bill_Qty || ip.Quantity || ip.Qty || 0);
-                    }
-                });
-            });
-
-            return deliveredQty;
-        };
-
-        const getOrderedQty = (product) => {
-            return Number(product?.Bill_Qty || product?.Ordered_Qty || product?.Quantity || 0);
-        };
-
-        const getRemainingQty = (product) => {
-            const ordered = getOrderedQty(product);
-            const delivered = getDeliveredQty(product);
-            const remaining = Math.max(ordered - delivered, 0);
-
-            return product.Act_Qty !== undefined ? product.Act_Qty : remaining;
-        };
-
-        const hasPending = row?.Products_List?.some((product) => {
-            const remaining = getRemainingQty(product);
-            return remaining > 0;
-        });
-
-        const findProductDetails = (productid) => products?.find(obj => isEqualNumber(obj?.Product_Id, productid)) ?? {};
-
-        const handlePendingNavigation = () => {
-            const isDeliveryOrder = row.Do_Inv_No && !row.So_Inv_No;
-
-            const normalizedRow = {
-                So_Id: isDeliveryOrder ? row.Do_Id : row.So_Id || "",
-                So_Inv_No: isDeliveryOrder ? row.Do_Inv_No : row.So_Inv_No || "",
-                So_Year: isDeliveryOrder ? row.Do_Year : row.So_Year || 0,
-                So_Date: isDeliveryOrder ? row.Do_Date : row.So_Date || "",
-                So_Branch_Inv_Id: isDeliveryOrder
-                    ? parseInt(row.Do_Inv_No?.match(/\d+/g)?.[0]) || 0
-                    : row.So_Branch_Inv_Id || 0,
-                So_No: row.So_No,
-
-                Alter_Id: row.Alter_Id || "",
-                Alterd_on: row.Created_on || "",
-                Altered_by: row.Created_by || "",
-                Branch_Id: row.Branch_Id || 0,
-                Branch_Name: row.Branch_Name || "",
-                CSGT_Total: row.CSGT_Total || 0,
-                Cancel_status: row.Cancel_status || "0",
-                ConvertedInvoice: row.ConvertedInvoice || [],
-                Created_BY_Name: row.Created_BY_Name || "",
-                Created_by: row.Created_by || "",
-                Created_on: row.Created_on || "",
-                GST_Inclusive: row.GST_Inclusive || 2,
-                IGST_Total: row.IGST_Total || 0,
-                IS_IGST: row.IS_IGST || 0,
-                Narration: row.Narration || null,
-                OrderStatus: "pending",
-                Products_List: row.Products_List || [],
-                Retailer_Id: row.Retailer_Id || 0,
-                Retailer_Name: row.Retailer_Name || "",
-                Round_off: row.Round_off || 0,
-                SGST_Total: row.SGST_Total || 0,
-                Sales_Person_Id: row.Sales_Person_Id || 0,
-                Sales_Person_Name: row.Sales_Person_Name || "",
-                Staff_Involved_List: row.Staff_Involved_List || [],
-                Total_Before_Tax: row.Total_Before_Tax || 0,
-                Total_Invoice_value: row.Total_Invoice_value || 0,
-                Total_Tax: row.Total_Tax || 0,
-                Trans_Type: row.Trans_Type || "INSERT",
-                VoucherType: parseInt(row.Voucher_Type || row.VoucherType) || 0,
-                VoucherTypeGet: row.VoucherTypeGet || "",
-                Do_Id: row.Do_Id || "",
-                Do_Inv_No: row.Do_Inv_No || "",
-                ...row
-            };
-
-            const staffsArray = transformStaffInvolvedListToStaffsArray(
-                normalizedRow.Staff_Involved_List || [],
-                normalizedRow.Do_Id || normalizedRow.So_Id || ""
-            );
-
-            const getOrderedQtyInternal = (product) => {
-                return Number(product?.Bill_Qty || 0);
-            };
-
-            const getDeliveredQtyInternal = (product) => {
-                let deliveredQty = 0;
-                if (normalizedRow.ConvertedInvoice?.length > 0) {
-                    normalizedRow.ConvertedInvoice.forEach((invoice) => {
-                        if (invoice.InvoicedProducts?.length > 0) {
-                            invoice.InvoicedProducts.forEach((ip) => {
-                                if (Number(ip.Item_Id) === Number(product.Item_Id)) {
-                                    deliveredQty += Number(ip.Bill_Qty || 0);
-                                }
-                            });
-                        }
-                    });
-                }
-                return deliveredQty;
-            };
-
-            const getRemainingQtyInternal = (product) => {
-                const ordered = getOrderedQtyInternal(product);
-                const delivered = getDeliveredQtyInternal(product);
-                const remaining = Math.max(ordered - delivered, 0);
-
-                return product.Act_Qty !== undefined ? product.Act_Qty : remaining;
-            };
-
-            const pendingProducts = normalizedRow.Products_List
-                ?.map((product) => {
-                    const ordered = getOrderedQtyInternal(product);
-                    const delivered = getDeliveredQtyInternal(product);
-                    const remaining = getRemainingQtyInternal(product);
-                    const productMaster = findProductDetails(product.Item_Id);
-
-                    if (remaining > 0) {
-                        const qtyToUse = product.Act_Qty !== undefined ? product.Act_Qty : remaining;
-                        const pack = productMaster?.PackGet;
-                        const Alt_Bill_Qty = Division(qtyToUse, pack);
-
-                        return {
-                            ...product,
-                            Product_Name: product.Product_Name || product.Product_Short_Name || product.Item_Name || "Unknown Product",
-                            Product_Short_Name: product.Product_Short_Name || product.Product_Name || "",
-                            Item_Name: product.Item_Name || product.Product_Name || product.Product_Short_Name || "",
-                            Ordered_Qty: ordered,
-                            Delivered_Qty: delivered,
-                            Total_Qty: qtyToUse,
-                            Amount: qtyToUse * Number(product.Item_Rate || 0),
-                            Bill_Qty: qtyToUse,
-                            Alt_Bill_Qty: Alt_Bill_Qty,
-                            Act_Qty: qtyToUse,
-                            Alt_Act_Qty: Alt_Bill_Qty,
-                        };
-                    }
-                    return null;
-                })
-                .filter(Boolean);
-
-            const stateData = {
-                S_Id: normalizedRow.So_Id,
-                So_Id: normalizedRow.So_Id,
-                So_Inv_No: normalizedRow.So_Inv_No,
-                So_Year: normalizedRow.So_Year,
-                Pre_Id: null,
-                Alter_Id: normalizedRow.Alter_Id,
-                Alterd_on: normalizedRow.Created_on,
-                Altered_by: normalizedRow.Created_by,
-                Approve_Status: 0,
-                Approved_By: null,
-                Branch_Id: normalizedRow.Branch_Id,
-                Branch_Name: normalizedRow.Branch_Name,
-                CSGT_Total: normalizedRow.CSGT_Total,
-                Cancel_status: normalizedRow.Cancel_status,
-                ConvertedInvoice: normalizedRow.ConvertedInvoice,
-                Created_BY_Name: normalizedRow.Created_BY_Name,
-                Created_by: normalizedRow.Created_by,
-                Created_on: normalizedRow.Created_on,
-                GST_Inclusive: normalizedRow.GST_Inclusive,
-                IGST_Total: normalizedRow.IGST_Total,
-                IS_IGST: normalizedRow.IS_IGST,
-                Narration: normalizedRow.Narration,
-                OrderStatus: "pending",
-                Products_List: pendingProducts,
-                Retailer_Id: normalizedRow.Retailer_Id,
-                Retailer_Name: normalizedRow.Retailer_Name,
-                Round_off: normalizedRow.Round_off,
-                SGST_Total: normalizedRow.SGST_Total,
-                Sales_Person_Id: normalizedRow.Sales_Person_Id,
-                Sales_Person_Name: normalizedRow.Sales_Person_Name,
-                So_Branch_Inv_Id: normalizedRow.So_Branch_Inv_Id,
-                So_Date: normalizedRow.So_Date,
-                So_No: normalizedRow.So_Id,
-                Staff_Involved_List: normalizedRow.Staff_Involved_List || [],
-                Staffs_Array: staffsArray,
-                Total_Before_Tax: normalizedRow.Total_Before_Tax,
-                Total_Invoice_value: normalizedRow.Total_Invoice_value,
-                Total_Tax: normalizedRow.Total_Tax,
-                Trans_Type: normalizedRow.Trans_Type,
-                VoucherType: normalizedRow.VoucherType,
-                VoucherTypeGet: normalizedRow.VoucherTypeGet,
-                isEdit: true,
-                fromPending: true,
-                isConverted: 0
-            };
-
-            navigate("/erp/sales/invoice/create", {
-                state: stateData,
-            });
-        };
+        const invoices = toArray(row?.ConvertedInvoice);
+        const orderProducts = toArray(row?.Products_List);
 
         return (
-            <>
-                <div className="text-end mb-2">
-                    {/* <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={debugProductCalculation}
-                        className="me-2"
-                    >
-                        Debug Calculations
-                    </Button> */}
+            <div className="p-3 bg-light border-top">
+                <div className="row g-3">
+                    {/* Left Column: Original Order Products */}
+                    <div className="col-lg-6">
+                        <div className="card shadow-sm border-0 h-100">
+                            <div className="card-header bg-white border-bottom-0 pt-3">
+                                <h6 className="fw-bold text-primary mb-0">Original Order Products</h6>
+                            </div>
+                            <div className="card-body">
+                                <div className="table-responsive">
+                                    <table className="table table-sm table-hover align-middle mb-0 fa-13">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>Product Name</th>
+                                                <th className="text-end">Qty</th>
+                                                <th className="text-end">Billed</th>
+                                                <th className="text-end">Pending</th>
+                                                <th className="text-end">Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {orderProducts.map((prod, i) => {
+                                                const ordered = toNumber(prod.Bill_Qty);
+                                                const billed = toNumber(prod.convertedQuantity);
+                                                const pending = ordered - billed;
+                                                return (
+                                                    <tr key={i}>
+                                                        <td className="fw-semibold text-truncate" style={{maxWidth: '180px'}} title={prod.Product_Name || prod.Item_Name}>
+                                                            {prod.Product_Name || prod.Item_Name}
+                                                        </td>
+                                                        <td className="text-end fw-bold text-dark">{ordered}</td>
+                                                        <td className="text-end fw-bold text-success">{billed}</td>
+                                                        <td className={`text-end fw-bold ${pending > 0 ? 'text-warning' : 'text-muted'}`}>
+                                                            {pending > 0 ? pending : 0}
+                                                        </td>
+                                                        <td className="text-end">₹{NumberFormat(prod.Item_Rate)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Invoices & Conversion Details */}
+                    <div className="col-lg-6">
+                        <div className="card shadow-sm border-0 h-100">
+                            <div className="card-header bg-white border-bottom-0 pt-3">
+                                <h6 className="fw-bold text-primary mb-0">Conversion Details</h6>
+                            </div>
+                            <div className="card-body">
+                                {invoices.length === 0 ? (
+                                    <div className="text-muted fst-italic py-4 text-center">No invoices generated yet.</div>
+                                ) : (
+                                    <div className="d-flex flex-column gap-3" style={{maxHeight: '400px', overflowY: 'auto', paddingRight: '4px'}}>
+                                        {invoices.map((inv, index) => (
+                                            <div key={index} className="card border shadow-none bg-white">
+                                                <div className="card-header bg-light border-0 d-flex justify-content-between align-items-center py-2">
+                                                    <div>
+                                                        <span className="fw-bold text-dark me-2 fa-13">{inv.invNumber}</span>
+                                                        <span className="badge bg-success fa-11">{inv.deliveryStatusGet || 'Delivered'}</span>
+                                                    </div>
+                                                    <div className="fw-bold text-success fa-13">
+                                                        ₹{NumberFormat(inv.invValue)}
+                                                    </div>
+                                                </div>
+                                                <div className="card-body p-2 row g-2">
+                                                    {/* Invoice Products */}
+                                                    <div className="col-12 border-bottom pb-2">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Invoice Products</h6>
+                                                        {toArray(inv.invoicedProduct).map((prod, i) => (
+                                                            <div key={i} className="d-flex justify-content-between fa-12 mb-1">
+                                                                <span className="text-truncate me-2" style={{maxWidth: '220px'}} title={prod.productNameGet}>{prod.productNameGet}</span>
+                                                                <span className="fw-bold">{prod.quantity} x ₹{prod.rate}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Trip Details & Receipt Details Side-by-Side */}
+                                                    <div className="col-6 border-end pt-1">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Trip Sheet</h6>
+                                                        {toArray(inv.tripDetails).length === 0 ? (
+                                                            <span className="fa-12 text-muted">No Trip Assigned</span>
+                                                        ) : toArray(inv.tripDetails).map((trip, i) => (
+                                                            <div key={i} className="fa-12">
+                                                                <div className="fw-bold">Trip #{trip.tripNumber}</div>
+                                                                <div className="text-muted">{LocalDate(trip.tripDate)}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="col-6 pt-1">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Receipts</h6>
+                                                        {toArray(inv.receiptInfo).length === 0 ? (
+                                                            <span className="fa-12 text-muted">Unpaid</span>
+                                                        ) : toArray(inv.receiptInfo).map((rec, i) => (
+                                                            <div key={i} className="fa-12 d-flex justify-content-between">
+                                                                <span className="text-truncate me-1">#{rec.receiptNumber}</span>
+                                                                <span className="fw-bold text-success">₹{NumberFormat(rec.receiptAmount)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <table className="table">
-                    <tbody>
-                        <tr>
-                            <td className="border p-2 bg-light">Order ID</td>
-                            <td className="border p-2 fw-bold">{row.So_Inv_No || row.Do_Inv_No}</td>
-                            <td className="border p-2 bg-light">Branch</td>
-                            <td className="border p-2">{row.Branch_Name}</td>
-                            <td className="border p-2 bg-light">Sales Person</td>
-                            <td className="border p-2">{row.Sales_Person_Name}</td>
-                        </tr>
-                        <tr>
-                            <td className="border p-2 bg-light">Total Ordered</td>
-                            <td className="border p-2 fw-bold">
-                                {row.Products_List?.reduce((sum, p) => sum + getOrderedQty(p), 0)}
-                            </td>
-                            <td className="border p-2 bg-light">Total Delivered</td>
-                            <td className="border p-2 fw-bold">
-                                {row.Products_List?.reduce((sum, p) => sum + getDeliveredQty(p), 0)}
-                            </td>
-                            <td className="border p-2 bg-light">Total Remaining</td>
-                            <td className="border p-2 fw-bold">
-                                {row.Products_List?.reduce((sum, p) => sum + getRemainingQty(p), 0)}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <table className="table table-bordered mt-3">
-                    <thead className="bg-light">
-                        <tr>
-                            <th className="p-2">#</th>
-                            <th className="p-2">Product</th>
-                            <th className="p-2">Item ID</th>
-                            <th className="p-2">Ordered Qty</th>
-                            <th className="p-2">Delivered Qty</th>
-                            <th className="p-2">
-                                Remaining Qty
-                                {hasPending && (
-                                    <Tooltip title="Create Invoice for Remaining Quantity">
-                                        <IconButton
-                                            size="small"
-                                            onClick={handlePendingNavigation}
-                                            className="ms-2"
-                                        >
-                                            <ArrowOutwardIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                            </th>
-                            <th className="p-2">Status</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {row.Products_List?.map((product, index) => {
-                            const orderedQty = getOrderedQty(product);
-                            const deliveredQty = getDeliveredQty(product);
-                            const remainingQty = getRemainingQty(product);
-                            const isCompleted = remainingQty === 0;
-
-                            return (
-                                <tr key={index}>
-                                    <td className="p-2">{index + 1}</td>
-                                    <td className="p-2">{product.Product_Name || product.Product_Short_Name || product.Item_Name || "Unknown"}</td>
-                                    <td className="p-2 text-muted">{product.Item_Id}</td>
-                                    <td className="p-2">{orderedQty}</td>
-                                    <td className="p-2">{deliveredQty}</td>
-                                    <td className={`p-2 fw-bold ${remainingQty === 0 ? 'text-success' : 'text-danger'}`}>
-                                        {remainingQty}
-                                    </td>
-                                    <td className="p-2">
-                                        <span className={`badge ${isCompleted ? 'bg-success' : 'bg-warning'}`}>
-                                            {isCompleted ? 'Completed' : 'Pending'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-
-                <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
-
-                {/* {row.ConvertedInvoice && row.ConvertedInvoice.length > 0 && (
-                    <div className="mt-3">
-                        <h6 className="mb-2">Related Invoices:</h6>
-                        <table className="table table-sm table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Invoice No</th>
-                                    <th>Date</th>
-                                    <th>Total Qty</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {row.ConvertedInvoice.map((invoice, idx) => (
-                                    <tr key={idx}>
-                                        <td>{invoice.Inv_No || invoice.Invoice_No}</td>
-                                        <td>{invoice.Inv_Date || invoice.Date}</td>
-                                        <td>
-                                            {(invoice.InvoicedProducts || invoice.Products || []).reduce(
-                                                (sum, p) => sum + Number(p.Bill_Qty || p.Quantity || 0),
-                                                0
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )} */}
-            </>
+                <div className="mt-4">
+                    <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
+                </div>
+            </div>
         );
     };
 
@@ -653,6 +311,77 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             ),
         [saleOrders]
     );
+    
+    const convertToSalesInvoice = (saleOrder) => {
+        const productsList = toArray(saleOrder?.Products_List);
+
+        const invoiceProducts = productsList.map((item, index) => {
+            const productMaster = baseData.products.find(
+                p => isEqualNumber(p.Product_Id, item.Item_Id)
+            ) || {};
+            const pack = toNumber(productMaster?.PackGet) || 1;
+            const billQty = toNumber(item.Bill_Qty);
+            const altBillQty = Division(billQty, pack);
+
+            return {
+                S_No: index + 1,
+                Item_Id: item.Item_Id,
+                Item_Name: item.Product_Name || productMaster?.Product_Name || '',
+                HSN_Code: item.HSN_Code || '',
+                GoDown_Id: item.GoDown_Id || '',
+                Bill_Qty: billQty,
+                Alt_Bill_Qty: altBillQty,
+                Act_Qty: billQty,
+                Alt_Act_Qty: altBillQty,
+                Free_Qty: toNumber(item.Free_Qty),
+                Total_Qty: billQty,
+                Item_Rate: toNumber(item.Item_Rate),
+                Taxable_Rate: toNumber(item.Taxable_Rate),
+                Amount: toNumber(item.Amount),
+                Unit_Id: item.Unit_Id || '',
+                Unit_Name: item.Unit_Name || productMaster?.Units || '',
+                Taxble: item.Taxble,
+                Taxable_Amount: toNumber(item.Taxable_Amount),
+                Tax_Rate: toNumber(item.Tax_Rate),
+                Cgst: toNumber(item.Cgst),
+                Cgst_Amo: toNumber(item.Cgst_Amo),
+                Sgst: toNumber(item.Sgst),
+                Sgst_Amo: toNumber(item.Sgst_Amo),
+                Igst: toNumber(item.Igst),
+                Igst_Amo: toNumber(item.Igst_Amo),
+                Final_Amo: toNumber(item.Final_Amo),
+            };
+        });
+
+        const invoicePayload = {
+            Do_Date: ISOString(),
+            Retailer_Id: saleOrder.Retailer_Id,
+            Retailer_Name: saleOrder.Retailer_Name,
+            Branch_Id: saleOrder.Branch_Id,
+            GST_Inclusive: saleOrder.GST_Inclusive,
+            IS_IGST: saleOrder.IS_IGST,
+            Narration: saleOrder.Narration || '',
+            So_No: saleOrder.So_Id,
+            Sales_Person_Id: saleOrder.Sales_Person_Id,
+            Products_List: invoiceProducts,
+            Staffs_Array: toArray(saleOrder?.Staff_Involved_List),
+            Expence_Array: [],
+        };
+
+        navigate('/erp/sales/invoice/create', {
+            state: invoicePayload,
+        });
+    };
+
+    const convertibleOrders = useMemo(() => {
+        return saleOrders.filter(order => {
+            if (toNumber(order?.Cancel_status) === 0) return false;
+            const products = toArray(order?.Products_List);
+            return products.some(
+                item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
+            );
+        });
+    }, [saleOrders]);
 
     return (
         <>
@@ -660,7 +389,51 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 title="Sale Orders"
                 dataArray={saleOrders}
                 EnableSerialNumber
+                stateUrl='/erp/sales/saleOrder'
+                stateGroup={'saleOrderListing'}
                 columns={[
+                    {
+                        Field_Name: "Checkbox",
+                        ColumnHeader: (
+                            <Checkbox 
+                                size="small"
+                                checked={convertibleOrders.length > 0 && selectedOrders.length === convertibleOrders.length}
+                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < convertibleOrders.length}
+                                onChange={(e) => {
+                                    if (e.target.checked) {
+                                        setSelectedOrders(convertibleOrders);
+                                    } else {
+                                        setSelectedOrders([]);
+                                    }
+                                }}
+                            />
+                        ),
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const products = toArray(row?.Products_List);
+                            const canConvert = toNumber(row?.Cancel_status) !== 0 && products.some(
+                                item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
+                            );
+
+                            return (
+                                <Checkbox 
+                                    size="small"
+                                    disabled={!canConvert}
+                                    checked={selectedOrders.some(so => so.So_Id === row.So_Id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedOrders([...selectedOrders, row]);
+                                        } else {
+                                            setSelectedOrders(selectedOrders.filter(so => so.So_Id !== row.So_Id));
+                                        }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            );
+                        }
+                    },
                     createCol("So_Date", "date", "Date"),
                     createCol("So_Inv_No", "string", "ID"),
                     createCol("Retailer_Name", "string", "Customer"),
@@ -679,13 +452,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
 
                             if (cancelStatus == 1) {
                                 status = "New";
-                                className = "bg-danger text-white";
+                                className = "bg-success text-white";
                             } else if (cancelStatus == 2) {
                                 status = "Hold";
                                 className = "bg-warning text-dark";
                             } else if (cancelStatus == 0) {
                                 status = "Cancelled";
-                                className = "bg-secondary text-white";
+                                className = "bg-danger text-white";
                             }
 
                             return (
@@ -701,43 +474,62 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                         align: "center",
                         isCustomCell: true,
                         Cell: ({ row }) => {
-                            if (Number(row?.Cancel_status) == 0) {
-                                return (
-                                    <span className="py-0 fw-bold px-2 rounded-4 fa-12 bg-danger text-white">
-                                        Cancelled
-                                    </span>
-                                );
-                            }
+                            const products = toArray(row?.Products_List);
+                            const totalBillQty = products.reduce((acc, item) => Addition(acc, item.Bill_Qty), 0);
+                            const totalConvertedQty = products.reduce((acc, item) => Addition(acc, item.convertedQuantity), 0);
 
-                            const totalOrdered = row?.Products_List?.reduce(
-                                (sum, p) => sum + (Number(p?.Bill_Qty) || 0),
-                                0
-                            ) || 0;
-
-                            const totalDelivered = row?.ConvertedInvoice?.reduce((sum, invoice) => {
-                                return sum + (invoice?.InvoicedProducts?.reduce(
-                                    (prodSum, prod) => prodSum + (Number(prod?.Bill_Qty) || 0),
-                                    0
-                                ) || 0);
-                            }, 0) || 0;
-
-                            const totalRemaining = totalOrdered - totalDelivered;
                             let status = "Pending";
-                            let className = "bg-warning text-dark";
+                            let className = "bg-primary text-white";
 
-                            if (totalRemaining <= 0) {
-                                status = "Completed";
-                                className = "bg-success text-white";
-                            }
-
-                            if (totalOrdered === 0) {
-                                status = "No Qty";
-                                className = "bg-secondary text-white";
+                            if (totalConvertedQty > 0) {
+                                if (totalConvertedQty >= totalBillQty) {
+                                    status = "Converted";
+                                    className = "bg-success text-white";
+                                } else {
+                                    status = "Partially";
+                                    className = "bg-warning text-dark";
+                                }
                             }
 
                             return (
                                 <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${className}`}>
                                     {status}
+                                </span>
+                            );
+                        },
+                    },
+                    {
+                        ColumnHeader: "Trip Status",
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const convertedInvoice = toArray(row?.ConvertedInvoice);
+                            const isAssigned = convertedInvoice.some(
+                                inv => toArray(inv?.tripDetails).length > 0
+                            );
+                            return (
+                                <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${isAssigned ? 'bg-success text-white' : 'bg-secondary text-white'}`}>
+                                    {isAssigned ? 'Assigned' : 'Pending'}
+                                </span>
+                            );
+                        },
+                    },
+                    {
+                        ColumnHeader: "Paid Amount",
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const convertedInvoice = toArray(row?.ConvertedInvoice);
+                            const paidAmount = convertedInvoice.reduce((sum, inv) => {
+                                const receipts = toArray(inv?.receiptInfo);
+                                const invPaid = receipts.reduce((invSum, r) => Addition(invSum, r?.receiptAmount), 0);
+                                return Addition(sum, invPaid);
+                            }, 0);
+                            return (
+                                <span className="fw-bold text-success">
+                                    ₹{paidAmount}
                                 </span>
                             );
                         },
@@ -748,6 +540,11 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {
+                            const products = toArray(row?.Products_List);
+                            const canConvert = toNumber(row?.Cancel_status) !== 0 && products.some(
+                                item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
+                            );
+
                             return (
                                 <ButtonActions
                                     buttonsData={[
@@ -774,6 +571,12 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                                     },
                                                 })
                                             }
+                                        },
+                                        {
+                                            name: "Convert to Invoice",
+                                            icon: <ReceiptLong className="fa-16" />,
+                                            disabled: !canConvert,
+                                            onclick: () => convertToSalesInvoice(row),
                                         }
                                     ]}
                                 />
@@ -792,6 +595,16 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 {"New"}
                             </Button>
                         )}
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            startIcon={<ReceiptLong />}
+                            onClick={() => setDialog({ ...dialog, bulkConvert: true })}
+                            disabled={selectedOrders.length === 0}
+                            style={{ marginLeft: '8px' }}
+                        >
+                            Bulk Convert ({selectedOrders.length})
+                        </Button>
                         <span className="bg-light text-light fa-11 px-1 shadow-sm py-1 rounded-3 mx-1">
                             {toNumber(Total_Invoice_value) > 0 && (
                                 <h6 className="m-0 text-end text-muted px-3">
@@ -812,7 +625,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 isExpendable={true}
                 tableMaxHeight={550}
                 expandableComp={(props) => (
-                    <ExpendableComponent {...props} handleOpenModal={handleOpenModal} />
+                    <ExpendableComponent {...props} />
                 )}
             />
 
@@ -869,7 +682,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             onChange={(e) => setFilters({ ...filters, Retailer: e })}
                                             options={[
                                                 { value: "", label: "ALL" },
-                                                ...retailers.map((obj) => ({
+                                                ...baseData.retailers.map((obj) => ({
                                                     value: obj?.Retailer_Id,
                                                     label:
                                                         obj?.Retailer_Name +
@@ -896,7 +709,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             }
                                             options={[
                                                 { value: "", label: "ALL" },
-                                                ...salesPerson.map((obj) => ({
+                                                ...baseData.salesPerson.map((obj) => ({
                                                     value: obj?.UserId,
                                                     label: obj?.Name,
                                                 })),
@@ -919,7 +732,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             }
                                             options={[
                                                 { value: "", label: "ALL" },
-                                                ...users.map((obj) => ({
+                                                ...baseData.users.map((obj) => ({
                                                     value: obj?.UserId,
                                                     label: obj?.Name,
                                                 })),
@@ -940,7 +753,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             onChange={(e) => setFilters({ ...filters, VoucherType: e })}
                                             options={[
                                                 { value: "", label: "ALL" },
-                                                ...voucher
+                                                ...baseData.voucher
                                                     .filter((obj) => obj.Type === "SALES")
                                                     .map((obj) => ({
                                                         value: obj?.Vocher_Type_Id,
@@ -1014,6 +827,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 Cancel_status: filters.Cancel_status,
                                 OrderStatus: filters.OrderStatus,
                             });
+                            setFilterVersion(v => v + 1);
                         }}
                         startIcon={<Search />}
                         variant="outlined"
@@ -1023,18 +837,18 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 </DialogActions>
             </Dialog>
 
-            <DirectSaleInvoiceFromPos
-                open={modalOpen}
-                onClose={handleCloseModal}
-                editValues={selectedOrder?.row}
-                defaultValues={selectedOrder?.payload}
-                loadingOn={loadingOn}
-                loadingOff={loadingOff}
-                transactionType="invoice"
+            <BulkInvoiceConvertDialog 
+                open={dialog.bulkConvert}
+                onClose={() => setDialog({ ...dialog, bulkConvert: false })}
+                selectedOrders={selectedOrders}
+                voucherTypes={baseData.voucher.filter(v => v.Type === "SALE_INVOICE")}
+                godowns={baseData.godowns}
+                stockLedgers={baseData.stockItemLedgers}
                 onSuccess={() => {
+                    setSelectedOrders([]);
                     fetchSaleOrders();
-                    handleCloseModal();
                 }}
+                userInfo={storage}
             />
         </>
     );

@@ -16,7 +16,7 @@ export const useTableStateSync = ({
     const [fetchTrigger, setFetchTrigger] = useState(1);
     const [availableViews, setAvailableViews] = useState([]);
 
-    const enabled = stateName && stateUrl && stateGroup;
+    const enabled = stateUrl && stateGroup;
 
     useEffect(() => {
         if (!enabled) return;

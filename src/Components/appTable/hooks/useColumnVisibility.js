@@ -1,7 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 export const useColumnVisibility = (initialColumns = []) => {
     const [dispColumns, setDispColumns] = useState(initialColumns);
+
+    useEffect(() => {
+        setDispColumns(prev => {
+            return initialColumns.map(newCol => {
+                const existing = prev.find(p => p.Field_Name === newCol.Field_Name);
+                if (existing) {
+                    return {
+                        ...newCol,
+                        isVisible: existing.isVisible,
+                        OrderBy: existing.OrderBy,
+                        Aggregation: existing.Aggregation
+                    };
+                }
+                return newCol;
+            });
+        });
+    }, [initialColumns]);
 
     const toggleColumn = (fieldName, visible) => {
         setDispColumns(cols =>
@@ -46,3 +63,4 @@ export const useColumnVisibility = (initialColumns = []) => {
         updateAggregation
     };
 };
+

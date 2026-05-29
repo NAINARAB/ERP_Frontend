@@ -14,7 +14,7 @@ import {
     isValidNumber,
     stringCompare
 } from "../../../Components/functions";
-import { Add, ArrowLeft, Clear, Delete, Download, Edit, Save } from "@mui/icons-material";
+import { Add, Clear, Delete, Download, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
@@ -502,30 +502,6 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                         title="Products"
                         ButtonArea={
                             <>
-                                {/* <AddItemToSaleOrderCart
-                                        orderProducts={orderProducts}
-                                        setOrderProducts={setOrderProducts}
-                                        open={addProductDialog}
-                                        onClose={() => setAddProductDialog(false)}
-                                        products={baseData.products}
-                                        brands={baseData.brand}
-                                        uom={baseData.uom}
-                                        GST_Inclusive={orderDetails.GST_Inclusive}
-                                        IS_IGST={IS_IGST}
-                                    >
-                                        <Button
-                                            onClick={() => setAddProductDialog(true)}
-                                            sx={{ ml: 1 }}
-                                            variant='outlined'
-                                            startIcon={<Add />}
-                                            disabled={
-                                                !checkIsNumber(orderDetails.Retailer_Id)
-                                                || (orderProducts.length > 0
-                                                    && orderProducts.some(pro => checkIsNumber(pro.Pre_Id)))
-                                            }
-                                        >Add Product</Button>
-                                    </AddItemToSaleOrderCart> */}
-
                                 <Button
                                     onClick={() => {
                                         setSelectedProductToEdit(null);
@@ -540,29 +516,6 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             && orderProducts.some(pro => checkIsNumber(pro.Pre_Id)))
                                     }
                                 >Add Product</Button>
-
-                                <ImportFromPOS
-                                    loadingOn={loadingOn} loadingOff={loadingOff}
-                                    open={importPosDialog} onClose={() => setImportPosDialog(false)}
-                                    retailer={orderDetails?.Retailer_Id}
-                                    selectedItems={orderProducts} setSelectedItems={setOrderProducts}
-                                    products={baseData.products}
-                                    GST_Inclusive={orderDetails.GST_Inclusive}
-                                    IS_IGST={IS_IGST}
-                                >
-                                    <Button
-                                        onClick={() => setImportPosDialog(true)}
-                                        disabled={
-                                            !checkIsNumber(orderDetails.Retailer_Id)
-                                            || (orderProducts.length > 0
-                                                && orderProducts.some(pro => !checkIsNumber(pro.Pre_Id)))
-                                        }
-                                        sx={{ ml: 1 }}
-                                        variant='outlined'
-                                        startIcon={<Download />}
-                                    >Import pos</Button>
-                                </ImportFromPOS>
-
                             </>
                         }
                         dataArray={orderProducts}
