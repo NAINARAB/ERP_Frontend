@@ -206,7 +206,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         creditLimit: toNumber(data?.others?.creditLimit),
                         creditDays: toNumber(data?.others?.creditDays),
                         recentDate: data?.others?.recentDate ? new Date(data?.others?.recentDate) : new Date(),
-                        invoiceCreationStatus: invoiceCreationStatus
+                        invoiceCreationStatus: invoiceCreationStatus,
+                        creditBills: toNumber(data?.others?.creditBills),
+                        creditBillLimitCount: toNumber(data?.others?.creditBillLimitCount),
+                        creditBillValidation: data?.others?.creditBillValidation ?? true
                     }));
                     setInvoiceInfo(pre => ({...pre, paymentDueDays: toNumber(data?.others?.creditDays) || '' }));
                 }
@@ -733,12 +736,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             singleGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_3', crudAction),
             creditAmountLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_4', crudAction),
             creditDaysLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_5', crudAction),
-            voucherBasedGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_6', crudAction)
+            voucherBasedGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_6', crudAction),
+            creditBillCountLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_7', crudAction)
         };
     }, [baseData.moduleConfiguration, isEdit]);
 
     const activeInvoiceCreationStatus = useMemo(() => {
-        const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice } = retailerSalesStatus;
+        const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice, creditBillValidation } = retailerSalesStatus;
 
         if (forceCreateInvoice) return true;
         if (!recentDate) return true;
@@ -762,6 +766,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
         return true;
     }, [retailerSalesStatus, salesInvoiceAccess, taxSplitUp?.invoiceTotal]);
+
+    const isCreditBillLimitExceeded = useMemo(() => {
+        if (!salesInvoiceAccess.creditBillCountLimit) return false;
+        const { creditBillValidation, creditBillLimitCount } = retailerSalesStatus;
+        if (toNumber(creditBillLimitCount) <= 0) return false;
+        return creditBillValidation === false;
+    }, [retailerSalesStatus, salesInvoiceAccess.creditBillCountLimit]);
 
     const selectedVoucher = useMemo(() => {
         return baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
@@ -889,7 +900,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         <Button 
                             onClick={saveFunWithCodition} 
                             variant="contained" 
-                            disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isLoading}
+                            disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                         >submit</Button>
                     </span>
                 </div>
@@ -959,6 +970,15 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                             <b>₹{toNumber(selectedVoucher?.crLimit).toLocaleString('en-IN')}</b> 
                             set for voucher <b>{selectedVoucher?.Voucher_Type}</b>. 
                             Please reduce the invoice amount or select a different voucher.
+                        </div>
+                    )}
+
+                    {isCreditBillLimitExceeded && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 Credit Bill Limit Reached — This account has&nbsp;
+                            <b>{retailerSalesStatus.creditBills}</b> pending bill(s) out of a maximum of&nbsp;
+                            <b>{retailerSalesStatus.creditBillLimitCount}</b> allowed.
+                            New invoices cannot be created until existing bills are settled.
                         </div>
                     )}
 
@@ -1158,7 +1178,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     <Button 
                         onClick={saveFunWithCodition} 
                         variant="contained" 
-                        disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isLoading}
+                        disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                     >submit</Button>
                 </CardActions>
             </Card>

@@ -364,7 +364,11 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             So_No: saleOrder.So_Id,
             Sales_Person_Id: saleOrder.Sales_Person_Id,
             Products_List: invoiceProducts,
-            Staffs_Array: toArray(saleOrder?.Staff_Involved_List),
+            Staffs_Array: toArray(saleOrder?.Staff_Involved_List).map(staff => ({
+                Emp_Id: staff.Involved_Emp_Id,
+                Emp_Name: staff.EmpName,
+                Emp_Type_Id: staff.Cost_Center_Type_Id
+            })),
             Expence_Array: [],
         };
 

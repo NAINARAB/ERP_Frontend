@@ -666,6 +666,41 @@ const ManageSalesInvoiceGeneralInfo = ({
                                         />
                                     </div>
 
+                                    {/* credit bill limit */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Bill Limit</label>
+                                        <input
+                                            className="cus-inpt p-2"
+                                            value={
+                                                isEqualNumber(retailerSalesStatus?.creditBillLimitCount, 0)
+                                                    ? 'Unlimited'
+                                                    : retailerSalesStatus?.creditBillLimitCount ?? ''
+                                            }
+                                            readOnly
+                                        />
+                                    </div>
+
+                                    {/* current credit bills */}
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                        <label className='fa-13'>Current Bills</label>
+                                        <input
+                                            className={`cus-inpt p-2 ${
+                                                !isEqualNumber(retailerSalesStatus?.creditBillLimitCount, 0)
+                                                && retailerSalesStatus?.creditBillValidation === false
+                                                    ? 'border-danger text-danger fw-bold'
+                                                    : ''
+                                            }`}
+                                            value={
+                                                retailerSalesStatus?.creditBills !== undefined
+                                                    ? isEqualNumber(retailerSalesStatus?.creditBillLimitCount, 0)
+                                                        ? retailerSalesStatus?.creditBills
+                                                        : `${retailerSalesStatus?.creditBills} / ${retailerSalesStatus?.creditBillLimitCount}`
+                                                    : ''
+                                            }
+                                            readOnly
+                                        />
+                                    </div>
+
                                     {/* previous invoice date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Recent Sales Date</label>

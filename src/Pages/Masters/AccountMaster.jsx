@@ -16,6 +16,7 @@ import { Button } from "react-bootstrap";
 import { Delete, Edit, Search } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import { toNumber } from "../../Components/functions";
 
 // CORRECTED: Use consistent camelCase for all fields
 const initialState = {
@@ -23,9 +24,10 @@ const initialState = {
     Account_name: "",
     Account_Alias_Name: "",
     Group_Id: "",
-    creditLimit: '',  // camelCase
-    creditDays: '',   // camelCase
-    percentageValue: ''  // camelCase
+    creditLimit: '',
+    creditDays: '',
+    percentageValue: '',
+    creditBillLimitCount: 0,
 };
 
 function AccountMaster() {
@@ -110,18 +112,16 @@ function AccountMaster() {
                 ...inputValue,
                 Created_By: userId,
             },
-        })
-            .then((data) => {
-                if (data.success) {
-                    toast.success("Account Master created successfully!");
-                    setIsCreateDialogOpen(false);
-                    setInputValue(initialState);
-                    setReload(!reload);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .catch((e) => console.error(e));
+        }).then((data) => {
+            if (data.success) {
+                toast.success("Account Master created successfully!");
+                setIsCreateDialogOpen(false);
+                setInputValue(initialState);
+                setReload(!reload);
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => console.error(e));
     };
 
     // CORRECTED: Properly map API response fields to inputValue
@@ -133,14 +133,14 @@ function AccountMaster() {
             Group_Id: row.Group_Id,
             creditLimit: row.creditLimit || row.CreditLimit || "",  // Handle both cases
             creditDays: row.creditDays || row.CreditDays || "",    // Handle both cases
-            percentageValue: row.percentageValue || row.PercentageValue || ""  // Handle both cases
+            percentageValue: row.percentageValue || row.PercentageValue || "",  // Handle both cases
+            creditBillLimitCount: toNumber(row.creditBillLimitCount)
         });
         setEditMode(true);
     };
 
-    // CORRECTED: Use proper field names
     const handleEdit = () => {
-        const { Acc_Id, Account_name, Group_Id, creditLimit, creditDays, percentageValue } = inputValue;
+        const { Acc_Id, Account_name, Group_Id } = inputValue;
         if (!Acc_Id || !Account_name || !Group_Id) {
             toast.error("All required fields must be filled.");
             return;
@@ -153,18 +153,16 @@ function AccountMaster() {
                 ...inputValue,
                 Alter_By: userId,
             },
-        })
-            .then((data) => {
-                if (data.success) {
-                    toast.success("Account updated successfully!");
-                    setEditMode(false);
-                    setInputValue(initialState);
-                    setReload(!reload);
-                } else {
-                    toast.error(data.message);
-                }
-            })
-            .catch((e) => console.error(e));
+        }).then((data) => {
+            if (data.success) {
+                toast.success("Account updated successfully!");
+                setEditMode(false);
+                setInputValue(initialState);
+                setReload(!reload);
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => console.error(e));
     };
 
     return (
@@ -218,6 +216,7 @@ function AccountMaster() {
                         createCol("creditLimit", "number", "Credit Limit"),
                         createCol("creditDays", "number", "Credit Days"),
                         createCol("percentageValue", "number", "Percentage Value"),
+                        createCol("creditBillLimitCount", "number", "Credit Bill Limit Count"),
                         {
                             ColumnHeader: "Actions",
                             isVisible: 1,
@@ -334,6 +333,18 @@ function AccountMaster() {
                             placeholder="Enter Percentage Value"
                         />
                     </div>
+                    <div className="p-2">
+                        <label>Credit Bill Limit Count</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditBillLimitCount}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditBillLimitCount: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                            placeholder="Enter Credit Bill Limit Count"
+                        />
+                    </div>
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setIsCreateDialogOpen(false)}>
@@ -346,8 +357,8 @@ function AccountMaster() {
             </Dialog>
 
             {/* Edit Dialog */}
-            <Dialog 
-                open={editMode} 
+            <Dialog
+                open={editMode}
                 onClose={() => {
                     setEditMode(false);
                     setInputValue(initialState);
@@ -430,6 +441,17 @@ function AccountMaster() {
                             value={inputValue.percentageValue}
                             onChange={(e) =>
                                 setInputValue({ ...inputValue, percentageValue: e.target.value })
+                            }
+                            className="cus-inpt w-100"
+                        />
+                    </div>
+                    <div className="p-2">
+                        <label>Credit Bill Limit Count</label>
+                        <input
+                            type="number"
+                            value={inputValue.creditBillLimitCount}
+                            onChange={(e) =>
+                                setInputValue({ ...inputValue, creditBillLimitCount: e.target.value })
                             }
                             className="cus-inpt w-100"
                         />
