@@ -284,6 +284,8 @@ const ReportsTemplateMobCreation = lazy(() => import('./Pages/Analytics/reportsT
 const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
 const ModuleRuleComponent = lazy(() => import('./Components/moduleRules'))
 
+const AbstractGroup = lazy(() => import('./Pages/Masters/AbstractGroupType'));
+
 const RoutingArray = [
     // ---------------------------------------------------------------------------
     // Root
@@ -581,6 +583,7 @@ const RoutingArray = [
     { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
     { component: <Users />, path: '/userControl/users' },
     { component: <ModuleRuleComponent />, path: '/userControl/moduleConfiguration' },
+    { component: <AbstractGroup />, path: '/erp/master/abstractgrouptype'},
 ];
 
 export default RoutingArray;
