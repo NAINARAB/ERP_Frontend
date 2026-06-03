@@ -226,7 +226,7 @@ function RateMaster({ loadingOn, loadingOff }) {
                             Min_Rate: newMinRate,
                             Old_Rate: originalRow.Rate,
                             Old_Max_Rate: originalRow.Max_Rate,
-                            Old_Min_Rate: originalRow.Min_Rate, // Added missing Old_Min_Rate
+                            Old_Min_Rate: originalRow.Min_Rate,
                             Rate_Date: filters.Fromdate,
                             Rate_time: selectedTime,
                             Updated_By: user?.UserId || null
@@ -627,60 +627,82 @@ function RateMaster({ loadingOn, loadingOff }) {
             .catch(e => console.error(e));
     };
 
-    const filteredAndSortedData = useMemo(() => {
-        if (!Array.isArray(posData)) {
-            return [];
-        }
-        
-        let data = [...posData];
-        
-        data = data.filter(item => 
-            showActiveOnly ? item.Is_Active_Decative === 1 : item.Is_Active_Decative === 0
-        );
-        
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase().trim();
-            data = data.filter(item => {
-                return (
-                    (item.POS_Brand_Name || '').toLowerCase().includes(term) ||
-                    (item.Short_Name || '').toLowerCase().includes(term) ||
-                    (item.Product_Name || '').toLowerCase().includes(term) ||
-                    String(item.Rate || '').includes(term) ||
-                    String(item.Max_Rate || '').includes(term) || 
-                    String(item.Min_Rate || '').includes(term)
-                );
-            });
-        }
-        
-        if (sortConfig.key) {
-            data.sort((a, b) => {
-                let aValue = a[sortConfig.key];
-                let bValue = b[sortConfig.key];
-                
-                if (sortConfig.key === 'Rate_Date') {
-                    aValue = new Date(aValue);
-                    bValue = new Date(bValue);
-                } else if (sortConfig.key === 'Rate' || sortConfig.key === 'Max_Rate' || sortConfig.key === 'Min_Rate' ||
-                           sortConfig.key === 'Brand_Level' || sortConfig.key === 'Item_Level') {
-                    aValue = parseFloat(aValue) || 0;
-                    bValue = parseFloat(bValue) || 0;
-                } else {
-                    aValue = (aValue || '').toString().toLowerCase();
-                    bValue = (bValue || '').toString().toLowerCase();
-                }
-                
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-        
-        return data;
-    }, [posData, searchTerm, showActiveOnly, sortConfig]);
+const filteredAndSortedData = useMemo(() => {
+    if (!Array.isArray(posData)) {
+        return [];
+    }
+    
+    let data = [...posData];
+    
+    data = data.filter(item => 
+        showActiveOnly ? item.Is_Active_Decative === 1 : item.Is_Active_Decative === 0
+    );
+    
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase().trim();
+        data = data.filter(item => {
+          
+            const shortName = item.Short_Name;
+            const productName = item.Product_Name;
+            
+            
+            const hasValidShortName = shortName && shortName !== "0" && shortName.trim() !== "";
+            const displayProductName = hasValidShortName ? shortName : (productName || "");
+            
+            return (
+                (item.POS_Brand_Name || '').toLowerCase().includes(term) ||
+         
+                (hasValidShortName && shortName.toLowerCase().includes(term)) ||
+       
+                (productName && productName.toLowerCase().includes(term)) ||
+                String(item.Rate || '').includes(term) ||
+                String(item.Max_Rate || '').includes(term) || 
+                String(item.Min_Rate || '').includes(term)
+            );
+        });
+    }
+    
+    if (sortConfig.key) {
+        data.sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+            
+            if (sortConfig.key === 'Rate_Date') {
+                aValue = new Date(aValue);
+                bValue = new Date(bValue);
+            } else if (sortConfig.key === 'Rate' || sortConfig.key === 'Max_Rate' || sortConfig.key === 'Min_Rate' ||
+                       sortConfig.key === 'Brand_Level' || sortConfig.key === 'Item_Level') {
+                aValue = parseFloat(aValue) || 0;
+                bValue = parseFloat(bValue) || 0;
+            } else if (sortConfig.key === 'Short_Name') {
+                // Special handling for product name sorting
+                const getProductName = (row) => {
+                    const shortName = row.Short_Name;
+                    const productName = row.Product_Name;
+                    if (shortName && shortName !== "0" && shortName.trim() !== "") {
+                        return shortName;
+                    }
+                    return productName || "";
+                };
+                aValue = getProductName(a).toLowerCase();
+                bValue = getProductName(b).toLowerCase();
+            } else {
+                aValue = (aValue || '').toString().toLowerCase();
+                bValue = (bValue || '').toString().toLowerCase();
+            }
+            
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    }
+    
+    return data;
+}, [posData, searchTerm, showActiveOnly, sortConfig]);
 
     const handlePrintActiveProducts = async () => {
         const dataToPrint = filteredAndSortedData;
@@ -934,53 +956,53 @@ function RateMaster({ loadingOn, loadingOff }) {
                            Object.keys(editedMaxRatesRef.current).length + 
                            Object.keys(editedMinRatesRef.current).length;
 
-    const SortableHeader = ({ columnKey, label, align = "left" }) => {
-        const isActive = sortConfig.key === columnKey;
-        const direction = isActive ? sortConfig.direction : 'asc';
-        
-        return (
-            <th 
-                style={{ 
-                    cursor: 'pointer', 
-                    userSelect: 'none',
-                    textAlign: align,
-                    backgroundColor: isActive ? '#e8e8e8' : 'transparent'
-                }}
-                onClick={() => handleSort(columnKey)}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', gap: '4px' }}>
-                    {label}
-                    {isActive ? (
-                        direction === 'asc' ? 
-                            <ArrowUpward fontSize="small" style={{ fontSize: '14px' }} /> : 
-                            <ArrowDownward fontSize="small" style={{ fontSize: '14px' }} />
-                    ) : (
-                        <span style={{ opacity: 0.8, fontSize: '14px' }}>↕</span>
-                    )}
-                </div>
-            </th>
-        );
-    };
+   const SortableHeader = ({ columnKey, label, align = "left" }) => {
+    const isActive = sortConfig.key === columnKey;
+    const direction = isActive ? sortConfig.direction : 'asc';
+    
+    return (
+        <th 
+            style={{ 
+                cursor: 'pointer', 
+                userSelect: 'none',
+                textAlign: align,
+                backgroundColor: isActive ? '#e8e8e8' : 'transparent'
+            }}
+            onClick={() => handleSort(columnKey)}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'right' ? 'flex-end' : 'flex-start', gap: '4px' }}>
+                {label}
+                {isActive ? (
+                    direction === 'asc' ? 
+                        <ArrowUpward fontSize="small" style={{ fontSize: '14px' }} /> : 
+                        <ArrowDownward fontSize="small" style={{ fontSize: '14px' }} />
+                ) : (
+                    <span style={{ opacity: 0.8, fontSize: '14px' }}>↕</span>
+                )}
+            </div>
+        </th>
+    );
+};
 
     const renderTable = () => {
         return (
             <div className="table-responsive">
                 <table className="table table-sm table-bordered">
-                    <thead className="table-light">
-                        <tr>
-                            <SortableHeader columnKey="sno" label="#" align="center" />
-                            <SortableHeader columnKey="Rate_Date" label="Rate Date" />
-                            <SortableHeader columnKey="POS_Brand_Name" label="Brand" />
-                            <SortableHeader columnKey="Short_Name" label="Product" />
-                            <SortableHeader columnKey="Rate" label="Rate (₹)" align="right" />
-                            <SortableHeader columnKey="Min_Rate" label="Min Rate (₹)" align="right" />
-                            <SortableHeader columnKey="Max_Rate" label="Max Rate (₹)" align="right" />
-                            <SortableHeader columnKey="Brand_Level" label="Brand Level" align="center" />
-                            <SortableHeader columnKey="Item_Level" label="Item Level" align="center" />
-                            <SortableHeader columnKey="Is_Active_Decative" label="Status" align="center" />
-                            <th style={{ textAlign: 'center', minWidth: '100px' }}>Actions</th>
-                        </tr>
-                    </thead>
+                   <thead className="table-light">
+    <tr>
+        <SortableHeader columnKey="sno" label="#" align="center" />
+        <SortableHeader columnKey="Rate_Date" label="Rate Date" />
+        <SortableHeader columnKey="POS_Brand_Name" label="Brand" />
+        <SortableHeader columnKey="Short_Name" label="Product" />
+        <SortableHeader columnKey="Rate" label="Rate (₹)" align="right" />
+        <SortableHeader columnKey="Min_Rate" label="Min Rate (₹)" align="right" />
+        <SortableHeader columnKey="Max_Rate" label="Max Rate (₹)" align="right" />
+        <SortableHeader columnKey="Brand_Level" label="Brand Level" align="center" />
+        <SortableHeader columnKey="Item_Level" label="Item Level" align="center" />
+        <SortableHeader columnKey="Is_Active_Decative" label="Status" align="center" />
+        <th style={{ textAlign: 'center', minWidth: '100px' }}>Actions</th>
+    </tr>
+</thead>
                     <tbody>
                         {filteredAndSortedData.length === 0 ? (
                             <tr>
@@ -1167,9 +1189,26 @@ function RateMaster({ loadingOn, loadingOff }) {
                         <Search />
                     </IconButton>
 
-                    {filters?.Fromdate === moment().format("YYYY-MM-DD") ? (
-                        <Button onClick={() => setAddDialog(true)}>Add</Button>
-                    ) : null}
+                    <Button onClick={() => {
+                        setInputValue({
+                            Id: "",
+                            Rate_Date: filters.Fromdate,
+                            Rate_Time: moment().format("HH:mm"),
+                            Pos_Brand_Id: "",
+                            Item_Id: "",
+                            Rate: "",
+                            Is_Active_Decative: "1",
+                            POS_Brand_Name: "",
+                            Product_Name: "",
+                            MaxRate: "",
+                            MinRate: "",
+                            Brand_Level: "",
+                            Item_Level: "",
+                            Short_Name: ""
+                        });
+                        setSelectedPosBrand("");
+                        setAddDialog(true);
+                    }}>Add</Button>
                 </div>
             </div>
 
@@ -1377,8 +1416,13 @@ function RateMaster({ loadingOn, loadingOff }) {
                         <select
                             value={selectedPosBrand}
                             onChange={e => {
-                                setSelectedPosBrand(e.target.value);
-                                setInputValue({ ...inputValue, Pos_Brand_Id: e.target.value });
+                                const brandId = e.target.value;
+                                setSelectedPosBrand(brandId);
+                                setInputValue(prev => ({ 
+                                    ...prev, 
+                                    Pos_Brand_Id: brandId,
+                                    Item_Id: ""  // Reset Item_Id when brand changes
+                                }));
                             }}
                             className="cus-inpt"
                             required>
@@ -1392,8 +1436,14 @@ function RateMaster({ loadingOn, loadingOff }) {
                         <select
                             className="cus-inpt"
                             disabled={!selectedPosBrand}
-                            value={inputValue.Item_Id}
-                            onChange={e => setInputValue({ ...inputValue, Item_Id: e.target.value })}
+                            value={inputValue.Item_Id || ""}
+                            onChange={e => {
+                                const productId = e.target.value;
+                                setInputValue(prev => ({ 
+                                    ...prev, 
+                                    Item_Id: productId 
+                                }));
+                            }}
                             required>
                             <option value="" disabled>Select Product</option>
                             {product.length > 0
@@ -1564,7 +1614,7 @@ function RateMaster({ loadingOn, loadingOff }) {
     );
 }
 
-// Table Row Component
+
 const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, editedMinRatesRef, onRateChange, onMaxRateChange, onMinRateChange, onEdit, onDelete, showActions }) => {
     const [localRate, setLocalRate] = useState(editedRatesRef.current[row.Id] !== undefined ? editedRatesRef.current[row.Id] : row.Rate);
     const [localMaxRate, setLocalMaxRate] = useState(editedMaxRatesRef.current[row.Id] !== undefined ? editedMaxRatesRef.current[row.Id] : row.Max_Rate);
@@ -1609,12 +1659,25 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, editedMi
     const statusText = row.Is_Active_Decative === 1 ? "Active" : "Inactive";
     const statusColor = row.Is_Active_Decative === 1 ? "green" : "red";
 
+    // Fix: Properly determine product name - ignore "0" values
+    const getProductName = () => {
+        const shortName = row.Short_Name;
+        const productName = row.Product_Name;
+        
+        // If Short_Name exists and is not "0", use it
+        if (shortName && shortName !== "0" && shortName.trim() !== "") {
+            return shortName;
+        }
+        // Otherwise use Product_Name
+        return productName || "-";
+    };
+
     return (
         <tr>
-            <td>{index + 1}</td>
+            <td style={{ textAlign: 'center' }}>{index + 1}</td>
             <td>{row.Rate_Date ? moment(row.Rate_Date).format('DD/MM/YYYY') : '-'}</td>
             <td>{row.POS_Brand_Name || '-'}</td>
-            <td>{row.Short_Name || row.Product_Name || '-'}</td>
+            <td style={{ minWidth: '200px' }}>{getProductName()}</td>
             <td style={{ minWidth: '100px', textAlign: 'right' }}>
                 <input
                     type="number"
@@ -1668,5 +1731,4 @@ const TableRow = memo(({ row, index, editedRatesRef, editedMaxRatesRef, editedMi
         </tr>
     );
 });
-
 export default RateMaster;

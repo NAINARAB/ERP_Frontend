@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useRef } from "react";
 import {
   IconButton,
   Tooltip,
@@ -7,96 +7,89 @@ import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
 import FilterableTable, { createCol } from "../../Components/filterableTable2";
 
 const StockValueDetails = () => {
-  const [fromDate, setFromDate] = useState(format(new Date().setDate(1), 'yyyy-MM-dd'));
-  const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fromDate, setFromDate] = useState(format(subDays(new Date(), 0), 'yyyy-MM-dd'));
+  const [toDate, setToDate] = useState(format(subDays(new Date(), 0), 'yyyy-MM-dd'));
   const [stockGroups, setStockGroups] = useState([]);
+  const [filteredStockGroups, setFilteredStockGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
   
-  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
-  const itemDropdownRef = React.useRef(null);
 
-  const stockGroupsWithAll = [ ...stockGroups];
-  const itemsWithAll = [ ...items];
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+  const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  const groupDropdownRef = useRef(null);
 
-  React.useEffect(() => {
+  const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "-- All Groups --" }, ...stockGroups];
+
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
-      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target)) {
-        setIsItemDropdownOpen(false);
+      if (groupDropdownRef.current && !groupDropdownRef.current.contains(event.target)) {
+        setIsGroupDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+
+  useEffect(() => {
+    if (groupSearchTerm.trim() === "") {
+      setFilteredStockGroups(stockGroupsWithAll);
+    } else {
+      const searchLower = groupSearchTerm.toLowerCase();
+      const filtered = stockGroupsWithAll.filter(group => 
+        group.Group_Name.toLowerCase().includes(searchLower)
+      );
+      setFilteredStockGroups(filtered);
+    }
+  }, [groupSearchTerm, stockGroupsWithAll]);
+
   const columns = [
     createCol('Trans_Date', 'date', 'Date', 'left', 'center', 1),
-    createCol('Item_Group_Id', 'number', 'Item_ID', 'center', 'center', 1),
-    createCol('Group_Name', 'string', 'Group Name', 'left', 'center', 1),
-    createCol('OB_Bal_Qty', 'number', 'OB_Bal_Qty', 'right', 'center', 1),
-    createCol('OB_Rate', 'number', 'OB_Rate', 'right', 'center', 1),
-    createCol('OB_Value', 'number', 'OB_Val', 'right', 'center', 1),
-    createCol('Pur_Qty', 'number', 'Pur_Qty', 'right', 'center', 1),
-    createCol('Pur_Rate', 'number', 'Pur_Rate', 'right', 'center', 1),
-    createCol('Pur_value', 'number', 'Pur_Val', 'right', 'center', 1),
-    createCol('Adj_Pur_Qty', 'number', 'Adj_Pur_Qty', 'right', 'center', 1),
-    createCol('Adj_Pur_Rate', 'number', 'Adj_Pur_Rate', 'right', 'center', 1),
-    createCol('Adj_Pur_value', 'number', 'Adj_Pur_value', 'right', 'center', 1),
-    createCol('IN_Qty', 'number', 'IN_Qty', 'right', 'center', 1),
-    createCol('IN_Rate', 'number', 'IN_Rate', 'right', 'center', 1),
-    createCol('IN_Value', 'number', 'IN_Value', 'right', 'center', 1),
-    createCol('Sal_Qty', 'number', 'Sal_Qty', 'right', 'center', 1),
-    createCol('Sal_Rate', 'number', 'Sal_Rate', 'right', 'center', 1),
-    createCol('Sal_value', 'number', 'Sal_value', 'right', 'center', 1),
-    createCol('Adj_Sal_Qty', 'number', 'Adj_Sal_Qty', 'right', 'center', 1),
-    createCol('Adj_Sal_Rate', 'number', 'Adj_Sal_Rate', 'right', 'center', 1),
-    createCol('Adj_Sal_value', 'number', 'Adj_Sal_value', 'right', 'center', 1),
-    createCol('OUT_Qty', 'number', 'OUT_Qty', 'right', 'center', 1),
-    createCol('Out_Rate', 'number', 'Out_Rate', 'right', 'center', 1),
-    createCol('Out_Value', 'number', 'Out_Value', 'right', 'center', 1),
-    createCol('Expense_value', 'number', 'Expense_value', 'right', 'center', 1),
-    createCol('Act_Expense', 'number', 'Act_Expense', 'right', 'center', 1),
-    createCol('Bal_Qty', 'number', 'Bal_Qty', 'right', 'center', 1),
-    createCol('CL_Rate', 'number', 'CL_Rate', 'right', 'center', 1),
-    createCol('CL_Value', 'number', 'CL_Val', 'right', 'center', 1),
-    createCol('CR_CL_Rate', 'number', 'CR_CL_Rate', 'right', 'center', 1),
-    createCol('Pre_Qty', 'number', 'Pre_Qty', 'right', 'center', 1),
-    createCol('Pre_Rate', 'number', 'Pre_Rate', 'right', 'center', 1),
-    createCol('Pre_CL_Value', 'number', 'Pre_CL_Value', 'right', 'center', 1),
+    createCol('OB_Bal_Qty', 'number', 'OB Qty', 'right', 'center', 1),
+    createCol('OB_Rate', 'number', 'OB Rate', 'right', 'center', 1),
+    createCol('OB_Value', 'number', 'OB Value', 'right', 'center', 1),
+    createCol('Pur_Qty', 'number', 'Pur Qty', 'right', 'center', 1),
+    createCol('Pur_Rate', 'number', 'Pur Rate', 'right', 'center', 1),
+    createCol('Pur_value', 'number', 'Pur Value', 'right', 'center', 1),
+    createCol('Adj_Pur_Qty', 'number', 'Adj Pur Qty', 'right', 'center', 1),
+    createCol('Adj_Pur_Rate', 'number', 'Adj Pur Rate', 'right', 'center', 1),
+    createCol('Adj_Pur_value', 'number', 'Adj Pur Value', 'right', 'center', 1),
+    createCol('IN_Qty', 'number', 'IN Qty', 'right', 'center', 1),
+    createCol('IN_Rate', 'number', 'IN Rate', 'right', 'center', 1),
+    createCol('IN_Value', 'number', 'IN Value', 'right', 'center', 1),
+    createCol('Sal_Qty', 'number', 'Sal Qty', 'right', 'center', 1),
+    createCol('Sal_Rate', 'number', 'Sal Rate', 'right', 'center', 1),
+    createCol('Sal_value', 'number', 'Sal Value', 'right', 'center', 1),
+    createCol('Adj_Sal_Qty', 'number', 'Adj Sal Qty', 'right', 'center', 1),
+    createCol('Adj_Sal_Rate', 'number', 'Adj Sal Rate', 'right', 'center', 1),
+    createCol('Adj_Sal_value', 'number', 'Adj Sal Value', 'right', 'center', 1),
+    createCol('OUT_Qty', 'number', 'OUT Qty', 'right', 'center', 1),
+    createCol('Out_Rate', 'number', 'Out Rate', 'right', 'center', 1),
+    createCol('Out_Value', 'number', 'Out Value', 'right', 'center', 1),
+    createCol('Expense_value', 'number', 'Expense Value', 'right', 'center', 1),
+    createCol('Act_Expense', 'number', 'Act Expense', 'right', 'center', 1),
+    createCol('Bal_Qty', 'number', 'Bal Qty', 'right', 'center', 1),
+    createCol('CL_Rate', 'number', 'CL Rate', 'right', 'center', 1),
+    createCol('CL_Value', 'number', 'CL Value', 'right', 'center', 1),
+    createCol('CR_CL_Rate', 'number', 'CR CL Rate', 'right', 'center', 1),
+    createCol('Pre_Qty', 'number', 'Pre Qty', 'right', 'center', 1),
+    createCol('Pre_Rate', 'number', 'Pre Rate', 'right', 'center', 1),
+    createCol('Pre_CL_Value', 'number', 'Pre CL Value', 'right', 'center', 1),
   ];
 
   useEffect(() => {
     loadStockGroups();
   }, [reload]);
-
-  useEffect(() => {
-    if (selectedGroup && selectedGroup.Item_Group_Id !== "0") {
-      loadItemsByGroup(selectedGroup.Item_Group_Id);
-    } else {
-      setItems([]);
-      setSelectedItem(null);
-      setIsItemDropdownOpen(false);
-    }
-    // Clear report data when stock group changes
-    setReportData([]);
-  }, [selectedGroup]);
-
-  const toggleItemSelection = (item) => {
-    setSelectedItem(item);
-    setIsItemDropdownOpen(false);
-    // Clear report data when item selection changes
-    setReportData([]);
-  };
 
   const loadStockGroups = async () => {
     try {
@@ -126,6 +119,7 @@ const StockValueDetails = () => {
       });
       
       setStockGroups(formattedGroups);
+      setFilteredStockGroups([{ Item_Group_Id: "0", Group_Name: "-- All Groups --" }, ...formattedGroups]);
       
       if (formattedGroups.length === 0) {
         toast.info("No stock groups found");
@@ -135,168 +129,6 @@ const StockValueDetails = () => {
       toast.error("Failed to load stock groups");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadItemsByGroup = async (groupId) => {
-    try {
-      setLoading(true);
-      const response = await fetchLink({
-        address: `inventory/stockItemGroup`,
-        method: "POST",
-        bodyData: { stockGroupId: groupId }
-      });
-      
-      let itemsList = [];
-      if (response && response.success && response.data) {
-        itemsList = response.data;
-      } else if (response && Array.isArray(response)) {
-        itemsList = response;
-      } else if (response && response.data && Array.isArray(response.data)) {
-        itemsList = response.data;
-      }
-      
-      const itemsWithAllOption = [{ Product_Id: "0", stock_item_name: "-- All Items --" }, ...itemsList];
-      setItems(itemsWithAllOption);
-      setSelectedItem(itemsWithAllOption[0]);
-      
-      if (itemsList.length === 0) {
-        toast.info("No items found for this stock group");
-      } else {
-        toast.success(`Found ${itemsList.length} items in this group`);
-      }
-    } catch (err) {
-      console.error("Error loading items:", err);
-      toast.error("Failed to load items");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
-    try {
-      const requestBody = {
-        Pre_date: preDate,
-        FromDate: fromDate,
-        ToDate: toDate,
-        stock_group_id: parseInt(groupId)
-      };
-
-      const response = await fetchLink({
-        address: `inventory/stockValueSync`,
-        method: "POST",
-        bodyData: requestBody
-      });
-      
-      if (response && response.success && response.data) {
-        const data = response.data;
-        
-        let closingBalance = null;
-        if (data.closingBalance) {
-          closingBalance = {
-            id: Date.now() + Math.random(),
-            itemGroupId: data.closingBalance.Item_Group_Id || groupId,
-            groupName: data.closingBalance.Group_Name || groupName,
-            transDate: data.closingBalance.Trans_Date,
-            closingRate: data.closingBalance.CL_Rate || 0,
-            closingValue: data.closingBalance.CL_Value || 0,
-            stockValue: data.closingBalance.Stock_Value || 0,
-            fromDate: fromDate,
-            toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'Success',
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
-          };
-        } else {
-          closingBalance = {
-            id: Date.now() + Math.random(),
-            itemGroupId: groupId,
-            groupName: groupName,
-            transDate: toDate,
-            closingRate: 0,
-            closingValue: 0,
-            stockValue: 0,
-            fromDate: fromDate,
-            toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'No Data',
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
-          };
-        }
-        
-        return {
-          success: true,
-          closingBalance: closingBalance,
-          groupName: groupName,
-          groupId: groupId
-        };
-      } else {
-        return {
-          success: false,
-          error: response?.message || `Failed to fetch data for ${groupName}`,
-          groupName: groupName,
-          groupId: groupId,
-          closingBalance: {
-            id: Date.now() + Math.random(),
-            itemGroupId: groupId,
-            groupName: groupName,
-            transDate: toDate,
-            closingRate: 0,
-            closingValue: 0,
-            stockValue: 0,
-            fromDate: fromDate,
-            toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'Failed',
-            error: response?.message,
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
-          }
-        };
-      }
-    } catch (err) {
-      console.error(`Error fetching data for group ${groupName}:`, err);
-      return {
-        success: false,
-        error: err.message || `Error fetching data for ${groupName}`,
-        groupName: groupName,
-        groupId: groupId,
-        closingBalance: {
-          id: Date.now() + Math.random(),
-          itemGroupId: groupId,
-          groupName: groupName,
-          transDate: toDate,
-          closingRate: 0,
-          closingValue: 0,
-          stockValue: 0,
-          fromDate: fromDate,
-          toDate: toDate,
-          fetchDate: new Date().toISOString(),
-          fetchStatus: 'Failed',
-          error: err.message,
-          searchCriteria: {
-            fromDate: fromDate,
-            toDate: toDate,
-            groupId: groupId,
-            groupName: groupName
-          }
-        }
-      };
     }
   };
 
@@ -314,47 +146,43 @@ const StockValueDetails = () => {
     try {
       setLoading(true);
 
-      // Pre_date = previous day of fromDate
-      const preDate = format(
-        new Date(new Date(fromDate).setDate(new Date(fromDate).getDate() - 1)),
-        'yyyy-MM-dd'
-      );
+      const preDate = format(subDays(new Date(fromDate), 1), 'yyyy-MM-dd');
 
       const requestBody = {
         FromDate: fromDate,
         ToDate: toDate,
-        StockGroupId: selectedGroup.Item_Group_Id === "0" ? null : selectedGroup.Item_Group_Id,
-        ItemId: selectedItem && selectedItem.Product_Id !== "0" ? selectedItem.Product_Id : null
+        Pre_date: preDate,
+        stock_group_id: selectedGroup.Item_Group_Id === "0" ? 0 : parseInt(selectedGroup.Item_Group_Id)
       };
 
-      const [syncResult, reportResponse] = await Promise.all([
-        fetchClosingBalanceForGroup(
-          selectedGroup.Item_Group_Id,
-          selectedGroup.Group_Name,
-          preDate
-        ),
-        fetchLink({
-          address: `inventory/stockValueErp`,
-          method: "POST",
-          bodyData: requestBody
-        })
-      ]);
+      const response = await fetchLink({
+        address: `inventory/stockValueErpSync`,
+        method: "POST",
+        bodyData: requestBody
+      });
 
-      // Handle sync API result
-      if (syncResult.success) {
-        toast.success(`Sync done for ${syncResult.groupName}`);
-      } else {
-        toast.warning(`Sync issue for ${syncResult.groupName}: ${syncResult.error}`);
-      }
-
-      if (reportResponse && reportResponse.success) {
-        let data = reportResponse.data?.records || [];
+      if (response && response.success) {
+        let data = [];
         
-        // Always show all data (no zero entry filtering)
+        if (response.data && response.data.closingBalance && Array.isArray(response.data.closingBalance)) {
+          data = response.data.closingBalance;
+        } else if (response.data && response.data.records && Array.isArray(response.data.records)) {
+          data = response.data.records;
+        } else if (response.data && Array.isArray(response.data)) {
+          data = response.data;
+        } else if (Array.isArray(response)) {
+          data = response;
+        }
+        
         setReportData(data);
-        toast.success(`Report loaded. Found ${data.length} records`);
+        
+        if (data.length === 0) {
+          toast.info("No stock value details found for the selected criteria");
+        } else {
+          toast.success(`Report loaded. Found ${data.length} records`);
+        }
       } else {
-        toast.error(reportResponse?.message || "Failed to fetch stock value data");
+        toast.error(response?.message || "Failed to fetch stock value data");
         setReportData([]);
       }
 
@@ -369,10 +197,10 @@ const StockValueDetails = () => {
 
   const handleReset = () => {
     setSelectedGroup(null);
-    setSelectedItem(null);
     setReportData([]);
-    setFromDate(format(new Date().setDate(1), 'yyyy-MM-dd'));
-    setToDate(format(new Date(), 'yyyy-MM-dd'));
+    setFromDate(format(subDays(new Date(), 0), 'yyyy-MM-dd'));
+    setToDate(format(subDays(new Date(), 0), 'yyyy-MM-dd'));
+    setGroupSearchTerm("");
     setReload(prev => !prev);
     toast.info("Filters reset");
   };
@@ -416,83 +244,89 @@ const StockValueDetails = () => {
               />
             </div>
 
-            <div style={{ minWidth: '180px' }}>
+            {/* Stock Group with Search Dropdown */}
+            <div ref={groupDropdownRef} style={{ minWidth: '250px', position: 'relative' }}>
               <label className="form-label fw-bold mb-0 small">Stock Group</label>
-              <select
+              <div
                 className="form-select form-select-sm"
-                value={selectedGroup?.Item_Group_Id || ''}
-                onChange={(e) => {
-                  const groupId = e.target.value;
-                  const group = stockGroupsWithAll.find(g => g.Item_Group_Id.toString() === groupId);
-                  setSelectedGroup(group);
-                  setIsItemDropdownOpen(false);
+                style={{ 
+                  cursor: 'pointer', 
+                  backgroundColor: 'white',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}
+                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
               >
-                <option value="">-- Select Stock Group --</option>
-                {stockGroupsWithAll.map((group) => (
-                  <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
-                    {group.Group_Name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <span style={{ color: selectedGroup ? 'inherit' : '#6c757d' }}>
+                  {selectedGroup ? selectedGroup.Group_Name : '-- Select Stock Group --'}
+                </span>
+                {/* <span>{isGroupDropdownOpen ? '▲' : '▼'}</span> */}
+              </div>
 
-            {selectedGroup && selectedGroup.Item_Group_Id !== "0" && (
-              <div ref={itemDropdownRef} style={{ minWidth: '180px', position: 'relative' }}>
-                <label className="form-label fw-bold mb-0 small">Items</label>
-                <div
-                  className="form-select form-select-sm"
-                  style={{ 
-                    cursor: 'pointer', 
-                    backgroundColor: 'white',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
-                >
-                  <span>
-                    {selectedItem ? selectedItem.stock_item_name : '-- Select Item --'}
-                  </span>
-                </div>
-
-                {isItemDropdownOpen && (
-                  <div style={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
-                    background: 'white', border: '1px solid #dee2e6',
-                    borderRadius: '0.375rem', marginTop: '2px',
-                    maxHeight: '250px', overflowY: 'auto',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }}>
-                    {items.map((item) => (
+              {isGroupDropdownOpen && (
+                <div style={{
+                  position: 'absolute', 
+                  zIndex: 1000,
+                  background: 'white', 
+                  border: '1px solid #dee2e6',
+                  borderRadius: '0.375rem', 
+                  marginTop: '2px',
+                  maxHeight: '300px', 
+                  overflowY: 'auto',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  width: '100%'
+                }}>
+                  {/* Search Input */}
+                  <div className="p-2 border-bottom">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      placeholder="Search stock group..."
+                      value={groupSearchTerm}
+                      onChange={(e) => setGroupSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Group List */}
+                  {filteredStockGroups.length === 0 ? (
+                    <div className="px-3 py-2 text-muted" style={{ fontSize: '12px' }}>
+                      No matching stock groups found
+                    </div>
+                  ) : (
+                    filteredStockGroups.map((group) => (
                       <div
-                        key={item.Product_Id}
-                        className="px-3 py-2"
+                        key={group.Item_Group_Id}
+                        className="px-3 py-2 d-flex align-items-center"
                         style={{ 
                           cursor: 'pointer', 
                           fontSize: '13px',
-                          backgroundColor: selectedItem?.Product_Id === item.Product_Id ? '#e3f2fd' : 'transparent',
-                          fontWeight: selectedItem?.Product_Id === item.Product_Id ? '500' : 'normal'
+                          backgroundColor: selectedGroup?.Item_Group_Id === group.Item_Group_Id ? '#e3f2fd' : 'transparent',
+                          fontWeight: selectedGroup?.Item_Group_Id === group.Item_Group_Id ? 'bold' : 'normal'
                         }}
-                        onClick={() => toggleItemSelection(item)}
-                        onMouseEnter={(e) => {
-                          if (selectedItem?.Product_Id !== item.Product_Id) {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                          }
+                        onClick={() => {
+                          setSelectedGroup(group);
+                          setIsGroupDropdownOpen(false);
+                          setGroupSearchTerm("");
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={(e) => {
-                          if (selectedItem?.Product_Id !== item.Product_Id) {
+                          if (selectedGroup?.Item_Group_Id !== group.Item_Group_Id) {
                             e.currentTarget.style.backgroundColor = 'transparent';
                           }
                         }}
                       >
-                        {item.stock_item_name}
+                        {group.Group_Name}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Search Button */}
             <div>
               <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
               <button
@@ -515,6 +349,7 @@ const StockValueDetails = () => {
               </button>
             </div>
 
+            {/* Reset Button */}
             <div>
               <label className="form-label fw-bold mb-0 small" style={{ visibility: 'hidden' }}>.</label>
               <button 
@@ -538,7 +373,7 @@ const StockValueDetails = () => {
             </div>
           )}
 
-          {!loading && (
+          {!loading && reportData.length > 0 && (
             <FilterableTable
               dataArray={reportData}
               columns={columns}

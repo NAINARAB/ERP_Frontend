@@ -20,6 +20,7 @@ import {
   Clear as ClearIcon,
   Receipt as ReceiptIcon,
   Payment as PaymentIcon,
+  SwapHoriz as ContraIcon,
   Add as AddIcon
 } from "@mui/icons-material";
 import { fetchLink } from '../../Components/fetchComponent';
@@ -87,20 +88,21 @@ const StyledSerialCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
-const StyledTableRow = styled(TableRow)(({ receiptsynced, paymentsynced }) => ({
-  backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : "#fff",
+// Updated StyledTableRow to handle receipt, payment, and contra sync types
+const StyledTableRow = styled(TableRow)(({ receiptsynced, paymentsynced, contrasynced }) => ({
+  backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : contrasynced ? "#e8f5e9" : "#fff",
   "&:hover": {
-    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : "#f5f5f5",
+    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : contrasynced ? "#c8e6c9" : "#f5f5f5",
   },
   "& td": {
-    backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : "transparent",
+    backgroundColor: receiptsynced ? "#e3f2fd" : paymentsynced ? "#fff3e0" : contrasynced ? "#e8f5e9" : "transparent",
     borderRight: "1px solid #e0e0e0",
   },
   "& td:last-child": {
     borderRight: "none",
   },
   "&:hover td": {
-    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : "#f5f5f5",
+    backgroundColor: receiptsynced ? "#bbdefb" : paymentsynced ? "#ffe0b2" : contrasynced ? "#c8e6c9" : "#f5f5f5",
   },
 }));
 
@@ -352,6 +354,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
     setDbPage(0);
   };
 
+  // Navigate to ConvertScreen for Receipt or Payment
   const handleSyncSelectedClick = () => {
     const selectedRowsArray = Object.values(selectedDbRows);
     if (selectedRowsArray.length === 0) {
@@ -360,8 +363,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
     }
     
     setSelectedTransactions(selectedRowsArray);
-    
-    // Clear session storage when navigating
     clearSelectionsFromSession();
     
     navigate("/erp/bankReports/bankList/convertScreen", {
@@ -373,6 +374,39 @@ const Bank = ({ loadingOn, loadingOff }) => {
         fromDate: fromDate,
         toDate: toDate,
         transactionTypeFilter: transactionTypeFilter
+      }
+    });
+  };
+
+  // In Bank component - Update handleContraClick
+  const handleContraClick = () => {
+    const selectedRowsArray = Object.values(selectedDbRows);
+    if (selectedRowsArray.length === 0) {
+      toast.warning('No rows selected');
+      return;
+    }
+
+    setSelectedTransactions(selectedRowsArray);
+    clearSelectionsFromSession();
+
+    // Find the complete account object from accountList
+    const selectedBankAccount = accountList.find(acc => acc.label === accountNo);
+      
+    navigate("/erp/bankReports/bankList/convertScreen", {
+      state: {
+        transactions: selectedRowsArray,
+        transactionType: 'contra',
+        transactionTypeFilter: transactionTypeFilter, // 'C' for Credit, 'D' for Debit
+        accountNo: accountNo,
+        selectedAccount: selectedBankAccount,
+        fromDate: fromDate,
+        toDate: toDate,
+        // Pass the selected bank account details explicitly
+        bankAccountDetails: {
+          Acc_Id: selectedBankAccount?.Acc_Id || null,
+          Account_name: selectedBankAccount?.Account_name || accountNo,
+          Group_Id: selectedBankAccount?.Group_Id || null
+        }
       }
     });
   };
@@ -408,7 +442,6 @@ const Bank = ({ loadingOn, loadingOff }) => {
         setTransactionTypeFilter('');
         setFilteredTransactions(transactions);
         setShowCheckboxes(false);
-        // Clear session storage after sync
         clearSelectionsFromSession();
       } else {
         toast.error(response.message || 'Sync failed');
@@ -553,10 +586,8 @@ const Bank = ({ loadingOn, loadingOff }) => {
       const { selections, filter } = getSelectionsFromSession();
       
       if (Object.keys(selections).length > 0 && filter) {
-        // Restore filter
         setTransactionTypeFilter(filter);
         
-        // Restore selections
         const restoredSelections = {};
         Object.keys(selections).forEach(rowId => {
           const row = filteredTransactions.find(txn => {
@@ -624,12 +655,36 @@ const Bank = ({ loadingOn, loadingOff }) => {
     return newTransactionKeys.has(rowKey);
   };
 
-  const isRowSynced = (row) => {
-    return (row.receipt_id && !row.pay_id) || (row.pay_id && !row.receipt_id);
-  };
+// Updated isRowSynced to properly check for all sync types
+const isRowSynced = (row) => {
+  // Check if any of the ID fields exist and are not null/undefined/empty string
+  const hasReceiptId = row.receipt_id && row.receipt_id !== null && row.receipt_id !== '';
+  const hasPayId = row.pay_id && row.pay_id !== null && row.pay_id !== '';
+  const hasContraId = row.contra_id && row.contra_id !== null && row.contra_id !== '';
+  
+  // Check if the IDs are valid numbers (if they're supposed to be numeric)
+  const isValidReceiptId = hasReceiptId && !isNaN(parseInt(row.receipt_id));
+  const isValidPayId = hasPayId && !isNaN(parseInt(row.pay_id));
+  const isValidContraId = hasContraId && !isNaN(parseInt(row.contra_id));
+  
+  return isValidReceiptId || isValidPayId || isValidContraId;
+};
 
+// Get sync type for styling - ensure correct identification
+const getSyncType = (row) => {
+  // Check for contra first as it might have highest priority
+  if (row.contra_id && row.contra_id !== null && row.contra_id !== '' && !isNaN(parseInt(row.contra_id))) {
+    return 'contra';
+  }
+  if (row.receipt_id && row.receipt_id !== null && row.receipt_id !== '' && !isNaN(parseInt(row.receipt_id))) {
+    return 'receipt';
+  }
+  if (row.pay_id && row.pay_id !== null && row.pay_id !== '' && !isNaN(parseInt(row.pay_id))) {
+    return 'payment';
+  }
+  return null;
+};
   const handleDbRowSelect = (row) => {
-    // Don't allow selection of synced rows
     if (isRowSynced(row)) {
       toast.info('Synced transactions cannot be selected');
       return;
@@ -648,7 +703,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
   };
 
   const handleSelectAllDbRows = () => {
-    const currentPageRows = paginatedDbData.filter(row => !isRowSynced(row)); // Only select non-synced rows
+    const currentPageRows = paginatedDbData.filter(row => !isRowSynced(row));
     const allSelected = currentPageRows.length > 0 && currentPageRows.every(row => {
       const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`;
       return selectedDbRows[rowId];
@@ -880,7 +935,7 @@ const Bank = ({ loadingOn, loadingOff }) => {
             </Grid>
             
             <Grid item xs={12} md={5}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -903,20 +958,42 @@ const Bank = ({ loadingOn, loadingOff }) => {
                   {syncLoading ? 'Syncing...' : 'Sync Only'}
                 </Button>
 
+                {/* Receipt / Payment button — shown when rows selected and filter is active */}
                 {activeTab === 0 && selectedCount > 0 && showCheckboxes && (
                   <Button
                     variant="contained"
                     color={transactionTypeFilter === 'C' ? 'success' : 'warning'}
                     onClick={handleSyncSelectedClick}
-                    startIcon={syncSelectedLoading ? <CircularProgress size={20} /> : (transactionTypeFilter === 'C' ? <ReceiptIcon /> : <PaymentIcon />)}
+                    startIcon={
+                      syncSelectedLoading
+                        ? <CircularProgress size={20} />
+                        : (transactionTypeFilter === 'C' ? <ReceiptIcon /> : <PaymentIcon />)
+                    }
                     disabled={syncSelectedLoading}
                     size="small"
                   >
-                    {syncSelectedLoading 
-                      ? `Processing ${selectedCount}...` 
-                      : (transactionTypeFilter === 'C' 
-                        ? `Receipt (${selectedCount})` 
+                    {syncSelectedLoading
+                      ? `Processing ${selectedCount}...`
+                      : (transactionTypeFilter === 'C'
+                        ? `Receipt (${selectedCount})`
                         : `Payment (${selectedCount})`)}
+                  </Button>
+                )}
+
+                {/* Contra button — shown for BOTH Credit and Debit when rows are selected */}
+                {activeTab === 0 && selectedCount > 0 && showCheckboxes && transactionTypeFilter && (
+                  <Button
+                    variant="contained"
+                    onClick={handleContraClick}
+                    startIcon={<ContraIcon />}
+                    size="small"
+                    sx={{
+                      backgroundColor: '#6a1b9a',
+                      color: '#fff',
+                      '&:hover': { backgroundColor: '#4a148c' },
+                    }}
+                  >
+                    Contra ({selectedCount})
                   </Button>
                 )}
               </Box>
@@ -1010,15 +1087,18 @@ const Bank = ({ loadingOn, loadingOff }) => {
                   ) : (
                     paginatedDbData.map((row, idx) => {
                       const rowId = row.Refno || `${row.TranDate}_${row.TranParticulars}`;
-                      const isReceiptSynced = row.receipt_id && !row.pay_id;  
-                      const isPaymentSynced = row.pay_id && !row.receipt_id;
-                      const synced = isReceiptSynced || isPaymentSynced;
+                      const syncType = getSyncType(row);
+                      const isReceiptSynced = syncType === 'receipt';
+                      const isPaymentSynced = syncType === 'payment';
+                      const isContraSynced = syncType === 'contra';
+                      const synced = isRowSynced(row);
                     
                       return (
                         <StyledTableRow
                           key={idx}
-                          receiptsynced={isReceiptSynced ? 1 : 0}  
+                          receiptsynced={isReceiptSynced ? 1 : 0}
                           paymentsynced={isPaymentSynced ? 1 : 0}
+                          contrasynced={isContraSynced ? 1 : 0}
                         >
                           {showCheckboxes && !synced && (
                             <StyledCheckboxCell align="center">
