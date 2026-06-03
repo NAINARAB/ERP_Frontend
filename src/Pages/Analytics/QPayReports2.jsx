@@ -423,12 +423,12 @@
 
 
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { 
   Card, FormControlLabel, Switch, Tab, Box, Checkbox, TextField, 
   Autocomplete, IconButton, Dialog, DialogContent, DialogActions, 
   Button, Tooltip, Select, MenuItem, FormControl, InputLabel,
-  CircularProgress, InputAdornment, Grid
+  CircularProgress, InputAdornment, Grid, Radio, RadioGroup, FormLabel
 } from '@mui/material'
 import { 
   Refresh, Sync, Search, Close 
@@ -443,7 +443,7 @@ function QPayReports2() {
   const [selectedMonth, setSelectedMonth] = useState('ALL')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedLedger, setSelectedLedger] = useState('ALL')
-  const [selectedStatus, setSelectedStatus] = useState('COMPLETED') 
+  const [selectedStatus, setSelectedStatus] = useState('SUMMARY')
   const [ledgers, setLedgers] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadingLedgers, setLoadingLedgers] = useState(false)
@@ -454,24 +454,67 @@ function QPayReports2() {
   const [reload, setReload] = useState(false)
   
 
-  const [cusFilter, setCusFilter] = useState({
-    zeros: false,
-    company: 2,
-    consolidate: 0,
-    salesInvoice: false 
-  })
+  // Report type selection - default is now 'consolidate'
+  const [reportType, setReportType] = useState('consolidate')
 
   const [syncLoading, setSyncLoading] = useState(false)
 
+  // Add refs to track initial mount and prevent unnecessary updates
+  const isInitialMount = useRef(true)
+  const isUpdatingStatus = useRef(false)
   
   const tabList = ['LIST', 'Sync']
 
- 
-  const statusOptions = [
-    { value: 'COMPLETED', label: 'Completed', pendingList: 0 },
-    { value: 'PENDING', label: 'Pending', pendingList: 1 }
+  // Consolidate status options
+  const consolidateStatusOptions = [
+    { value: 'SUMMARY', label: 'Summary', filterValue: 1 },
+    { value: 'LIST', label: 'List', filterValue: 0 }
   ]
 
+  // Sales Invoice status options
+  const salesInvoiceStatusOptions = [
+    { value: 'COMPLETED', label: 'Completed', filterValue: 0 },
+    { value: 'PENDING', label: 'Pending', filterValue: 1 }
+  ]
+
+  // Get status options based on report type
+  const getStatusOptions = useCallback(() => {
+    if (reportType === 'consolidate') {
+      return consolidateStatusOptions
+    }
+    return salesInvoiceStatusOptions
+  }, [reportType])
+
+  const statusOptions = getStatusOptions()
+
+  // Update selected status when report type changes - but prevent multiple updates
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    
+    // Prevent multiple updates
+    if (isUpdatingStatus.current) return
+    
+    isUpdatingStatus.current = true
+    
+    if (reportType === 'consolidate') {
+      if (selectedStatus !== 'SUMMARY') {
+        setSelectedStatus('SUMMARY')
+      }
+    } else {
+      if (selectedStatus !== 'COMPLETED') {
+        setSelectedStatus('COMPLETED')
+      }
+    }
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      isUpdatingStatus.current = false
+    }, 100)
+  }, [reportType])
 
   const months = [
     { value: 'ALL', label: 'ALL' },
@@ -548,36 +591,39 @@ function QPayReports2() {
     
     setLoading(true)
     try {
-      const ledgerParam = selectedLedger === 'ALL' ? 0 : selectedLedger
+      const ledgerParam = selectedLedger === 'ALL' ? 0 : parseInt(selectedLedger)
       const monthParam = selectedMonth === 'ALL' ? 0 : parseInt(selectedMonth)
-      const yearParam = selectedYear
+      const yearParam = parseInt(selectedYear)
       
-     
-      const selectedStatusObj = statusOptions.find(s => s.value === selectedStatus)
-      const pendingListParam = selectedStatusObj?.pendingList ?? 0
+      // Get filter value based on current status and report type
+      let filterValue = 0
+      if (reportType === 'consolidate') {
+        // For consolidate: SUMMARY = 1, LIST = 0
+        filterValue = selectedStatus === 'SUMMARY' ? 1 : 0
+      } else {
+        // For salesInvoice: COMPLETED = 0, PENDING = 1
+        const selectedStatusObj = statusOptions.find(s => s.value === selectedStatus)
+        filterValue = selectedStatusObj?.filterValue ?? 0
+      }
       
       let response;
+      let url;
       
-      if (cusFilter.consolidate === 1) {
+      // API calls based on report type
+      if (reportType === 'salesInvoice') {
+        url = `reports/tallyReports/qPay/search?Month_No=${monthParam}&Year=${yearParam}&Customer_Id=${ledgerParam}&Pending_List=${filterValue}`;
+        response = await fetchLink({ address: url, method: 'GET' });
+      } 
+      else if (reportType === 'consolidate') {   
+        // For consolidate: Consoidate=1 for Summary, Consoidate=0 for List
+        url = `reports/tallyReports/qPay/consolidate?Month_No=${monthParam}&Year=${yearParam}&Customer_Id=${ledgerParam}&Consoidate=${filterValue}`;
       
-        response = await fetchLink({
-          address: `reports/tallyReports/qPay/consolidate?Month_No=${monthParam}&Year=${yearParam}&Customer_Id=${ledgerParam}&Pending_List=${pendingListParam}`
-        })
-      } else if (cusFilter.salesInvoice === true) {
-        
-        response = await fetchLink({
-          address: `reports/tallyReports/qPay/search?Month_No=${monthParam}&Year=${yearParam}&Customer_Id=${ledgerParam}&Consoidate=${pendingListParam}`
-        })
-      } else {
-  
-        response = await fetchLink({
-          address: `reports/tallyReports/qPay/search?Month_No=${monthParam}&Year=${yearParam}&Customer_Id=${ledgerParam}&Consoidate=${pendingListParam}`
-        })
+        response = await fetchLink({ address: url, method: 'GET' });
       }
       
       if (response && response.success) {
-      
-        setRepData(response.data || [])
+        let data = response.data || [];
+        setRepData(data);
       } else {
         console.error('API returned error:', response)
         setRepData([])
@@ -588,37 +634,28 @@ function QPayReports2() {
     } finally {
       setLoading(false)
     }
-  }, [activeMainTab, selectedLedger, selectedMonth, selectedYear, selectedStatus, cusFilter.consolidate, cusFilter.salesInvoice, cusFilter.company]);
+  }, [activeMainTab, selectedLedger, selectedMonth, selectedYear, selectedStatus, reportType, statusOptions]);
+
+  // Use a ref to track if the initial fetch has been done
+  const hasFetched = useRef(false)
 
   useEffect(() => {
-    fetchReportData()
-  }, [fetchReportData, reload])
+    if (!hasFetched.current) {
+      hasFetched.current = true
+      fetchReportData()
+    }
+  }, [fetchReportData])
+
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      fetchReportData()
+    }
+  }, [reload, fetchReportData])
 
   
   useEffect(() => {
-    let filteredData = [...repData]
-    
-
-    if (cusFilter.consolidate === 0 && !cusFilter.salesInvoice) {
-      if (!cusFilter.zeros) {
-        filteredData = filteredData.filter(o => o && o.Bal_Amount !== 0 && o.Bal_Amount !== '0')
-      }
-    }
-    
-
-    if (cusFilter.consolidate === 0 && !cusFilter.salesInvoice) {
-      const pendingListValue = selectedStatus === 'COMPLETED' ? 0 : 1
-      filteredData = filteredData.filter(o => {
-        if (pendingListValue === 0) {
-          return o && (o.Bal_Amount === 0 || o.Bal_Amount === '0')
-        } else {
-          return o && o.Bal_Amount !== 0 && o.Bal_Amount !== '0'
-        }
-      })
-    }
-    
-    setShowData(filteredData)
-  }, [repData, cusFilter.zeros, cusFilter.consolidate, cusFilter.salesInvoice, selectedStatus])
+    setShowData([...repData])
+  }, [repData])
 
   const handleSearch = () => {
     setReload(prev => !prev)
@@ -632,11 +669,16 @@ function QPayReports2() {
     setSyncLoading(true)
     try {
       const monthParam = selectedMonth === 'ALL' ? 0 : parseInt(selectedMonth)
-      const yearParam = selectedYear
-      const ledgerParam = selectedLedger === 'ALL' ? 0 : selectedLedger
+      const yearParam = parseInt(selectedYear)
+      const ledgerParam = selectedLedger === 'ALL' ? 0 : parseInt(selectedLedger)
       
-      const selectedStatusObj = statusOptions.find(s => s.value === selectedStatus)
-      const pendingList = selectedStatusObj?.pendingList ?? 0
+      let filterValue = 0
+      if (reportType === 'consolidate') {
+        filterValue = selectedStatus === 'SUMMARY' ? 1 : 0
+      } else {
+        const selectedStatusObj = statusOptions.find(s => s.value === selectedStatus)
+        filterValue = selectedStatusObj?.filterValue ?? 0
+      }
       
       const response = await fetchLink({
         address: `reports/tallyReports/qPay/syncConsolidate`,
@@ -645,19 +687,15 @@ function QPayReports2() {
           Month_No: monthParam,
           Year: yearParam,
           Customer_Id: ledgerParam,
-          Pending_List: pendingList
+          Pending_List: filterValue
         })
       })
       
       if (response && response.success) {
-        alert('Data synced successfully!')
         handleSearch()
-      } else {
-        alert('Sync failed: ' + (response?.message || 'Unknown error'))
-      }
+      } 
     } catch (error) {
       console.error('Sync error:', error)
-      alert('Error during sync: ' + error.message)
     } finally {
       setSyncLoading(false)
     }
@@ -832,37 +870,32 @@ function QPayReports2() {
             </Button>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={1.5}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={cusFilter.salesInvoice === true}
-                  onChange={e => setCusFilter(prev => ({ ...prev, salesInvoice: e.target.checked }))}
-                  size="small"
+          {/* Radio Group for Report Type - Only Consolidate and Sales Invoice */}
+          <Grid item xs={12} md={4}>
+            <FormControl component="fieldset" size="small">
+              <FormLabel component="legend" sx={{ fontSize: '0.75rem' }}>Report Type</FormLabel>
+              <RadioGroup
+                row
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+              >
+                <FormControlLabel 
+                  value="consolidate" 
+                  control={<Radio size="small" />} 
+                  label="Consolidate" 
                 />
-              }
-              label="Sales Invoice"
-              labelPlacement="start"
-              sx={{ mr: 0 }}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={1.5}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={cusFilter.consolidate === 1}
-                  onChange={e => setCusFilter(prev => ({ ...prev, consolidate: e.target.checked ? 1 : 0 }))}
-                  size="small"
+                <FormControlLabel 
+                  value="salesInvoice" 
+                  control={<Radio size="small" />} 
+                  label="Sales Invoice" 
                 />
-              }
-              label="Consolidate"
-              labelPlacement="start"
-              sx={{ mr: 0 }}
-            />
+              </RadioGroup>
+            </FormControl>
           </Grid>
         </Grid>
       </div>
+
+     
 
       <div className="p-3">
         <TabContext value={activeMainTab}>
@@ -884,23 +917,6 @@ function QPayReports2() {
           </Box>
           
           <TabPanel value="list" sx={{ px: 0, py: 2 }}>
-           
-            {cusFilter.consolidate === 0 && !cusFilter.salesInvoice && (
-              <div className="mb-3">
-                {/* <FormControlLabel
-                  control={
-                    <Switch
-                      checked={!cusFilter.zeros}
-                      onChange={e => setCusFilter(prev => ({ ...prev, zeros: !(e.target.checked) }))}
-                      size="small"
-                    />
-                  }
-                  label="Remove Zeros"
-                  labelPlacement="start"
-                /> */}
-              </div>
-            )}
-            
             {displayReportContent()}
           </TabPanel>
           
@@ -940,9 +956,12 @@ function QPayReports2() {
                     <strong>{selectedStatus}</strong>
                   </div>
                   <div className="d-flex justify-content-between">
-                    <span>Pending List Value:</span>
+                    <span>Parameter:</span>
                     <strong>
-                      {selectedStatus === 'COMPLETED' ? '0 (Completed)' : '1 (Pending)'}
+                      {reportType === 'salesInvoice' ? 
+                        `Pending_List = ${selectedStatus === 'COMPLETED' ? '0' : '1'}` :
+                        `Consoidate = ${selectedStatus === 'SUMMARY' ? '1' : '0'}`
+                      }
                     </strong>
                   </div>
                 </Card>

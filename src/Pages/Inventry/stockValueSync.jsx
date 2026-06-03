@@ -2,8 +2,6 @@ import React, { useState, useEffect, Fragment, useRef } from "react";
 import {
   IconButton,
   Tooltip,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -16,35 +14,47 @@ import { fetchLink } from "../../Components/fetchComponent";
 import { toast } from "react-toastify";
 
 const StockValueSync = () => {
-const [fromDate, setFromDate] = useState(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
-const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fromDate, setFromDate] = useState(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
+  const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [stockGroups, setStockGroups] = useState([]);
+  const [filteredStockGroups, setFilteredStockGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [items, setItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [closingBalances, setClosingBalances] = useState([]);
   const [historyList, setHistoryList] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
   
-  // ✅ Dropdown state
-  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
-  const itemDropdownRef = useRef(null);
+  // ✅ Dropdown states for stock group with search
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+  const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  const groupDropdownRef = useRef(null);
 
   const stockGroupsWithAll = [{ Item_Group_Id: "0", Group_Name: "-- All Stock Groups --" }, ...stockGroups];
 
   // ✅ Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target)) {
-        setIsItemDropdownOpen(false);
+      if (groupDropdownRef.current && !groupDropdownRef.current.contains(event.target)) {
+        setIsGroupDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // ✅ Filter stock groups based on search term (case-insensitive, matches any part of the name)
+  useEffect(() => {
+    if (groupSearchTerm.trim() === "") {
+      setFilteredStockGroups(stockGroupsWithAll);
+    } else {
+      const searchLower = groupSearchTerm.toLowerCase();
+      const filtered = stockGroupsWithAll.filter(group => 
+        group.Group_Name.toLowerCase().includes(searchLower)
+      );
+      setFilteredStockGroups(filtered);
+    }
+  }, [groupSearchTerm, stockGroupsWithAll]);
 
   useEffect(() => {
     loadStockGroups();
@@ -52,52 +62,13 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   useEffect(() => {
     if (selectedGroup && selectedGroup.Item_Group_Id !== "0") {
-      loadItemsByGroup(selectedGroup.Item_Group_Id);
-      setSelectedItems([]);
-      setSelectAll(false);
-      setIsItemDropdownOpen(false);
+      // Only load items if needed - but we're not using items anymore
+      // Keep for potential future use or remove API call
+      setIsGroupDropdownOpen(false);
     } else if (selectedGroup && selectedGroup.Item_Group_Id === "0") {
-      setItems([]);
-      setSelectedItems([]);
-      setSelectAll(false);
-      setIsItemDropdownOpen(false);
-    } else {
-      setItems([]);
-      setSelectedItems([]);
-      setSelectAll(false);
+      setIsGroupDropdownOpen(false);
     }
   }, [selectedGroup]);
-
-  // ✅ Toggle item selection
-  const toggleItemSelection = (item) => {
-    setSelectedItems(prev => {
-      const isSelected = prev.some(i => i.Product_Id === item.Product_Id);
-      if (isSelected) {
-        const newSelected = prev.filter(i => i.Product_Id !== item.Product_Id);
-        setSelectAll(false);
-        return newSelected;
-      } else {
-        return [...prev, item];
-      }
-    });
-  };
-
-  // ✅ Toggle select all
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedItems([]);
-      setSelectAll(false);
-    } else {
-      setSelectedItems([...items]);
-      setSelectAll(true);
-    }
-  };
-
-  // ✅ Remove selected item
-  const removeSelectedItem = (itemId) => {
-    setSelectedItems(prev => prev.filter(item => item.Product_Id !== itemId));
-    setSelectAll(false);
-  };
 
   const loadStockGroups = async () => {
     try {
@@ -133,6 +104,7 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
       });
       
       setStockGroups(formattedGroups);
+      setFilteredStockGroups([{ Item_Group_Id: "0", Group_Name: "-- All Stock Groups --" }, ...formattedGroups]);
       
       if (formattedGroups.length === 0) {
         toast.info("No stock groups found");
@@ -145,141 +117,102 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     }
   };
 
-  const loadItemsByGroup = async (groupId) => {
-    try {
-      setLoading(true);
-      const response = await fetchLink({
-        address: `inventory/stockItemGroup`,
-        method: "POST",
-        bodyData: { stockGroupId: groupId }
-      });
-      
-      let itemsList = [];
-      if (response && response.success && response.data) {
-        itemsList = response.data;
-      } else if (response && Array.isArray(response)) {
-        itemsList = response;
-      } else if (response && response.data && Array.isArray(response.data)) {
-        itemsList = response.data;
-      }
-      
-      setItems(itemsList);
-      
-      if (itemsList.length === 0) {
-        toast.info("No items found for this stock group");
-      } else {
-        toast.success(`Found ${itemsList.length} items in this group`);
-      }
-    } catch (err) {
-      console.error("Error loading items:", err);
-      toast.error("Failed to load items");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
+  try {
+    const requestBody = {
+      Pre_date: preDate,
+      FromDate: fromDate,
+      ToDate: toDate,
+      stock_group_id: parseInt(groupId)
+    };
 
- 
-  const fetchClosingBalanceForGroup = async (groupId, groupName, preDate) => {
-    try {
-      const requestBody = {
-        Pre_date: preDate,
-        FromDate: fromDate,
-        ToDate: toDate,
-        stock_group_id: parseInt(groupId)
-      };
-
-      const response = await fetchLink({
-        address: `inventory/stockValueSync`,
-        method: "POST",
-        bodyData: requestBody
-      });
+    const response = await fetchLink({
+      address: `inventory/stockValueSync`,
+      method: "POST",
+      bodyData: requestBody
+    });
+    
+    if (response && response.success && response.data) {
+      const data = response.data;
       
-      if (response && response.success && response.data) {
-        const data = response.data;
-        
-        let closingBalance = null;
-        if (data.closingBalance) {
-          closingBalance = {
-            id: Date.now() + Math.random(),
-            itemGroupId: data.closingBalance.Item_Group_Id || groupId,
-            groupName: data.closingBalance.Group_Name || groupName,
-            transDate: data.closingBalance.Trans_Date,
-            closingRate: data.closingBalance.CL_Rate || 0,
-            closingValue: data.closingBalance.CL_Value || 0,
-            stockValue: data.closingBalance.Stock_Value || 0,
+      // ✅ Check if closingBalance is an array and has at least one item
+      let closingBalance = null;
+      
+      if (data.closingBalance && Array.isArray(data.closingBalance) && data.closingBalance.length > 0) {
+        const firstBalance = data.closingBalance[0];
+        closingBalance = {
+          id: Date.now() + Math.random(),
+          itemGroupId: firstBalance.Item_Group_Id || groupId,
+          groupName: firstBalance.Group_Name || groupName,
+          transDate: firstBalance.Trans_Date,
+          closingRate: firstBalance.CL_Rate || 0,
+          closingValue: firstBalance.CL_Value || 0,
+          stockValue: firstBalance.Stock_Value || 0,
+          fromDate: fromDate,
+          toDate: toDate,
+          fetchDate: new Date().toISOString(),
+          fetchStatus: 'Success',
+          searchCriteria: {
             fromDate: fromDate,
             toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'Success',
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
-          };
-        } else {
-          closingBalance = {
-            id: Date.now() + Math.random(),
-            itemGroupId: groupId,
-            groupName: groupName,
-            transDate: toDate,
-            closingRate: 0,
-            closingValue: 0,
-            stockValue: 0,
+            groupId: groupId,
+            groupName: groupName
+          }
+        };
+      } else if (data.closingBalance && !Array.isArray(data.closingBalance)) {
+        // Handle if it's a single object (backward compatibility)
+        closingBalance = {
+          id: Date.now() + Math.random(),
+          itemGroupId: data.closingBalance.Item_Group_Id || groupId,
+          groupName: data.closingBalance.Group_Name || groupName,
+          transDate: data.closingBalance.Trans_Date,
+          closingRate: data.closingBalance.CL_Rate || 0,
+          closingValue: data.closingBalance.CL_Value || 0,
+          stockValue: data.closingBalance.Stock_Value || 0,
+          fromDate: fromDate,
+          toDate: toDate,
+          fetchDate: new Date().toISOString(),
+          fetchStatus: 'Success',
+          searchCriteria: {
             fromDate: fromDate,
             toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'No Data',
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
-          };
-        }
-        
-        return {
-          success: true,
-          closingBalance: closingBalance,
-          groupName: groupName,
-          groupId: groupId
+            groupId: groupId,
+            groupName: groupName
+          }
         };
       } else {
-        return {
-          success: false,
-          error: response?.message || `Failed to fetch data for ${groupName}`,
+        // No data case
+        closingBalance = {
+          id: Date.now() + Math.random(),
+          itemGroupId: groupId,
           groupName: groupName,
-          groupId: groupId,
-          closingBalance: {
-            id: Date.now() + Math.random(),
-            itemGroupId: groupId,
-            groupName: groupName,
-            transDate: toDate,
-            closingRate: 0,
-            closingValue: 0,
-            stockValue: 0,
+          transDate: toDate,
+          closingRate: 0,
+          closingValue: 0,
+          stockValue: 0,
+          fromDate: fromDate,
+          toDate: toDate,
+          fetchDate: new Date().toISOString(),
+          fetchStatus: 'No Data',
+          searchCriteria: {
             fromDate: fromDate,
             toDate: toDate,
-            fetchDate: new Date().toISOString(),
-            fetchStatus: 'Failed',
-            error: response?.message,
-            searchCriteria: {
-              fromDate: fromDate,
-              toDate: toDate,
-              groupId: groupId,
-              groupName: groupName
-            }
+            groupId: groupId,
+            groupName: groupName
           }
         };
       }
-    } catch (err) {
-      console.error(`Error fetching data for group ${groupName}:`, err);
+      
+      return {
+        success: true,
+        closingBalance: closingBalance,
+        groupName: groupName,
+        groupId: groupId
+      };
+    } else {
       return {
         success: false,
-        error: err.message || `Error fetching data for ${groupName}`,
+        error: response?.message || `Failed to fetch data for ${groupName}`,
         groupName: groupName,
         groupId: groupId,
         closingBalance: {
@@ -294,7 +227,7 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
           toDate: toDate,
           fetchDate: new Date().toISOString(),
           fetchStatus: 'Failed',
-          error: err.message,
+          error: response?.message,
           searchCriteria: {
             fromDate: fromDate,
             toDate: toDate,
@@ -304,7 +237,36 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         }
       };
     }
-  };
+  } catch (err) {
+    console.error(`Error fetching data for group ${groupName}:`, err);
+    return {
+      success: false,
+      error: err.message || `Error fetching data for ${groupName}`,
+      groupName: groupName,
+      groupId: groupId,
+      closingBalance: {
+        id: Date.now() + Math.random(),
+        itemGroupId: groupId,
+        groupName: groupName,
+        transDate: toDate,
+        closingRate: 0,
+        closingValue: 0,
+        stockValue: 0,
+        fromDate: fromDate,
+        toDate: toDate,
+        fetchDate: new Date().toISOString(),
+        fetchStatus: 'Failed',
+        error: err.message,
+        searchCriteria: {
+          fromDate: fromDate,
+          toDate: toDate,
+          groupId: groupId,
+          groupName: groupName
+        }
+      }
+    };
+  }
+};
 
   const handleSearch = async () => {
     if (!fromDate || !toDate) {
@@ -314,11 +276,6 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
     if (!selectedGroup) {
       toast.error("Please select a stock group");
-      return;
-    }
-
-    if (selectedGroup.Item_Group_Id !== "0" && selectedItems.length === 0) {
-      toast.error("Please select at least one item");
       return;
     }
 
@@ -394,7 +351,7 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
         if (failedGroups.length > 0) {
           toast.warning(`Processed ${totalGroups} groups. Success: ${successCount}, No Data: ${noDataCount}, Failed: ${failCount}. Total Stock Value: ₹${totalClosingValue.toFixed(2)}`);
         } else {
-          toast.success(`Successfully fetched closing balances for ${totalGroups} groups. Total Stock Value: ₹${totalClosingValue.toFixed(2)}`);
+          toast.success(`Successfully fetched closing balances for ${totalGroups} groups`);
         }
         
       } else {
@@ -415,7 +372,7 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
           
           setHistoryList(prev => [searchRecord, ...prev]);
           setClosingBalances([result.closingBalance]);
-          toast.success(`${selectedGroup.Group_Name} - Stock Value: ₹${result.closingBalance.stockValue.toFixed(2)}`);
+          toast.success(`${selectedGroup.Group_Name} Sync Successfully`);
         } else {
           toast.error(result.error || "Failed to fetch closing balance");
           setClosingBalances([]);
@@ -431,17 +388,16 @@ const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     }
   };
 
-const handleReset = () => {
-  setSelectedGroup(null);
-  setSelectedItems([]);
-  setSelectAll(false);
-  setClosingBalances([]); 
-  setHistoryList([]);      
-  setFromDate(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
-  setToDate(format(new Date(), 'yyyy-MM-dd'));
-  setReload(prev => !prev);
-  toast.info("Filters reset");
-};
+  const handleReset = () => {
+    setSelectedGroup(null);
+    setClosingBalances([]); 
+    setHistoryList([]);      
+    setFromDate(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
+    setToDate(format(new Date(), 'yyyy-MM-dd'));
+    setGroupSearchTerm("");
+    setReload(prev => !prev);
+    toast.info("Filters reset");
+  };
 
   const handleClearHistory = () => {
     setHistoryList([]);
@@ -579,63 +535,61 @@ const handleReset = () => {
     toast.success("Closing balance report exported successfully");
   };
 
-
   const renderClosingBalanceTable = () => {
     const totalClosingValue = closingBalances.reduce((sum, row) => sum + (row.stockValue || 0), 0);
     
-   return (
-  <div className="table-responsive">
-    <table className="table table-sm table-bordered mb-0">
-      <thead className="table-light">
-        <tr>
-          <th>#</th>
-          <th>Group ID</th>
-          <th>Group Name</th>
-          <th>Transaction Date</th>
-          <th className="text-end">Closing Rate (₹)</th>
-          <th className="text-end">Closing Value (₹)</th>
-          <th className="text-end">Stock Value (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {closingBalances.length === 0 ? (
-          <tr>
-            <td colSpan="7" className="text-center">No closing balance data available</td>
-          </tr>
-        ) : (
-          closingBalances.map((balance, idx) => (
-            <tr 
-              key={idx} 
-              className={
-                balance.fetchStatus === 'Failed' ? 'table-danger' : 
-                balance.fetchStatus === 'No Data' ? 'table-warning' : ''
-              }
-            >
-              <td>{idx + 1}</td>
-              <td>{balance.itemGroupId}</td>
-              <td><strong>{balance.groupName}</strong></td>
-              <td>{balance.transDate ? format(new Date(balance.transDate), 'dd/MM/yyyy') : '-'}</td>
-              <td className="text-end">
-                <span style={{ 
-                  color: (balance.closingRate || 0) === 0 ? '#dc3545' : 'inherit',
-                  fontWeight: (balance.closingRate || 0) === 0 ? 'bold' : 'normal'
-                }}>
-                  ₹{(balance.closingRate || 0).toFixed(2)}
-                </span>
-              </td>
-              <td className="text-end">₹{(balance.closingValue || 0).toFixed(2)}</td>
-              <td className="text-end">
-                <strong>₹{(balance.stockValue || 0).toFixed(2)}</strong>
-              </td>
+    return (
+      <div className="table-responsive">
+        <table className="table table-sm table-bordered mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>Group ID</th>
+              <th>Group Name</th>
+              <th>Transaction Date</th>
+              <th className="text-end">Closing Rate (₹)</th>
+              <th className="text-end">Closing Value (₹)</th>
+              <th className="text-end">Stock Value (₹)</th>
             </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-);
+          </thead>
+          <tbody>
+            {closingBalances.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="text-center">No closing balance data available</td>
+              </tr>
+            ) : (
+              closingBalances.map((balance, idx) => (
+                <tr 
+                  key={idx} 
+                  className={
+                    balance.fetchStatus === 'Failed' ? 'table-danger' : 
+                    balance.fetchStatus === 'No Data' ? 'table-warning' : ''
+                  }
+                >
+                  <td>{idx + 1}</td>
+                  <td>{balance.itemGroupId}</td>
+                  <td><strong>{balance.groupName}</strong></td>
+                  <td>{balance.transDate ? format(new Date(balance.transDate), 'dd/MM/yyyy') : '-'}</td>
+                  <td className="text-end">
+                    <span style={{ 
+                      color: (balance.closingRate || 0) === 0 ? '#dc3545' : 'inherit',
+                      fontWeight: (balance.closingRate || 0) === 0 ? 'bold' : 'normal'
+                    }}>
+                      ₹{(balance.closingRate || 0).toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="text-end">₹{(balance.closingValue || 0).toFixed(2)}</td>
+                  <td className="text-end">
+                    <strong>₹{(balance.stockValue || 0).toFixed(2)}</strong>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
   };
-
 
   return (
     <Fragment>
@@ -657,7 +611,6 @@ const handleReset = () => {
         </div>
 
         <div className="card-body">
-        
           <div className="d-flex align-items-end gap-2 flex-wrap mb-3">
             {/* From Date */}
             <div style={{ minWidth: '140px' }}>
@@ -681,106 +634,87 @@ const handleReset = () => {
               />
             </div>
 
-            {/* Stock Group */}
-            <div style={{ minWidth: '180px' }}>
+            {/* Stock Group with Search */}
+            <div ref={groupDropdownRef} style={{ minWidth: '250px', position: 'relative' }}>
               <label className="form-label fw-bold mb-0 small">Stock Group</label>
-              <select
+              <div
                 className="form-select form-select-sm"
-                value={selectedGroup?.Item_Group_Id || ''}
-                onChange={(e) => {
-                  const groupId = e.target.value;
-                  const group = stockGroupsWithAll.find(g => g.Item_Group_Id.toString() === groupId);
-                  setSelectedGroup(group);
-                  setIsItemDropdownOpen(false);
+                style={{ 
+                  cursor: 'pointer', 
+                  backgroundColor: 'white',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}
+                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
               >
-                <option value="">-- Select Stock Group --</option>
-                {stockGroupsWithAll.map((group) => (
-                  <option key={group.Item_Group_Id} value={group.Item_Group_Id}>
-                    {group.Group_Name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedGroup && selectedGroup.Item_Group_Id !== "0" && (
-              <div ref={itemDropdownRef} style={{ minWidth: '200px' }}>
-                <label className="form-label fw-bold mb-0 small">
-                  Items{' '}
-                  {selectedItems.length > 0 && (
-                    <span className="text-muted fw-normal" style={{ fontSize: '10px' }}>
-                      ({selectedItems.length} selected)
-                    </span>
-                  )}
-                </label>
-                <div
-                  className="form-select form-select-sm"
-                  style={{ 
-                    cursor: 'pointer', 
-                    backgroundColor: 'white',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
-                >
-                  <span>
-                    {selectedItems.length === 0
-                      ? '-- Select Items --'
-                      : selectedItems.length === items.length
-                      ? `All items (${items.length})`
-                      : `${selectedItems.length} of ${items.length} items`}
-                  </span>
-                 
-                </div>
-
-                {isItemDropdownOpen && (
-                  <div style={{
-                    position: 'absolute', zIndex: 1000,
-                    background: 'white', border: '1px solid #dee2e6',
-                    borderRadius: '0.375rem', marginTop: '2px',
-                    maxHeight: '250px', overflowY: 'auto',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    width: '200px'
-                  }}>
-                    <div
-                      className="px-3 py-2 border-bottom d-flex align-items-center gap-2"
-                      style={{ cursor: 'pointer', fontWeight: 500, fontSize: '12px', backgroundColor: '#f8f9fa' }}
-                      onClick={toggleSelectAll}
-                    >
-                      <input
-                        type="checkbox"
-                        readOnly
-                        checked={selectAll}
-                        ref={el => { if (el) el.indeterminate = selectedItems.length > 0 && selectedItems.length < items.length; }}
-                      />
-                      <span>Select All ({items.length} items)</span>
-                    </div>
-
-                    {items.length === 0 ? (
-                      <div className="px-3 py-2 text-muted" style={{ fontSize: '12px' }}>No items found</div>
-                    ) : (
-                      items.map((item) => {
-                        const isChecked = selectedItems.some(i => i.Product_Id === item.Product_Id);
-                        return (
-                          <div
-                            key={item.Product_Id}
-                            className="px-3 py-1 d-flex align-items-center gap-2"
-                            style={{ cursor: 'pointer', fontSize: '12px', padding: '6px 12px' }}
-                            onClick={() => toggleItemSelection(item)}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            <input type="checkbox" readOnly checked={isChecked} />
-                            <span>{item.stock_item_name}</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
+                <span style={{ color: selectedGroup ? 'inherit' : '#6c757d' }}>
+                  {selectedGroup ? selectedGroup.Group_Name : '-- Select Stock Group --'}
+                </span>
+                {/* <span>{isGroupDropdownOpen ? '▲' : '▼'}</span> */}
               </div>
-            )}
+
+              {isGroupDropdownOpen && (
+                <div style={{
+                  position: 'absolute', 
+                  zIndex: 1000,
+                  background: 'white', 
+                  border: '1px solid #dee2e6',
+                  borderRadius: '0.375rem', 
+                  marginTop: '2px',
+                  maxHeight: '300px', 
+                  overflowY: 'auto',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  width: '100%'
+                }}>
+                  {/* Search Input */}
+                  <div className="p-2 border-bottom">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      placeholder="Search stock group..."
+                      value={groupSearchTerm}
+                      onChange={(e) => setGroupSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Group List */}
+                  {filteredStockGroups.length === 0 ? (
+                    <div className="px-3 py-2 text-muted" style={{ fontSize: '12px' }}>
+                      No matching stock groups found
+                    </div>
+                  ) : (
+                    filteredStockGroups.map((group) => (
+                      <div
+                        key={group.Item_Group_Id}
+                        className="px-3 py-2 d-flex align-items-center"
+                        style={{ 
+                          cursor: 'pointer', 
+                          fontSize: '13px',
+                          backgroundColor: selectedGroup?.Item_Group_Id === group.Item_Group_Id ? '#e3f2fd' : 'transparent',
+                          fontWeight: selectedGroup?.Item_Group_Id === group.Item_Group_Id ? 'bold' : 'normal'
+                        }}
+                        onClick={() => {
+                          setSelectedGroup(group);
+                          setIsGroupDropdownOpen(false);
+                          setGroupSearchTerm("");
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={(e) => {
+                          if (selectedGroup?.Item_Group_Id !== group.Item_Group_Id) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {group.Group_Name}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Search Button */}
             <div>
@@ -788,7 +722,7 @@ const handleReset = () => {
               <button
                 className="btn btn-primary btn-sm"
                 onClick={handleSearch}
-                disabled={loading || !selectedGroup || (selectedGroup?.Item_Group_Id !== "0" && selectedItems.length === 0)}
+                disabled={loading || !selectedGroup}
                 style={{ whiteSpace: 'nowrap' }}
               >
                 {loading ? (

@@ -956,9 +956,13 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
     // const fetchSalesInvoices = () => setFilters((pre) => ({ ...pre, fetchTrigger: pre.fetchTrigger + 1 }));
 
-    const onCloseAssignDialog = () =>
-        setFilters((prev) => ({ ...prev, assignDialog: false, selectedInvoice: null }));
-
+  
+const onCloseAssignDialog = () =>
+    setFilters((prev) => ({ 
+        ...prev, 
+        assignDialog: false, 
+        selectedInvoice: null 
+    }));
     const onCloseFilterDialog = () => setFilters((prev) => ({ ...prev, filterDialog: false }));
 
     const onCloseMultipleUpdateCostCategoryDialog = () => {
@@ -1748,12 +1752,24 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             return (
                                 <ButtonActions
                                     buttonsData={[
-                                        {
-                                            name: "Add Employee",
-                                            onclick: () => setFilters((prev) => ({ ...prev, assignDialog: true, selectedInvoice: row })),
-                                            icon: <PersonAdd fontSize="small" color="primary" />,
-                                            disabled: !AddRights && !EditRights,
-                                        },
+                         
+{
+    name: "Add Employee",
+    onclick: () => {
+
+        const selectedRow = {
+            ...row,
+            staffInvolvedStatus: row.staffInvolvedStatus === 1 ? 1 : 0 // Ensure it's 0 or 1
+        };
+        setFilters((prev) => ({ 
+            ...prev, 
+            assignDialog: true, 
+            selectedInvoice: selectedRow 
+        }));
+    },
+    icon: <PersonAdd fontSize="small" color="primary" />,
+    disabled: !AddRights && !EditRights,
+},
                                         {
                                             name: "Print Invoice",
                                             onclick: () => {
@@ -1820,14 +1836,28 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                             {viewMode === 'pending' ? "New Invoices" : "Pending Invoice"}
                         </button>
 
-                        <IconButton
-                            size="small"
-                            onClick={() => setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }))}
-                            disabled={!multipleCostCenterUpdateValues.Do_Id.length}
-                        >
-                            <PersonAdd fontSize="small" />
-                        </IconButton>
+<IconButton
+    size="small"
+    onClick={() => {
 
+        const selectedInvoices = salesInvoices.filter(inv =>
+            multipleCostCenterUpdateValues.Do_Id.includes(toNumber(inv.Do_Id))
+        );
+        
+        const allHaveStaffInvolved = selectedInvoices.length > 0 && 
+            selectedInvoices.every(inv => isEqualNumber(inv.staffInvolvedStatus, 1));
+        
+        setMultipleCostCenterUpdateValues(prev => ({
+            ...prev,
+            staffInvolvedStatus: allHaveStaffInvolved ? 1 : 0
+        }));
+        
+        setFilters((prev) => ({ ...prev, multipleStaffUpdateDialog: true }));
+    }}
+    disabled={!multipleCostCenterUpdateValues.Do_Id.length}
+>
+    <PersonAdd fontSize="small" />
+</IconButton>
                         <IconButton
                             size="small"
                             onClick={() => setFilters((prev) => ({ ...prev, multipleStaffRemoveDialog: true }))}
@@ -2017,27 +2047,28 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
                                     );
                                 })}
 
-                            <div className="col-lg-4 col-md-6 p-2 d-flex align-items-end">
-                                <input
-                                    className="form-check-input shadow-none pointer mx-2"
-                                    style={{ padding: "0.7em" }}
-                                    type="checkbox"
-                                    id="removeFromList"
-                                    checked={isEqualNumber(filters.selectedInvoice?.staffInvolvedStatus, 1)}
-                                    onChange={() => {
-                                        setFilters((pre) => ({
-                                            ...pre,
-                                            selectedInvoice: {
-                                                ...pre.selectedInvoice,
-                                                staffInvolvedStatus: isEqualNumber(pre.selectedInvoice?.staffInvolvedStatus, 1) ? 0 : 1,
-                                            },
-                                        }));
-                                    }}
-                                />
-                                <label htmlFor="removeFromList" className="fw-bold">
-                                    Remove invoice from this page
-                                </label>
-                            </div>
+     <div className="col-lg-4 col-md-6 p-2 d-flex align-items-end">
+    <input
+        className="form-check-input shadow-none pointer mx-2"
+        style={{ padding: "0.7em" }}
+        type="checkbox"
+        id="removeFromList"
+        checked={filters.selectedInvoice?.staffInvolvedStatus === 1}
+        onChange={(e) => {
+            const newStatus = e.target.checked ? 1 : 0;
+            setFilters((prev) => ({
+                ...prev,
+                selectedInvoice: {
+                    ...prev.selectedInvoice,
+                    staffInvolvedStatus: newStatus,
+                },
+            }));
+        }}
+    />
+    <label htmlFor="removeFromList" className="fw-bold">
+        Remove invoice from this page
+    </label>
+</div>
                         </div>
                     </DialogContent>
                     <DialogActions>
