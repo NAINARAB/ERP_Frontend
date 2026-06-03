@@ -839,7 +839,7 @@ const initializeRowConfigs = () => {
                 for (const config of rowConfigs) {
                     const amount = parseFloat(config.amount) || 0;
                     const localData = localStorage.getItem("user");
-                    const userId = localData ? JSON.parse(localData).UserId : "1";
+                    const userId = localData ? JSON.parse(localData).UserId : "";
 
                     const billReferences = (config.selectedInvoices || []).map(inv => ({
                         dr_cr: transactionTypeFilter === 'C' ? 'Cr' : 'Dr',
@@ -955,6 +955,9 @@ const initializeRowConfigs = () => {
                     };
                 });
 
+                 const user = JSON.parse(localStorage.getItem("user"));
+                 const userId = user?.UserId;
+
                 const payload = {
                     accountNo,
                     Acc: selectedAccount,
@@ -969,7 +972,8 @@ const initializeRowConfigs = () => {
                         receipt_date: commonConfig.receipt_date,
                         remarks: commonConfig.remarks
                     },
-                    transactions: transactionsWithLedgers
+                    transactions: transactionsWithLedgers,
+                    created_by:userId
                 };
 
                 const response = await fetchLink({
@@ -1009,6 +1013,10 @@ const initializeRowConfigs = () => {
                     };
                 });
 
+                  const user = JSON.parse(localStorage.getItem("user"));
+                 const userId = user?.UserId;
+
+
                 const payload = {
                     accountNo,
                     Acc: selectedAccount,
@@ -1023,7 +1031,8 @@ const initializeRowConfigs = () => {
                         payment_date: commonConfig.payment_date,
                         remarks: commonConfig.remarks
                     },
-                    transactions: transactionsWithLedgers
+                    transactions: transactionsWithLedgers,
+                    created_by:userId
                 };
 
                 const response = await fetchLink({
