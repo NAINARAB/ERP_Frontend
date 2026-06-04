@@ -140,66 +140,66 @@ function Lollist({ loadingOn, loadingOff }) {
         fetchColumnData();
     }, [parseData?.companyId]);
 
-useEffect(() => {
-    async function fetchData() {
-        try {
-            setIsLoading(true);  
-            loadingOn()
-            const columnRes = await fetchLink({
-                address: `masters/displayColumn?company_id=${parseData?.companyId}`,
-            });
-
-            if (!columnRes.success || !Array.isArray(columnRes.data)) {
-                console.error("No display columns found");
-                return;
-            }
-
-            const sortedColumns = [...columnRes.data].sort(
-                (a, b) => a.Position - b.Position
-            );
-            setColumnSettings(sortedColumns);
-            setOriginalColumnSettings([...sortedColumns]);
-
-            const visibleColumns = sortedColumns
-                .filter(
-                    (col) =>
-                        col.status === 1 &&
-                        !["Auto_Id", "Ledger_Tally_Id"].includes(col.ColumnName)
-                )
-                .sort((a, b) => a.Position - b.Position)
-                .map((col) => ({
-                    header: col.Alias_Name || col.ColumnName,
-                    accessor: col.ColumnName,
-                    position: col.Position,
-                }));
-            setColumns(visibleColumns);
-
-            const dataRes = await fetchLink({ address: `masters/getlolDetails` });
-
-            if (dataRes.success && Array.isArray(dataRes.data)) {
-                setAllData(dataRes.data);
-
-                const allowedKeys = visibleColumns.map((col) => col.accessor);
-                const filteredData = dataRes.data.map((row) => {
-                    const filteredRow = {};
-                    allowedKeys.forEach((key) => {
-                        filteredRow[key] = row[key] || "";
-                    });
-                    return filteredRow;
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                setIsLoading(true);
+                loadingOn()
+                const columnRes = await fetchLink({
+                    address: `masters/displayColumn?company_id=${parseData?.companyId}`,
                 });
 
-                setLolData(filteredData);
-            }
-        } catch (error) {
-            console.error("Error loading data:", error);
-        } finally {
-            setIsLoading(false);  
-            loadingOff()
-        }
-    }
+                if (!columnRes.success || !Array.isArray(columnRes.data)) {
+                    console.error("No display columns found");
+                    return;
+                }
 
-    fetchData();
-}, [data, isApplying, parseData?.companyId]);
+                const sortedColumns = [...columnRes.data].sort(
+                    (a, b) => a.Position - b.Position
+                );
+                setColumnSettings(sortedColumns);
+                setOriginalColumnSettings([...sortedColumns]);
+
+                const visibleColumns = sortedColumns
+                    .filter(
+                        (col) =>
+                            col.status === 1 &&
+                            !["Auto_Id", "Ledger_Tally_Id"].includes(col.ColumnName)
+                    )
+                    .sort((a, b) => a.Position - b.Position)
+                    .map((col) => ({
+                        header: col.Alias_Name || col.ColumnName,
+                        accessor: col.ColumnName,
+                        position: col.Position,
+                    }));
+                setColumns(visibleColumns);
+
+                const dataRes = await fetchLink({ address: `masters/getlolDetails` });
+
+                if (dataRes.success && Array.isArray(dataRes.data)) {
+                    setAllData(dataRes.data);
+
+                    const allowedKeys = visibleColumns.map((col) => col.accessor);
+                    const filteredData = dataRes.data.map((row) => {
+                        const filteredRow = {};
+                        allowedKeys.forEach((key) => {
+                            filteredRow[key] = row[key] || "";
+                        });
+                        return filteredRow;
+                    });
+
+                    setLolData(filteredData);
+                }
+            } catch (error) {
+                console.error("Error loading data:", error);
+            } finally {
+                setIsLoading(false);
+                loadingOff()
+            }
+        }
+
+        fetchData();
+    }, [data, isApplying, parseData?.companyId]);
 
 
     const handlePositionChange = (columnId, newPosition) => {
@@ -588,24 +588,24 @@ useEffect(() => {
         //         return 0;
         //     });
         // }
-    filterableData.sort((a, b) => {
-      
-        if (a.IsUpdated === 0 && b.IsUpdated !== 0) return -1;
-        if (a.IsUpdated !== 0 && b.IsUpdated === 0) return 1;
-        
-        if (sortConfig.key) {
-            if (a[sortConfig.key] < b[sortConfig.key]) {
-                return sortConfig.direction === "asc" ? -1 : 1;
-            }
-            if (a[sortConfig.key] > b[sortConfig.key]) {
-                return sortConfig.direction === "asc" ? 1 : -1;
-            }
-        }
-        return 0;
-    });
+        filterableData.sort((a, b) => {
 
-    return filterableData;
-}, [allData, globalSearch, appliedFilters, sortConfig]);
+            if (a.IsUpdated === 0 && b.IsUpdated !== 0) return -1;
+            if (a.IsUpdated !== 0 && b.IsUpdated === 0) return 1;
+
+            if (sortConfig.key) {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === "asc" ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === "asc" ? 1 : -1;
+                }
+            }
+            return 0;
+        });
+
+        return filterableData;
+    }, [allData, globalSearch, appliedFilters, sortConfig]);
 
     const renderTableHeader = () => (
         <TableHead>
@@ -683,13 +683,13 @@ useEffect(() => {
         </TableHead>
     );
 
-//    if (isLoading) {
-//     return (
-//         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
-//             <CircularProgress size={50} />
-//         </Box>
-//     );
-// }
+    //    if (isLoading) {
+    //     return (
+    //         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
+    //             <CircularProgress size={50} />
+    //         </Box>
+    //     );
+    // }
 
 
     const handleCheckboxChange = (row) => {
@@ -704,6 +704,29 @@ useEffect(() => {
                 : [...prevSelected, row];
         });
     };
+
+
+    const handleSelectAll = () => {
+        const allSelected = filteredData.every((row) =>
+            selectedRows.some((sel) => sel.Ledger_Tally_Id === row.Ledger_Tally_Id)
+        );
+
+        if (allSelected) {
+
+            setSelectedRows((prev) =>
+                prev.filter(
+                    (sel) => !filteredData.some((row) => row.Ledger_Tally_Id === sel.Ledger_Tally_Id)
+                )
+            );
+        } else {
+
+            const newRows = filteredData.filter(
+                (row) => !selectedRows.some((sel) => sel.Ledger_Tally_Id === row.Ledger_Tally_Id)
+            );
+            setSelectedRows((prev) => [...prev, ...newRows]);
+        }
+    };
+
 
     return (
         <Box
@@ -722,6 +745,7 @@ useEffect(() => {
                     mb: 3,
                 }}
             >
+
                 <Typography variant="h5">LOL List</Typography>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                     {selectedRows.length > 0 && (
@@ -789,10 +813,39 @@ useEffect(() => {
                     >
                         <DownloadIcon fontSize="small" sx={{ mr: 1 }} /> Download{" "}
                     </MenuItem>
+
+
+
+
                     <MenuItem onClick={handleClickOpen}>
                         <FileUploadIcon fontSize="small" sx={{ mr: 1 }} />
                         Upload
                     </MenuItem>
+
+                    <Tooltip title="Select All">
+                        <input
+                            type="checkbox"
+                            checked={
+                                filteredData.length > 0 &&
+                                filteredData.every((row) =>
+                                    selectedRows.some((sel) => sel.Ledger_Tally_Id === row.Ledger_Tally_Id)
+                                )
+                            }
+                            ref={(el) => {
+                                if (el) {
+                                    el.indeterminate =
+                                        selectedRows.some((sel) =>
+                                            filteredData.some((row) => row.Ledger_Tally_Id === sel.Ledger_Tally_Id)
+                                        ) &&
+                                        !filteredData.every((row) =>
+                                            selectedRows.some((sel) => sel.Ledger_Tally_Id === row.Ledger_Tally_Id)
+                                        );
+                                }
+                            }}
+                            onChange={handleSelectAll}
+                            style={{ transform: "scale(1.5)", cursor: "pointer" }}
+                        />
+                    </Tooltip>
 
                     <Dialog open={open} fullWidth>
                         <DialogTitle>Upload Excel File</DialogTitle>
