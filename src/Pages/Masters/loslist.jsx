@@ -497,6 +497,26 @@ function Loslist() {
     return filterableData;
 }, [allData, globalSearch, appliedFilters, sortConfig]);
 
+
+const handleSelectAll = () => {
+    const allSelected = filteredData.every((row) =>
+        selectedRows.some((sel) => sel.Stock_Tally_Id === row.Stock_Tally_Id)
+    );
+
+    if (allSelected) {
+        setSelectedRows((prev) =>
+            prev.filter(
+                (sel) => !filteredData.some((row) => row.Stock_Tally_Id === sel.Stock_Tally_Id)
+            )
+        );
+    } else {
+        const newRows = filteredData.filter(
+            (row) => !selectedRows.some((sel) => sel.Stock_Tally_Id === row.Stock_Tally_Id)
+        );
+        setSelectedRows((prev) => [...prev, ...newRows]);
+    }
+};
+
     const renderTableHeader = () => (
         <TableHead>
             <TableRow>
@@ -763,8 +783,37 @@ function Loslist() {
                         Upload
                     </MenuItem>
 
+    <Tooltip title="Select All">
+        <input
+            type="checkbox"
+            checked={
+                filteredData.length > 0 &&
+                filteredData.every((row) =>
+                    selectedRows.some((sel) => sel.Stock_Tally_Id === row.Stock_Tally_Id)
+                )
+            }
+            ref={(el) => {
+                if (el) {
+                    el.indeterminate =
+                        selectedRows.some((sel) =>
+                            filteredData.some((row) => row.Stock_Tally_Id === sel.Stock_Tally_Id)
+                        ) &&
+                        !filteredData.every((row) =>
+                            selectedRows.some((sel) => sel.Stock_Tally_Id === row.Stock_Tally_Id)
+                        );
+                }
+            }}
+            onChange={handleSelectAll}
+            style={{ transform: "scale(1.5)", cursor: "pointer" }}
+        />
+    </Tooltip>
+
                 </Box>
+
+                
             </Box>
+
+            
 
             <Dialog
                 open={dialogOpen}

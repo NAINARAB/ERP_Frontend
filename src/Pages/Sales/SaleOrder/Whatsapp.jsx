@@ -666,7 +666,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const getPDFUrlSimple = (order) => {
         const baseUrl = api;
         const formattedInvoiceNo = order.DocumentNumber ? order.DocumentNumber.replace(/_/g, '/') : '';
-        const encodedInvoiceNo = encodeURIComponent(formattedInvoiceNo);
+        const encodedInvoiceNo = btoa(formattedInvoiceNo);
         const companyid = btoa(storage?.Company_id);
         return `https://printapp.erpsmt.in/sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}&Company_id=${companyid}`;
     };
@@ -2711,7 +2711,7 @@ export default Whatsapp;
 //  const getPDFUrlForInvoice = (order) => {
 //     try {
 //         const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
-//         const encodedInvoiceNo = encodeURIComponent(formattedInvoiceNo);
+//         const encodedInvoiceNo = btoa(formattedInvoiceNo);
 //         const companyId = storage?.Company_id;
 //         return `https://printapp.erpsmt.in/sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}&Company_id=${companyId}`;
 //     } catch (error) {
@@ -2973,8 +2973,10 @@ export default Whatsapp;
 //         const invoiceDate = new Date(row.Do_Date || row.createdOn).toLocaleDateString('en-GB');
 //         const totalAmount = Number(row.Total_Invoice_value || 0).toFixed(2);
         
-//         // Use sale_order template
-//         const templateName = "sale_order";
+   
+//         // const templateName = "sale_order";
+
+//         const templateName="sale_order_thanks";
         
 //         const payload = {
 //             to: recipientPhone,
@@ -2982,7 +2984,7 @@ export default Whatsapp;
 //             template: {
 //                 name: templateName,
 //                 language: {
-//                     code: "en"
+//                     code: "ta"
 //                 },
 //                 components: [
 //                     {
@@ -3225,7 +3227,7 @@ export default Whatsapp;
 //     const getPDFUrlSimple = (order) => {
 //         const baseUrl = api;
 //         const formattedInvoiceNo = order.Do_Inv_No.replace(/_/g, '/');
-//         const encodedInvoiceNo = encodeURIComponent(formattedInvoiceNo);
+//         const encodedInvoiceNo = btoa(formattedInvoiceNo);
 //         const companyid = btoa(storage?.Company_id);
 //         return `https://printapp.erpsmt.in/sales/downloadPdf?Do_Inv_No=${encodedInvoiceNo}&Company_id=${companyid}`;
 //     };
