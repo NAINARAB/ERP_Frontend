@@ -7,6 +7,7 @@ import {
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import SaleOrderInvoicePrint from "../SalesReportComponent/SaleOrderInvoicePrint";
+import InvoicePrintPreview from "./invoicePrintPreview";
 import { Add, Edit, FilterAlt, Print, ReceiptLong, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
@@ -900,26 +901,26 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 userInfo={storage}
             />
 
-            {printOrderRow && (
-                <SaleOrderInvoicePrint
-                    open={dialog.printInvoice}
-                    onClose={() => {
-                        setDialog(prev => ({ ...prev, printInvoice: false }));
-                        setPrintOrderRow(null);
-                    }}
-                    convertedInvoices={toArray(printOrderRow?.ConvertedInvoice)}
-                    invoiceCopyCount={toNumber(printOrderRow?.invoiceCopyCount) || 1}
-                />
-            )}
+            {/* Single-row print */}
+            <InvoicePrintPreview
+                open={!!printOrderRow && dialog.printInvoice}
+                onClose={() => {
+                    setDialog(prev => ({ ...prev, printInvoice: false }));
+                    setPrintOrderRow(null);
+                }}
+                doIds={toArray(printOrderRow?.ConvertedInvoice).map(inv => inv.invId)}
+                copyCountMap={toArray(printOrderRow?.ConvertedInvoice).reduce((acc, inv) => {
+                    acc[String(inv.invId)] = toNumber(printOrderRow?.invoiceCopyCount) || 1;
+                    return acc;
+                }, {})}
+            />
 
-            {/* Bulk print: no printOrderRow — uses selectedOrders directly */}
-            {!printOrderRow && dialog.printInvoice && (
-                <SaleOrderInvoicePrint
-                    open={dialog.printInvoice}
-                    onClose={() => setDialog(prev => ({ ...prev, printInvoice: false }))}
-                    selectedOrders={printableSelected}
-                />
-            )}
+            {/* Bulk print */}
+            <InvoicePrintPreview
+                open={!printOrderRow && dialog.printInvoice}
+                onClose={() => setDialog(prev => ({ ...prev, printInvoice: false }))}
+                selectedOrders={printableSelected}
+            />
         </>
     );
 };
