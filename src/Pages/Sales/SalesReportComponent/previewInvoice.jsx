@@ -390,7 +390,7 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                         <h3 className='text-center mb-2'>{'TAX INVOICE'}</h3>
 
                         {/* General Info */}
-                     <div className="row">
+                        <div className="row">
                             <div className="col-6 p-0 border border-bottom-0 border-end-0">
                                 <div className="border-bottom p-2">
                                     <p className='m-0 fa-17'>{companyInfo?.Company_Name}</p>
@@ -399,17 +399,17 @@ const InvoiceBillTemplate = ({ orderDetails, orderProducts, download, actionOpen
                                     <p className='m-0 fa-14'>Phone No: {companyInfo?.Telephone_Number}</p>
                                     {/* <p className='m-0 fa-14'>GSTIN / UIN: {companyInfo?.Gst_Number}</p> */}
                                     <p className='m-0 fa-14'>
-  {companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number ? (
-    <>
-      GSTIN / UIN: 
-      {companyInfo?.Gst_Number ? ` ${companyInfo.Gst_Number}` : ''}
-      {companyInfo?.Gst_Number && companyInfo?.VAT_TIN_Number ? ' || ' : ''}
-      {companyInfo?.VAT_TIN_Number ? ` ${companyInfo.VAT_TIN_Number}` : ''}
-    </>
-  ) : (
-    <>GSTIN / UIN: Not Available</>
-  )}
-</p>
+                                        {companyInfo?.Gst_Number || companyInfo?.VAT_TIN_Number ? (
+                                            <>
+                                                GSTIN / UIN:
+                                                {companyInfo?.Gst_Number ? ` ${companyInfo.Gst_Number}` : ''}
+                                                {companyInfo?.Gst_Number && companyInfo?.VAT_TIN_Number ? ' || ' : ''}
+                                                {companyInfo?.VAT_TIN_Number ? ` ${companyInfo.VAT_TIN_Number}` : ''}
+                                            </>
+                                        ) : (
+                                            <>GSTIN / UIN: Not Available</>
+                                        )}
+                                    </p>
                                     <p className='m-0 fa-14'>State: {companyInfo?.State}</p>
                                     <p className='m-0 fa-14'>Code: </p>
                                 </div>

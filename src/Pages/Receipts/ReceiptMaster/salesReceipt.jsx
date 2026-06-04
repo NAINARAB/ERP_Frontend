@@ -41,7 +41,7 @@ const SalesInvoiceReceipt = ({
                             case 'bill_name': return [key, invoiceDetails?.Do_Inv_No];
                             case 'bill_amount': return [key, toNumber(invoiceDetails?.Total_Invoice_value)];
                             case 'Debit_Amo': return [key, 0];
-                            case 'Credit_Amo': return [key, 0];
+                            case 'Credit_Amo': return [key, toNumber(invoiceDetails?.receiptPendingAmount)];
                             case 'JournalBillType': return [key, 'SALES INVOICE'];
 
                             case 'SalesInvoiceDate': return [key, invoiceDetails.Do_Date];

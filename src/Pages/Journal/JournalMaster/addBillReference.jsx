@@ -90,7 +90,7 @@ const BillRefDialog = ({
                                     {[
                                         "Sno", "Voucher-Number", 'Voucher-Ref', "Date",
                                         "Source", "Dr/Cr", "Total", "Total Ref",
-                                        "Journal", "Pay/Rec", "Pending", "#"
+                                        "Journal", "Pay/Rec", "Pending", 'Narration', "#"
                                     ].map((c) => (
                                         <th key={c} className="fa-13">{c}</th>
                                     ))}
@@ -124,6 +124,7 @@ const BillRefDialog = ({
                                             <td className="fa-12">{row?.journalAdjustment}</td>
                                             <td className="fa-12">{row?.againstAmount}</td>
                                             <td className="fa-12">{pending}</td>
+                                            <td className="fa-12">{row?.narration}</td>
                                             <td className="p-0">
                                                 <div className="d-flex align-items-center">
                                                     <input

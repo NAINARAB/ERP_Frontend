@@ -6,7 +6,8 @@ import {
     Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, ReceiptLong, Search, Visibility } from "@mui/icons-material";
+import SaleOrderInvoicePrint from "../SalesReportComponent/SaleOrderInvoicePrint";
+import { Add, Edit, FilterAlt, Print, ReceiptLong, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { useNavigate } from "react-router-dom";
@@ -57,7 +58,9 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         filters: false,
         orderDetails: false,
         bulkConvert: false,
+        printInvoice: false,
     });
+    const [printOrderRow, setPrintOrderRow] = useState(null);
 
     useEffect(() => {
         const otherSessionFiler = getSessionFiltersByPageId(pageID);
@@ -201,7 +204,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                                 const pending = ordered - billed;
                                                 return (
                                                     <tr key={i}>
-                                                        <td className="fw-semibold text-truncate" style={{maxWidth: '180px'}} title={prod.Product_Name || prod.Item_Name}>
+                                                        <td className="fw-semibold text-truncate" style={{ maxWidth: '180px' }} title={prod.Product_Name || prod.Item_Name}>
                                                             {prod.Product_Name || prod.Item_Name}
                                                         </td>
                                                         <td className="text-end fw-bold text-dark">{ordered}</td>
@@ -230,7 +233,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 {invoices.length === 0 ? (
                                     <div className="text-muted fst-italic py-4 text-center">No invoices generated yet.</div>
                                 ) : (
-                                    <div className="d-flex flex-column gap-3" style={{maxHeight: '400px', overflowY: 'auto', paddingRight: '4px'}}>
+                                    <div className="d-flex flex-column gap-3" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '4px' }}>
                                         {invoices.map((inv, index) => (
                                             <div key={index} className="card border shadow-none bg-white">
                                                 <div className="card-header bg-light border-0 d-flex justify-content-between align-items-center py-2">
@@ -248,7 +251,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                                         <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Invoice Products</h6>
                                                         {toArray(inv.invoicedProduct).map((prod, i) => (
                                                             <div key={i} className="d-flex justify-content-between fa-12 mb-1">
-                                                                <span className="text-truncate me-2" style={{maxWidth: '220px'}} title={prod.productNameGet}>{prod.productNameGet}</span>
+                                                                <span className="text-truncate me-2" style={{ maxWidth: '220px' }} title={prod.productNameGet}>{prod.productNameGet}</span>
                                                                 <span className="fw-bold">{prod.quantity} x ₹{prod.rate}</span>
                                                             </div>
                                                         ))}
@@ -311,7 +314,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             ),
         [saleOrders]
     );
-    
+
     const convertToSalesInvoice = (saleOrder) => {
         const productsList = toArray(saleOrder?.Products_List);
 
@@ -377,15 +380,30 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         });
     };
 
-    const convertibleOrders = useMemo(() => {
+    const selectableOrders = useMemo(() => {
         return saleOrders.filter(order => {
             if (toNumber(order?.Cancel_status) === 0) return false;
             const products = toArray(order?.Products_List);
-            return products.some(
-                item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
-            );
+            const canConvert = products.some(item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty));
+            const hasInvoices = toArray(order?.ConvertedInvoice).length > 0;
+            return canConvert || hasInvoices;
         });
     }, [saleOrders]);
+
+    const printableSelected = useMemo(
+        () => selectedOrders.filter(o => toArray(o?.ConvertedInvoice).length > 0),
+        [selectedOrders]
+    );
+
+    const convertibleSelected = useMemo(
+        () => selectedOrders.filter(o => {
+            const products = toArray(o?.Products_List);
+            return toNumber(o?.Cancel_status) !== 0 && products.some(
+                item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
+            );
+        }),
+        [selectedOrders]
+    );
 
     return (
         <>
@@ -399,13 +417,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     {
                         Field_Name: "Checkbox",
                         ColumnHeader: (
-                            <Checkbox 
+                            <Checkbox
                                 size="small"
-                                checked={convertibleOrders.length > 0 && selectedOrders.length === convertibleOrders.length}
-                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < convertibleOrders.length}
+                                checked={selectableOrders.length > 0 && selectedOrders.length === selectableOrders.length}
+                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < selectableOrders.length}
                                 onChange={(e) => {
                                     if (e.target.checked) {
-                                        setSelectedOrders(convertibleOrders);
+                                        setSelectedOrders(selectableOrders);
                                     } else {
                                         setSelectedOrders([]);
                                     }
@@ -420,11 +438,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                             const canConvert = toNumber(row?.Cancel_status) !== 0 && products.some(
                                 item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
                             );
+                            const hasInvoices = toArray(row?.ConvertedInvoice).length > 0;
+                            const canSelect = canConvert || hasInvoices;
 
                             return (
-                                <Checkbox 
+                                <Checkbox
                                     size="small"
-                                    disabled={!canConvert}
+                                    disabled={!canSelect}
                                     checked={selectedOrders.some(so => so.So_Id === row.So_Id)}
                                     onChange={(e) => {
                                         if (e.target.checked) {
@@ -443,6 +463,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     createCol("Retailer_Name", "string", "Customer"),
                     createCol("VoucherTypeGet", "string", "Voucher"),
                     createCol("Total_Invoice_value", "number", "Invoice Value"),
+                    createCol("invoiceCopyCount", "number", "Bill copy"),
                     {
                         ColumnHeader: "Order Status",
                         isVisible: 1,
@@ -549,6 +570,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty)
                             );
 
+                            const hasInvoices = toArray(row?.ConvertedInvoice).length > 0;
+
                             return (
                                 <ButtonActions
                                     buttonsData={[
@@ -581,6 +604,15 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             icon: <ReceiptLong className="fa-16" />,
                                             disabled: !canConvert,
                                             onclick: () => convertToSalesInvoice(row),
+                                        },
+                                        {
+                                            name: "Print Invoice",
+                                            icon: <Print className="fa-16" />,
+                                            disabled: !hasInvoices,
+                                            onclick: () => {
+                                                setPrintOrderRow(row);
+                                                setDialog(prev => ({ ...prev, printInvoice: true }));
+                                            },
                                         }
                                     ]}
                                 />
@@ -590,6 +622,35 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 ]}
                 ButtonArea={
                     <>
+                        {/* <span className="bg-light text-light fa-11 px-1 shadow-sm py-1 rounded-3 mx-1">
+                            {toNumber(Total_Invoice_value) > 0 && (
+                                <h6 className="m-0 text-end text-muted px-3">
+                                    Total: {NumberFormat(Total_Invoice_value)}
+                                </h6>
+                            )}
+                        </span> */}
+
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            startIcon={<ReceiptLong />}
+                            onClick={() => setDialog({ ...dialog, bulkConvert: true })}
+                            disabled={convertibleSelected.length === 0}
+                            style={{ marginLeft: '8px' }}
+                        >
+                            to invoice ({convertibleSelected.length})
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<Print />}
+                            onClick={() => setDialog(prev => ({ ...prev, printInvoice: true }))}
+                            disabled={printableSelected.length === 0}
+                            style={{ marginLeft: '8px' }}
+                        >
+                            Print ({printableSelected.length})
+                        </Button>
+
                         {AddRights && (
                             <Button
                                 variant="outlined"
@@ -599,23 +660,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 {"New"}
                             </Button>
                         )}
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<ReceiptLong />}
-                            onClick={() => setDialog({ ...dialog, bulkConvert: true })}
-                            disabled={selectedOrders.length === 0}
-                            style={{ marginLeft: '8px' }}
-                        >
-                            Bulk Convert ({selectedOrders.length})
-                        </Button>
-                        <span className="bg-light text-light fa-11 px-1 shadow-sm py-1 rounded-3 mx-1">
-                            {toNumber(Total_Invoice_value) > 0 && (
-                                <h6 className="m-0 text-end text-muted px-3">
-                                    Total: {NumberFormat(Total_Invoice_value)}
-                                </h6>
-                            )}
-                        </span>
+
                         <Tooltip title="Filters">
                             <IconButton
                                 size="small"
@@ -841,10 +886,10 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 </DialogActions>
             </Dialog>
 
-            <BulkInvoiceConvertDialog 
+            <BulkInvoiceConvertDialog
                 open={dialog.bulkConvert}
                 onClose={() => setDialog({ ...dialog, bulkConvert: false })}
-                selectedOrders={selectedOrders}
+                selectedOrders={convertibleSelected}
                 voucherTypes={baseData.voucher.filter(v => v.Type === "SALE_INVOICE")}
                 godowns={baseData.godowns}
                 stockLedgers={baseData.stockItemLedgers}
@@ -854,6 +899,27 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 }}
                 userInfo={storage}
             />
+
+            {printOrderRow && (
+                <SaleOrderInvoicePrint
+                    open={dialog.printInvoice}
+                    onClose={() => {
+                        setDialog(prev => ({ ...prev, printInvoice: false }));
+                        setPrintOrderRow(null);
+                    }}
+                    convertedInvoices={toArray(printOrderRow?.ConvertedInvoice)}
+                    invoiceCopyCount={toNumber(printOrderRow?.invoiceCopyCount) || 1}
+                />
+            )}
+
+            {/* Bulk print: no printOrderRow — uses selectedOrders directly */}
+            {!printOrderRow && dialog.printInvoice && (
+                <SaleOrderInvoicePrint
+                    open={dialog.printInvoice}
+                    onClose={() => setDialog(prev => ({ ...prev, printInvoice: false }))}
+                    selectedOrders={printableSelected}
+                />
+            )}
         </>
     );
 };

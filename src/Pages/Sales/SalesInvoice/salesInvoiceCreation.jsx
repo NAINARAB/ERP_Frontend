@@ -211,7 +211,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         creditBillLimitCount: toNumber(data?.others?.creditBillLimitCount),
                         creditBillValidation: data?.others?.creditBillValidation ?? true
                     }));
-                    setInvoiceInfo(pre => ({...pre, paymentDueDays: toNumber(data?.others?.creditDays) || '' }));
+                    setInvoiceInfo(pre => ({ ...pre, paymentDueDays: toNumber(data?.others?.creditDays) || '' }));
                 }
             }).catch(console.error);
         } else setRetailerSalesStatus(retailerOutstandingDetails)
@@ -332,7 +332,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 address: `masters/retailers/address?Retailer_Id=${retailerId}`
             }).then(res => {
                 const retailerAddress = res.success ? toArray(res.data) : [];
-                
+
                 const seen = new Set();
                 const distinctAddresses = retailerAddress.filter(addr => {
                     const key = `${addr.deliveryName}|${addr.phoneNumber}|${addr.cityName}|${addr.deliveryAddress}|${addr.gstNumber}|${addr.stateName}`;
@@ -875,10 +875,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 GST_Inclusive={invoiceInfo.GST_Inclusive}
                 IS_IGST={IS_IGST}
                 editValues={selectedProductToEdit}
-                initialValue={{ 
-                    ...salesInvoiceDetailsInfo, 
-                    Pre_Id: invoiceInfo.So_No, 
-                    rowId: rid(), 
+                initialValue={{
+                    ...salesInvoiceDetailsInfo,
+                    Pre_Id: invoiceInfo.So_No,
+                    rowId: rid(),
                 }}
                 batchDetails={baseData.batchDetails}
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
@@ -896,10 +896,10 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                 navigate('/erp/sales/invoice');
                             }
                         }}>Cancel</Button>
-                        
-                        <Button 
-                            onClick={saveFunWithCodition} 
-                            variant="contained" 
+
+                        <Button
+                            onClick={saveFunWithCodition}
+                            variant="contained"
                             disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                         >submit</Button>
                     </span>
@@ -964,11 +964,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
                     {!voucherCrLimitValid && (
                         <div className="alert alert-warning p-2 mb-2">
-                            ⚠️ Invoice total 
-                            (<b>₹{(taxSplitUp?.invoiceTotal ?? 0).toLocaleString('en-IN')}</b>) 
-                            exceeds the CR limit of 
-                            <b>₹{toNumber(selectedVoucher?.crLimit).toLocaleString('en-IN')}</b> 
-                            set for voucher <b>{selectedVoucher?.Voucher_Type}</b>. 
+                            ⚠️ Invoice total
+                            (<b>₹{(taxSplitUp?.invoiceTotal ?? 0).toLocaleString('en-IN')}</b>)
+                            exceeds the CR limit of
+                            <b>₹{toNumber(selectedVoucher?.crLimit).toLocaleString('en-IN')}</b>
+                            set for voucher <b>{selectedVoucher?.Voucher_Type}</b>.
                             Please reduce the invoice amount or select a different voucher.
                         </div>
                     )}
@@ -1175,9 +1175,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         }
                     }}>Cancel</Button>
 
-                    <Button 
-                        onClick={saveFunWithCodition} 
-                        variant="contained" 
+                    <Button
+                        onClick={saveFunWithCodition}
+                        variant="contained"
                         disabled={!isStockValid || !isSingleGodownValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                     >submit</Button>
                 </CardActions>

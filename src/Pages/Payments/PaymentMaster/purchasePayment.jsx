@@ -35,7 +35,7 @@ const PurchaseInvoicePayment = ({
                             case 'pay_bill_id': return [key, invoiceDetails?.PIN_Id];
                             case 'bill_name': return [key, invoiceDetails?.Po_Inv_No];
                             case 'bill_amount': return [key, toNumber(invoiceDetails?.Total_Invoice_value)];
-                            case 'Debit_Amo': return [key, 0];
+                            case 'Debit_Amo': return [key, toNumber(invoiceDetails?.paymentPendingAmount)];
                             case 'Credit_Amo': return [key, 0];
                             case 'JournalBillType': return [key, 'PURCHASE INVOICE'];
                             

@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Save } from "@mui/icons-material";
 import { toast } from "react-toastify";
 
-import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray } from "../../../Components/functions";
+import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { receiptValueInitialValue, receiptGeneralInfoInitialValue } from "./variable";
 
@@ -102,7 +102,7 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         dataSource: item.actualSource,
                         totalReference: Addition(item.againstAmount, item.journalAdjustment),
                         Paid_Amount: Addition(item.againstAmount, item.journalAdjustment),
-                        receiptPendingAmount: Subraction(item.totalValue, Addition(item.againstAmount, item.journalAdjustment))
+                        receiptPendingAmount: toNumber(item.BalanceAmount)
                     }));
                 updateBaseData('salesInvoiceSearchResult', mappedData);
             }
