@@ -219,12 +219,13 @@ const ManageCreditNoteGeneralInfo = ({
 
                                     {/* Original Invoice Date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Original Invoice Date</label>
+                                        <label className='fa-13'>Stock Inward Date</label>
                                         <input
                                             type="date"
-                                            value={invoiceInfo?.Ref_Inv_Date ? ISOString(invoiceInfo?.Ref_Inv_Date) : ''}
+                                            value={invoiceInfo?.stockInwardDate ? ISOString(invoiceInfo?.stockInwardDate) : ''}
                                             className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Date: String(e.target.value).trim() }))}
+                                            disabled
+                                            // onChange={e => setInvoiceInfo(pre => ({ ...pre, stockInwardDate: String(e.target.value).trim() }))}
                                         />
                                     </div>
 

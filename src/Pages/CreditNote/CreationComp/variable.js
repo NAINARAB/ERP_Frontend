@@ -40,6 +40,7 @@ export const creditNoteGeneralInfo = {
 
     Alter_Reason: '',
     paymentDueDays: 0,
+    stockInwardDate: null,
 
     Alter_Id: '',
     Created_by: storage?.UserId,

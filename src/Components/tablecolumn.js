@@ -167,6 +167,8 @@ export const additionalModules = [
     { name: 'MATERIAL_INWARD', alias: 'Material Inward', moduleCode: 'MI' },
     { name: 'OTHER_GODOWN', alias: 'Other Godown', moduleCode: 'OG' },
     { name: 'PROCESSING', alias: 'Processing', moduleCode: 'PRO' },
+    { name: 'SALES_RETURN', alias: 'Sales Return', moduleCode: 'SR' },
+    { name: 'PURCHASE_RETURN', alias: 'Purchase Return', moduleCode: 'PR' },
 ];
 
 export const allERPModules = [...erpModules, ...additionalModules];

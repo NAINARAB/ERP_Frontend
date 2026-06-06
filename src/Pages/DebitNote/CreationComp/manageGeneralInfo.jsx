@@ -220,7 +220,7 @@ const ManageDebitNoteGeneralInfo = ({
                                         />
                                     </div>
 
-                                   <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                    <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                         <label className='fa-13'>Original Invoice No</label>
                                         <div className="d-flex">
                                             <input
@@ -234,12 +234,13 @@ const ManageDebitNoteGeneralInfo = ({
 
                                     {/* Original Invoice Date */}
                                     <div className="col-xl-3 col-md-4 col-sm-6 p-2">
-                                        <label className='fa-13'>Original Invoice Date</label>
+                                        <label className='fa-13'>Stock Outward Date</label>
                                         <input
                                             type="date"
-                                            value={invoiceInfo?.Ref_Inv_Date ? ISOString(invoiceInfo?.Ref_Inv_Date) : ''}
+                                            value={invoiceInfo?.stockOutwardDate ? ISOString(invoiceInfo?.stockOutwardDate) : ''}
                                             className={inputStyle}
-                                            onChange={e => setInvoiceInfo(pre => ({ ...pre, Ref_Inv_Date: String(e.target.value).trim() }))}
+                                            disabled
+                                            // onChange={e => setInvoiceInfo(pre => ({ ...pre, stockOutwardDate: String(e.target.value).trim() }))}
                                         />
                                     </div>
 

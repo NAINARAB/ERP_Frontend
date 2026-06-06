@@ -40,6 +40,7 @@ export const debitNoteGeneralInfo = {
 
     Alter_Reason: '',
     paymentDueDays: 0,
+    stockOutwardDate: null,
 
     Alter_Id: '',
     Created_by: storage?.UserId,

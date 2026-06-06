@@ -1,6 +1,7 @@
 import { Addition, checkIsNumber, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
 import { customSelectStyles } from "../../../../Components/tablecolumn";
 import Select from 'react-select';
+import RequiredStar from "../../../../Components/requiredStar";
 
 const TripSheetGeneralInfo = ({
     tripSheetInfo,
@@ -20,7 +21,7 @@ const TripSheetGeneralInfo = ({
                     <div className="row px-3">
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Branch</label>
+                            <label>Branch <RequiredStar /></label>
                             <select
                                 value={tripSheetInfo.Branch_Id}
                                 onChange={e => setTripSheetInfo({ ...tripSheetInfo, Branch_Id: e.target.value })}
@@ -35,7 +36,7 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Date</label>
+                            <label>Date <RequiredStar /></label>
                             <input
                                 value={tripSheetInfo.Trip_Date}
                                 type="date"
@@ -66,7 +67,7 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Activity Location</label>
+                            <label>Activity Location <RequiredStar /></label>
                             <Select
                                 value={{
                                     value: tripSheetInfo.Godownlocation,
@@ -108,7 +109,7 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Bill Type</label>
+                            <label>Bill Type <RequiredStar /></label>
                             <select
                                 value={tripSheetInfo.BillType}
                                 onChange={e => {
@@ -131,7 +132,7 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Voucher Type</label>
+                            <label>Voucher Type <RequiredStar /></label>
                             <select
                                 value={tripSheetInfo.VoucherType}
                                 onChange={e => setTripSheetInfo({ ...tripSheetInfo, VoucherType: e.target.value })}
@@ -140,16 +141,12 @@ const TripSheetGeneralInfo = ({
                                 <option value={''} disabled>select voucher</option>
                                 {voucherType.filter(
                                     v => {
-                                        if(tripSheetInfo.BillType === 'MATERIAL INWARD'){
-                                            return stringCompare(v.Type, 'MATERIAL_INWARD')
-                                        }else if(tripSheetInfo.BillType === 'OTHER GODOWN'){
-                                            return stringCompare(v.Type, 'OTHER_GODOWN')
-                                        }else if(tripSheetInfo.BillType === 'CREDIT_NOTE'){
-                                            return stringCompare(v.Type, 'CREDIT_NOTE')
-                                        }else if(tripSheetInfo.BillType === 'DEBIT_NOTE'){
-                                            return stringCompare(v.Type, 'DEBIT_NOTE')
-                                        }else{
-                                            return false
+                                        switch (tripSheetInfo.BillType) {
+                                            case "MATERIAL INWARD": return stringCompare(v.Type, 'MATERIAL_INWARD');
+                                            case "OTHER GODOWN": return stringCompare(v.Type, 'OTHER_GODOWN');
+                                            case "CREDIT_NOTE": return stringCompare(v.Type, 'SALES_RETURN');
+                                            case "DEBIT_NOTE": return stringCompare(v.Type, 'PURCHASE_RETURN');
+                                            default: return false;
                                         }
                                     }
                                 ).map((voucher, voucherInd) => (
@@ -159,13 +156,13 @@ const TripSheetGeneralInfo = ({
                         </div>
 
                         <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
-                            <label>Status</label>
+                            <label>Status <RequiredStar /></label>
                             <select
                                 value={tripSheetInfo?.TripStatus || ''}
                                 onChange={e => setTripSheetInfo(pre => ({ ...pre, TripStatus: e.target.value }))}
                                 className="cus-inpt p-2"
                             >
-                                <option value="">Select</option>
+                                {/* <option value="">Select</option> */}
                                 <option value="New">New</option>
                                 <option value="OnProcess">OnProcess</option>
                                 <option value="Completed">Completed</option>

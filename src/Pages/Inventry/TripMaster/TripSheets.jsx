@@ -80,16 +80,105 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
-    const TaxData = (Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).reduce((data, item) => {
-        const HSNindex = data.findIndex(obj => obj.hsnCode == item.HSN_Code);
+    /**
+     * Build a unified products list for the print preview.
+     * - CREDIT_NOTE / DEBIT_NOTE: flatten products from each note's Products_List,
+     *   merge same products (by Item_Id) across multiple notes by summing QTY and amounts.
+     * - MATERIAL INWARD / OTHER GODOWN: use Products_List as-is.
+     */
+    const printProductsList = useMemo(() => {
+        const billType = selectedRow?.BillType;
 
-        const {
-            Taxable_Value = 0, Cgst_P = 0, Sgst_P = 0, Igst_P = 0, HSN_Code
-        } = item;
+        if (billType === 'CREDIT_NOTE') {
+            const noteList = Array.isArray(selectedRow?.Credit_Note_List) ? selectedRow.Credit_Note_List : [];
+            // Flatten all product rows, carrying the parent note's retailer & inv no
+            const allProducts = noteList.flatMap(note =>
+                (Array.isArray(note.Products_List) ? note.Products_List : []).map(p => ({
+                    ...p,
+                    _Retailer_Name: note.Retailer_Name,
+                    _Inv_No: note.CR_Inv_No,
+                    _Note_Id: note.CR_Id,
+                    // Normalise field names to match MATERIAL INWARD items
+                    QTY: toNumber(p.QTY),
+                    KGS: toNumber(p.KGS ?? 0),
+                    Total_Value: toNumber(p.Total_Value),
+                    Taxable_Value: toNumber(p.Taxable_Amount ?? 0),
+                    HSN_Code: p.HSN_Code,
+                    Product_Name: p.Product_Name,
+                    Gst_Rate: toNumber(p.Gst_Rate ?? 0),
+                    Cgst_P: toNumber(p.Cgst_P ?? 0),
+                    Sgst_P: toNumber(p.Sgst_P ?? 0),
+                    Igst_P: toNumber(p.Igst_P ?? 0),
+                }))
+            );
+            // Merge same Item_Id across all notes
+            return allProducts.reduce((acc, item) => {
+                const existing = acc.find(x => x.Item_Id === item.Item_Id && x._Note_Id === item._Note_Id);
+                if (existing) {
+                    existing.QTY = Addition(existing.QTY, item.QTY);
+                    existing.KGS = Addition(existing.KGS, item.KGS);
+                    existing.Total_Value = Addition(existing.Total_Value, item.Total_Value);
+                    existing.Taxable_Value = Addition(existing.Taxable_Value, item.Taxable_Value);
+                    existing.Cgst_P = Addition(existing.Cgst_P, item.Cgst_P);
+                    existing.Sgst_P = Addition(existing.Sgst_P, item.Sgst_P);
+                    existing.Igst_P = Addition(existing.Igst_P, item.Igst_P);
+                    return acc;
+                }
+                return [...acc, { ...item }];
+            }, []);
+        }
+
+        if (billType === 'DEBIT_NOTE') {
+            const noteList = Array.isArray(selectedRow?.Debit_Note_List) ? selectedRow.Debit_Note_List : [];
+            const allProducts = noteList.flatMap(note =>
+                (Array.isArray(note.Products_List) ? note.Products_List : []).map(p => ({
+                    ...p,
+                    _Retailer_Name: note.Retailer_Name,
+                    _Inv_No: note.DB_Inv_No,
+                    _Note_Id: note.DB_Id,
+                    QTY: toNumber(p.QTY),
+                    KGS: toNumber(p.KGS ?? 0),
+                    Total_Value: toNumber(p.Total_Value),
+                    Taxable_Value: toNumber(p.Taxable_Amount ?? 0),
+                    HSN_Code: p.HSN_Code,
+                    Product_Name: p.Product_Name,
+                    Gst_Rate: toNumber(p.Gst_Rate ?? 0),
+                    Cgst_P: toNumber(p.Cgst_P ?? 0),
+                    Sgst_P: toNumber(p.Sgst_P ?? 0),
+                    Igst_P: toNumber(p.Igst_P ?? 0),
+                }))
+            );
+            return allProducts.reduce((acc, item) => {
+                const existing = acc.find(x => x.Item_Id === item.Item_Id && x._Note_Id === item._Note_Id);
+                if (existing) {
+                    existing.QTY = Addition(existing.QTY, item.QTY);
+                    existing.KGS = Addition(existing.KGS, item.KGS);
+                    existing.Total_Value = Addition(existing.Total_Value, item.Total_Value);
+                    existing.Taxable_Value = Addition(existing.Taxable_Value, item.Taxable_Value);
+                    existing.Cgst_P = Addition(existing.Cgst_P, item.Cgst_P);
+                    existing.Sgst_P = Addition(existing.Sgst_P, item.Sgst_P);
+                    existing.Igst_P = Addition(existing.Igst_P, item.Igst_P);
+                    return acc;
+                }
+                return [...acc, { ...item }];
+            }, []);
+        }
+
+        // MATERIAL INWARD / OTHER GODOWN — use Products_List directly
+        return Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : [];
+    }, [selectedRow]);
+
+    const TaxData = printProductsList.reduce((data, item) => {
+        const HSN_Code = item.HSN_Code;
+        const Taxable_Value = toNumber(item.Taxable_Value ?? item.Taxable_Amount ?? 0);
+        const Cgst_P = toNumber(item.Cgst_P ?? 0);
+        const Sgst_P = toNumber(item.Sgst_P ?? 0);
+        const Igst_P = toNumber(item.Igst_P ?? 0);
+        const HSNindex = data.findIndex(obj => obj.hsnCode === HSN_Code);
 
         if (HSNindex !== -1) {
             const prev = data[HSNindex];
-            const newValue = {
+            data[HSNindex] = {
                 ...prev,
                 taxableValue: Addition(prev.taxableValue, Taxable_Value),
                 cgst: Addition(prev.cgst, Cgst_P),
@@ -97,21 +186,17 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 igst: Addition(prev.igst, Igst_P),
                 totalTax: Addition(prev.totalTax, Addition(Addition(Cgst_P, Sgst_P), Igst_P)),
             };
-
-            data[HSNindex] = newValue;
             return data;
         }
 
-        const newEntry = {
+        return [...data, {
             hsnCode: HSN_Code,
-            taxableValue: Number(Taxable_Value) ?? 0,
-            cgst: Number(Cgst_P) ?? 0,
-            sgst: Number(Sgst_P) ?? 0,
-            igst: Number(Igst_P) ?? 0,
+            taxableValue: Taxable_Value,
+            cgst: Cgst_P,
+            sgst: Sgst_P,
+            igst: Igst_P,
             totalTax: Addition(Addition(Cgst_P, Sgst_P), Igst_P),
-        };
-
-        return [...data, newEntry];
+        }];
     }, []);
 
     const handlePrint = useReactToPrint({
@@ -689,73 +774,109 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                             <thead>
                                 <tr>
                                     <th className="fa-12 bg-light">#</th>
-                                    <th className="fa-12 bg-light">Reason</th>
-                                    <th className="fa-12 bg-light">Party</th>
-                                    <th className="fa-12 bg-light">Address</th>
+                                    {(selectedRow?.BillType === 'CREDIT_NOTE' || selectedRow?.BillType === 'DEBIT_NOTE') ? (
+                                        <>
+                                            <th className="fa-12 bg-light">Invoice No</th>
+                                            <th className="fa-12 bg-light">Party</th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th className="fa-12 bg-light">Reason</th>
+                                            <th className="fa-12 bg-light">Party</th>
+                                            <th className="fa-12 bg-light">Address</th>
+                                        </>
+                                    )}
                                     <th className="fa-12 bg-light">Item</th>
                                     <th className="fa-12 bg-light">HSN</th>
-
                                     <th className="fa-12 bg-light">Qty</th>
                                     <th className="fa-12 bg-light">KGS</th>
                                     <th className="fa-12 bg-light">Rate</th>
                                     <th className="fa-12 bg-light">Amount</th>
-                                    <th className="fa-12 bg-light">Transfer To</th>
+                                    {(selectedRow?.BillType !== 'CREDIT_NOTE' && selectedRow?.BillType !== 'DEBIT_NOTE') && (
+                                        <th className="fa-12 bg-light">Transfer To</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
-                                {(Array.isArray(selectedRow?.Products_List) ? selectedRow.Products_List : []).sort(
-                                    (a, b) => String(a.Trip_From).localeCompare(b.Trip_From)
-                                ).map((item, index, array) => {
-                                    const isFirstOccurrence =
-                                        index === 0 || item.Trip_From !== array[index - 1]?.Trip_From;
-                                    const rowSpan = array.filter((row) => row.Trip_From === item.Trip_From).length;
+                                {(selectedRow?.BillType === 'CREDIT_NOTE' || selectedRow?.BillType === 'DEBIT_NOTE') ? (
+                                    printProductsList.map((item, index, array) => {
+                                        const isFirstOfNote = index === 0 || item._Note_Id !== array[index - 1]?._Note_Id;
+                                        const noteRowSpan = array.filter(r => r._Note_Id === item._Note_Id).length;
+                                        return (
+                                            <tr key={index}>
+                                                <td className="fa-10">{index + 1}</td>
+                                                {isFirstOfNote && (
+                                                    <>
+                                                        <td className="fa-10 vctr" rowSpan={noteRowSpan}>
+                                                            {item._Inv_No}
+                                                        </td>
+                                                        <td className="fa-10 vctr" rowSpan={noteRowSpan}>
+                                                            {item._Retailer_Name}
+                                                        </td>
+                                                    </>
+                                                )}
+                                                <td className="fa-10">{item?.Product_Name}</td>
+                                                <td className="fa-10">{item?.HSN_Code}</td>
+                                                <td className="fa-10">{NumberFormat(item?.QTY)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.KGS)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.Gst_Rate)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.Total_Value)}</td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    printProductsList.sort(
+                                        (a, b) => String(a.Trip_From).localeCompare(b.Trip_From)
+                                    ).map((item, index, array) => {
+                                        const isFirstOccurrence =
+                                            index === 0 || item.Trip_From !== array[index - 1]?.Trip_From;
+                                        const rowSpan = array.filter((row) => row.Trip_From === item.Trip_From).length;
 
-                                    return (
-                                        <tr key={index}>
-                                            <td className="fa-10">{index + 1}</td>
-                                            {/* Render the `Trip_From` cell only for the first occurrence */}
-                                            {isFirstOccurrence && (
-                                                <td className="fa-10 vctr" rowSpan={rowSpan}>
-                                                    {item.Trip_From === "STOCK JOURNAL" && "T"}
-                                                </td>
-                                            )}
-                                            <td className="fa-10"></td>
-                                            <td className="fa-10"></td>
-                                            <td className="fa-10">{item?.Product_Name}</td>
-                                            <td className="fa-10">{item?.HSN_Code}</td>
-                                            <td className="fa-10">{NumberFormat(item?.QTY)}</td>
-                                            <td className="fa-10">{NumberFormat(item?.KGS)}</td>
-                                            <td className="fa-10">{NumberFormat(item?.Gst_Rate)}</td>
-                                            <td className="fa-10">{NumberFormat(item?.Total_Value)}</td>
-                                            <td className="fa-10">{item?.ToLocation}</td>
-                                        </tr>
-                                    );
-                                })}
+                                        return (
+                                            <tr key={index}>
+                                                <td className="fa-10">{index + 1}</td>
+                                                {isFirstOccurrence && (
+                                                    <td className="fa-10 vctr" rowSpan={rowSpan}>
+                                                        {item.Trip_From === "STOCK JOURNAL" && "T"}
+                                                    </td>
+                                                )}
+                                                <td className="fa-10"></td>
+                                                <td className="fa-10"></td>
+                                                <td className="fa-10">{item?.Product_Name}</td>
+                                                <td className="fa-10">{item?.HSN_Code}</td>
+                                                <td className="fa-10">{NumberFormat(item?.QTY)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.KGS)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.Gst_Rate)}</td>
+                                                <td className="fa-10">{NumberFormat(item?.Total_Value)}</td>
+                                                <td className="fa-10">{item?.ToLocation}</td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
 
                                 <tr>
-                                    <td className="fa-10 fw-bold" colSpan={6}>
+                                    <td className="fa-10 fw-bold" colSpan={(selectedRow?.BillType === 'CREDIT_NOTE' || selectedRow?.BillType === 'DEBIT_NOTE') ? 5 : 6}>
                                         Total:&emsp;
-                                        {numberToWords((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                        {numberToWords(printProductsList.reduce(
                                             (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
                                         ))} Only.
                                     </td>
-                                    <td className="fa-10 fw-bold ">
-                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                    <td className="fa-10 fw-bold">
+                                        {NumberFormat(printProductsList.reduce(
                                             (acc, item) => Addition(acc, item.QTY ?? 0), 0
                                         ))}.
                                     </td>
                                     <td className="fa-10 fw-bold">
-                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                        {NumberFormat(printProductsList.reduce(
                                             (acc, item) => Addition(acc, item.KGS ?? 0), 0
                                         ))}.
                                     </td>
                                     <td className="fa-10"></td>
-                                    <td className="fa-10 fw-bold" colSpan={2}>
-                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                    <td className="fa-10 fw-bold" colSpan={(selectedRow?.BillType === 'CREDIT_NOTE' || selectedRow?.BillType === 'DEBIT_NOTE') ? 1 : 2}>
+                                        {NumberFormat(printProductsList.reduce(
                                             (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
                                         ))}.
                                     </td>
-
                                 </tr>
 
                             </tbody>
@@ -840,7 +961,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     <td>0</td>
                                     <td>Grand Total</td>
                                     <td>
-                                        {NumberFormat((Array.isArray(selectedRow.Products_List) ? selectedRow.Products_List : []).reduce(
+                                        {NumberFormat(printProductsList.reduce(
                                             (acc, item) => Addition(acc, item.Total_Value ?? 0), 0
                                         ))}.
                                     </td>
