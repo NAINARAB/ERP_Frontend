@@ -290,64 +290,78 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     }, [tripData, filters]);
 
   
-    const transformToDeliveryChallan = (tripData) => {
-        const items = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
+    const transformToDeliveryChallan = (tripData, resolvedProducts) => {
+        const billType = tripData?.BillType;
+        const isCreditOrDebit = billType === 'CREDIT_NOTE' || billType === 'DEBIT_NOTE';
+
+        // Use the pre-resolved product list (handles CN/DN merging) if provided,
+        // otherwise fall back to Products_List (MATERIAL INWARD / OTHER GODOWN)
+        const sourceProducts = resolvedProducts ?? (
+            Array.isArray(tripData?.Products_List) ? tripData.Products_List : []
+        );
+
+        const items = sourceProducts.map((item, index) => ({
             sno: index + 1,
             description: item.Product_Name || "",
             hsn: item.HSN_Code || "",
-            rate: item.Product_Rate ? NumberFormat(item.Product_Rate) : 0,
+            rate: isCreditOrDebit
+                ? NumberFormat(item.Item_Rate ?? 0)
+                : (item.Product_Rate ? NumberFormat(item.Product_Rate) : 0),
             bags: item.Bag || 0,
             qty: item.KGS || item.QTY || 0,
-            amount: item.Product_Rate * item.QTY || 0
-            
+            amount: isCreditOrDebit
+                ? toNumber(item.Total_Value ?? 0)
+                : (item.Product_Rate * item.QTY || 0),
+            // CN/DN extra: party name per item group
+            partyName: item._Retailer_Name || '',
+            invNo: item._Inv_No || '',
         }));
 
-      
         const totalBags = items.reduce((sum, item) => sum + (item.bags || 0), 0);
-        const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
-        const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+        const totalQty = items.reduce((sum, item) => sum + toNumber(item.qty || 0), 0);
+        const totalAmount = items.reduce((sum, item) => sum + toNumber(item.amount || 0), 0);
 
-     
         const driver = (Array.isArray(tripData?.Employees_Involved) ? tripData.Employees_Involved : [])
             .find(staff => staff?.Cost_Category === 'Driver' || staff?.Cost_Category === 'Load Man');
 
-        const receiptDetails = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item) => ({
-                  toAddressId:item.ToLocation,
-                  toaddress: item.ToAddress,
-                  toPhone_No: item.ToPhone,
-                  toGst_No: item.ToGst
-              }));
+        // Recipient / company info
+        let firstLocation, lastLocation;
 
-        const firstLocation = receiptDetails[0]?.toAddressId ==35 ? tripData?.Narration : receiptDetails[0]; 
+        if (isCreditOrDebit) {
+            // For CN: recipient = first note's retailer info
+            const noteList = billType === 'CREDIT_NOTE'
+                ? (Array.isArray(tripData?.Credit_Note_List) ? tripData.Credit_Note_List : [])
+                : (Array.isArray(tripData?.Debit_Note_List) ? tripData.Debit_Note_List : []);
+            const firstNote = noteList[0];
+            firstLocation = firstNote ? {
+                toaddress: firstNote.Retailer_Name || '',
+                toGst_No: '',
+                toPhone_No: '',
+            } : null;
+            lastLocation = null; // company info comes from CompanyDetails in the component
+        } else {
+            const receiptDetails = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map(item => ({
+                toAddressId: item.ToLocation,
+                toaddress: item.ToAddress,
+                toPhone_No: item.ToPhone,
+                toGst_No: item.ToGst,
+            }));
+            firstLocation = receiptDetails[0]?.toAddressId === 35 ? tripData?.Narration : receiptDetails[0];
 
-         const companyDetails=(Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map((item, index) => ({
-            fromAddressId:item.FromLocation,
-            fromAddress : item.FromAddress,
-            fromPhone_No:item.FromPhone,
-            fromGst_No:item.FromGst    
-            
-        }));
-         
-        const lastLocation =companyDetails[0]?.toAddressId ==35 ? tripData?.Narration : companyDetails[0] 
+            const companyDetails = (Array.isArray(tripData?.Products_List) ? tripData.Products_List : []).map(item => ({
+                fromAddressId: item.FromLocation,
+                fromAddress: item.FromAddress,
+                fromPhone_No: item.FromPhone,
+                fromGst_No: item.FromGst,
+            }));
+            lastLocation = companyDetails[0]?.fromAddressId === 35 ? tripData?.Narration : companyDetails[0];
+        }
+
         return {
             challanNo: tripData?.Challan_No || tripData?.Trip_No || "",
             date: tripData?.Trip_Date ? LocalDate(tripData.Trip_Date) : "",
-            // company: {
-            //     name: "S.M TRADERS",
-            //     address: "746-A, PULIYUR, SAYANAPURAM, SIVAGANGAI - 630611",
-            //     gst: "33AADFS4987M1ZL"
-            // },
-            company:{
-                  lastLocation
-            },
-            recipient:{
-                    firstLocation
-            },
-            // recipient: {
-            //     name: "S.M TRADERS",
-            //     address: "157, CHITRAKARA STREET, EAST MASI STREET, MADURAI - 625001",
-            //     gstin: "33AADFS4987M1ZL"
-            // },
+            company: { lastLocation },
+            recipient: { firstLocation },
             transport: {
                 mode: "By Road",
                 vehicleNo: tripData?.Vehicle_No || "",
@@ -1001,7 +1015,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogTitle>
                 <DialogContent ref={deliveryChallanPrintRef}>
                     {isValidObject(selectedRow) && (
-                        <DeliveryChallan data={transformToDeliveryChallan(selectedRow)} />
+                        <DeliveryChallan data={transformToDeliveryChallan(selectedRow, printProductsList)} />
                     )}
                 </DialogContent>
                 <DialogActions>

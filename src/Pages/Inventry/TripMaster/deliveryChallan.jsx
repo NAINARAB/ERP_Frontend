@@ -224,6 +224,9 @@ const DeliveryChallan = ({ data }) => {
                 <thead>
                     <tr className="bg-light">
                         <th className="text-center" style={{ width: '5%' }}>S.No</th>
+                        {/* {items.some(i => i.partyName) && (
+                            <th className="text-center" style={{ width: '20%' }}>Party / Inv No</th>
+                        )} */}
                         <th className="text-center" style={{ width: '25%' }}>Description of Goods</th>
                         <th className="text-center" style={{ width: '8%' }}>HSN</th>
                         <th className="text-center" style={{ width: '8%' }}>Rate</th>
@@ -236,6 +239,12 @@ const DeliveryChallan = ({ data }) => {
                     {items.map((item, index) => (
                         <tr key={index}>
                             <td className="text-center">{item.sno || index + 1}</td>
+                            {/* {items.some(i => i.partyName) && (
+                                <td style={{ fontSize: '11px' }}>
+                                    <div className="fw-bold">{item.partyName || ''}</div>
+                                    <div style={{ color: '#555' }}>{item.invNo || ''}</div>
+                                </td>
+                            )} */}
                             <td>{item.description || ''}</td>
                             <td className="text-center">{item.hsn || ''}</td>
                             <td className="text-right">{item.rate || 0}</td>
@@ -247,6 +256,7 @@ const DeliveryChallan = ({ data }) => {
                     {[...Array(emptyRowsCount)].map((_, index) => (
                         <tr key={`empty-${index}`}>
                             <td className="text-center">{items.length + index + 1}</td>
+                            {/* {items.some(i => i.partyName) && <td></td>} */}
                             <td></td>
                             <td></td>
                             <td></td>
@@ -256,7 +266,8 @@ const DeliveryChallan = ({ data }) => {
                         </tr>
                     ))}
                     <tr className="fw-bold">
-                        <td colSpan="4" className="text-right">TOTAL</td>
+                        {/* <td colSpan={items.some(i => i.partyName) ? 5 : 4} className="text-right">TOTAL</td> */}
+                        <td colSpan={4} className="text-right">TOTAL</td>
                         <td className="text-right">{displayTotals.totalBags}</td>
                         <td className="text-right">{displayTotals.totalQty}</td>
                         <td className="text-right">{displayTotals.totalAmount}</td>
