@@ -199,3 +199,10 @@ export const tallyModules = [
     { value: 'Sales_Order', name: 'Sales Order', },
     { value: 'Stock_Journal', name: 'Stock Journal', },
 ].sort((a, b) => a.value.localeCompare(b.value));
+
+export const statusDropDown = [
+    { value: 1, name: 'New' },
+    { value: 2, name: 'Processing' },
+    { value: 3, name: 'Completed' },
+    { value: 0, name: 'Cancelled' },
+]

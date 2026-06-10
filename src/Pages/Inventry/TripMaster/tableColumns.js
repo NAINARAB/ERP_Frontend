@@ -39,6 +39,8 @@ export const tripMasterDetails = {
     Narration: '',
     TripStatus: 'New',
     Alter_Reason: '',
+    concern: null,
+    concernGet: '',
     Created_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
 }
@@ -111,6 +113,7 @@ export const initialArrivalValue = {
     Updated_By: checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : '',
     Alter_Reason: '',
 }
+
 export const tripCreditNoteColumns = {
     CR_Id: '',
     CR_Inv_No: '',

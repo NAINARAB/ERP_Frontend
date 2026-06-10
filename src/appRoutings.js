@@ -215,6 +215,8 @@ const PurchaseOrderTallyBasedReport = lazy(() => import('./Pages/Purchase/tallyB
 const PurchaseInvoiceCreate = lazy(() => import('./Pages/Purchase/PurchaseInvoice/purchaseInvoiceCreate'));
 const PurchaseInvoces = lazy(() => import('./Pages/Purchase/purchaseInvoices'));
 const PurchasePaymentDue = lazy(() => import('./Pages/Purchase/PurchaseReport/paymentDue'));
+const NewPurchaseOrderList = lazy(() => import('./Pages/Purchase/newPurchaseOrder/listPurchaseOrder'))
+const NewPurchaseOrderCreate = lazy(() => import('./Pages/Purchase/newPurchaseOrder/createPurchaseOrder'))
 
 // -----------------------------------------------------------------------------
 // Payments
@@ -452,8 +454,8 @@ const RoutingArray = [
     { component: <PurchaseInvoiceCreate />, path: '/erp/purchase/invoice/create' },
     { component: <PurchaseInvoces />, path: '/erp/purchase/invoice' },
     { component: <PurchaseReportForCustomer />, path: '/erp/purchase/myPurchase' },
-    { component: <PurchaseOrderEntries />, path: '/erp/purchase/purchaseOrder' },
-    { component: <PurchaseOrderDataEntry />, path: '/erp/purchase/purchaseOrder/create' },
+    { component: <NewPurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
+    { component: <NewPurchaseOrderCreate />, path: '/erp/purchase/purchaseOrder/create' },
     { component: <PurchasePaymentDue />, path: '/erp/purchase/purchasePayemntDue' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
     { component: <PaymentDue />, path: '/erp/purchase/paymentdure' },

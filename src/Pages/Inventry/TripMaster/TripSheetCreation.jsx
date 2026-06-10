@@ -22,6 +22,16 @@ import TripSheetStaffInvolved from "./createComp/staffInfo";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
+const getDistinct = (
+    items,
+    keySelector
+) => {
+    return Array.from(
+        new Map(items.map(item => [keySelector(item), item])).values()
+    );
+};
+
+
 const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const location = useLocation();
     const stateDetails = location.state;
@@ -54,6 +64,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
     const [tripSheetInfo, setTripSheetInfo] = useState(tripMasterDetails);
     const [selectedItems, setSelectedItems] = useState([]);
     const [staffInvolvedList, setStaffInvolvedList] = useState([]);
+    const [retailerData, setRetailerData] = useState([]);
 
     const [creditNoteData, setCreditNoteData] = useState([]);
     const [cnFilters, setCnFilters] = useState({
@@ -94,7 +105,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     uomResponse,
                     voucherTypeResponse,
                     batchStockResponse,
-                    creditNoteFilterResponse
+                    creditNoteFilterResponse,
+                    debitNoteFilterResponse,
+                    retailerResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -105,7 +118,8 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/voucher` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
                     fetchLink({ address: `creditNote/filterValues` }),
-                    fetchLink({ address: `debitNote/filterValues` })
+                    fetchLink({ address: `debitNote/filterValues` }),
+                    fetchLink({ address: `masters/retailers/dropDown` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -129,6 +143,9 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 const voucherOrdered = (voucherTypeResponse.success ? voucherTypeResponse.data : []).sort(
                     (a, b) => String(a?.Vocher_Type_Id).localeCompare(b?.Voucher_Type)
                 );
+                const retailersData = (retailerResponse.success ? retailerResponse.data : []).sort(
+                    (a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name)
+                );
 
                 setBranch(branchData);
                 setProducts(productsData);
@@ -138,15 +155,17 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 setUom(uomOrdered);
                 setVoucherType(voucherOrdered);
                 setBatchDetails(toArray(batchStockResponse.data));
+                setRetailerData(retailersData)
 
-                const creditNoteFilterData = creditNoteFilterResponse.success ? creditNoteFilterResponse.data : null;
-                if (creditNoteFilterData) {
-                    setFiltersDropDown({
-                        voucherType: toArray(creditNoteFilterData?.others?.voucherType),
-                        retailers: toArray(creditNoteFilterData?.others?.retailers),
-                        createdBy: toArray(creditNoteFilterData?.others?.createdBy)
-                    });
-                }
+                const allRetailers = [...creditNoteFilterResponse?.others?.retailers, ...debitNoteFilterResponse?.others?.retailers];
+                const allVoucherTypes = [...creditNoteFilterResponse?.others?.voucherType, ...debitNoteFilterResponse?.others?.voucherType];
+                const allCreatedBy = [...creditNoteFilterResponse?.others?.createdBy, ...debitNoteFilterResponse?.others?.createdBy];
+
+                setFiltersDropDown({
+                    voucherType: getDistinct(allVoucherTypes, x => x.Voucher_Type),
+                    retailers: getDistinct(allRetailers, x => x.Retailer_Id),
+                    createdBy: getDistinct(allCreatedBy, x => x.Created_By)
+                });
 
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -382,6 +401,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                             voucherType={voucherType}
                             selectedItems={selectedItems}
                             setSelectedItems={setSelectedItems}
+                            retailers={retailerData}
                         />
                     </div>
 

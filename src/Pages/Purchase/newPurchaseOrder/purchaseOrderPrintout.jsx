@@ -1,17 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogActions, Button, Chip } from '@mui/material';
+import { Dialog, DialogContent, DialogTitle, DialogActions, Button } from '@mui/material';
 import { Close, Print } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
 import { fetchLink } from '../../../Components/fetchComponent';
 import {
     LocalDate, NumberFormat, numberToWords,
-    Addition, RoundNumber,
-    isEqualNumber
+    Addition
 } from '../../../Components/functions';
 
-// ─── Page size styles (same as previewInvoice.jsx) ───────────────────────────
-// Same dimensions as previewInvoice.jsx — 200mm width intentionally causes the browser
-// to scale content down to fit physical paper (A5=148mm, A4=210mm)
+// ─── Page size styles ────────────────────────────────────────────────────────
 const a4Styles = {
     width: '200mm',
     minHeight: '290mm',
@@ -74,51 +71,32 @@ const buildTaxData = (products, isIGST) => products.reduce((data, item) => {
     }];
 }, []);
 
-const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies }) => {
+const PurchaseOrderPage = ({ invoice, company, pageSize = 'A5' }) => {
     const {
         retailerName, retailerMobile, retailerAddress, retailerCity,
         retailerState, retailerGstNumber,
-        invoiceNumber, invoiceDate,
-        invoiceCGST, invoiceSGST, invoiceIGST,
-        invoiceRoundOff, invoiceTaxableValue, invoiceValue,
-        orderNumber, orderDate,
-        salesPersonName, salesPersonMobileNumber,
-        deliveryPersonName, deliveryPersonMobileNumber,
-        tripStaffInfo = [],
+        poNumber, poDate, narration,
+        poCGST, poSGST, poIGST,
+        poRoundOff, poTaxableValue, poValue,
         productsDetails = [],
     } = invoice;
 
-    const isIGST = Number(invoiceIGST) > 0;
+    const isIGST = Number(poIGST) > 0;
     const TaxData = buildTaxData(productsDetails, isIGST);
-    const vehicleNo = [...new Set(tripStaffInfo.map(s => s.vehicleNumber).filter(Boolean))].join(', ');
 
     const extraDetails = [
-        { labelOne: 'Invoice No', dataOne: invoiceNumber, labelTwo: 'Dated', dataTwo: LocalDate(invoiceDate) },
-        { labelOne: "Delivery By", dataOne: deliveryPersonName, labelTwo: 'Delivery Mobile', deliveryPersonMobileNumber },
-        { labelOne: 'Order No', dataOne: orderNumber, labelTwo: 'Order Date', dataTwo: LocalDate(orderDate) },
-        { labelOne: 'Sales Person', dataOne: salesPersonName, labelTwo: 'Mobile', dataTwo: salesPersonMobileNumber },
-        {
-            labelOne: 'Dispatched through',
-            dataOne: tripStaffInfo.filter(
-                fil => isEqualNumber(fil.costCatergoryId, 2)
-            ).map(cost => cost.costCenterName),
-            labelTwo: 'Vehicle No',
-            dataTwo: vehicleNo
-        }
+        { labelOne: 'Voucher No.', dataOne: poNumber, labelTwo: 'Dated', dataTwo: LocalDate(poDate) },
+        { labelOne: 'Reference', dataOne: narration, labelTwo: '', dataTwo: '' },
     ];
 
     const pageStyle = pageSize === 'A4' ? a4Styles : a5Styles;
 
-    // page-break-before: always ensures no two bill copies share a page
     const wrapperStyle = {
         ...pageStyle,
-        pageBreakBefore: copyIndex > 0 ? 'always' : 'auto',
-        breakBefore: copyIndex > 0 ? 'page' : 'auto',
         pageBreakAfter: 'always',
         breakAfter: 'page',
     };
 
-    // chunk products into groups of 15 (same as previewInvoice.jsx)
     const chunkSize = 15;
     const productChunks = [];
     for (let i = 0; i < productsDetails.length; i += chunkSize) {
@@ -128,34 +106,27 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
     return (
         <div style={wrapperStyle} className="print-container">
 
-            {/* Copy label (screen only) */}
-            {/* {totalCopies > 1 && (
-                <div style={{ textAlign: 'right', fontSize: '11px', color: '#666', marginBottom: '2px' }}
-                    className="d-print-none">
-                    Copy {copyIndex + 1} of {totalCopies}
-                </div>
-            )} */}
-
-            <h5 className='text-center mb-2'>TAX INVOICE</h5>
+            <h5 className='text-center mb-2 fw-bold'>PURCHASE ORDER</h5>
 
             {/* ── General Info ── */}
             <div className="row">
                 <div className="col-6 p-0 border border-bottom-0 border-end-0">
-                    {/* Company block */}
+                    {/* Invoice To (Company Details) */}
                     <div className="border-bottom p-2">
-                        <p className='mb-2 fa-17'>{company?.companyName}</p>
-                        <p className='m-0 fa-12'>Address: {company?.companyAddress}</p>
+                        <p className='m-0 fa-12'>Invoice To</p>
+                        <p className='mb-2 fa-17 fw-bold'>{company?.companyName}</p>
+                        <p className='m-0 fa-12'>{company?.companyAddress}</p>
                         <p className='m-0 fa-12'>Phone No: {company?.compnayMobileNumber}</p>
                         <p className='m-0 fa-12'>GSTIN / UIN: {company?.companyGstNumber}</p>
                     </div>
-                    {/* Buyer block */}
+                    {/* Supplier (Retailer Details) */}
                     <div className="p-2">
-                        <p className='m-0 fa-12'>Buyer (Bill to)</p>
-                        <p className='mb-2 fa-17'>{retailerName}</p>
+                        <p className='m-0 fa-12'>Supplier (Bill from)</p>
+                        <p className='mb-2 fa-17 fw-bold'>{retailerName}</p>
                         <p className='m-0 fa-14'>{retailerMobile}{retailerAddress ? ' - ' + retailerAddress : ''}</p>
                         <p className='m-0 fa-14'>{retailerCity}</p>
-                        <p className='m-0 fa-14'>GSTIN / UIN: {retailerGstNumber}</p>
                         <p className='m-0 fa-14'>State Name: {retailerState}</p>
+                        <p className='m-0 fa-14'>GSTIN / UIN: {retailerGstNumber}</p>
                     </div>
                 </div>
 
@@ -165,22 +136,16 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                         <tbody>
                             {extraDetails.map((detail, index) => (
                                 <tr key={index}>
-                                    <td className="border-end fa-14 px-1">
-                                        <p className="m-0">{detail.labelOne}</p>
-                                        <p className="m-0 text-end">{detail.dataOne || '-'}</p>
+                                    <td className="border-end fa-14 px-1" style={{ width: '50%' }}>
+                                        <p className="m-0 text-muted">{detail.labelOne}</p>
+                                        <p className="m-0 fw-bold">{detail.dataOne || '-'}</p>
                                     </td>
-                                    <td className='fa-14 px-1'>
-                                        <p className="m-0">{detail.labelTwo}</p>
-                                        <p className="m-0 text-end">{detail.dataTwo || '-'}</p>
+                                    <td className='fa-14 px-1' style={{ width: '50%' }}>
+                                        <p className="m-0 text-muted">{detail.labelTwo}</p>
+                                        <p className="m-0 fw-bold">{detail.dataTwo || '-'}</p>
                                     </td>
                                 </tr>
                             ))}
-                            <tr>
-                                <td colSpan={2} className='border-0 fa-14'>
-                                    <p className="m-0">Invoice Value</p>
-                                    <p className="m-0 text-end fa-18">{NumberFormat(invoiceValue)}</p>
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -192,16 +157,13 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                     <table className="table m-0">
                         <thead>
                             <tr>
-                                <td className='border bg-light fa-14'>Sno</td>
-                                <td className='border bg-light fa-14'>Product</td>
-                                <td className='border bg-light fa-14'>HSN/SAC</td>
-                                <td className='border bg-light fa-14 text-end'>Quantity</td>
-                                <td className='border bg-light fa-14 text-end'>Rate</td>
-                                <td className='border bg-light fa-14 text-end'>
-                                    <p className='m-2'>Rate</p>
-                                    <p className='m-0'>(Incl. of Tax)</p>
-                                </td>
-                                <td className='border bg-light fa-14 text-end'>Amount</td>
+                                <td className='border bg-light fa-14 fw-bold'>Sl No</td>
+                                <td className='border bg-light fa-14 fw-bold'>Description of Goods</td>
+                                <td className='border bg-light fa-14 fw-bold'>HSN/SAC</td>
+                                <td className='border bg-light fa-14 fw-bold text-center'>GST Rate</td>
+                                <td className='border bg-light fa-14 fw-bold text-end'>Quantity</td>
+                                <td className='border bg-light fa-14 fw-bold text-end'>Rate</td>
+                                <td className='border bg-light fa-14 fw-bold text-end'>Amount</td>
                             </tr>
                         </thead>
                         <tbody>
@@ -212,11 +174,15 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                                         return (
                                             <tr key={globalIdx}>
                                                 <td className='border fa-13'>{globalIdx + 1}</td>
-                                                <td className='border fa-13'>{p.productName}</td>
+                                                <td className='border fa-13 fw-bold'>
+                                                    {p.productName}
+                                                </td>
                                                 <td className='border fa-13'>{p.hsnCode}</td>
-                                                <td className='border fa-13 text-end'>{NumberFormat(p.quantity)}</td>
+                                                <td className='border fa-13 text-center'>{p.gstPercentage}%</td>
+                                                <td className='border fa-13 text-end fw-bold'>
+                                                    {NumberFormat(p.quantity)} <span className="fw-normal text-muted">{p.uom}</span>
+                                                </td>
                                                 <td className='border fa-13 text-end'>{NumberFormat(p.itemRateWithoutTax)}</td>
-                                                <td className='border fa-13 text-end'>{NumberFormat(p.itemRateWithTax)}</td>
                                                 <td className='border fa-13 text-end'>{NumberFormat(p.itemAmount)}</td>
                                             </tr>
                                         );
@@ -226,44 +192,44 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                                     {chunkIndex === productChunks.length - 1 && (
                                         <>
                                             <tr>
-                                                <td className="border p-2" rowSpan={isIGST ? 4 : 5} colSpan={4}>
-                                                    <p className='m-0 mx-2 p-2 fa-13 fw-bold'>Amount Chargeable (in words):</p>
-                                                    <p className='m-0 fa-13 fw-bold'>&emsp; INR {numberToWords(parseInt(invoiceValue))} Only.</p>
+                                                <td className="border p-2" rowSpan={isIGST ? 4 : 5} colSpan={5}>
+                                                    <p className='m-0 mx-2 p-2 fa-13 text-muted'>Amount Chargeable (in words):</p>
+                                                    <p className='m-0 fa-13 fw-bold'>&emsp; INR {numberToWords(parseInt(poValue))} Only.</p>
                                                 </td>
-                                                <td className="border p-2 fa-14" colSpan={2}>Total Taxable Amount</td>
-                                                <td className="border p-2 text-end fa-14">{NumberFormat(invoiceTaxableValue)}</td>
+                                                <td className="border p-2 fa-14 text-end">Total Taxable Amount</td>
+                                                <td className="border p-2 text-end fa-14">{NumberFormat(poTaxableValue)}</td>
                                             </tr>
 
                                             {!isIGST ? (
                                                 <>
                                                     <tr>
-                                                        <td className="border p-2 fa-14" colSpan={2}>CGST</td>
-                                                        <td className="border p-2 text-end fa-14">{NumberFormat(invoiceCGST)}</td>
+                                                        <td className="border p-2 fa-14 text-end">CGST</td>
+                                                        <td className="border p-2 text-end fa-14">{NumberFormat(poCGST)}</td>
                                                     </tr>
                                                     <tr>
-                                                        <td className="border p-2 fa-14" colSpan={2}>SGST</td>
-                                                        <td className="border p-2 fa-14 text-end">{NumberFormat(invoiceSGST)}</td>
+                                                        <td className="border p-2 fa-14 text-end">SGST</td>
+                                                        <td className="border p-2 fa-14 text-end">{NumberFormat(poSGST)}</td>
                                                     </tr>
                                                 </>
                                             ) : (
                                                 <tr>
-                                                    <td className="border p-2 fa-14" colSpan={2}>IGST</td>
-                                                    <td className="border p-2 fa-14 text-end">{NumberFormat(invoiceIGST)}</td>
+                                                    <td className="border p-2 fa-14 text-end">IGST</td>
+                                                    <td className="border p-2 fa-14 text-end">{NumberFormat(poIGST)}</td>
                                                 </tr>
                                             )}
 
                                             <tr>
-                                                <td className="border p-2 fa-14" colSpan={2}>Round Off</td>
-                                                <td className="border p-2 fa-14 text-end">{NumberFormat(invoiceRoundOff)}</td>
+                                                <td className="border p-2 fa-14 text-end">Round Off</td>
+                                                <td className="border p-2 fa-14 text-end">{NumberFormat(poRoundOff)}</td>
                                             </tr>
                                             <tr>
-                                                <td className="border p-2 fa-14" colSpan={2}>Total</td>
-                                                <td className="border p-2 fa-14 text-end fw-bold">{NumberFormat(invoiceValue)}</td>
+                                                <td className="border p-2 fa-14 text-end fw-bold">Total</td>
+                                                <td className="border p-2 fa-14 text-end fw-bold">{NumberFormat(poValue)}</td>
                                             </tr>
                                         </>
                                     )}
 
-                                    {/* Page break between product chunks (same invoice, multi-page) */}
+                                    {/* Page break between product chunks */}
                                     {chunkIndex < productChunks.length - 1 && (
                                         <tr style={{ pageBreakAfter: 'always', height: '0', visibility: 'hidden', border: 'none' }}>
                                             <td colSpan="7" style={{ border: 'none' }}></td>
@@ -285,33 +251,33 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                     <table className="table">
                         <thead>
                             <tr>
-                                <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>HSN / SAC</td>
-                                <td className="border bg-light fa-14 text-center" rowSpan={2} style={{ verticalAlign: 'middle' }}>Taxable Value</td>
+                                <td className="border bg-light fa-14 text-center fw-bold" rowSpan={2} style={{ verticalAlign: 'middle' }}>HSN / SAC</td>
+                                <td className="border bg-light fa-14 text-center fw-bold" rowSpan={2} style={{ verticalAlign: 'middle' }}>Taxable Value</td>
                                 {isIGST ? (
-                                    <td className="border bg-light fa-14 text-center" colSpan={2}>IGST Tax</td>
+                                    <td className="border bg-light fa-14 text-center fw-bold" colSpan={2}>IGST Tax</td>
                                 ) : (
                                     <>
-                                        <td className="border bg-light fa-14 text-center" colSpan={2}>Central Tax</td>
-                                        <td className="border bg-light fa-14 text-center" colSpan={2}>State Tax</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold" colSpan={2}>Central Tax</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold" colSpan={2}>State Tax</td>
                                     </>
                                 )}
-                                <td className="border bg-light fa-14 text-center">Total</td>
+                                <td className="border bg-light fa-14 text-center fw-bold">Total</td>
                             </tr>
                             <tr>
                                 {isIGST ? (
                                     <>
-                                        <td className="border bg-light fa-14 text-center">Rate</td>
-                                        <td className="border bg-light fa-14 text-center">Amount</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Rate</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Amount</td>
                                     </>
                                 ) : (
                                     <>
-                                        <td className="border bg-light fa-14 text-center">Rate</td>
-                                        <td className="border bg-light fa-14 text-center">Amount</td>
-                                        <td className="border bg-light fa-14 text-center">Rate</td>
-                                        <td className="border bg-light fa-14 text-center">Amount</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Rate</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Amount</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Rate</td>
+                                        <td className="border bg-light fa-14 text-center fw-bold">Amount</td>
                                     </>
                                 )}
-                                <td className="border bg-light fa-14 text-center">Tax Amount</td>
+                                <td className="border bg-light fa-14 text-center fw-bold">Tax Amount</td>
                             </tr>
                         </thead>
                         <tbody>
@@ -321,14 +287,14 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                                     <td className="border fa-13 text-end">{NumberFormat(o?.taxableValue)}</td>
                                     {isIGST ? (
                                         <>
-                                            <td className="border fa-13 text-end">{NumberFormat(o?.igstPercentage)}</td>
+                                            <td className="border fa-13 text-end">{NumberFormat(o?.igstPercentage)}%</td>
                                             <td className="border fa-13 text-end">{NumberFormat(o?.igst)}</td>
                                         </>
                                     ) : (
                                         <>
-                                            <td className="border fa-13 text-end">{NumberFormat(o?.cgstPercentage)}</td>
+                                            <td className="border fa-13 text-end">{NumberFormat(o?.cgstPercentage)}%</td>
                                             <td className="border fa-13 text-end">{NumberFormat(o?.cgst)}</td>
-                                            <td className="border fa-13 text-end">{NumberFormat(o?.sgstPercentage)}</td>
+                                            <td className="border fa-13 text-end">{NumberFormat(o?.sgstPercentage)}%</td>
                                             <td className="border fa-13 text-end">{NumberFormat(o?.sgst)}</td>
                                         </>
                                     )}
@@ -336,7 +302,7 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                                 </tr>
                             ))}
                             <tr>
-                                <td className="border fa-13 text-end">Total</td>
+                                <td className="border fa-13 text-end fw-bold">Total</td>
                                 <td className="border fa-13 text-end fw-bold">
                                     {NumberFormat(TaxData.reduce((s, o) => s + Number(o.taxableValue), 0))}
                                 </td>
@@ -374,72 +340,40 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
                 </div>
             </div>
 
-            <div className="col-12 text-center">
-                <p>This is a Computer Generated Invoice</p>
+            <div className="col-12 text-center mt-3">
+                <p className="text-muted fa-12">This is a Computer Generated Purchase Order</p>
             </div>
         </div>
     );
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
-/**
- * InvoicePrintPreview
- *
- * Props:
- *   open           – boolean (controls Dialog visibility)
- *   onClose        – function
- *   doIds          – number[] | string[]  — explicit list of Do_Id values
- *   copyCountMap   – { [Do_Id]: number }  — copy count per invoice id
- *   selectedOrders – sale-order row[]     — alternative: reads ConvertedInvoice + invoiceCopyCount
- */
-const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, selectedOrders = [] }) => {
+const PurchaseOrderPrintout = ({ open, onClose, poId }) => {
     const printRef = useRef(null);
-    const [pageSize, setPageSize] = useState('A5');
+    const [pageSize, setPageSize] = useState('A4');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [invoices, setInvoices] = useState([]);
+    const [invoice, setInvoice] = useState(null);
     const [company, setCompany] = useState({});
 
-    // Build Do_Id → copyCount map from selectedOrders if not explicitly provided
-    const resolvedCopyMap = (() => {
-        if (Object.keys(copyCountMap).length > 0) return copyCountMap;
-        const map = {};
-        for (const order of selectedOrders) {
-            const n = Math.max(1, parseInt(order.invoiceCopyCount) || 1);
-            for (const inv of (order.ConvertedInvoice ?? [])) {
-                if (inv?.invId) map[String(inv.invId)] = n;
-            }
-        }
-        return map;
-    })();
-
-    const getCopyCount = (invId) =>
-        Math.max(1, resolvedCopyMap[String(invId)] ?? 1);
-
-    const totalBills = invoices.reduce((s, inv) => s + getCopyCount(inv.invId), 0);
-
-    // Fetch when dialog opens
     useEffect(() => {
-        if (!open) { setInvoices([]); setError(''); return; }
-
-        const ids = doIds.length > 0 ? doIds : Object.keys(resolvedCopyMap);
-        if (ids.length === 0) { setError('No invoice IDs provided.'); return; }
+        if (!open) { setInvoice(null); setError(''); return; }
+        if (!poId) { setError('No Purchase Order ID provided.'); return; }
 
         setLoading(true);
         setError('');
 
-        fetchLink({ address: `sales/salesInvoice/bulkByIds?Do_Ids=${ids.join(',')}` })
+        fetchLink({ address: `purchase/purchaseOrderPrint?PO_Id=${poId}` })
             .then(({ data, success, others }) => {
                 if (success && Array.isArray(data) && data.length > 0) {
-                    setInvoices(data);
+                    setInvoice(data[0]); // We only print one PO
                     setCompany(others?.companydata?.[0] ?? {});
                 } else {
-                    setError('No invoice data found.');
+                    setError('No purchase order data found.');
                 }
             })
-            .catch(() => setError('Failed to fetch invoice data.'))
+            .catch(() => setError('Failed to fetch purchase order data.'))
             .finally(() => setLoading(false));
-    }, [open]);
+    }, [open, poId]);
 
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
@@ -462,7 +396,7 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
     });
 
     const handleClose = () => {
-        setInvoices([]);
+        setInvoice(null);
         setError('');
         onClose?.();
     };
@@ -472,7 +406,7 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
             open={open}
             onClose={handleClose}
             fullWidth
-            maxWidth="xl"
+            maxWidth="lg"
             sx={{
                 '& .MuiDialog-container': {
                     alignItems: 'flex-start',
@@ -501,16 +435,7 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
                 justifyContent: 'center',
                 gap: 1.5,
             }}>
-                Invoice Print Preview
-                {!loading && invoices.length > 0 && (
-                    <Chip
-                        label={`${invoices.length} invoice${invoices.length !== 1 ? 's' : ''} · ${totalBills} bill${totalBills !== 1 ? 's' : ''}`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ fontWeight: 'normal', fontSize: '12px' }}
-                    />
-                )}
+                Purchase Order Print Preview
             </DialogTitle>
 
             <DialogContent
@@ -522,18 +447,20 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
                     flexDirection: 'column',
                     alignItems: 'center',
                     width: '100%',
+                    backgroundColor: '#f8f9fa',
                     '@media print': {
                         overflow: 'visible',
                         display: 'block',
                         height: 'auto',
                         marginTop: '2px',
+                        backgroundColor: '#fff',
                     }
                 }}
             >
                 {loading && (
                     <div className="d-flex align-items-center justify-content-center py-5 gap-3">
                         <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                        <span className="text-muted">Loading invoices…</span>
+                        <span className="text-muted">Loading purchase order…</span>
                     </div>
                 )}
 
@@ -541,41 +468,28 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
                     <div className="alert alert-warning m-3">{error}</div>
                 )}
 
-                {!loading && !error && invoices.length === 0 && (
-                    <div className="alert alert-info m-3">No invoices to display.</div>
-                )}
-
                 {/* Printable area */}
-                {!loading && invoices.length > 0 && (
+                {!loading && invoice && (
                     <div ref={printRef} style={{ width: '100%' }}>
-                        {invoices.map((invoice, invIdx) => {
-                            const copies = getCopyCount(invoice.invId);
-                            return Array.from({ length: copies }).map((_, copyIdx) => (
-                                <InvoicePage
-                                    key={`inv-${invIdx}-copy-${copyIdx}`}
-                                    invoice={invoice}
-                                    company={company}
-                                    pageSize={pageSize}
-                                    copyIndex={copyIdx}
-                                    totalCopies={copies}
-                                />
-                            ));
-                        })}
+                        <PurchaseOrderPage
+                            invoice={invoice}
+                            company={company}
+                            pageSize={pageSize}
+                        />
                     </div>
                 )}
             </DialogContent>
 
             <DialogActions sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2 }}>
-                {/* A4/A5 toggle — same as previewInvoice.jsx */}
                 <div className="form-check form-switch">
                     <input
                         className="form-check-input"
                         type="checkbox"
-                        id="invoicePrintPageSizeSwitch"
+                        id="purchaseOrderPrintPageSizeSwitch"
                         checked={pageSize === 'A4'}
                         onChange={() => setPageSize(prev => prev === 'A5' ? 'A4' : 'A5')}
                     />
-                    <label className="form-check-label" htmlFor="invoicePrintPageSizeSwitch">
+                    <label className="form-check-label" htmlFor="purchaseOrderPrintPageSizeSwitch">
                         {pageSize} selected
                     </label>
                 </div>
@@ -584,9 +498,9 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
                     <Button startIcon={<Close />} variant="outlined" color="error" onClick={handleClose}>
                         Close
                     </Button>
-                    {!loading && invoices.length > 0 && (
+                    {!loading && invoice && (
                         <Button startIcon={<Print />} variant="contained" onClick={handlePrint}>
-                            Print{totalBills > 1 ? ` (${totalBills} Bills)` : ''}
+                            Print
                         </Button>
                     )}
                 </div>
@@ -595,4 +509,4 @@ const InvoicePrintPreview = ({ open, onClose, doIds = [], copyCountMap = {}, sel
     );
 };
 
-export default InvoicePrintPreview;
+export default PurchaseOrderPrintout;

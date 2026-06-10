@@ -10,7 +10,8 @@ const TripSheetGeneralInfo = ({
     godown,
     voucherType,
     selectedItems,
-    setSelectedItems
+    setSelectedItems,
+    retailers
 }) => {
 
     return (
@@ -116,7 +117,9 @@ const TripSheetGeneralInfo = ({
                                     setTripSheetInfo({
                                         ...tripSheetInfo,
                                         BillType: e.target.value,
-                                        VoucherType: ''
+                                        VoucherType: '',
+                                        concern: null,
+                                        concernGet: ''
                                     });
                                     setSelectedItems([]);
                                 }}
@@ -169,6 +172,23 @@ const TripSheetGeneralInfo = ({
                                 <option value="Canceled">Canceled</option>
                             </select>
                         </div>
+
+                        {tripSheetInfo.BillType === 'MATERIAL INWARD' && (
+                            <div className="col-sm-6 px-2 py-1">
+                                <label>Retailer <RequiredStar /></label>
+                                <Select
+                                    value={{ value: tripSheetInfo.concern, label: tripSheetInfo.concernGet }}
+                                    onChange={e => setTripSheetInfo(pre => ({ ...pre, concern: e.value, concernGet: e.label }))}
+                                    styles={customSelectStyles}
+                                    options={
+                                        retailers.map(r => ({ value: r.Retailer_Id, label: r.Retailer_Name }))
+                                    }
+                                    filterOption={reactSelectFilterLogic}
+                                    placeholder={"Retailer"}
+                                    isSearchable={true}
+                                />
+                            </div>
+                        )}
 
                         {checkIsNumber(tripSheetInfo?.Trip_Id) && (
                             <div className="col-xl-3 col-md-4 col-sm-6 px-2 py-1">
