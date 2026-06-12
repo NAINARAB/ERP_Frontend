@@ -3,7 +3,7 @@ import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, Dialog
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
-    Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
+    Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import SaleOrderInvoicePrint from "../SalesReportComponent/SaleOrderInvoicePrint";
@@ -34,6 +34,9 @@ const defaultFilters = {
     VoucherType: { value: "", label: "ALL" },
     Cancel_status: '',
     OrderStatus: { value: "", label: "ALL" },
+    ConvertStatus: { value: "", label: "ALL" },
+    TripStatus: { value: "", label: "ALL" },
+    PaidStatus: { value: "", label: "ALL" },
 };
 
 const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
@@ -74,6 +77,9 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             VoucherType = defaultFilters.VoucherType,
             Cancel_status = defaultFilters.Cancel_status,
             OrderStatus = defaultFilters.OrderStatus,
+            ConvertStatus = defaultFilters.ConvertStatus,
+            TripStatus = defaultFilters.TripStatus,
+            PaidStatus = defaultFilters.PaidStatus,
         } = otherSessionFiler;
 
         setFilters((pre) => ({
@@ -86,6 +92,9 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             VoucherType,
             Cancel_status,
             OrderStatus,
+            ConvertStatus,
+            TripStatus,
+            PaidStatus,
         }));
     }, [filterVersion, pageID]);
 
@@ -140,7 +149,6 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
             SalesPerson = defaultFilters.SalesPerson,
             VoucherType = defaultFilters.VoucherType,
             Cancel_status = defaultFilters.Cancel_status,
-            OrderStatus = defaultFilters.OrderStatus,
         } = otherSessionFiler;
 
         let queryParams = [
@@ -153,10 +161,6 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         if (isValidNumber(SalesPerson.value)) queryParams.push(`Sales_Person_Id=${SalesPerson.value}`);
         if (isValidNumber(CreatedBy.value)) queryParams.push(`Created_by=${CreatedBy.value}`);
         if (isValidNumber(VoucherType.value)) queryParams.push(`VoucherType=${VoucherType.value}`);
-
-        if (OrderStatus?.value) {
-            queryParams.push(`OrderStatus=${OrderStatus.value}`);
-        }
 
         fetchLink({
             address: `sales/saleOrder?${queryParams.join('&')}`,
@@ -307,55 +311,129 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         });
     };
 
+    const filteredSaleOrders = useMemo(() => {
+        return saleOrders.filter(row => {
+            let isValid = true;
+
+            if (filters.OrderStatus?.value) {
+                const cancelStatus = Number(row?.Cancel_status);
+                let status = cancelStatus === 1 ? "New" : cancelStatus === 2 ? "Hold" : "Cancelled";
+                if (status !== filters.OrderStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.ConvertStatus?.value) {
+                const products = toArray(row?.Products_List);
+                const totalBillQty = products.reduce((acc, item) => Addition(acc, item.Bill_Qty), 0);
+                const totalConvertedQty = products.reduce((acc, item) => Addition(acc, item.convertedQuantity), 0);
+
+                let status = "Pending";
+                if (totalConvertedQty > 0) {
+                    if (totalConvertedQty >= totalBillQty) {
+                        status = "Converted";
+                    } else {
+                        status = "Partially";
+                    }
+                }
+                if (status !== filters.ConvertStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.TripStatus?.value) {
+                const convertedInvoice = toArray(row?.ConvertedInvoice);
+                const isAssigned = convertedInvoice.some(
+                    inv => toArray(inv?.tripDetails).length > 0
+                );
+                let status = isAssigned ? 'Assigned' : 'Pending';
+                if (status !== filters.TripStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.PaidStatus?.value) {
+                const convertedInvoice = toArray(row?.ConvertedInvoice);
+                const paidAmount = convertedInvoice.reduce((sum, inv) => {
+                    const receipts = toArray(inv?.receiptInfo);
+                    const invPaid = receipts.reduce((invSum, r) => Addition(invSum, r?.receiptAmount), 0);
+                    return Addition(sum, invPaid);
+                }, 0);
+                
+                let status = "Unpaid";
+                if (paidAmount > 0) {
+                    if (paidAmount >= Number(row?.Total_Invoice_value)) {
+                        status = "Fully Paid";
+                    } else {
+                        status = "Partially Paid";
+                    }
+                }
+                if (status !== filters.PaidStatus.value) isValid = false;
+            }
+
+            return isValid;
+        });
+    }, [saleOrders, filters.OrderStatus, filters.ConvertStatus, filters.TripStatus, filters.PaidStatus]);
+
     const Total_Invoice_value = useMemo(
         () =>
-            saleOrders.reduce(
+            filteredSaleOrders.reduce(
                 (acc, orders) => Addition(acc, orders?.Total_Invoice_value),
                 0
             ),
-        [saleOrders]
+        [filteredSaleOrders]
     );
 
     const convertToSalesInvoice = (saleOrder) => {
         const productsList = toArray(saleOrder?.Products_List);
+        const convertedInvoices = toArray(saleOrder?.ConvertedInvoice);
 
-        const invoiceProducts = productsList.map((item, index) => {
+        const invoiceProducts = productsList.reduce((acc, item) => {
             const productMaster = baseData.products.find(
                 p => isEqualNumber(p.Product_Id, item.Item_Id)
             ) || {};
             const pack = toNumber(productMaster?.PackGet) || 1;
-            const billQty = toNumber(item.Bill_Qty);
-            const altBillQty = Division(billQty, pack);
+            
+            const orderedQty = toNumber(item.Bill_Qty);
+            let convertedQty = 0;
+            convertedInvoices.forEach(inv => {
+                toArray(inv?.invoicedProduct).forEach(invProd => {
+                    if (isEqualNumber(invProd.productId, item.Item_Id)) {
+                        convertedQty = Addition(convertedQty, invProd.quantity);
+                    }
+                });
+            });
 
-            return {
-                S_No: index + 1,
-                Item_Id: item.Item_Id,
-                Item_Name: item.Product_Name || productMaster?.Product_Name || '',
-                HSN_Code: item.HSN_Code || '',
-                GoDown_Id: item.GoDown_Id || '',
-                Bill_Qty: billQty,
-                Alt_Bill_Qty: altBillQty,
-                Act_Qty: billQty,
-                Alt_Act_Qty: altBillQty,
-                Free_Qty: toNumber(item.Free_Qty),
-                Total_Qty: billQty,
-                Item_Rate: toNumber(item.Item_Rate),
-                Taxable_Rate: toNumber(item.Taxable_Rate),
-                Amount: toNumber(item.Amount),
-                Unit_Id: item.Unit_Id || '',
-                Unit_Name: item.Unit_Name || productMaster?.Units || '',
-                Taxble: item.Taxble,
-                Taxable_Amount: toNumber(item.Taxable_Amount),
-                Tax_Rate: toNumber(item.Tax_Rate),
-                Cgst: toNumber(item.Cgst),
-                Cgst_Amo: toNumber(item.Cgst_Amo),
-                Sgst: toNumber(item.Sgst),
-                Sgst_Amo: toNumber(item.Sgst_Amo),
-                Igst: toNumber(item.Igst),
-                Igst_Amo: toNumber(item.Igst_Amo),
-                Final_Amo: toNumber(item.Final_Amo),
-            };
-        });
+            const pendingQty = orderedQty - convertedQty;
+
+            if (pendingQty > 0) {
+                const billQty = pendingQty;
+                const altBillQty = Division(billQty, pack);
+
+                acc.push({
+                    S_No: acc.length + 1,
+                    Item_Id: item.Item_Id,
+                    Item_Name: item.Product_Name || productMaster?.Product_Name || '',
+                    HSN_Code: item.HSN_Code || '',
+                    GoDown_Id: item.GoDown_Id || '',
+                    Bill_Qty: billQty,
+                    Alt_Bill_Qty: altBillQty,
+                    Act_Qty: billQty,
+                    Alt_Act_Qty: altBillQty,
+                    Total_Qty: billQty,
+                    Item_Rate: toNumber(item.Item_Rate),
+                    Taxable_Rate: toNumber(item.Taxable_Rate),
+                    Amount: Multiplication(billQty, item.Item_Rate),
+                    Unit_Id: item.Unit_Id || '',
+                    Unit_Name: item.Unit_Name || productMaster?.Units || '',
+                    Taxble: item.Taxble,
+                    Tax_Rate: toNumber(item.Tax_Rate),
+                    Cgst: toNumber(item.Cgst),
+                    Sgst: toNumber(item.Sgst),
+                    Igst: toNumber(item.Igst),
+                });
+            }
+            return acc;
+        }, []);
+
+        if (invoiceProducts.length === 0) {
+            alert("No pending items available for conversion.");
+            return;
+        }
 
         const invoicePayload = {
             Do_Date: ISOString(),
@@ -382,14 +460,14 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
     };
 
     const selectableOrders = useMemo(() => {
-        return saleOrders.filter(order => {
+        return filteredSaleOrders.filter(order => {
             if (toNumber(order?.Cancel_status) === 0) return false;
             const products = toArray(order?.Products_List);
             const canConvert = products.some(item => toNumber(item.convertedQuantity) < toNumber(item.Bill_Qty));
             const hasInvoices = toArray(order?.ConvertedInvoice).length > 0;
             return canConvert || hasInvoices;
         });
-    }, [saleOrders]);
+    }, [filteredSaleOrders]);
 
     const printableSelected = useMemo(
         () => selectedOrders.filter(o => toArray(o?.ConvertedInvoice).length > 0),
@@ -410,7 +488,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         <>
             <AppTableComponent
                 title="Sale Orders"
-                dataArray={saleOrders}
+                dataArray={filteredSaleOrders}
                 EnableSerialNumber
                 stateUrl='/erp/sales/saleOrder'
                 stateGroup={'saleOrderListing'}
@@ -819,7 +897,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                     </td>
                                 </tr>
 
-                                <tr>
+                                {/* <tr>
                                     <td style={{ verticalAlign: "middle" }}>Canceled Order</td>
                                     <td>
                                         <select
@@ -847,13 +925,77 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                             onChange={(e) => setFilters({ ...filters, OrderStatus: e })}
                                             options={[
                                                 { value: "", label: "ALL" },
-                                                { value: "pending", label: "Pending" },
-                                                { value: "completed", label: "Completed" },
+                                                { value: "New", label: "New" },
+                                                { value: "Hold", label: "Hold" },
+                                                { value: "Cancelled", label: "Cancelled" },
                                             ]}
                                             styles={customSelectStyles}
                                             isSearchable={false}
                                             placeholder={"Order Status"}
                                             filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr> */}
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Convert Status</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.ConvertStatus}
+                                            onChange={(e) => setFilters({ ...filters, ConvertStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Pending", label: "Pending" },
+                                                { value: "Partially", label: "Partially" },
+                                                { value: "Converted", label: "Converted" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Convert Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Trip Status</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.TripStatus}
+                                            onChange={(e) => setFilters({ ...filters, TripStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Assigned", label: "Assigned" },
+                                                { value: "Pending", label: "Pending" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Trip Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Paid Amount</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.PaidStatus}
+                                            onChange={(e) => setFilters({ ...filters, PaidStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Fully Paid", label: "Fully Paid" },
+                                                { value: "Partially Paid", label: "Partially Paid" },
+                                                { value: "Unpaid", label: "Unpaid" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Paid Amount Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
                                         />
                                     </td>
                                 </tr>
@@ -876,6 +1018,9 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                 VoucherType: filters.VoucherType,
                                 Cancel_status: filters.Cancel_status,
                                 OrderStatus: filters.OrderStatus,
+                                ConvertStatus: filters.ConvertStatus,
+                                TripStatus: filters.TripStatus,
+                                PaidStatus: filters.PaidStatus,
                             });
                             setFilterVersion(v => v + 1);
                         }}
