@@ -151,7 +151,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                 <table className="table table-bordered">
                     <thead>
                         <tr>
-                            {['Sno', 'Item', 'Quantity', 'HSN', 'Units', 'Action'].map((item, index) => (
+                            {['Sno', 'Item', 'Quantity', 'Rate', 'HSN', 'Units', 'Action'].map((item, index) => (
                                 <th key={index} className="fa-13 bg-light">{item}</th>
                             ))}
                         </tr>
@@ -175,6 +175,19 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                                 }))}
                                             />
                                         ) : row.QTY}
+                                    </td>
+                                    <td className="fa-12">
+                                        {godownActivityData.tripType.value === 'MATERIAL_INWARD' ? (
+                                            <input
+                                                type="number"
+                                                className="cus-inpt p-2"
+                                                value={row.Gst_Rate}
+                                                onChange={(e) => setGodownActivityData(pre => ({
+                                                    ...pre,
+                                                    items: pre.items.map((item, i) => i === index ? { ...item, Gst_Rate: e.target.value } : item)
+                                                }))}
+                                            />
+                                        ) : row.Gst_Rate}
                                     </td>
                                     <td className="fa-12">{row.HSN_Code}</td>
                                     {/* <td className="fa-12">{row.Gst_Rate}</td> */}

@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButton, Switch } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
-import { Addition, checkIsNumber, Division, getUniqueData, isEqualNumber, ISOString, isValidObject, Multiplication, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, stringCompare, toNumber } from "../../../Components/functions";
+import { Addition, checkIsNumber, Division, getUniqueData, isEqualNumber, ISOString, isValidObject, Multiplication, NumberFormat, numberToWords, onlynumAndNegative, RoundNumber, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
-import { initialInvoiceValue, itemsRowDetails, staffRowDetails } from "./variable";
+import { initialInvoiceValue, invoiceTripInfo, itemsRowDetails, staffRowDetails } from "./variable";
 import AddItemsDialog from "./addToCart";
 import PurchaseInvoiceStaffInvolved from "./StaffInfoComp";
 import PurchaseInvoiceGeneralInfo from "./generalInfoComp";
@@ -29,6 +29,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
     const [selectedItems, setSelectedItems] = useState([]);
     const [StaffArray, setStaffArray] = useState([]);
     const [invoiceExpences, setInvoiceExpences] = useState([]);
+    const [tripDetails, setTripDetails] = useState([]);
 
     const [deliveryDetails, setDeliveryDetails] = useState([]);
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
@@ -222,7 +223,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
             Array.isArray(stateDetails?.staffInfo) &&
             isValidObject(stateDetails?.invoiceInfo)
         ) {
-            const { invoiceInfo, orderInfo, staffInfo } = stateDetails;
+            const { invoiceInfo, orderInfo = [], staffInfo = [], tripDetails = [] } = stateDetails;
             searchFromArrival(invoiceInfo.Retailer_Id);
             setInvoiceDetails(
                 Object.fromEntries(
@@ -248,9 +249,13 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
+            setTripDetails(
+                toArray(tripDetails).map(item => Object.fromEntries(
+                    Object.entries(invoiceTripInfo).map(([key, value]) => [key, item[key] ?? value])
+                ))
+            )
             setManualInvoice(!invoiceInfo.isFromPurchaseOrder)
         }
-        console.log(stateDetails)
     }, [stateDetails])
 
     const searchFromArrival = (vendor) => {
@@ -433,6 +438,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 Product_Array: selectedItems,
                 StaffArray: StaffArray,
                 Expence_Array: invoiceExpences,
+                Trip_Details: tripDetails,
                 ...invoiceDetails
             }
         }).then(data => {

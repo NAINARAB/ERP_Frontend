@@ -89,3 +89,10 @@ export const purchaseOrderStaffInfo = {
     Emp_Type_Id: '',
     EmpType: ''
 }
+
+export const tripDetailsInfo = {
+    id: '',
+    PO_Id: '',
+    po_uid: '',
+    trip_id: '',
+}

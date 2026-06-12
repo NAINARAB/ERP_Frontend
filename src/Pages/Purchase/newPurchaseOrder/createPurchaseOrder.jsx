@@ -19,7 +19,7 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
-import { purchaseOrderGeneralInfo, purchaseOrderStockInfo, purchaseOrderStaffInfo } from "./column";
+import { purchaseOrderGeneralInfo, purchaseOrderStockInfo, purchaseOrderStaffInfo, tripDetailsInfo } from "./column";
 import AddItemToSaleOrderCart from "../../Sales/SaleOrder/addItemToCart";
 import InvolvedStaffs from "./creationComponent/involvedStaffs";
 import ParameterDialog from "./creationComponent/parameterDialog";
@@ -46,6 +46,7 @@ const CreatePurchaseOrder = ({ loadingOn, loadingOff }) => {
     const [orderDetails, setOrderDetails] = useState(purchaseOrderGeneralInfo)
     const [orderProducts, setOrderProducts] = useState([]);
     const [staffInvolved, setStaffInvolved] = useState([]);
+    const [tripDetails, setTripDetails] = useState([]);
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
     const [addProductDialog, setAddProductDialog] = useState(false);
@@ -62,10 +63,10 @@ const CreatePurchaseOrder = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         if (
             isValidObject(editValues) &&
-            Array.isArray(editValues?.Products_List) &&
-            Array.isArray(editValues?.Staff_Involved_List)
+            Array.isArray(editValues.Products_List) &&
+            Array.isArray(editValues.Staff_Involved_List)
         ) {
-            const { Products_List, Staff_Involved_List } = editValues;
+            const { Products_List = [], Staff_Involved_List = [], Trip_Details = [] } = editValues;
             setOrderDetails(
                 Object.fromEntries(
                     Object.entries(purchaseOrderGeneralInfo).map(([key, value]) => {
@@ -88,6 +89,13 @@ const CreatePurchaseOrder = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
+            setTripDetails(
+                Trip_Details?.map(item => Object.fromEntries(
+                    Object.entries(tripDetailsInfo).map(([key, value]) => {
+                        return [key, item[key] ?? value]
+                    })
+                ))
+            )
 
             // Populate itemParameters from Products_List[].parameters
             const paramMap = {};
@@ -203,6 +211,7 @@ const CreatePurchaseOrder = ({ loadingOn, loadingOff }) => {
                     Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0)),
                     Staff_Involved_List: staffInvolved,
                     Parameter_Array,
+                    Trip_Details: tripDetails
                 }
             }).then(data => {
                 if (data.success) {

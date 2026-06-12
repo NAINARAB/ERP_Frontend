@@ -93,3 +93,9 @@ export const purchaseExpenceInfo = {
     Amount_value_DR: 0,
     Amount_value_CR: 0,
 }
+
+export const invoiceTripInfo = {
+    id: '',
+    pin: '',
+    tripid: '',
+}

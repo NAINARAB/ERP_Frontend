@@ -2,8 +2,8 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Addition, checkIsNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, NumberFormat, numberToWords, reactSelectFilterLogic, Subraction, timeDuration, toNumber } from "../../../Components/functions";
-import { Download, Edit, FilterAlt, LocalShipping, Search, Visibility } from "@mui/icons-material";
+import { Addition, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, Multiplication, NumberFormat, numberToWords, reactSelectFilterLogic, Subraction, timeDuration, toArray, toNumber } from "../../../Components/functions";
+import { Download, Edit, FilterAlt, LocalShipping, Search, Visibility, AddShoppingCart, Receipt } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
@@ -31,7 +31,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         filterDialog: false,
         refresh: false,
         printPreviewDialog: false,
-        deliveryChallanDialog: false, 
+        deliveryChallanDialog: false,
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
@@ -80,12 +80,6 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }
 
-    /**
-     * Build a unified products list for the print preview.
-     * - CREDIT_NOTE / DEBIT_NOTE: flatten products from each note's Products_List,
-     *   merge same products (by Item_Id) across multiple notes by summing QTY and amounts.
-     * - MATERIAL INWARD / OTHER GODOWN: use Products_List as-is.
-     */
     const printProductsList = useMemo(() => {
         const billType = selectedRow?.BillType;
 
@@ -289,7 +283,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         });
     }, [tripData, filters]);
 
-  
+
     const transformToDeliveryChallan = (tripData, resolvedProducts) => {
         const billType = tripData?.BillType;
         const isCreditOrDebit = billType === 'CREDIT_NOTE' || billType === 'DEBIT_NOTE';
@@ -504,6 +498,76 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             setSelectedRow(row);
                                         }
                                     },
+                                    {
+                                        name: 'Create PO',
+                                        icon: <AddShoppingCart className="fa-14" />,
+                                        onclick: () => nav('/erp/purchase/purchaseOrder/create', {
+                                            state: {
+                                                Retailer_Id: row?.concern,
+                                                Retailer_Name: row?.concernGet,
+                                                Branch_Id: row?.Branch_Id,
+                                                Products_List: toArray(row?.Products_List).map((pro, proInd) => ({
+                                                    Serial_No: proInd + 1,
+                                                    Item_Id: pro.Product_Id,
+                                                    Item_Rate: pro.Gst_Rate,
+                                                    Bill_Qty: pro.QTY,
+                                                    Amount: Multiplication(pro.QTY, pro.Gst_Rate),
+                                                    HSN_Code: pro.HSN_Code,
+                                                    Unit_Id: pro.Unit_Id,
+                                                    Unit_Name: pro.Units,
+                                                    Godown_Id: pro.To_Location,
+                                                })),
+                                                Staff_Involved_List: row?.Employees_Involved?.map(emp => ({
+                                                    Emp_Id: emp.Involved_Emp_Id,
+                                                    EmpName: emp.Emp_Name,
+                                                    Emp_Type_Id: emp.Cost_Center_Type_Id,
+                                                    EmpType: emp.Cost_Category
+                                                })),
+                                                Trip_Details: [{
+                                                    trip_id: row?.Trip_Id
+                                                }]
+                                            }
+                                        }),
+                                        disabled: row?.BillType !== 'MATERIAL INWARD'
+                                    },
+                                    {
+                                        name: 'Create Invoice',
+                                        icon: <Receipt className="fa-14" />,
+                                        onclick: () => nav('/erp/purchase/invoice/create', {
+                                            state: {
+                                                invoiceInfo: {
+                                                    Retailer_Id: row?.concern,
+                                                    Retailer_Name: row?.concernGet,
+                                                    Branch_Id: row?.Branch_Id,
+                                                    isFromPurchaseOrder: false
+                                                },
+                                                orderInfo: toArray(row?.Products_List).map((pro, proInd) => ({
+                                                    S_No: proInd + 1,
+                                                    Item_Id: pro.Product_Id,
+                                                    Item_Name: pro.Product_Name,
+                                                    Product_Name: pro.Product_Name,
+                                                    Item_Rate: pro.Gst_Rate,
+                                                    Bill_Qty: pro.QTY,
+                                                    Act_Qty: pro.QTY,
+                                                    Amount: Multiplication(pro.QTY, pro.Gst_Rate),
+                                                    HSN_Code: pro.HSN_Code,
+                                                    Unit_Id: pro.Unit_Id,
+                                                    Unit_Name: pro.Units,
+                                                    Location_Id: pro.To_Location,
+                                                })),
+                                                staffInfo: row?.Employees_Involved?.map(emp => ({
+                                                    Involved_Emp_Id: emp.Involved_Emp_Id,
+                                                    Involved_Emp_Name: emp.Emp_Name,
+                                                    Cost_Center_Type_Id: emp.Cost_Center_Type_Id,
+                                                    EmpType: emp.Cost_Category
+                                                })),
+                                                tripDetails: [{
+                                                    tripid: row?.Trip_Id
+                                                }]
+                                            }
+                                        }),
+                                        disabled: row?.BillType !== 'MATERIAL INWARD'
+                                    }
                                 ]}
                             />
                         )
