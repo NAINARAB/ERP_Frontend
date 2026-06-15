@@ -6,7 +6,6 @@ import {
     Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import SaleOrderInvoicePrint from "../SalesReportComponent/SaleOrderInvoicePrint";
 import InvoicePrintPreview from "./invoicePrintPreview";
 import { Add, Edit, FilterAlt, Print, ReceiptLong, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
@@ -369,15 +368,6 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         });
     }, [saleOrders, filters.OrderStatus, filters.ConvertStatus, filters.TripStatus, filters.PaidStatus]);
 
-    const Total_Invoice_value = useMemo(
-        () =>
-            filteredSaleOrders.reduce(
-                (acc, orders) => Addition(acc, orders?.Total_Invoice_value),
-                0
-            ),
-        [filteredSaleOrders]
-    );
-
     const convertToSalesInvoice = (saleOrder) => {
         const productsList = toArray(saleOrder?.Products_List);
         const convertedInvoices = toArray(saleOrder?.ConvertedInvoice);
@@ -545,24 +535,33 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     createCol("invoiceCopyCount", "number", "Bill copy"),
                     {
                         ColumnHeader: "Order Status",
+                        Field_Name: 'OrderStatus',
                         isVisible: 1,
                         align: "center",
                         isCustomCell: true,
                         Cell: ({ row }) => {
                             const cancelStatus = Number(row?.Cancel_status);
+                            const products = toArray(row?.Products_List);
+                            const orderQuantity = products.reduce((acc, item) => Addition(acc, item.Bill_Qty), 0);
+                            const totalConvertedQty = products.reduce((acc, item) => Addition(acc, item.convertedQuantity), 0);
 
                             let status = "";
                             let className = "bg-success text-white";
 
-                            if (cancelStatus == 1) {
-                                status = "New";
-                                className = "bg-success text-white";
-                            } else if (cancelStatus == 2) {
-                                status = "Hold";
-                                className = "bg-warning text-dark";
-                            } else if (cancelStatus == 0) {
+                            if (cancelStatus == 0) {
                                 status = "Cancelled";
                                 className = "bg-danger text-white";
+                            } else if (totalConvertedQty > 0) {
+                                if (totalConvertedQty >= orderQuantity) {
+                                    status = "Completed";
+                                    className = "bg-success text-white";
+                                } else {
+                                    status = "Processing";
+                                    className = "bg-warning text-dark";
+                                }
+                            } else {
+                                status = "New";
+                                className = "bg-primary text-white";
                             }
 
                             return (
@@ -574,6 +573,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     },
                     {
                         ColumnHeader: "Convert Status",
+                        Field_Name: 'invoiceStatus',
                         isVisible: 1,
                         align: "center",
                         isCustomCell: true,
@@ -604,6 +604,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     },
                     {
                         ColumnHeader: "Trip Status",
+                        Field_Name: 'tripStatus',
                         isVisible: 1,
                         align: "center",
                         isCustomCell: true,
@@ -640,7 +641,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     },
                     createCol("Created_BY_Name", "string", "Created_By"),
                     {
-                        Field_Name: "Action",
+                        ColumnHeader: "Action",
+                        Field_Name: 'rowAction',
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {

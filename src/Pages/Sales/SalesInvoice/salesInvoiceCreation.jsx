@@ -2,14 +2,17 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, IconButton, CardContent, Card, Dialog, DialogTitle, DialogContent, DialogActions, CardActions } from "@mui/material";
 import { toast } from 'react-toastify';
 import {
-    isEqualNumber, isValidObject, ISOString, getUniqueData, Addition, getSessionUser,
+    isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, Subraction, filterableText, generateUUID
+    rid, Subraction, filterableText, generateUUID, reactSelectFilterLogic,
+    Division
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
-import { Add, Delete, Edit, ReceiptLong } from "@mui/icons-material";
+import { Add, Delete, ReceiptLong } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
-import FilterableTable, { createCol } from "../../../Components/filterableTable2";
+import Select from 'react-select';
+import { customSelectStyles } from '../../../Components/tablecolumn';
+
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -18,7 +21,8 @@ import {
     retailerOutstandingDetails,
     canCreateInvoice,
     setAddress,
-    defaultStaffTypes
+    defaultStaffTypes,
+    commonGodownForProducts
 } from './variable';
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
@@ -39,6 +43,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const location = useLocation();
     const editValues = location.state;
     const [requestId, setRequestId] = useState(generateUUID());
+    const [commonGodown, setCommonGodown] = useState(commonGodownForProducts);
     const [baseData, setBaseData] = useState({
         products: [],
         branch: [],
@@ -121,7 +126,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `masters/defaultAccountMaster?Type=SALE_INVOICE` }),
-                    // fetchLink({ address: `sales/stockInGodown` }),
                     fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
                     fetchLink({ address: `inventory/batchMaster/stockBalance` }),
                     fetchLink({ address: `authorization/moduleRules?moduleName=SALE_INVOICE` })
@@ -154,9 +158,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 const expencesMaster = (expenceResponse.success ? toArray(expenceResponse.data) : []).sort(
                     (a, b) => String(a?.Account_Name).localeCompare(b?.Account_Name)
                 );
-                // const stockInGodowns = (godownWiseStock.success ? godownWiseStock.data : []).sort(
-                //     (a, b) => String(a?.stock_item_name).localeCompare(b?.stock_item_name)
-                // );
                 const stockItemLedgerName = (stockItemLedgerNameResponse.success ? stockItemLedgerNameResponse.data : []);
                 const moduleConfiguration = moduleConfigurationResponse.success ? moduleConfigurationResponse.data : [];
 
@@ -176,7 +177,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         Expence_Name: exp.Account_Name,
                         percentageValue: exp.percentageValue
                     })),
-                    // stockInGodown: stockInGodowns,
                     stockItemLedgerName: stockItemLedgerName,
                     batchDetails: toArray(batchDetailsResponse.data),
                     moduleConfiguration: moduleConfiguration
@@ -472,6 +472,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         })
     }, [baseData.expence, IS_IGST, taxType])
 
+    useEffect(() => {
+        fetchLink({
+            address: `sales/salesInvoice/godownStockDetails?Godown_Id=${commonGodown.value}`
+        }).then(({ data, success }) => {
+            if (success) {
+                setBaseData(pre => ({ ...pre, stockInGodown: data }))
+            }
+        }).catch(console.error);
+    }, [commonGodown.value]);
+
     // Expence Info
 
     const invExpencesTotal = useMemo(() => {
@@ -595,7 +605,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     gstNumber: retailerShippingAddress?.gstNumber,
                     stateName: retailerShippingAddress?.stateName
                 },
-                Product_Array: invoiceProducts.map((item, index) => ({ ...item, S_No: index + 1 })),
+                Product_Array: invoiceProducts
+                    .filter(item => checkIsNumber(item.Item_Id))
+                    .map((item, index) => ({ ...item, S_No: index + 1, GoDown_Id: commonGodown.value })),
                 Staffs_Array: Array.from(
                     new Map(
                         staffArray.filter(
@@ -830,34 +842,49 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         return invoiceProducts.every(item => isValidNumber(item?.Batch_Id) || Boolean(item?.Batch_Name));
     }, [invoiceProducts, salesInvoiceAccess.batchUsage]);
 
-    const cumulativeRow = useMemo(() => {
-        if (invoiceProducts.length > 0) {
-            const totals = invoiceProducts.reduce(
-                (acc, item) => ({
-                    Act_Qty: Addition(acc.Act_Qty, item.Act_Qty),
-                    Alt_Act_Qty: Addition(acc.Alt_Act_Qty, item.Alt_Act_Qty),
-                    Bill_Qty: Addition(acc.Bill_Qty, item.Bill_Qty),
-                    Alt_Bill_Qty: Addition(acc.Alt_Bill_Qty, item.Alt_Bill_Qty),
-                    Amount: Addition(acc.Amount, item.Amount),
-                }),
-                {
-                    Act_Qty: 0,
-                    Alt_Act_Qty: 0,
-                    Bill_Qty: 0,
-                    Alt_Bill_Qty: 0,
-                    Amount: 0,
-                }
-            );
+    const tdStyle = 'border fa-13 vctr';
+    const inputStyle = 'cus-inpt p-1';
 
-            return {
-                ...salesInvoiceDetailsInfo,
-                ...totals,
-                Item_Name: 'Total',
-                Item_Id: 'TOTAL_ROW',
-            };
-        }
-        return null;
-    }, [invoiceProducts]);
+
+    const changeSelectedObjects = (indexValue, key, value) => {
+        setInvoiceProduct((prev) => {
+            return prev.map((item, sIndex) => {
+                if (isEqualNumber(sIndex, indexValue)) {
+                    switch (key) {
+                        case 'Bill_Qty': {
+                            const updatedValue = parseFloat(value || 0);
+                            const newItem = { ...item, Bill_Qty: updatedValue };
+                            if (item.Item_Rate) {
+                                newItem.Amount = toNumber(item.Item_Rate) * updatedValue;
+                            } else if (item.Amount) {
+                                newItem.Item_Rate = updatedValue ? toNumber(item.Amount) / updatedValue : '';
+                            }
+                            return newItem;
+                        }
+                        case 'Item_Rate': {
+                            const updatedValue = parseFloat(value || 0);
+                            const newItem = { ...item, Item_Rate: updatedValue };
+                            if (item.Bill_Qty) {
+                                newItem.Amount = updatedValue * toNumber(item.Bill_Qty);
+                            }
+                            return newItem;
+                        }
+                        case 'Amount': {
+                            const updatedValue = parseFloat(value || 0);
+                            const newItem = { ...item, Amount: updatedValue };
+                            if (item.Bill_Qty) {
+                                newItem.Item_Rate = toNumber(item.Bill_Qty) ? updatedValue / toNumber(item.Bill_Qty) : '';
+                            }
+                            return newItem;
+                        }
+                        default:
+                            return { ...item, [key]: value };
+                    }
+                }
+                return item;
+            });
+        });
+    };
 
     const saveFunWithCodition = () => {
         if (voucherGodownCondition) {
@@ -955,6 +982,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     salesInvoiceAccess={salesInvoiceAccess}
                                     fetchedAddresses={fetchedAddresses}
                                     onPreviewOpen={fetchLastInvoicePreview}
+                                    godownData={baseData.godown}
+                                    commonGodown={commonGodown}
+                                    setCommonGodown={setCommonGodown}
                                 />
                             </div>
                         </div>
@@ -1007,148 +1037,253 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     )}
 
                     {/* product details */}
-                    <FilterableTable
-                        title="Items"
-                        headerFontSizePx={13}
-                        bodyFontSizePx={13}
-                        EnableSerialNumber
-                        disablePagination
-                        ButtonArea={
-                            <>
+                    <div className="table-responsive">
+                        <div className="d-flex p-2 justify-content-end align-items-center gap-2">
+                            <Button
+                                onClick={() => {
+                                    setInvoiceProduct(prev => [
+                                        ...prev,
+                                        {
+                                            ...salesInvoiceDetailsInfo,
+                                            rowId: rid(),
+                                            Pre_Id: invoiceInfo.So_No,
+                                            S_No: prev.length + 1,
+                                        }
+                                    ]);
+                                }}
+                                variant='outlined'
+                                type="button"
+                                startIcon={<Add />}
+                                disabled={
+                                    !checkIsNumber(invoiceInfo.Retailer_Id)
+                                    || (invoiceProducts.length > 0
+                                        && checkIsNumber(invoiceInfo.So_No))
+                                }
+                            >Add Product</Button>
+
+                            <AddProductsInSalesInvoice
+                                loadingOn={loadingOn}
+                                loadingOff={loadingOff}
+                                open={dialog.importFromSaleOrder}
+                                onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
+                                retailer={invoiceInfo?.Retailer_Id}
+                                selectedItems={invoiceProducts}
+                                setSelectedItems={setInvoiceProduct}
+                                staffArray={staffArray}
+                                setStaffArray={setStaffArray}
+                                products={baseData.products}
+                                GST_Inclusive={invoiceInfo.GST_Inclusive}
+                                IS_IGST={IS_IGST}
+                                invoiceInfo={invoiceInfo}
+                                setInvoiceInfo={setInvoiceInfo}
+                                godowns={baseData.godown}
+                            >
                                 <Button
-                                    onClick={() => {
-                                        setSelectedProductToEdit(null);
-                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                    }}
-                                    sx={{ ml: 1 }}
-                                    variant='outlined'
-                                    type="button"
-                                    startIcon={<Add />}
+                                    onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
                                     disabled={
                                         !checkIsNumber(invoiceInfo.Retailer_Id)
-                                        || (invoiceProducts.length > 0
-                                            && checkIsNumber(invoiceInfo.So_No))
+                                        || (
+                                            invoiceProducts.length > 0
+                                            && !checkIsNumber(invoiceInfo.So_No)
+                                        )
                                     }
-                                >Add Product</Button>
+                                    type="button"
+                                    variant='outlined'
+                                    startIcon={<ReceiptLong />}
+                                >Choose Sale Order</Button>
+                            </AddProductsInSalesInvoice>
+                        </div>
 
-                                <AddProductsInSalesInvoice
-                                    loadingOn={loadingOn}
-                                    loadingOff={loadingOff}
-                                    open={dialog.importFromSaleOrder}
-                                    onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
-                                    retailer={invoiceInfo?.Retailer_Id}
-                                    selectedItems={invoiceProducts}
-                                    setSelectedItems={setInvoiceProduct}
-                                    staffArray={staffArray}
-                                    setStaffArray={setStaffArray}
-                                    products={baseData.products}
-                                    GST_Inclusive={invoiceInfo.GST_Inclusive}
-                                    IS_IGST={IS_IGST}
-                                    invoiceInfo={invoiceInfo}
-                                    setInvoiceInfo={setInvoiceInfo}
-                                    godowns={baseData.godown}
-                                    stockInGodown={baseData.stockInGodown}
-                                >
-                                    <Button
-                                        onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
-                                        disabled={
-                                            !checkIsNumber(invoiceInfo.Retailer_Id)
-                                            || (
-                                                invoiceProducts.length > 0
-                                                && !checkIsNumber(invoiceInfo.So_No)
-                                            )
-                                        }
-                                        sx={{ ml: 1 }}
-                                        type="button"
-                                        variant='outlined'
-                                        startIcon={<ReceiptLong />}
-                                    >Choose Sale Order</Button>
-                                </AddProductsInSalesInvoice>
-                            </>
-                        }
-                        dataArray={[
-                            ...invoiceProducts.sort((a, b) => toNumber(a.S_No) - toNumber(b.S_No)),
-                            ...Array.from({
-                                length: dummyRowCount > 0 ? dummyRowCount : 0
-                            }).map(d => salesInvoiceDetailsInfo),
-                            ...(cumulativeRow ? [cumulativeRow] : []),
-                        ]}
-                        columns={[
-                            createCol('Item_Name', 'string'),
-                            createCol('Batch_Name', 'string'),
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Act Qty',
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-                                    return row?.Act_Qty ? `${row?.Act_Qty} (${row?.Alt_Act_Qty})` : '';
-                                }
-                            },
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Bill Qty',
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-                                    return row?.Bill_Qty ? `${row?.Bill_Qty} (${row?.Alt_Bill_Qty})` : '';
-                                }
-                            },
-                            createCol('Item_Rate', 'number'),
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Tax',
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-                                    const { Cgst = 0, Sgst = 0, Igst = 0, Cgst_Amo = 0, Sgst_Amo = 0, Igst_Amo = 0 } = row;
-                                    const taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
-                                    const taxAmount = IS_IGST ? Igst_Amo : Addition(Cgst_Amo, Sgst_Amo);
-
-                                    return !checkIsNumber(row?.Item_Id) ? '' : `${taxAmount} - (${taxPercentage} %)`
-                                }
-                            },
-                            {
-                                isVisible: 1,
-                                ColumnHeader: 'Godown',
-                                isCustomCell: true,
-                                Cell: ({ row }) => baseData.godown.find(
-                                    godown => isEqualNumber(godown.Godown_Id, row?.GoDown_Id)
-                                )?.Godown_Name ?? ''
-                            },
-                            createCol('Amount', 'number'),
-                            {
-                                isCustomCell: true,
-                                Cell: ({ row }) => {
-                                    return (
-                                        <>
-                                            <IconButton
-                                                onClick={() => {
-                                                    setSelectedProductToEdit(row);
-                                                    setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                                }}
-                                                size="small"
-                                                type="button"
-                                                disabled={!checkIsNumber(row?.Item_Id)}
-                                            >
-                                                <Edit />
-                                            </IconButton>
-                                            <IconButton
-                                                size="small"
-                                                type="button"
-                                                onClick={() => setInvoiceProduct(
-                                                    pre => pre.filter(obj => obj.rowId !== row.rowId)
-                                                )}
-                                                color='error'
-                                                disabled={!checkIsNumber(row?.Item_Id)}
-                                            >
-                                                <Delete />
-                                            </IconButton>
-                                        </>
-                                    )
-                                },
-                                ColumnHeader: 'Action',
-                                isVisible: 1,
-                            },
-                        ]}
-                    />
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <td className={tdStyle}>SNo</td>
+                                    <td className={tdStyle}>Item</td>
+                                    <td className={tdStyle}>Stock</td>
+                                    <td className={tdStyle}>Rate</td>
+                                    <td className={tdStyle}>Bill Qty</td>
+                                    <td className={tdStyle}>Act Qty</td>
+                                    <td className={tdStyle}>Unit</td>
+                                    <td className={tdStyle}>Amount</td>
+                                    {/* <td className={tdStyle}>Batch</td> */}
+                                    <td className={tdStyle}>#</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {invoiceProducts
+                                    .sort((a, b) => toNumber(a.S_No) - toNumber(b.S_No))
+                                    .map((row, i) => (
+                                        <tr key={row.rowId || i}>
+                                            <td className={tdStyle}>{i + 1}</td>
+                                            <td className={tdStyle} style={{ minWidth: 200 }}>
+                                                <Select
+                                                    value={row?.Item_Id ? {
+                                                        value: row.Item_Id,
+                                                        label: row.Item_Name || findProductDetails(baseData.products, row.Item_Id)?.Product_Name || ''
+                                                    } : null}
+                                                    onChange={e => {
+                                                        const productInfo = findProductDetails(baseData.products, e.value);
+                                                        setInvoiceProduct(prev => prev.map((item, sIndex) => {
+                                                            if (sIndex !== i) return item;
+                                                            return {
+                                                                ...item,
+                                                                Item_Id: e.value,
+                                                                Item_Name: productInfo.Product_Name ?? '',
+                                                                Item_Rate: productInfo.Item_Rate ?? 0,
+                                                                Unit_Id: productInfo.UOM_Id ?? item.Unit_Id,
+                                                                Unit_Name: productInfo.Units ?? item.Unit_Name,
+                                                                HSN_Code: productInfo.HSN_Code ?? '',
+                                                                GoDown_Id: '',
+                                                                Bill_Qty: 0,
+                                                                Act_Qty: 0,
+                                                                Amount: 0,
+                                                            };
+                                                        }));
+                                                    }}
+                                                    options={[
+                                                        { value: '', label: 'select', isDisabled: true },
+                                                        ...baseData.products.map(obj => ({
+                                                            value: obj.Product_Id,
+                                                            label: obj.Product_Name,
+                                                            isDisabled: invoiceProducts.some(
+                                                                (ind, idx) => idx !== i && isEqualNumber(ind.Item_Id, obj.Product_Id)
+                                                            )
+                                                        }))
+                                                    ]}
+                                                    styles={customSelectStyles}
+                                                    isSearchable
+                                                    placeholder="Select Product"
+                                                    menuPortalTarget={document.body}
+                                                    filterOption={reactSelectFilterLogic}
+                                                    maxMenuHeight={200}
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                {(() => {
+                                                    const productDetails = findProductDetails(baseData.products, row.Item_Id);
+                                                    const packValue = toNumber(productDetails?.PackGet);
+                                                    const stockValue = toNumber(baseData.stockInGodown.find(
+                                                        god => isEqualNumber(god.Product_Id, row?.Item_Id)
+                                                    )?.Bal_Qty)
+                                                    return `${stockValue}(${Division(stockValue, packValue || 1)})`;
+                                                })()}
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Item_Rate ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Bill_Qty ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Bill_Qty', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Act_Qty ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <select
+                                                    value={row?.Unit_Id ?? ''}
+                                                    className={inputStyle}
+                                                    onChange={e => {
+                                                        const selectedIndex = e.target.selectedIndex;
+                                                        const label = e.target.options[selectedIndex].text;
+                                                        const value = e.target.value;
+                                                        changeSelectedObjects(i, 'Unit_Id', value);
+                                                        changeSelectedObjects(i, 'Unit_Name', label);
+                                                    }}
+                                                    required
+                                                >
+                                                    <option value="">select</option>
+                                                    {baseData.uom.map((o, j) => (
+                                                        <option value={o.Unit_Id} key={j}>{o.Units}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Amount ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Amount', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            {/* <td className={tdStyle} style={{ minWidth: 200 }}>
+                                                <Select
+                                                    value={row?.GoDown_Id ? {
+                                                        value: row.GoDown_Id,
+                                                        label: (() => {
+                                                            const opts = getGodownOptions(row.Item_Id);
+                                                            return opts.find(o => isEqualNumber(o.value, row.GoDown_Id))?.label
+                                                                || baseData.godown.find(g => isEqualNumber(g.Godown_Id, row.GoDown_Id))?.Godown_Name
+                                                                || '';
+                                                        })()
+                                                    } : null}
+                                                    onChange={e => changeSelectedObjects(i, 'GoDown_Id', e.value)}
+                                                    options={[
+                                                        { value: '', label: 'select', isDisabled: true },
+                                                        ...getGodownOptions(row.Item_Id)
+                                                    ]}
+                                                    styles={customSelectStyles}
+                                                    isDisabled={!checkIsNumber(row?.Item_Id)}
+                                                    isSearchable
+                                                    placeholder="Select Godown"
+                                                    menuPortalTarget={document.body}
+                                                    filterOption={reactSelectFilterLogic}
+                                                    maxMenuHeight={200}
+                                                />
+                                            </td> */}
+                                            {/* <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Batch_Name ?? ''}
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Batch_Name', e.target.value)}
+                                                />
+                                            </td> */}
+                                            <td className={tdStyle}>
+                                                {/* <IconButton
+                                                    onClick={() => {
+                                                        setSelectedProductToEdit(row);
+                                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
+                                                    }}
+                                                    size='small'
+                                                    type="button"
+                                                >
+                                                    <Edit />
+                                                </IconButton> */}
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setInvoiceProduct(pre =>
+                                                            pre.filter(obj => obj.rowId !== row.rowId)
+                                                        );
+                                                    }}
+                                                    size='small'
+                                                    type="button"
+                                                    color='error'
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
 
                     <br />
 

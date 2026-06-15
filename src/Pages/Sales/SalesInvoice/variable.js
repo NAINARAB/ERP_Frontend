@@ -46,6 +46,11 @@ export const retailerDeliveryAddressInfo = {
     stateName: '',
 }
 
+export const commonGodownForProducts = {
+    value: null,
+    label: ''
+}
+
 export const salesInvoiceGeneralInfo = {
     Do_Id: '',
     Do_No: '',
