@@ -12,14 +12,15 @@ import {
     InputLabel, FormControl, CircularProgress, Tab, Tabs, Switch,
     FormControlLabel, Chip, Paper, Stack, RadioGroup, Radio, Menu,
     ListItemIcon, ListItemText, LinearProgress, Table, TableHead,
-    TableRow, TableCell, TableBody, TableContainer
+    TableRow, TableCell, TableBody, TableContainer,
 } from "@mui/material";
 import {
     CheckBox, CheckBoxOutlineBlank, FilterAlt, Print, Search,
     Download, PictureAsPdf, TableChart, ArrowDropDown, Settings,
-    Language, Send, SendAndArchive, Close as CloseIcon,
+    Language, Send, SendAndArchive, Close as CloseIcon, Save as SaveIcon,
+    Visibility, VisibilityOff, Tune as TuneIcon, Check as CheckIcon,
+    WhatsApp as WhatsAppIcon
 } from "@mui/icons-material";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { toast } from "react-toastify";
 import { useReactToPrint } from "react-to-print";
 import { DotPeWhatsAppService } from "../../../Components/dotpeWhatsappService";
@@ -28,10 +29,7 @@ import api from "../../../API";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
-import CheckIcon from '@mui/icons-material/Check';
-
 import { REACT_APP_ASKEVA_TOKEN, REACT_APP_ASKEVA_API_ENDPOINT, print_app } from '../../../encryptionKey';
-
 
 const ASKEVA_CONFIG = {
     token: REACT_APP_ASKEVA_TOKEN,
@@ -45,7 +43,6 @@ const TAB_TO_WHATSAPP_TYPE = {
     receipt_list: "Receipt_List",
     outstanding: "Outstanding",
     pending_bills: "Pending_Bills",
-
 };
 
 const TEMPLATE_MAP = {
@@ -95,10 +92,8 @@ const uniqueCaseInsensitive = (values) => {
     for (const v of values) {
         if (v === undefined || v === null || v === "") continue;
         if (typeof v === "object") continue;
-
         const s = String(v).trim();
         if (!s || s === "[object Object]") continue;
-
         const key = s.toLowerCase();
         if (!map.has(key)) map.set(key, s);
     }
@@ -121,6 +116,21 @@ const normalizePhone = (raw) => {
     if (p.startsWith("0")) p = p.substring(1);
     if (!p.startsWith("91")) p = `91${p}`;
     return p;
+};
+
+const isValidPhone = (phone) => {
+    if (!phone) return false;
+    const str = String(phone).trim();
+    return str !== "" && 
+           str !== "Not Available" && 
+           str !== "null" && 
+           str !== "undefined" &&
+           str !== "NULL" &&
+           str !== "NA" &&
+           str !== "N/A" &&
+           str !== "0" &&
+           str !== "0000000000" &&
+           str.length >= 10;
 };
 
 const getRowKey = (row, tab) => {
@@ -226,7 +236,6 @@ const BulkSendProgressDialog = ({ open, total, sent, failed, onClose, mode }) =>
     );
 };
 
-// ─── WhatsApp Settings Dialog ───────────────────────────────────────────────
 const WhatsappSettingsDialog = ({ open, onClose, activeTab, onSettingsSaved }) => {
     const [loading, setLoading] = useState(false);
     const [whatsappServices, setWhatsappServices] = useState([]);
@@ -435,7 +444,6 @@ const WhatsappSettingsDialog = ({ open, onClose, activeTab, onSettingsSaved }) =
     );
 };
 
-
 const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo, phoneMap, fromDate, toDate }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -443,14 +451,12 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
 
     const isOutstanding = tab === "outstanding";
 
-    // Use the passed dates directly without modification
     const apiEndpoint = isOutstanding
         ? `payment/transactions?Acc_Id=${row?.Acc_Id}&fromDate=${fromDate}&toDate=${toDate}`
         : `journal/accountPendingReference?Acc_Id=${row?.Acc_Id}&Fromdate=${fromDate}&Todate=${toDate}`;
 
     useEffect(() => {
         if (open && row?.Acc_Id && fromDate && toDate) {
-         
             fetchTransactions();
         }
     }, [open, row, fromDate, toDate]);
@@ -466,7 +472,6 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
 
             if (response?.success && response.data) {
                 let data = toArray(response.data);
-
                 if (!isOutstanding && data.length > 0 && data[0].voucherId) {
                     data = data.map(item => ({
                         invoice_no: item.voucherNumber,
@@ -477,7 +482,8 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
                         Debit_Amt: item.accountSide === "Dr" ? item.totalValue : 0,
                         BalanceAmount: item.BalanceAmount,
                         narration: item.narration,
-                        BillRefNo: item.BillRefNo
+                        BillRefNo: item.BillRefNo,
+                        totalValue: item.totalValue
                     }));
                 }
                 setTransactions(data);
@@ -496,13 +502,21 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
     const handleSendAll = async () => {
         setSending(true);
         try {
-            const totalAmount = transactions.reduce((sum, t) => sum + (t.Debit_Amt || t.BalanceAmount || 0), 0);
+            let totalAmount = 0;
+            if (tab === "pending_bills") {
+                totalAmount = transactions.reduce((sum, t) => sum + (t.totalValue || t.Debit_Amt || 0), 0);
+            } else {
+                totalAmount = row?.Bal_Amount || 0;
+                if (transactions.length > 0 && transactions[transactions.length - 1].BalanceAmount) {
+                    totalAmount = transactions[transactions.length - 1].BalanceAmount;
+                }
+            }
             const transactionDetails = transactions.map((t, i) => {
                 const date = t.Ledger_Date ? new Date(t.Ledger_Date).toLocaleDateString("en-GB") : "-";
-                const amount = NumberFormat(t.Debit_Amt || t.BalanceAmount || 0);
+                const amount = NumberFormat(t.totalValue || t.Debit_Amt || 0);
                 const narration = t.narration || t.Ledger_Desc || "-";
-
-                return `${i + 1}. ${date} - ${t.invoice_no || t.voucherNumber || "-"} - ₹${amount} - ${narration}`;
+                const balance = t.BalanceAmount ? NumberFormat(t.BalanceAmount) : "-";
+                return `${i + 1}. ${date} - ${t.invoice_no || t.voucherNumber || "-"} - ₹${amount} - Bal: ₹${balance} - ${narration}`;
             }).join("\n");
 
             await onSend(row, tab, totalAmount, transactionDetails);
@@ -520,9 +534,7 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
         return new Date(dateString).toLocaleDateString("en-GB");
     };
 
-    const formatAmount = (amount) => {
-        return `₹${NumberFormat(amount || 0)}`;
-    };
+    const formatAmount = (amount) => `₹${NumberFormat(amount || 0)}`;
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
@@ -611,10 +623,892 @@ const TransactionDetailsDialog = ({ open, onClose, row, tab, onSend, companyInfo
     );
 };
 
+const WhatsAppColumnSettings = ({ open, onClose, companyId, onSave, activeTab }) => {
+    const [columns, setColumns] = useState([]);
+    const [selectedColumns, setSelectedColumns] = useState(new Set());
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterType, setFilterType] = useState("all");
 
+    useEffect(() => {
+        if (open && companyId) {
+            fetchColumns();
+            loadSavedSettings();
+        }
+    }, [open, companyId, activeTab]);
+
+    const fetchColumns = async () => {
+        setLoading(true);
+        try {
+            const response = await fetchLink({
+                address: `masters/columns/dropDown?company_id=${companyId}`,
+                method: "GET",
+                loadingOn: () => { },
+                loadingOff: () => { }
+            });
+            if (response?.success && response.data) {
+                setColumns(response.data);
+            } else {
+                toast.error("Failed to load columns");
+            }
+        } catch (error) {
+            console.error("Error fetching columns:", error);
+            toast.error("Error loading columns");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadSavedSettings = async () => {
+        try {
+            const whatsappType = TAB_TO_WHATSAPP_TYPE[activeTab];
+            if (!whatsappType) return;
+            const response = await fetchLink({
+                address: `masters/whatsappFilter?WhatsappType=${whatsappType}&company_id=${companyId}`,
+                method: "GET",
+                loadingOn: () => { },
+                loadingOff: () => { },
+            });
+            if (response?.success && response.data) {
+                const savedColumns = new Set(response.data.map(item => item.Column_Name));
+                setSelectedColumns(savedColumns);
+            } else {
+                setSelectedColumns(new Set());
+            }
+        } catch (error) {
+            console.error("Error loading saved settings:", error);
+        }
+    };
+
+    const handleColumnToggle = (columnName, isEnabled) => {
+        const newSelectedColumns = new Set(selectedColumns);
+        if (isEnabled) {
+            newSelectedColumns.add(columnName);
+        } else {
+            newSelectedColumns.delete(columnName);
+        }
+        setSelectedColumns(newSelectedColumns);
+    };
+
+    const handleSelectAll = () => {
+        const allColumnNames = columns.map(col => col.ColumnName);
+        setSelectedColumns(new Set(allColumnNames));
+    };
+
+    const handleClearAll = () => {
+        setSelectedColumns(new Set());
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const whatsappType = TAB_TO_WHATSAPP_TYPE[activeTab];
+            if (!whatsappType) { toast.error("Invalid tab type"); return; }
+
+            const typesResp = await fetchLink({ address: "masters/whatsappTypes" });
+            const types = toArray(typesResp?.data);
+            const typeRec = types.find(
+                (t) => t.WhatsappType?.toLowerCase() === whatsappType?.toLowerCase()
+            );
+            if (!typeRec) { toast.error("WhatsApp type not found"); return; }
+
+            const selectedColumnsArray = Array.from(selectedColumns);
+            const response = await fetchLink({
+                address: "masters/saveWhatsappColumnSettings",
+                method: "POST",
+                bodyData: {
+                    company_id: companyId,
+                    whatsapp_type_id: typeRec.Id,
+                    whatsapp_type: whatsappType,
+                    tab: activeTab,
+                    enabled_columns: selectedColumnsArray,
+                },
+            });
+
+            if (response?.success) {
+                toast.success(`Saved ${selectedColumns.size} column settings`);
+                if (onSave) onSave(selectedColumnsArray);
+                onClose();
+            } else {
+                toast.error(response?.message || "Failed to save settings");
+            }
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            toast.error("Error saving settings");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const filteredColumns = columns.filter(column => {
+        const matchesSearch = searchTerm === "" ||
+            column.ColumnName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            column.Alias_Name?.toLowerCase().includes(searchTerm.toLowerCase());
+        let matchesType = true;
+        if (filterType === "visible") matchesType = column.Is_Visible === 1;
+        else if (filterType === "hidden") matchesType = column.Is_Visible === 0;
+        return matchesSearch && matchesType;
+    });
+
+    const selectedCount = selectedColumns.size;
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { minHeight: "70vh", maxHeight: "90vh", borderRadius: 2 } }}>
+            <DialogTitle sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                        <Typography variant="h6" fontWeight="bold">
+                            <TuneIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+                            WhatsApp Column Settings
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Configure which columns to display in WhatsApp messages for {activeTab?.replace("_", " ").toUpperCase()}
+                        </Typography>
+                    </Box>
+                    <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+                </Box>
+            </DialogTitle>
+            <DialogContent dividers sx={{ p: 2 }}>
+                {loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <>
+                        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                            <TextField
+                                fullWidth size="small"
+                                placeholder="Search columns by name or alias..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                InputProps={{
+                                    startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} />,
+                                    endAdornment: searchTerm && (
+                                        <IconButton size="small" onClick={() => setSearchTerm("")}>
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    )
+                                }}
+                            />
+                        </Paper>
+                        <Box sx={{ maxHeight: "calc(70vh - 280px)", overflowY: "auto" }}>
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table size="small" stickyHeader>
+                                    <TableHead>
+                                        <TableRow sx={{ bgcolor: "grey.50" }}>
+                                            <TableCell padding="checkbox" width="50">
+                                                <Checkbox
+                                                    indeterminate={selectedCount > 0 && selectedCount < columns.length}
+                                                    checked={selectedCount === columns.length && columns.length > 0}
+                                                    onChange={(e) => e.target.checked ? handleSelectAll() : handleClearAll()}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>Column Name</TableCell>
+                                            <TableCell>Alias</TableCell>
+                                            <TableCell align="center" width="80">Position</TableCell>
+                                            <TableCell align="center" width="80">Status</TableCell>
+                                            <TableCell align="center" width="80">Data Type</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredColumns.map((column, index) => (
+                                            <TableRow
+                                                key={column.Id || index} hover
+                                                sx={{ bgcolor: selectedColumns.has(column.ColumnName) ? 'action.hover' : 'inherit', '&:hover': { bgcolor: 'action.selected' } }}
+                                                onClick={() => handleColumnToggle(column.ColumnName, !selectedColumns.has(column.ColumnName))}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <TableCell padding="checkbox">
+                                                    <Checkbox
+                                                        checked={selectedColumns.has(column.ColumnName)}
+                                                        onChange={(e) => { e.stopPropagation(); handleColumnToggle(column.ColumnName, e.target.checked); }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        size="small" color="primary"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" fontWeight={selectedColumns.has(column.ColumnName) ? "bold" : "normal"}>
+                                                        {column.ColumnName}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color={selectedColumns.has(column.ColumnName) ? "text.primary" : "text.secondary"}>
+                                                        {column.Alias_Name || column.ColumnName}
+                                                    </Typography>
+                                                    {column.Alias_Name && column.Alias_Name !== column.ColumnName && (
+                                                        <Typography variant="caption" color="text.disabled">(Original: {column.ColumnName})</Typography>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Chip label={column.Position || index + 1} size="small" variant="outlined" sx={{ minWidth: 40 }} />
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    {column.Is_Visible === 1 ? (
+                                                        <Chip label="Visible" size="small" color="success" variant="outlined" icon={<Visibility sx={{ fontSize: 14 }} />} />
+                                                    ) : (
+                                                        <Chip label="Hidden" size="small" color="default" variant="outlined" icon={<VisibilityOff sx={{ fontSize: 14 }} />} />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Chip label={column.Data_Type || "string"} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            {filteredColumns.length === 0 && (
+                                <Box textAlign="center" p={4}>
+                                    <Typography color="text.secondary">
+                                        {searchTerm ? `No columns found matching "${searchTerm}"` : "No columns available"}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+                    </>
+                )}
+            </DialogContent>
+            <DialogActions sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                <Button onClick={onClose} disabled={saving} variant="outlined">Cancel</Button>
+                <Button onClick={handleSave} variant="contained" color="primary" disabled={loading || saving}
+                    startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}>
+                    {saving ? "Saving..." : `Save Settings (${selectedCount})`}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+// const WhatsAppFilterBar = ({ activeTab, dataSource, columnFilters, setColumnFilters }) => {
+//     const [enabledColumns, setEnabledColumns] = useState([]);
+//     const [loadingColumns, setLoadingColumns] = useState(false);
+//     const [lolColumns, setLolColumns] = useState([]);
+//     const [draftFilters, setDraftFilters] = useState(columnFilters);
+//     const storage = JSON.parse(localStorage.getItem("user") || "{}");
+//     const companyId = storage?.Company_id;
+
+//     useEffect(() => {
+//         setDraftFilters(columnFilters);
+//     }, [columnFilters]);
+
+//     const hasDraftChanges = JSON.stringify(draftFilters) !== JSON.stringify(columnFilters);
+
+//     const handleApplyFilters = () => {
+//         setColumnFilters(draftFilters);
+//     };
+
+//     const handleResetDraft = () => {
+//         setDraftFilters(columnFilters);
+//     };
+
+//     const handleClearAll = () => {
+//         setDraftFilters({});
+//         setColumnFilters({});
+//     };
+
+//     const getValueFromRow = (row, columnName) => {
+//         if (!row) return null;
+        
+//         // Direct match with proper null check
+//         if (row[columnName] !== undefined && row[columnName] !== null && row[columnName] !== "") {
+//             return row[columnName];
+//         }
+        
+//         // Case insensitive match
+//         const lowerColName = columnName.toLowerCase();
+//         for (const key in row) {
+//             if (key.toLowerCase() === lowerColName) {
+//                 const val = row[key];
+//                 if (val !== undefined && val !== null && val !== "") {
+//                     return val;
+//                 }
+//             }
+//         }
+        
+//         // Special mappings for common fields with proper null checks
+//         const mappings = {
+//             'Customer_Phone': ['A1', 'A1_Phone', 'Phone', 'Mobile_No', 'PhoneNumber'],
+//             'Alternate_Phone': ['A2', 'Alt_Phone', 'Alternate_Phone'],
+//             'Landline_Phone': ['A3', 'Landline', 'Landline_Phone'],
+//             'City': ['City', 'District', 'Location', 'City_Name'],
+//             'Address': ['Address', 'Party_Address', 'Retailer_Address'],
+//             'State': ['State', 'Region', 'State_Name'],
+//             'GST_No': ['GST_No', 'GST', 'GSTIN'],
+//             'PAN_No': ['PAN_No', 'PAN', 'Pan_Number'],
+//             'Bank_Name': ['Bank_Name', 'Bank', 'BankName'],
+//             'Owner_Name': ['Owner_Name', 'Owner', 'OwnerName'],
+//             'Retailer_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name', 'Ledger_Name'],
+//             'Ret_Code': ['Ret_Code', 'retailerCode', 'Customer_Code', 'Ledger_Tally_Id'],
+//             'Pincode': ['Pincode', 'Pin_Code', 'Zip'],
+//             'Ledger_Tally_Id': ['Ret_Code', 'retailerCode', 'Customer_Code'],
+//             'Ledger_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name'],
+//             'Ledger_Alias': ['Alias', 'Ledger_Alias', 'Customer_Alias']
+//         };
+        
+//         if (mappings[columnName]) {
+//             for (const field of mappings[columnName]) {
+//                 const val = row[field];
+//                 if (val !== undefined && val !== null && val !== "") {
+//                     return val;
+//                 }
+//             }
+//         }
+        
+//         return null;
+//     };
+
+//     const getUniqueValues = (columnName) => {
+//         if (!dataSource || dataSource.length === 0) return [];
+//         const values = new Set();
+//         dataSource.forEach(row => {
+//             let value = getValueFromRow(row, columnName);
+//             if (value !== undefined && value !== null && value !== "") {
+//                 if (typeof value === 'object') {
+//                     if (value.label) value = value.label;
+//                     else if (value.value) value = value.value;
+//                     else return;
+//                 }
+//                 // Skip "Not Available" and similar placeholder values
+//                 const strValue = String(value).trim();
+//                 if (strValue && 
+//                     strValue !== "Not Available" && 
+//                     strValue !== "null" && 
+//                     strValue !== "undefined" &&
+//                     strValue !== "[object Object]" &&
+//                     strValue !== "NULL" &&
+//                     strValue !== "NA" &&
+//                     strValue !== "N/A") {
+//                     values.add(strValue);
+//                 }
+//             }
+//         });
+//         return Array.from(values).sort();
+//     };
+
+//     const formatColumnLabel = (columnName) => {
+//         const labels = {
+//             'Ledger_Tally_Id': 'Customer Code',
+//             'Ledger_Name': 'Customer Name',
+//             'Ledger_Alias': 'Customer Alias',
+//             'Customer_Phone': 'Phone Number',
+//             'Alternate_Phone': 'Alternate Phone',
+//             'Landline_Phone': 'Landline Phone',
+//             'City': 'City/Location',
+//             'Address': 'Address',
+//             'Pincode': 'Pincode',
+//             'State': 'State',
+//             'GST_No': 'GST Number',
+//             'PAN_No': 'PAN Number',
+//             'Bank_Name': 'Bank Name',
+//             'Bank_Account_No': 'Bank Account',
+//             'IFSC_Code': 'IFSC Code',
+//             'Branch_Name': 'Branch Name',
+//             'Owner_Name': 'Owner Name',
+//             'LOL_Id': 'LOL ID',
+//             'Ret_Id': 'Retailer ID'
+//         };
+//         return labels[columnName] || columnName.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim();
+//     };
+
+//     const isLOLColumn = (columnName) => {
+//         return lolColumns.includes(columnName) || 
+//                ['Customer_Phone', 'Alternate_Phone', 'Landline_Phone', 'City', 'Address', 
+//                 'Pincode', 'State', 'GST_No', 'PAN_No', 'Bank_Name', 'Bank_Account_No', 
+//                 'IFSC_Code', 'Branch_Name', 'Owner_Name', 'LOL_Id', 'Ret_Id'].includes(columnName);
+//     };
+
+//     useEffect(() => {
+//         const loadEnabledColumns = async () => {
+//             if (!activeTab) return;
+//             setLoadingColumns(true);
+//             try {
+//                 const whatsappType = TAB_TO_WHATSAPP_TYPE[activeTab];
+//                 if (!whatsappType) { setEnabledColumns([]); return; }
+//                 const response = await fetchLink({
+//                     address: `masters/whatsappFilter?WhatsappType=${whatsappType}&company_id=${companyId}`,
+//                     method: "GET",
+//                     loadingOn: () => { },
+//                     loadingOff: () => { },
+//                 });
+//                 if (response?.success && response.message && response.message.length > 0) {
+//                     const enabled = response.message.map(item => item.Column_Name);
+//                     setEnabledColumns(enabled);
+                    
+//                     // Extract LOL columns dynamically from data
+//                     if (dataSource && dataSource.length > 0) {
+//                         const firstRow = dataSource[0];
+//                         const lolCols = Object.keys(firstRow).filter(key => 
+//                             key.startsWith('LOL_') || 
+//                             ['A1', 'A2', 'A3', 'Customer_Phone', 'Alternate_Phone', 'Landline_Phone', 
+//                              'City', 'Address', 'Pincode', 'State', 'GST_No', 'PAN_No', 
+//                              'Bank_Name', 'Bank_Account_No', 'IFSC_Code', 'Branch_Name', 
+//                              'Owner_Name', 'LOL_Id', 'Ret_Id'].includes(key)
+//                         );
+//                         setLolColumns(lolCols);
+//                     }
+//                 } else {
+//                     setEnabledColumns([]);
+//                 }
+//             } catch (error) {
+//                 console.error("Error loading enabled columns:", error);
+//                 setEnabledColumns([]);
+//             } finally {
+//                 setLoadingColumns(false);
+//             }
+//         };
+//         loadEnabledColumns();
+//     }, [activeTab, companyId, dataSource]);
+
+//     if (loadingColumns) {
+//         return (
+//             <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2, border: "1px solid", borderColor: "divider" }}>
+//                 <Typography variant="caption" color="text.secondary" display="block" mb={1.5} fontWeight={600}>
+//                     <TuneIcon sx={{ fontSize: 12, mr: 0.5, verticalAlign: "middle" }} />
+//                     Loading Filters...
+//                 </Typography>
+//                 <CircularProgress size={24} />
+//             </Box>
+//         );
+//     }
+
+//     // Combine enabled columns with LOL columns
+//     const allColumns = [...enabledColumns, ...lolColumns];
+//     const uniqueColumns = [...new Set(allColumns)];
+
+//     if (!uniqueColumns || uniqueColumns.length === 0) return null;
+
+//     const hasActiveFilters = Object.keys(columnFilters).length > 0;
+
+//     return (
+//         <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2, border: "1px solid", borderColor: "divider" }}>
+//             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+//                 <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+//                     <FilterAlt fontSize="small" />
+//                     Quick Filters ({uniqueColumns.length} columns)
+//                 </Typography>
+//                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+//                     {hasActiveFilters && (
+//                         <Button size="small" variant="outlined" color="error" startIcon={<CloseIcon />} onClick={handleClearAll}>
+//                             Clear All Filters
+//                         </Button>
+//                     )}
+//                     <Button size="small" variant="outlined" color="primary" onClick={handleResetDraft} disabled={!hasDraftChanges}>
+//                         Reset
+//                     </Button>
+//                     <Button size="small" variant="contained" color="primary" onClick={handleApplyFilters} disabled={!hasDraftChanges} startIcon={<Search fontSize="small" />}>
+//                         Search
+//                     </Button>
+//                 </Box>
+//             </Box>
+//             <Stack direction="row" gap={2} flexWrap="wrap">
+//                 {uniqueColumns.map((columnName) => {
+//                     const options = getUniqueValues(columnName);
+//                     const currentFilter = draftFilters[columnName];
+//                     const label = formatColumnLabel(columnName);
+//                     const isLOL = isLOLColumn(columnName);
+                    
+//                     return (
+//                         <Autocomplete
+//                             key={columnName} 
+//                             multiple 
+//                             size="small" 
+//                             options={options}
+//                             disableCloseOnSelect 
+//                             getOptionLabel={(o) => o}
+//                             value={Array.isArray(currentFilter) ? currentFilter : []}
+//                             onChange={(_, v) => setDraftFilters((prev) => ({ ...prev, [columnName]: v }))}
+//                             renderOption={(props, option, { selected }) => (
+//                                 <li {...props}>
+//                                     <Checkbox icon={icon} checkedIcon={checkedIcon} checked={selected} sx={{ mr: 1 }} />
+//                                     {option}
+//                                 </li>
+//                             )}
+//                             renderInput={(params) => (
+//                                 <TextField 
+//                                     {...params} 
+//                                     label={label}
+//                                     placeholder={options.length === 0 ? "No data available" : "Select to filter"}
+//                                     size="small" 
+//                                     sx={{ minWidth: isLOL ? 260 : 220 }}
+//                                     InputProps={{
+//                                         ...params.InputProps,
+//                                         endAdornment: (
+//                                             <>
+//                                                 {isLOL && options.length > 0 && (
+//                                                     <Chip 
+//                                                         label={`${options.length}`} 
+//                                                         size="small" 
+//                                                         color="info" 
+//                                                         sx={{ mr: 1, height: 18, fontSize: 9 }} 
+//                                                     />
+//                                                 )}
+//                                                 {params.InputProps.endAdornment}
+//                                             </>
+//                                         )
+//                                     }}
+//                                 />
+//                             )}
+//                             sx={{ minWidth: isLOL ? 260 : 220 }}
+//                         />
+//                     );
+//                 })}
+//             </Stack>
+//         </Box>
+//     );
+// };
+
+
+
+const WhatsAppFilterBar = ({ activeTab, dataSource, columnFilters, setColumnFilters }) => {
+    const [enabledColumns, setEnabledColumns] = useState([]);
+    const [loadingColumns, setLoadingColumns] = useState(false);
+    const [draftFilters, setDraftFilters] = useState(columnFilters);
+    const storage = JSON.parse(localStorage.getItem("user") || "{}");
+    const companyId = storage?.Company_id;
+
+    useEffect(() => {
+        setDraftFilters(columnFilters);
+    }, [columnFilters]);
+
+    const hasDraftChanges = JSON.stringify(draftFilters) !== JSON.stringify(columnFilters);
+
+    const handleApplyFilters = () => {
+        setColumnFilters(draftFilters);
+    };
+
+    const handleResetDraft = () => {
+        setDraftFilters(columnFilters);
+    };
+
+    const handleClearAll = () => {
+        setDraftFilters({});
+        setColumnFilters({});
+    };
+
+    // Clean column name to remove suffixes like " - LOL-[19]"
+    const cleanColumnName = (name) => {
+        if (!name) return name;
+        // Remove " - LOL-[number]" suffix
+        return name.replace(/\s*-\s*LOL-\[\d+\]\s*$/, '').trim();
+    };
+
+    const getValueFromRow = (row, columnName) => {
+        if (!row) return null;
+        
+        // First check if the column exists directly with case-insensitive matching
+        const lowerColName = columnName.toLowerCase();
+        for (const key in row) {
+            if (key.toLowerCase() === lowerColName) {
+                const val = row[key];
+                if (val !== undefined && val !== null && val !== "" && val !== " ") {
+                    return val;
+                }
+            }
+        }
+        
+        // Also check for the column with " - LOL-[number]" suffix
+        for (const key in row) {
+            const cleanKey = cleanColumnName(key);
+            if (cleanKey.toLowerCase() === lowerColName) {
+                const val = row[key];
+                if (val !== undefined && val !== null && val !== "" && val !== " ") {
+                    return val;
+                }
+            }
+        }
+        
+        // Special mappings for common fields with proper null checks
+        const mappings = {
+            'Customer_Phone': ['A1', 'A1_Phone', 'Phone', 'Mobile_No', 'PhoneNumber', 'Party_Mobile_1', 'Customer_Phone'],
+            'Alternate_Phone': ['A2', 'Alt_Phone', 'Alternate_Phone', 'Party_Mobile_2'],
+            'Landline_Phone': ['A3', 'Landline', 'Landline_Phone'],
+            'City': ['City', 'District', 'Location', 'City_Name', 'Party_Location', 'Party_District'],
+            'Address': ['Address', 'Party_Address', 'Retailer_Address', 'Party_Mailing_Address'],
+            'State': ['State', 'Region', 'State_Name'],
+            'GST_No': ['GST_No', 'GST', 'GSTIN'],
+            'PAN_No': ['PAN_No', 'PAN', 'Pan_Number'],
+            'Bank_Name': ['Bank_Name', 'Bank', 'BankName'],
+            'Owner_Name': ['Owner_Name', 'Owner', 'OwnerName'],
+            'Retailer_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name', 'Ledger_Name', 'Ledger_Alias', 'Party_Mailing_Name'],
+            'Ret_Code': ['Ret_Code', 'retailerCode', 'Customer_Code', 'Ledger_Tally_Id', 'Alter_Tally_Id'],
+            'Pincode': ['Pincode', 'Pin_Code', 'Zip'],
+            'Ledger_Tally_Id': ['Ret_Code', 'retailerCode', 'Customer_Code', 'Ledger_Tally_Id', 'Alter_Tally_Id'],
+            'Ledger_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name', 'Ledger_Name', 'Party_Mailing_Name'],
+            'Ledger_Alias': ['Alias', 'Ledger_Alias', 'Customer_Alias', 'Ledger_Name'],
+            'A1': ['A1', 'Customer_Phone', 'Phone', 'Party_Mobile_1', 'Mobile_No'],
+            'A2': ['A2', 'Alternate_Phone', 'Party_Mobile_2'],
+            'A3': ['A3', 'Landline_Phone'],
+            'A4': ['A4'],
+            'A5': ['A5'],
+            'Party_Location': ['Location', 'Party_Location', 'City'],
+            'Party_District': ['District', 'Party_District'],
+            'Party_Group': ['Party_Group', 'Group'],
+            'Party_Nature': ['Party_Nature', 'Nature'],
+            'Party_Mobile_1': ['A1', 'Party_Mobile_1', 'Mobile_No', 'Customer_Phone'],
+            'Party_Mobile_2': ['A2', 'Party_Mobile_2', 'Alternate_Phone'],
+            'Party_Name': ['Party_Name'],
+            'Party_Mailing_Name': ['Party_Mailing_Name'],
+            'Party_Mailing_Address': ['Party_Mailing_Address'],
+            'Actual_Party_Name_with_Brokers': ['Actual_Party_Name_with_Brokers'],
+            'Ref_Brokers': ['Ref_Brokers'],
+            'Ref_Owners': ['Ref_Owners'],
+            'File_No': ['File_No'],
+            'Date_Added': ['Date_Added'],
+            'Payment_Mode': ['Payment_Mode'],
+            'PayGroup': ['Q_Pay_Group', 'PayGroup'],
+            'PayDays': ['Q_Pay_Days', 'PayDays'],
+            'Total_Invoice_value': ['Total_Invoice_value', 'credit_amount', 'debit_amount']
+        };
+        
+        if (mappings[columnName]) {
+            for (const field of mappings[columnName]) {
+                // Check direct field
+                let val = row[field];
+                if (val !== undefined && val !== null && val !== "" && val !== " ") {
+                    return val;
+                }
+                // Check field with suffix
+                for (const key in row) {
+                    const cleanKey = cleanColumnName(key);
+                    if (cleanKey.toLowerCase() === field.toLowerCase()) {
+                        val = row[key];
+                        if (val !== undefined && val !== null && val !== "" && val !== " ") {
+                            return val;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
+    };
+
+    const getUniqueValues = (columnName) => {
+        if (!dataSource || dataSource.length === 0) return [];
+        const values = new Set();
+        dataSource.forEach(row => {
+            let value = getValueFromRow(row, columnName);
+            if (value !== undefined && value !== null && value !== "") {
+                if (typeof value === 'object') {
+                    if (value.label) value = value.label;
+                    else if (value.value) value = value.value;
+                    else return;
+                }
+                // Skip "Not Available" and similar placeholder values
+                const strValue = String(value).trim();
+                if (strValue && 
+                    strValue !== "Not Available" && 
+                    strValue !== "null" && 
+                    strValue !== "undefined" &&
+                    strValue !== "[object Object]" &&
+                    strValue !== "NULL" &&
+                    strValue !== "NA" &&
+                    strValue !== "N/A" &&
+                    strValue !== "" &&
+                    strValue !== " ") {
+                    values.add(strValue);
+                }
+            }
+        });
+        return Array.from(values).sort();
+    };
+
+    const formatColumnLabel = (columnName) => {
+        const labels = {
+            'Ledger_Tally_Id': 'Customer Code',
+            'Ledger_Name': 'Customer Name',
+            'Ledger_Alias': 'Customer Alias',
+            'Customer_Phone': 'Phone Number',
+            'Alternate_Phone': 'Alternate Phone',
+            'Landline_Phone': 'Landline Phone',
+            'City': 'City/Location',
+            'Address': 'Address',
+            'Pincode': 'Pincode',
+            'State': 'State',
+            'GST_No': 'GST Number',
+            'PAN_No': 'PAN Number',
+            'Bank_Name': 'Bank Name',
+            'Bank_Account_No': 'Bank Account',
+            'IFSC_Code': 'IFSC Code',
+            'Branch_Name': 'Branch Name',
+            'Owner_Name': 'Owner Name',
+            'LOL_Id': 'LOL ID',
+            'Ret_Id': 'Retailer ID',
+            'Party_Location': 'Location',
+            'Party_District': 'District',
+            'Party_Group': 'Party Group',
+            'Party_Nature': 'Party Nature',
+            'Party_Mobile_1': 'Mobile 1',
+            'Party_Mobile_2': 'Mobile 2',
+            'A1': 'Phone (A1)',
+            'A2': 'Alternate (A2)',
+            'A3': 'Landline (A3)',
+            'A4': 'A4 Field',
+            'A5': 'A5 Field',
+            'Party_Name': 'Party Name',
+            'Party_Mailing_Name': 'Mailing Name',
+            'Party_Mailing_Address': 'Mailing Address',
+            'Actual_Party_Name_with_Brokers': 'Actual Party Name',
+            'Ref_Brokers': 'Reference Brokers',
+            'Ref_Owners': 'Reference Owners',
+            'File_No': 'File Number',
+            'Date_Added': 'Date Added',
+            'Payment_Mode': 'Payment Mode',
+            'PayGroup': 'Pay Group',
+            'PayDays': 'Pay Days',
+            'Retailer_Name': 'Retailer Name',
+            'Ret_Code': 'Retailer Code',
+            'Total_Invoice_value': 'Amount'
+        };
+        return labels[columnName] || columnName.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim();
+    };
+
+    useEffect(() => {
+        const loadEnabledColumns = async () => {
+            if (!activeTab) return;
+            setLoadingColumns(true);
+            try {
+                const whatsappType = TAB_TO_WHATSAPP_TYPE[activeTab];
+                if (!whatsappType) { 
+                    setEnabledColumns([]); 
+                    setLoadingColumns(false);
+                    return; 
+                }
+                
+                const response = await fetchLink({
+                    address: `masters/whatsappFilter?WhatsappType=${whatsappType}&company_id=${companyId}`,
+                    method: "GET",
+                    loadingOn: () => { },
+                    loadingOff: () => { },
+                });
+                
+                if (response?.success && response.message && response.message.length > 0) {
+                    // Get the column names from the API response
+                    const enabled = response.message.map(item => cleanColumnName(item.Column_Name));
+                    // Remove duplicates using Set
+                    setEnabledColumns([...new Set(enabled)]);
+                } else {
+                    setEnabledColumns([]);
+                }
+            } catch (error) {
+                console.error("Error loading enabled columns:", error);
+                setEnabledColumns([]);
+            } finally {
+                setLoadingColumns(false);
+            }
+        };
+        loadEnabledColumns();
+    }, [activeTab, companyId]);
+
+    if (loadingColumns) {
+        return (
+            <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2, border: "1px solid", borderColor: "divider" }}>
+                <Typography variant="caption" color="text.secondary" display="block" mb={1.5} fontWeight={600}>
+                    <TuneIcon sx={{ fontSize: 12, mr: 0.5, verticalAlign: "middle" }} />
+                    Loading Filters...
+                </Typography>
+                <CircularProgress size={24} />
+            </Box>
+        );
+    }
+
+    // Use only the enabled columns from the API
+    const uniqueColumns = enabledColumns.filter(col => col && col.trim() !== '');
+
+    if (!uniqueColumns || uniqueColumns.length === 0) {
+        return (
+            <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2, border: "1px solid", borderColor: "divider" }}>
+                <Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <TuneIcon fontSize="small" />
+                    No filters configured. Please configure WhatsApp columns in settings.
+                </Typography>
+            </Box>
+        );
+    }
+
+    const hasActiveFilters = Object.keys(columnFilters).length > 0;
+
+    return (
+        <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2, border: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <FilterAlt fontSize="small" />
+                    WhatsApp Filters ({uniqueColumns.length} columns)
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {hasActiveFilters && (
+                        <Button size="small" variant="outlined" color="error" startIcon={<CloseIcon />} onClick={handleClearAll}>
+                            Clear All Filters
+                        </Button>
+                    )}
+                    <Button size="small" variant="outlined" color="primary" onClick={handleResetDraft} disabled={!hasDraftChanges}>
+                        Reset
+                    </Button>
+                    <Button size="small" variant="contained" color="primary" onClick={handleApplyFilters} disabled={!hasDraftChanges} startIcon={<Search fontSize="small" />}>
+                        Apply Filters
+                    </Button>
+                </Box>
+            </Box>
+            <Stack direction="row" gap={2} flexWrap="wrap">
+                {uniqueColumns.map((columnName) => {
+                    const options = getUniqueValues(columnName);
+                    const currentFilter = draftFilters[columnName];
+                    const label = formatColumnLabel(columnName);
+                    
+                    return (
+                        <Autocomplete
+                            key={columnName} 
+                            multiple 
+                            size="small" 
+                            options={options}
+                            disableCloseOnSelect 
+                            getOptionLabel={(o) => o}
+                            value={Array.isArray(currentFilter) ? currentFilter : []}
+                            onChange={(_, v) => setDraftFilters((prev) => ({ ...prev, [columnName]: v }))}
+                            renderOption={(props, option, { selected }) => (
+                                <li {...props}>
+                                    <Checkbox icon={icon} checkedIcon={checkedIcon} checked={selected} sx={{ mr: 1 }} />
+                                    {option}
+                                </li>
+                            )}
+                            renderInput={(params) => (
+                                <TextField 
+                                    {...params} 
+                                    label={label}
+                                    placeholder={options.length === 0 ? "No data available" : "Select to filter"}
+                                    size="small" 
+                                    sx={{ minWidth: 260 }}
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {options.length > 0 && (
+                                                    <Chip 
+                                                        label={`${options.length}`} 
+                                                        size="small" 
+                                                        color="info" 
+                                                        sx={{ mr: 1, height: 18, fontSize: 9 }} 
+                                                    />
+                                                )}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        )
+                                    }}
+                                />
+                            )}
+                            sx={{ minWidth: 260 }}
+                        />
+                    );
+                })}
+            </Stack>
+        </Box>
+    );
+};
 const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, pageID }) => {
     const storage = JSON.parse(localStorage.getItem("user") || "{}");
-
+    const companyId = storage?.Company_id;
     const [salesInvoices, setSalesInvoices] = useState([]);
     const [allSalesInvoices, setAllSalesInvoices] = useState([]);
     const [allSalesOrders, setAllSalesOrders] = useState([]);
@@ -650,18 +1544,11 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [bulkMenuAnchor, setBulkMenuAnchor] = useState(null);
     const [bulkProgress, setBulkProgress] = useState({ open: false, total: 0, sent: 0, failed: 0, mode: "parallel" });
 
-    const [transactionDialog, setTransactionDialog] = useState({
-        open: false, row: null, tab: "", fromDate: "",
-        toDate: ""
-    });
+    const [transactionDialog, setTransactionDialog] = useState({ open: false, row: null, tab: "", fromDate: "", toDate: "" });
+    const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
+    const [whatsappColumns, setWhatsappColumns] = useState([]);
 
-
-
-    const getOneMonthBefore = (dateString) => {
-        const date = new Date(dateString);
-        date.setMonth(date.getMonth() - 1);
-        return date.toISOString().split('T')[0];
-    };
+    const prevSelectAll = useRef(false);
 
     const [outstandingFromDate, setOutstandingFromDate] = useState(() => {
         const today = new Date();
@@ -669,10 +1556,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         oneMonthBefore.setMonth(today.getMonth() - 1);
         return oneMonthBefore.toISOString().split('T')[0];
     });
-
-    const [outstandingToDate, setOutstandingToDate] = useState(() => {
-        return new Date().toISOString().split('T')[0];
-    });
+    const [outstandingToDate, setOutstandingToDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     const [pendingBillsFromDate, setPendingBillsFromDate] = useState(() => {
         const today = new Date();
@@ -680,11 +1564,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         oneMonthBefore.setMonth(today.getMonth() - 1);
         return oneMonthBefore.toISOString().split('T')[0];
     });
-
-    const [pendingBillsToDate, setPendingBillsToDate] = useState(() => {
-        return new Date().toISOString().split('T')[0];
-    });
-
+    const [pendingBillsToDate, setPendingBillsToDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     const [allPendingBills, setAllPendingBills] = useState([]);
     const [filteredPendingBills, setFilteredPendingBills] = useState([]);
@@ -697,13 +1577,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [pendingBillsSearch, setPendingBillsSearch] = useState("");
 
     const bulkAbortRef = useRef(false);
-
     const [priceListSearch, setPriceListSearch] = useState("");
-
-
-
-
-
 
     const [filters, setFilters] = useState({
         reqDate: ISOString(),
@@ -726,21 +1600,23 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     });
 
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-    const [pdfGeneration, setPdfGeneration] = useState({ loading: false, pdfUrl: null, error: null });
     const [multiPrint, setMultiPrint] = useState({ open: false, doIds: [], docType: "" });
     const multiPrintRef = useRef(null);
     const [companyInfo, setCompanyInfo] = useState([]);
 
     useEffect(() => {
-        const companyId = storage?.Company_id;
-        if (companyId) {
-            fetchLink({ address: `masters/company?Company_id=${companyId}` })
+        const companyIdLocal = storage?.Company_id;
+        if (companyIdLocal) {
+            fetchLink({ address: `masters/company?Company_id=${companyIdLocal}` })
                 .then((r) => { if (r?.success && r?.data[0]) setCompanyInfo(r.data); })
                 .catch(console.error);
         }
     }, []);
 
-    // Price list search filter
+    const handleColumnSettingsSave = async (selectedColumnsArray) => {
+        setWhatsappColumns(selectedColumnsArray);
+    };
+
     useEffect(() => {
         if (activeTab === "price_list" && priceListRetailers.length > 0) {
             const searchTerm = priceListSearch.toLowerCase().trim();
@@ -846,14 +1722,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
     const getPDFUrlSimple = (order) => {
         const formattedInvoiceNo = (order.DocumentNumber || "").replace(/_/g, "/");
-        // return `https://printapp.erpsmt.in/sales/downloadPdf?Do_Inv_No=${btoa(formattedInvoiceNo)}&Company_id=${btoa(storage?.Company_id)}`;
-        return `${print_app}/sales/downloadPdf?Do_Inv_No=${btoa(formattedInvoiceNo)}&Company_id=${btoa(storage?.Company_id)}`
+        return `${print_app}/sales/downloadPdf?Do_Inv_No=${btoa(formattedInvoiceNo)}&Company_id=${btoa(storage?.Company_id)}`;
     };
 
     const getPDfUrlSalesOrder = (order) => {
         const formattedSalesNo = (order.DocumentNumber || "").replace(/_/g, "/");
-        // return `https://printapp.erpsmt.in/salesOrder/downloadPdf?So_Inv_No=${btoa(formattedSalesNo)}&Company_id=${btoa(storage?.Company_id)}`;
-        return `${print_app}/salesOrder/downloadPdf?So_Inv_No=${btoa(formattedSalesNo)}&Company_id=${btoa(storage?.Company_id)}`
+        return `${print_app}/salesOrder/downloadPdf?So_Inv_No=${btoa(formattedSalesNo)}&Company_id=${btoa(storage?.Company_id)}`;
     };
 
     const processInvoice = (invoice, phoneMapRef) => ({
@@ -889,7 +1763,8 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             ]);
             const si = toArray(siResp?.data).map((x) => processInvoice(x, phoneMap));
             const so = toArray(soResp?.data).map((x) => processOrder(x, phoneMap));
-            setAllSalesInvoices(si); setAllSalesOrders(so);
+            setAllSalesInvoices(si);
+            setAllSalesOrders(so);
             setCostTypes(toArray(siResp?.others?.costTypes || soResp?.others?.costTypes));
             setUniqueInvolvedCost(toArray(siResp?.others?.uniqeInvolvedStaffs || soResp?.others?.uniqeInvolvedStaffs));
             if (activeTab === "sale_invoice") { setSalesInvoices(si); setFilteredData(si); }
@@ -927,15 +1802,32 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 const recs = toArray(response.data).map((r) => ({
                     ...r,
                     DocumentType: "Receipt",
-                    DocumentId: r.Receipt_Id || r.Id,
-                    DocumentNumber: r.Receipt_No || r.receipt_invoice_no,
-                    DocumentDate: r.receipt_date || r.Created_Date,
+                    DocumentId: r.receipt_id || r.Receipt_Id || r.Id,
+                    DocumentNumber: r.receipt_invoice_no || r.Receipt_No,
+                    DocumentDate: r.receipt_date || r.created_on,
                     voucherTypeGet: r.Voucher_Type,
                     transaction_type: r.transaction_type,
-                    retailerNameGet: r.Customer_Name || r.Retailer_Name,
+                    retailerNameGet: r.Retailer_Name || r.Customer_Name,
                     Total_Invoice_value: r.credit_amount || r.debit_amount || 0,
-                    createdOn: r.Created_Date || r.Receipt_Date,
-                    A1_Phone: phoneMap.get(Number(r.Retailer_Id)) || r.Phone_No || "Not Available",
+                    createdOn: r.created_on || r.receipt_date,
+                    Retailer_Id: r.Retailer_Id || r.Linked_Retailer_Id,
+                    A1_Phone: phoneMap.get(Number(r.Retailer_Id || r.Linked_Retailer_Id)) || r.A1 || r.Customer_Phone || "Not Available",
+                    Customer_Phone: r.A1 || r.Customer_Phone || "Not Available",
+                    Alternate_Phone: r.A2 || r.Alternate_Phone || "",
+                    Landline_Phone: r.A3 || r.Landline_Phone || "",
+                    LOL_Id: r.LOL_Id || r.Id,
+                    Ret_Id: r.Ret_Id || r.Retailer_Id,
+                    Owner_Name: r.Owner_Name || "",
+                    City: r.City || "",
+                    Address: r.Address || "",
+                    Pincode: r.Pincode || "",
+                    State: r.State || "",
+                    GST_No: r.GST_No || "",
+                    PAN_No: r.PAN_No || "",
+                    Bank_Name: r.Bank_Name || "",
+                    Bank_Account_No: r.Bank_Account_No || "",
+                    IFSC_Code: r.IFSC_Code || "",
+                    Branch_Name: r.Branch_Name || "",
                 }));
                 setAllReceipts(recs);
                 if (activeTab === "receipt_list") setFilteredData(recs);
@@ -1004,10 +1896,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                     DocumentId: r.Retailer_Id,
                     DocumentNumber: r.Acc_Id,
                     retailerNameGet: r.Retailer_Name,
-                    A1_Phone:
-                        r["A1 - LOL-[19]"]?.trim() ||
-                        phoneMap.get(Number(r.Retailer_Id)) ||
-                        "Not Available",
+                    A1_Phone: r["A1 - LOL-[19]"]?.trim() || phoneMap.get(Number(r.Retailer_Id)) || "Not Available",
                     Total_Invoice_value: r.Bal_Amount || 0,
                     Location: r["Party_Location - LOL-[5]"] || "",
                     District: r["Party_District - LOL-[12]"] || "",
@@ -1018,17 +1907,15 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                     Bal_Amount: r.Bal_Amount || 0,
                     Debit_Amt: r.Debit_Amt || 0,
                     Credit_Amt: r.Credit_Amt || 0,
+                    Customer_Phone: r["A1 - LOL-[19]"]?.trim() || "Not Available",
                 }));
 
                 records = records.filter((r) => (r.CR_DR || "").toUpperCase() === "DR");
-
-                records = records.filter((r) => {
-                    return (
-                        (r.Debit_Amt !== 0 && r.Debit_Amt !== null && r.Debit_Amt !== undefined) ||
-                        (r.Credit_Amt !== 0 && r.Credit_Amt !== null && r.Credit_Amt !== undefined) ||
-                        (r.Bal_Amount !== 0 && r.Bal_Amount !== null && r.Bal_Amount !== undefined)
-                    );
-                });
+                records = records.filter((r) =>
+                    (r.Debit_Amt !== 0 && r.Debit_Amt !== null && r.Debit_Amt !== undefined) ||
+                    (r.Credit_Amt !== 0 && r.Credit_Amt !== null && r.Credit_Amt !== undefined) ||
+                    (r.Bal_Amount !== 0 && r.Bal_Amount !== null && r.Bal_Amount !== undefined)
+                );
 
                 if (tab === "outstanding") {
                     setAllOutstanding(records);
@@ -1042,17 +1929,13 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                     if (activeTab === "pending_bills") setFilteredData(records);
                 }
 
-                if (records.length === 0) {
-                    toast.info("No debit records found with non-zero amounts");
-                }
+                if (records.length === 0) toast.info("No debit records found with non-zero amounts");
             } else {
                 if (tab === "outstanding") {
-                    setAllOutstanding([]);
-                    setFilteredOutstanding([]);
+                    setAllOutstanding([]); setFilteredOutstanding([]);
                     if (activeTab === "outstanding") setFilteredData([]);
                 } else {
-                    setAllPendingBills([]);
-                    setFilteredPendingBills([]);
+                    setAllPendingBills([]); setFilteredPendingBills([]);
                     if (activeTab === "pending_bills") setFilteredData([]);
                 }
                 toast.info("No data found");
@@ -1095,6 +1978,27 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         } else setPrintReady(false);
     }, [multiPrint.open]);
 
+    const fetchBillCountForRetailer = async (accId, fromDate, toDate) => {
+        try {
+            const response = await fetchLink({
+                address: `journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`,
+                loadingOn: () => { }, loadingOff: () => { }
+            });
+            if (response?.success && response.data) {
+                const transactions = toArray(response.data);
+                const uniqueBills = new Set();
+                transactions.forEach(item => {
+                    if (item.voucherNumber || item.invoice_no) uniqueBills.add(item.voucherNumber || item.invoice_no);
+                });
+                return uniqueBills.size || transactions.length;
+            }
+            return "0";
+        } catch (error) {
+            console.error("Error fetching bill count:", error);
+            return "0";
+        }
+    };
+
     const buildSaleInvoiceParams = (row) => {
         const pdfUrl = getPDFUrlSimple(row);
         const companyname = companyInfo[0]?.Company_Name;
@@ -1107,9 +2011,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
     const buildPriceListParams = (row) => {
         const encodedCompanyId = btoa(storage?.Company_id);
-        // const priceListLink = `https://printapp.erpsmt.in/rateMaster?Company_id=${encodedCompanyId}`;
-
-        const priceListLink = `${print_app}/rateMaster?Company_id=${encodedCompanyId}`
+        const priceListLink = `${print_app}/rateMaster?Company_id=${encodedCompanyId}`;
         const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
         const companyname = companyInfo[0]?.Company_Name;
         return { bodyParams: [companyname, customerName, priceListLink], clientRefId: generateUniqueClientRefId("plist", `retailer_${row.Ret_Id}`) };
@@ -1135,60 +2037,73 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         return { bodyParams: [companyname, customerName, receiptNo, date, amount, paymentMode], clientRefId: generateUniqueClientRefId("receipt", receiptNo) };
     };
 
-    const buildOutstandingPendingParams = (row, totalAmount, transactionDetails) => {
+    const buildOutstandingParams = (row) => {
+        const outstandingQuery = `Acc_Id=${row.Acc_Id}&fromDate=${outstandingFromDate}&toDate=${outstandingToDate}&Company_id=${storage?.Company_id}`;
+        const maskedOutstandingParams = btoa(outstandingQuery);
+        const statementLink = `${print_app}/statement?data=${maskedOutstandingParams}`;
         const companyname = companyInfo[0]?.Company_Name;
         const customerName = row.retailerNameGet || row.Retailer_Name;
-        const amount = NumberFormat(totalAmount);
-
-
-        const encodedCompanyId = btoa(storage?.Company_id);
-        // const statementLink = `https://printapp.erpsmt.in/statement?Acc_Id=${row.Acc_Id}&Company_id=${encodedCompanyId}`;
-
-        const statementLink = `${print_app}/statement?Acc_Id=${row.Acc_Id}&Company_id=${encodedCompanyId}`
-
-
-        const messageBody = `${companyname}\n${customerName}\nYour outstanding balance - ₹${amount}\n\nTransaction Details:\n${transactionDetails}\n\nDownload your statement: ${statementLink}\nThank you`;
-
-        return {
-            bodyParams: [companyname, customerName, `₹${amount}`, statementLink],
-            clientRefId: generateUniqueClientRefId("outstanding", row.DocumentId)
-        };
+        const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
+        return { bodyParams: [companyname, customerName, `₹${amount}`, statementLink], clientRefId: generateUniqueClientRefId("outstanding", row.DocumentId) };
     };
+
+    const buildPendingBillsParams = async (row) => {
+        const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
+        const maskedPendingParams = btoa(pendingQuery);
+        const pendingbillsLink = `${print_app}/pendingbills?data=${maskedPendingParams}`;
+        const companyname = companyInfo[0]?.Company_Name;
+        const customerName = row.retailerNameGet || row.Retailer_Name;
+        const amount = NumberFormat(row.Bal_Amount || 0);
+        let billCount = "0";
+        try {
+            const response = await fetchLink({
+                address: `journal/accountPendingReference?Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}`,
+                loadingOn: () => { }, loadingOff: () => { }
+            });
+            if (response?.success && response.data) {
+                const transactions = toArray(response.data);
+                const uniqueBills = new Set();
+                transactions.forEach(item => {
+                    if (item.voucherNumber || item.invoice_no) uniqueBills.add(item.voucherNumber || item.invoice_no);
+                });
+                billCount = String(uniqueBills.size || transactions.length);
+            }
+        } catch (error) { billCount = "0"; }
+        return { bodyParams: [companyname, customerName, billCount, `₹${amount}`, pendingbillsLink], clientRefId: generateUniqueClientRefId("pending_bills", row.DocumentId) };
+    };
+
+    const getTabAndParams = useCallback((row, tab) => {
+        if (tab === "price_list") return { tab, ...buildPriceListParams(row) };
+        if (tab === "sale_order") return { tab, ...buildSaleOrderParams(row) };
+        if (tab === "receipt_list") return { tab, ...buildReceiptParams(row) };
+        if (tab === "outstanding") return { tab, ...buildOutstandingParams(row) };
+        if (tab === "pending_bills") return { tab, ...buildPendingBillsParams(row) };
+        return { tab: "sale_invoice", ...buildSaleInvoiceParams(row) };
+    }, [buildPriceListParams, buildSaleOrderParams, buildReceiptParams, buildSaleInvoiceParams, buildOutstandingParams, buildPendingBillsParams]);
 
     const sendOutstandingPendingMessage = async (row, tab, totalAmount, transactionDetails) => {
         const rowKey = getRowKey(row, tab);
         setSendingStates((p) => ({ ...p, [rowKey]: true }));
         try {
             let phone = phoneMap.get(Number(row.Retailer_Id)) || row.A1 || row.Customer_Phone;
-            if (!phone) { toast.error("Phone not found"); return false; }
+            if (!phone || !isValidPhone(phone)) { 
+                toast.error("Valid phone number not found"); 
+                return false; 
+            }
             phone = normalizePhone(phone);
-
             const companyname = companyInfo[0]?.Company_Name;
             const customerName = row.retailerNameGet || row.Retailer_Name;
             const amount = NumberFormat(totalAmount);
-
-            const encodedCompanyId = btoa(storage?.Company_id);
-            // const statementLink = `https://printapp.erpsmt.in/statement?Acc_Id=${row.Acc_Id}&Company_id=${encodedCompanyId}`;
-            const statementLink = `${print_app}/statement?Acc_Id=${row.Acc_Id}&Company_id=${encodedCompanyId}`
-            let bodyParams;
-            let clientRefId;
+            let bodyParams, clientRefId;
             if (tab === "pending_bills") {
-
                 const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
-                const maskedPendingParams = btoa(pendingQuery);
-                const pendingbillsLink = `${print_app}/pendingbills?data=${maskedPendingParams}`;
-                const billCount = transactionDetails
-                    ? transactionDetails.split('\n').filter(l => l.trim().length > 0).length
-                    : 0;
-                bodyParams = [companyname, customerName, String(billCount), `₹${amount}`, statementLink];
+                const pendingbillsLink = `${print_app}/pendingbills?data=${btoa(pendingQuery)}`;
+                const billCount = transactionDetails ? transactionDetails.split('\n').filter(l => l.trim().length > 0).length : 0;
                 bodyParams = [companyname, customerName, String(billCount), `₹${amount}`, pendingbillsLink];
                 clientRefId = generateUniqueClientRefId("pending_bills", row.DocumentId);
             } else {
-
                 const outstandingQuery = `Acc_Id=${row.Acc_Id}&fromDate=${outstandingFromDate}&toDate=${outstandingToDate}&Company_id=${storage?.Company_id}`;
-                const maskedOutstandingParams = btoa(outstandingQuery);
-                // const statementLink = `http://localhost:5173/statement?data=${maskedOutstandingParams}`;
-                const statementLink = `${print_app}/statement?data=${maskedOutstandingParams}`
+                const statementLink = `${print_app}/statement?data=${btoa(outstandingQuery)}`;
                 bodyParams = [companyname, customerName, `₹${amount}`, statementLink];
                 clientRefId = generateUniqueClientRefId("outstanding", row.DocumentId);
             }
@@ -1203,45 +2118,25 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         }
     };
 
-    const getTabAndParams = (row, tab) => {
-        if (tab === "price_list") return { tab, ...buildPriceListParams(row) };
-        if (tab === "sale_order") return { tab, ...buildSaleOrderParams(row) };
-        if (tab === "receipt_list") return { tab, ...buildReceiptParams(row) };
-        return { tab: "sale_invoice", ...buildSaleInvoiceParams(row) };
-    };
-
     const sendSingleRow = async (row, tab) => {
         if (tab === "outstanding" || tab === "pending_bills") {
-
-            let fromDate, toDate;
-
-            if (tab === "outstanding") {
-                fromDate = outstandingFromDate;
-                toDate = outstandingToDate;
-
-            } else {
-                fromDate = pendingBillsFromDate;
-                toDate = pendingBillsToDate;
-
-            }
-
-
             setTransactionDialog({
-                open: true,
-                row,
-                tab,
-                fromDate: fromDate,
-                toDate: toDate
+                open: true, row, tab,
+                fromDate: tab === "outstanding" ? outstandingFromDate : pendingBillsFromDate,
+                toDate: tab === "outstanding" ? outstandingToDate : pendingBillsToDate,
             });
             return;
         }
-
-
         const rowKey = getRowKey(row, tab);
         setSendingStates((p) => ({ ...p, [rowKey]: true }));
         try {
-            let phone = phoneMap.get(Number(row.Retailer_Id)) || row.A1 || row.Customer_Phone;
-            if (!phone) { toast.error("Phone not found"); return false; }
+            let phone = phoneMap.get(Number(row.Retailer_Id)) || row?.A1 || row?.Customer_Phone || row?.A1_Phone;
+            
+            if (!phone || !isValidPhone(phone)) {
+                toast.error("Valid phone number not found for this customer");
+                return false;
+            }
+            
             phone = normalizePhone(phone);
             const { tab: resolvedTab, bodyParams, clientRefId } = getTabAndParams(row, tab);
             await sendWhatsAppMessage({ tab: resolvedTab, phone, bodyParams, clientRefId });
@@ -1255,22 +2150,21 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         }
     };
 
-
     const getSelectedRows = useCallback(() => {
         const ids = multipleCostCenterUpdateValues.Do_Id;
-        const source = activeTab === "price_list"
-            ? filteredPriceListRetailers
-            : activeTab === "receipt_list"
-                ? filteredData
-                : filteredData;
+        let source;
+        if (activeTab === "price_list") source = filteredPriceListRetailers;
+        else if (activeTab === "receipt_list") source = filteredData;
+        else if (activeTab === "outstanding") source = filteredOutstanding;
+        else if (activeTab === "pending_bills") source = filteredPendingBills;
+        else source = filteredData;
         return source.filter((row) => ids.includes(toNumber(row.DocumentId)));
-    }, [multipleCostCenterUpdateValues.Do_Id, activeTab, filteredPriceListRetailers, filteredData]);
+    }, [multipleCostCenterUpdateValues.Do_Id, activeTab, filteredPriceListRetailers, filteredData, filteredOutstanding, filteredPendingBills]);
 
     const handleBulkSend = async (mode) => {
         setBulkMenuAnchor(null);
         const rows = getSelectedRows();
         if (!rows.length) { toast.warning("Select at least one row"); return; }
-
         bulkAbortRef.current = false;
         setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode });
 
@@ -1284,12 +2178,39 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         const sendRow = async (row) => {
             try {
                 let phone = phoneMap.get(Number(row.Retailer_Id)) || row.A1 || row.Customer_Phone;
-                if (!phone) { increment(false); return; }
+                if (!phone || !isValidPhone(phone)) { 
+                    increment(false); 
+                    return; 
+                }
                 phone = normalizePhone(phone);
-                const { tab, bodyParams, clientRefId } = getTabAndParams(row, activeTab);
+                let tab, bodyParams, clientRefId;
+                if (activeTab === "outstanding") {
+                    const companyname = companyInfo[0]?.Company_Name;
+                    const customerName = row.retailerNameGet || row.Retailer_Name;
+                    const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
+                    const outstandingQuery = `Acc_Id=${row.Acc_Id}&fromDate=${outstandingFromDate}&toDate=${outstandingToDate}&Company_id=${storage?.Company_id}`;
+                    const statementLink = `${print_app}/statement?data=${btoa(outstandingQuery)}`;
+                    tab = "outstanding";
+                    bodyParams = [companyname, customerName, `₹${amount}`, statementLink];
+                    clientRefId = generateUniqueClientRefId("outstanding", row.DocumentId);
+                } else if (activeTab === "pending_bills") {
+                    const companyname = companyInfo[0]?.Company_Name;
+                    const customerName = row.retailerNameGet || row.Retailer_Name;
+                    const amount = NumberFormat(row.Bal_Amount || 0);
+                    const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
+                    const pendingbillsLink = `${print_app}/pendingbills?data=${btoa(pendingQuery)}`;
+                    const billCount = await fetchBillCountForRetailer(row.Acc_Id, pendingBillsFromDate, pendingBillsToDate);
+                    tab = "pending_bills";
+                    bodyParams = [companyname, customerName, String(billCount), `₹${amount}`, pendingbillsLink];
+                    clientRefId = generateUniqueClientRefId("pending_bills", row.DocumentId);
+                } else {
+                    const params = getTabAndParams(row, activeTab);
+                    tab = params.tab; bodyParams = params.bodyParams; clientRefId = params.clientRefId;
+                }
                 await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId });
                 increment(true);
-            } catch {
+            } catch (error) {
+                console.error("Bulk send error:", error);
                 increment(false);
             }
         };
@@ -1306,23 +2227,22 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     };
 
     const ActionCell = ({ row, tab = "sale_invoice" }) => {
-        const hasPhone = !!(phoneMap.get(Number(row.Retailer_Id)) || row?.A1 || row?.Customer_Phone);
+        const phone = phoneMap.get(Number(row.Retailer_Id)) || row?.A1_Phone || row?.A1 || row?.Customer_Phone || row?.phone || row?.Mobile_No;
+        const hasPhone = phone && isValidPhone(phone);
+        
         const rowKey = getRowKey(row, tab);
         const busy = !!sendingStates[rowKey];
         const { serviceName = "Dotpe", langName = "english" } = tabMethodSettings[tab] || {};
-
-        const tooltipText = hasPhone
-            ? `Send via WhatsApp (${serviceName} · ${langName})`
-            : "No phone number available";
-
+        const tooltipText = hasPhone ? `Send via WhatsApp (${serviceName} · ${langName})` : "No valid phone number available";
+        
         return (
             <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
                 <Tooltip title={tooltipText}>
                     <span>
-                        <IconButton
-                            size="small"
-                            onClick={() => sendSingleRow(row, tab)}
-                            disabled={!hasPhone || busy}
+                        <IconButton 
+                            size="small" 
+                            onClick={() => sendSingleRow(row, tab)} 
+                            disabled={!hasPhone || busy} 
                             color={hasPhone ? "success" : "default"}
                         >
                             {busy ? <CircularProgress size={20} /> : <WhatsAppIcon fontSize="small" />}
@@ -1360,13 +2280,21 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     );
 
     const selectCell = (row) => {
-        const isSelected = multipleCostCenterUpdateValues.Do_Id.includes(toNumber(row.DocumentId));
+        const docId = toNumber(row.DocumentId);
+        const isSelected = multipleCostCenterUpdateValues.Do_Id.includes(docId);
         const toggle = () => {
-            const fn = (prev) => isSelected
-                ? { ...prev, Do_Id: prev.Do_Id.filter((x) => !isEqualNumber(x, row.DocumentId)) }
-                : { ...prev, Do_Id: [...prev.Do_Id, toNumber(row.DocumentId)] };
-            setMultipleCostCenterUpdateValues(fn);
-            setMultipleStaffRemoveValues(fn);
+            setMultipleCostCenterUpdateValues(prev => ({
+                ...prev,
+                Do_Id: prev.Do_Id.includes(docId)
+                    ? prev.Do_Id.filter((x) => !isEqualNumber(x, docId))
+                    : [...prev.Do_Id, docId],
+            }));
+            setMultipleStaffRemoveValues(prev => ({
+                ...prev,
+                Do_Id: prev.Do_Id.includes(docId)
+                    ? prev.Do_Id.filter((x) => !isEqualNumber(x, docId))
+                    : [...prev.Do_Id, docId],
+            }));
         };
         return <Checkbox onFocus={(e) => e.target.blur()} checked={isSelected} onChange={toggle} />;
     };
@@ -1380,7 +2308,13 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         createCol("retailerNameGet", "string", "Customer"),
         {
             Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true,
-            Cell: ({ row }) => <span>{row.A1_Phone || phoneMap.get(Number(row.Retailer_Id)) || row.A1 || "Not Available"}</span>,
+            Cell: ({ row }) => {
+                const phone = row.A1_Phone || phoneMap.get(Number(row.Retailer_Id)) || row.A1 || "Not Available";
+                const hasPhone = phone && isValidPhone(phone);
+                return <span style={{ color: hasPhone ? 'inherit' : '#999' }}>
+                    {hasPhone ? phone : "No Phone"}
+                </span>;
+            },
         },
         {
             Field_Name: "BillQty", isVisible: 1, isCustomCell: true,
@@ -1404,7 +2338,16 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         { Field_Name: "Select", isVisible: 1, isCustomCell: true, Cell: ({ row }) => selectCell(row) },
         { Field_Name: "Retailer_Name", Fied_Data: "string", ColumnHeader: "Customer Name", isVisible: 1 },
         { Field_Name: "Ret_Code", Fied_Data: "string", ColumnHeader: "Customer Code", isVisible: 1 },
-        { Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true, Cell: ({ row }) => <span>{row.A1 || "Not Available"}</span> },
+        { 
+            Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true, 
+            Cell: ({ row }) => {
+                const phone = row.A1 || "Not Available";
+                const hasPhone = phone && isValidPhone(phone);
+                return <span style={{ color: hasPhone ? 'inherit' : '#999' }}>
+                    {hasPhone ? phone : "No Phone"}
+                </span>;
+            } 
+        },
         { Field_Name: "City", Fied_Data: "string", ColumnHeader: "City", isVisible: 1 },
         { Field_Name: "Location", Fied_Data: "string", ColumnHeader: "Location", isVisible: 1 },
         { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="price_list" /> },
@@ -1416,8 +2359,17 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         { Field_Name: "receipt_date", Fied_Data: "date", ColumnHeader: "Receipt Date", isVisible: 1 },
         { Field_Name: "DebitAccountGet", Fied_Data: "string", ColumnHeader: "Debit Acct", isVisible: 1 },
         { Field_Name: "CreditAccountGet", Fied_Data: "string", ColumnHeader: "Credit Acct", isVisible: 1 },
-        { Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true, Cell: ({ row }) => <span>{row.A1_Phone || "Not Available"}</span> },
-        { Field_Name: "Total_Invoice_value", Fied_Data: "number", ColumnHeader: "Amount", isVisible: 1, isCustomCell: true, Cell: ({ row }) => `₹${NumberFormat(row.debit_amount || row.credit_amount || 0)}` },
+        { 
+            Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true, 
+            Cell: ({ row }) => {
+                const phone = row.A1_Phone || row.A1 || row.Customer_Phone || "Not Available";
+                const hasPhone = phone && isValidPhone(phone);
+                return <span style={{ color: hasPhone ? 'inherit' : '#999' }}>
+                    {hasPhone ? phone : "No Phone"}
+                </span>;
+            } 
+        },
+        { Field_Name: "Total_Invoice_value", Fied_Data: "number", ColumnHeader: "Amount", isVisible: 1, isCustomCell: true, Cell: ({ row }) => `₹${NumberFormat(row.credit_amount || row.debit_amount || 0)}` },
         { Field_Name: "transaction_type", Fied_Data: "string", ColumnHeader: "Payment Mode", isVisible: 1 },
         { Field_Name: "bank_name", Fied_Data: "string", ColumnHeader: "Bank", isVisible: 1 },
         { Field_Name: "check_no", Fied_Data: "string", ColumnHeader: "Cheque/Ref", isVisible: 1 },
@@ -1431,14 +2383,17 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         { Field_Name: "Retailer_Name", Fied_Data: "string", ColumnHeader: "Party Name", isVisible: 1 },
         { Field_Name: "Location", Fied_Data: "string", ColumnHeader: "Location", isVisible: 1 },
         { Field_Name: "District", Fied_Data: "string", ColumnHeader: "District", isVisible: 1 },
-        {
-            Field_Name: "A1_Phone", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true,
-            Cell: ({ row }) => <span>{row.A1_Phone || "Not Available"}</span>,
+        { 
+            Field_Name: "A1_Phone", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true, 
+            Cell: ({ row }) => {
+                const phone = row.A1_Phone || row.A1 || row.Customer_Phone || "Not Available";
+                const hasPhone = phone && isValidPhone(phone);
+                return <span style={{ color: hasPhone ? 'inherit' : '#999' }}>
+                    {hasPhone ? phone : "No Phone"}
+                </span>;
+            } 
         },
-        {
-            Field_Name: "OB_Amount", ColumnHeader: "Opening Balance", isVisible: 1, isCustomCell: true,
-            Cell: ({ row }) => <span>{row.OB_Amount || "-"}</span>,
-        },
+        { Field_Name: "OB_Amount", ColumnHeader: "Opening Balance", isVisible: 1, isCustomCell: true, Cell: ({ row }) => <span>{row.OB_Amount || "-"}</span> },
         {
             Field_Name: "Bal_Amount", ColumnHeader: "Balance", isVisible: 1, isCustomCell: true,
             Cell: ({ row }) => (
@@ -1451,11 +2406,9 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         {
             Field_Name: "PayDays", ColumnHeader: "Pay Days", isVisible: 1, isCustomCell: true,
             Cell: ({ row }) => (
-                <Chip
-                    label={`${row.PayDays} days`} size="small"
+                <Chip label={`${row.PayDays} days`} size="small"
                     color={row.PayDays > 30 ? "error" : row.PayDays > 15 ? "warning" : "success"}
-                    sx={{ fontSize: 11 }}
-                />
+                    sx={{ fontSize: 11 }} />
             ),
         },
         {
@@ -1464,63 +2417,206 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         },
     ];
 
-    const applyFilters = useCallback(() => {
-        let src;
-        if (activeTab === "price_list") src = priceListRetailers;
-        else if (activeTab === "receipt_list") src = allReceipts;
-        else src = salesInvoices;
+const applyFilters = useCallback(() => {
+    let src;
+    if (activeTab === "price_list") src = priceListRetailers;
+    else if (activeTab === "receipt_list") src = allReceipts;
+    else if (activeTab === "outstanding") src = allOutstanding;
+    else if (activeTab === "pending_bills") src = allPendingBills;
+    else src = salesInvoices;
 
-        let filtered = [...src];
-        for (const col of filterColumns) {
-            const fv = columnFilters[col.Field_Name];
-            if (!fv) continue;
-            if (fv.type === "range") {
-                const { min, max } = fv;
-                filtered = filtered.filter((item) => {
-                    const v = item[col.Field_Name];
-                    return (min === undefined || v >= min) && (max === undefined || v <= max);
-                });
-            } else if (fv.type === "date") {
-                const { start, end } = fv.value || {};
-                filtered = filtered.filter((item) => {
-                    const d = new Date(item[col.Field_Name]);
-                    return (!start || d >= new Date(start)) && (!end || d <= new Date(end));
-                });
-            } else if (Array.isArray(fv)) {
-                const sel = fv.map(normalize).filter(Boolean);
-                if (!sel.length) continue;
-                if (typeof col.getFilterValues === "function") {
-                    filtered = filtered.filter((item) =>
-                        sel.some((v) => (col.getFilterValues(item) || []).map(normalize).includes(v))
-                    );
-                } else {
-                    filtered = filtered.filter((item) => sel.includes(normalize(item[col.Field_Name])));
+    let filtered = [...src];
+    
+    for (const [colName, filterValues] of Object.entries(columnFilters)) {
+        if (!filterValues || filterValues.length === 0) continue;
+        
+        filtered = filtered.filter((item) => {
+            let itemValue = null;
+            
+            // Direct match
+            if (item[colName] !== undefined && item[colName] !== null && item[colName] !== "") {
+                itemValue = item[colName];
+            } else {
+                // Check case insensitive
+                const lowerColName = colName.toLowerCase();
+                for (const key in item) {
+                    if (key.toLowerCase() === lowerColName) {
+                        const val = item[key];
+                        if (val !== undefined && val !== null && val !== "") {
+                            itemValue = val;
+                            break;
+                        }
+                    }
                 }
             }
+            
+            // Special mappings for all data types including receipt list
+            if (itemValue === null || itemValue === undefined || itemValue === "") {
+                const mappings = {
+                    // Receipt list specific mappings
+                    'receipt_invoice_no': ['receipt_invoice_no', 'Receipt_No', 'DocumentNumber'],
+                    'receipt_date': ['receipt_date', 'created_on', 'DocumentDate'],
+                    'credit_amount': ['credit_amount', 'Credit_Amt', 'Total_Invoice_value'],
+                    'debit_amount': ['debit_amount', 'Debit_Amt'],
+                    'transaction_type': ['transaction_type', 'Payment_Mode'],
+                    'bank_name': ['bank_name', 'Bank_Name'],
+                    'check_no': ['check_no', 'Cheque_No'],
+                    'Status': ['Status', 'status'],
+                    'Narration': ['Narration', 'narration'],
+                    'DebitAccountGet': ['DebitAccountGet', 'Debit_Account'],
+                    'CreditAccountGet': ['CreditAccountGet', 'Credit_Account'],
+                    'Total_Invoice_value': ['Total_Invoice_value', 'credit_amount', 'debit_amount'],
+                    
+                    // Common mappings
+                    'Customer_Phone': ['A1', 'A1_Phone', 'Phone', 'Mobile_No', 'PhoneNumber', 'Party_Mobile_1', 'A1 - LOL-[19]'],
+                    'Alternate_Phone': ['A2', 'Alt_Phone', 'Alternate_Phone', 'Party_Mobile_2', 'A2 - LOL-[20]'],
+                    'Landline_Phone': ['A3', 'Landline', 'Landline_Phone', 'A3 - LOL-[21]'],
+                    'City': ['City', 'District', 'Location', 'City_Name', 'Party_Location', 'Party_District', 'Party_Location - LOL-[5]'],
+                    'Address': ['Address', 'Party_Address', 'Retailer_Address', 'Party_Mailing_Address', 'Party_Mailing_Address - LOL-[17]'],
+                    'State': ['State', 'Region', 'State_Name'],
+                    'GST_No': ['GST_No', 'GST', 'GSTIN', 'GST_No - LOL-[18]'],
+                    'PAN_No': ['PAN_No', 'PAN', 'Pan_Number'],
+                    'Bank_Name': ['Bank_Name', 'Bank', 'BankName'],
+                    'Owner_Name': ['Owner_Name', 'Owner', 'OwnerName'],
+                    'Retailer_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name', 'Ledger_Name', 'Ledger_Alias', 'Party_Mailing_Name', 'Ledger_Name - LOL-[1]'],
+                    'Ret_Code': ['Ret_Code', 'retailerCode', 'Customer_Code', 'Ledger_Tally_Id'],
+                    'Pincode': ['Pincode', 'Pin_Code', 'Zip'],
+                    'Party_Location': ['Location', 'Party_Location', 'City', 'Party_Location - LOL-[5]'],
+                    'Party_District': ['District', 'Party_District', 'Party_District - LOL-[12]'],
+                    'Party_Group': ['Party_Group', 'Group', 'Party_Group - LOL-[7]'],
+                    'Party_Nature': ['Party_Nature', 'Nature', 'Party_Nature - LOL-[6]'],
+                    'Party_Mobile_1': ['A1', 'Party_Mobile_1', 'Mobile_No', 'Customer_Phone', 'Party_Mobile_1 - LOL-[10]'],
+                    'Party_Mobile_2': ['A2', 'Party_Mobile_2', 'Alternate_Phone', 'Party_Mobile_2 - LOL-[11]'],
+                    'Ledger_Tally_Id': ['Ret_Code', 'retailerCode', 'Customer_Code', 'Ledger_Tally_Id', 'Alter_Tally_Id'],
+                    'Ledger_Name': ['retailerNameGet', 'Retailer_Name', 'Customer_Name', 'Party_Name', 'Ledger_Name', 'Ledger_Name - LOL-[1]'],
+                    'Ledger_Alias': ['Alias', 'Ledger_Alias', 'Customer_Alias', 'Ledger_Name', 'Ledger_Alias - LOL-[2]'],
+                    'A1': ['A1', 'Customer_Phone', 'Phone', 'Party_Mobile_1', 'A1 - LOL-[19]'],
+                    'A2': ['A2', 'Alternate_Phone', 'Party_Mobile_2', 'A2 - LOL-[20]'],
+                    'A3': ['A3', 'Landline_Phone', 'A3 - LOL-[21]'],
+                    'PayGroup': ['Q_Pay_Group', 'PayGroup'],
+                    'PayDays': ['Q_Pay_Days', 'PayDays']
+                };
+                
+                if (mappings[colName]) {
+                    for (const field of mappings[colName]) {
+                        const val = item[field];
+                        if (val !== undefined && val !== null && val !== "" && val !== " ") {
+                            itemValue = val;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (itemValue === null || itemValue === undefined || itemValue === "") {
+                return false;
+            }
+            
+            const itemStr = String(itemValue).toLowerCase().trim();
+            
+            if (itemStr === "not available" || 
+                itemStr === "null" || 
+                itemStr === "undefined" ||
+                itemStr === "[object object]" ||
+                itemStr === "na" ||
+                itemStr === "n/a" ||
+                itemStr === "" ||
+                itemStr === " ") {
+                return false;
+            }
+            
+            return filterValues.some(filterVal => {
+                if (!filterVal) return false;
+                const filterStr = String(filterVal).toLowerCase().trim();
+                if (!filterStr) return false;
+                
+                if (colName.includes('Phone') || colName === 'Customer_Phone' || 
+                    colName === 'Alternate_Phone' || colName === 'Landline_Phone' ||
+                    colName === 'A1_Phone' || colName === 'A1' || colName === 'A2' || colName === 'A3' ||
+                    colName === 'Party_Mobile_1' || colName === 'Party_Mobile_2') {
+                    const itemNumeric = itemStr.replace(/[^0-9]/g, '');
+                    const filterNumeric = filterStr.replace(/[^0-9]/g, '');
+                    if (itemNumeric && filterNumeric) {
+                        return itemNumeric.includes(filterNumeric) || filterNumeric.includes(itemNumeric);
+                    }
+                    return itemStr.includes(filterStr);
+                }
+                
+                // For amount fields, do numeric comparison
+                if (colName === 'credit_amount' || colName === 'debit_amount' || 
+                    colName === 'Total_Invoice_value' || colName.includes('Amount')) {
+                    const itemNum = parseFloat(itemStr);
+                    const filterNum = parseFloat(filterStr);
+                    if (!isNaN(itemNum) && !isNaN(filterNum)) {
+                        return itemNum === filterNum;
+                    }
+                }
+                
+                return itemStr.includes(filterStr) || filterStr.includes(itemStr);
+            });
+        });
+    }
+    
+    for (const col of filterColumns) {
+        const fv = columnFilters[col.Field_Name];
+        if (!fv) continue;
+        if (fv.type === "range") {
+            const { min, max } = fv;
+            filtered = filtered.filter((item) => {
+                const v = item[col.Field_Name];
+                return (min === undefined || v >= min) && (max === undefined || v <= max);
+            });
+        } else if (fv.type === "date") {
+            const { start, end } = fv.value || {};
+            filtered = filtered.filter((item) => {
+                const d = new Date(item[col.Field_Name]);
+                return (!start || d >= new Date(start)) && (!end || d <= new Date(end));
+            });
         }
-        if (activeTab === "price_list") setFilteredPriceListRetailers(filtered);
-        else setFilteredData(filtered);
-    }, [columnFilters, salesInvoices, priceListRetailers, allReceipts, filterColumns, activeTab]);
-
+    }
+    
+    if (activeTab === "price_list") {
+        setFilteredPriceListRetailers(filtered);
+    } else if (activeTab === "outstanding") {
+        setFilteredOutstanding(filtered);
+        setFilteredData(filtered);
+    } else if (activeTab === "pending_bills") {
+        setFilteredPendingBills(filtered);
+        setFilteredData(filtered);
+    } else if (activeTab === "receipt_list") {
+        // For receipt list, we need to update the data source
+        // But the receipt data is in allReceipts, so we just set filteredData
+        setFilteredData(filtered);
+    } else {
+        setFilteredData(filtered);
+    }
+}, [columnFilters, salesInvoices, priceListRetailers, allReceipts, allOutstanding, allPendingBills, filterColumns, activeTab]);
     useEffect(() => { applyFilters(); }, [applyFilters]);
 
     useEffect(() => {
-        const ids = selectAllCheckBox
-            ? (activeTab === "price_list" ? filteredPriceListRetailers : filteredData).map((i) => toNumber(i.DocumentId))
-            : [];
+        if (selectAllCheckBox === prevSelectAll.current) return;
+        prevSelectAll.current = selectAllCheckBox;
+        if (!selectAllCheckBox) return;
+
+        let source;
+        if (activeTab === "price_list") source = filteredPriceListRetailers;
+        else if (activeTab === "outstanding") source = filteredOutstanding;
+        else if (activeTab === "pending_bills") source = filteredPendingBills;
+        else source = filteredData;
+
+        const ids = source.map((i) => toNumber(i.DocumentId));
         setMultipleCostCenterUpdateValues((p) => ({ ...p, Do_Id: ids }));
         setMultipleStaffRemoveValues((p) => ({ ...p, Do_Id: ids }));
-    }, [selectAllCheckBox, filteredData, filteredPriceListRetailers, activeTab]);
-
+    }, [selectAllCheckBox]);
 
     useEffect(() => {
         if (multipleCostCenterUpdateValues.Do_Id.length > 0) {
             setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: [] }));
             setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: [] }));
             setSelectAllCheckBox(false);
+            prevSelectAll.current = false;
         }
-    }, [priceListSearch, outstandingSearch, pendingBillsSearch, columnFilters]);
-
+    }, [priceListSearch, outstandingSearch, pendingBillsSearch]);
 
     useEffect(() => {
         if ((activeTab === "outstanding" || activeTab === "pending_bills") &&
@@ -1528,12 +2624,14 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             setMultipleCostCenterUpdateValues(prev => ({ ...prev, Do_Id: [] }));
             setMultipleStaffRemoveValues(prev => ({ ...prev, Do_Id: [] }));
             setSelectAllCheckBox(false);
+            prevSelectAll.current = false;
         }
     }, [outstandingFromDate, outstandingToDate, pendingBillsFromDate, pendingBillsToDate]);
 
     const handleTabChange = (newVal) => {
         setActiveTab(newVal);
         setSelectAllCheckBox(false);
+        prevSelectAll.current = false;
         setMultipleCostCenterUpdateValues(STAFF_INIT);
         setMultipleStaffRemoveValues(STAFF_INIT);
         setColumnFilters({});
@@ -1545,35 +2643,18 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
         if (newVal === "price_list") {
             priceListRetailers.length === 0 ? fetchRetailersWithLOL() : setFilteredPriceListRetailers(priceListRetailers);
-        }
-        else if (newVal === "sale_invoice") {
-            setSalesInvoices(allSalesInvoices);
-            setFilteredData(allSalesInvoices);
-        }
-        else if (newVal === "sale_order") {
-            setSalesInvoices(allSalesOrders);
-            setFilteredData(allSalesOrders);
-        }
-        else if (newVal === "receipt_list") {
+        } else if (newVal === "sale_invoice") {
+            setSalesInvoices(allSalesInvoices); setFilteredData(allSalesInvoices);
+        } else if (newVal === "sale_order") {
+            setSalesInvoices(allSalesOrders); setFilteredData(allSalesOrders);
+        } else if (newVal === "receipt_list") {
             allReceipts.length === 0 ? fetchReceipts() : setFilteredData(allReceipts);
-        }
-        else if (newVal === "outstanding") {
-            if (allOutstanding.length === 0) {
-                setAllOutstanding([]);
-                setFilteredOutstanding([]);
-                setFilteredData([]);
-            } else {
-                setFilteredData(allOutstanding);
-            }
-        }
-        else if (newVal === "pending_bills") {
-            if (allPendingBills.length === 0) {
-                setAllPendingBills([]);
-                setFilteredPendingBills([]);
-                setFilteredData([]);
-            } else {
-                setFilteredData(allPendingBills);
-            }
+        } else if (newVal === "outstanding") {
+            if (allOutstanding.length === 0) { setAllOutstanding([]); setFilteredOutstanding([]); setFilteredData([]); }
+            else setFilteredData(allOutstanding);
+        } else if (newVal === "pending_bills") {
+            if (allPendingBills.length === 0) { setAllPendingBills([]); setFilteredPendingBills([]); setFilteredData([]); }
+            else setFilteredData(allPendingBills);
         }
     };
 
@@ -1651,83 +2732,6 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         else fetchAllInvoices(true);
     };
 
-    const DebtorsCreditorsFilterBar = ({ tab }) => {
-        const isOutstanding = tab === "outstanding";
-
-        const fromDate = isOutstanding ? outstandingFromDate : pendingBillsFromDate;
-        const toDate = isOutstanding ? outstandingToDate : pendingBillsToDate;
-        const setFromDate = isOutstanding ? setOutstandingFromDate : setPendingBillsFromDate;
-        const setToDate = isOutstanding ? setOutstandingToDate : setPendingBillsToDate;
-
-        const allData = isOutstanding ? allOutstanding : allPendingBills;
-        const filteredList = isOutstanding ? filteredOutstanding : filteredPendingBills;
-        const activeFilter = isOutstanding ? outstandingFilter : pendingBillsFilter;
-        const setFilter = isOutstanding ? setOutstandingFilter : setPendingBillsFilter;
-        const fetchFn = isOutstanding ? fetchOutstanding : fetchPendingBills;
-
-        const handleSearch = () => {
-          
-            fetchFn();
-        };
-
-        const drCount = allData.filter((r) => r.CR_DR === "DR").length;
-        const drAmt = allData.filter((r) => r.CR_DR === "DR").reduce((s, r) => s + (r.Bal_Amount || 0), 0);
-
-        return (
-            <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2 }}>
-                <Stack direction="row" gap={2} alignItems="center" flexWrap="wrap" mb={1.5}>
-                    <TextField
-                        label="From Date"
-                        type="date"
-                        size="small"
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        sx={{ minWidth: 160 }}
-                    />
-                    <TextField
-                        label="To Date"
-                        type="date"
-                        size="small"
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        sx={{ minWidth: 160 }}
-                    />
-                    <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<Search />}
-                        onClick={handleSearch}
-                    >
-                        Search
-                    </Button>
-                </Stack>
-
-                <Divider sx={{ mb: 1.5 }} />
-
-                <Stack direction="row" gap={1.5} alignItems="center" flexWrap="wrap">
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Filter:
-                    </Typography>
-
-                    <Button
-                        variant={activeFilter === "DR" ? "contained" : "outlined"}
-                        color="error"
-                        size="small"
-                        onClick={() => setFilter("DR")}
-                        sx={{ textTransform: "none", minWidth: 120 }}
-                    >
-                        Debit / DR ({drCount})
-                    </Button>
-
-                    <Divider orientation="vertical" flexItem />
-                    <Chip label={`DR Total: ₹${NumberFormat(drAmt)}`} color="error" variant="outlined" size="small" />
-                </Stack>
-            </Box>
-        );
-    };
-
     const renderFilter = (col) => {
         const { Field_Name, Fied_Data, ColumnHeader } = col;
         if (Fied_Data === "number") return (
@@ -1750,13 +2754,9 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         );
 
         let src;
-        if (activeTab === "price_list") {
-            src = priceListRetailers;
-        } else if (activeTab === "receipt_list") {
-            src = allReceipts;
-        } else {
-            src = salesInvoices;
-        }
+        if (activeTab === "price_list") src = priceListRetailers;
+        else if (activeTab === "receipt_list") src = allReceipts;
+        else src = salesInvoices;
 
         let filterValues;
         if (typeof col.getFilterValues === "function") {
@@ -1769,9 +2769,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 return String(val);
             });
         }
-
         const validOptions = filterValues.filter(v => v && v !== "" && v !== "[object Object]");
-
         return (
             <Autocomplete
                 multiple size="small" options={uniqueCaseInsensitive(validOptions)}
@@ -1792,20 +2790,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         if (!serviceName) return null;
         return (
             <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
-                <Chip
-                    icon={<WhatsAppIcon sx={{ fontSize: 14 }} />}
-                    label={serviceName}
-                    size="small"
+                <Chip icon={<WhatsAppIcon sx={{ fontSize: 14 }} />} label={serviceName} size="small"
                     color={serviceName.toLowerCase() === "askeva" ? "secondary" : "primary"}
-                    sx={{ height: 22, fontSize: 10 }}
-                />
+                    sx={{ height: 22, fontSize: 10 }} />
                 {langName && (
-                    <Chip
-                        icon={<Language sx={{ fontSize: 13 }} />}
-                        label={langName}
-                        size="small" color="info" variant="outlined"
-                        sx={{ height: 22, fontSize: 10 }}
-                    />
+                    <Chip icon={<Language sx={{ fontSize: 13 }} />} label={langName} size="small"
+                        color="info" variant="outlined" sx={{ height: 22, fontSize: 10 }} />
                 )}
             </Box>
         );
@@ -1818,42 +2808,21 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         return (
             <>
                 <Tooltip title={`Send WhatsApp to ${selectedCount} selected`}>
-                    <Button
-                        variant="contained"
-                        color="success"
-                        size="small"
-                        startIcon={<WhatsAppIcon />}
-                        endIcon={<ArrowDropDown />}
+                    <Button variant="contained" color="success" size="small"
+                        startIcon={<WhatsAppIcon />} endIcon={<ArrowDropDown />}
                         onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
-                        sx={{ textTransform: "none", bgcolor: "#25D366", "&:hover": { bgcolor: "#1ebe5c" } }}
-                    >
+                        sx={{ textTransform: "none", bgcolor: "#25D366", "&:hover": { bgcolor: "#1ebe5c" } }}>
                         Send ({selectedCount})
                     </Button>
                 </Tooltip>
-
-                <Menu
-                    anchorEl={bulkMenuAnchor}
-                    open={Boolean(bulkMenuAnchor)}
-                    onClose={() => setBulkMenuAnchor(null)}
-                >
+                <Menu anchorEl={bulkMenuAnchor} open={Boolean(bulkMenuAnchor)} onClose={() => setBulkMenuAnchor(null)}>
                     <MenuItem onClick={() => handleBulkSend("parallel")}>
-                        <ListItemIcon>
-                            <SendAndArchive fontSize="small" color="success" />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary="Send Simultaneously"
-                            secondary={`Fire all ${selectedCount} messages at once`}
-                        />
+                        <ListItemIcon><SendAndArchive fontSize="small" color="success" /></ListItemIcon>
+                        <ListItemText primary="Send Simultaneously" secondary={`Fire all ${selectedCount} messages at once`} />
                     </MenuItem>
-
                     <MenuItem onClick={() => handleBulkSend("sequential")}>
-                        <ListItemIcon>
-                            <Send fontSize="small" color="info" />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary="Send One by One"
-                            secondary="Sequential with progress tracking"
-                        />
+                        <ListItemIcon><Send fontSize="small" color="info" /></ListItemIcon>
+                        <ListItemText primary="Send One by One" secondary="Sequential with progress tracking" />
                     </MenuItem>
                 </Menu>
             </>
@@ -1863,77 +2832,68 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const sharedButtonArea = (
         <>
             <CurrentMethodBadge />
-
             <Tooltip title="WhatsApp Settings for this tab">
                 <IconButton size="small" onClick={() => setSettingsDialog(true)}>
                     <Settings fontSize="small" />
                 </IconButton>
             </Tooltip>
+            <Tooltip title="Configure WhatsApp Columns">
+                <IconButton size="small" onClick={() => setColumnSettingsOpen(true)}
+                    sx={{ color: 'primary.main', '&:hover': { bgcolor: 'primary.light', color: 'white' } }}>
+                    <TuneIcon />
+                </IconButton>
+            </Tooltip>
 
             {activeTab === "price_list" && (
-                <TextField
-                    size="small"
-                    placeholder="Search by Name, Code, City, Location or Phone..."
-                    value={priceListSearch}
-                    onChange={(e) => setPriceListSearch(e.target.value)}
+                <TextField size="small" placeholder="Search by Name, Code, City, Location or Phone..."
+                    value={priceListSearch} onChange={(e) => setPriceListSearch(e.target.value)}
                     sx={{ minWidth: 300, ml: 1 }}
-                    InputProps={{
-                        startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} />,
-                    }}
+                    InputProps={{ startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} /> }}
                 />
             )}
 
             {(activeTab === "outstanding" || activeTab === "pending_bills") && (
-                <TextField
-                    size="small"
-                    placeholder="Search by Party Name, Location, District, Phone..."
+                <TextField size="small" placeholder="Search by Party Name, Location, District, Phone..."
                     value={activeTab === "outstanding" ? outstandingSearch : pendingBillsSearch}
                     onChange={(e) => {
+                        const searchTerm = e.target.value.toLowerCase().trim();
                         if (activeTab === "outstanding") {
                             setOutstandingSearch(e.target.value);
-                            const searchTerm = e.target.value.toLowerCase().trim();
-                            if (!searchTerm) {
-                                setFilteredOutstanding(allOutstanding);
-                                setFilteredData(allOutstanding);
-                            } else {
-                                const filtered = allOutstanding.filter(item =>
-                                    (item.Retailer_Name || "").toLowerCase().includes(searchTerm) ||
-                                    (item.Location || "").toLowerCase().includes(searchTerm) ||
-                                    (item.District || "").toLowerCase().includes(searchTerm) ||
-                                    (item.A1_Phone || "").includes(searchTerm)
-                                );
-                                setFilteredOutstanding(filtered);
-                                setFilteredData(filtered);
-                            }
+                            const filtered = !searchTerm ? allOutstanding : allOutstanding.filter(item =>
+                                (item.Retailer_Name || "").toLowerCase().includes(searchTerm) ||
+                                (item.Location || "").toLowerCase().includes(searchTerm) ||
+                                (item.District || "").toLowerCase().includes(searchTerm) ||
+                                (item.A1_Phone || "").includes(searchTerm)
+                            );
+                            setFilteredOutstanding(filtered); setFilteredData(filtered);
                         } else {
                             setPendingBillsSearch(e.target.value);
-                            const searchTerm = e.target.value.toLowerCase().trim();
-                            if (!searchTerm) {
-                                setFilteredPendingBills(allPendingBills);
-                                setFilteredData(allPendingBills);
-                            } else {
-                                const filtered = allPendingBills.filter(item =>
-                                    (item.Retailer_Name || "").toLowerCase().includes(searchTerm) ||
-                                    (item.Location || "").toLowerCase().includes(searchTerm) ||
-                                    (item.District || "").toLowerCase().includes(searchTerm) ||
-                                    (item.A1_Phone || "").includes(searchTerm)
-                                );
-                                setFilteredPendingBills(filtered);
-                                setFilteredData(filtered);
-                            }
+                            const filtered = !searchTerm ? allPendingBills : allPendingBills.filter(item =>
+                                (item.Retailer_Name || "").toLowerCase().includes(searchTerm) ||
+                                (item.Location || "").toLowerCase().includes(searchTerm) ||
+                                (item.District || "").toLowerCase().includes(searchTerm) ||
+                                (item.A1_Phone || "").includes(searchTerm)
+                            );
+                            setFilteredPendingBills(filtered); setFilteredData(filtered);
                         }
                     }}
                     sx={{ minWidth: 300, ml: 1 }}
-                    InputProps={{
-                        startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} />,
-                    }}
+                    InputProps={{ startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} /> }}
                 />
             )}
 
             <Tooltip title="Select All">
                 <Checkbox
                     checked={selectAllCheckBox}
-                    onChange={(e) => setSelectAllCheckBox(e.target.checked)}
+                    onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectAllCheckBox(checked);
+                        if (!checked) {
+                            setMultipleCostCenterUpdateValues((p) => ({ ...p, Do_Id: [] }));
+                            setMultipleStaffRemoveValues((p) => ({ ...p, Do_Id: [] }));
+                            prevSelectAll.current = false;
+                        }
+                    }}
                     disabled={
                         activeTab === "price_list"
                             ? filteredPriceListRetailers.length === 0
@@ -1950,19 +2910,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 </IconButton>
             )}
 
-            <IconButton size="small" onClick={refreshData} disabled={isRefreshing}>
-                <Search />
-            </IconButton>
-
             {viewMode === "pending" && activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && (
                 <>
-                    <Button
-                        variant="contained" size="small"
-                        startIcon={<Download />} endIcon={<ArrowDropDown />}
+                    <Button variant="contained" size="small" startIcon={<Download />} endIcon={<ArrowDropDown />}
                         onClick={(e) => setDownloadAnchorEl(e.currentTarget)}
                         disabled={!multipleCostCenterUpdateValues.Do_Id.length || downloadLoading}
-                        sx={{ ml: 1, textTransform: "none" }}
-                    >
+                        sx={{ ml: 1, textTransform: "none" }}>
                         {downloadLoading ? "Downloading…" : "Download"}
                     </Button>
                     <Menu anchorEl={downloadAnchorEl} open={Boolean(downloadAnchorEl)} onClose={() => setDownloadAnchorEl(null)}>
@@ -1979,8 +2932,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             )}
 
             {activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && (
-                <input
-                    type="date" className="cus-inpt w-auto"
+                <input type="date" className="cus-inpt w-auto"
                     value={filters.reqDate}
                     onChange={(e) => setFilters((p) => ({ ...p, reqDate: e.target.value }))}
                     disabled={isRefreshing}
@@ -1988,45 +2940,13 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             )}
 
             {activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && (
-                <IconButton
-                    size="small"
+                <IconButton size="small"
                     disabled={!filters.docType || !multipleCostCenterUpdateValues.Do_Id.length}
-                    onClick={() => { setCurrentPrintType(filters.docType); setMultiPrint({ open: true, doIds: multipleCostCenterUpdateValues.Do_Id, docType: filters.docType }); }}
-                >
+                    onClick={() => { setCurrentPrintType(filters.docType); setMultiPrint({ open: true, doIds: multipleCostCenterUpdateValues.Do_Id, docType: filters.docType }); }}>
                     <Print />
                 </IconButton>
             )}
         </>
-    );
-
-    const ReceiptFilterBar = () => (
-        <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>Receipt Filters</Typography>
-            <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
-                <TextField label="From Date" type="date" size="small" value={receiptFilters.Fromdate} InputLabelProps={{ shrink: true }}
-                    onChange={(e) => setReceiptFilters((p) => ({ ...p, Fromdate: e.target.value }))} />
-                <TextField label="To Date" type="date" size="small" value={receiptFilters.Todate} InputLabelProps={{ shrink: true }}
-                    onChange={(e) => setReceiptFilters((p) => ({ ...p, Todate: e.target.value }))} />
-                <TextField label="Voucher No" type="string" size="xl" value={receiptFilters.voucher}
-                    onChange={(e) => setReceiptFilters((p) => ({ ...p, voucher: e.target.value }))} />
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                    <InputLabel>Payment Mode</InputLabel>
-                    <MuiSelect value={receiptFilters.receipt_type} label="Payment Mode"
-                        onChange={(e) => setReceiptFilters((p) => ({ ...p, receipt_type: e.target.value }))}>
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="cash">Cash</MenuItem>
-                        <MenuItem value="bank">Bank</MenuItem>
-                        <MenuItem value="cheque">Cheque</MenuItem>
-                        <MenuItem value="online">Online</MenuItem>
-                    </MuiSelect>
-                </FormControl>
-                <Button variant="contained" size="small" startIcon={<Search />} onClick={fetchReceipts}>Search</Button>
-                <Button variant="outlined" size="small" onClick={() => {
-                    setReceiptFilters({ Fromdate: ISOString(), Todate: ISOString(), voucher: "", debit: "", credit: "", createdBy: "", status: "", receipt_type: "" });
-                    setTimeout(fetchReceipts, 100);
-                }}>Reset</Button>
-            </Stack>
-        </Box>
     );
 
     const sharedDialogs = (
@@ -2043,42 +2963,37 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 </DialogActions>
             </Dialog>
 
-            <WhatsappSettingsDialog
-                open={settingsDialog}
-                onClose={() => setSettingsDialog(false)}
-                activeTab={activeTab}
-                onSettingsSaved={() => fetchAllTabSettings()}
-            />
+            <WhatsappSettingsDialog open={settingsDialog} onClose={() => setSettingsDialog(false)}
+                activeTab={activeTab} onSettingsSaved={() => fetchAllTabSettings()} />
 
-            <BulkSendProgressDialog
-                open={bulkProgress.open}
-                total={bulkProgress.total}
-                sent={bulkProgress.sent}
-                failed={bulkProgress.failed}
-                mode={bulkProgress.mode}
-                onClose={() => {
-                    bulkAbortRef.current = true;
-                    setBulkProgress((p) => ({ ...p, open: false }));
-                }}
-            />
+            <BulkSendProgressDialog open={bulkProgress.open} total={bulkProgress.total}
+                sent={bulkProgress.sent} failed={bulkProgress.failed} mode={bulkProgress.mode}
+                onClose={() => { bulkAbortRef.current = true; setBulkProgress((p) => ({ ...p, open: false })); }} />
 
             <TransactionDetailsDialog
                 open={transactionDialog.open}
                 onClose={() => setTransactionDialog({ open: false, row: null, tab: "", fromDate: "", toDate: "" })}
-                row={transactionDialog.row}
-                tab={transactionDialog.tab}
-                fromDate={transactionDialog.fromDate}
-                toDate={transactionDialog.toDate}
-                onSend={sendOutstandingPendingMessage}
-                companyInfo={companyInfo}
-                phoneMap={phoneMap}
+                row={transactionDialog.row} tab={transactionDialog.tab}
+                fromDate={transactionDialog.fromDate} toDate={transactionDialog.toDate}
+                onSend={sendOutstandingPendingMessage} companyInfo={companyInfo} phoneMap={phoneMap}
             />
+
+            <WhatsAppColumnSettings open={columnSettingsOpen} onClose={() => setColumnSettingsOpen(false)}
+                companyId={companyId} onSave={handleColumnSettingsSave} activeTab={activeTab} />
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>
                 <Alert severity={snackbar.severity} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>{snackbar.message}</Alert>
             </Snackbar>
         </>
     );
+
+    const activeDataSource = useMemo(() => {
+        if (activeTab === "price_list") return filteredPriceListRetailers;
+        if (activeTab === "outstanding") return filteredOutstanding;
+        if (activeTab === "pending_bills") return filteredPendingBills;
+        if (activeTab === "receipt_list") return allReceipts;
+        return filteredData;
+    }, [activeTab, filteredPriceListRetailers, filteredOutstanding, filteredPendingBills, allReceipts, filteredData]);
 
     return (
         <>
@@ -2094,62 +3009,119 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             </Box>
 
             {activeTab === "sale_order" && (
-                <FilterableTable
-                    title={viewMode === "pending" ? "Pending Sale Orders" : "Sale Orders"}
-                    columns={saleOrderColumns} dataArray={filteredData}
-                    EnableSerialNumber ButtonArea={sharedButtonArea}
-                />
+                <>
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title={viewMode === "pending" ? "Pending Sale Orders" : "Sale Orders"}
+                        columns={saleOrderColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
+                </>
             )}
 
             {activeTab === "sale_invoice" && (
-                <FilterableTable
-                    title={viewMode === "pending" ? "Pending Sale Invoices" : "Sale Invoices"}
-                    columns={saleInvoiceColumns} dataArray={filteredData}
-                    EnableSerialNumber ButtonArea={sharedButtonArea}
-                />
+                <>
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title={viewMode === "pending" ? "Pending Sale Invoices" : "Sale Invoices"}
+                        columns={saleInvoiceColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
+                </>
             )}
 
             {activeTab === "price_list" && (
-                <FilterableTable
-                    title="Price List — Retailers"
-                    columns={priceListColumns} dataArray={filteredPriceListRetailers}
-                    EnableSerialNumber ButtonArea={sharedButtonArea}
-                />
+                <>
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title="Price List — Retailers"
+                        columns={priceListColumns} dataArray={filteredPriceListRetailers} EnableSerialNumber ButtonArea={sharedButtonArea} />
+                </>
             )}
 
             {activeTab === "receipt_list" && (
                 <>
-                    <ReceiptFilterBar />
-                    <FilterableTable
-                        title="Receipt List"
-                        columns={receiptColumns} dataArray={filteredData}
-                        EnableSerialNumber ButtonArea={sharedButtonArea}
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title="Receipt List" columns={receiptColumns} dataArray={filteredData} EnableSerialNumber
+                        ButtonArea={
+                            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                                <TextField label="From Date" type="date" size="small" value={receiptFilters.Fromdate}
+                                    onChange={(e) => setReceiptFilters((p) => ({ ...p, Fromdate: e.target.value }))}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <TextField label="To Date" type="date" size="small" value={receiptFilters.Todate}
+                                    onChange={(e) => setReceiptFilters((p) => ({ ...p, Todate: e.target.value }))}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <TextField label="Voucher No" size="small" value={receiptFilters.voucher}
+                                    onChange={(e) => setReceiptFilters((p) => ({ ...p, voucher: e.target.value }))} />
+                                <FormControl size="small" sx={{ minWidth: 130 }}>
+                                    <InputLabel>Payment Mode</InputLabel>
+                                    <MuiSelect value={receiptFilters.receipt_type} label="Payment Mode"
+                                        onChange={(e) => setReceiptFilters((p) => ({ ...p, receipt_type: e.target.value }))}>
+                                        <MenuItem value="">All</MenuItem>
+                                        <MenuItem value="cash">Cash</MenuItem>
+                                        <MenuItem value="bank">Bank</MenuItem>
+                                        <MenuItem value="cheque">Cheque</MenuItem>
+                                        <MenuItem value="online">Online</MenuItem>
+                                    </MuiSelect>
+                                </FormControl>
+                                <Button variant="contained" size="small" startIcon={<Search />} onClick={fetchReceipts}>Search</Button>
+                                <Button variant="outlined" size="small" onClick={() => {
+                                    setReceiptFilters({ Fromdate: ISOString(), Todate: ISOString(), voucher: "", debit: "", credit: "", createdBy: "", status: "", receipt_type: "" });
+                                    setTimeout(fetchReceipts, 100);
+                                }}>Reset</Button>
+                                <Divider orientation="vertical" flexItem />
+                                {sharedButtonArea}
+                            </Stack>
+                        }
                     />
                 </>
             )}
 
             {activeTab === "outstanding" && (
                 <>
-                    <DebtorsCreditorsFilterBar tab="outstanding" />
-                    <FilterableTable
-                        title="Transactions — Debit Parties"
-                        columns={debtorsCreditorsColumns}
-                        dataArray={filteredOutstanding}
-                        EnableSerialNumber
-                        ButtonArea={sharedButtonArea}
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title="Transactions — Debit Parties" columns={debtorsCreditorsColumns}
+                        dataArray={filteredOutstanding} EnableSerialNumber
+                        ButtonArea={
+                            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                                <TextField label="From Date" type="date" size="small" value={outstandingFromDate}
+                                    onChange={(e) => setOutstandingFromDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <TextField label="To Date" type="date" size="small" value={outstandingToDate}
+                                    onChange={(e) => setOutstandingToDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <Button variant="contained" size="small" startIcon={<Search />} onClick={fetchOutstanding}>Search</Button>
+                                <Divider orientation="vertical" flexItem />
+                                <Button variant={outstandingFilter === "DR" ? "contained" : "outlined"} color="error" size="small"
+                                    onClick={() => setOutstandingFilter("DR")} sx={{ textTransform: "none", minWidth: 120 }}>
+                                    Debit / DR ({allOutstanding.filter((r) => r.CR_DR === "DR").length})
+                                </Button>
+                                <Chip label={`DR Total: ₹${NumberFormat(allOutstanding.filter((r) => r.CR_DR === "DR").reduce((s, r) => s + (r.Bal_Amount || 0), 0))}`}
+                                    color="error" variant="outlined" size="small" />
+                                {sharedButtonArea}
+                            </Stack>
+                        }
                     />
                 </>
             )}
 
             {activeTab === "pending_bills" && (
                 <>
-                    <DebtorsCreditorsFilterBar tab="pending_bills" />
-                    <FilterableTable
-                        title="Pending Bills — Debit Parties"
-                        columns={debtorsCreditorsColumns}
-                        dataArray={filteredPendingBills}
-                        EnableSerialNumber
-                        ButtonArea={sharedButtonArea}
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title="Pending Bills — Debit Parties" columns={debtorsCreditorsColumns}
+                        dataArray={filteredPendingBills} EnableSerialNumber
+                        ButtonArea={
+                            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                                <TextField label="From Date" type="date" size="small" value={pendingBillsFromDate}
+                                    onChange={(e) => setPendingBillsFromDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <TextField label="To Date" type="date" size="small" value={pendingBillsToDate}
+                                    onChange={(e) => setPendingBillsToDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <Button variant="contained" size="small" startIcon={<Search />} onClick={fetchPendingBills}>Search</Button>
+                                <Divider orientation="vertical" flexItem />
+                                <Button variant={pendingBillsFilter === "DR" ? "contained" : "outlined"} color="error" size="small"
+                                    onClick={() => setPendingBillsFilter("DR")} sx={{ textTransform: "none", minWidth: 120 }}>
+                                    Debit / DR ({allPendingBills.filter((r) => r.CR_DR === "DR").length})
+                                </Button>
+                                <Chip label={`DR Total: ₹${NumberFormat(allPendingBills.filter((r) => r.CR_DR === "DR").reduce((s, r) => s + (r.Bal_Amount || 0), 0))}`}
+                                    color="error" variant="outlined" size="small" />
+                                {sharedButtonArea}
+                            </Stack>
+                        }
                     />
                 </>
             )}
