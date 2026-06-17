@@ -5,7 +5,7 @@ import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
     rid, Subraction, filterableText, generateUUID, reactSelectFilterLogic,
-    Division
+    Division, Multiplication
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete, ReceiptLong } from "@mui/icons-material";
@@ -27,7 +27,6 @@ import {
 import InvolvedStaffs from "./manageInvolvedStaff";
 import ManageSalesInvoiceGeneralInfo from "./manageGeneralInfo";
 import SalesInvoiceTaxDetails from "./taxDetails";
-import AddProductsInSalesInvoice from "./importFromSaleOrder";
 import ExpencesOfSalesInvoice from "./manageExpences";
 import AddProductForm from "./addProducts";
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
@@ -66,6 +65,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         importFromSaleOrder: false,
         godownMismatch: false
     });
+
+    const [saleOrderDetails, setSaleOrderDetails] = useState({
+        generalInfo: {},
+        products: []
+    })
 
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
@@ -264,6 +268,21 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             });
         }
     }, [editValues])
+
+    useEffect(() => {
+        if (isValidNumber(invoiceInfo?.So_No)) {
+            fetchLink({
+                address: `sales/saleOrder/getById?So_Id=${invoiceInfo.So_No}`
+            }).then(data => {
+                if (data.success) {
+                    setSaleOrderDetails({
+                        generalInfo: data.others?.generalInfo ?? {},
+                        products: data.others?.products ?? []
+                    });
+                }
+            }).catch(console.error);
+        }
+    }, [invoiceInfo?.So_No])
 
     useEffect(() => {
         const staffs = toArray(editValues?.Staffs_Array)
@@ -607,7 +626,38 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 },
                 Product_Array: invoiceProducts
                     .filter(item => checkIsNumber(item.Item_Id))
-                    .map((item, index) => ({ ...item, S_No: index + 1, GoDown_Id: commonGodown.value })),
+                    .map((item, index) => {
+                        const productMaster = findProductDetails(baseData.products, item.Item_Id);
+                        const gstPercentage = IS_IGST ? productMaster.Igst_P : productMaster.Gst_P;
+                        const isTaxable = gstPercentage > 0;
+                        const Amount = toNumber(item.Amount);
+                        const Item_Rate = toNumber(item.Item_Rate);
+                        const itemRateGst = calculateGSTDetails(Item_Rate, gstPercentage, taxType);
+                        const gstInfo = calculateGSTDetails(Amount, gstPercentage, taxType);
+
+                        const cgstPer = !IS_IGST ? gstInfo.cgst_per : 0;
+                        const igstPer = IS_IGST ? gstInfo.igst_per : 0;
+                        const Cgst_Amo = !IS_IGST ? gstInfo.cgst_amount : 0;
+                        const Igst_Amo = IS_IGST ? gstInfo.igst_amount : 0;
+
+                        return {
+                            ...item,
+                            S_No: index + 1,
+                            GoDown_Id: commonGodown.value,
+                            Total_Qty: item.Bill_Qty,
+                            Taxble: isTaxable ? 1 : 0,
+                            Taxable_Rate: itemRateGst.base_amount,
+                            Taxable_Amount: gstInfo.base_amount,
+                            Tax_Rate: gstPercentage,
+                            Cgst: cgstPer ?? 0,
+                            Sgst: cgstPer ?? 0,
+                            Cgst_Amo: isNotTaxableBill ? 0 : Cgst_Amo,
+                            Sgst_Amo: isNotTaxableBill ? 0 : Cgst_Amo,
+                            Igst: igstPer ?? 0,
+                            Igst_Amo: isNotTaxableBill ? 0 : Igst_Amo,
+                            Final_Amo: gstInfo.with_tax,
+                        };
+                    }),
                 Staffs_Array: Array.from(
                     new Map(
                         staffArray.filter(
@@ -849,39 +899,89 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     const changeSelectedObjects = (indexValue, key, value) => {
         setInvoiceProduct((prev) => {
             return prev.map((item, sIndex) => {
-                if (isEqualNumber(sIndex, indexValue)) {
-                    switch (key) {
-                        case 'Bill_Qty': {
-                            const updatedValue = parseFloat(value || 0);
-                            const newItem = { ...item, Bill_Qty: updatedValue };
-                            if (item.Item_Rate) {
-                                newItem.Amount = toNumber(item.Item_Rate) * updatedValue;
-                            } else if (item.Amount) {
-                                newItem.Item_Rate = updatedValue ? toNumber(item.Amount) / updatedValue : '';
-                            }
-                            return newItem;
+                if (!isEqualNumber(sIndex, indexValue)) return item;
+
+                const productInfo = findProductDetails(baseData.products, item.Item_Id);
+                const pack = toNumber(productInfo?.PackGet) || 1;
+
+                switch (key) {
+                    case 'Act_Qty': {
+                        const qty = toNumber(value);
+                        const altQty = Division(qty, pack);
+                        const newItem = {
+                            ...item,
+                            Act_Qty: value,
+                            Bill_Qty: value,
+                            Alt_Act_Qty: altQty,
+                            Alt_Bill_Qty: altQty,
+                        };
+                        if (toNumber(item.Item_Rate)) {
+                            newItem.Amount = Multiplication(item.Item_Rate, qty);
                         }
-                        case 'Item_Rate': {
-                            const updatedValue = parseFloat(value || 0);
-                            const newItem = { ...item, Item_Rate: updatedValue };
-                            if (item.Bill_Qty) {
-                                newItem.Amount = updatedValue * toNumber(item.Bill_Qty);
-                            }
-                            return newItem;
-                        }
-                        case 'Amount': {
-                            const updatedValue = parseFloat(value || 0);
-                            const newItem = { ...item, Amount: updatedValue };
-                            if (item.Bill_Qty) {
-                                newItem.Item_Rate = toNumber(item.Bill_Qty) ? updatedValue / toNumber(item.Bill_Qty) : '';
-                            }
-                            return newItem;
-                        }
-                        default:
-                            return { ...item, [key]: value };
+                        return newItem;
                     }
+                    case 'Alt_Act_Qty': {
+                        const altQty = toNumber(value);
+                        const qty = Multiplication(altQty, pack);
+                        const newItem = {
+                            ...item,
+                            Alt_Act_Qty: value,
+                            Alt_Bill_Qty: value,
+                            Act_Qty: qty,
+                            Bill_Qty: qty,
+                        };
+                        if (toNumber(item.Item_Rate)) {
+                            newItem.Amount = Multiplication(item.Item_Rate, qty);
+                        }
+                        return newItem;
+                    }
+                    case 'Bill_Qty': {
+                        const qty = toNumber(value);
+                        const altQty = Division(qty, pack);
+                        const newItem = {
+                            ...item,
+                            Bill_Qty: value,
+                            Alt_Bill_Qty: altQty,
+                        };
+                        if (toNumber(item.Item_Rate)) {
+                            newItem.Amount = Multiplication(item.Item_Rate, qty);
+                        } else if (toNumber(item.Amount) && qty) {
+                            newItem.Item_Rate = Division(item.Amount, qty);
+                        }
+                        return newItem;
+                    }
+                    case 'Alt_Bill_Qty': {
+                        const altQty = toNumber(value);
+                        const qty = Multiplication(altQty, pack);
+                        const newItem = {
+                            ...item,
+                            Alt_Bill_Qty: value,
+                            Bill_Qty: qty,
+                        };
+                        if (toNumber(item.Item_Rate)) {
+                            newItem.Amount = Multiplication(item.Item_Rate, qty);
+                        }
+                        return newItem;
+                    }
+                    case 'Item_Rate': {
+                        const rate = toNumber(value);
+                        const newItem = { ...item, Item_Rate: value };
+                        if (toNumber(item.Bill_Qty)) {
+                            newItem.Amount = Multiplication(rate, item.Bill_Qty);
+                        }
+                        return newItem;
+                    }
+                    case 'Amount': {
+                        const amt = toNumber(value);
+                        const newItem = { ...item, Amount: value };
+                        if (toNumber(item.Bill_Qty)) {
+                            newItem.Item_Rate = Division(amt, item.Bill_Qty);
+                        }
+                        return newItem;
+                    }
+                    default:
+                        return { ...item, [key]: value };
                 }
-                return item;
             });
         });
     };
@@ -1060,38 +1160,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                         && checkIsNumber(invoiceInfo.So_No))
                                 }
                             >Add Product</Button>
-
-                            <AddProductsInSalesInvoice
-                                loadingOn={loadingOn}
-                                loadingOff={loadingOff}
-                                open={dialog.importFromSaleOrder}
-                                onClose={() => setDialog(pre => ({ ...pre, importFromSaleOrder: false }))}
-                                retailer={invoiceInfo?.Retailer_Id}
-                                selectedItems={invoiceProducts}
-                                setSelectedItems={setInvoiceProduct}
-                                staffArray={staffArray}
-                                setStaffArray={setStaffArray}
-                                products={baseData.products}
-                                GST_Inclusive={invoiceInfo.GST_Inclusive}
-                                IS_IGST={IS_IGST}
-                                invoiceInfo={invoiceInfo}
-                                setInvoiceInfo={setInvoiceInfo}
-                                godowns={baseData.godown}
-                            >
-                                <Button
-                                    onClick={() => setDialog(pre => ({ ...pre, importFromSaleOrder: true }))}
-                                    disabled={
-                                        !checkIsNumber(invoiceInfo.Retailer_Id)
-                                        || (
-                                            invoiceProducts.length > 0
-                                            && !checkIsNumber(invoiceInfo.So_No)
-                                        )
-                                    }
-                                    type="button"
-                                    variant='outlined'
-                                    startIcon={<ReceiptLong />}
-                                >Choose Sale Order</Button>
-                            </AddProductsInSalesInvoice>
                         </div>
 
                         <table className="table">
@@ -1099,10 +1167,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                 <tr>
                                     <td className={tdStyle}>SNo</td>
                                     <td className={tdStyle}>Item</td>
-                                    <td className={tdStyle}>Stock</td>
+                                    {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Rate</td>}
                                     <td className={tdStyle}>Rate</td>
-                                    <td className={tdStyle}>Bill Qty</td>
+                                    {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Qty</td>}
+                                    <td className={tdStyle}>Stock</td>
                                     <td className={tdStyle}>Act Qty</td>
+                                    <td className={tdStyle}>Alt Act Qty</td>
+                                    <td className={tdStyle}>Bill Qty</td>
+                                    {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
                                     <td className={tdStyle}>Amount</td>
                                     {/* <td className={tdStyle}>Batch</td> */}
@@ -1132,10 +1204,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                                 Item_Rate: productInfo.Item_Rate ?? 0,
                                                                 Unit_Id: productInfo.UOM_Id ?? item.Unit_Id,
                                                                 Unit_Name: productInfo.Units ?? item.Unit_Name,
-                                                                HSN_Code: productInfo.HSN_Code ?? '',
+                                                                HSN_Code: productInfo?.HSN_Code ?? '',
                                                                 GoDown_Id: '',
                                                                 Bill_Qty: 0,
+                                                                Alt_Bill_Qty: 0,
                                                                 Act_Qty: 0,
+                                                                Alt_Act_Qty: 0,
                                                                 Amount: 0,
                                                             };
                                                         }));
@@ -1158,6 +1232,21 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     maxMenuHeight={200}
                                                 />
                                             </td>
+                                            {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>
+                                                {toArray(saleOrderDetails.products).find(s => isEqualNumber(s.Item_Id, row.Item_Id))?.Item_Rate}
+                                            </td>}
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Item_Rate ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>
+                                                {toArray(saleOrderDetails.products).find(s => isEqualNumber(s.Item_Id, row.Item_Id))?.Bill_Qty}
+                                            </td>}
                                             <td className={tdStyle}>
                                                 {(() => {
                                                     const productDetails = findProductDetails(baseData.products, row.Item_Id);
@@ -1170,11 +1259,19 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Item_Rate ?? ''}
+                                                    value={row?.Act_Qty ?? ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
+                                                    onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
                                                     required
+                                                />
+                                            </td>
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Alt_Act_Qty ?? ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Alt_Act_Qty', e.target.value)}
                                                 />
                                             </td>
                                             <td className={tdStyle}>
@@ -1186,15 +1283,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     required
                                                 />
                                             </td>
-                                            <td className={tdStyle}>
+                                            {/* <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Act_Qty ?? ''}
+                                                    value={row?.Alt_Bill_Qty ?? ''}
                                                     type="number"
                                                     className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
-                                                    required
+                                                    onChange={e => changeSelectedObjects(i, 'Alt_Bill_Qty', e.target.value)}
                                                 />
-                                            </td>
+                                            </td> */}
                                             <td className={tdStyle}>
                                                 <select
                                                     value={row?.Unit_Id ?? ''}
@@ -1223,49 +1319,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     required
                                                 />
                                             </td>
-                                            {/* <td className={tdStyle} style={{ minWidth: 200 }}>
-                                                <Select
-                                                    value={row?.GoDown_Id ? {
-                                                        value: row.GoDown_Id,
-                                                        label: (() => {
-                                                            const opts = getGodownOptions(row.Item_Id);
-                                                            return opts.find(o => isEqualNumber(o.value, row.GoDown_Id))?.label
-                                                                || baseData.godown.find(g => isEqualNumber(g.Godown_Id, row.GoDown_Id))?.Godown_Name
-                                                                || '';
-                                                        })()
-                                                    } : null}
-                                                    onChange={e => changeSelectedObjects(i, 'GoDown_Id', e.value)}
-                                                    options={[
-                                                        { value: '', label: 'select', isDisabled: true },
-                                                        ...getGodownOptions(row.Item_Id)
-                                                    ]}
-                                                    styles={customSelectStyles}
-                                                    isDisabled={!checkIsNumber(row?.Item_Id)}
-                                                    isSearchable
-                                                    placeholder="Select Godown"
-                                                    menuPortalTarget={document.body}
-                                                    filterOption={reactSelectFilterLogic}
-                                                    maxMenuHeight={200}
-                                                />
-                                            </td> */}
-                                            {/* <td className={tdStyle}>
-                                                <input
-                                                    value={row?.Batch_Name ?? ''}
-                                                    className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Batch_Name', e.target.value)}
-                                                />
-                                            </td> */}
                                             <td className={tdStyle}>
-                                                {/* <IconButton
-                                                    onClick={() => {
-                                                        setSelectedProductToEdit(row);
-                                                        setDialog(pre => ({ ...pre, addProductDialog: true }));
-                                                    }}
-                                                    size='small'
-                                                    type="button"
-                                                >
-                                                    <Edit />
-                                                </IconButton> */}
                                                 <IconButton
                                                     onClick={() => {
                                                         setInvoiceProduct(pre =>

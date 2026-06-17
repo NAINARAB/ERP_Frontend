@@ -33,38 +33,13 @@ const ManageSalesInvoiceGeneralInfo = ({
     godownData = [],
     onPreviewOpen,
     isPreview = false,
-    commonGodown = commonGodownForProducts, 
+    commonGodown = commonGodownForProducts,
     setCommonGodown
 }) => {
 
     const inputStyle = 'cus-inpt p-2';
 
     const [open, setOpen] = useState(false);
-    const [saleOrderDialog, setSaleOrderDialog] = useState({
-        open: false,
-        loading: false,
-        generalInfo: null,
-        products: []
-    });
-
-    const fetchSaleOrderDetails = () => {
-        if (!isValidNumber(invoiceInfo?.So_No)) return;
-        setSaleOrderDialog(pre => ({ ...pre, open: true, loading: true }));
-        fetchLink({ address: `sales/saleOrder/getById?So_Id=${invoiceInfo.So_No}` })
-            .then(data => {
-                if (data.success) {
-                    setSaleOrderDialog(pre => ({
-                        ...pre,
-                        loading: false,
-                        generalInfo: data.others?.generalInfo ?? null,
-                        products: data.others?.products ?? []
-                    }));
-                } else {
-                    setSaleOrderDialog(pre => ({ ...pre, loading: false }));
-                }
-            })
-            .catch(() => setSaleOrderDialog(pre => ({ ...pre, loading: false })));
-    };
 
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
@@ -162,15 +137,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                         disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
                                                     ><ReceiptLong /></IconButton>
                                                 </Tooltip>
-                                                <Tooltip title='Sale order details'>
-                                                    <span>
-                                                        <IconButton
-                                                            disabled={!isValidNumber(invoiceInfo?.So_No)}
-                                                            onClick={fetchSaleOrderDetails}
-                                                        ><Visibility />
-                                                        </IconButton>
-                                                    </span>
-                                                </Tooltip>
                                             </div>
                                         </div>
 
@@ -213,7 +179,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 placeholder={"Select Godown"}
                                                 maxMenuHeight={300}
                                                 filterOption={reactSelectFilterLogic}
-                                                // isDisabled={isValidNumber(invoiceInfo.So_No)}
+                                            // isDisabled={isValidNumber(invoiceInfo.So_No)}
                                             />
                                         </div>
 
@@ -803,84 +769,6 @@ const ManageSalesInvoiceGeneralInfo = ({
                     StockItemLedgerName={invoiceInfo.Stock_Item_Ledger_Name}
                 />
             </AppDialog>
-
-            {/* Sale Order Products Dialog */}
-            <Dialog
-                open={saleOrderDialog.open}
-                onClose={() => setSaleOrderDialog(pre => ({ ...pre, open: false }))}
-                maxWidth='md'
-                fullWidth
-            >
-                <DialogTitle className="border-bottom d-flex justify-content-between align-items-center">
-                    <span>
-                        Sale Order Details
-                        {saleOrderDialog.generalInfo && (
-                            <span className="fa-13 text-muted ms-2">
-                                &mdash; {saleOrderDialog.generalInfo.So_Inv_No}&nbsp;|&nbsp;
-                                {saleOrderDialog.generalInfo.Retailer_Name}&nbsp;|&nbsp;
-                                {new Date(saleOrderDialog.generalInfo.So_Date).toLocaleDateString('en-IN')}
-                            </span>
-                        )}
-                    </span>
-                    <IconButton
-                        size='small'
-                        onClick={() => setSaleOrderDialog(pre => ({ ...pre, open: false }))}
-                    >
-                        <Close />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent className="p-0">
-                    {saleOrderDialog.loading ? (
-                        <div className="text-center p-4">Loading...</div>
-                    ) : saleOrderDialog.products.length === 0 ? (
-                        <div className="text-center p-4 text-muted">No products found for this order.</div>
-                    ) : (
-                        <div className="table-responsive">
-                            <table className="table table-bordered table-hover mb-0">
-                                <thead className="table-light">
-                                    <tr>
-                                        <th className="fa-13 text-center">#</th>
-                                        <th className="fa-13">Product</th>
-                                        <th className="fa-13 text-end">Rate</th>
-                                        <th className="fa-13 text-end">Qty</th>
-                                        <th className="fa-13">UOM</th>
-                                        <th className="fa-13 text-end">Amount</th>
-                                        <th className="fa-13 text-end">Tax %</th>
-                                        <th className="fa-13">Godown</th>
-                                        <th className="fa-13">HSN</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {saleOrderDialog.products.map((p, i) => (
-                                        <tr key={i}>
-                                            <td className="fa-13 text-center">{p.S_No || i + 1}</td>
-                                            <td className="fa-13">{p.Product_Name}</td>
-                                            <td className="fa-13 text-end">{toNumber(p.Item_Rate).toFixed(2)}</td>
-                                            <td className="fa-13 text-end">{p.Bill_Qty}</td>
-                                            <td className="fa-13">{p.UOM || p.Unit_Name}</td>
-                                            <td className="fa-13 text-end">{toNumber(p.Amount).toFixed(2)}</td>
-                                            <td className="fa-13 text-end">{p.Tax_Rate ?? 0}%</td>
-                                            <td className="fa-13">{p.Godown_Name || '-'}</td>
-                                            <td className="fa-13">{p.HSN_Code || '-'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot className="table-light fw-semibold">
-                                    <tr>
-                                        <td colSpan={5} className="fa-13 text-end">Total</td>
-                                        <td className="fa-13 text-end">
-                                            {saleOrderDialog.products
-                                                .reduce((acc, p) => acc + toNumber(p.Amount), 0)
-                                                .toFixed(2)}
-                                        </td>
-                                        <td colSpan={3}></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
         </>
     )
 }

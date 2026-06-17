@@ -4,10 +4,10 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
     getSessionFiltersByPageId, ISOString,
-    isValidNumber, LocalDate, NumberFormat, reactSelectFilterLogic,
+    isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic,
     setSessionFilters, toArray, toNumber,
 } from "../../../Components/functions";
-import { Add, Edit, FilterAlt, Search, Print } from "@mui/icons-material";
+import { Add, Edit, FilterAlt, Search, Print, Receipt } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import AppTableComponent from "../../../Components/appTable/appTableComponent";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +47,7 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
     const [dialog, setDialog] = useState({
         filters: false,
     });
-    
+
     const [printPO, setPrintPO] = useState(null);
 
     useEffect(() => {
@@ -428,6 +428,50 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                                             name: "Print Order",
                                             icon: <Print className="fa-16" />,
                                             onclick: () => setPrintPO(row?.PO_Id)
+                                        },
+                                        {
+                                            name: "Create Invoice",
+                                            icon: <Receipt className="fa-16" />,
+                                            onclick: () => {
+                                                navigate('/erp/purchase/invoice/create', {
+                                                    state: {
+                                                        invoiceInfo: {
+                                                            Branch_Id: row?.Branch_Id,
+                                                            Po_Inv_Date: ISOString(),
+                                                            Po_Entry_Date: ISOString(),
+                                                            Retailer_Id: row?.Retailer_Id,
+                                                            Retailer_Name: row?.Retailer_Name,
+                                                            isFromPurchaseOrder: true
+                                                        },
+                                                        orderInfo: toArray(row?.Products_List).filter(
+                                                            fil => toNumber(fil.pendingInvoiceWeight) > 0
+                                                        ).map((item, iIndex) => ({
+                                                            S_No: iIndex + 1,
+                                                            OrderId: item?.PO_Id,
+                                                            Location_Id: item?.Godown_Id,
+                                                            Item_Id: item?.Item_Id,
+                                                            Item_Name: item?.Product_Name || 'not found',
+                                                            Product_Name: item?.Product_Name || 'not found',
+                                                            Bill_Qty: item?.pendingInvoiceWeight,
+                                                            Act_Qty: item?.Bill_Qty,
+                                                            Bill_Alt_Qty: item?.Bill_Qty,
+                                                            Unit_Id: item?.Unit_Id,
+                                                            Unit_Name: item?.Unit_Name,
+                                                            Item_Rate: item?.Item_Rate,
+                                                            Amount: Multiplication(item?.Item_Rate, item?.pendingInvoiceWeight),
+                                                            Free_Qty: 0,
+                                                        })),
+                                                        staffInfo: toArray(row?.Staff_Involved_List).map(staff => ({
+                                                            Involved_Emp_Id: Number(staff.Emp_Id),
+                                                            Involved_Emp_Name: staff.EmpName,
+                                                            Cost_Center_Type_Id: Number(staff.Emp_Type_Id),
+                                                        }))
+                                                    }
+                                                })
+                                            },
+                                            disabled: toArray(row?.Products_List).filter(
+                                                fil => toNumber(fil.pendingInvoiceWeight) > 0
+                                            ).length === 0
                                         },
                                     ]}
                                 />
