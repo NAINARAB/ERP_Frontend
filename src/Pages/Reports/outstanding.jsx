@@ -626,7 +626,7 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             // Prepare table data
             const tableData = group.transactions.map((txn) => {
                 if (txn.isTotalRow) {
-                    // Month Total Row - simpler format without styles
+                    
                     return [
                         { content: `${group.monthYear} Total`, colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } },
                         NumberFormat(txn.debit),
@@ -1129,27 +1129,32 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
         }
     }, [allAccounts]);
 
-    const tableData = useMemo(() => {
-        if (!Array.isArray(allAccounts)) return [];
+ const tableData = useMemo(() => {
+    if (!Array.isArray(allAccounts)) return [];
 
-        return allAccounts.filter((item) => {
-            const balance = parseFloat(item?.Bal_Amount || 0);
+    return allAccounts.filter((item) => {
 
-            // Skip zero balances
-            if (balance === 0) return false;
+        const obAmount = parseFloat(item?.OB_Amount || 0);
+        const balAmount = parseFloat(item?.Bal_Amount || 0);
+        const debitAmt = parseFloat(item?.Debit_Amt || 0);
+        const creditAmt = parseFloat(item?.Credit_Amt || 0);
 
-            // Filter by account type
-            if (viewType === "debtors" && item.Account_Types !== "Debtor") return false;
-            if (viewType === "creditors" && item.Account_Types !== "Creditor") return false;
 
-            if (filters.Account_Id && item.Acc_Id !== filters.Account_Id)
-                return false;
-            if (filters.Group_Name && item.Group_Name !== filters.Group_Name)
-                return false;
+        // if (obAmount === 0 && balAmount === 0 && debitAmt === 0 && creditAmt === 0) {
+        //     return false;
+        // }
 
-            return true;
-        });
-    }, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
+        
+        if (viewType === "debtors" && item.CR_DR !== "DR") return false;
+        if (viewType === "creditors" && item.CR_DR !== "CR") return false;
+
+
+        if (filters.Account_Id && item.Acc_Id !== filters.Account_Id) return false;
+        if (filters.Group_Name && item.Group_Name !== filters.Group_Name) return false;
+
+        return true;
+    });
+}, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
 
     const Total_Debit = useMemo(() => {
         return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Dr_Amount || 0)), 0);
@@ -1285,7 +1290,7 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                                     variant="outlined"
                                     size="small"
                                     startIcon={<Visibility />}
-                                    onClick={() => openTransactionDialog(row.Acc_Id, row.Account_name)}
+                                    onClick={() => openTransactionDialog(row.Acc_Id, row.Retailer_Name)}
                                     sx={{ minWidth: 'auto', padding: '2px 8px' }}
                                 >
                                     View
@@ -1293,12 +1298,19 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                             </Tooltip>
                         ),
                     },
-                    createCol("Account_name", "string", "Account Name"),
-                    createCol("Group_Name", "string", "Group"),
-                    {
-                        ...createCol("Account_Types", "string", "Account Type"),
-                        isVisible: 1
-                    },
+                    createCol("Retailer_Name", "string", "Account Name"),
+                    // createCol("Group_Name", "string", "Group"),
+                   {
+    Field_Name: "CR_DR", // Just a reference key
+    Header: "Account Type",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) => {
+        if (row?.CR_DR === "DR") return "Debtor";
+        if (row?.CR_DR === "CR") return "Creditor";
+        return row?.Account_Types || "-"; // Fallback (if CR_DR is missing)
+    }
+},
                     {
                         ...createCol("OB_Amount", "number", "Opening Balance"),
                         format: (value) => NumberFormat(value || 0)
