@@ -32,7 +32,7 @@ import * as XLSX from "xlsx";
 import { REACT_APP_ASKEVA_TOKEN, REACT_APP_ASKEVA_API_ENDPOINT, print_app } from '../../../encryptionKey';
 
 const ASKEVA_CONFIG = {
-    token: REACT_APP_ASKEVA_TOKEN,
+    // token: REACT_APP_ASKEVA_TOKEN,
     apiEndpoint: REACT_APP_ASKEVA_API_ENDPOINT,
 };
 
@@ -138,7 +138,8 @@ const getRowKey = (row, tab) => {
     return `${tab}_${id}`;
 };
 
-const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams }) => {
+const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,evatoken }) => {
+
     const payload = {
         to: phone,
         type: "template",
@@ -151,7 +152,7 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams 
             }],
         },
     };
-    const resp = await fetch(`${ASKEVA_CONFIG.apiEndpoint}?token=${ASKEVA_CONFIG.token}`, {
+    const resp = await fetch(`${ASKEVA_CONFIG.apiEndpoint}?token=${evatoken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1385,9 +1386,9 @@ const WhatsAppFilterBar = ({ activeTab, dataSource, columnFilters, setColumnFilt
                 });
                 
                 if (response?.success && response.message && response.message.length > 0) {
-                    // Get the column names from the API response
+                   
                     const enabled = response.message.map(item => cleanColumnName(item.Column_Name));
-                    // Remove duplicates using Set
+           
                     setEnabledColumns([...new Set(enabled)]);
                 } else {
                     setEnabledColumns([]);
@@ -1603,6 +1604,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [multiPrint, setMultiPrint] = useState({ open: false, doIds: [], docType: "" });
     const multiPrintRef = useRef(null);
     const [companyInfo, setCompanyInfo] = useState([]);
+    const [evatoken, setEvatoken] = useState(""); 
 
     useEffect(() => {
         const companyIdLocal = storage?.Company_id;
@@ -1612,6 +1614,23 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 .catch(console.error);
         }
     }, []);
+
+
+useEffect(() => {
+  const companyIdLocal = storage?.Company_id;
+  if (companyIdLocal) {
+    fetchLink({ address: `masters/company/url?Company_id=${companyIdLocal}` })
+      .then((r) => {
+        if (r?.success && r?.data) {
+          
+          const token = r.data?.Whatsapp_key || r.data?.token || "";
+        
+          if (token) setEvatoken(token);
+        }
+      })
+      .catch((e) => console.error("Token fetch error:", e));
+  }
+}, []);
 
     const handleColumnSettingsSave = async (selectedColumnsArray) => {
         setWhatsappColumns(selectedColumnsArray);
@@ -1685,18 +1704,21 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         );
     }, []);
 
-    const sendWhatsAppMessage = useCallback(
-        async ({ tab, phone, bodyParams, clientRefId }) => {
-            const { serviceName = "Dotpe", langName = "en" } = tabMethodSettings[tab] || {};
-            const svcKey = serviceName.toLowerCase();
-            const langKey = langName.toLowerCase();
-            const langCode = LANG_CODE_MAP[langKey] || "en";
-            const templateName = resolveTemplate(tab, svcKey, langKey);
-            if (svcKey === "askeva") return sendViaAskeva({ phone, templateName, language: langCode, bodyParams });
-            return sendViaDotPe({ phone, templateName, language: langCode, bodyParams, clientRefId });
-        },
-        [tabMethodSettings, resolveTemplate]
-    );
+   const sendWhatsAppMessage = useCallback(
+    async ({ tab, phone, bodyParams, clientRefId }) => {
+        const { serviceName = "Dotpe", langName = "en" } = tabMethodSettings[tab] || {};
+        const svcKey = serviceName.toLowerCase();
+        const langKey = langName.toLowerCase();
+        const langCode = LANG_CODE_MAP[langKey] || "en";
+        const templateName = resolveTemplate(tab, svcKey, langKey);
+        if (svcKey === "askeva") return sendViaAskeva({ 
+            phone, templateName, language: langCode, bodyParams, 
+            evatoken: String(evatoken) 
+        });
+        return sendViaDotPe({ phone, templateName, language: langCode, bodyParams, clientRefId });
+    },
+    [tabMethodSettings, resolveTemplate, evatoken] 
+);
 
     const calculateAltActQty = (item) => {
         if (item.Alt_Act_Qty != null) return Number(item.Alt_Act_Qty) || 0;
