@@ -892,6 +892,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         return invoiceProducts.every(item => isValidNumber(item?.Batch_Id) || Boolean(item?.Batch_Name));
     }, [invoiceProducts, salesInvoiceAccess.batchUsage]);
 
+    const altQuantity = useMemo(() => {
+        const rule = baseData.moduleConfiguration.find(
+            rule => rule.ruleCode === 'SI_9'
+        )
+        return isEqualNumber(rule?.createOption, 1);
+    }, [baseData.moduleConfiguration])
+
     const tdStyle = 'border fa-13 vctr';
     const inputStyle = 'cus-inpt p-1';
 
@@ -1171,8 +1178,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     <td className={tdStyle}>Rate</td>
                                     {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Qty</td>}
                                     <td className={tdStyle}>Stock</td>
-                                    <td className={tdStyle}>Act Qty</td>
-                                    <td className={tdStyle}>Alt Act Qty</td>
+                                    {altQuantity && (
+                                        <>
+                                            <td className={tdStyle}>Act Qty</td>
+                                            <td className={tdStyle}>Alt Act Qty</td>
+                                        </>
+                                    )}
                                     <td className={tdStyle}>Bill Qty</td>
                                     {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
@@ -1237,7 +1248,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                             </td>}
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Item_Rate ?? ''}
+                                                    value={row?.Item_Rate || ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
@@ -1257,26 +1268,30 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     return `${stockValue}(${Division(stockValue, packValue || 1)})`;
                                                 })()}
                                             </td>
+                                            {altQuantity && (
+                                                <>
+                                                    <td className={tdStyle}>
+                                                        <input
+                                                            value={row?.Act_Qty || ''}
+                                                            type="number"
+                                                            className={inputStyle}
+                                                            onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
+                                                            required
+                                                        />
+                                                    </td>
+                                                    <td className={tdStyle}>
+                                                        <input
+                                                            value={row?.Alt_Act_Qty || ''}
+                                                            type="number"
+                                                            className={inputStyle}
+                                                            onChange={e => changeSelectedObjects(i, 'Alt_Act_Qty', e.target.value)}
+                                                        />
+                                                    </td>
+                                                </>
+                                            )}
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Act_Qty ?? ''}
-                                                    type="number"
-                                                    className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
-                                                    required
-                                                />
-                                            </td>
-                                            <td className={tdStyle}>
-                                                <input
-                                                    value={row?.Alt_Act_Qty ?? ''}
-                                                    type="number"
-                                                    className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Alt_Act_Qty', e.target.value)}
-                                                />
-                                            </td>
-                                            <td className={tdStyle}>
-                                                <input
-                                                    value={row?.Bill_Qty ?? ''}
+                                                    value={row?.Bill_Qty || ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Bill_Qty', e.target.value)}
@@ -1312,7 +1327,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <input
-                                                    value={row?.Amount ?? ''}
+                                                    value={row?.Amount || ''}
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Amount', e.target.value)}
