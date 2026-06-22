@@ -525,7 +525,13 @@ const AddProductFormCreditNote = ({
                             {/* Batch */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Batch</label>
-                                <Select
+                                <input
+                                    value={productDetails.Batch_Name || ''}
+                                    className="cus-inpt"
+                                    type="text"
+                                    onChange={e => setProductDetails(pre => ({ ...pre, Batch_Name: e.target.value }))}
+                                />
+                                {/* <Select
                                     value={{
                                         value: productDetails?.Batch_Name || '',
                                         label: productDetails?.Batch_Name || ''
@@ -546,8 +552,8 @@ const AddProductFormCreditNote = ({
                                     isSearchable={true}
                                     placeholder={"Select Batch"}
                                     menuPortalTarget={document.body}
-                                    isDisabled={true}
-                                />
+                                    // isDisabled={true}
+                                /> */}
                             </div>
 
                         </div>

@@ -125,8 +125,8 @@ const Users = ({ loadingOn, loadingOff }) => {
     };
     const editRow = (user) => {
         const { UserId, Name, UserName, UserTypeId, Password, BranchId } = user;
-        
-            const decryptedPassword = Password ? decryptPasswordFun(Password) : '';
+
+        const decryptedPassword = Password ? decryptPasswordFun(Password) : '';
 
         setInputValue(pre => ({ ...pre, UserId, Name, UserName, UserTypeId, Password: decryptedPassword, BranchId }));
         setScreen(true);
@@ -371,40 +371,40 @@ const Users = ({ loadingOn, loadingOff }) => {
                                         />
                                     </div>
 
-                                   <div className="col-lg-4 col-md-6 p-2">
-    {inputValue.UserId ? (
-        <>
-            <label>Password</label>
-            <div className="cus-inpt" style={{ 
-                backgroundColor: '#f5f5f5', 
-                padding: '10px', 
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                color: '#666'
-            }}>
-                Password cannot be changed here. 
-                <Button variant="link" size="sm" className="ms-2">
-                    Change Password
-                </Button>
-            </div>
-        </>
-    ) : (
-        <>
-            <label>Password</label>
-            <input
-                className="cus-inpt"
-                type="password"
-                required
-                minLength={6}
-                value={inputValue.Password}
-                onChange={(e) =>
-                    setInputValue({ ...inputValue, Password: e.target.value })
-                }
-            />
-        </>
-    )}
-</div>
+                                    <div className="col-lg-4 col-md-6 p-2">
+                                        {inputValue.UserId ? (
+                                            <>
+                                                <label>Password</label>
+                                                <div className="cus-inpt" style={{
+                                                    backgroundColor: '#f5f5f5',
+                                                    padding: '10px',
+                                                    borderRadius: '4px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    color: '#666'
+                                                }}>
+                                                    Password cannot be changed here.
+                                                    <Button variant="link" size="sm" className="ms-2">
+                                                        Change Password
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label>Password</label>
+                                                <input
+                                                    className="cus-inpt"
+                                                    type="password"
+                                                    required
+                                                    minLength={6}
+                                                    value={inputValue.Password}
+                                                    onChange={(e) =>
+                                                        setInputValue({ ...inputValue, Password: e.target.value })
+                                                    }
+                                                />
+                                            </>
+                                        )}
+                                    </div>
 
                                     <div className="col-lg-4 col-md-6 p-2">
                                         <label>Mobile</label>

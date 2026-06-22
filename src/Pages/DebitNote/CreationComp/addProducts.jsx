@@ -546,7 +546,7 @@ const AddProductFormDebitNote = ({
                                     isSearchable={true}
                                     placeholder={"Select Batch"}
                                     menuPortalTarget={document.body}
-                                    isDisabled={true}
+                                    // isDisabled={true}
                                 />
                             </div>
 

@@ -592,11 +592,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             return;
         }
 
-        if (retailerSalesStatus.forceCreateInvoice === false && activeInvoiceCreationStatus === false) {
-            setRetailerSalesStatus(pre => ({ ...pre, dialog: true }));
-            return;
-        }
-
         fetchLink({
             address: `sales/salesInvoice`,
             method: checkIsNumber(invoiceInfo?.Do_Id) ? 'PUT' : 'POST',
@@ -993,14 +988,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         });
     };
 
-    const saveFunWithCodition = () => {
-        if (voucherGodownCondition) {
-            saveSalesInvoice();
-        } else {
-            setDialog(pre => ({ ...pre, godownMismatch: true }));
-        }
-    }
-
     return (
         <>
 
@@ -1042,9 +1029,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         }}>Cancel</Button>
 
                         <Button
-                            onClick={saveFunWithCodition}
+                            onClick={saveSalesInvoice}
                             variant="contained"
-                            disabled={!isStockValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
+                            disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                         >submit</Button>
                     </span>
                 </div>
@@ -1118,7 +1105,12 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         </div>
                     )}
 
-                    {/* SI_4 & SI_5: Credit Amount / Days Limit — BLOCKED (handled via dialog below) */}
+                    {/* SI_4 & SI_5: Credit Amount / Days Limit — BLOCKED */}
+                    {!activeInvoiceCreationStatus && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 <b>Credit Limit Exceeded:</b> The retailer exceeds the credit limit or credit days limit. Cannot save invoice.
+                        </div>
+                    )}
 
                     {/* SI_6: Voucher Based Godown — WARNING (handled via dialog below) */}
 
@@ -1188,7 +1180,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
                                     <td className={tdStyle}>Amount</td>
-                                    {/* <td className={tdStyle}>Batch</td> */}
+                                    {salesInvoiceAccess.batchUsage && <td className={tdStyle}>Batch</td>}
                                     <td className={tdStyle}>#</td>
                                 </tr>
                             </thead>
@@ -1334,6 +1326,37 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     required
                                                 />
                                             </td>
+                                            {salesInvoiceAccess.batchUsage && (
+                                                <td className={tdStyle} style={{ minWidth: 200 }}>
+                                                    <Select
+                                                        value={{
+                                                            value: row?.Batch_Name || '',
+                                                            label: row?.Batch_Name || ''
+                                                        }}
+                                                        onChange={e => changeSelectedObjects(i, 'Batch_Name', e.value)}
+                                                        options={
+                                                            baseData.batchDetails.filter(
+                                                                bat => (
+                                                                    isEqualNumber(bat.item_id, row?.Item_Id)
+                                                                    && isEqualNumber(bat?.godown_id, commonGodown?.value)
+                                                                    && toNumber(bat.pendingQuantity) >= toNumber(row?.Bill_Qty)
+                                                                )
+                                                            ).map(
+                                                                bat => ({ value: bat.batch, label: bat.batch })
+                                                            )
+                                                        }
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        placeholder={"Select Batch"}
+                                                        menuPortalTarget={document.body}
+                                                        isDisabled={
+                                                            !checkIsNumber(row?.Item_Id)
+                                                            || !checkIsNumber(commonGodown?.value)
+                                                            || isEqualNumber(row?.Bill_Qty, 0)
+                                                        }
+                                                    />
+                                                </td>
+                                            )}
                                             <td className={tdStyle}>
                                                 <IconButton
                                                     onClick={() => {
@@ -1404,14 +1427,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     }}>Cancel</Button>
 
                     <Button
-                        onClick={saveFunWithCodition}
+                        onClick={saveSalesInvoice}
                         variant="contained"
-                        disabled={!isStockValid || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
+                        disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
                     >submit</Button>
                 </CardActions>
             </Card>
 
-            <AppDialog
+            {/* <AppDialog
                 open={dialog.godownMismatch}
                 onClose={() => setDialog(pre => ({ ...pre, godownMismatch: false }))}
                 title="Godown Mismatch"
@@ -1423,25 +1446,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 }}
             >
                 The godown is not match with Voucher type anyway do you want to save?
-            </AppDialog>
+            </AppDialog> */}
 
-            <AppDialog
-                open={retailerSalesStatus.dialog}
-                onClose={() => setRetailerSalesStatus(pre => ({ ...pre, dialog: false }))}
-                title="Retailer Sales Status"
-                onSubmit={() => {
-                    setRetailerSalesStatus(pre => ({ ...pre, dialog: false, forceCreateInvoice: true }));
-                    saveSalesInvoice();
-                }}
-                submitText="Yes"
-                closeText="No"
-                maxWidth="sm"
-                fullWidth
-                isSubmit
-            >
-                <h3>The Retailer Exceeds the credit limit and credit days!</h3>
-                <p>Anyway Do you want to create invoice?</p>
-            </AppDialog>
 
             <Dialog
                 open={printDialog.open}

@@ -111,12 +111,43 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                 />
             )
         },
+        {
+            name: 'Credit Note',
+            component: (
+                <UnAssignedJournals
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api={`inventory/batchMaster/creditNote`}
+                    postApi='inventory/batchMaster/creditNote'
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
+                />
+            )
+        },
+        {
+            name: 'Debit Note',
+            component: (
+                <ChooseBatch
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                    api={`inventory/batchMaster/debitNote`}
+                    postApi='inventory/batchMaster/debitNote'
+                    compareGodown={'godownId'}
+                    dateFilter={dateFilter}
+                    setDateFilter={setDateFilter}
+                />
+            )
+        },
     ]
 
     return (
         <>
 
-            {/* <div className="d-flex align-items-center flex-wrap mb-3">
+            <div className="d-flex align-items-center flex-wrap mb-3">
                 <label htmlFor="from" className='me-1 fw-bold '>Fromdate: </label>
                 <input
                     type="date"
@@ -141,7 +172,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                         Todate: pre.FilterTodate ? pre.FilterTodate : pre.Todate
                     }))}
                 ><Search /></IconButton>
-            </div> */}
+            </div>
 
             <TabContext value={tabValue}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
