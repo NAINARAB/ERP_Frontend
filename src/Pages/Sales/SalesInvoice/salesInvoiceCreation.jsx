@@ -243,6 +243,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     })
                 ))
             );
+            if (Products_List?.length > 0) {
+                if (isValidNumber(Products_List[0]?.GoDown_Id)) {
+                    setCommonGodown({ value: Products_List[0]?.GoDown_Id, label: Products_List[0]?.GoDown_Name })
+                }
+            }
             setInvoiceExpences(
                 toArray(Expence_Array).map(item => Object.fromEntries(
                     Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
@@ -638,7 +643,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         return {
                             ...item,
                             S_No: index + 1,
-                            GoDown_Id: commonGodown.value,
+                            GoDown_Id: checkIsNumber(invoiceInfo?.Do_Id) ? item.GoDown_Id : commonGodown.value,
                             Total_Qty: item.Bill_Qty,
                             Taxble: isTaxable ? 1 : 0,
                             Taxable_Rate: itemRateGst.base_amount,
