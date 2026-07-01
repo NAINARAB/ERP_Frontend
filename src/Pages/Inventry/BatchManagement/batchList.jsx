@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { isEqualNumber, filterableText, groupData, Addition, toNumber, Division, ISOString, stringCompare, toArray } from '../../../Components/functions'
 import FilterableTable, { createCol } from '../../../Components/filterableTable2';
@@ -12,6 +13,7 @@ const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
 const BatchListing = ({ loadingOn, loadingOff }) => {
+    const navigate = useNavigate();
     const [dataArray, setDataArray] = useState([]);
     const [dateFilter, setDateFilter] = useState({
         Fromdate: ISOString(),
@@ -50,10 +52,38 @@ const BatchListing = ({ loadingOn, loadingOff }) => {
     }));
 
     const DisplayColumn = useMemo(() => {
-        return propsColumns.filter(
+        const columns = propsColumns.filter(
             col => (isEqualNumber(col?.Defult_Display, 1) || isEqualNumber(col?.isVisible, 1))
-        )
-    }, [propsColumns])
+        );
+        columns.push({
+            Field_Name: 'action',
+            Fied_Data: 'string',
+            ColumnHeader: 'Trace',
+            isVisible: 1,
+            isCustomCell: true,
+            align: 'center',
+            Cell: ({ row }) => (
+                <IconButton
+                    size="small"
+                    color="primary"
+                    title="Trace Batch"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/erp/batchManagement/batchReport', {
+                            state: {
+                                batch: row.batch,
+                                item: { value: row.item_id, label: row.productNameGet },
+                                godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
+                            }
+                        });
+                    }}
+                >
+                    <Search fontSize="small" />
+                </IconButton>
+            )
+        });
+        return columns;
+    }, [propsColumns, navigate]);
 
     const showData = useMemo(() => {
         const filter = Object.keys(filters).length > 0, grouping = groupBy ? true : false;

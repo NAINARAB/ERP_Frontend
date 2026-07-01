@@ -643,7 +643,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         return {
                             ...item,
                             S_No: index + 1,
-                            GoDown_Id: checkIsNumber(invoiceInfo?.Do_Id) ? item.GoDown_Id : commonGodown.value,
+                            GoDown_Id: commonGodown.value,
                             Total_Qty: item.Bill_Qty,
                             Taxble: isTaxable ? 1 : 0,
                             Taxable_Rate: itemRateGst.base_amount,
@@ -805,24 +805,23 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     }, [baseData.moduleConfiguration, isEdit]);
 
     const activeInvoiceCreationStatus = useMemo(() => {
-        const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice, creditBillValidation } = retailerSalesStatus;
+        const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice } = retailerSalesStatus;
 
         if (forceCreateInvoice) return true;
-        if (!recentDate) return true;
-
-        const baseDate = new Date(recentDate);
-        const expiryDate = new Date(baseDate);
-        expiryDate.setDate(expiryDate.getDate() + toNumber(creditDays));
-        const today = new Date();
 
         const currentTotal = taxSplitUp?.invoiceTotal || 0;
         const isOutstandingExceeded = toNumber(creditLimit) > 0
             ? Addition(toNumber(outstanding), currentTotal) > toNumber(creditLimit)
             : false;
 
-        const isCreditDaysCrossed = toNumber(creditDays) > 0
-            ? today > expiryDate
-            : false;
+        let isCreditDaysCrossed = false;
+        if (toNumber(creditDays) > 0 && recentDate) {
+            const baseDate = new Date(recentDate);
+            const expiryDate = new Date(baseDate);
+            expiryDate.setDate(expiryDate.getDate() + toNumber(creditDays));
+            const today = new Date();
+            isCreditDaysCrossed = today > expiryDate;
+        }
 
         if (salesInvoiceAccess.creditAmountLimit && isOutstandingExceeded) return false;
         if (salesInvoiceAccess.creditDaysLimit && isCreditDaysCrossed) return false;
@@ -1119,13 +1118,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
                     {/* SI_6: Voucher Based Godown — WARNING (handled via dialog below) */}
 
-                    {/* SI_7: Credit Bill Count Limit — BLOCKED */}
+                    {/* SI_7: Credit Bill Count Limit — WARNING */}
                     {isCreditBillLimitExceeded && (
-                        <div className="alert alert-danger p-2 mb-2">
-                            🚫 <b>Credit Bill Limit:</b> This account has&nbsp;
+                        <div className="alert alert-warning p-2 mb-2">
+                            ⚠️ <b>Credit Bill Limit:</b> This account has&nbsp;
                             <b>{retailerSalesStatus.creditBills}</b> pending bill(s) out of a maximum of&nbsp;
                             <b>{retailerSalesStatus.creditBillLimitCount}</b> allowed.
-                            New invoices cannot be created until existing bills are settled.
+                            It is recommended to settle existing bills.
                         </div>
                     )}
 
@@ -1434,7 +1433,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     <Button
                         onClick={saveSalesInvoice}
                         variant="contained"
-                        disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
+                        disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isLoading}
                     >submit</Button>
                 </CardActions>
             </Card>
