@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogActions,
@@ -25,10 +25,10 @@ const initialState = {
     Voucher_Id: "",
 };
 
-const absGroupOptions = [
-    { value: "Cash", label: "Cash" },
-    { value: "Credit", label: "Credit" },
-];
+// NOTE: absGroupOptions is no longer a hardcoded list.
+// It is now derived from the live abstractGroupList (see useMemo below),
+// so any ABS_Group value ever saved to the backend automatically
+// becomes a future suggestion.
 
 const groupTypeOptions = [
     { value: "SALES", label: "SALES" },
@@ -84,6 +84,49 @@ function AbstractGroup() {
         }
     }, [searchTerm, abstractGroupList]);
 
+    // Build distinct ABS_Group suggestions from the data we already have.
+    // Case-insensitive de-dupe, keeps the first-seen casing.
+    const absGroupOptions = useMemo(() => {
+        const seen = new Map();
+
+        abstractGroupList.forEach((item) => {
+            const raw = item.ABS_Group?.trim();
+            if (raw) {
+                const key = raw.toLowerCase();
+                if (!seen.has(key)) {
+                    seen.set(key, raw);
+                }
+            }
+        });
+
+        return Array.from(seen.values());
+    }, [abstractGroupList]);
+
+    // If the typed text matches an existing option (case-insensitive),
+    // snap to the existing option's casing instead of creating a
+    // near-duplicate ("cash" -> "Cash").
+    const normalizeAbsGroup = (val) => {
+        if (!val) return "";
+        const trimmed = String(val).trim();
+        const match = absGroupOptions.find(
+            (opt) => opt.toLowerCase() === trimmed.toLowerCase()
+        );
+        return match || trimmed;
+    };
+
+    // Checks whether the same ABS_Group + Group_Type + Voucher_Id
+    // combination already exists (excludeId lets edit-mode ignore itself).
+    const isDuplicateEntry = (data, excludeId = null) => {
+        return abstractGroupList.some(
+            (item) =>
+                String(item.ABS_Group_Id) !== String(excludeId) &&
+                item.ABS_Group?.toLowerCase() ===
+                    data.ABS_Group?.toLowerCase() &&
+                item.Group_Type === data.Group_Type &&
+                String(item.Voucher_Id) === String(data.Voucher_Id)
+        );
+    };
+
     const fetchAbstractGroups = async () => {
         try {
             const data = await fetchLink({
@@ -121,11 +164,8 @@ function AbstractGroup() {
     };
 
     const handleCreate = async () => {
-        const {
-            ABS_Group,
-            Group_Type,
-            Voucher_Id,
-        } = inputValue;
+        const ABS_Group = normalizeAbsGroup(inputValue.ABS_Group);
+        const { Group_Type, Voucher_Id } = inputValue;
 
         if (
             !ABS_Group ||
@@ -138,13 +178,22 @@ function AbstractGroup() {
             return;
         }
 
+        if (isDuplicateEntry({ ABS_Group, Group_Type, Voucher_Id })) {
+            toast.error(
+                "This Abstract Group already exists for the selected Group Type and Voucher Type."
+            );
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             const data = await fetchLink({
                 address: `masters/abstractGroup`,
                 method: "POST",
-                bodyData: inputValue,
+                // ABS_Group is sent as free text now (new or existing value).
+                // See backend note below for the matching server-side change.
+                bodyData: { ...inputValue, ABS_Group },
             });
 
             if (data.success) {
@@ -169,12 +218,8 @@ function AbstractGroup() {
     };
 
     const handleEdit = async () => {
-        const {
-            ABS_Group_Id,
-            ABS_Group,
-            Group_Type,
-            Voucher_Id,
-        } = inputValue;
+        const ABS_Group = normalizeAbsGroup(inputValue.ABS_Group);
+        const { ABS_Group_Id, Group_Type, Voucher_Id } = inputValue;
 
         if (
             !ABS_Group_Id ||
@@ -188,13 +233,25 @@ function AbstractGroup() {
             return;
         }
 
+        if (
+            isDuplicateEntry(
+                { ABS_Group, Group_Type, Voucher_Id },
+                ABS_Group_Id
+            )
+        ) {
+            toast.error(
+                "This Abstract Group already exists for the selected Group Type and Voucher Type."
+            );
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             const data = await fetchLink({
                 address: `masters/abstractGroup`,
                 method: "PUT",
-                bodyData: inputValue,
+                bodyData: { ...inputValue, ABS_Group },
             });
 
             if (data.success) {
@@ -294,6 +351,62 @@ function AbstractGroup() {
                 .includes(searchValue)
         );
     };
+
+    // Filter for the plain-string ABS_Group options list.
+    const absGroupFilterOptions = (options, { inputValue }) => {
+        const searchValue = inputValue
+            .toLowerCase()
+            .replace(/[\s,]/g, "");
+
+        return options.filter((option) =>
+            option
+                .toLowerCase()
+                .replace(/[\s,]/g, "")
+                .includes(searchValue)
+        );
+    };
+
+    // Shared render for the "select or type" Abstract Group field,
+    // used in both the Create and Edit dialogs.
+    const renderAbsGroupField = () => (
+        <Autocomplete
+            freeSolo
+            autoSelect
+            options={absGroupOptions}
+            filterOptions={absGroupFilterOptions}
+            value={inputValue.ABS_Group || ""}
+            onChange={(e, newValue) => {
+                setInputValue((prev) => ({
+                    ...prev,
+                    ABS_Group: normalizeAbsGroup(newValue),
+                }));
+            }}
+            onInputChange={(e, newInputValue, reason) => {
+                // "input" = user is typing; keep it live in state so
+                // handleCreate/handleEdit always see the latest text
+                // even if the user never explicitly selects/blurs.
+                if (reason === "input") {
+                    setInputValue((prev) => ({
+                        ...prev,
+                        ABS_Group: newInputValue,
+                    }));
+                }
+            }}
+            onBlur={() => {
+                setInputValue((prev) => ({
+                    ...prev,
+                    ABS_Group: normalizeAbsGroup(prev.ABS_Group),
+                }));
+            }}
+            renderInput={(params) => (
+                <TextField
+                    {...params}
+                    size="small"
+                    placeholder="Select existing or type a new Abstract Group"
+                />
+            )}
+        />
+    );
 
     return (
         <>
@@ -450,40 +563,7 @@ function AbstractGroup() {
                             Abstract Group*
                         </label>
 
-                        <Autocomplete
-                            options={absGroupOptions}
-                            filterOptions={customFilterOptions}
-                            getOptionLabel={(option) =>
-                                option.label || ""
-                            }
-                            value={
-                                absGroupOptions.find(
-                                    (item) =>
-                                        item.value ===
-                                        inputValue.ABS_Group
-                                ) || null
-                            }
-                            onChange={(
-                                e,
-                                newValue
-                            ) =>
-                                setInputValue({
-                                    ...inputValue,
-                                    ABS_Group:
-                                        newValue?.value ||
-                                        "",
-                                })
-                            }
-                            renderInput={(
-                                params
-                            ) => (
-                                <TextField
-                                    {...params}
-                                    size="small"
-                                    placeholder="Search Abstract Group"
-                                />
-                            )}
-                        />
+                        {renderAbsGroupField()}
                     </div>
 
                     {/* Group Type */}
@@ -617,40 +697,7 @@ function AbstractGroup() {
                             Abstract Group*
                         </label>
 
-                        <Autocomplete
-                            options={absGroupOptions}
-                            filterOptions={customFilterOptions}
-                            getOptionLabel={(option) =>
-                                option.label || ""
-                            }
-                            value={
-                                absGroupOptions.find(
-                                    (item) =>
-                                        item.value ===
-                                        inputValue.ABS_Group
-                                ) || null
-                            }
-                            onChange={(
-                                e,
-                                newValue
-                            ) =>
-                                setInputValue({
-                                    ...inputValue,
-                                    ABS_Group:
-                                        newValue?.value ||
-                                        "",
-                                })
-                            }
-                            renderInput={(
-                                params
-                            ) => (
-                                <TextField
-                                    {...params}
-                                    size="small"
-                                    placeholder="Search Abstract Group"
-                                />
-                            )}
-                        />
+                        {renderAbsGroupField()}
                     </div>
 
                     {/* Group Type */}
