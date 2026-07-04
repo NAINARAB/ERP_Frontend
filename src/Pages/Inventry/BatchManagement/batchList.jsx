@@ -2,15 +2,89 @@ import { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { isEqualNumber, filterableText, groupData, Addition, toNumber, Division, ISOString, stringCompare, toArray } from '../../../Components/functions'
-import FilterableTable, { createCol } from '../../../Components/filterableTable2';
-import { Autocomplete, Checkbox, Dialog, DialogContent, DialogActions, Button, IconButton, TextField, Tooltip } from "@mui/material";
-import { CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, Search } from "@mui/icons-material";
-import TableWrapper from "../../../Components/tableComp/TableWrapper";
+import { isEqualNumber, ISOString, stringCompare } from '../../../Components/functions'
+import AppTableComponent from '../../../Components/appTable/appTableComponent';
+import AppDialog from '../../../Components/appDialogComponent';
+import { Dialog, DialogContent, DialogActions, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
+import { AutoGraph, FilterAlt, QueryStats, Search, Warehouse } from "@mui/icons-material";
 import { batchListingColumns } from "./variable";
+const IN_MODULES = ["PURCHASE", "PRODUCTION", "CREDIT_NOTE", "MATERIAL_INWARD"];
+const OUT_MODULES = ["SALES", "CONSUMPTION", "DEBIT_NOTE", "OTHER_GODOWN"];
 
-const icon = <CheckBoxOutlineBlank fontSize="small" />;
-const checkedIcon = <CheckBox fontSize="small" />;
+const BatchSummaryExpander = ({ row }) => {
+    const [summary, setSummary] = useState({});
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!row.id) {
+            setLoading(false);
+            return;
+        }
+        fetchLink({
+            address: `inventory/batchMaster/batchTransactions?batch_id=${row.id}`
+        }).then(data => {
+            if (data.success && data.data.length > 0) {
+                const txs = data.data[0].transaction || [];
+                const sums = txs.reduce((acc, tx) => {
+                    const type = tx.transType;
+                    if (!acc[type]) acc[type] = 0;
+                    acc[type] += Number(tx.batchQuantity) || 0;
+                    return acc;
+                }, {});
+                setSummary(sums);
+            }
+            setLoading(false);
+        }).catch(e => {
+            console.error(e);
+            setLoading(false);
+        });
+    }, [row.id]);
+
+    if (loading) {
+        return <div className="p-3 text-center"><CircularProgress size={24} /></div>;
+    }
+
+    const modules = Object.keys(summary);
+    if (modules.length === 0) {
+        return <div className="p-3 text-center text-muted">No transactions found.</div>;
+    }
+
+    return (
+        <div className="p-3" style={{ backgroundColor: '#faf7f0', borderTop: '1px solid #d8d0c2' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '12px', color: '#5b635c' }}>
+                BATCH TRANSACTION SUMMARY
+            </div>
+            <div className="d-flex flex-wrap gap-3">
+                {modules.map(mod => {
+                    const isIn = IN_MODULES.includes(mod);
+                    return (
+                        <div 
+                            key={mod} 
+                            style={{ 
+                                padding: '12px 16px', 
+                                borderRadius: '12px', 
+                                backgroundColor: isIn ? '#e8f5e9' : '#ffebee',
+                                color: isIn ? '#2e7d32' : '#c62828',
+                                border: `1px solid ${isIn ? '#a5d6a7' : '#ef9a9a'}`,
+                                minWidth: '160px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                            }}
+                        >
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px', letterSpacing: '0.05em' }}>
+                                {mod.replace('_', ' ')}
+                            </div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>
+                                {isIn ? '+' : '-'}{summary[mod].toLocaleString()}
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+    );
+};
 
 const BatchListing = ({ loadingOn, loadingOff }) => {
     const navigate = useNavigate();
@@ -23,9 +97,6 @@ const BatchListing = ({ loadingOn, loadingOff }) => {
         dateBased: 'no',
         filterDialog: false,
     });
-    const [filters, setFilters] = useState({});
-    const [groupBy, setGroupBy] = useState('');
-    const [filteredData, setFilteredData] = useState([]);
     const [filterDialog, setFilterDialog] = useState(false);
 
     useEffect(() => {
@@ -63,259 +134,77 @@ const BatchListing = ({ loadingOn, loadingOff }) => {
             isCustomCell: true,
             align: 'center',
             Cell: ({ row }) => (
-                <IconButton
-                    size="small"
-                    color="primary"
-                    title="Trace Batch"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/erp/batchManagement/batchReport', {
-                            state: {
-                                batch: row.batch,
-                                item: { value: row.item_id, label: row.productNameGet },
-                                godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
-                            }
-                        });
-                    }}
-                >
-                    <Search fontSize="small" />
-                </IconButton>
+                <>
+                    <IconButton
+                        size="small"
+                        color="primary"
+                        title="Trace Batch"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/erp/batchManagement/batchReport', {
+                                state: {
+                                    batch: row.batch,
+                                    item: { value: row.item_id, label: row.productNameGet },
+                                    godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
+                                }
+                            });
+                        }}
+                    >
+                        <QueryStats fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/erp/batchManagement/batchTransaction', {
+                                state: {
+                                    batch_id: row.id,
+                                    batch: row.batch,
+                                    item: { value: row.item_id, label: row.productNameGet },
+                                    godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
+                                }
+                            });
+                        }}
+                        size="small"
+                        color="primary"
+                        title="Stock transaction"
+                    >
+                        <Warehouse />
+                    </IconButton>
+                </>
             )
         });
         return columns;
     }, [propsColumns, navigate]);
 
-    const showData = useMemo(() => {
-        const filter = Object.keys(filters).length > 0, grouping = groupBy ? true : false;
-
-        const filtered = filter ? filteredData : dataArray;
-        const groupFiltered = grouping ? groupData(filtered, groupBy) : [];
-
-        const aggKeys = DisplayColumn.filter(fil => (
-            filterableText(fil.Fied_Data) === "number"
-        )).map(col => col.Field_Name);
-
-        const groupAggregations = groupFiltered.map(grp => {
-            const sumKeys = ['Total_Qty', 'pendingQuantity', 'consumedQuantity', 'totalQuantity'];
-
-            return {
-                ...grp,
-                ...Object.fromEntries(
-                    aggKeys.map(key => [
-                        key,
-                        sumKeys.includes(key)
-                            ? grp?.groupedData?.reduce(
-                                (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
-                                0
-                            )
-                            : Division(
-                                grp?.groupedData?.reduce(
-                                    (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
-                                    0
-                                ),
-                                grp.groupedData.length
-                            )
-                    ])
-                )
-            }
-        });
-
-        return grouping ? groupAggregations : filtered
-    }, [filters, dataArray, filteredData, groupBy, DisplayColumn])
-
-    useEffect(() => {
-        applyFilters();
-    }, [filters]);
-
-    const handleFilterChange = (column, value) => {
-        setFilters(prevFilters => ({
-            ...prevFilters,
-            [column]: value,
-        }));
-    };
-
-    const applyFilters = () => {
-        let filtered = [...dataArray];
-        for (const column of propsColumns) {
-            if (filters[column.Field_Name]) {
-                if (filters[column.Field_Name].type === 'range') {
-                    const { min, max } = filters[column.Field_Name];
-                    filtered = filtered.filter(item => {
-                        const value = item[column.Field_Name];
-                        return (min === undefined || value >= min) && (max === undefined || value <= max);
-                    });
-                } else if (filters[column.Field_Name].type === 'date') {
-                    const { start, end } = filters[column.Field_Name].value;
-                    filtered = filtered.filter(item => {
-                        const dateValue = new Date(item[column.Field_Name]);
-                        return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
-                    });
-                } else if (Array.isArray(filters[column.Field_Name])) {
-                    filtered = filters[column.Field_Name]?.length > 0 ? filtered.filter(item => filters[column.Field_Name].includes(item[column.Field_Name]?.toLowerCase().trim())) : filtered
-                }
-            }
-        }
-        setFilteredData(filtered);
-    };
-
-    const renderFilter = (column) => {
-        const { Field_Name, Fied_Data } = column;
-        if (Fied_Data === 'number') {
-            return (
-                <div className='d-flex justify-content-between px-2'>
-                    <input
-                        placeholder="Min"
-                        type="number"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={filters[Field_Name]?.min ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], min: e.target.value ? parseFloat(e.target.value) : undefined })}
-                    />
-                    <input
-                        placeholder="Max"
-                        type="number"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={filters[Field_Name]?.max ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'range', ...filters[Field_Name], max: e.target.value ? parseFloat(e.target.value) : undefined })}
-                    />
-                </div>
-            );
-        } else if (Fied_Data === 'date') {
-            return (
-                <div className='d-flex justify-content-between px-2'>
-                    <input
-                        placeholder="Start Date"
-                        type="date"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={filters[Field_Name]?.value?.start ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, start: e.target.value || undefined } })}
-                    />
-                    <input
-                        placeholder="End Date"
-                        type="date"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={filters[Field_Name]?.value?.end ?? ''}
-                        onChange={(e) => handleFilterChange(Field_Name, { type: 'date', value: { ...filters[Field_Name]?.value, end: e.target.value || undefined } })}
-                    />
-                </div>
-            );
-        } else if (Fied_Data === 'string') {
-            const distinctValues = [...new Set(dataArray.map(item => item[Field_Name]?.toLowerCase()?.trim()))];
-            return (
-                <Autocomplete
-                    multiple
-                    id={`${Field_Name}-filter`}
-                    options={distinctValues}
-                    disableCloseOnSelect
-                    getOptionLabel={option => option}
-                    value={filters[Field_Name] || []}
-                    onChange={(event, newValue) => handleFilterChange(Field_Name, newValue)}
-                    renderOption={(props, option, { selected }) => (
-                        <li {...props}>
-                            <Checkbox
-                                icon={icon}
-                                checkedIcon={checkedIcon}
-                                style={{ marginRight: 8 }}
-                                checked={selected}
-                            />
-                            {option}
-                        </li>
-                    )}
-                    isOptionEqualToValue={(opt, val) => opt === val}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label={Field_Name}
-                            placeholder={`Select ${Field_Name?.replace(/_/g, ' ')}`}
-                        />
-                    )}
-                />
-            );
-        }
-    };
-
     const closeDialog = () => {
         setFilterDialog(false);
     }
 
-
     return (
         <>
 
-            <FilterableTable
+            <AppTableComponent
                 title="Batch Listing"
                 EnableSerialNumber
+                // onClickFun={(row) => setSelectedBatchRow(row)}
                 ButtonArea={
                     <>
-                        <Tooltip title='Clear Filters'>
-                            <IconButton
-                                size="small"
-                                onClick={() => setFilters({})}
-                            >
-                                <FilterAltOff />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Filters">
+                        <Tooltip title="API Date Filters">
                             <IconButton
                                 onClick={() => setFilterDialog(true)}
                                 size="small"
-                            // className="d-md-none d-inline"
                             >
                                 <FilterAlt />
                             </IconButton>
                         </Tooltip>
-                        <select
-                            className="cus-inpt p-2 w-auto m-1"
-                            value={groupBy}
-                            onChange={e => setGroupBy(e.target.value)}
-                        >
-                            <option value="">Group By</option>
-                            {DisplayColumn.filter(fil => (
-                                filterableText(fil.Fied_Data) === "string"
-                                && fil?.Field_Name !== 'Ledger_Name'
-                            )).map((col, colInd) => (
-                                <option value={col?.Field_Name} key={colInd}>{col?.Field_Name?.replace(/_/g, ' ')}</option>
-                            ))}
-                        </select>
                     </>
                 }
                 maxHeightOption
                 ExcelPrintOption
-                dataArray={showData}
-                columns={
-                    //     [
-                    //     createCol('trans_date', 'date', 'Date'),
-                    //     createCol('batch', 'string', 'Batch'),
-                    //     createCol('productNameGet', 'string', 'Product'),
-                    //     createCol('godownName', 'string', 'Godown'),
-                    //     createCol('stockDays', 'number', 'Stock Days'),
-                    //     createCol('pendingQuantity', 'number', 'Available Qty'),
-                    //     createCol('consumedQuantity', 'number', 'Consumed Qty'),
-                    //     createCol('totalQuantity', 'number', 'Max Qty'),
-                    //     // createCol('createdByGet', 'string', 'Created By'),
-                    //     // createCol('trans_date', 'date', 'Date'),
-                    // ]
-                    groupBy
-                        ? DisplayColumn.filter(fil =>
-                            showData.length > 0 && Object.keys(showData[0]).includes(fil.Field_Name)
-                        ).map(col => ({
-                            ...col,
-                            ColumnHeader: col.Field_Name === groupBy ? groupBy : col.ColumnHeader
-                        }))
-                        : DisplayColumn
-                }
-                enableFilters
-                isExpendable={groupBy ? true : false}
-                expandableComp={({ row }) => (
-                    <FilterableTable
-                        EnableSerialNumber
-                        headerFontSizePx={12}
-                        bodyFontSizePx={12}
-                        dataArray={toArray(row?.groupedData)}
-                        columns={DisplayColumn.filter(
-                            (clm) => !stringCompare(clm.Field_Name, groupBy) 
-                        )}
-                    />
-                )}
+                dataArray={dataArray}
+                columns={DisplayColumn}
+                isExpendable
+                expandableComp={(props) => <BatchSummaryExpander {...props} />}
             />
 
             <Dialog
@@ -324,34 +213,6 @@ const BatchListing = ({ loadingOn, loadingOff }) => {
                 maxWidth='sm' fullWidth
             >
                 <DialogContent>
-                    <h5 className="d-flex justify-content-between px-2">
-                        <span>Filters</span>
-                        <span>
-                            <Tooltip title='Clear Filters'>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setFilters({})}
-                                >
-                                    <FilterAltOff />
-                                </IconButton>
-                            </Tooltip>
-
-                            <Button
-                                onClick={() => {
-                                    closeDialog();
-                                    setDateFilter(pre => ({
-                                        ...pre,
-                                        Fromdate: dateFilter?.FilterFromDate,
-                                        Todate: dateFilter.FilterTodate,
-                                        dateBased: 'yes',
-                                    }));
-                                }}
-                                startIcon={<Search />}
-                                variant="outlined"
-                            >Search</Button>
-                        </span>
-                    </h5>
-
                     <div className="table-responsive">
                         <table className="table table-bordered">
                             <tbody>
@@ -400,18 +261,21 @@ const BatchListing = ({ loadingOn, loadingOff }) => {
                         </table>
                     </div>
 
-                    <div className="border rounded-3 " >
-                        {DisplayColumn.map((column, ke) => (
-                            <div key={ke} className="py-3 px-3 hov-bg border-bottom">
-                                <label className='mt-2 mb-1'>{column?.Field_Name?.replace(/_/g, ' ')}</label>
-                                {renderFilter(column)}
-                            </div>
-                        ))}
-                        <br />
-                    </div>
-
                 </DialogContent>
                 <DialogActions>
+                    <Button
+                        onClick={() => {
+                            closeDialog();
+                            setDateFilter(pre => ({
+                                ...pre,
+                                Fromdate: dateFilter?.FilterFromDate,
+                                Todate: dateFilter.FilterTodate,
+                                dateBased: 'yes',
+                            }));
+                        }}
+                        startIcon={<Search />}
+                        variant="outlined"
+                    >Search</Button>
                     <Button onClick={closeDialog}>close</Button>
                 </DialogActions>
             </Dialog>

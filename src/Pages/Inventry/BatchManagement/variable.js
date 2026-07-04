@@ -31,7 +31,7 @@ export const batchListingColumns = [
     { Field_Name: 'productNameGet', Fied_Data: 'string', ColumnHeader: 'Product' },
     { Field_Name: 'godownName', Fied_Data: 'string', ColumnHeader: 'Godown' },
     { Field_Name: 'stockDays', Fied_Data: 'number', ColumnHeader: 'Stock Days' },
-    { Field_Name: 'pendingQuantity', Fied_Data: 'number', ColumnHeader: 'Available Qty' },
     { Field_Name: 'consumedQuantity', Fied_Data: 'number', ColumnHeader: 'Consumed Qty' },
-    { Field_Name: 'totalQuantity', Fied_Data: 'number', ColumnHeader: 'Max Qty' },
+    { Field_Name: 'pendingQuantity', Fied_Data: 'number', ColumnHeader: 'Available Qty' },
+    // { Field_Name: 'totalQuantity', Fied_Data: 'number', ColumnHeader: 'Max Qty' },
 ]

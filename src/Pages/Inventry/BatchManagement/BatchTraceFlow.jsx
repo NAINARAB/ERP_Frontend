@@ -581,16 +581,52 @@ function SvgConnectorCanvas({ containerRef, prevLevels, nextLevels, currentBatch
 /* ------------------------------ Search ------------------------------ */
 
 function SearchPanel({ onSearch, loading, initialForm }) {
-    const [form, setForm] = useState(initialForm || { batch: "", item: null, godown: null });
-    const canSearch = form.batch && form.item;
+    const [form, setForm] = useState(() => {
+        if (initialForm) {
+            return {
+                item: initialForm.item || null,
+                godown: initialForm.godown || null,
+                batch: initialForm.batch ? { value: initialForm.batch, label: initialForm.batch } : null,
+                batch_id: initialForm.batch_id || null
+            }
+        }
+        return { item: null, godown: null, batch: null, batch_id: null };
+    });
 
-    const [products, setProducts] = useState([]);
-    const [godowns, setGodowns] = useState([]);
+    const [dropDownData, setDropDownData] = useState([]);
 
     useEffect(() => {
-        fetchLink({ address: `masters/products` }).then(res => res && res.success && setProducts(res.data));
-        fetchLink({ address: `dataEntry/godownLocationMaster` }).then(res => res && res.success && setGodowns(res.data));
+        fetchLink({ address: `inventory/batchMaster/dropDown` })
+            .then(res => {
+                if (res && res.success && res.data && res.data.length > 0) {
+                    setDropDownData(res.data[0] || []);
+                }
+            });
     }, []);
+
+    const getFilteredData = (excludeField) => {
+        return dropDownData.filter(row => {
+            let match = true;
+            if (excludeField !== 'item' && form.item && row.item_id !== form.item.value) match = false;
+            if (excludeField !== 'godown' && form.godown && row.godown_id !== form.godown.value) match = false;
+            if (excludeField !== 'batch' && form.batch && row.batch !== form.batch.value) match = false;
+            return match;
+        });
+    };
+
+    const itemOptions = Array.from(
+        new Map(getFilteredData('item').map(r => [r.item_id, { value: r.item_id, label: r.item_name }])).values()
+    ).sort((a, b) => a.label.localeCompare(b.label));
+
+    const godownOptions = Array.from(
+        new Map(getFilteredData('godown').map(r => [r.godown_id, { value: r.godown_id, label: r.godown_name }])).values()
+    ).sort((a, b) => a.label.localeCompare(b.label));
+
+    const batchOptions = Array.from(
+        new Map(getFilteredData('batch').map(r => [r.batch, { value: r.batch, label: r.batch }])).values()
+    ).sort((a, b) => a.label.localeCompare(b.label));
+
+    const canSearch = form.batch && form.item;
 
     return (
         <Paper
@@ -606,37 +642,41 @@ function SearchPanel({ onSearch, loading, initialForm }) {
                     gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(140px, 1fr))" },
                 }}
             >
-                <input
-                    value={form.batch}
-                    onChange={(e) => setForm({ ...form, batch: e.target.value })}
-                    className="cus-inpt"
-                    placeholder="Batch"
-                />
-
                 <Select
                     value={form.item}
                     onChange={(e) => setForm({ ...form, item: e })}
-                    options={products.map(p => ({ value: p.Product_Id, label: p.Product_Name }))}
+                    options={itemOptions}
                     styles={customSelectStyles}
                     isSearchable={true}
                     placeholder="Select Item"
                     filterOption={reactSelectFilterLogic}
+                    isClearable
                 />
 
                 <Select
                     value={form.godown}
                     onChange={(e) => setForm({ ...form, godown: e })}
-                    options={godowns.sort(
-                        (a, b) => a.Godown_Name.localeCompare(b.Godown_Name)
-                    ).map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
+                    options={godownOptions}
                     styles={customSelectStyles}
                     isSearchable={true}
                     placeholder="Select Godown"
                     filterOption={reactSelectFilterLogic}
+                    isClearable
+                />
+
+                <Select
+                    value={form.batch}
+                    onChange={(e) => setForm({ ...form, batch: e })}
+                    options={batchOptions}
+                    styles={customSelectStyles}
+                    isSearchable={true}
+                    placeholder="Select Batch"
+                    filterOption={reactSelectFilterLogic}
+                    isClearable
                 />
             </Box>
             <Button
-                onClick={() => onSearch({ batch_name: form.batch, item_id: form.item.value, godown_id: form.godown?.value })}
+                onClick={() => onSearch({ batch_name: form.batch?.value, item_id: form.item?.value, godown_id: form.godown?.value })}
                 disabled={!canSearch || loading}
                 variant="contained"
                 startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}

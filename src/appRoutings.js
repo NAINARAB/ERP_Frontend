@@ -190,6 +190,7 @@ const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/Add
 const ArrivalMaster = lazy(() => import('./Pages/Inventry/TripMaster/arrivalMaster'));
 const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAssign'));
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
+const BatchTransactionView = lazy(() => import('./Pages/Inventry/BatchManagement/batchTransaction'))
 const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverReport'));
 const StockJournalAdjustmentCreate = lazy(() => import('./Pages/Inventry/StockJournalAdjustmentCreate'));
 const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment'));
@@ -335,6 +336,7 @@ const RoutingArray = [
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
     { component: <BatchAssign />, path: '/erp/batchManagement/batchCreation' },
     { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
+    { component: <BatchTransactionView />, path: '/erp/batchManagement/batchTransaction' },
     { component: <BatchTraceFlow />, path: '/erp/batchManagement/batchReport' },
 
     // ---------------------------------------------------------------------------
@@ -456,10 +458,10 @@ const RoutingArray = [
     { component: <PurchaseInvoiceCreate />, path: '/erp/purchase/invoice/create' },
     { component: <PurchaseInvoces />, path: '/erp/purchase/invoice' },
     { component: <PurchaseReportForCustomer />, path: '/erp/purchase/myPurchase' },
-    // { component: <NewPurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
-    { component: <PurchaseOrderEntries />, path: '/erp/purchase/purchaseOrder' },
-    // { component: <NewPurchaseOrderCreate />, path: '/erp/purchase/purchaseOrder/create' },
-    { component: <PurchaseOrderDataEntry />, path: '/erp/purchase/purchaseOrder/create' },
+    { component: <NewPurchaseOrderList />, path: '/erp/purchase/purchaseOrder' },
+    // { component: <PurchaseOrderEntries />, path: '/erp/purchase/purchaseOrder' },
+    { component: <NewPurchaseOrderCreate />, path: '/erp/purchase/purchaseOrder/create' },
+    // { component: <PurchaseOrderDataEntry />, path: '/erp/purchase/purchaseOrder/create' },
     { component: <PurchasePaymentDue />, path: '/erp/purchase/purchasePayemntDue' },
     { component: <PurchaseReport />, path: '/erp/purchase/purchaseReport' },
     { component: <PaymentDue />, path: '/erp/purchase/paymentdure' },
