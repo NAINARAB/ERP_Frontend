@@ -47,27 +47,27 @@ const TAB_TO_WHATSAPP_TYPE = {
 const TEMPLATE_MAP = {
     sale_invoice: {
         dotpe: { english: "sales_invoice_en", tamil: "sales_invoice_order" },
-        askeva: { english: "sales_invoice_en", tamil: "sales_invoice_thanks" },
+        askeva: { english: "saleinvoice_english", tamil: "salesinvoice_tamil" },
     },
     price_list: {
         dotpe: { english: "price_list_en", tamil: "price_list" },
-        askeva: { english: "price_list_en", tamil: "price_list_thanks" },
+        askeva: { english: "pricelist_english", tamil: "pricelist_tamil" },
     },
     sale_order: {
         dotpe: { english: "sale_order_new_en", tamil: "sale_order" },
-        askeva: { english: "sale_order_new_en", tamil: "sale_order_thankss" },
+        askeva: { english: "saleorder_english", tamil: "saleorder_tamil" },
     },
     receipt_list: {
         dotpe: { english: "payment_receipt", tamil: "payment_receipt" },
-        askeva: { english: "receipt_list_en", tamil: "receipt_list_thanks" },
+        askeva: { english: "receipt_englishh", tamil: "receipt_tamil" },
     },
     outstanding: {
         dotpe: { english: "outstanding", tamil: "outstanding" },
-        askeva: { english: "outstanding_en", tamil: "outstanding_thanks" },
+        askeva: { english: "transaction_english", tamil: "transaction_tamil" },
     },
     pending_bills: {
         dotpe: { english: "pending_bills", tamil: "pending_bills" },
-        askeva: { english: "pending_bills_en", tamil: "pending_bills_thanks" },
+        askeva: { english: "pendingbill_english", tamil: "pendingbilll_tamil" },  	
     },
 };
 
@@ -84,7 +84,7 @@ const STAFF_INIT = {
     deliveryStatus: 5,
 };
 
-// Ledger_LOL columns exposed for filtering on the Sale Invoice tab
+
 const LEDGER_LOL_FILTER_COLUMNS = [
     { key: "Ledger_Name", label: "Ledger Name" },
     { key: "City", label: "City" },
@@ -1954,13 +1954,13 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
     const fetchOutstanding = () => fetchDebtorsCreditors("outstanding", outstandingFromDate, outstandingToDate);
     const fetchPendingBills = () => fetchDebtorsCreditors("pending_bills", pendingBillsFromDate, pendingBillsToDate);
 
-    // INITIAL LOAD - Fetch all data and counts
+    
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
             const phoneMapResult = await fetchPhoneMap();
 
-            // Sale Invoice fetched independently with its own date range
+          
             fetchSaleInvoices(phoneMapResult);
 
             const [soResp, retailersResp, receiptsResp, outstandingResp, pendingResp] = await Promise.allSettled([
@@ -2029,7 +2029,7 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
                 if (activeTab === "receipt_list") setFilteredData(recs);
             }
 
-            // Process outstanding
+         
             if (outstandingResp.status === 'fulfilled' && outstandingResp.value?.success) {
                 let records = toArray(outstandingResp.value.data).map((r) => ({
                     ...r,
@@ -2061,7 +2061,7 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
                 if (activeTab === "outstanding") setFilteredData(records);
             }
 
-            // Process pending bills
+     
             if (pendingResp.status === 'fulfilled' && pendingResp.value?.success) {
                 let records = toArray(pendingResp.value.data).map((r) => ({
                     ...r,
@@ -2093,12 +2093,12 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
                 if (activeTab === "pending_bills") setFilteredData(records);
             }
 
-            // Fetch settings
+
             await fetchLink({ address: "masters/erpCostCenter/dropDown" })
                 .then((d) => setCostCenterData(toArray(d.data))).catch(console.error);
             await fetchAllTabSettings();
 
-            // Fetch all WhatsApp counts after data is loaded
+  
             await fetchAllWhatsappCounts();
 
             setInitialDataLoaded(true);
@@ -2107,7 +2107,7 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
         init();
     }, []);
 
-    // Refresh sale order / pending data when its filters change (sale_invoice is independent now)
+
     useEffect(() => {
         if (initialDataLoaded) {
             if (viewMode === "normal") fetchAllInvoices(true);
@@ -2151,7 +2151,7 @@ const buildSaleInvoiceParams = (row) => {
     const rawDate = new Date(row.Do_Date || row.DocumentDate || row.createdOn);
     const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
     const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
-    return { bodyParams: [companyname, customerName, invoiceNo, date, amount, pdfUrl], clientRefId: generateUniqueClientRefId("inv", invoiceNo) };
+    return { bodyParams: [companyname, customerName, date, amount, pdfUrl], clientRefId: generateUniqueClientRefId("inv", invoiceNo) };
 };
 
     const buildPriceListParams = (row) => {
@@ -2169,7 +2169,7 @@ const buildSaleInvoiceParams = (row) => {
         const date = new Date(row.So_Date || row.DocumentDate || row.createdOn).toLocaleDateString("en-GB");
         const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
         const companyname = companyInfo[0]?.Company_Name;
-        return { bodyParams: [companyname, customerName, invoiceNo, date, amount, pdfUrl], clientRefId: generateUniqueClientRefId("sord", invoiceNo) };
+        return { bodyParams: [companyname, customerName, date, amount, pdfUrl], clientRefId: generateUniqueClientRefId("sord", invoiceNo) };
     };
 
     const buildReceiptParams = (row) => {
@@ -2179,7 +2179,7 @@ const buildSaleInvoiceParams = (row) => {
         const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
         const companyname = companyInfo[0]?.Company_Name;
         const paymentMode = row.transaction_type || "-";
-        return { bodyParams: [companyname, customerName, receiptNo, date, amount, paymentMode], clientRefId: generateUniqueClientRefId("receipt", receiptNo) };
+        return { bodyParams: [companyname, customerName, date, amount], clientRefId: generateUniqueClientRefId("receipt", receiptNo) };
     };
 
     const buildOutstandingParams = (row) => {
