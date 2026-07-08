@@ -1711,7 +1711,7 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
         A1_Phone: (phoneMapRef || phoneMap).get(Number(order.Retailer_Id)) || order.A1 || "Not Available",
     });
 
-    // INDEPENDENT FETCH FOR SALE INVOICE TAB — driven solely by Fromdate/Todate
+
     const fetchSaleInvoices = async (phoneMapRef = null) => {
         try {
             setIsSaleInvoiceLoading(true);
@@ -1884,72 +1884,160 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
     }, [pendingBillsFilter, allPendingBills, activeTab]);
 
     const fetchDebtorsCreditors = async (tab, fromDate, toDate) => {
-        try {
-            setIsLoading(true);
-            const response = await fetchLink({
-                address: `reports/externalAPI/debtorsCreditors?Fromdate=${fromDate}&Todate=${toDate}`,
-                loadingOn,
-                loadingOff,
+    try {
+        setIsLoading(true);
+        const response = await fetchLink({
+            address: `reports/externalAPI/debtorsCreditors?Fromdate=${fromDate}&Todate=${toDate}`,
+            loadingOn,
+            loadingOff,
+        });
+
+        if (response?.success && response.data) {
+            const debtorsList = toArray(response.data.Debtors);
+            const data1List = toArray(response.data.Data1);
+
+            // Build a lookup by Acc_Id (stringified, since API mixes string/number types)
+            const data1Map = new Map();
+            data1List.forEach((d) => {
+                if (d?.Acc_Id !== undefined) data1Map.set(String(d.Acc_Id), d);
             });
-            if (response?.success && response.data) {
-                let records = toArray(response.data).map((r) => ({
-                    ...r,
+
+            let records = debtorsList.map((debtor) => {
+                const detail = data1Map.get(String(debtor.Acc_Id)) || {};
+                // detail first, debtor second — debtor's Retailer_Name/Group_Name etc.
+                // take priority if present, but Bal_Amount/CR_DR/LOL fields only exist on detail
+                const merged = { ...detail, ...debtor };
+
+                return {
+                    ...merged,
                     DocumentType: tab === "outstanding" ? "Outstanding" : "PendingBill",
-                    DocumentId: r.Retailer_Id,
-                    DocumentNumber: r.Acc_Id,
-                    retailerNameGet: r.Retailer_Name,
-                    A1_Phone: r["A1 - LOL-[19]"]?.trim() || phoneMap.get(Number(r.Retailer_Id)) || "Not Available",
-                    Total_Invoice_value: r.Bal_Amount || 0,
-                    Location: r["Party_Location - LOL-[5]"] || "",
-                    District: r["Party_District - LOL-[12]"] || "",
-                    PayDays: r.Q_Pay_Days ?? "",
-                    PayGroup: r.Q_Pay_Group || "",
-                    CR_DR: r.CR_DR || "",
-                    OB_Amount: r.OB_Amount || 0,
-                    Bal_Amount: r.Bal_Amount || 0,
-                    Debit_Amt: r.Debit_Amt || 0,
-                    Credit_Amt: r.Credit_Amt || 0,
-                    Customer_Phone: r["A1 - LOL-[19]"]?.trim() || "Not Available",
-                }));
+                    DocumentId: merged.Retailer_Id,
+                    DocumentNumber: merged.Acc_Id,
+                    retailerNameGet: merged.Retailer_Name || merged.Account_name || detail.Retailer_Name,
+                    A1_Phone: merged["A1 - LOL-[19]"]?.trim() || phoneMap.get(Number(merged.Retailer_Id)) || "Not Available",
+                    Total_Invoice_value: merged.Bal_Amount || 0,
+                    Location: merged["Party_Location - LOL-[5]"] || "",
+                    District: merged["Party_District - LOL-[12]"] || "",
+                    PayDays: merged.Q_Pay_Days ?? "",
+                    PayGroup: merged.Q_Pay_Group || "",
+                    CR_DR: merged.CR_DR || "",
+                    OB_Amount: merged.OB_Amount || 0,
+                    Bal_Amount: merged.Bal_Amount || 0,
+                    Debit_Amt: merged.Debit_Amt || 0,
+                    Credit_Amt: merged.Credit_Amt || 0,
+                    Customer_Phone: merged["A1 - LOL-[19]"]?.trim() || "Not Available",
+                };
+            });
 
-                records = records.filter((r) => (r.CR_DR || "").toUpperCase() === "DR");
-                records = records.filter((r) =>
-                    (r.Debit_Amt !== 0 && r.Debit_Amt !== null && r.Debit_Amt !== undefined) ||
-                    (r.Credit_Amt !== 0 && r.Credit_Amt !== null && r.Credit_Amt !== undefined) ||
-                    (r.Bal_Amount !== 0 && r.Bal_Amount !== null && r.Bal_Amount !== undefined)
-                );
+            records = records.filter((r) => (r.CR_DR || "").toUpperCase() === "DR");
+            records = records.filter((r) =>
+                (r.Debit_Amt !== 0 && r.Debit_Amt !== null && r.Debit_Amt !== undefined) ||
+                (r.Credit_Amt !== 0 && r.Credit_Amt !== null && r.Credit_Amt !== undefined) ||
+                (r.Bal_Amount !== 0 && r.Bal_Amount !== null && r.Bal_Amount !== undefined)
+            );
 
-                if (tab === "outstanding") {
-                    setAllOutstanding(records);
-                    setOutstandingSearch("");
-                    await fetchWhatsappCountsFor(records, 'Outstanding');
-                    setFilteredOutstanding(records);
-                    if (activeTab === "outstanding") setFilteredData(records);
-                } else {
-                    setAllPendingBills(records);
-                    setPendingBillsSearch("");
-                    await fetchWhatsappCountsFor(records, 'PendingBill');
-                    setFilteredPendingBills(records);
-                    if (activeTab === "pending_bills") setFilteredData(records);
-                }
-
-                if (records.length === 0) toast.info("No debit records found with non-zero amounts");
+            if (tab === "outstanding") {
+                setAllOutstanding(records);
+                setOutstandingSearch("");
+                await fetchWhatsappCountsFor(records, 'Outstanding');
+                setFilteredOutstanding(records);
+                if (activeTab === "outstanding") setFilteredData(records);
             } else {
-                if (tab === "outstanding") {
-                    setAllOutstanding([]); setFilteredOutstanding([]);
-                    if (activeTab === "outstanding") setFilteredData([]);
-                } else {
-                    setAllPendingBills([]); setFilteredPendingBills([]);
-                    if (activeTab === "pending_bills") setFilteredData([]);
-                }
-                toast.info("No data found");
+                setAllPendingBills(records);
+                setPendingBillsSearch("");
+                await fetchWhatsappCountsFor(records, 'PendingBill');
+                setFilteredPendingBills(records);
+                if (activeTab === "pending_bills") setFilteredData(records);
             }
-        } catch (e) {
-            toast.error(`Failed to load ${tab === "outstanding" ? "outstanding" : "pending bills"} data`);
-        } finally {
-            setIsLoading(false);
+
+            if (records.length === 0) toast.info("No debit records found with non-zero amounts");
+        } else {
+            if (tab === "outstanding") {
+                setAllOutstanding([]); setFilteredOutstanding([]);
+                if (activeTab === "outstanding") setFilteredData([]);
+            } else {
+                setAllPendingBills([]); setFilteredPendingBills([]);
+                if (activeTab === "pending_bills") setFilteredData([]);
+            }
+            toast.info("No data found");
         }
-    };
+    } catch (e) {
+        toast.error(`Failed to load ${tab === "outstanding" ? "outstanding" : "pending bills"} data`);
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+    // const fetchDebtorsCreditors = async (tab, fromDate, toDate) => {
+    //     try {
+    //         setIsLoading(true);
+    //         const response = await fetchLink({
+    //             address: `reports/externalAPI/debtorsCreditors?Fromdate=${fromDate}&Todate=${toDate}`,
+    //             loadingOn,
+    //             loadingOff,
+    //         });
+    //         if (response?.success && response.data) {
+    //             let records = toArray(response.data).map((r) => ({
+    //                 ...r,
+    //                 DocumentType: tab === "outstanding" ? "Outstanding" : "PendingBill",
+    //                 DocumentId: r.Retailer_Id,
+    //                 DocumentNumber: r.Acc_Id,
+    //                 retailerNameGet: r.Retailer_Name,
+    //                 A1_Phone: r["A1 - LOL-[19]"]?.trim() || phoneMap.get(Number(r.Retailer_Id)) || "Not Available",
+    //                 Total_Invoice_value: r.Bal_Amount || 0,
+    //                 Location: r["Party_Location - LOL-[5]"] || "",
+    //                 District: r["Party_District - LOL-[12]"] || "",
+    //                 PayDays: r.Q_Pay_Days ?? "",
+    //                 PayGroup: r.Q_Pay_Group || "",
+    //                 CR_DR: r.CR_DR || "",
+    //                 OB_Amount: r.OB_Amount || 0,
+    //                 Bal_Amount: r.Bal_Amount || 0,
+    //                 Debit_Amt: r.Debit_Amt || 0,
+    //                 Credit_Amt: r.Credit_Amt || 0,
+    //                 Customer_Phone: r["A1 - LOL-[19]"]?.trim() || "Not Available",
+    //             }));
+
+    //             records = records.filter((r) => (r.CR_DR || "").toUpperCase() === "DR");
+    //             records = records.filter((r) =>
+    //                 (r.Debit_Amt !== 0 && r.Debit_Amt !== null && r.Debit_Amt !== undefined) ||
+    //                 (r.Credit_Amt !== 0 && r.Credit_Amt !== null && r.Credit_Amt !== undefined) ||
+    //                 (r.Bal_Amount !== 0 && r.Bal_Amount !== null && r.Bal_Amount !== undefined)
+    //             );
+
+    //             if (tab === "outstanding") {
+    //                 setAllOutstanding(records);
+    //                 setOutstandingSearch("");
+    //                 await fetchWhatsappCountsFor(records, 'Outstanding');
+    //                 setFilteredOutstanding(records);
+    //                 if (activeTab === "outstanding") setFilteredData(records);
+    //             } else {
+    //                 setAllPendingBills(records);
+    //                 setPendingBillsSearch("");
+    //                 await fetchWhatsappCountsFor(records, 'PendingBill');
+    //                 setFilteredPendingBills(records);
+    //                 if (activeTab === "pending_bills") setFilteredData(records);
+    //             }
+
+    //             if (records.length === 0) toast.info("No debit records found with non-zero amounts");
+    //         } else {
+    //             if (tab === "outstanding") {
+    //                 setAllOutstanding([]); setFilteredOutstanding([]);
+    //                 if (activeTab === "outstanding") setFilteredData([]);
+    //             } else {
+    //                 setAllPendingBills([]); setFilteredPendingBills([]);
+    //                 if (activeTab === "pending_bills") setFilteredData([]);
+    //             }
+    //             toast.info("No data found");
+    //         }
+    //     } catch (e) {
+    //         toast.error(`Failed to load ${tab === "outstanding" ? "outstanding" : "pending bills"} data`);
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
+
+
+
 
     const fetchOutstanding = () => fetchDebtorsCreditors("outstanding", outstandingFromDate, outstandingToDate);
     const fetchPendingBills = () => fetchDebtorsCreditors("pending_bills", pendingBillsFromDate, pendingBillsToDate);
@@ -2382,7 +2470,7 @@ const buildSaleInvoiceParams = (row) => {
         const { serviceName = "Dotpe", langName = "english" } = tabMethodSettings[tab] || {};
         const tooltipText = hasPhone ? `Send via WhatsApp (${serviceName} · ${langName})` : "No valid phone number available";
 
-        // Get the document type for the count key
+        
         const docType = row.DocumentType || row.voucherTypeGet || 'Unknown';
         const docId = row.DocumentId || row.Receipt_Id || row.Ret_Id || row.So_Id || row.Do_Id || row.Id;
         const sentCount = whatsappCounts[getCountKey(docType, docId)] || 0;
@@ -2458,8 +2546,26 @@ const buildSaleInvoiceParams = (row) => {
         { Field_Name: "DocumentNumber", Fied_Data: "string", ColumnHeader: "Document No", isVisible: 1 },
         { Field_Name: "DocumentType", Fied_Data: "string", ColumnHeader: "Type", isVisible: 1 },
         { Field_Name: "Created", isVisible: 1, isCustomCell: true, Cell: ({ row }) => row?.createdOn ? LocalDateWithTime(row.createdOn) : "" },
-        createCol("voucherTypeGet", "string", "Voucher"),
-        createCol("retailerNameGet", "string", "Customer"),
+        {
+    Field_Name: "Voucher",
+    ColumnHeader: "Voucher",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) =>
+        row.voucherTypeGet ||
+        row.VoucherTypeGet ||
+        "-",
+},
+        {
+    Field_Name: "Customer",
+    ColumnHeader: "Customer",
+    isVisible: 1,
+    isCustomCell: true,
+    Cell: ({ row }) =>
+        row.retailerNameGet ||
+        row.Retailer_Name ||
+        "-",
+},
         {
             Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true,
             Cell: ({ row }) => {
@@ -2479,10 +2585,10 @@ const buildSaleInvoiceParams = (row) => {
             Cell: ({ row }) => RoundNumber(toArray(row.stockDetails).reduce((s, i) => s + toNumber(i.Alt_Act_Qty), 0)),
         },
         createCol("Narration", "string", "Narration"),
-        {
-            Field_Name: "Status", isVisible: 1, isCustomCell: true,
-            Cell: ({ row }) => row.Delivery_Status || row.Conversion_Status || row.Status || "-",
-        },
+        // {
+        //     Field_Name: "Status", isVisible: 1, isCustomCell: true,
+        //     Cell: ({ row }) => row.Delivery_Status || row.Conversion_Status || row.Status || "-",
+        // },
     ];
 
     const saleInvoiceColumns = [...baseColumns, { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="sale_invoice" /> }];
