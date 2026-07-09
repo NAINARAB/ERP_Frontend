@@ -1,464 +1,62 @@
-// import {
-//     Button,
-//     Dialog,
-//     DialogActions,
-//     DialogContent,
-//     DialogTitle,
-//     IconButton,
-//     Tooltip,
-// } from "@mui/material";
-// import {
-//     ISOString,
-//     isValidDate,
-//     NumberFormat,
-//     toArray,
-//     Addition,
-// } from "../../Components/functions";
-// import { fetchLink } from "../../Components/fetchComponent";
-// import FilterableTable, { createCol } from "../../Components/filterableTable2";
-// import Select from "react-select";
-// import { useEffect, useState, useMemo } from "react";
-// import { FilterAlt, Search, FilterAltOff } from "@mui/icons-material";
-// import { useLocation, useNavigate } from "react-router-dom";
-// import { customSelectStyles } from "../../Components/tablecolumn";
-
-// const useQuery = () => new URLSearchParams(useLocation().search);
-
-// const defaultFilters = {
-//     fromDate: ISOString(),
-//     toDate: ISOString(),
-// };
-
-// const defaultFilterDropDown = {
-//     voucherType: [],
-//     retailers: [],
-//     collectionType: [],
-//     paymentStatus: [],
-//     collectedBy: [],
-// };
-
-// const Outstanding = ({ loadingOn, loadingOff }) => {
-//     const navigate = useNavigate();
-//     const location = useLocation();
-//     const query = useQuery();
-//     const storage = JSON.parse(localStorage.getItem("user"));
-
-//     const [allAccounts, setAllAccounts] = useState([]);
-//     const [viewType, setViewType] = useState("debtors");
-
-//     const [accountOptions, setAccountOptions] = useState([]);
-//     const [groupOptions, setGroupOptions] = useState([]);
-
-//     const [filters, setFilters] = useState({
-//         fromDate: defaultFilters.fromDate,
-//         toDate: defaultFilters.toDate,
-//         fetchFrom: defaultFilters.fromDate,
-//         fetchTo: defaultFilters.toDate,
-//         Account_Id: "",
-//         Group_Name: "",
-//         filterDialog: false,
-//         refresh: false,
-//     });
-
-//     const [drowDownValues, setDropDownValues] = useState(defaultFilterDropDown);
-
-//     useEffect(() => {
-//         fetchLink({ address: `receipt/filterValues` })
-//             .then((data) => {
-//                 if (data.success) {
-//                     setDropDownValues({
-//                         voucherType: toArray(data?.others?.voucherType),
-//                     });
-//                 }
-//             })
-//             .catch(console.error);
-
-//         fetchAllAccounts();
-//     }, [storage?.Company_id]);
-
-//     const resetFilters = () => {
-//         setFilters({
-//             ...defaultFilters,
-//             fetchFrom: defaultFilters.fromDate,
-//             fetchTo: defaultFilters.toDate,
-//             Account_Id: "",
-//             Group_Name: "",
-//             filterDialog: false,
-//             refresh: false,
-//         });
-
-//         updateQueryString({
-//             fromDate: defaultFilters.fromDate,
-//             toDate: defaultFilters.toDate,
-//             Account_Id: "",
-//             Group_Name: "",
-//         });
-
-//         fetchAllAccounts();
-//     };
-
-//     const fetchAllAccounts = () => {
-//         if (loadingOn) loadingOn();
-//         fetchLink({
-//             address: `payment/getDebtorDetails?fromDate=${filters?.fromDate}&toDate=${filters?.toDate}`,
-//             method: "GET",
-//         })
-//             .then((data) => {
-//                 if (data.success) setAllAccounts(data.data || []);
-//             })
-//             .finally(() => loadingOff && loadingOff())
-//             .catch(console.error);
-//     };
-
-//     useEffect(() => {
-//         if (Array.isArray(allAccounts)) {
-//             const accOpts = allAccounts.map((a) => ({
-//                 value: a.Acc_Id,
-//                 label: a.Account_name,
-//             }));
-
-//             const grpOpts = [
-//                 ...new Map(
-//                     allAccounts.map((a) => [
-//                         a.Group_Name,
-//                         { value: a.Group_Name, label: a.Group_Name },
-//                     ])
-//                 ).values(),
-//             ];
-
-//             setAccountOptions([{ value: "", label: "ALL" }, ...accOpts]);
-//             setGroupOptions([{ value: "", label: "ALL" }, ...grpOpts]);
-//         }
-//     }, [allAccounts]);
-
-//     const tableData = useMemo(() => {
-//         if (!Array.isArray(allAccounts)) return [];
-
-//         return allAccounts.filter((item) => {
-//             const balance = parseFloat(item?.Bal_Amount || 0);
-
-//             // Skip zero balances
-//             if (balance === 0) return false;
-
-//             // Filter by account type
-//             if (viewType === "debtors" && item.Account_Types !== "Debtor") return false;
-//             if (viewType === "creditors" && item.Account_Types !== "Creditor") return false;
-
-//             if (filters.Account_Id && item.Acc_Id !== filters.Account_Id)
-//                 return false;
-//             if (filters.Group_Name && item.Group_Name !== filters.Group_Name)
-//                 return false;
-
-//             return true;
-//         });
-//     }, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
-
-//     const Total_Debit = useMemo(() => {
-//         return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Dr_Amount || 0)), 0);
-//     }, [tableData]);
-
-//     const Total_Credit = useMemo(() => {
-//         return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Cr_Amount || 0)), 0);
-//     }, [tableData]);
-
-//     const Total_Outstanding = useMemo(() => {
-//         return Total_Debit - Total_Credit;
-//     }, [Total_Debit, Total_Credit]);
-
-//     useEffect(() => {
-//         const queryFilters = {
-//             fromDate:
-//                 query.get("fromDate") && isValidDate(query.get("fromDate"))
-//                     ? query.get("fromDate")
-//                     : defaultFilters.fromDate,
-//             toDate:
-//                 query.get("toDate") && isValidDate(query.get("toDate"))
-//                     ? query.get("toDate")
-//                     : defaultFilters.toDate,
-//         };
-//         setFilters((pre) => ({
-//             ...pre,
-//             fetchFrom: queryFilters.fromDate,
-//             fetchTo: queryFilters.toDate,
-//         }));
-//     }, [location.search]);
-
-//     const updateQueryString = (newFilters) => {
-//         const params = new URLSearchParams(newFilters);
-//         navigate(`?${params.toString()}`, { replace: true });
-//     };
-
-//     const closeDialog = () => {
-//         setFilters((pre) => ({ ...pre, filterDialog: false }));
-//     };
-
-//     return (
-//         <>
-//             <FilterableTable
-//                 title={
-//                     viewType === "debtors"
-//                         ? "Debtors Outstanding"
-//                         : "Creditors Outstanding"
-//                 }
-//                 ButtonArea={
-//                     <div className="d-flex justify-content-between align-items-center w-100">
-//                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-//                             <Button
-//                                 variant={viewType === "debtors" ? "contained" : "outlined"}
-//                                 onClick={() => setViewType("debtors")}
-//                                 size="small"
-//                             >
-//                                 Debtors
-//                             </Button>
-//                             <Button
-//                                 variant={viewType === "creditors" ? "contained" : "outlined"}
-//                                 onClick={() => setViewType("creditors")}
-//                                 size="small"
-//                             >
-//                                 Creditors
-//                             </Button>
-//                             <div className="d-flex align-items-center">
-//                                 <Tooltip title="Filters">
-//                                     <IconButton
-//                                         size="small"
-//                                         onClick={() => setFilters({ ...filters, filterDialog: true })}
-//                                     >
-//                                         <FilterAlt />
-//                                     </IconButton>
-//                                 </Tooltip>
-//                                 <Tooltip title="Reset Filters">
-//                                     <IconButton size="small" onClick={resetFilters}>
-//                                         <FilterAltOff />
-//                                     </IconButton>
-//                                 </Tooltip>
-//                             </div>
-//                         </div>
-
-//                         <div className="d-flex flex-column align-items-end">
-//                             <div className="d-flex align-items-center">
-//                                 <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Debit:</span>
-//                                 <strong>{NumberFormat(Total_Debit)}</strong>
-//                             </div>
-//                             <div className="d-flex align-items-center">
-//                                 <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Credit:</span>
-//                                 <strong>{NumberFormat(Total_Credit)}</strong>
-//                             </div>
-//                             <div className="d-flex align-items-center">
-//                                 <span className="text-muted me-2">Total Outstanding:</span>
-//                                 <strong className={Total_Outstanding >= 0 ? "text-danger" : "text-success"}>
-//                                     {NumberFormat(Math.abs(Total_Outstanding))} {Total_Outstanding >= 0 ? "DR" : "CR"}
-//                                 </strong>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 }
-//                 EnableSerialNumber
-//                 ExcelPrintOption={true}
-//                 dataArray={tableData}
-//                 headerFontSizePx={14}
-//                 bodyFontSizePx={13}
-//                 columns={[
-//                     // createCol("Acc_Id", "string", "Account ID"),
-                    
-//                     createCol("Account_name", "string", "Account Name"),
-//                     createCol("Group_Name", "string", "Group"),
-//                     {
-//                         ...createCol("Account_Types", "string", "Account Type"),
-//                         isVisible: 1
-//                     },
-//                     {
-//                         ...createCol("OB_Amount", "number", "Opening Balance"),
-//                         format: (value) => NumberFormat(value || 0)
-//                     },
-//                     {
-//                         ...createCol("Dr_Amount", "number", "Debit Amount"),
-//                         format: (value) => NumberFormat(value || 0)
-//                     },
-//                     {
-//                         ...createCol("Cr_Amount", "number", "Credit Amount"),
-//                         format: (value) => NumberFormat(value || 0)
-//                     },
-//                     createCol("CR_DR", "string", "Type"),
-//                     {
-//                         Field_Name: "Bal_Amount",
-//                         isVisible: 1,
-//                         Fied_Data: "number",
-//                         isCustomCell: true,
-//                         Header: "Balance Amount",
-//                         Cell: ({ row }) => (
-//                             <span className={row?.CR_DR === "DR" ? "text-danger" : "text-success"}>
-//                                 {NumberFormat(Math.abs(row?.Bal_Amount || 0))} {row?.CR_DR}
-//                             </span>
-//                         ),
-//                     },
-//                 ]}
-//             />
-
-//             {/* Filter Dialog */}
-//             <Dialog
-//                 open={filters.filterDialog}
-//                 onClose={closeDialog}
-//                 fullWidth
-//                 maxWidth="md"
-//             >
-//                 <DialogTitle>Filters</DialogTitle>
-//                 <DialogContent>
-//                     <table className="table table-borderless w-100">
-//                         <tbody>
-//                             <tr>
-//                                 <td style={{ verticalAlign: "middle", width: "150px" }}>
-//                                     From
-//                                 </td>
-//                                 <td>
-//                                     <input
-//                                         type="date"
-//                                         value={filters.fromDate || ""}
-//                                         onChange={(e) =>
-//                                             setFilters({ ...filters, fromDate: e.target.value })
-//                                         }
-//                                         className="cus-inpt"
-//                                     />
-//                                 </td>
-//                             </tr>
-
-//                             <tr>
-//                                 <td style={{ verticalAlign: "middle" }}>To</td>
-//                                 <td>
-//                                     <input
-//                                         type="date"
-//                                         value={filters.toDate || ""}
-//                                         onChange={(e) =>
-//                                             setFilters({ ...filters, toDate: e.target.value })
-//                                         }
-//                                         className="cus-inpt"
-//                                     />
-//                                 </td>
-//                             </tr>
-
-//                             <tr>
-//                                 <td style={{ verticalAlign: "middle" }}>Account Name</td>
-//                                 <td>
-//                                     <Select
-//                                         styles={customSelectStyles}
-//                                         value={
-//                                             accountOptions.find(
-//                                                 (a) => a.value === filters.Account_Id
-//                                             ) || { value: "", label: "ALL" }
-//                                         }
-//                                         options={accountOptions}
-//                                         onChange={(selected) =>
-//                                             setFilters({
-//                                                 ...filters,
-//                                                 Account_Id: selected?.value || "",
-//                                             })
-//                                         }
-//                                     />
-//                                 </td>
-//                             </tr>
-
-//                             <tr>
-//                                 <td style={{ verticalAlign: "middle" }}>Group Name</td>
-//                                 <td>
-//                                     <Select
-//                                         styles={customSelectStyles}
-//                                         value={
-//                                             groupOptions.find(
-//                                                 (g) => g.value === filters.Group_Name
-//                                             ) || { value: "", label: "ALL" }
-//                                         }
-//                                         options={groupOptions}
-//                                         onChange={(selected) =>
-//                                             setFilters({
-//                                                 ...filters,
-//                                                 Group_Name: selected?.value || "",
-//                                             })
-//                                         }
-//                                     />
-//                                 </td>
-//                             </tr>
-//                         </tbody>
-//                     </table>
-//                 </DialogContent>
-
-//                 <DialogActions>
-//                     <Button onClick={closeDialog}>Close</Button>
-//                     <Button
-//                         onClick={() => {
-//                             const updatedFilters = {
-//                                 fromDate: filters?.fromDate,
-//                                 toDate: filters?.toDate,
-//                                 Account_Id: filters?.Account_Id,
-//                                 Group_Name: filters?.Group_Name,
-//                             };
-
-//                             setFilters((prev) => ({
-//                                 ...prev,
-//                                 fetchFrom: filters.fromDate,
-//                                 fetchTo: filters.toDate,
-//                             }));
-
-//                             updateQueryString(updatedFilters);
-//                             fetchAllAccounts();
-//                             closeDialog();
-//                         }}
-//                         startIcon={<Search />}
-//                         variant="outlined"
-//                     >
-//                         Search
-//                     </Button>
-//                 </DialogActions>
-//             </Dialog>
-//         </>
-//     );
-// };
-
-// export default Outstanding;
-
-
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Tooltip,
-    CircularProgress,
+    Container,
+    Paper,
+    Typography,
     Box,
-} from "@mui/material";
-import {
-    ISOString,
-    isValidDate,
-    NumberFormat,
-    toArray,
-    Addition,
-} from "../../Components/functions";
+    CircularProgress,
+    Alert,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TablePagination,
+    Chip,
+    Button,
+    Tooltip,
+    ToggleButton,
+    ToggleButtonGroup,
+    IconButton,
+    useMediaQuery,
+    useTheme,
+    TextField,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Grid
+} from '@mui/material';
+import { toast } from 'react-toastify';
+import { useLocation, useNavigate } from 'react-router-dom';
+import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import SearchIcon from '@mui/icons-material/Search';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from "xlsx";
+import dayjs from "dayjs";
+
+// Import your fetch utility - adjust path as needed
 import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable, { createCol } from "../../Components/filterableTable2";
-import Select from "react-select";
-import { useEffect, useState, useMemo, useRef } from "react";
-import { FilterAlt, Search, FilterAltOff, Visibility, PictureAsPdf } from "@mui/icons-material";
-import { useLocation, useNavigate } from "react-router-dom";
-import { customSelectStyles } from "../../Components/tablecolumn";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-
-const defaultFilters = {
-    fromDate: ISOString(),
-    toDate: ISOString(),
+// Import NumberFormat utility if needed
+const NumberFormat = (value) => {
+    if (!value || value === 0) return "-";
+    return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
 };
 
-const defaultFilterDropDown = {
-    voucherType: [],
-    retailers: [],
-    collectionType: [],
-    paymentStatus: [],
-    collectedBy: [],
-};
-
-// Dialog for showing transaction details
+// AccountTransactionsDialog Component
 const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, fromDate, toDate }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -469,7 +67,7 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
         if (open && accountId) {
             fetchTransactionDetails();
         }
-    }, [open, accountId]);
+    }, [open, accountId, fromDate, toDate]);
 
     const fetchTransactionDetails = async () => {
         setLoading(true);
@@ -546,8 +144,8 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             currentGroup.transactions.push({
                 ...txn,
                 isTransaction: true,
-                formattedInvoice: `${txn.invoice_no}/${year}`, // Invoice format with year
-                displayDate: date.toLocaleDateString('en-GB') // Format: dd/mm/yyyy
+                formattedInvoice: `${txn.invoice_no}/${year}`,
+                displayDate: date.toLocaleDateString('en-GB')
             });
             
             // Add to month totals
@@ -617,7 +215,7 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             doc.setFontSize(13);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(255, 255, 255);
-            doc.setFillColor(33, 150, 243); // Blue background
+            doc.setFillColor(33, 150, 243);
             doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
             doc.text(group.monthYear, pageWidth / 2, yPos, { align: 'center' });
             doc.setTextColor(0, 0, 0);
@@ -626,7 +224,6 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             // Prepare table data
             const tableData = group.transactions.map((txn) => {
                 if (txn.isTotalRow) {
-                    
                     return [
                         { content: `${group.monthYear} Total`, colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } },
                         NumberFormat(txn.debit),
@@ -758,7 +355,7 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
         doc.text("Total Debit", 20 + summaryWidth/2, yPos + 7, { align: 'center' });
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(220, 53, 69); // Red color
+        doc.setTextColor(220, 53, 69);
         doc.text(NumberFormat(grandTotals.debit), 20 + summaryWidth/2, yPos + 16, { align: 'center' });
         
         // Total Credit
@@ -771,7 +368,7 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
         doc.text("Total Credit", 20 + summaryWidth + spacing + summaryWidth/2, yPos + 7, { align: 'center' });
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(40, 167, 69); // Green color
+        doc.setTextColor(40, 167, 69);
         doc.text(NumberFormat(grandTotals.credit), 20 + summaryWidth + spacing + summaryWidth/2, yPos + 16, { align: 'center' });
         
         // Net Balance
@@ -784,11 +381,10 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
         doc.text("Net Balance", 20 + (summaryWidth + spacing) * 2 + summaryWidth/2, yPos + 7, { align: 'center' });
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        // Set text color based on balance
         if (grandBalance >= 0) {
-            doc.setTextColor(40, 167, 69); // Green for positive
+            doc.setTextColor(40, 167, 69);
         } else {
-            doc.setTextColor(220, 53, 69); // Red for negative
+            doc.setTextColor(220, 53, 69);
         }
         doc.text(`${NumberFormat(Math.abs(grandBalance))} ${grandBalance >= 0 ? 'CR' : 'DR'}`, 
                  20 + (summaryWidth + spacing) * 2 + summaryWidth/2, yPos + 16, { align: 'center' });
@@ -815,13 +411,15 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             scroll="paper"
         >
             <DialogTitle>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>
-                        Transaction Details - {accountName}
-                        <Box component="span" sx={{ fontSize: '0.9rem', color: 'text.secondary', ml: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                        <Typography variant="h6" component="span">
+                            Transaction Details - {accountName}
+                        </Typography>
+                        <Typography variant="body2" component="span" sx={{ ml: 2, color: 'text.secondary' }}>
                             (From: {new Date(fromDate).toLocaleDateString()} To: {new Date(toDate).toLocaleDateString()})
-                        </Box>
-                    </span>
+                        </Typography>
+                    </Box>
                     <Tooltip title="Download PDF">
                         <IconButton 
                             onClick={generatePDF} 
@@ -829,10 +427,10 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
                             color="primary"
                             sx={{ ml: 2 }}
                         >
-                            <PictureAsPdf />
+                            <PictureAsPdfIcon />
                         </IconButton>
                     </Tooltip>
-                </div>
+                </Box>
             </DialogTitle>
             <DialogContent dividers ref={contentRef}>
                 {loading ? (
@@ -866,15 +464,15 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
                                 </Box>
                                 
                                 {/* Transactions Table */}
-                                <table className="table table-bordered table-hover w-100 mb-0">
+                                <table className="table table-bordered table-hover w-100 mb-0" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Invoice No</th>
-                                            <th>Particulars</th>
-                                            <th>Debit Amount</th>
-                                            <th>Credit Amount</th>
-                                            <th>Ledger Description</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Date</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Invoice No</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Particulars</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Debit Amount</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Credit Amount</th>
+                                            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ledger Description</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -883,16 +481,16 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
                                                 // Month Total Row
                                                 return (
                                                     <tr key={`total-${groupIndex}-${txnIndex}`} style={{ backgroundColor: '#f5f5f5', fontWeight: 'bold' }}>
-                                                        <td colSpan="3" style={{ textAlign: 'right', paddingRight: '20px' }}>
+                                                        <td colSpan="3" style={{ textAlign: 'right', paddingRight: '20px', border: '1px solid #ddd', padding: '8px' }}>
                                                             {group.monthYear} Total
                                                         </td>
-                                                        <td className="text-danger" style={{ fontWeight: 'bold' }}>
+                                                        <td style={{ color: '#dc3545', fontWeight: 'bold', border: '1px solid #ddd', padding: '8px' }}>
                                                             {NumberFormat(txn.debit)}
                                                         </td>
-                                                        <td className="text-success" style={{ fontWeight: 'bold' }}>
+                                                        <td style={{ color: '#28a745', fontWeight: 'bold', border: '1px solid #ddd', padding: '8px' }}>
                                                             {NumberFormat(txn.credit)}
                                                         </td>
-                                                        <td style={{ color: txn.balance >= 0 ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
+                                                        <td style={{ color: txn.balance >= 0 ? '#28a745' : '#dc3545', fontWeight: 'bold', border: '1px solid #ddd', padding: '8px' }}>
                                                             {NumberFormat(Math.abs(txn.balance))} {txn.balance >= 0 ? 'CR' : 'DR'}
                                                         </td>
                                                     </tr>
@@ -902,12 +500,12 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
                                             // Regular Transaction Row
                                             return (
                                                 <tr key={`${groupIndex}-${txnIndex}`}>
-                                                    <td>{txn.displayDate}</td>
-                                                    <td>{txn.formattedInvoice}</td>
-                                                    <td>{txn.Particulars}</td>
-                                                    <td className="text-danger">{NumberFormat(txn.Debit_Amt || 0)}</td>
-                                                    <td className="text-success">{NumberFormat(txn.Credit_Amt || 0)}</td>
-                                                    <td>{txn.Ledger_Desc}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{txn.displayDate}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{txn.formattedInvoice}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{txn.Particulars}</td>
+                                                    <td style={{ color: '#dc3545', border: '1px solid #ddd', padding: '8px' }}>{NumberFormat(txn.Debit_Amt || 0)}</td>
+                                                    <td style={{ color: '#28a745', border: '1px solid #ddd', padding: '8px' }}>{NumberFormat(txn.Credit_Amt || 0)}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{txn.Ledger_Desc}</td>
                                                 </tr>
                                             );
                                         })}
@@ -925,19 +523,19 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
                                 backgroundColor: '#e8f4fd'
                             }}
                         >
-                            <table className="table mb-0">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <tbody>
                                     <tr style={{ backgroundColor: '#333', color: 'white' }}>
-                                        <td colSpan="3" style={{ textAlign: 'right', paddingRight: '20px', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                        <td colSpan="3" style={{ textAlign: 'right', paddingRight: '20px', fontWeight: 'bold', fontSize: '1.1rem', padding: '8px' }}>
                                             GRAND TOTAL
                                         </td>
-                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }}>
+                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', padding: '8px' }}>
                                             {NumberFormat(grandTotals.debit)}
                                         </td>
-                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }}>
+                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', padding: '8px' }}>
                                             {NumberFormat(grandTotals.credit)}
                                         </td>
-                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: grandBalance >= 0 ? '#28a745' : '#dc3545' }}>
+                                        <td style={{ fontWeight: 'bold', fontSize: '1.1rem', color: grandBalance >= 0 ? '#28a745' : '#dc3545', padding: '8px' }}>
                                             {NumberFormat(Math.abs(grandBalance))} {grandBalance >= 0 ? 'CR' : 'DR'}
                                         </td>
                                     </tr>
@@ -1002,21 +600,21 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Close</Button>
-                {groups.length > 0 && (
+                {/* {groups.length > 0 && (
                     <Button 
                         onClick={generatePDF} 
                         variant="contained"
-                        startIcon={<PictureAsPdf />}
+                        startIcon={<PictureAsPdfIcon />}
                         disabled={loading}
                         sx={{ backgroundColor: '#d32f2f', '&:hover': { backgroundColor: '#b71c1c' } }}
                     >
                         Download PDF
                     </Button>
-                )}
+                )} */}
                 <Button 
                     onClick={fetchTransactionDetails} 
                     variant="outlined"
-                    startIcon={<Search />}
+                    startIcon={<SearchIcon />}
                     disabled={loading}
                 >
                     Refresh
@@ -1026,182 +624,84 @@ const AccountTransactionsDialog = ({ open, onClose, accountId, accountName, from
     );
 };
 
-const Outstanding = ({ loadingOn, loadingOff }) => {
-    const navigate = useNavigate();
+// Main OutstandingReport Component
+const OutstandingReport = () => {
     const location = useLocation();
-    const query = useQuery();
-    const storage = JSON.parse(localStorage.getItem("user"));
+    const navigate = useNavigate();
+    const contentRef = useRef(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const [allAccounts, setAllAccounts] = useState([]);
-    const [viewType, setViewType] = useState("debtors");
-
-    const [accountOptions, setAccountOptions] = useState([]);
-    const [groupOptions, setGroupOptions] = useState([]);
-
-    const [filters, setFilters] = useState({
-        fromDate: defaultFilters.fromDate,
-        toDate: defaultFilters.toDate,
-        fetchFrom: defaultFilters.fromDate,
-        fetchTo: defaultFilters.toDate,
-        Account_Id: "",
-        Group_Name: "",
-        filterDialog: false,
-        refresh: false,
+    // State
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [allData, setAllData] = useState({ Data1: [], Debtors: [], Creditors: [] });
+    const [viewMode, setViewMode] = useState("Debtors");
+    const [sortConfig, setSortConfig] = useState({
+        key: null,
+        order: "asc",
     });
+    const [decodedParams, setDecodedParams] = useState({
+        Fromdate: dayjs().format("YYYY-MM-DD"),
+        Todate: dayjs().format("YYYY-MM-DD"),
+    });
+    const [downloading, setDownloading] = useState(false);
+    const [companyInfo, setCompanyInfo] = useState(null);
+    const [datePickerOpen, setDatePickerOpen] = useState(false);
+    const [tempFromDate, setTempFromDate] = useState(dayjs().format("YYYY-MM-DD"));
+    const [tempToDate, setTempToDate] = useState(dayjs().format("YYYY-MM-DD"));
+    const [companyId, setCompanyId] = useState('');
 
-    // State for transaction dialog
+    // Transaction Dialog State
     const [transactionDialog, setTransactionDialog] = useState({
         open: false,
         accountId: null,
-        accountName: "",
-        fromDate: filters.fromDate,
-        toDate: filters.toDate,
+        accountName: '',
+        fromDate: '',
+        toDate: ''
     });
 
-    const [drowDownValues, setDropDownValues] = useState(defaultFilterDropDown);
+    // Pagination state
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
 
-    useEffect(() => {
-        fetchLink({ address: `receipt/filterValues` })
-            .then((data) => {
-                if (data.success) {
-                    setDropDownValues({
-                        voucherType: toArray(data?.others?.voucherType),
-                    });
-                }
-            })
-            .catch(console.error);
-
-        fetchAllAccounts();
-    }, [storage?.Company_id]);
-
-    const resetFilters = () => {
-        setFilters({
-            ...defaultFilters,
-            fetchFrom: defaultFilters.fromDate,
-            fetchTo: defaultFilters.toDate,
-            Account_Id: "",
-            Group_Name: "",
-            filterDialog: false,
-            refresh: false,
-        });
-
-        updateQueryString({
-            fromDate: defaultFilters.fromDate,
-            toDate: defaultFilters.toDate,
-            Account_Id: "",
-            Group_Name: "",
-        });
-
-        fetchAllAccounts();
+    // Format helpers
+    const formatINR = (value) => {
+        if (!value || value === 0) return "-";
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(value);
     };
 
-    const fetchAllAccounts = () => {
-        if (loadingOn) loadingOn();
-        fetchLink({
-            address: `payment/getDebtorDetails?fromDate=${filters?.fromDate}&toDate=${filters?.toDate}`,
-            method: "GET",
-        })
-            .then((data) => {
-                if (data.success) setAllAccounts(data.data || []);
-            })
-            .finally(() => loadingOff && loadingOff())
-            .catch(console.error);
+    const getTotal = (key) => {
+        return filteredRows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
     };
 
-    useEffect(() => {
-        if (Array.isArray(allAccounts)) {
-            const accOpts = allAccounts.map((a) => ({
-                value: a.Acc_Id,
-                label: a.Account_name,
-            }));
-
-            const grpOpts = [
-                ...new Map(
-                    allAccounts.map((a) => [
-                        a.Group_Name,
-                        { value: a.Group_Name, label: a.Group_Name },
-                    ])
-                ).values(),
-            ];
-
-            setAccountOptions([{ value: "", label: "ALL" }, ...accOpts]);
-            setGroupOptions([{ value: "", label: "ALL" }, ...grpOpts]);
+    // Parse OB_Amount to extract numeric value and DR/CR
+    const parseOBAmount = (obAmount) => {
+        if (!obAmount) return { value: 0, type: '' };
+        const str = String(obAmount).trim();
+        const match = str.match(/^([\d.]+)\s*(DR|CR)?$/i);
+        if (match) {
+            return {
+                value: parseFloat(match[1]) || 0,
+                type: match[2] ? match[2].toUpperCase() : ''
+            };
         }
-    }, [allAccounts]);
-
- const tableData = useMemo(() => {
-    if (!Array.isArray(allAccounts)) return [];
-
-    return allAccounts.filter((item) => {
-
-        const obAmount = parseFloat(item?.OB_Amount || 0);
-        const balAmount = parseFloat(item?.Bal_Amount || 0);
-        const debitAmt = parseFloat(item?.Debit_Amt || 0);
-        const creditAmt = parseFloat(item?.Credit_Amt || 0);
-
-
-        // if (obAmount === 0 && balAmount === 0 && debitAmt === 0 && creditAmt === 0) {
-        //     return false;
-        // }
-
-        
-        if (viewType === "debtors" && item.CR_DR !== "DR") return false;
-        if (viewType === "creditors" && item.CR_DR !== "CR") return false;
-
-
-        if (filters.Account_Id && item.Acc_Id !== filters.Account_Id) return false;
-        if (filters.Group_Name && item.Group_Name !== filters.Group_Name) return false;
-
-        return true;
-    });
-}, [allAccounts, viewType, filters.Account_Id, filters.Group_Name]);
-
-    const Total_Debit = useMemo(() => {
-        return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Dr_Amount || 0)), 0);
-    }, [tableData]);
-
-    const Total_Credit = useMemo(() => {
-        return tableData.reduce((acc, item) => Addition(acc, parseFloat(item?.Cr_Amount || 0)), 0);
-    }, [tableData]);
-
-    const Total_Outstanding = useMemo(() => {
-        return Total_Debit - Total_Credit;
-    }, [Total_Debit, Total_Credit]);
-
-    useEffect(() => {
-        const queryFilters = {
-            fromDate:
-                query.get("fromDate") && isValidDate(query.get("fromDate"))
-                    ? query.get("fromDate")
-                    : defaultFilters.fromDate,
-            toDate:
-                query.get("toDate") && isValidDate(query.get("toDate"))
-                    ? query.get("toDate")
-                    : defaultFilters.toDate,
-        };
-        setFilters((pre) => ({
-            ...pre,
-            fetchFrom: queryFilters.fromDate,
-            fetchTo: queryFilters.toDate,
-        }));
-    }, [location.search]);
-
-    const updateQueryString = (newFilters) => {
-        const params = new URLSearchParams(newFilters);
-        navigate(`?${params.toString()}`, { replace: true });
+        return { value: 0, type: '' };
     };
 
-    const closeDialog = () => {
-        setFilters((pre) => ({ ...pre, filterDialog: false }));
-    };
-
+    // Transaction Dialog handlers
     const openTransactionDialog = (accountId, accountName) => {
         setTransactionDialog({
             open: true,
-            accountId,
-            accountName,
-            fromDate: filters.fromDate,
-            toDate: filters.toDate,
+            accountId: accountId,
+            accountName: accountName,
+            fromDate: decodedParams.Fromdate,
+            toDate: decodedParams.Todate
         });
     };
 
@@ -1209,252 +709,703 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
         setTransactionDialog({
             open: false,
             accountId: null,
-            accountName: "",
-            fromDate: "",
-            toDate: "",
+            accountName: '',
+            fromDate: '',
+            toDate: ''
         });
     };
 
-    return (
-        <>
-            <FilterableTable
-                title={
-                    viewType === "debtors"
-                        ? "Debtors Outstanding"
-                        : "Creditors Outstanding"
-                }
-                ButtonArea={
-                    <div className="d-flex justify-content-between align-items-center w-100">
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <Button
-                                variant={viewType === "debtors" ? "contained" : "outlined"}
-                                onClick={() => setViewType("debtors")}
-                                size="small"
-                            >
-                                Debtors
-                            </Button>
-                            <Button
-                                variant={viewType === "creditors" ? "contained" : "outlined"}
-                                onClick={() => setViewType("creditors")}
-                                size="small"
-                            >
-                                Creditors
-                            </Button>
-                            <div className="d-flex align-items-center">
-                                <Tooltip title="Filters">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => setFilters({ ...filters, filterDialog: true })}
-                                    >
-                                        <FilterAlt />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Reset Filters">
-                                    <IconButton size="small" onClick={resetFilters}>
-                                        <FilterAltOff />
-                                    </IconButton>
-                                </Tooltip>
-                            </div>
-                        </div>
+    // Filter rows based on view mode
+    const filteredRows = useMemo(() => {
+        let dataToShow = [];
 
-                        <div className="d-flex flex-column align-items-end">
-                            <div className="d-flex align-items-center">
-                                <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Debit:</span>
-                                <strong>{NumberFormat(Total_Debit)}</strong>
-                            </div>
-                            <div className="d-flex align-items-center">
-                                <span className="text-muted me-2">Total {viewType === "debtors" ? "Debtors" : "Creditors"} Credit:</span>
-                                <strong>{NumberFormat(Total_Credit)}</strong>
-                            </div>
-                            <div className="d-flex align-items-center">
-                                <span className="text-muted me-2">Total Outstanding:</span>
-                                <strong className={Total_Outstanding >= 0 ? "text-danger" : "text-success"}>
-                                    {NumberFormat(Math.abs(Total_Outstanding))} {Total_Outstanding >= 0 ? "DR" : "CR"}
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
+        // Check if Data1 is an array or object
+        const data1Array = Array.isArray(allData.Data1) ? allData.Data1 :
+                          Object.values(allData.Data1 || {});
+
+        if (viewMode === "Debtors") {
+            // Get Debtors Acc_Id list - check if Debtors is array or object
+            const debtorsArray = Array.isArray(allData.Debtors) ? allData.Debtors :
+                                 Object.values(allData.Debtors || {});
+            const debtorIds = new Set(debtorsArray.map(d => d.Acc_Id));
+            // Filter Data1 where Acc_Id exists in Debtors
+            dataToShow = data1Array.filter(row => debtorIds.has(row.Acc_Id));
+        } else {
+            // Get Creditors Acc_Id list - check if Creditors is array or object
+            const creditorsArray = Array.isArray(allData.Creditors) ? allData.Creditors :
+                                   Object.values(allData.Creditors || {});
+            const creditorIds = new Set(creditorsArray.map(c => c.Acc_Id));
+            // Filter Data1 where Acc_Id exists in Creditors
+            dataToShow = data1Array.filter(row => creditorIds.has(row.Acc_Id));
+        }
+
+        // Apply sorting
+        if (sortConfig.key) {
+            dataToShow = [...dataToShow].sort((a, b) => {
+                let aVal = a[sortConfig.key];
+                let bVal = b[sortConfig.key];
+
+                // Handle OB_Amount specially - extract numeric value
+                if (sortConfig.key === 'OB_Amount') {
+                    aVal = parseOBAmount(aVal).value;
+                    bVal = parseOBAmount(bVal).value;
                 }
-                EnableSerialNumber
-                ExcelPrintOption={true}
-                dataArray={tableData}
-                headerFontSizePx={14}
-                bodyFontSizePx={13}
-                columns={[
-                    {
-                        ...createCol("Acc_Id", "string", "View Details"),
-                        isCustomCell: true,
-                        Cell: ({ row }) => (
-                            <Tooltip title="View Transaction Details">
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<Visibility />}
-                                    onClick={() => openTransactionDialog(row.Acc_Id, row.Retailer_Name)}
-                                    sx={{ minWidth: 'auto', padding: '2px 8px' }}
-                                >
-                                    View
-                                </Button>
-                            </Tooltip>
-                        ),
-                    },
-                    createCol("Retailer_Name", "string", "Account Name"),
-                    // createCol("Group_Name", "string", "Group"),
-                   {
-    Field_Name: "CR_DR", // Just a reference key
-    Header: "Account Type",
-    isVisible: 1,
-    isCustomCell: true,
-    Cell: ({ row }) => {
-        if (row?.CR_DR === "DR") return "Debtor";
-        if (row?.CR_DR === "CR") return "Creditor";
-        return row?.Account_Types || "-"; // Fallback (if CR_DR is missing)
+
+                if (typeof aVal === "number" && typeof bVal === "number") {
+                    return sortConfig.order === "asc" ? aVal - bVal : bVal - aVal;
+                }
+
+                const aStr = String(aVal || '').toLowerCase();
+                const bStr = String(bVal || '').toLowerCase();
+                return sortConfig.order === "asc"
+                    ? aStr.localeCompare(bStr)
+                    : bStr.localeCompare(aStr);
+            });
+        }
+
+        return dataToShow;
+    }, [allData, viewMode, sortConfig]);
+
+    // Paginated slice of filteredRows - only this gets rendered in the table
+    const paginatedRows = useMemo(() => {
+        const start = page * rowsPerPage;
+        return filteredRows.slice(start, start + rowsPerPage);
+    }, [filteredRows, page, rowsPerPage]);
+
+    // Reset to first page whenever the underlying data set changes
+    useEffect(() => {
+        setPage(0);
+    }, [viewMode, sortConfig]);
+
+    // Fetch data using direct API call
+    const fetchAllAccounts = async (fromDate, toDate) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await fetchLink({
+                address: `reports/externalAPI/debtorsCreditors?fromDate=${fromDate}&toDate=${toDate}`,
+                method: "GET",
+            });
+
+            if (response.success) {
+                const data = response.data || { Data1: [], Debtors: [], Creditors: [] };
+
+                // Handle both array and object formats
+                const normalizedData = {
+                    Data1: Array.isArray(data.Data1) ? data.Data1 : Object.values(data.Data1 || {}),
+                    Debtors: Array.isArray(data.Debtors) ? data.Debtors : Object.values(data.Debtors || {}),
+                    Creditors: Array.isArray(data.Creditors) ? data.Creditors : Object.values(data.Creditors || {})
+                };
+
+                setAllData(normalizedData);
+                return normalizedData;
+            } else {
+                throw new Error(response.message || 'Failed to fetch data');
+            }
+        } catch (err) {
+            console.error('Error fetching report:', err);
+            setError(err.message || 'Failed to load report data');
+            toast.error('Failed to fetch report data');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch data with date range
+    const fetchDataWithDateRange = async (fromDate, toDate) => {
+        try {
+            setDecodedParams({ Fromdate: fromDate, Todate: toDate });
+            await fetchAllAccounts(fromDate, toDate);
+        } catch (err) {
+            console.error('Error fetching data:', err);
+        }
+    };
+
+    // Handle date change
+    const handleDateChange = async () => {
+        if (tempFromDate && tempToDate) {
+            if (tempFromDate > tempToDate) {
+                toast.error('From date cannot be after To date');
+                return;
+            }
+            setDatePickerOpen(false);
+            
+            // Update URL with new dates
+            const params = new URLSearchParams(location.search);
+            params.set('fromDate', tempFromDate);
+            params.set('toDate', tempToDate);
+            params.set('Company_id', companyId);
+            navigate(`?${params.toString()}`);
+            
+            await fetchDataWithDateRange(tempFromDate, tempToDate);
+        }
+    };
+
+    // Fetch data on component mount and URL changes
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const fromDate = params.get('fromDate') || params.get('Fromdate') || dayjs().format("YYYY-MM-DD");
+        const toDate = params.get('toDate') || params.get('Todate') || dayjs().format("YYYY-MM-DD");
+        const compId = params.get('Company_id') || '';
+        
+        setCompanyId(compId);
+        setTempFromDate(fromDate);
+        setTempToDate(toDate);
+        
+        const fetchData = async () => {
+            try {
+                setDecodedParams({ Fromdate: fromDate, Todate: toDate });
+
+                // Fetch company info if available
+                if (compId) {
+                    try {
+                        const response = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${compId}`);
+                        const data = await response.json();
+                        if (data.success && data.data) {
+                            setCompanyInfo(data.data);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching company info:', err);
+                    }
+                }
+
+                // Fetch the report data
+                await fetchAllAccounts(fromDate, toDate);
+
+            } catch (err) {
+                console.error('Error in fetchData:', err);
+            }
+        };
+
+        fetchData();
+    }, [location.search]);
+
+    // Generate PDF - only called when user clicks download button
+    const generatePDF = async () => {
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.style.backgroundColor = 'white';
+        wrapperDiv.style.padding = '20px';
+        wrapperDiv.style.width = '1200px';
+        wrapperDiv.style.fontFamily = 'Arial, sans-serif';
+        wrapperDiv.style.color = 'black';
+
+        // Header
+        const headerDiv = document.createElement('div');
+        headerDiv.style.textAlign = 'center';
+        headerDiv.style.marginBottom = '20px';
+        headerDiv.style.padding = '10px';
+        headerDiv.style.borderBottom = '2px solid #1976d2';
+        headerDiv.innerHTML = `
+            <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #1976d2;">
+                ${viewMode} Outstanding Report
+            </h1>
+            <p style="margin: 5px 0; font-size: 12px;">
+                Period: ${decodedParams.Fromdate} to ${decodedParams.Todate}
+            </p>
+            <p style="margin: 5px 0; font-size: 12px;">
+                Total Records: ${filteredRows.length}
+            </p>
+        `;
+        wrapperDiv.appendChild(headerDiv);
+
+        // Table
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontSize = '10px';
+        table.style.fontFamily = 'Arial, sans-serif';
+
+        // Column widths
+        const colgroup = document.createElement('colgroup');
+        const colWidths = ['5%', '15%', '18%', '12%', '12%', '12%', '14%', '12%'];
+        colWidths.forEach((w) => {
+            const col = document.createElement('col');
+            col.style.width = w;
+            colgroup.appendChild(col);
+        });
+        table.appendChild(colgroup);
+
+        // Header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        headerRow.style.backgroundColor = '#1976d2';
+
+        const headers = ['#', 'Group', 'Retailer', 'Opening Balance', 'Debit', 'Credit', 'Balance', 'Actions'];
+        headers.forEach((header) => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            th.style.padding = '6px 4px';
+            th.style.textAlign = 'left';
+            th.style.fontWeight = 'bold';
+            th.style.border = '1px solid #ddd';
+            th.style.color = '#fff';
+            th.style.backgroundColor = '#1976d2';
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Body
+        const tbody = document.createElement('tbody');
+        filteredRows.forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #ddd';
+
+            const obInfo = parseOBAmount(row.OB_Amount);
+            const isDR = obInfo.type === 'DR';
+            const isCR = obInfo.type === 'CR';
+            const balanceColor = isDR ? '#d32f2f' : isCR ? '#2e7d32' : 'inherit';
+
+            const fields = [
+                (idx + 1).toString(),
+                row.Group_Name || '-',
+                row.Retailer_Name || '-',
+                formatINR(obInfo.value),
+                formatINR(row.Debit_Amt || 0),
+                formatINR(row.Credit_Amt || 0),
+                `${formatINR(row.Bal_Amount || 0)} ${isDR ? 'DR' : isCR ? 'CR' : ''}`,
+                'View'
+            ];
+
+            fields.forEach((field, fieldIdx) => {
+                const td = document.createElement('td');
+                td.textContent = field;
+                td.style.padding = '6px';
+                td.style.border = '1px solid #ddd';
+                if (fieldIdx === 6) {
+                    td.style.color = balanceColor;
+                    td.style.fontWeight = 'bold';
+                }
+                if (field === 'View') {
+                    td.style.textAlign = 'center';
+                }
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+
+        // Total row
+        const totalRow = document.createElement('tr');
+        totalRow.style.backgroundColor = '#f5f5f5';
+        totalRow.style.fontWeight = 'bold';
+
+        const totalLabel = document.createElement('td');
+        totalLabel.textContent = 'TOTAL';
+        totalLabel.colSpan = 3;
+        totalLabel.style.padding = '6px';
+        totalLabel.style.border = '1px solid #ddd';
+        totalRow.appendChild(totalLabel);
+
+        const totals = ['OB_Amount', 'Debit_Amt', 'Credit_Amt', 'Bal_Amount'];
+        totals.forEach((key) => {
+            const td = document.createElement('td');
+            td.textContent = formatINR(getTotal(key));
+            td.style.padding = '6px';
+            td.style.border = '1px solid #ddd';
+            totalRow.appendChild(td);
+        });
+
+        const emptyTd = document.createElement('td');
+        emptyTd.style.border = '1px solid #ddd';
+        totalRow.appendChild(emptyTd);
+
+        tbody.appendChild(totalRow);
+        table.appendChild(tbody);
+        wrapperDiv.appendChild(table);
+
+        document.body.appendChild(wrapperDiv);
+
+        try {
+            const canvas = await html2canvas(wrapperDiv, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 280;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            document.body.removeChild(wrapperDiv);
+
+            pdf.save(`Outstanding_${viewMode}_${decodedParams.Fromdate}_to_${decodedParams.Todate}.pdf`);
+            toast.success('PDF downloaded successfully!');
+        } catch (err) {
+            document.body.removeChild(wrapperDiv);
+            throw err;
+        }
+    };
+
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key: key,
+            order: prev.key === key && prev.order === "asc" ? "desc" : "asc",
+        }));
+    };
+
+    const downloadAsPDF = async () => {
+        if (!contentRef.current) {
+            toast.error('Content reference not found');
+            return;
+        }
+        setDownloading(true);
+        try {
+            await generatePDF();
+        } catch (err) {
+            console.error('Error generating PDF:', err);
+            toast.error('Failed to generate PDF');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    // Excel Export - always exports the FULL filteredRows dataset, not just the current page
+    const exportToExcel = () => {
+        try {
+            const exportData = filteredRows.map((row, idx) => {
+                const obInfo = parseOBAmount(row.OB_Amount);
+                return {
+                    '#': idx + 1,
+                    'Group': row.Group_Name || '-',
+                    'Retailer': row.Retailer_Name || '-',
+                    'Opening Balance': obInfo.value,
+                    'Debit': row.Debit_Amt || 0,
+                    'Credit': row.Credit_Amt || 0,
+                    'Balance': row.Bal_Amount || 0,
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, `${viewMode} Report`);
+            XLSX.writeFile(workbook, `Outstanding_${viewMode}_${dayjs().format("DDMMYYYY")}.xlsx`);
+            toast.success('Excel downloaded successfully!');
+        } catch (err) {
+            console.error('Error exporting Excel:', err);
+            toast.error('Failed to export Excel');
+        }
+    };
+
+    // Get count for display
+    const getCount = (type) => {
+        const data = type === 'Debtors' ? allData.Debtors : allData.Creditors;
+        return Array.isArray(data) ? data.length : Object.keys(data || {}).length;
+    };
+
+    // Pagination handlers
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    if (loading) {
+        return (
+            <Container sx={{ textAlign: 'center', mt: 10 }}>
+                <CircularProgress size={60} />
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                    Loading Outstanding Report...
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                    Fetching data for {viewMode}...
+                </Typography>
+            </Container>
+        );
     }
-},
-                    {
-                        ...createCol("OB_Amount", "number", "Opening Balance"),
-                        format: (value) => NumberFormat(value || 0)
-                    },
-                    {
-                        ...createCol("Dr_Amount", "number", "Debit Amount"),
-                        format: (value) => NumberFormat(value || 0)
-                    },
-                    {
-                        ...createCol("Cr_Amount", "number", "Credit Amount"),
-                        format: (value) => NumberFormat(value || 0)
-                    },
-                    createCol("CR_DR", "string", "Type"),
-                    {
-                        Field_Name: "Bal_Amount",
-                        isVisible: 1,
-                        Fied_Data: "number",
-                        isCustomCell: true,
-                        Header: "Balance Amount",
-                        Cell: ({ row }) => (
-                            <span className={row?.CR_DR === "DR" ? "text-danger" : "text-success"}>
-                                {NumberFormat(Math.abs(row?.Bal_Amount || 0))} {row?.CR_DR}
-                            </span>
-                        ),
-                    },
-                ]}
-            />
 
-            {/* Filter Dialog */}
-            <Dialog
-                open={filters.filterDialog}
-                onClose={closeDialog}
-                fullWidth
-                maxWidth="md"
-            >
-                <DialogTitle>Filters</DialogTitle>
-                <DialogContent>
-                    <table className="table table-borderless w-100">
-                        <tbody>
-                            <tr>
-                                <td style={{ verticalAlign: "middle", width: "150px" }}>
-                                    From
-                                </td>
-                                <td>
-                                    <input
-                                        type="date"
-                                        value={filters.fromDate || ""}
-                                        onChange={(e) =>
-                                            setFilters({ ...filters, fromDate: e.target.value })
-                                        }
-                                        className="cus-inpt"
-                                    />
-                                </td>
-                            </tr>
+    if (error) {
+        return (
+            <Container sx={{ mt: 4, maxWidth: 600 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+                <Button variant="contained" onClick={() => window.location.reload()}>
+                    Retry
+                </Button>
+            </Container>
+        );
+    }
 
-                            <tr>
-                                <td style={{ verticalAlign: "middle" }}>To</td>
-                                <td>
-                                    <input
-                                        type="date"
-                                        value={filters.toDate || ""}
-                                        onChange={(e) =>
-                                            setFilters({ ...filters, toDate: e.target.value })
-                                        }
-                                        className="cus-inpt"
-                                    />
-                                </td>
-                            </tr>
+    // Show message if no data
+    if (filteredRows.length === 0 && !loading) {
+        return (
+            <Container maxWidth="xl" sx={{ py: 2 }}>
+                <Paper elevation={4} sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        No {viewMode} found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        No records available for the selected period.
+                    </Typography>
+                </Paper>
+            </Container>
+        );
+    }
 
-                            <tr>
-                                <td style={{ verticalAlign: "middle" }}>Account Name</td>
-                                <td>
-                                    <Select
-                                        styles={customSelectStyles}
-                                        value={
-                                            accountOptions.find(
-                                                (a) => a.value === filters.Account_Id
-                                            ) || { value: "", label: "ALL" }
-                                        }
-                                        options={accountOptions}
-                                        onChange={(selected) =>
-                                            setFilters({
-                                                ...filters,
-                                                Account_Id: selected?.value || "",
-                                            })
-                                        }
-                                    />
-                                </td>
-                            </tr>
+    return (
+        <Container maxWidth="xl" sx={{ py: 2 }}>
+            <Paper elevation={4} sx={{ p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                        Outstanding Report
+                    </Typography>
 
-                            <tr>
-                                <td style={{ verticalAlign: "middle" }}>Group Name</td>
-                                <td>
-                                    <Select
-                                        styles={customSelectStyles}
-                                        value={
-                                            groupOptions.find(
-                                                (g) => g.value === filters.Group_Name
-                                            ) || { value: "", label: "ALL" }
-                                        }
-                                        options={groupOptions}
-                                        onChange={(selected) =>
-                                            setFilters({
-                                                ...filters,
-                                                Group_Name: selected?.value || "",
-                                            })
-                                        }
-                                    />
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </DialogContent>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <ToggleButtonGroup
+                            exclusive
+                            size="small"
+                            value={viewMode}
+                            onChange={(_, val) => val && setViewMode(val)}
+                            sx={{ height: 32 }}
+                        >
+                            <ToggleButton value="Debtors" sx={{ textTransform: 'none' }}>
+                                Debtors ({getCount('Debtors')})
+                            </ToggleButton>
+                            <ToggleButton value="Creditors" sx={{ textTransform: 'none' }}>
+                                Creditors ({getCount('Creditors')})
+                            </ToggleButton>
+                        </ToggleButtonGroup>
 
-                <DialogActions>
-                    <Button onClick={closeDialog}>Close</Button>
-                    <Button
-                        onClick={() => {
-                            const updatedFilters = {
-                                fromDate: filters?.fromDate,
-                                toDate: filters?.toDate,
-                                Account_Id: filters?.Account_Id,
-                                Group_Name: filters?.Group_Name,
-                            };
+                        <Tooltip title="Change Date Range">
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<DateRangeIcon />}
+                                onClick={() => setDatePickerOpen(true)}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                {decodedParams.Fromdate} to {decodedParams.Todate}
+                            </Button>
+                        </Tooltip>
 
-                            setFilters((prev) => ({
-                                ...prev,
-                                fetchFrom: filters.fromDate,
-                                fetchTo: filters.toDate,
-                            }));
+                        {/* <Tooltip title="Download PDF">
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<DownloadIcon />}
+                                endIcon={<PictureAsPdfIcon />}
+                                onClick={downloadAsPDF}
+                                disabled={filteredRows.length === 0 || downloading}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                {downloading ? 'Downloading...' : 'PDF'}
+                            </Button>
+                        </Tooltip> */}
 
-                            updateQueryString(updatedFilters);
-                            fetchAllAccounts();
-                            closeDialog();
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={exportToExcel}
+                            disabled={filteredRows.length === 0}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Excel
+                        </Button>
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2, gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                            label={`From: ${decodedParams.Fromdate}`}
+                            variant="outlined"
+                            size="small"
+                        />
+                        <Chip
+                            label={`To: ${decodedParams.Todate}`}
+                            variant="outlined"
+                            size="small"
+                        />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                            label={`Total Records: ${filteredRows.length}`}
+                            color="info"
+                            variant="filled"
+                            size="small"
+                        />
+                        <Chip
+                            label={`Total Balance: ${formatINR(getTotal('Bal_Amount'))}`}
+                            color="secondary"
+                            variant="filled"
+                            size="small"
+                        />
+                    </Box>
+                </Box>
+
+                <div ref={contentRef} style={{ display: 'none' }} />
+
+                <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+                    <Table
+                        size="small"
+                        sx={{
+                            tableLayout: 'fixed',
+                            width: '100%',
+                            '& .MuiTableCell-root': {
+                                fontSize: isMobile ? '0.6rem' : '0.875rem',
+                                padding: isMobile ? '4px 2px' : '6px 16px',
+                                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                wordBreak: 'break-word',
+                            },
                         }}
-                        startIcon={<Search />}
-                        variant="outlined"
                     >
-                        Search
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#1976d2' }}>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700, width: '10%' }}>#</TableCell>
+                                <TableCell
+                                    sx={{ color: '#fff', fontWeight: 700, width: '40%', cursor: 'pointer' }}
+                                    onClick={() => handleSort('Retailer_Name')}
+                                >
+                                    Retailer {sortConfig.key === 'Retailer_Name' && (sortConfig.order === 'asc' ? '↑' : '↓')}
+                                </TableCell>
+                                <TableCell
+                                    sx={{ color: '#fff', fontWeight: 700, width: '10%', cursor: 'pointer' }}
+                                    onClick={() => handleSort('OB_Amount')}
+                                >
+                                    Opening {sortConfig.key === 'OB_Amount' && (sortConfig.order === 'asc' ? '↑' : '↓')}
+                                </TableCell>
+                                <TableCell
+                                    sx={{ color: '#fff', fontWeight: 700, width: '10%', cursor: 'pointer' }}
+                                    onClick={() => handleSort('Debit_Amt')}
+                                >
+                                    Debit {sortConfig.key === 'Debit_Amt' && (sortConfig.order === 'asc' ? '↑' : '↓')}
+                                </TableCell>
+                                <TableCell
+                                    sx={{ color: '#fff', fontWeight: 700, width: '10%', cursor: 'pointer' }}
+                                    onClick={() => handleSort('Credit_Amt')}
+                                >
+                                    Credit {sortConfig.key === 'Credit_Amt' && (sortConfig.order === 'asc' ? '↑' : '↓')}
+                                </TableCell>
+                                <TableCell
+                                    sx={{ color: '#fff', fontWeight: 700, width: '10%', cursor: 'pointer' }}
+                                    onClick={() => handleSort('Bal_Amount')}
+                                >
+                                    Balance {sortConfig.key === 'Bal_Amount' && (sortConfig.order === 'asc' ? '↑' : '↓')}
+                                </TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700, width: '10%' }}>
+                                    Actions
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {paginatedRows.map((row, index) => {
+                                const obInfo = parseOBAmount(row.OB_Amount);
+                                const isDR = obInfo.type === 'DR';
+                                const isCR = obInfo.type === 'CR';
+                                const balanceColor = isDR ? '#d32f2f' : isCR ? '#2e7d32' : 'inherit';
+
+                                return (
+                                    <TableRow key={row.Acc_Id || index} hover>
+                                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                                        <TableCell>{row.Retailer_Name || '-'}</TableCell>
+                                        <TableCell>{formatINR(obInfo.value)}</TableCell>
+                                        <TableCell>{formatINR(row.Debit_Amt || 0)}</TableCell>
+                                        <TableCell>{formatINR(row.Credit_Amt || 0)}</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: balanceColor }}>
+                                            {formatINR(row.Bal_Amount || 0)}
+                                            {isDR ? ' DR' : isCR ? ' CR' : ''}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Tooltip title="View Transaction Details">
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => openTransactionDialog(row.Acc_Id, row.Retailer_Name)}
+                                                    sx={{ minWidth: 'auto', padding: '2px 8px' }}
+                                                >
+                                                    View
+                                                </Button>
+                                            </Tooltip>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {/* Total Row - always reflects the FULL filtered dataset, not just the current page */}
+                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                <TableCell colSpan={2} align="right"><strong>TOTAL</strong></TableCell>
+                                <TableCell><strong>{formatINR(getTotal('OB_Amount'))}</strong></TableCell>
+                                <TableCell><strong>{formatINR(getTotal('Debit_Amt'))}</strong></TableCell>
+                                <TableCell><strong>{formatINR(getTotal('Credit_Amt'))}</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>
+                                    <strong>{formatINR(getTotal('Bal_Amount'))}</strong>
+                                </TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                <TablePagination
+                    component="div"
+                    count={filteredRows.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                />
+            </Paper>
+
+            {/* Date Range Picker Dialog */}
+            <Dialog open={datePickerOpen} onClose={() => setDatePickerOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Typography variant="h6" fontWeight={600}>
+                        Change Date Range
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="From Date"
+                                type="date"
+                                value={tempFromDate}
+                                onChange={(e) => setTempFromDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="To Date"
+                                type="date"
+                                value={tempToDate}
+                                onChange={(e) => setTempToDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, pt: 0 }}>
+                    <Button onClick={() => setDatePickerOpen(false)} color="inherit">
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleDateChange} 
+                        variant="contained" 
+                        color="primary"
+                        disabled={!tempFromDate || !tempToDate || tempFromDate > tempToDate}
+                    >
+                        Apply
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Transaction Details Dialog */}
+            {/* Account Transactions Dialog */}
             <AccountTransactionsDialog
                 open={transactionDialog.open}
                 onClose={closeTransactionDialog}
@@ -1463,8 +1414,8 @@ const Outstanding = ({ loadingOn, loadingOff }) => {
                 fromDate={transactionDialog.fromDate}
                 toDate={transactionDialog.toDate}
             />
-        </>
+        </Container>
     );
 };
 
-export default Outstanding;
+export default OutstandingReport;

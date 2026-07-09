@@ -37,6 +37,9 @@ const groupTypeOptions = [
     { value: "PAYMENT", label: "PAYMENT" },
     { value: "CONTRA", label: "CONTRA" },
     { value: "JOURNAL", label: "JOURNAL" },
+    { value: "STOCK JOURNAL", label: "STOCK JOURNAL" },
+    {value:"DEBIT NOTE", label:"DEBIT NOTE"},
+    {value:"CREDIT NOTE", label:"CREDIT NOTE"},
 ];
 
 function AbstractGroup() {
