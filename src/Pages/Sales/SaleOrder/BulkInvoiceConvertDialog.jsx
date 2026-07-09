@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { fetchLink } from '../../../Components/fetchComponent';
 import { toast } from 'react-toastify';
+import { checkIsNumber } from '../../../Components/functions';
 
 const BulkInvoiceConvertDialog = ({
     open,
@@ -29,7 +30,7 @@ const BulkInvoiceConvertDialog = ({
     };
 
     const handleSubmit = async () => {
-        if (!formData.Voucher_Type || !formData.Do_Date || !formData.Stock_Item_Ledger_Name || !formData.backupGodownId) {
+        if (!checkIsNumber(formData.Voucher_Type) || !formData.Do_Date || !formData.Stock_Item_Ledger_Name || !checkIsNumber(formData.backupGodownId)) {
             toast.warning('Please fill all required fields');
             return;
         }
