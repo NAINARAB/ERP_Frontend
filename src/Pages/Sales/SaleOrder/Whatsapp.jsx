@@ -1345,6 +1345,14 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
 
+    const [saleOrderFromDate, setSaleOrderFromDate] = useState(() => 
+    new Date().toISOString().split('T')[0]
+);
+
+const [saleOrderToDate, setSaleOrderToDate] = useState(() => 
+    new Date().toISOString().split('T')[0]
+);
+
 const [saleInvoiceFromDate, setSaleInvoiceFromDate] = useState(() => 
     new Date().toISOString().split('T')[0]
 );
@@ -1353,7 +1361,7 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
 );
     const [saleInvoiceFilters, setSaleInvoiceFilters] = useState({});
     const [isSaleInvoiceLoading, setIsSaleInvoiceLoading] = useState(false);
-
+    const [isSaleOrderLoading, setIsSaleOrderLoading] = useState(false);
     const [tabMethodSettings, setTabMethodSettings] = useState({});
     const [settingsDialog, setSettingsDialog] = useState(false);
     const [allMethods, setAllMethods] = useState([]);
@@ -1367,21 +1375,13 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
 
     const prevSelectAll = useRef(false);
 
-    const [outstandingFromDate, setOutstandingFromDate] = useState(() => {
-        const today = new Date();
-        const oneMonthBefore = new Date(today);
-        oneMonthBefore.setMonth(today.getMonth() - 1);
-        return oneMonthBefore.toISOString().split('T')[0];
-    });
-    const [outstandingToDate, setOutstandingToDate] = useState(() => new Date().toISOString().split('T')[0]);
+   const today = new Date().toISOString().split("T")[0];
 
-    const [pendingBillsFromDate, setPendingBillsFromDate] = useState(() => {
-        const today = new Date();
-        const oneMonthBefore = new Date(today);
-        oneMonthBefore.setMonth(today.getMonth() - 1);
-        return oneMonthBefore.toISOString().split('T')[0];
-    });
-    const [pendingBillsToDate, setPendingBillsToDate] = useState(() => new Date().toISOString().split('T')[0]);
+const [outstandingFromDate, setOutstandingFromDate] = useState(today);
+const [outstandingToDate, setOutstandingToDate] = useState(today);
+
+const [pendingBillsFromDate, setPendingBillsFromDate] = useState(today);
+const [pendingBillsToDate, setPendingBillsToDate] = useState(today);
 
     const [allPendingBills, setAllPendingBills] = useState([]);
     const [filteredPendingBills, setFilteredPendingBills] = useState([]);
@@ -1397,6 +1397,9 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
     const [priceListSearch, setPriceListSearch] = useState("");
     const [whatsappCounts, setWhatsappCounts] = useState({});
     const [countsLoaded, setCountsLoaded] = useState(false);
+
+
+const [reqDate, setReqDate] = useState(today);
 
     const [filters, setFilters] = useState({
         reqDate: ISOString(),
@@ -1742,34 +1745,59 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
         }
     };
 
-    // Sale Order keeps its existing reqDate/staffStatus driven fetch
-    const fetchAllInvoices = async (refresh = false) => {
-        try {
-            if (!refresh) setIsLoading(true); else setIsRefreshing(true);
-            setViewMode("normal");
-            const soResp = await fetchLink({ address: `sales/salesOrder/lrReportWhatsapp?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`, loadingOn, loadingOff });
-            const so = toArray(soResp?.data).map((x) => processOrder(x, phoneMap));
+const fetchAllInvoices = async (refresh = false, fromDate = null, toDate = null) => {
+    try {
+        if (!refresh) setIsLoading(true); else setIsRefreshing(true);
+        setViewMode("normal");
+        
+        // Use provided dates or fallback to current date
+        const dateParam = fromDate && toDate ? 
+            `Fromdate=${fromDate}&Todate=${toDate}` : 
+            `reqDate=${filters.reqDate}`;
+        
+        const staffParam = fromDate && toDate ? 
+            `&staffStatus=${filters.staffStatus}` : 
+            `&staffStatus=${filters.staffStatus}`;
+        
+        const soResp = await fetchLink({ 
+            address: `sales/salesOrder/lrReportWhatsapp?${dateParam}${staffParam}`, 
+            loadingOn, 
+            loadingOff 
+        });
+        
+        const so = toArray(soResp?.data).map((x) => processOrder(x, phoneMap));
 
-            setAllSalesOrders(so);
+        setAllSalesOrders(so);
 
-            if (soResp?.others?.costTypes) setCostTypes(toArray(soResp.others.costTypes));
-            if (soResp?.others?.uniqeInvolvedStaffs) setUniqueInvolvedCost(toArray(soResp.others.uniqeInvolvedStaffs));
+        if (soResp?.others?.costTypes) setCostTypes(toArray(soResp.others.costTypes));
+        if (soResp?.others?.uniqeInvolvedStaffs) setUniqueInvolvedCost(toArray(soResp.others.uniqeInvolvedStaffs));
 
-            if (activeTab === "sale_order") {
-                setSalesInvoices(so);
-                setFilteredData(so);
-                await fetchWhatsappCountsFor(so, 'SalesOrder');
-            }
-
-            if (!hasInitialLoading) setHasInitialLoading(true);
-        } catch (e) {
-            console.error(e);
-            toast.error("Failed to load data");
-        } finally {
-            if (!refresh) setIsLoading(false);
-            setIsRefreshing(false);
+        if (activeTab === "sale_order") {
+            setSalesInvoices(so);
+            setFilteredData(so);
+            await fetchWhatsappCountsFor(so, 'SalesOrder');
         }
-    };
+
+        if (!hasInitialLoading) setHasInitialLoading(true);
+    } catch (e) {
+        console.error(e);
+        toast.error("Failed to load data");
+    } finally {
+        if (!refresh) setIsLoading(false);
+        setIsRefreshing(false);
+        setIsSaleOrderLoading(false);
+    }
+};
+
+useEffect(() => {
+    fetchSaleOrders();
+}, []);
+
+const fetchSaleOrders = async (reqDate) => {
+
+    setIsSaleOrderLoading(true);
+    await fetchAllInvoices(true, reqDate );
+};
 
     const fetchPendingInvoices = async () => {
         try {
@@ -1873,6 +1901,10 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
         }
     }, [outstandingFilter, allOutstanding, activeTab]);
 
+
+    useEffect(() => {
+    fetchSaleOrders();
+}, []);
     useEffect(() => {
         if (activeTab === "pending_bills") {
             const filtered = pendingBillsFilter === "ALL"
@@ -2050,7 +2082,8 @@ const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
 
           
             fetchSaleInvoices(phoneMapResult);
-
+            const today = new Date().toISOString().split('T')[0];
+            
             const [soResp, retailersResp, receiptsResp, outstandingResp, pendingResp] = await Promise.allSettled([
                 fetchLink({ address: `sales/salesOrder/lrReportWhatsapp?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`, loadingOn, loadingOff }),
                 fetchLink({ address: "masters/retailerswithlol", loadingOn, loadingOff }),
@@ -3017,7 +3050,10 @@ const buildSaleInvoiceParams = (row) => {
         } catch (e) { toast.error(`PDF download failed: ${e.message}`); }
         finally { setDownloadLoading(false); }
     };
-
+useEffect(() => {
+    fetchOutstanding();
+    fetchPendingBills();
+}, []);
     const handleMultiPrint = useReactToPrint({
         content: () => multiPrintRef.current,
         documentTitle: "Multiple Documents",
@@ -3133,6 +3169,32 @@ const buildSaleInvoiceParams = (row) => {
 
     const sharedButtonArea = (
         <>
+          {activeTab === "sale_order" && (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 1 }}>
+              
+                <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<Search />}
+                    onClick={fetchSaleOrders}
+                    disabled={isSaleOrderLoading || !saleOrderFromDate || !saleOrderToDate || (saleOrderFromDate && saleOrderToDate && new Date(saleOrderFromDate) > new Date(saleOrderToDate))}
+                >
+                    {isSaleOrderLoading ? "Loading…" : "Search"}
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        setSaleOrderFromDate(today);
+                        setSaleOrderToDate(today);
+                        setTimeout(() => fetchSaleOrders(), 100);
+                    }}
+                >
+                    Reset
+                </Button>
+            </Stack>
+        )}
             <CurrentMethodBadge />
             <Tooltip title="WhatsApp Settings for this tab">
                 <IconButton size="small" onClick={() => setSettingsDialog(true)}>
@@ -3311,13 +3373,14 @@ const buildSaleInvoiceParams = (row) => {
                 </Tabs>
             </Box>
 
-            {activeTab === "sale_order" && (
-                <>
-                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
-                    <FilterableTable title={viewMode === "pending" ? "Pending Sale Orders" : "Sale Orders"}
-                        columns={saleOrderColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
-                </>
-            )}
+          {activeTab === "sale_order" && (
+    <>
+       
+        <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+        <FilterableTable title={viewMode === "pending" ? "Pending Sale Orders" : "Sale Orders"}
+            columns={saleOrderColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
+    </>
+)}
 
             {activeTab === "sale_invoice" && (
                 <>
