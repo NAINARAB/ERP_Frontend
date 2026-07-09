@@ -34,6 +34,7 @@ import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { getModuleAccess } from "../../../Components/moduleAccess";
 import SalesInvoicePreview from "./salesInvoicePreview";
+import { useCallback } from "react";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
@@ -791,23 +792,41 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         }
     };
 
-    const salesInvoiceAccess = useMemo(() => {
-        const crudAction = isEdit ? 3 : 1;
-        return {
-            stockSeparation: getModuleAccess(baseData.moduleConfiguration, 'SI_1', crudAction),   // Blocked
-            batchUsage: getModuleAccess(baseData.moduleConfiguration, 'SI_2', crudAction),        // Warning
-            singleGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_3', crudAction),      // Warning
-            creditAmountLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_4', crudAction), // Blocked
-            creditDaysLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_5', crudAction),   // Blocked
-            voucherBasedGodown: getModuleAccess(baseData.moduleConfiguration, 'SI_6', crudAction),// Warning
-            creditBillCountLimit: getModuleAccess(baseData.moduleConfiguration, 'SI_7', crudAction) // Blocked
-        };
+    // Rule behavior mapping: true = blocks invoice, false = warning only
+    const ruleBlocksInvoice = {
+        'SI_1': true,   // Positive and Negative Stock Separation - prevent
+        'SI_2': false,  // Batch Usage - warning only
+        'SI_3': false,  // Single Godown Usage - ignore (warning only if active)
+        'SI_4': true,   // Retailer Credit Amount Limit - prevent
+        'SI_5': true,   // Retailer Credit Days Limit - prevent
+        'SI_6': false,  // Voucher Based Godown - ignore (warning only if active)
+        'SI_7': true,   // Credit Bill Count Limit - prevent
+    };
+
+    const getRuleOptions = useCallback((code) => {
+        const rule = baseData.moduleConfiguration.find(r => r.ruleCode === code);
+        if (!rule) return { exists: false, block: false };
+        const isActive = isEdit ? isEqualNumber(rule.updateOption, 1) : isEqualNumber(rule.createOption, 1);
+        if (!isActive) return { exists: false, block: false };
+        return { exists: true, block: ruleBlocksInvoice[code] ?? false };
     }, [baseData.moduleConfiguration, isEdit]);
+
+    const salesInvoiceAccess = useMemo(() => {
+        return {
+            stockSeparation: getRuleOptions('SI_1'),
+            batchUsage: getRuleOptions('SI_2'),
+            singleGodown: getRuleOptions('SI_3'),
+            creditAmountLimit: getRuleOptions('SI_4'),
+            creditDaysLimit: getRuleOptions('SI_5'),
+            voucherBasedGodown: getRuleOptions('SI_6'),
+            creditBillCountLimit: getRuleOptions('SI_7')
+        };
+    }, [getRuleOptions]);
 
     const activeInvoiceCreationStatus = useMemo(() => {
         const { outstanding, creditLimit, creditDays, recentDate, forceCreateInvoice } = retailerSalesStatus;
 
-        if (forceCreateInvoice) return true;
+        if (forceCreateInvoice) return { valid: true, warning: false };
 
         const currentTotal = taxSplitUp?.invoiceTotal || 0;
         const isOutstandingExceeded = toNumber(creditLimit) > 0
@@ -823,18 +842,27 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             isCreditDaysCrossed = today > expiryDate;
         }
 
-        if (salesInvoiceAccess.creditAmountLimit && isOutstandingExceeded) return false;
-        if (salesInvoiceAccess.creditDaysLimit && isCreditDaysCrossed) return false;
+        let isBlocked = false;
+        let isWarning = false;
 
-        return true;
+        if (salesInvoiceAccess.creditAmountLimit.exists && isOutstandingExceeded) {
+            if (salesInvoiceAccess.creditAmountLimit.block) isBlocked = true;
+            else isWarning = true;
+        }
+        if (salesInvoiceAccess.creditDaysLimit.exists && isCreditDaysCrossed) {
+            if (salesInvoiceAccess.creditDaysLimit.block) isBlocked = true;
+            else isWarning = true;
+        }
+
+        return { valid: !isBlocked, warning: isWarning };
     }, [retailerSalesStatus, salesInvoiceAccess, taxSplitUp?.invoiceTotal]);
 
     const isCreditBillLimitExceeded = useMemo(() => {
-        if (!salesInvoiceAccess.creditBillCountLimit) return false;
+        if (!salesInvoiceAccess.creditBillCountLimit.exists) return false;
         const { creditBillValidation, creditBillLimitCount } = retailerSalesStatus;
         if (toNumber(creditBillLimitCount) <= 0) return false;
         return creditBillValidation === false;
-    }, [retailerSalesStatus, salesInvoiceAccess.creditBillCountLimit]);
+    }, [retailerSalesStatus, salesInvoiceAccess.creditBillCountLimit.exists]);
 
     const selectedVoucher = useMemo(() => {
         return baseData.voucherType.find(item => isEqualNumber(item.Vocher_Type_Id, invoiceInfo.Voucher_Type)) || {};
@@ -848,55 +876,36 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     }, [selectedVoucher, taxSplitUp?.invoiceTotal]);
 
     const voucherGodownCondition = useMemo(() => {
-        if (!salesInvoiceAccess.voucherBasedGodown) return true;
+        if (!salesInvoiceAccess.voucherBasedGodown.exists) return true;
         if (isEdit) return true;
         const voucherGodown = toNumber(selectedVoucher?.GodownId);
         const productHasGodown = invoiceProducts.length > 0 && invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, voucherGodown));
         return productHasGodown;
-    }, [selectedVoucher, invoiceProducts, isEdit, salesInvoiceAccess.voucherBasedGodown]);
+    }, [selectedVoucher, invoiceProducts, isEdit, salesInvoiceAccess.voucherBasedGodown.exists]);
 
-    // Warning only — does NOT block save
     const isSingleGodownValid = useMemo(() => {
-        if (!salesInvoiceAccess.singleGodown) return true;
+        if (!salesInvoiceAccess.singleGodown.exists) return true;
         if (invoiceProducts.length <= 1) return true;
-
         const firstGodown = invoiceProducts[0]?.GoDown_Id;
         return invoiceProducts.every(item => isEqualNumber(item?.GoDown_Id, firstGodown));
-    }, [invoiceProducts, salesInvoiceAccess.singleGodown]);
+    }, [invoiceProducts, salesInvoiceAccess.singleGodown.exists]);
 
-    // Blocked — disables save button
-    const isStockValid = useMemo(() => {
-        if (!salesInvoiceAccess.stockSeparation) return true;
-        if (invoiceProducts.length === 0) return true;
+    const isStockMixed = useMemo(() => {
+        if (invoiceProducts.length === 0) return false;
+        const hasPositive = invoiceProducts.some(item => Subraction(toNumber(item?.Godown_Stock), toNumber(item?.Bill_Qty)) >= 0);
+        const hasNegative = invoiceProducts.some(item => Subraction(toNumber(item?.Godown_Stock), toNumber(item?.Bill_Qty)) < 0);
+        return hasPositive && hasNegative;
+    }, [invoiceProducts]);
 
-        const hasPositive = invoiceProducts.some(item => {
-            const stock = toNumber(item?.Godown_Stock);
-            const qty = toNumber(item?.Bill_Qty);
-            return Subraction(stock, qty) >= 0;
-        });
-
-        const hasNegative = invoiceProducts.some(item => {
-            const stock = toNumber(item?.Godown_Stock);
-            const qty = toNumber(item?.Bill_Qty);
-            return Subraction(stock, qty) < 0;
-        });
-
-        return !(hasPositive && hasNegative);
-    }, [invoiceProducts, salesInvoiceAccess.stockSeparation]);
-
-    // Warning only — does NOT block save
-    const isBatchValid = useMemo(() => {
-        if (!salesInvoiceAccess.batchUsage) return true;
-        if (invoiceProducts.length === 0) return true;
-        return invoiceProducts.every(item => isValidNumber(item?.Batch_Id) || Boolean(item?.Batch_Name));
-    }, [invoiceProducts, salesInvoiceAccess.batchUsage]);
+    const isBatchMissing = useMemo(() => {
+        if (invoiceProducts.length === 0) return false;
+        return invoiceProducts.some(item => !isValidNumber(item?.Batch_Id) && !Boolean(item?.Batch_Name));
+    }, [invoiceProducts]);
 
     const altQuantity = useMemo(() => {
-        const rule = baseData.moduleConfiguration.find(
-            rule => rule.ruleCode === 'SI_9'
-        )
+        const rule = baseData.moduleConfiguration.find(rule => rule.ruleCode === 'SI_9');
         return isEqualNumber(rule?.createOption, 1);
-    }, [baseData.moduleConfiguration])
+    }, [baseData.moduleConfiguration]);
 
     const tdStyle = 'border fa-13 vctr';
     const inputStyle = 'cus-inpt p-1';
@@ -1035,7 +1044,22 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         <Button
                             onClick={saveSalesInvoice}
                             variant="contained"
-                            disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isCreditBillLimitExceeded || isLoading}
+                            disabled={(
+                                isStockMixed &&
+                                salesInvoiceAccess.stockSeparation.block
+                            ) || (
+                                    isBatchMissing &&
+                                    salesInvoiceAccess.batchUsage.block
+                                ) || (
+                                    !isSingleGodownValid &&
+                                    salesInvoiceAccess.singleGodown.block
+                                ) || !activeInvoiceCreationStatus.valid || (
+                                    isCreditBillLimitExceeded &&
+                                    salesInvoiceAccess.creditBillCountLimit.block
+                                ) ||
+                                !voucherCrLimitValid ||
+                                isLoading
+                            }
                         >submit</Button>
                     </span>
                 </div>
@@ -1073,7 +1097,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     setShippingAddress={setRetailerShippingAddress}
                                     retailerSalesStatus={{
                                         ...retailerSalesStatus,
-                                        invoiceCreationStatus: activeInvoiceCreationStatus
+                                        invoiceCreationStatus: activeInvoiceCreationStatus.valid
                                     }}
                                     staffArray={staffArray}
                                     setStaffArray={setStaffArray}
@@ -1088,38 +1112,66 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         </div>
                     </div>
 
-                    {/* SI_1: Positive and Negative Stock Separation — BLOCKED */}
-                    {!isStockValid && salesInvoiceAccess.stockSeparation && (
+                    {/* SI_1: Positive and Negative Stock Separation */}
+                    {isStockMixed && salesInvoiceAccess.stockSeparation.exists && salesInvoiceAccess.stockSeparation.block && (
                         <div className="alert alert-danger p-2 mb-2">
                             🚫 <b>Stock Separation:</b> Cannot save invoice with mixed stock (positive and negative). Please ensure all items have either positive or negative stock.
                         </div>
                     )}
+                    {isStockMixed && salesInvoiceAccess.stockSeparation.exists && !salesInvoiceAccess.stockSeparation.block && (
+                        <div className="alert alert-warning p-2 mb-2">
+                            ⚠️ <b>Stock Separation:</b> Invoice contains mixed stock (positive and negative). It is recommended to use separate invoices.
+                        </div>
+                    )}
 
-                    {/* SI_2: Batch Usage — WARNING only */}
-                    {!isBatchValid && salesInvoiceAccess.batchUsage && (
+                    {/* SI_2: Batch Usage */}
+                    {isBatchMissing && salesInvoiceAccess.batchUsage.exists && salesInvoiceAccess.batchUsage.block && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 <b>Batch Usage:</b> One or more invoice items are missing a batch value. Cannot save invoice.
+                        </div>
+                    )}
+                    {isBatchMissing && salesInvoiceAccess.batchUsage.exists && !salesInvoiceAccess.batchUsage.block && (
                         <div className="alert alert-warning p-2 mb-2">
                             ⚠️ <b>Batch Usage:</b> One or more invoice items are missing a batch value. It is recommended to assign a batch to all items before saving.
                         </div>
                     )}
 
-                    {/* SI_3: Single Godown Usage — WARNING only */}
-                    {!isSingleGodownValid && salesInvoiceAccess.singleGodown && (
+                    {/* SI_3: Single Godown Usage */}
+                    {!isSingleGodownValid && salesInvoiceAccess.singleGodown.exists && salesInvoiceAccess.singleGodown.block && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 <b>Single Godown:</b> Invoice items are from multiple godowns. Cannot save invoice.
+                        </div>
+                    )}
+                    {!isSingleGodownValid && salesInvoiceAccess.singleGodown.exists && !salesInvoiceAccess.singleGodown.block && (
                         <div className="alert alert-warning p-2 mb-2">
                             ⚠️ <b>Single Godown:</b> Invoice items are from multiple godowns. It is recommended to use a single godown per invoice.
                         </div>
                     )}
 
-                    {/* SI_4 & SI_5: Credit Amount / Days Limit — BLOCKED */}
-                    {!activeInvoiceCreationStatus && (
+                    {/* SI_4 & SI_5: Credit Amount / Days Limit */}
+                    {!activeInvoiceCreationStatus.valid && (
                         <div className="alert alert-danger p-2 mb-2">
                             🚫 <b>Credit Limit Exceeded:</b> The retailer exceeds the credit limit or credit days limit. Cannot save invoice.
                         </div>
                     )}
+                    {activeInvoiceCreationStatus.valid && activeInvoiceCreationStatus.warning && (
+                        <div className="alert alert-warning p-2 mb-2">
+                            ⚠️ <b>Credit Limit Exceeded:</b> The retailer exceeds the credit limit or credit days limit. Please check before proceeding.
+                        </div>
+                    )}
 
-                    {/* SI_6: Voucher Based Godown — WARNING (handled via dialog below) */}
+                    {/* SI_6: Voucher Based Godown */}
 
-                    {/* SI_7: Credit Bill Count Limit — WARNING */}
-                    {isCreditBillLimitExceeded && (
+                    {/* SI_7: Credit Bill Count Limit */}
+                    {isCreditBillLimitExceeded && salesInvoiceAccess.creditBillCountLimit.exists && salesInvoiceAccess.creditBillCountLimit.block && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 <b>Credit Bill Limit:</b> This account has&nbsp;
+                            <b>{retailerSalesStatus.creditBills}</b> pending bill(s) out of a maximum of&nbsp;
+                            <b>{retailerSalesStatus.creditBillLimitCount}</b> allowed.
+                            New invoices cannot be created until existing bills are settled.
+                        </div>
+                    )}
+                    {isCreditBillLimitExceeded && salesInvoiceAccess.creditBillCountLimit.exists && !salesInvoiceAccess.creditBillCountLimit.block && (
                         <div className="alert alert-warning p-2 mb-2">
                             ⚠️ <b>Credit Bill Limit:</b> This account has&nbsp;
                             <b>{retailerSalesStatus.creditBills}</b> pending bill(s) out of a maximum of&nbsp;
@@ -1184,7 +1236,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
                                     <td className={tdStyle}>Amount</td>
-                                    {salesInvoiceAccess.batchUsage && <td className={tdStyle}>Batch</td>}
+                                    {salesInvoiceAccess.batchUsage.exists && <td className={tdStyle}>Batch</td>}
                                     <td className={tdStyle}>#</td>
                                 </tr>
                             </thead>
@@ -1330,7 +1382,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     required
                                                 />
                                             </td>
-                                            {salesInvoiceAccess.batchUsage && (
+                                            {salesInvoiceAccess.batchUsage.exists && (
                                                 <td className={tdStyle} style={{ minWidth: 200 }}>
                                                     <Select
                                                         value={{
@@ -1433,7 +1485,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     <Button
                         onClick={saveSalesInvoice}
                         variant="contained"
-                        disabled={!isStockValid || !activeInvoiceCreationStatus || !voucherCrLimitValid || isLoading}
+                        disabled={(isStockMixed && salesInvoiceAccess.stockSeparation.block) || (isBatchMissing && salesInvoiceAccess.batchUsage.block) || (!isSingleGodownValid && salesInvoiceAccess.singleGodown.block) || !activeInvoiceCreationStatus.valid || (isCreditBillLimitExceeded && salesInvoiceAccess.creditBillCountLimit.block) || !voucherCrLimitValid || isLoading}
                     >submit</Button>
                 </CardActions>
             </Card>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, IconButton, CardContent, Card } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
@@ -12,15 +12,15 @@ import {
     toNumber,
     reactSelectFilterLogic,
     isValidNumber,
-    stringCompare
+    stringCompare,
+    generateUUID
 } from "../../../Components/functions";
-import { Add, Clear, Delete, Download, Edit, Save } from "@mui/icons-material";
+import { Add, Clear, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { saleOrderGeneralInfo, saleOrderStockInfo, saleOrderStaffInfo } from "./column";
-import ImportFromPOS from "./importFromPos";
 import AddItemToSaleOrderCart from "./addItemToCart";
 import InvolvedStaffs from "./creationStaffInfo";
 import RequiredStar from "../../../Components/requiredStar";
@@ -30,8 +30,8 @@ const storage = getSessionUser().user;
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
 const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
-    const navigate = useNavigate();
     const location = useLocation();
+    const [requestId, setRequestId] = useState(generateUUID());
     const editValues = location.state;
     const [baseData, setBaseData] = useState({
         products: [],
@@ -51,7 +51,6 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
     const [addProductDialog, setAddProductDialog] = useState(false);
-    const [importPosDialog, setImportPosDialog] = useState(false);
 
     const isInclusive = isEqualNumber(orderDetails.GST_Inclusive, 1);
     const isNotTaxableBill = isEqualNumber(orderDetails.GST_Inclusive, 2);
@@ -173,25 +172,31 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
 
     const postSaleOrder = () => {
         if (isValidNumber(orderDetails?.So_Id) && stringCompare(orderDetails?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
-        
+
         if (orderProducts?.length > 0 && orderDetails?.Retailer_Id) {
-            loadingOn();
             fetchLink({
                 address: `sales/saleOrder`,
                 method: checkIsNumber(orderDetails?.So_Id) ? 'PUT' : 'POST',
+                loadingOff, loadingOn,
+                headers: {
+                    'Idempotency-Key': requestId
+                },
                 bodyData: {
                     ...orderDetails,
                     Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0)),
                     Staff_Involved_List: staffInvolved
                 }
             }).then(data => {
+                if (!isEqualNumber(data.statusCode, 409)) {
+                    setRequestId(generateUUID());
+                }
                 if (data.success) {
                     toast.success(data?.message);
                     clearValues()
                 } else {
                     toast.error(data?.message)
                 }
-            }).catch(e => console.error(e)).finally(() => loadingOff())
+            }).catch(e => console.error(e))
 
         } else {
             if (orderProducts.length <= 0) {
@@ -571,7 +576,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                             },
                             {
                                 isCustomCell: true,
-                                Cell: ({ row }) => {
+                                Cell: ({ row, index }) => {
                                     return (
                                         <>
                                             <IconButton
@@ -586,11 +591,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             <IconButton
                                                 size="small"
                                                 onClick={() => {
-                                                    if (checkIsNumber(row?.Pre_Id)) {
-                                                        setOrderProducts(pre => pre.filter(o => !isEqualNumber(o?.Pre_Id, row?.Pre_Id)))
-                                                    } else {
-                                                        setOrderProducts(pre => pre.filter(obj => !isEqualNumber(obj.Item_Id, row.Item_Id)))
-                                                    }
+                                                    setOrderProducts(pre => pre.filter((_, exInd) => !isEqualNumber(exInd, index)))
                                                 }}
                                                 color='error'
                                             >

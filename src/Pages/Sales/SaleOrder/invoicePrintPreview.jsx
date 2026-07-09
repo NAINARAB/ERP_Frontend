@@ -277,7 +277,7 @@ const InvoicePage = ({ invoice, company, pageSize = 'A5', copyIndex, totalCopies
             </div>
 
             {/* ── Page Break ── */}
-            <div style={{ pageBreakBefore: 'always' }}></div>
+            {/* <div style={{ pageBreakBefore: 'always' }}></div> */}
 
             {/* ── Tax summary table ── */}
             <div className="row mt-1">
