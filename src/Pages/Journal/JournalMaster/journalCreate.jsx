@@ -10,6 +10,7 @@ import BillRefDialog from "./addBillReference";
 import InvolvedStaffs from "./staffInvolved";
 import { useLocation } from "react-router-dom";
 import { toast } from 'react-toastify'
+import { getModuleAccess } from "../../../Components/moduleAccess";
 
 // const toNum = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 const money = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
@@ -39,6 +40,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         costCategory: [],
         costCenter: [],
         owners: [],
+        moduleConfiguration: []
     });
 
     const [refModal, setRefModal] = useState({ open: false, line: null });
@@ -48,13 +50,14 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
     useEffect(() => {
         (async () => {
             try {
-                const [accountsRes, voucherRes, branchRes, ownersRes, costCenterRes, costCategoryRes] = await Promise.all([
+                const [accountsRes, voucherRes, branchRes, ownersRes, costCenterRes, costCategoryRes, moduelRulesRes] = await Promise.all([
                     fetchLink({ address: `journal/accounts` }),
                     fetchLink({ address: `masters/voucher?module=JOURNAL` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/user/dropDown` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `authorization/moduleRules?moduleName=JOURNAL` }),
                 ]);
 
                 const accountsList = (accountsRes.success ? accountsRes.data : [])
@@ -72,7 +75,9 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 const costCenter = (costCenterRes.success ? costCenterRes.data : [])
                     .sort((a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category));
 
-                setBaseData({ accountsList, voucherType, branch, owners, costCategory, costCenter });
+                const moduleConfiguration = moduelRulesRes.success ? moduelRulesRes.data : [];
+
+                setBaseData({ accountsList, voucherType, branch, owners, costCategory, costCenter, moduleConfiguration });
             } catch (e) {
                 console.error("Base data fetch error", e);
             }
@@ -162,32 +167,24 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         [journalEntriesInfo, journalBillReference]
     );
 
-    // const saveStatus = useMemo(() => {
-    //     const hasDr = journalEntriesInfo.some(e => (
-    //         e.DrCr === "Dr"
-    //         && e.Amount > 0
-    //         && checkIsNumber(e.Acc_Id)
-    //         && !isEqualNumber(e.Acc_Id, 0)
-    //     ));
+    const oneSideMultipleRef = useMemo(() => {
+        return getModuleAccess(baseData.moduleConfiguration, 'JO_1', 1)
+    }, [baseData.moduleConfiguration]);
 
-    //     const hasCr = journalEntriesInfo.some(e => (
-    //         e.DrCr === "Cr"
-    //         && e.Amount > 0
-    //         && checkIsNumber(e.Acc_Id)
-    //         && !isEqualNumber(e.Acc_Id, 0)
-    //     ));
+    const bothSideSingleRefrence = useMemo(() => {
+        return getModuleAccess(baseData.moduleConfiguration, 'JO_2', 1)
+    }, [baseData.moduleConfiguration]);
 
-    //     const journalEntriesInfoBalance = journalEntriesInfo.filter(
-    //         bill => bill?.Entries?.length > 0
-    //     ).every(entry => isEqualNumber(
-    //         entry?.Entries?.reduce(
-    //             (acc, bill) => Addition(bill.Amount, acc), 0
-    //         ), 
-    //         entry.Amount
-    //     ))
-
-    //     return hasDr && hasCr && isEqualNumber(sumOfDebit, sumOfCredit) && journalEntriesInfoBalance;
-    // }, [journalEntriesInfo, sumOfDebit, sumOfCredit, journalBillReference]);
+    const referenceCount = useMemo(() => {
+        return journalEntriesInfo.reduce((acc, ref) => {
+            if (ref.DrCr === 'Dr') {
+                acc.totalDebit = acc.totalDebit + 1
+            } else {
+                acc.totalCredit = acc.totalCredit + 1
+            }
+            return acc
+        }, { totalDebit: 0, totalCredit: 0 });
+    }, [journalEntriesInfo])
 
     const saveStatus = useMemo(() => {
         const num = (v) => (v == null || v === "" ? 0 : Number(v) || 0);
@@ -203,7 +200,15 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
             (e) => e.DrCr === "Cr" && num(e.Amount) > 0 && checkIsNumber(e.Acc_Id) && !isEqualNumber(e.Acc_Id, 0)
         );
 
-        return hasDr && hasCr && nearlyEqual(sumOfDebit, sumOfCredit);
+        const oneSideMultiple = isEqualNumber(oneSideMultipleRef, 1) && (
+            referenceCount.totalDebit > 1 && referenceCount.totalCredit > 1
+        )
+
+        const bothSideSingle = isEqualNumber(bothSideSingleRefrence, 1) && (
+            referenceCount.totalDebit > 1 || referenceCount.totalCredit > 1
+        )
+
+        return hasDr && hasCr && nearlyEqual(sumOfDebit, sumOfCredit) && !oneSideMultiple && !bothSideSingle;
 
         // const refsByLine = journalBillReference.reduce((m, r) => {
         //     if (!r?.LineId) return m;
@@ -216,7 +221,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         //     .every((e) => nearlyEqual(refsByLine[e.LineId], e.Amount));
 
         // return allRefdLinesBalanced;
-    }, [journalGeneralInfo, journalEntriesInfo, journalBillReference, sumOfDebit, sumOfCredit]);
+    }, [journalGeneralInfo, journalEntriesInfo, journalBillReference, sumOfDebit, sumOfCredit, oneSideMultipleRef, referenceCount]);
 
     const resetValues = () => {
         setJournalGeneralInfo({ ...journalGeneralInfoIV, JournalDate: ISOString() });
@@ -316,6 +321,24 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 </div>
 
                 <div className="my-2" />
+
+                {isEqualNumber(oneSideMultipleRef, 1) && (
+                    referenceCount.totalDebit > 1 && referenceCount.totalCredit > 1
+                ) && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 You can only add multiple Entries in any one side, either debit or credit side.
+                        </div>
+                    )
+                }
+
+                {isEqualNumber(bothSideSingleRefrence, 1) && (
+                    referenceCount.totalDebit > 1 || referenceCount.totalCredit > 1
+                ) && (
+                        <div className="alert alert-danger p-2 mb-2">
+                            🚫 You can only add one Entrie in debit and one Entrie in credit side.
+                        </div>
+                    )
+                }
 
                 <JournalEntriesPanel
                     {...baseData}

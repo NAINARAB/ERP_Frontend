@@ -1,7 +1,7 @@
 import { Button, IconButton } from "@mui/material";
 import { useState, useEffect } from "react";
 import { salesInvoiceStaffInfo } from "./variable";
-import { checkIsNumber, isEqualNumber, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
@@ -20,6 +20,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             .map(st => ({
                 value: st.Cost_Center_Id,
                 label: st.Allias_Name,
+                costCenterName: st.Cost_Center_Name,
                 userType: st.User_Type 
             }));
     };
@@ -39,6 +40,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             .map(st => ({
                 value: st.Cost_Center_Id,
                 label: st.Allias_Name,
+                costCenterName: st.Cost_Center_Name,
                 userType: st.User_Type
             }));
     };
@@ -147,7 +149,14 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                                     styles={customSelectStyles}
                                     isSearchable={true}
                                     placeholder="Select Staff"
-                                    filterOption={reactSelectFilterLogic}
+                                    filterOption={(option, inputValue) => {
+                                        const normalize = (str) => String(str).replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+                                        const normalizedInput = normalize(inputValue);
+                                        if (!normalizedInput) return true;
+                                        const normalizedLabel = normalize(option.label);
+                                        const normalizedName = normalize(option.data?.costCenterName || '');
+                                        return normalizedLabel.includes(normalizedInput) || normalizedName.includes(normalizedInput);
+                                    }}
                                     noOptionsMessage={() => {
                                         if (checkIsNumber(row?.Emp_Type_Id)) {
                                             return "No staff available for this category";

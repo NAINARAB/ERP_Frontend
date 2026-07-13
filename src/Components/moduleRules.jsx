@@ -2,14 +2,26 @@ import { fetchLink } from './fetchComponent';
 import { useState, useEffect } from 'react';
 import { allERPModules } from './tablecolumn';
 import FilterableTable, { createCol } from './filterableTable2';
-import { Button } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem } from '@mui/material';
 
 const ModuleRuleComponent = ({ loadingOn, loadingOff }) => {
     const [moduleName, setModuleName] = useState(allERPModules[0]);
     const [rules, setRules] = useState([]);
     const [modifiedRules, setModifiedRules] = useState({});
 
-    useEffect(() => {
+    const [openDialog, setOpenDialog] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [formData, setFormData] = useState({
+        id: '',
+        moduleCode: '',
+        moduleName: '',
+        ruleNumber: '',
+        ruleCode: '',
+        ruleName: '',
+        discription: ''
+    });
+
+    const fetchRules = () => {
         if (moduleName) {
             setModifiedRules({});
             fetchLink({
@@ -21,6 +33,10 @@ const ModuleRuleComponent = ({ loadingOn, loadingOff }) => {
                 }
             }).catch(console.error)
         }
+    };
+
+    useEffect(() => {
+        fetchRules();
     }, [moduleName]);
 
     const handleCheckboxChange = (ruleId, field, checked) => {
@@ -43,7 +59,7 @@ const ModuleRuleComponent = ({ loadingOn, loadingOff }) => {
         });
     };
 
-    const handleSave = () => {
+    const handleSaveAccess = () => {
         const rulesToSave = Object.values(modifiedRules);
         if (rulesToSave.length === 0) return;
 
@@ -59,73 +75,92 @@ const ModuleRuleComponent = ({ loadingOn, loadingOff }) => {
         }).catch(console.error);
     };
 
+    const handleOpenDialog = (rule = null) => {
+        if (rule) {
+            setIsEditMode(true);
+            setFormData({
+                id: rule.id || rule.ruleId,
+                moduleCode: rule.moduleCode || '',
+                moduleName: rule.moduleName || '',
+                ruleNumber: rule.ruleNumber || '',
+                ruleCode: rule.ruleCode || '',
+                ruleName: rule.ruleName || '',
+                discription: rule.discription || ''
+            });
+            setOpenDialog(true);
+        } else {
+            setIsEditMode(false);
+            setFormData({
+                id: '',
+                moduleCode: moduleName.moduleCode,
+                moduleName: moduleName.name,
+                ruleNumber: '',
+                ruleCode: '',
+                ruleName: '',
+                discription: ''
+            });
+            setOpenDialog(true);
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+    };
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        let updatedData = { ...formData, [name]: value };
+
+        if (name === 'moduleName') {
+            const selectedModule = allERPModules.find(m => m.name === value);
+            if (selectedModule) {
+                updatedData.moduleCode = selectedModule.moduleCode;
+                // ruleCode is generated entirely by the backend now
+            }
+        }
+
+        setFormData(updatedData);
+    };
+
+    const handleSaveRule = () => {
+        const localData = JSON.parse(localStorage.getItem('user'));
+        const createdBy = localData?.UserId || 1;
+
+        const bodyData = { ...formData };
+        if (!isEditMode) {
+            bodyData.createdBy = createdBy;
+        }
+
+        fetchLink({
+            address: `authorization/moduleRules`,
+            method: isEditMode ? 'PUT' : 'POST',
+            bodyData,
+            loadingOn, loadingOff
+        }).then(response => {
+            if (response.success) {
+                handleCloseDialog();
+                fetchRules();
+            }
+        }).catch(console.error);
+    };
+
     return (
         <div className="p-4">
-            {/* <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="py-3 px-4 border-b text-left text-gray-700 font-semibold">Rule Name</th>
-                            <th className="py-3 px-4 border-b text-left text-gray-700 font-semibold">Description</th>
-                            <th className="py-3 px-4 border-b text-center text-gray-700 font-semibold">Get</th>
-                            <th className="py-3 px-4 border-b text-center text-gray-700 font-semibold">Create</th>
-                            <th className="py-3 px-4 border-b text-center text-gray-700 font-semibold">Update</th>
-                            <th className="py-3 px-4 border-b text-center text-gray-700 font-semibold">Delete</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rules?.length > 0 ? (
-                            rules.map((rule) => (
-                                <tr key={rule.ruleId} className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-2 px-4 border-b text-gray-800">{rule.ruleName}</td>
-                                    <td className="py-2 px-4 border-b text-gray-600 text-sm">{rule.discription}</td>
-                                    <td className="py-2 px-4 border-b text-center">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 cursor-pointer accent-blue-600"
-                                            checked={rule.getOption === 1}
-                                            onChange={(e) => handleCheckboxChange(rule.ruleId, 'getOption', e.target.checked)}
-                                        />
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-center">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 cursor-pointer accent-blue-600"
-                                            checked={rule.createOption === 1}
-                                            onChange={(e) => handleCheckboxChange(rule.ruleId, 'createOption', e.target.checked)}
-                                        />
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-center">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 cursor-pointer accent-blue-600"
-                                            checked={rule.updateOption === 1}
-                                            onChange={(e) => handleCheckboxChange(rule.ruleId, 'updateOption', e.target.checked)}
-                                        />
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-center">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 cursor-pointer accent-blue-600"
-                                            checked={rule.deleteOption === 1}
-                                            onChange={(e) => handleCheckboxChange(rule.ruleId, 'deleteOption', e.target.checked)}
-                                        />
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="6" className="py-4 text-center text-gray-500">No rules found for this module</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div> */}
-
             <FilterableTable
                 title='Module Configuration'
                 dataArray={rules}
                 columns={[
+                    {
+                        isVisible: 1,
+                        isCustomCell: true,
+                        align: 'center',
+                        headerAlign: 'center',
+                        ColumnHeader: 'Action',
+                        Cell: ({ row }) => (
+                            <Button size="small" onClick={() => handleOpenDialog(row)}>Edit</Button>
+                        )
+                    },
+                    createCol('ruleCode', 'string', 'Rule Code'),
                     createCol('ruleName', 'string', 'Name'),
                     createCol('discription', 'string', 'Description'),
                     {
@@ -223,15 +258,93 @@ const ModuleRuleComponent = ({ loadingOn, loadingOff }) => {
                         </select>
 
                         <Button
-                            onClick={handleSave}
+                            onClick={() => handleOpenDialog()}
+                            className='w-auto'
+                            variant="outlined"
+                        >
+                            + Create Rule
+                        </Button>
+                        <Button
+                            onClick={handleSaveAccess}
                             disabled={Object.keys(modifiedRules).length === 0}
                             className='w-auto'
+                            variant="contained"
                         >
-                            Save Changes
+                            Save Access
                         </Button>
                     </>
                 }
             />
+
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>{isEditMode ? 'Edit Rule' : 'Create New Rule'}</DialogTitle>
+                <DialogContent dividers className="flex flex-col gap-4">
+                    <TextField
+                        select
+                        label="Module Name"
+                        name="moduleName"
+                        value={formData.moduleName}
+                        onChange={handleFormChange}
+                        fullWidth
+                        size="small"
+                        margin="dense"
+                        disabled={isEditMode}
+                    >
+                        {allERPModules.map(m => (
+                            <MenuItem key={m.name} value={m.name}>{m.alias} ({m.name})</MenuItem>
+                        ))}
+                    </TextField>
+                    {isEditMode && (
+                        <>
+                            <TextField
+                                label="Rule Number"
+                                name="ruleNumber"
+                                type="number"
+                                value={formData.ruleNumber}
+                                onChange={handleFormChange}
+                                fullWidth
+                                size="small"
+                                margin="dense"
+                                disabled
+                            />
+                            <TextField
+                                label="Rule Code"
+                                name="ruleCode"
+                                value={formData.ruleCode}
+                                onChange={handleFormChange}
+                                fullWidth
+                                size="small"
+                                margin="dense"
+                                disabled
+                            />
+                        </>
+                    )}
+                    <TextField
+                        label="Rule Name"
+                        name="ruleName"
+                        value={formData.ruleName}
+                        onChange={handleFormChange}
+                        fullWidth
+                        size="small"
+                        margin="dense"
+                    />
+                    <TextField
+                        label="Description"
+                        name="discription"
+                        value={formData.discription}
+                        onChange={handleFormChange}
+                        fullWidth
+                        size="small"
+                        margin="dense"
+                        multiline
+                        rows={3}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleSaveRule} variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }

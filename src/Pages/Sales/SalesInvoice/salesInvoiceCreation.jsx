@@ -892,8 +892,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
     const isStockMixed = useMemo(() => {
         if (invoiceProducts.length === 0) return false;
-        const hasPositive = invoiceProducts.some(item => Subraction(toNumber(item?.Godown_Stock), toNumber(item?.Bill_Qty)) >= 0);
-        const hasNegative = invoiceProducts.some(item => Subraction(toNumber(item?.Godown_Stock), toNumber(item?.Bill_Qty)) < 0);
+        const hasPositive = invoiceProducts.some(item => toNumber(item?.Godown_Stock) >= 0);
+        const hasNegative = invoiceProducts.some(item => toNumber(item?.Godown_Stock) < 0);
         return hasPositive && hasNegative;
     }, [invoiceProducts]);
 

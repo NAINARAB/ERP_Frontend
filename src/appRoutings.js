@@ -187,6 +187,7 @@ const TripSheetCreation = lazy(() => import('./Pages/Inventry/TripMaster/TripShe
 const StockInwards = lazy(() => import('./Pages/Inventry/stockInward'));
 const StockMangement = lazy(() => import('./Pages/Inventry/Processing/listProcessing'));
 const StockManagementCreate = lazy(() => import('./Pages/Inventry/Processing/AddProcessing'));
+const ProcessingListLRReport = lazy(() => import('./Pages/Inventry/Processing/ProcessingLrReport/listProcessing'));
 const ArrivalMaster = lazy(() => import('./Pages/Inventry/TripMaster/arrivalMaster'));
 const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAssign'));
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
@@ -373,6 +374,7 @@ const RoutingArray = [
     { component: <StockJournalEntry />, path: '/erp/inventory/stockJournal/create' },
     { component: <StockMangement />, path: '/erp/inventory/stockProcessing' },
     { component: <StockManagementCreate />, path: '/erp/inventory/stockProcessing/create' },
+    { component: <ProcessingListLRReport />, path: '/erp/inventory/processingLRReport' },
     { component: <StockReport />, path: '/erp/inventory/stockReport' },
     { component: <TallyStockJournalList />, path: '/erp/inventory/tallyStockJournal' },
     { component: <TripSheets />, path: '/erp/inventory/tripSheet' },
