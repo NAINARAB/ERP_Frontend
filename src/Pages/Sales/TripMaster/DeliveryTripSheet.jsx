@@ -1030,7 +1030,64 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     const printRef = useRef(null);
     const [companyInfo, setCompanyInfo] = useState({});
     const itemPreviewPrintRef = useRef(null);
+    const [routeDialog, setRouteDialog] = useState(false);
+    const [routeData, setRouteData] = useState({});
 
+
+const openRouteDialog = (row) => {
+    setSelectedRow(row);
+
+    const initialRoutes = {};
+    (row?.Product_Array || []).forEach((group, idx) => {
+        const firstProduct = group.Products_List?.[0] || {};
+        initialRoutes[idx] = group.Route || firstProduct.Route || '';
+    });
+
+    setRouteData(initialRoutes);
+    setRouteDialog(true);
+};
+
+const closeRouteDialog = () => {
+    setRouteDialog(false);
+    setRouteData({});
+};
+
+const handleRouteChange = (idx, value) => {
+    setRouteData(prev => ({ ...prev, [idx]: value }));
+};
+
+const handleSaveRoute = () => {
+   
+    const payload = (selectedRow?.Product_Array || [])
+        .map((group, idx) => {
+            const firstProduct = group.Products_List?.[0] || {};
+            return {
+                Trip_Id: selectedRow?.Trip_Id,
+                Retailer_Id: firstProduct.Retailer_Id || group.Retailer_Id,
+                Route: routeData[idx]
+            };
+        })
+        .filter(item => item.Route !== '' && item.Route !== undefined && item.Route !== null);
+
+    if (payload.length === 0) {
+        toast.error("Enter at least one route number");
+        return;
+    }
+
+    fetchLink({
+        address: `delivery/tripRoute`,  
+        method: "PUT",
+        bodyData: { routes: payload },
+    }).then((data) => {
+        if (data.success) {
+            toast.success("Route updated successfully!");
+            closeRouteDialog();
+            setReload(!reload);
+        } else {
+            toast.error("Failed to update route");
+        }
+    }).catch(e => console.error(e));
+};
 
 
 
@@ -1823,6 +1880,12 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                     //     }),
 
                                     // },
+
+                                    {
+                                        name: 'Set Route',
+                                        icon: <Edit className="fa-14" />,
+                                        onclick: () => openRouteDialog(row)
+                                    },
                                     {
                                         name: 'Edit',
                                         icon: <Edit className="fa-14" />,
@@ -2095,6 +2158,75 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                     >Search</Button>
                 </DialogActions>
             </Dialog>
+
+
+            <Dialog
+    open={routeDialog}
+    onClose={closeRouteDialog}
+    maxWidth="md"
+    fullWidth
+>
+    <DialogTitle>Set Route</DialogTitle>
+    <DialogContent>
+        {selectedRow?.Product_Array && (
+            <table className="table table-bordered">
+                <thead>
+                    <tr>
+                        <th className="fa-12 bg-light">Retailer Name</th>
+                        <th className="fa-12 bg-light">Do_Date</th>
+                        <th className="fa-12 bg-light">Delivery Person</th>
+                        <th className="fa-12 bg-light text-center">Route No</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {selectedRow.Product_Array.length > 0 ? (
+                        selectedRow.Product_Array.map((group, idx) => {
+                            const formatDate = (d) => (d ? d.split("T")[0] : "");
+                            const firstProduct = group.Products_List?.[0] || {};
+
+                            return (
+                                <tr key={idx}>
+                                    <td className="fw-bold">
+                                        {firstProduct.Retailer_Name || "N/A"}
+                                    </td>
+                                    <td className="text-end">
+                                        {formatDate(group.Product_Do_Date)}
+                                    </td>
+                                    <td className="text-end">
+                                        {group.Retailer_Name || firstProduct.Delivery_Person || "N/A"}
+                                    </td>
+                                    <td className="text-center">
+                                        <input
+                                            type="number"
+                                            className="cus-inpt"
+                                            style={{ width: '100px' }}
+                                            value={routeData[idx] ?? ''}
+                                            onChange={(e) => handleRouteChange(idx, e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    ) : (
+                        <tr>
+                            <td colSpan={4} className="text-center">
+                                No data available
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={closeRouteDialog} variant="outlined">
+            Close
+        </Button>
+        <Button onClick={handleSaveRoute} variant="contained">
+            Save
+        </Button>
+    </DialogActions>
+</Dialog>
 
             <Dialog
                 open={filters.shortPreviewDialog}
