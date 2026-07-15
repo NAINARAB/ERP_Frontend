@@ -2727,7 +2727,7 @@ const buildSaleInvoiceParams = (row) => {
 
     const applyFilters = useCallback(() => {
 
-        if (activeTab === "sale_invoice") return;
+        // if (activeTab === "sale_invoice") return;
 
         let src;
         if (activeTab === "price_list") src = priceListRetailers;
@@ -2735,6 +2735,7 @@ const buildSaleInvoiceParams = (row) => {
         else if (activeTab === "outstanding") src = allOutstanding;
         else if (activeTab === "pending_bills") src = allPendingBills;
         else if (activeTab === "sale_order") src = allSalesOrders;
+        else if (activeTab === "sale_invoice") src = allSalesInvoices;
         else src = salesInvoices;
 
         let filtered = [...src];
@@ -2896,7 +2897,7 @@ const buildSaleInvoiceParams = (row) => {
         } else {
             setFilteredData(filtered);
         }
-    }, [columnFilters, salesInvoices, priceListRetailers, allReceipts, allOutstanding, allPendingBills, allSalesOrders, filterColumns, activeTab]);
+    }, [columnFilters, salesInvoices, priceListRetailers, allReceipts, allOutstanding, allPendingBills,allSalesInvoices, allSalesOrders, filterColumns, activeTab]);
 
     useEffect(() => { applyFilters(); }, [applyFilters]);
 
@@ -3384,7 +3385,7 @@ useEffect(() => {
 
             {activeTab === "sale_invoice" && (
                 <>
-                    <SaleInvoiceLedgerFilterBar
+                    {/* <SaleInvoiceLedgerFilterBar
                         dataSource={allSalesInvoices}
                         columnFilters={saleInvoiceFilters}
                         setColumnFilters={setSaleInvoiceFilters}
@@ -3394,7 +3395,8 @@ useEffect(() => {
                         setToDate={setSaleInvoiceToDate}
                         onSearch={() => fetchSaleInvoices()}
                         isLoading={isSaleInvoiceLoading}
-                    />
+                    /> */}
+                     <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
                     <FilterableTable title="Sale Invoices"
                         columns={saleInvoiceColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
                 </>
