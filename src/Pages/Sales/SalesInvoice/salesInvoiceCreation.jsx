@@ -1222,8 +1222,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                 <tr>
                                     <td className={tdStyle}>SNo</td>
                                     <td className={tdStyle}>Item</td>
-                                    {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Rate</td>}
-                                    <td className={tdStyle}>Rate</td>
                                     {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Qty</td>}
                                     <td className={tdStyle}>Stock</td>
                                     {altQuantity && (
@@ -1233,6 +1231,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                         </>
                                     )}
                                     <td className={tdStyle}>Bill Qty</td>
+                                    {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>Order Rate</td>}
+                                    <td className={tdStyle}>Rate</td>
                                     {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
                                     <td className={tdStyle}>Amount</td>
@@ -1292,18 +1292,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                 />
                                             </td>
                                             {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>
-                                                {toArray(saleOrderDetails.products).find(s => isEqualNumber(s.Item_Id, row.Item_Id))?.Item_Rate}
-                                            </td>}
-                                            <td className={tdStyle}>
-                                                <input
-                                                    value={row?.Item_Rate || ''}
-                                                    type="number"
-                                                    className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
-                                                    required
-                                                />
-                                            </td>
-                                            {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>
                                                 {toArray(saleOrderDetails.products).find(s => isEqualNumber(s.Item_Id, row.Item_Id))?.Bill_Qty}
                                             </td>}
                                             <td className={tdStyle}>
@@ -1343,6 +1331,18 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Bill_Qty', e.target.value)}
+                                                    required
+                                                />
+                                            </td>
+                                            {isValidNumber(invoiceInfo.So_No) && <td className={tdStyle}>
+                                                {toArray(saleOrderDetails.products).find(s => isEqualNumber(s.Item_Id, row.Item_Id))?.Item_Rate}
+                                            </td>}
+                                            <td className={tdStyle}>
+                                                <input
+                                                    value={row?.Item_Rate || ''}
+                                                    type="number"
+                                                    className={inputStyle}
+                                                    onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
                                                     required
                                                 />
                                             </td>

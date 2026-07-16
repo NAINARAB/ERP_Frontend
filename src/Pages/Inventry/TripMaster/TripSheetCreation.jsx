@@ -4,7 +4,7 @@ import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, Dialog
 import {
     Addition, checkIsNumber, combineDateTime, isEqualNumber,
     isValidDate, isValidObject, ISOString,
-    stringCompare, LocalDate, formatDateForTimeLocal,
+    stringCompare, LocalDate, formatDateTimeLocal,
     toArray,
     toNumber,
     isValidNumber
@@ -193,7 +193,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                         if (key === 'Trip_Date') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
                         if (
                             key === 'StartTime' || key === 'EndTime'
-                        ) return [key, stateDetails[key] ? formatDateForTimeLocal(stateDetails[key]) : value]
+                        ) return [key, stateDetails[key] ? formatDateTimeLocal(stateDetails[key]) : value]
                         return [key, stateDetails[key] ?? value]
                     })
                 )
@@ -233,12 +233,6 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 method: checkIsNumber(tripSheetInfo?.Trip_Id) ? 'PUT' : 'POST',
                 bodyData: {
                     ...tripSheetInfo,
-                    StartTime: (
-                        tripSheetInfo.StartTime && tripSheetInfo.Trip_Date
-                    ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.StartTime) : '',
-                    EndTime: (
-                        tripSheetInfo.EndTime && tripSheetInfo.Trip_Date
-                    ) ? combineDateTime(tripSheetInfo.Trip_Date, tripSheetInfo.EndTime) : '',
                     Product_Array: selectedItems,
                     EmployeesInvolved: staffInvolvedList.filter(staff => checkIsNumber(staff.Involved_Emp_Id) && checkIsNumber(staff.Cost_Center_Type_Id))
                 }

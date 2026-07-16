@@ -1,4 +1,4 @@
-import { Addition, checkIsNumber, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
+import { Addition, checkIsNumber, formatDateTimeLocal, isEqualNumber, onlynum, reactSelectFilterLogic, stringCompare, Subraction } from "../../../../Components/functions";
 import { customSelectStyles } from "../../../../Components/tablecolumn";
 import Select from 'react-select';
 import RequiredStar from "../../../../Components/requiredStar";
@@ -232,19 +232,19 @@ const TripSheetGeneralInfo = ({
                                 <tr>
                                     <td>
                                         <input
-                                            type='time'
+                                            type='datetime-local'
                                             onChange={e => {
                                                 setTripSheetInfo(pre => ({ ...pre, StartTime: e.target.value }))
                                             }}
-                                            value={tripSheetInfo?.StartTime}
+                                            value={formatDateTimeLocal(tripSheetInfo?.StartTime)}
                                             className="cus-inpt p-2"
                                         />
                                     </td>
                                     <td>
                                         <input
-                                            type='time'
+                                            type='datetime-local'
                                             onChange={e => setTripSheetInfo(pre => ({ ...pre, EndTime: e.target.value }))}
-                                            value={tripSheetInfo?.EndTime}
+                                            value={formatDateTimeLocal(tripSheetInfo?.EndTime)}
                                             className="cus-inpt p-2"
                                         />
                                     </td>

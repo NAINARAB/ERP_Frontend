@@ -218,7 +218,7 @@ const PurchaseOrderDataEntry = ({ loadingOn, loadingOff, AddRights, EditRights, 
                 const discount = item?.OrderDetails?.Discount || 0
                 const freight = item.freightCharges || 0;
 
-                const deliveries = (po.DeliveryDetails || []).filter(d => d.ItemId === item.ItemId);
+                const deliveries = (po.DeliveryDetails || []).filter(d => Number(d.ItemId) === Number(item.ItemId));
                 
                 let arrivedQuantity = 0;
                 deliveries.forEach(d => {
