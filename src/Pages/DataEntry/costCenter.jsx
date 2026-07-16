@@ -515,7 +515,6 @@
 // export default CostCenter;
 
 
-
 import { useEffect, useState } from "react";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable from '../../Components/filterableTable2'
@@ -853,6 +852,22 @@ const CostCenter = ({ loadingOn, loadingOff }) => {
                             {
                                 isVisible: 1,
                                 Field_Name: 'UserGet',
+                                Fied_Data: 'string'
+                            },
+                            {
+                                isVisible: 1,
+                                ColumnHeader: 'ERP EMPLOYEE',
+                                isCustomCell: true,
+                                align: 'center',
+                                Cell: ({ row }) => (
+                                    <span className={`cus-badge text-white ${row?.EmpGet !== 'Not found' ? 'bg-success' : 'bg-danger'}`}>
+                                        {row?.EmpGet !== 'Not found' ? 'true' : 'false'}
+                                    </span>
+                                )
+                            },
+                            {
+                                isVisible: 1,
+                                Field_Name: 'EmpGet',
                                 Fied_Data: 'string'
                             },
                             {
