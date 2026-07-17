@@ -2646,83 +2646,116 @@ const handleSaveRoute = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+<Dialog
+    open={filters?.ItemPreviewDialog}
+    onClose={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))}
+    maxWidth="md"
+    fullWidth
+>
+    <DialogTitle>Products Summary</DialogTitle>
+    <DialogContent>
+        {/* Only render printable content when dialog is open */}
+        {filters?.ItemPreviewDialog && (
+            <div ref={itemPreviewPrintRef}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd' }}>
+                    <thead>
+                        <tr style={{ backgroundColor: '#f5f5f5' }}>
+                            <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Product Name</th>
+                            <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>Total Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {(() => {
+                            // Step 1: group products by brand, then by item within brand
+                            const brandMap = new Map();
 
-            <Dialog
-                open={filters?.ItemPreviewDialog}
-                onClose={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>Products Summary</DialogTitle>
-                <DialogContent>
-                    {/* Only render printable content when dialog is open */}
-                    {filters?.ItemPreviewDialog && (
-                        <div ref={itemPreviewPrintRef}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd' }}>
-                                <thead>
-                                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Product Name</th>
-                                        <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>Total Quantity</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(() => {
-                                        const productMap = new Map();
+                            selectedRow?.Product_Array?.forEach(delivery => {
+                                delivery.Products_List?.forEach(product => {
+                                    const brandKey = product.POS_Brand_Name || 'Unbranded';
+                                    const itemKey = product.Item_Id;
 
-                                        selectedRow?.Product_Array?.forEach(delivery => {
-                                            delivery.Products_List?.forEach(product => {
-                                                const key = product.Item_Id;
-                                                if (productMap.has(key)) {
-                                                    const existing = productMap.get(key);
-                                                    productMap.set(key, {
-                                                        ...existing,
-                                                        totalQty: existing.totalQty + (product.Act_Qty || product.Bill_Qty || 0)
-                                                    });
-                                                } else {
-                                                    productMap.set(key, {
-                                                        productName: product.Product_Name,
-                                                        totalQty: product.Act_Qty || product.Bill_Qty || 0,
-                                                        unit: product.Unit_Name,
-                                                        itemId: product.Item_Id
-                                                    });
-                                                }
-                                            });
+                                    if (!brandMap.has(brandKey)) {
+                                        brandMap.set(brandKey, new Map());
+                                    }
+                                    const itemMap = brandMap.get(brandKey);
+
+                                    if (itemMap.has(itemKey)) {
+                                        const existing = itemMap.get(itemKey);
+                                        itemMap.set(itemKey, {
+                                            ...existing,
+                                            totalQty: existing.totalQty + (product.Act_Qty || product.Bill_Qty || 0)
                                         });
+                                    } else {
+                                        itemMap.set(itemKey, {
+                                            productName: product.Product_Name,
+                                            totalQty: product.Act_Qty || product.Bill_Qty || 0,
+                                            unit: product.Unit_Name,
+                                            itemId: product.Item_Id
+                                        });
+                                    }
+                                });
+                            });
 
-                                        const groupedProducts = Array.from(productMap.values());
+                            // Step 2: render, grouped with a brand header row
+                            const rows = [];
+                            Array.from(brandMap.entries()).forEach(([brandName, itemMap]) => {
+                                rows.push(
+                                    <tr key={`brand-${brandName}`}>
+                                        <td
+                                            colSpan={2}
+                                            style={{
+                                                padding: '10px',
+                                                border: '1px solid #ddd',
+                                                backgroundColor: '#eef3fb',
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            {brandName}
+                                        </td>
+                                    </tr>
+                                );
 
-                                        return groupedProducts.map((product, index) => (
-                                            <tr key={index}>
-                                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{product.productName}</td>
-                                                <td style={{ padding: '10px', textAlign: 'right', border: '1px solid #ddd' }}>{product.totalQty}</td>
-                                            </tr>
-                                        ));
-                                    })()}
-                                </tbody>
-                            </table>
+                                Array.from(itemMap.values()).forEach((product, index) => {
+                                    rows.push(
+                                        <tr key={`${brandName}-${product.itemId}-${index}`}>
+                                            <td style={{ padding: '10px 10px 10px 24px', border: '1px solid #ddd' }}>
+                                                {product.productName}
+                                            </td>
+                                            <td style={{ padding: '10px', textAlign: 'right', border: '1px solid #ddd' }}>
+                                                {product.totalQty}
+                                            </td>
+                                        </tr>
+                                    );
+                                });
+                            });
 
-                            {(!selectedRow?.Product_Array || selectedRow.Product_Array.length === 0) && (
-                                <p style={{ textAlign: 'center', padding: '20px' }}>
-                                    No product data available
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))} color="primary">
-                        Close
-                    </Button>
-                    <Button
-                        startIcon={<Download />}
-                        variant="outlined"
-                        onClick={handleItemPreviewPrint}
-                        disabled={!selectedRow?.Product_Array || selectedRow.Product_Array.length === 0}
-                    >
-                        Download
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                            return rows;
+                        })()}
+                    </tbody>
+                </table>
+
+                {(!selectedRow?.Product_Array || selectedRow.Product_Array.length === 0) && (
+                    <p style={{ textAlign: 'center', padding: '20px' }}>
+                        No product data available
+                    </p>
+                )}
+            </div>
+        )}
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={() => setFilters(pre => ({ ...pre, ItemPreviewDialog: false }))} color="primary">
+            Close
+        </Button>
+        <Button
+            startIcon={<Download />}
+            variant="outlined"
+            onClick={handleItemPreviewPrint}
+            disabled={!selectedRow?.Product_Array || selectedRow.Product_Array.length === 0}
+        >
+            Download
+        </Button>
+    </DialogActions>
+</Dialog>
             <Dialog open={deleteDialog} onClose={closeDeleteDialog} fullWidth maxWidth="sm">
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>
