@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
-import { isEqualNumber, ISOString, isValidNumber, reactSelectFilterLogic, toNumber } from "../../../Components/functions";
+import { isEqualNumber, ISOString, isValidNumber, Multiplication, reactSelectFilterLogic, toNumber } from "../../../Components/functions";
 import { Delete } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import Select from 'react-select';
@@ -89,9 +89,13 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
             const itemIndex = pre.items.findIndex(item => isEqualNumber(item.Product_Id, Product_Id));
             if (itemIndex !== -1) {
                 const newItems = [...pre.items];
+                const Gst_Rate = toNumber(newItems[itemIndex].Gst_Rate);
                 newItems[itemIndex] = {
                     ...newItems[itemIndex],
                     QTY: numValue,
+                    Total_Value: Multiplication(Gst_Rate, numValue),
+                    KGS: Multiplication(numValue, productInfo?.PackGet),
+                    Taxable_Value:  Multiplication(Gst_Rate, numValue)
                 };
                 return { ...pre, items: newItems };
             } else {
@@ -101,8 +105,15 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                     QTY: numValue,
                     Unit_Id: productInfo?.UOM_Id,
                     Units: productInfo?.Units,
-                    Gst_Rate: productInfo?.Item_Rate,
+                    Gst_Rate: toNumber(productInfo?.Item_Rate),
                     HSN_Code: productInfo?.HSN_Code,
+                    Gst_P: toNumber(productInfo?.Gst_P),
+                    Cgst_P: toNumber(productInfo?.Cgst_P),
+                    Sgst_P: toNumber(productInfo?.Sgst_P),
+                    Igst_P: toNumber(productInfo?.Igst_P),
+                    Total_Value: Multiplication(productInfo?.Item_Rate, numValue),
+                    KGS: Multiplication(numValue, productInfo?.PackGet),
+                    Taxable_Value:  Multiplication(productInfo?.Item_Rate, numValue)
                 };
                 return { ...pre, items: [...pre.items, newItem] };
             }
@@ -171,7 +182,13 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                                 value={row.QTY}
                                                 onChange={(e) => setGodownActivityData(pre => ({
                                                     ...pre,
-                                                    items: pre.items.map((item, i) => i === index ? { ...item, QTY: e.target.value } : item)
+                                                    items: pre.items.map((item, i) => i === index ? { 
+                                                        ...item, 
+                                                        QTY: e.target.value,
+                                                        Total_Value: Multiplication(item.Gst_Rate, e.target.value),
+                                                        KGS: Multiplication(e.target.value, productInfo?.PackGet),
+                                                        Taxable_Value:  Multiplication(item.Gst_Rate, e.target.value)
+                                                    } : item)
                                                 }))}
                                             />
                                         ) : row.QTY}
@@ -184,7 +201,13 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                                 value={row.Gst_Rate}
                                                 onChange={(e) => setGodownActivityData(pre => ({
                                                     ...pre,
-                                                    items: pre.items.map((item, i) => i === index ? { ...item, Gst_Rate: e.target.value } : item)
+                                                    items: pre.items.map((item, i) => i === index ? { 
+                                                        ...item, 
+                                                        Gst_Rate: e.target.value,
+                                                        Total_Value: Multiplication(e.target.value, item.QTY),
+                                                        KGS: Multiplication(item.QTY, productInfo?.PackGet),
+                                                        Taxable_Value:  Multiplication(e.target.value, item.QTY) 
+                                                    } : item)
                                                 }))}
                                             />
                                         ) : row.Gst_Rate}

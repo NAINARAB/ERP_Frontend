@@ -1236,7 +1236,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     {/* <td className={tdStyle}>Alt Bill Qty</td> */}
                                     <td className={tdStyle}>Unit</td>
                                     <td className={tdStyle}>Amount</td>
-                                    {salesInvoiceAccess.batchUsage.exists && <td className={tdStyle}>Batch</td>}
+                                    <td className={tdStyle}>Batch</td>
                                     <td className={tdStyle}>#</td>
                                 </tr>
                             </thead>
@@ -1382,37 +1382,35 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     required
                                                 />
                                             </td>
-                                            {salesInvoiceAccess.batchUsage.exists && (
-                                                <td className={tdStyle} style={{ minWidth: 200 }}>
-                                                    <Select
-                                                        value={{
-                                                            value: row?.Batch_Name || '',
-                                                            label: row?.Batch_Name || ''
-                                                        }}
-                                                        onChange={e => changeSelectedObjects(i, 'Batch_Name', e.value)}
-                                                        options={
-                                                            baseData.batchDetails.filter(
-                                                                bat => (
-                                                                    isEqualNumber(bat.item_id, row?.Item_Id)
-                                                                    && isEqualNumber(bat?.godown_id, commonGodown?.value)
-                                                                    && toNumber(bat.pendingQuantity) >= toNumber(row?.Bill_Qty)
-                                                                )
-                                                            ).map(
-                                                                bat => ({ value: bat.batch, label: bat.batch })
+                                            <td className={tdStyle} style={{ minWidth: 200 }}>
+                                                <Select
+                                                    value={{
+                                                        value: row?.Batch_Name || '',
+                                                        label: row?.Batch_Name || ''
+                                                    }}
+                                                    onChange={e => changeSelectedObjects(i, 'Batch_Name', e.value)}
+                                                    options={
+                                                        baseData.batchDetails.filter(
+                                                            bat => (
+                                                                isEqualNumber(bat.item_id, row?.Item_Id)
+                                                                && isEqualNumber(bat?.godown_id, commonGodown?.value)
+                                                                && toNumber(bat.pendingQuantity) >= toNumber(row?.Bill_Qty)
                                                             )
-                                                        }
-                                                        styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Batch"}
-                                                        menuPortalTarget={document.body}
-                                                        isDisabled={
-                                                            !checkIsNumber(row?.Item_Id)
-                                                            || !checkIsNumber(commonGodown?.value)
-                                                            || isEqualNumber(row?.Bill_Qty, 0)
-                                                        }
-                                                    />
-                                                </td>
-                                            )}
+                                                        ).map(
+                                                            bat => ({ value: bat.batch, label: bat.batch })
+                                                        )
+                                                    }
+                                                    styles={customSelectStyles}
+                                                    isSearchable={true}
+                                                    placeholder={"Select Batch"}
+                                                    menuPortalTarget={document.body}
+                                                    isDisabled={
+                                                        !checkIsNumber(row?.Item_Id)
+                                                        || !checkIsNumber(commonGodown?.value)
+                                                        || isEqualNumber(row?.Bill_Qty, 0)
+                                                    }
+                                                />
+                                            </td>
                                             <td className={tdStyle}>
                                                 <IconButton
                                                     onClick={() => {
