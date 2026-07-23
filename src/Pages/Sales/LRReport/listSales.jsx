@@ -1328,49 +1328,120 @@ const onCloseAssignDialog = () =>
         }));
     };
 
-    const applyFilters = () => {
-        let filtered = [...salesInvoices];
+      const applyFilters = () => {
+    let filtered = [...salesInvoices];
 
-        for (const column of filterColumns) {
-            const key = column.Field_Name;
-            const filterVal = columnFilters[key];
-            if (!filterVal) continue;
+    for (const column of filterColumns) {
+        const key = column.Field_Name;
+        const filterVal = columnFilters[key];
+        if (!filterVal) continue;
 
-            if (filterVal.type === "range") {
-                const { min, max } = filterVal;
-                filtered = filtered.filter((item) => {
-                    const value = item[key];
-                    return (min === undefined || value >= min) && (max === undefined || value <= max);
-                });
-                continue;
-            }
-
-            if (filterVal.type === "date") {
-                const { start, end } = filterVal.value || {};
-                filtered = filtered.filter((item) => {
-                    const dateValue = new Date(item[key]);
-                    return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
-                });
-                continue;
-            }
-
-            if (Array.isArray(filterVal)) {
-                const selected = filterVal.map(normalize).filter(Boolean);
-                if (!selected.length) continue;
-
-                if (typeof column.getFilterValues === "function") {
-                    filtered = filtered.filter((item) => {
-                        const rowVals = (column.getFilterValues(item) || []).map(normalize).filter(Boolean);
-                        return selected.some((v) => rowVals.includes(v));
-                    });
-                } else {
-                    filtered = filtered.filter((item) => selected.includes(normalize(item[key])));
-                }
-            }
+        if (filterVal.type === "range") {
+            const { min, max } = filterVal;
+            filtered = filtered.filter((item) => {
+                const value = item[key];
+                return (min === undefined || value >= min) && (max === undefined || value <= max);
+            });
+            continue;
         }
 
-        setFilteredData(filtered);
-    };
+        if (filterVal.type === "date") {
+            const { start, end } = filterVal.value || {};
+            filtered = filtered.filter((item) => {
+                const dateValue = new Date(item[key]);
+                return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
+            });
+            continue;
+        }
+
+        if (Array.isArray(filterVal)) {
+            // Check if empty filter is selected
+            const hasEmptyFilter = filterVal.some(v => v === "" || v === null || v === undefined);
+            const selectedValues = filterVal
+                .filter(v => v !== "" && v !== null && v !== undefined)
+                .map(normalize)
+                .filter(Boolean);
+
+            filtered = filtered.filter((item) => {
+                let rowVals = [];
+                let isEmpty = false;
+
+                if (typeof column.getFilterValues === "function") {
+                    const vals = column.getFilterValues(item) || [];
+                    rowVals = vals.map(normalize).filter(Boolean);
+                    isEmpty = vals.length === 0 || vals.every(v => v === "" || v === null || v === undefined);
+                } else {
+                    const val = item[key];
+                    if (val === undefined || val === null || val === "") {
+                        isEmpty = true;
+                    } else {
+                        rowVals = [normalize(val)];
+                    }
+                }
+
+             
+                if (hasEmptyFilter) {
+              
+                    if (selectedValues.length === 0) {
+                        return isEmpty;
+                    }
+                 
+                    return isEmpty || selectedValues.some((v) => rowVals.includes(v));
+                }
+
+              
+                if (selectedValues.length === 0) return true;
+                return selectedValues.some((v) => rowVals.includes(v));
+            });
+        }
+    }
+
+    setFilteredData(filtered);
+};
+
+    // const applyFilters = () => {
+    //     let filtered = [...salesInvoices];
+
+    //     for (const column of filterColumns) {
+    //         const key = column.Field_Name;
+    //         const filterVal = columnFilters[key];
+    //         if (!filterVal) continue;
+
+    //         if (filterVal.type === "range") {
+    //             const { min, max } = filterVal;
+    //             filtered = filtered.filter((item) => {
+    //                 const value = item[key];
+    //                 return (min === undefined || value >= min) && (max === undefined || value <= max);
+    //             });
+    //             continue;
+    //         }
+
+    //         if (filterVal.type === "date") {
+    //             const { start, end } = filterVal.value || {};
+    //             filtered = filtered.filter((item) => {
+    //                 const dateValue = new Date(item[key]);
+    //                 return (start === undefined || dateValue >= new Date(start)) && (end === undefined || dateValue <= new Date(end));
+    //             });
+    //             continue;
+    //         }
+
+    //         if (Array.isArray(filterVal)) {
+    //             const selected = filterVal.map(normalize).filter(Boolean);
+    //             if (!selected.length) continue;
+
+    //             if (typeof column.getFilterValues === "function") {
+    //                 filtered = filtered.filter((item) => {
+    //                     const rowVals = (column.getFilterValues(item) || []).map(normalize).filter(Boolean);
+    //                     return selected.some((v) => rowVals.includes(v));
+    //                 });
+    //             } else {
+    //                 filtered = filtered.filter((item) => selected.includes(normalize(item[key])));
+    //             }
+    //         }
+    //     }
+
+    //     setFilteredData(filtered);
+    // };
 
     const handleMultiPrint = useReactToPrint({
         content: () => multiPrintRef.current,
@@ -1472,110 +1543,157 @@ const onCloseAssignDialog = () =>
     `,
     });
 
-    const renderFilter = (column) => {
-        const { Field_Name, Fied_Data, ColumnHeader } = column;
+   const renderFilter = (column) => {
+    const { Field_Name, Fied_Data, ColumnHeader } = column;
 
-        if (Fied_Data === "number") {
-            return (
-                <div className="d-flex justify-content-between px-2">
-                    <input
-                        placeholder="Min"
-                        type="number"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={columnFilters[Field_Name]?.min ?? ""}
-                        onChange={(e) =>
-                            handleFilterChange(Field_Name, {
-                                type: "range",
-                                ...columnFilters[Field_Name],
-                                min: e.target.value ? parseFloat(e.target.value) : undefined,
-                            })
-                        }
-                    />
-                    <input
-                        placeholder="Max"
-                        type="number"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={columnFilters[Field_Name]?.max ?? ""}
-                        onChange={(e) =>
-                            handleFilterChange(Field_Name, {
-                                type: "range",
-                                ...columnFilters[Field_Name],
-                                max: e.target.value ? parseFloat(e.target.value) : undefined,
-                            })
-                        }
-                    />
-                </div>
-            );
-        }
-
-        if (Fied_Data === "date") {
-            return (
-                <div className="d-flex justify-content-between px-2">
-                    <input
-                        placeholder="Start Date"
-                        type="date"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={columnFilters[Field_Name]?.value?.start ?? ""}
-                        onChange={(e) =>
-                            handleFilterChange(Field_Name, {
-                                type: "date",
-                                value: { ...columnFilters[Field_Name]?.value, start: e.target.value || undefined },
-                            })
-                        }
-                    />
-                    <input
-                        placeholder="End Date"
-                        type="date"
-                        className="bg-light border-0 m-1 p-1 w-50"
-                        value={columnFilters[Field_Name]?.value?.end ?? ""}
-                        onChange={(e) =>
-                            handleFilterChange(Field_Name, {
-                                type: "date",
-                                value: { ...columnFilters[Field_Name]?.value, end: e.target.value || undefined },
-                            })
-                        }
-                    />
-                </div>
-            );
-        }
-
-        if (Fied_Data === "string") {
-            const rawValues =
-                typeof column.getFilterValues === "function"
-                    ? salesInvoices.flatMap((item) => column.getFilterValues(item) || [])
-                    : salesInvoices.map((item) => item[Field_Name]);
-
-            const distinctValues = uniqueCaseInsensitive(rawValues);
-
-            return (
-                <Autocomplete
-                    multiple
-                    id={`${Field_Name}-filter`}
-                    options={distinctValues}
-                    disableCloseOnSelect
-                    getOptionLabel={(option) => option}
-                    value={columnFilters[Field_Name] || []}
-                    onChange={(event, newValue) => handleFilterChange(Field_Name, newValue)}
-                    renderOption={(props, option, { selected }) => (
-                        <li {...props}>
-                            <Checkbox icon={icon} checkedIcon={checkedIcon} style={{ marginRight: 8 }} checked={selected} />
-                            {option}
-                        </li>
-                    )}
-                    isOptionEqualToValue={(opt, val) => opt === val}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label={ColumnHeader || Field_Name}
-                            placeholder={`Select ${(ColumnHeader || Field_Name).replace(/_/g, " ")}`}
-                        />
-                    )}
+    if (Fied_Data === "number") {
+        return (
+            <div className="d-flex justify-content-between px-2">
+                <input
+                    placeholder="Min"
+                    type="number"
+                    className="bg-light border-0 m-1 p-1 w-50"
+                    value={columnFilters[Field_Name]?.min ?? ""}
+                    onChange={(e) =>
+                        handleFilterChange(Field_Name, {
+                            type: "range",
+                            ...columnFilters[Field_Name],
+                            min: e.target.value ? parseFloat(e.target.value) : undefined,
+                        })
+                    }
                 />
-            );
-        }
+                <input
+                    placeholder="Max"
+                    type="number"
+                    className="bg-light border-0 m-1 p-1 w-50"
+                    value={columnFilters[Field_Name]?.max ?? ""}
+                    onChange={(e) =>
+                        handleFilterChange(Field_Name, {
+                            type: "range",
+                            ...columnFilters[Field_Name],
+                            max: e.target.value ? parseFloat(e.target.value) : undefined,
+                        })
+                    }
+                />
+            </div>
+        );
+    }
 
-        return null;
-    };
+    if (Fied_Data === "date") {
+        return (
+            <div className="d-flex justify-content-between px-2">
+                <input
+                    placeholder="Start Date"
+                    type="date"
+                    className="bg-light border-0 m-1 p-1 w-50"
+                    value={columnFilters[Field_Name]?.value?.start ?? ""}
+                    onChange={(e) =>
+                        handleFilterChange(Field_Name, {
+                            type: "date",
+                            value: { ...columnFilters[Field_Name]?.value, start: e.target.value || undefined },
+                        })
+                    }
+                />
+                <input
+                    placeholder="End Date"
+                    type="date"
+                    className="bg-light border-0 m-1 p-1 w-50"
+                    value={columnFilters[Field_Name]?.value?.end ?? ""}
+                    onChange={(e) =>
+                        handleFilterChange(Field_Name, {
+                            type: "date",
+                            value: { ...columnFilters[Field_Name]?.value, end: e.target.value || undefined },
+                        })
+                    }
+                />
+            </div>
+        );
+    }
+
+    if (Fied_Data === "string") {
+        // Get all values including empty ones
+        const rawValues = salesInvoices.flatMap((item) => {
+            if (typeof column.getFilterValues === "function") {
+                const vals = column.getFilterValues(item) || [];
+                return vals.length > 0 ? vals : [""];
+            }
+            const val = item[Field_Name];
+            // Check if value exists and is not empty
+            if (val !== undefined && val !== null && val !== "") {
+                return [val];
+            }
+            return [""];
+        });
+
+        // Get distinct values (including empty)
+        const distinctValues = [];
+        const seen = new Set();
+        
+        rawValues.forEach(val => {
+            const normalized = normalize(val);
+            if (!seen.has(normalized)) {
+                seen.add(normalized);
+                distinctValues.push(val);
+            }
+        });
+
+        // Sort: empty values first, then alphabetically
+        distinctValues.sort((a, b) => {
+            const aEmpty = a === "" || a === null || a === undefined;
+            const bEmpty = b === "" || b === null || b === undefined;
+            if (aEmpty && !bEmpty) return -1;
+            if (!aEmpty && bEmpty) return 1;
+            return String(a).localeCompare(String(b));
+        });
+
+        return (
+            <Autocomplete
+                multiple
+                id={`${Field_Name}-filter`}
+                options={distinctValues}
+                disableCloseOnSelect
+                getOptionLabel={(option) => {
+                    if (option === "" || option === null || option === undefined) {
+                        return "␣ Empty";
+                    }
+                    return option;
+                }}
+                value={columnFilters[Field_Name] || []}
+                onChange={(event, newValue) => handleFilterChange(Field_Name, newValue)}
+                renderOption={(props, option, { selected }) => {
+                    const isEmpty = option === "" || option === null || option === undefined;
+                    return (
+                        <li {...props} style={isEmpty ? { 
+                            borderTop: '1px solid #e0e0e0', 
+                            marginTop: '4px',
+                            paddingTop: '8px',
+                            backgroundColor: '#fff3e0',
+                            fontWeight: 'bold'
+                        } : {}}>
+                            <Checkbox 
+                                icon={isEmpty ? <CheckBoxOutlineBlank fontSize="small" sx={{ color: '#e65100' }} /> : icon} 
+                                checkedIcon={isEmpty ? <CheckBox fontSize="small" sx={{ color: '#e65100' }} /> : checkedIcon} 
+                                style={{ marginRight: 8 }} 
+                                checked={selected} 
+                            />
+                            {isEmpty ? "␣ Empty Values" : option}
+                        </li>
+                    );
+                }}
+                isOptionEqualToValue={(opt, val) => opt === val}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        label={ColumnHeader || Field_Name}
+                        placeholder={`Select ${(ColumnHeader || Field_Name).replace(/_/g, " ")}`}
+                    />
+                )}
+            />
+        );
+    }
+
+    return null;
+};
 
     const postMultipleStaffRemove = async () => {
         if (!multipleStaffRemoveValues.CostCategory.value || multipleStaffRemoveValues.Do_Id.length === 0) {
