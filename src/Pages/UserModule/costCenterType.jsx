@@ -9,6 +9,9 @@ import { fetchLink } from "../../Components/fetchComponent";
 const initialState = {
     Cost_Category_Id: "",
     Cost_Category: "",
+    Alias_Name: "",
+    Order_By: "",
+    IS_Active: 1,
 };
 
 function CostCenterType() {
@@ -17,7 +20,12 @@ function CostCenterType() {
     const [open, setOpen] = useState(false);
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [newChipType, setNewChipType] = useState("");
+    const [createValue, setCreateValue] = useState({
+        Cost_Category: "",
+        Alias_Name: "",
+        Order_By: "",
+        IS_Active: 1,
+    });
     const [inputValue, setInputValue] = useState(initialState);
     const [editUser, setEditUser] = useState(false);
 
@@ -52,11 +60,16 @@ function CostCenterType() {
         fetchLink({
             address: `dataEntry/costCategory`,
             method: "POST",
-            bodyData: { Cost_Category: newChipType },
+            bodyData: createValue,
         }).then((data) => {
             if (data.success) {
                 setIsCreateDialogOpen(false);
-                setNewChipType("");
+                setCreateValue({
+                    Cost_Category: "",
+                    Alias_Name: "",
+                    Order_By: "",
+                    IS_Active: 1,
+                });
                 setReload(!reload);
                 toast.success(data.message);
             } else {
@@ -71,14 +84,17 @@ function CostCenterType() {
         setInputValue({
             Cost_Category_Id: user.Cost_Category_Id,
             Cost_Category: user.Cost_Category,
+            Alias_Name: user.Alias_Name || "",
+            Order_By: user.Order_By || "",
+            IS_Active: user.IS_Active ?? 1,
         });
     };
 
-    const editFun = (Cost_Category_Id, Cost_Category) => {
+    const editFun = () => {
         fetchLink({
             address: `dataEntry/costCategory`,
             method: "PUT",
-            bodyData: { Cost_Category_Id, Cost_Category },
+            bodyData: inputValue,
         }).then((data) => {
             if (data.success) {
                 toast.success(data.message);
@@ -112,6 +128,9 @@ function CostCenterType() {
                                 <tr>
                                     <th className="fa-14">Cost_Category_Id</th>
                                     <th className="fa-14">Cost_Category</th>
+                                    <th className="fa-14">Alias Name</th>
+                                    <th className="fa-14">Order By</th>
+                                    <th className="fa-14">Status</th>
                                     <th className="fa-14">Action</th>
                                 </tr>
                             </thead>
@@ -120,6 +139,9 @@ function CostCenterType() {
                                     <tr key={index}>
                                         <td className="fa-14">{obj.Cost_Category_Id}</td>
                                         <td className="fa-14">{obj.Cost_Category}</td>
+                                        <td className="fa-14">{obj.Alias_Name}</td>
+                                        <td className="fa-14">{obj.Order_By}</td>
+                                        <td className="fa-14">{obj.IS_Active === 1 ? 'Active' : 'Inactive'}</td>
                                         <td className="fa-12" style={{ minWidth: "80px" }}>
                                             <IconButton
                                                 onClick={() => {
@@ -158,15 +180,48 @@ function CostCenterType() {
             >
                 <DialogTitle id="create-dialog-title">Cost_Category Creation</DialogTitle>
                 <DialogContent>
-                    <div className="p-2">
-                        <label>Cost_Category Name</label>
-                        <input
-                            type="text"
-                            onChange={(event) => setNewChipType(event.target.value)}
-                            placeholder="Ex: Admin"
-                            value={newChipType}
-                            className="cus-inpt"
-                        />
+                    <div className="p-2 d-flex flex-column gap-2">
+                        <div>
+                            <label>Cost_Category Name</label>
+                            <input
+                                type="text"
+                                onChange={(event) => setCreateValue({ ...createValue, Cost_Category: event.target.value })}
+                                placeholder="Ex: Admin"
+                                value={createValue.Cost_Category}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Alias Name</label>
+                            <input
+                                type="text"
+                                onChange={(event) => setCreateValue({ ...createValue, Alias_Name: event.target.value })}
+                                placeholder="Alias Name"
+                                value={createValue.Alias_Name}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Order By</label>
+                            <input
+                                type="number"
+                                onChange={(event) => setCreateValue({ ...createValue, Order_By: event.target.value })}
+                                placeholder="Order By"
+                                value={createValue.Order_By}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select
+                                className="cus-inpt"
+                                value={createValue.IS_Active}
+                                onChange={(event) => setCreateValue({ ...createValue, IS_Active: Number(event.target.value) })}
+                            >
+                                <option value={1}>Active</option>
+                                <option value={0}>Inactive</option>
+                            </select>
+                        </div>
                     </div>
                 </DialogContent>
                 <DialogActions>
@@ -187,25 +242,68 @@ function CostCenterType() {
             >
                 <DialogTitle id="create-dialog-title">Cost_Category</DialogTitle>
                 <DialogContent>
-                    <div className="p-2">
-                        <label>Cost_Category </label>
-                        <input
-                            type="text"
-                            onChange={(event) =>
-                                setInputValue({
-                                    ...inputValue,
-                                    Cost_Category: event.target.value,
-                                })
-                            }
-                            placeholder={inputValue.Cost_Category}
-                            value={inputValue.Cost_Category}
-                            className="cus-inpt"
-                        />
+                    <div className="p-2 d-flex flex-column gap-2">
+                        <div>
+                            <label>Cost_Category </label>
+                            <input
+                                type="text"
+                                onChange={(event) =>
+                                    setInputValue({
+                                        ...inputValue,
+                                        Cost_Category: event.target.value,
+                                    })
+                                }
+                                placeholder="Cost Category"
+                                value={inputValue.Cost_Category}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Alias Name</label>
+                            <input
+                                type="text"
+                                onChange={(event) =>
+                                    setInputValue({
+                                        ...inputValue,
+                                        Alias_Name: event.target.value,
+                                    })
+                                }
+                                placeholder="Alias Name"
+                                value={inputValue.Alias_Name}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Order By</label>
+                            <input
+                                type="number"
+                                onChange={(event) =>
+                                    setInputValue({
+                                        ...inputValue,
+                                        Order_By: event.target.value,
+                                    })
+                                }
+                                placeholder="Order By"
+                                value={inputValue.Order_By}
+                                className="cus-inpt"
+                            />
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select
+                                className="cus-inpt"
+                                value={inputValue.IS_Active}
+                                onChange={(event) => setInputValue({ ...inputValue, IS_Active: Number(event.target.value) })}
+                            >
+                                <option value={1}>Active</option>
+                                <option value={0}>Inactive</option>
+                            </select>
+                        </div>
                     </div>
                 </DialogContent>
                 <DialogActions>
                     <MuiButton onClick={() => setEditUser(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={() => editFun(inputValue.Cost_Category_Id, inputValue.Cost_Category)} color="success">
+                    <MuiButton onClick={() => editFun()} color="success">
                         Update
                     </MuiButton>
                 </DialogActions>

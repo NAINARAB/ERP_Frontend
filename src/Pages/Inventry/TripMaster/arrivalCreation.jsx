@@ -94,7 +94,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                     ...newItems[itemIndex],
                     QTY: numValue,
                     Total_Value: Multiplication(Gst_Rate, numValue),
-                    KGS: Multiplication(numValue, productInfo?.PackGet),
+                    KGS: numValue,
                     Taxable_Value:  Multiplication(Gst_Rate, numValue)
                 };
                 return { ...pre, items: newItems };
@@ -112,7 +112,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                     Sgst_P: toNumber(productInfo?.Sgst_P),
                     Igst_P: toNumber(productInfo?.Igst_P),
                     Total_Value: Multiplication(productInfo?.Item_Rate, numValue),
-                    KGS: Multiplication(numValue, productInfo?.PackGet),
+                    KGS: numValue,
                     Taxable_Value:  Multiplication(productInfo?.Item_Rate, numValue)
                 };
                 return { ...pre, items: [...pre.items, newItem] };
@@ -186,7 +186,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                                         ...item, 
                                                         QTY: e.target.value,
                                                         Total_Value: Multiplication(item.Gst_Rate, e.target.value),
-                                                        KGS: Multiplication(e.target.value, productInfo?.PackGet),
+                                                        KGS: e.target.value,
                                                         Taxable_Value:  Multiplication(item.Gst_Rate, e.target.value)
                                                     } : item)
                                                 }))}
@@ -205,7 +205,7 @@ const ArrivalCreation = ({ loadingOn, loadingOff, switchDisplay }) => {
                                                         ...item, 
                                                         Gst_Rate: e.target.value,
                                                         Total_Value: Multiplication(e.target.value, item.QTY),
-                                                        KGS: Multiplication(item.QTY, productInfo?.PackGet),
+                                                        KGS: e.target.value,
                                                         Taxable_Value:  Multiplication(e.target.value, item.QTY) 
                                                     } : item)
                                                 }))}

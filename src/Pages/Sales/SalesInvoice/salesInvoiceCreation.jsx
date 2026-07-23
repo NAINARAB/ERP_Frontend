@@ -4,11 +4,11 @@ import { toast } from 'react-toastify';
 import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
-    rid, Subraction, filterableText, generateUUID, reactSelectFilterLogic,
+    rid, filterableText, generateUUID, reactSelectFilterLogic,
     Division, Multiplication
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
-import { Add, Delete, ReceiptLong } from "@mui/icons-material";
+import { Add, Delete } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import Select from 'react-select';
 import { customSelectStyles } from '../../../Components/tablecolumn';
@@ -30,7 +30,6 @@ import SalesInvoiceTaxDetails from "./taxDetails";
 import ExpencesOfSalesInvoice from "./manageExpences";
 import AddProductForm from "./addProducts";
 import InvoiceTemplate from "../LRReport/SalesInvPrint/invTemplate";
-import AppDialog from "../../../Components/appDialogComponent";
 import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { getModuleAccess } from "../../../Components/moduleAccess";
 import SalesInvoicePreview from "./salesInvoicePreview";
@@ -99,7 +98,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         deliverySlipDialog: false
     });
 
-    const isEdit = useMemo(() => isValidNumber(invoiceInfo?.Do_Id), [invoiceInfo?.Do_Id])
+    const isEdit = useMemo(() => isValidNumber(invoiceInfo?.Do_Id), [invoiceInfo?.Do_Id]);
+
+    const defaultStaffOption = useMemo(() => {
+        const ruleID = 'SI_10';
+        const ruleAccess = getModuleAccess(baseData.moduleConfiguration, ruleID, 1);
+        return ruleAccess
+    }, [baseData.moduleConfiguration]);
 
     useEffect(() => {
 
@@ -419,14 +424,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
     }, [baseData.retailers, invoiceInfo.Retailer_Id])
 
     useEffect(() => {
-        const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
-        setStaffArray(pre => {
-            const newDefaults = defaultStaffTypesData.filter(def =>
-                !pre.some(p => isEqualNumber(p.Emp_Type_Id, def.Emp_Type_Id))
-            );
-            return [...pre, ...newDefaults];
-        })
-    }, [baseData.staffType])
+        if (defaultStaffOption) {
+            const defaultStaffTypesData = defaultStaffTypes(baseData.staffType);
+            setStaffArray(pre => {
+                const newDefaults = defaultStaffTypesData.filter(def =>
+                    !pre.some(p => isEqualNumber(p.Emp_Type_Id, def.Emp_Type_Id))
+                );
+                return [...pre, ...newDefaults];
+            })
+        }
+    }, [baseData.staffType, defaultStaffOption])
 
     useEffect(() => {
         setInvoiceProduct(pre => {
