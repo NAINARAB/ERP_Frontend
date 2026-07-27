@@ -123,6 +123,14 @@ const UnAssignedJournals = ({
         })).filter(item => String(item?.batch).length > 0));
     }
 
+    const handleAutoBatch = () => {
+        setBulkInput('');
+        setInputs(journalData.map(item => ({
+            ...item,
+            batch: item?.suggestBatchName || ''
+        })).filter(item => String(item?.batch)?.length > 0));
+    }
+
     return (
         <>
             <Card className="rounded-2xl shadow-md p-4">
@@ -149,6 +157,13 @@ const UnAssignedJournals = ({
                         className="mx-1"
                         disabled={inputs.some(inpt => String(inpt?.id)?.length === 0) || inputs.length === 0}
                     >Save</Button>
+
+                    <Button
+                        onClick={handleAutoBatch}
+                        variant="contained"
+                        className="mx-1"
+                        disabled={journalData.length === 0}
+                    >Random Batch</Button>
 
                 </div>
 
@@ -183,7 +198,7 @@ const UnAssignedJournals = ({
                                     )}
                                     <td className="vctr fa-12 p-0">
                                         <input
-                                            placeholder="..."
+                                            placeholder={item?.suggestBatchName || '...'}
                                             value={inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''}
                                             onChange={(e) => handleInputChange(item, e.target.value)}
                                             className="cus-inpt"

@@ -175,6 +175,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
             </div>
 
             <TabContext value={tabValue}>
+                
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList
                         indicatorColor='transparant'
