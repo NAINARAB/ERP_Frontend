@@ -298,9 +298,13 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                         >
                             <div className="row">
                                 <div className="col-5 p-2">
-                                    <h5 className="m-0">{invoice.voucherTypeGet}</h5>
-                                    <p className="m-0">{invoice.createdByGet}</p>
-                                    <p className="m-0">{LocalDateWithTime(invoice.createdOn)}</p>
+                                   <p className="m-0" style={{ fontSize: '0.8rem' }}>
+  {invoice.voucherTypeGet}
+</p>
+<p className="m-0" style={{ fontSize: '0.8rem' }}>
+  {invoice.createdByGet}
+</p>
+                                    <p className="m-0" style={{ fontSize: '0.8rem' }}>{LocalDateWithTime(invoice.createdOn)}</p>
                                     <br />
                                     <p className="m-0">{invoice.mailingName ? `${invoice.mailingName},` : " "}</p>
                                     <p className="m-0">{invoice.mailingAddress ? `${invoice.mailingAddress},` : " "}</p>
@@ -356,7 +360,7 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                             <br />
 
                             <div>
-                                <p className="m-0">Lorry: {findStaffName(invoice.staffDetails, "Transport")}</p>
+                                <p className="m-0 mt-4">Lorry: {findStaffName(invoice.staffDetails, "Transport")}</p>
                                 <p className="m-0">LoadMan: {findStaffName(invoice.staffDetails, "Load Man")}</p>
                             </div>
                         </div>
@@ -402,9 +406,9 @@ className="border py-4 px-4"
                         >
                             <div className="row">
                                 <div className="col-5 p-2">
-                                    <h5 className="m-0">{invoice.voucherTypeGet}</h5>
-                                    <p className="m-0">{invoice.createdByGet}</p>
-                                    <p className="m-0">{LocalDateWithTime(invoice.createdOn)}</p>
+                                    <p className="m-0" style={{ fontSize: '0.8rem' }}>{invoice.voucherTypeGet}</p>
+                                    <p className="m-0" style={{ fontSize: '0.8rem' }}>{invoice.createdByGet}</p>
+                                    <p className="m-0" style={{ fontSize: '0.8rem' }}>{LocalDateWithTime(invoice.createdOn)}</p>
                                     <br />
                                     <p className="m-0">{invoice.mailingName ? `${invoice.mailingName},` : " "}</p>
                                     <p className="m-0">{invoice.mailingAddress ? `${invoice.mailingAddress},` : " "}</p>
