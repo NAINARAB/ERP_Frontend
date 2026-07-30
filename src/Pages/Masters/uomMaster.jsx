@@ -106,7 +106,6 @@ function UomMaster() {
                     </div>
                 </div>
 
-           
                 <FilterableTable
                     dataArray={UserTypeData}
                     EnableSerialNumber={true}
@@ -116,13 +115,11 @@ function UomMaster() {
                         createCol('Unit_Id', 'string', 'Unit_Id'),
                         createCol('Units', 'string', 'Units'),
                         {
-
                             Field_Name: "Actions",
                             ColumnHeader: "Actions",
                             isVisible: 1,
                             isCustomCell: true,
                             Cell: ({ row }) => {
-
                                 return (
                                     <td className="fa-12" style={{ minWidth: "80px" }}>
                                         <IconButton
@@ -147,7 +144,6 @@ function UomMaster() {
                         },
                     ]}
                 />
-
             </div>
 
             <Dialog
