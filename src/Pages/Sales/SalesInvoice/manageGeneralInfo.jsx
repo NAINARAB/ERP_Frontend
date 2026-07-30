@@ -54,8 +54,11 @@ const ManageSalesInvoiceGeneralInfo = ({
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
     const onChangeRetailerAddress = (column, value) => {
+        let retailerAddress = null;
 
-        const retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
+        if (enableBillingAutocomplete) {
+            retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
+        }
 
         if (retailerAddress) {
             setAddress(retailerAddress, setRetailerDeliveryAddress);
@@ -75,8 +78,11 @@ const ManageSalesInvoiceGeneralInfo = ({
     }
 
     const onChangeRetailerShippingAddress = (column, value) => {
+        let retailerAddress = null;
 
-        const retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
+        if (enableShippingAutocomplete) {
+            retailerAddress = toArray(fetchedAddresses).find(add => stringCompare(add[column], value));
+        }
 
         if (retailerAddress) {
             setAddress(retailerAddress, setShippingAddress);
