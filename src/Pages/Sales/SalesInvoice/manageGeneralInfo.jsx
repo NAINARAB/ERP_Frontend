@@ -40,6 +40,16 @@ const ManageSalesInvoiceGeneralInfo = ({
     const inputStyle = 'cus-inpt p-2';
 
     const [open, setOpen] = useState(false);
+    const [enableBillingAutocomplete, setEnableBillingAutocomplete] = useState(true);
+    const [enableShippingAutocomplete, setEnableShippingAutocomplete] = useState(true);
+
+    const getUniqueOptions = (column) => {
+        return [...new Set(
+            toArray(fetchedAddresses)
+                .map(addr => addr?.[column])
+                .filter(val => val !== undefined && val !== null && String(val).trim() !== '')
+        )];
+    };
 
     const validRetailer = checkIsNumber(invoiceInfo?.Retailer_Id) && !isEqualNumber(invoiceInfo?.Retailer_Id, 0)
 
@@ -339,7 +349,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label >GSTNO</label>
                                             <input
                                                 id="billingGSTNI"
-                                                list="billingGSTINData"
+                                                list={enableBillingAutocomplete ? "billingGSTINData" : undefined}
                                                 value={retailerDeliveryAddress?.gstNumber || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 15-CHAR-STRING"
@@ -348,8 +358,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="billingGSTINData">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option value={addr?.gstNumber} key={i}>{addr?.gstNumber}</option>
+                                                {getUniqueOptions('gstNumber').map((val, i) => (
+                                                    <option value={val} key={i}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -359,7 +369,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="nameInput">Mailing Name</label>
                                             <input
                                                 id="nameInput"
-                                                list="deliveryName"
+                                                list={enableBillingAutocomplete ? "deliveryName" : undefined}
                                                 value={retailerDeliveryAddress?.deliveryName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: Party name / Other"
@@ -368,8 +378,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="deliveryName">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.deliveryName}>{addr?.deliveryName}</option>
+                                                {getUniqueOptions('deliveryName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -379,7 +389,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="phoneInput">Phone Number</label>
                                             <input
                                                 id="phoneInput"
-                                                list="phoneNumber"
+                                                list={enableBillingAutocomplete ? "phoneNumber" : undefined}
                                                 value={retailerDeliveryAddress?.phoneNumber || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 9876543210"
@@ -388,8 +398,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="phoneNumber">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.phoneNumber}>{addr?.phoneNumber}</option>
+                                                {getUniqueOptions('phoneNumber').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -399,7 +409,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="cityInput">City Name</label>
                                             <input
                                                 id="cityInput"
-                                                list="cityName"
+                                                list={enableBillingAutocomplete ? "cityName" : undefined}
                                                 value={retailerDeliveryAddress?.cityName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: Madurai"
@@ -408,8 +418,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="cityName">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.cityName}>{addr?.cityName}</option>
+                                                {getUniqueOptions('cityName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -419,7 +429,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="billingStateInput">State name</label>
                                             <input
                                                 id="billingStateInput"
-                                                list="billingState"
+                                                list={enableBillingAutocomplete ? "billingState" : undefined}
                                                 value={retailerDeliveryAddress?.stateName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: TamilNadu"
@@ -428,8 +438,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="billingState">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.stateName}>{addr?.stateName}</option>
+                                                {getUniqueOptions('stateName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -439,7 +449,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="addressInput">Address</label>
                                             <input
                                                 id="addressInput"
-                                                list="deliveryAddress"
+                                                list={enableBillingAutocomplete ? "deliveryAddress" : undefined}
                                                 value={retailerDeliveryAddress?.deliveryAddress || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 123, ABC Street"
@@ -448,10 +458,23 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="deliveryAddress">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.deliveryAddress}>{addr?.deliveryAddress}</option>
+                                                {getUniqueOptions('deliveryAddress').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
+                                        </div>
+
+                                        {/* Enable Autocomplete */}
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
+                                            <label className="mb-2">
+                                                <input
+                                                    type="checkbox"
+                                                    className="me-2"
+                                                    checked={enableBillingAutocomplete}
+                                                    onChange={e => setEnableBillingAutocomplete(e.target.checked)}
+                                                />
+                                                Enable Autocomplete
+                                            </label>
                                         </div>
                                     </div>
                                 </fieldset>
@@ -467,7 +490,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingGSTNI">GSTNO</label>
                                             <input
                                                 id="shippingGSTNI"
-                                                list="shippingGSTINData"
+                                                list={enableShippingAutocomplete ? "shippingGSTINData" : undefined}
                                                 value={shippingAddress?.gstNumber || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 15-CHAR-STRING"
@@ -476,8 +499,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingGSTINData">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option value={addr?.gstNumber} key={i}>{addr?.gstNumber}</option>
+                                                {getUniqueOptions('gstNumber').map((val, i) => (
+                                                    <option value={val} key={i}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -487,7 +510,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingNameInput">Mailing Name</label>
                                             <input
                                                 id="shippingNameInput"
-                                                list="shippingName"
+                                                list={enableShippingAutocomplete ? "shippingName" : undefined}
                                                 value={shippingAddress?.deliveryName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: Party name / Other"
@@ -496,8 +519,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingName">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.deliveryName}>{addr?.deliveryName}</option>
+                                                {getUniqueOptions('deliveryName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -507,7 +530,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingPhoneNumber">Phone Number</label>
                                             <input
                                                 id="shippingPhoneNumber"
-                                                list="shippingPhoneNumberData"
+                                                list={enableShippingAutocomplete ? "shippingPhoneNumberData" : undefined}
                                                 value={shippingAddress?.phoneNumber || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 9876543210"
@@ -516,8 +539,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingPhoneNumberData">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.phoneNumber}>{addr?.phoneNumber}</option>
+                                                {getUniqueOptions('phoneNumber').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -527,7 +550,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingCityInput">City Name</label>
                                             <input
                                                 id="shippingCityInput"
-                                                list="shippingCityName"
+                                                list={enableShippingAutocomplete ? "shippingCityName" : undefined}
                                                 value={shippingAddress?.cityName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: Madurai"
@@ -536,8 +559,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingCityName">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.cityName}>{addr?.cityName}</option>
+                                                {getUniqueOptions('cityName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -547,7 +570,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingStateInput">State name</label>
                                             <input
                                                 id="shippingStateInput"
-                                                list="shippingState"
+                                                list={enableShippingAutocomplete ? "shippingState" : undefined}
                                                 value={shippingAddress?.stateName || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: TamilNadu"
@@ -556,8 +579,8 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingState">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.stateName}>{addr?.stateName}</option>
+                                                {getUniqueOptions('stateName').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
                                         </div>
@@ -567,7 +590,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             <label htmlFor="shippingAddressInput">Address</label>
                                             <input
                                                 id="shippingAddressInput"
-                                                list="shippingAddress"
+                                                list={enableShippingAutocomplete ? "shippingAddress" : undefined}
                                                 value={shippingAddress?.deliveryAddress || ""}
                                                 className={inputStyle}
                                                 placeholder="ex: 123, ABC Street"
@@ -576,10 +599,23 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                 autoComplete="off"
                                             />
                                             <datalist id="shippingAddress">
-                                                {toArray(fetchedAddresses).map((addr, i) => (
-                                                    <option key={i} value={addr?.deliveryAddress}>{addr?.deliveryAddress}</option>
+                                                {getUniqueOptions('deliveryAddress').map((val, i) => (
+                                                    <option key={i} value={val}>{val}</option>
                                                 ))}
                                             </datalist>
+                                        </div>
+
+                                        {/* Enable Autocomplete */}
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2 d-flex align-items-end">
+                                            <label className="mb-2">
+                                                <input
+                                                    type="checkbox"
+                                                    className="me-2"
+                                                    checked={enableShippingAutocomplete}
+                                                    onChange={e => setEnableShippingAutocomplete(e.target.checked)}
+                                                />
+                                                Enable Autocomplete
+                                            </label>
                                         </div>
                                     </div>
                                 </fieldset>
