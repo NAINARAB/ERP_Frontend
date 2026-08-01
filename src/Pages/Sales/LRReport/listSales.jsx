@@ -922,6 +922,7 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
 
                 return {
                     costType: costType.Cost_Category,
+                    orderBy: toNumber(costType.Order_By),
                     field: field,
                     columnConfig: {
                         Field_Name: field,
@@ -939,15 +940,9 @@ const SalesInvoiceListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights
             });
 
         return columns.sort((a, b) => {
-            const aName = a.costType.toLowerCase();
-            const bName = b.costType.toLowerCase();
-
-            if (aName.includes('broker')) return -1;
-            if (bName.includes('broker')) return 1;
-
-            if (aName.includes('transport')) return -1;
-            if (bName.includes('transport')) return 1;
-
+            if (a.orderBy !== b.orderBy) {
+                return a.orderBy - b.orderBy;
+            }
             return a.costType.localeCompare(b.costType);
         }).map(c => c.columnConfig);
     }, [costTypes, uniqueInvolvedCost]);

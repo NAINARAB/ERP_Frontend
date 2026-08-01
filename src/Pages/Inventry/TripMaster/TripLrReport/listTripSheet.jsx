@@ -191,6 +191,7 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
 
                 return {
                     costType: costType.Cost_Category,
+                    orderBy: toNumber(costType.Order_By),
                     field: field,
                     columnConfig: {
                         Field_Name: field,
@@ -208,6 +209,9 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
             });
 
         return columns.sort((a, b) => {
+            if (a.orderBy !== b.orderBy) {
+                return a.orderBy - b.orderBy;
+            }
             return a.costType.localeCompare(b.costType);
         }).map(c => c.columnConfig);
     }, [costTypes, uniqueInvolvedCost]);
