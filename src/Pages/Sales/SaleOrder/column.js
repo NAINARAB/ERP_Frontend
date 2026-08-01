@@ -19,7 +19,7 @@ export const saleOrderGeneralInfo = {
     Narration: '',
     isConverted: '',
     Cancel_status: 1,
-    
+
     CSGT_Total: 0,
     SGST_Total: 0,
     IGST_Total: 0,
@@ -85,10 +85,24 @@ export const saleOrderStockInfo = {
 }
 
 export const saleOrderStaffInfo = {
-    Id: '', 
-    So_Id: '', 
-    Involved_Emp_Id: '', 
+    Id: '',
+    So_Id: '',
+    Involved_Emp_Id: '',
     EmpName: '',
     Cost_Center_Type_Id: '',
     EmpType: ''
+}
+
+export const saleOrderExpencesInitialValue = {
+    Id: '',
+    So_Id: '',
+    Sno: '',
+    Expense_Id: '',
+    Cgst: 0,
+    Cgst_Amo: 0,
+    Sgst: 0,
+    Sgst_Amo: 0,
+    Igst: 0,
+    Igst_Amo: 0,
+    Expence_Value: 0
 }

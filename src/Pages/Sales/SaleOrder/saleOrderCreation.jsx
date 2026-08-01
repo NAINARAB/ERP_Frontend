@@ -24,6 +24,7 @@ import { saleOrderGeneralInfo, saleOrderStockInfo, saleOrderStaffInfo } from "./
 import AddItemToSaleOrderCart from "./addItemToCart";
 import InvolvedStaffs from "./creationStaffInfo";
 import RequiredStar from "../../../Components/requiredStar";
+import ExpencesOfSaleOrder from "./manageExpences";
 
 const storage = getSessionUser().user;
 
@@ -48,6 +49,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
     const [orderDetails, setOrderDetails] = useState(saleOrderGeneralInfo)
     const [orderProducts, setOrderProducts] = useState([]);
     const [staffInvolved, setStaffInvolved] = useState([]);
+    const [orderExpences, setOrderExpences] = useState([]);
 
     const [selectedProductToEdit, setSelectedProductToEdit] = useState(null);
     const [addProductDialog, setAddProductDialog] = useState(false);
@@ -86,6 +88,9 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
+            if (Array.isArray(editValues?.Expence_Array)) {
+                setOrderExpences(editValues.Expence_Array);
+            }
         }
     }, [editValues])
 
@@ -104,6 +109,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     staffResponse,
                     staffCategory,
                     salesPersonResponse,
+                    expenceResponse,
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
@@ -113,6 +119,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
                     fetchLink({ address: `masters/users/salesPerson/dropDown` }),
+                    fetchLink({ address: `masters/defaultAccountMaster?Type=SALE_ORDER` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -139,6 +146,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 const salesPersonData = (salesPersonResponse.success ? salesPersonResponse.data : []).sort(
                     (a, b) => String(a?.Name).localeCompare(b?.Name)
                 );
+                const expenceData = expenceResponse.success ? expenceResponse.data : [];
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -150,6 +158,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     staff: staffData,
                     staffType: staffCategoryData,
                     salesPerson: salesPersonData,
+                    expence: expenceData,
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name'])
                 }));
 
@@ -168,6 +177,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
         setOrderDetails(saleOrderGeneralInfo);
         setOrderProducts([]);
         setStaffInvolved([]);
+        setOrderExpences([]);
     }
 
     const postSaleOrder = () => {
@@ -184,7 +194,8 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 bodyData: {
                     ...orderDetails,
                     Product_Array: orderProducts.filter(o => isGraterNumber(o?.Bill_Qty, 0)),
-                    Staff_Involved_List: staffInvolved
+                    Staff_Involved_List: staffInvolved,
+                    Expence_Array: orderExpences
                 }
             }).then(data => {
                 if (!isEqualNumber(data.statusCode, 409)) {
@@ -209,7 +220,11 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
     }
 
     const Total_Invoice_value = useMemo(() => {
-        return orderProducts.reduce((acc, item) => {
+        const TotalExpences = toNumber(RoundNumber(
+            orderExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+        ));
+
+        const productTotal = orderProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return Addition(acc, Amount);
@@ -223,10 +238,12 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
             }
         }, 0)
-    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+
+        return Addition(TotalExpences, productTotal);
+    }, [orderProducts, orderExpences, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
 
     const totalValueBeforeTax = useMemo(() => {
-        return orderProducts.reduce((acc, item) => {
+        const productTax = orderProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return {
@@ -248,7 +265,33 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
             TotalValue: 0,
             TotalTax: 0
         });
-    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+
+        const invoiceExpencesTaxTotal = orderExpences.reduce((acc, exp) => Addition(
+            acc,
+            IS_IGST ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
+        ), 0);
+
+        return {
+            TotalValue: productTax.TotalValue,
+            TotalTax: Addition(productTax.TotalTax, invoiceExpencesTaxTotal),
+        }
+    }, [orderProducts, orderExpences, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+
+    const roundOffAmount = useMemo(() => {
+        const Cgst = IS_IGST ? 0 : RoundNumber(totalValueBeforeTax.TotalTax / 2);
+        const Sgst = IS_IGST ? 0 : RoundNumber(totalValueBeforeTax.TotalTax / 2);
+        const Igst = IS_IGST ? RoundNumber(totalValueBeforeTax.TotalTax) : 0;
+        const sumComponents = Addition(
+            totalValueBeforeTax.TotalValue,
+            Addition(Addition(Cgst, Sgst), Igst)
+        );
+        const TotalExpences = toNumber(RoundNumber(
+            orderExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+        ));
+        const total = Addition(sumComponents, TotalExpences);
+        const roundedTotal = Math.round(Total_Invoice_value);
+        return RoundNumber(roundedTotal - total);
+    }, [Total_Invoice_value, totalValueBeforeTax, IS_IGST, orderExpences]);
 
     useEffect(() => {
         setOrderProducts(pre => {
@@ -609,6 +652,21 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                         disablePagination={true}
                     />
 
+                    {/* Expences */}
+                    <div className="py-2">
+                        <ExpencesOfSaleOrder
+                            invoiceExpences={orderExpences}
+                            setInvoiceExpences={setOrderExpences}
+                            expenceMaster={baseData.expence}
+                            IS_IGST={IS_IGST}
+                            taxType={taxType}
+                            Total_Invoice_value={Total_Invoice_value}
+                            invoiceProducts={orderProducts}
+                            findProductDetails={findProductDetails}
+                            products={baseData.products}
+                        />
+                    </div>
+
                     {/* invoice Gst and total  */}
                     {orderProducts.length > 0 && (
                         <div className="d-flex justify-content-end py-2">
@@ -649,7 +707,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">
-                                            {RoundNumber(Math.round(Total_Invoice_value) - Total_Invoice_value)}
+                                            {NumberFormat(roundOffAmount)}
                                         </td>
                                     </tr>
                                     <tr>

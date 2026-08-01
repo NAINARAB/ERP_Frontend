@@ -441,7 +441,21 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 Emp_Name: staff.EmpName,
                 Emp_Type_Id: staff.Cost_Center_Type_Id
             })),
-            Expence_Array: [],
+            Expence_Array: toArray(saleOrder?.Expence_Array)
+                .filter(exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name))
+                .map((exp, idx) => ({
+                    Id: '',
+                    Do_Id: '',
+                    Sno: idx + 1,
+                    Expense_Id: exp.Expense_Id,
+                    Expence_Value: Number(exp.Expence_Value) > 0 ? Number(exp.Expence_Value) : -Number(exp.Expence_Value),
+                    Cgst: 0,
+                    Cgst_Amo: 0,
+                    Sgst: 0,
+                    Sgst_Amo: 0,
+                    Igst: 0,
+                    Igst_Amo: 0
+                })),
         };
 
         navigate('/erp/sales/invoice/create', {

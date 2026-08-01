@@ -536,8 +536,13 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             }
         }, 0);
 
-        return Addition(invValue, invExpencesTotal);
-    }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal])
+        const invoiceExpencesTaxTotal = toArray(invoiceExpences).reduce((acc, exp) => Addition(
+            acc,
+            IS_IGST ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
+        ), 0);
+
+        return Addition(Addition(invValue, invExpencesTotal), invoiceExpencesTaxTotal);
+    }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal, invoiceExpences])
 
     const taxSplitUp = useMemo(() => {
         if (toArray(invoiceProducts).length === 0) return {};
@@ -562,18 +567,28 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             totalTax = Addition(totalTax, parseFloat(taxInfo.tax_amount));
         });
 
-        const totalWithTax = Addition(totalTaxable, totalTax);
-        const totalWithExpenses = Addition(totalWithTax, invExpencesTotal);
-        const roundedTotal = Math.round(totalWithExpenses);
-        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
+        const invoiceExpencesTaxTotal = toArray(invoiceExpences).reduce((acc, exp) => Addition(
+            acc,
+            isEqualNumber(IS_IGST, 1) ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
+        ), 0);
 
-        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
-        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(totalTax / 2);
-        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(totalTax) : 0;
+        const combinedTax = Addition(totalTax, invoiceExpencesTaxTotal);
+
+        const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(combinedTax / 2);
+        const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(combinedTax / 2);
+        const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(combinedTax) : 0;
+        
+        const sumComponents = Addition(
+            totalTaxable, 
+            Addition(Addition(cgst, sgst), igst)
+        );
+        const totalWithExpenses = Addition(sumComponents, invExpencesTotal);
+        const roundedTotal = Math.round(Total_Invoice_value);
+        const roundOff = RoundNumber(roundedTotal - totalWithExpenses);
 
         return {
             totalTaxable: RoundNumber(totalTaxable),
-            totalTax: RoundNumber(totalTax),
+            totalTax: RoundNumber(combinedTax),
             cgst,
             sgst,
             igst,
@@ -581,7 +596,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             invoiceTotal: roundedTotal
         };
 
-    }, [invoiceProducts, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
+    }, [invoiceProducts, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal, invoiceExpences, Total_Invoice_value]);
 
     useEffect(() => {
         if (taxSplitUp?.roundOff && taxSplitUp?.roundOff !== invoiceInfo.Round_off) {
