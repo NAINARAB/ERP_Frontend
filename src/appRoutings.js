@@ -55,6 +55,7 @@ const ItemGroupMasterCreate = lazy(() => import('./Pages/Masters/itemGroupMaster
 const VoucherGroup = lazy(() => import('./Pages/Masters/VoucherGroup'));
 const VoucherGroupCreate = lazy(() => import('./Pages/Masters/VoucherGroupCreate'));
 const UserAccountMapping = lazy(() => import('./Pages/Masters/useraccountMapping'));
+const ActiveProductMaster = lazy(() => import('./Pages/Masters/ActiveProductMaster'));
 
 
 const StockJournalRate = lazy(() => import('./Pages/Inventry/stockJournalRate'))
@@ -440,6 +441,7 @@ const RoutingArray = [
 
     { component: <VoucherGroup />, path: '/erp/master/VoucherGroup' },
     { component: <VoucherGroupCreate />, path: '/erp/master/VoucherGroup/Create' },
+    { component: <ActiveProductMaster />, path: '/erp/master/ActiveProductMaster' },
 
     // ---------------------------------------------------------------------------
     // ERP - Payments
