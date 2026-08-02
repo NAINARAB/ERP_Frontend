@@ -56,7 +56,9 @@ const VoucherGroup = lazy(() => import('./Pages/Masters/VoucherGroup'));
 const VoucherGroupCreate = lazy(() => import('./Pages/Masters/VoucherGroupCreate'));
 const UserAccountMapping = lazy(() => import('./Pages/Masters/useraccountMapping'));
 const ActiveProductMaster = lazy(() => import('./Pages/Masters/ActiveProductMaster'));
-
+const UnitMasterCategory = lazy(() => import('./Pages/Masters/UnitMasterCategory'));
+const UnitMasterMeasurement = lazy(() => import('./Pages/Masters/UnitMasterMeasurement'));
+const ProductUnitConversion = lazy(() => import('./Pages/Masters/ProductUnitConversion'));
 
 const StockJournalRate = lazy(() => import('./Pages/Inventry/stockJournalRate'))
 const StockArrivalRate = lazy(() => import('./Pages/Inventry/stockArrivalRate'))
@@ -434,6 +436,9 @@ const RoutingArray = [
     { component: <TallyLolSyncDashboard />, path: '/erp/master/tallyLOL' },
     { component: <TallyLosSyncDashboard />, path: '/erp/master/tallyLOS' },
     { component: <UomMaster />, path: '/erp/master/uomMaster' },
+    { component: <UnitMasterCategory />, path: '/erp/master/unitCategory' },
+    { component: <UnitMasterMeasurement />, path: '/erp/master/unitMeasurement' },
+    { component: <ProductUnitConversion />, path: '/erp/master/productUnitConversion' },
     { component: <VoucherType />, path: '/erp/master/voucherMaster' },
     { component: <ItemGroupMaster />, path: '/erp/master/itemGroupMaster' },
     { component: <ItemGroupMasterCreate />, path: '/erp/master/itemGroupMaster/Create' },
