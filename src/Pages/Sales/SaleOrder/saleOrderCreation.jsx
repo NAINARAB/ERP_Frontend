@@ -13,7 +13,8 @@ import {
     reactSelectFilterLogic,
     isValidNumber,
     stringCompare,
-    generateUUID
+    generateUUID,
+    toArray
 } from "../../../Components/functions";
 import { Add, Clear, Delete, Edit, Save } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
@@ -89,7 +90,10 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 ))
             );
             if (Array.isArray(editValues?.Expence_Array)) {
-                setOrderExpences(editValues.Expence_Array);
+                const expences = toArray(editValues?.Expence_Array).filter(
+                    exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name)
+                );
+                setOrderExpences(expences);
             }
         }
     }, [editValues])
@@ -219,12 +223,8 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
         }
     }
 
-    const Total_Invoice_value = useMemo(() => {
-        const TotalExpences = toNumber(RoundNumber(
-            orderExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
-        ));
-
-        const productTotal = orderProducts.reduce((acc, item) => {
+    const productTotal = useMemo(() => {
+        return orderProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return Addition(acc, Amount);
@@ -238,9 +238,15 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                 return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
             }
         }, 0)
+    }, [orderProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive]);
 
+    const TotalExpences = useMemo(() => toNumber(RoundNumber(
+        orderExpences.reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
+    )), [orderExpences]);
+
+    const Total_Invoice_value = useMemo(() => {
         return Addition(TotalExpences, productTotal);
-    }, [orderProducts, orderExpences, isNotTaxableBill, baseData.products, IS_IGST, isInclusive])
+    }, [orderExpences, productTotal])
 
     const totalValueBeforeTax = useMemo(() => {
         const productTax = orderProducts.reduce((acc, item) => {
@@ -660,7 +666,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                             expenceMaster={baseData.expence}
                             IS_IGST={IS_IGST}
                             taxType={taxType}
-                            Total_Invoice_value={Total_Invoice_value}
+                            productTotal={productTotal}
                             invoiceProducts={orderProducts}
                             findProductDetails={findProductDetails}
                             products={baseData.products}
@@ -673,7 +679,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                             <table className="table">
                                 <tbody>
                                     <tr>
-                                        <td className="border p-2" rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 4 : 5}>
+                                        <td className="border p-2" rowSpan={isEqualNumber(orderDetails.IS_IGST, 1) ? 5 : 6}>
                                             Total in words: {numberToWords(parseInt(Total_Invoice_value))}
                                         </td>
                                         <td className="border p-2">Total Taxable Amount</td>
@@ -704,6 +710,12 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                                             </td>
                                         </tr>
                                     )}
+                                    <tr>
+                                        <td className="border p-2">Total Expences</td>
+                                        <td className="border p-2">
+                                            {RoundNumber(TotalExpences)}
+                                        </td>
+                                    </tr>
                                     <tr>
                                         <td className="border p-2">Round Off</td>
                                         <td className="border p-2">

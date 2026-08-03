@@ -5,7 +5,7 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 const ExpencesOfSalesInvoice = ({
     invoiceExpences = [],
@@ -13,7 +13,7 @@ const ExpencesOfSalesInvoice = ({
     expenceMaster = [],
     IS_IGST,
     taxType,
-    Total_Invoice_value = 0,
+    productTotal = 0,
     invoiceProducts = [],
     findProductDetails,
     products = []
@@ -95,7 +95,7 @@ const ExpencesOfSalesInvoice = ({
             );
         } else {
             const getInvoicedAmountInPercentage = isValidNumber(selected?.percentageValue)
-                ? getPercentage(Total_Invoice_value, selected.percentageValue)
+                ? getPercentage(productTotal, selected.percentageValue)
                 : 0;
 
             setInvoiceExpences(prev =>
@@ -110,6 +110,43 @@ const ExpencesOfSalesInvoice = ({
             );
         }
     };
+
+    useEffect(() => {
+        setInvoiceExpences(prev => {
+            let hasChanges = false;
+            const newExpenses = prev.map(item => {
+                const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, item.Expense_Id));
+                if (!selected) return item;
+
+                let newValue = item.Expence_Value;
+
+                if (stringCompare(selected.Expence_Name, 'COOLIE EXPENSES')) {
+                    newValue = RoundNumber(coolieExp);
+                } else if (isValidNumber(selected.percentageValue)) {
+                    newValue = RoundNumber(getPercentage(productTotal, selected.percentageValue));
+                }
+
+                if (!isEqualNumber(newValue, item.Expence_Value)) {
+                    hasChanges = true;
+                    const Cgst = item.Cgst ? toNumber(item.Cgst) : 0;
+                    const Sgst = item.Sgst ? toNumber(item.Sgst) : 0;
+                    const Igst = item.Igst ? toNumber(item.Igst) : 0;
+                    const taxPercentage = IS_IGST ? Igst : Addition(Cgst, Sgst);
+                    const taxAmount = calculateGSTDetails(newValue, taxPercentage, taxType);
+
+                    return {
+                        ...item,
+                        Expence_Value: newValue,
+                        Cgst_Amo: (Cgst > 0 && !IS_IGST) ? taxAmount.cgst_amount : 0,
+                        Sgst_Amo: (Sgst > 0 && !IS_IGST) ? taxAmount.sgst_amount : 0,
+                        Igst_Amo: (Igst > 0 && IS_IGST) ? taxAmount.igst_amount : 0,
+                    };
+                }
+                return item;
+            });
+            return hasChanges ? newExpenses : prev;
+        });
+    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences]);
 
     const addNewRow = () => {
         setInvoiceExpences(prev => [...prev, { ...salesInvoiceExpencesInfo, Sno: prev.length }]);

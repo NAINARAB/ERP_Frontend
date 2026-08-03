@@ -254,8 +254,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     setCommonGodown({ value: Products_List[0]?.GoDown_Id, label: Products_List[0]?.GoDown_Name })
                 }
             }
+            const expences = toArray(Expence_Array).filter(
+                exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name)
+            );
             setInvoiceExpences(
-                toArray(Expence_Array).map(item => Object.fromEntries(
+                expences.map(item => Object.fromEntries(
                     Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
                         return [key, item[key] ?? value]
                     })
@@ -520,8 +523,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         return toArray(invoiceExpences).reduce((acc, exp) => Addition(acc, exp?.Expence_Value), 0)
     }, [invoiceExpences]);
 
-    const Total_Invoice_value = useMemo(() => {
-        const invValue = invoiceProducts.reduce((acc, item) => {
+    const productTotal = useMemo(() => {
+        return invoiceProducts.reduce((acc, item) => {
             const Amount = RoundNumber(item?.Amount);
 
             if (isNotTaxableBill) return Addition(acc, Amount);
@@ -535,14 +538,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 return Addition(acc, calculateGSTDetails(Amount, gstPercentage, 'add').with_tax);
             }
         }, 0);
+    }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive]);
 
+    const Total_Invoice_value = useMemo(() => {
         const invoiceExpencesTaxTotal = toArray(invoiceExpences).reduce((acc, exp) => Addition(
             acc,
             IS_IGST ? exp?.Igst_Amo : Addition(exp?.Cgst_Amo, exp?.Sgst_Amo)
         ), 0);
 
-        return Addition(Addition(invValue, invExpencesTotal), invoiceExpencesTaxTotal);
-    }, [invoiceProducts, isNotTaxableBill, baseData.products, IS_IGST, isInclusive, invExpencesTotal, invoiceExpences])
+        return Addition(Addition(productTotal, invExpencesTotal), invoiceExpencesTaxTotal);
+    }, [productTotal, invExpencesTotal, invoiceExpences, IS_IGST])
 
     const taxSplitUp = useMemo(() => {
         if (toArray(invoiceProducts).length === 0) return {};
@@ -577,9 +582,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         const cgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(combinedTax / 2);
         const sgst = isEqualNumber(IS_IGST, 1) ? 0 : RoundNumber(combinedTax / 2);
         const igst = isEqualNumber(IS_IGST, 1) ? RoundNumber(combinedTax) : 0;
-        
+
         const sumComponents = Addition(
-            totalTaxable, 
+            totalTaxable,
             Addition(Addition(cgst, sgst), igst)
         );
         const totalWithExpenses = Addition(sumComponents, invExpencesTotal);
@@ -1461,7 +1466,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         expenceMaster={baseData.expence}
                         IS_IGST={IS_IGST}
                         taxType={taxType}
-                        Total_Invoice_value={Total_Invoice_value}
+                        productTotal={productTotal}
                         invoiceProducts={invoiceProducts}
                         findProductDetails={findProductDetails}
                         products={baseData.products}
