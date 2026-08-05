@@ -585,7 +585,6 @@ const RoutingArray = [
     { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
     
-
     // ---------------------------------------------------------------------------
     // User Control
     // ---------------------------------------------------------------------------
@@ -602,7 +601,7 @@ const RoutingArray = [
     { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
     { component: <Users />, path: '/userControl/users' },
     { component: <ModuleRuleComponent />, path: '/userControl/moduleConfiguration' },
-    { component: <AbstractGroup />, path: '/erp/master/abstractgrouptype'},
+    { component: <AbstractGroup />, path: '/erp/master/abstractgrouptype' },
 ];
 
 export default RoutingArray;

@@ -846,7 +846,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             creditAmountLimit: getRuleOptions('SI_4'),
             creditDaysLimit: getRuleOptions('SI_5'),
             voucherBasedGodown: getRuleOptions('SI_6'),
-            creditBillCountLimit: getRuleOptions('SI_7')
+            creditBillCountLimit: getRuleOptions('SI_7'),
+            productModification: getRuleOptions('SI_11')
         };
     }, [getRuleOptions]);
 
@@ -1239,7 +1240,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                 disabled={
                                     !checkIsNumber(invoiceInfo.Retailer_Id)
                                     || (invoiceProducts.length > 0
-                                        && checkIsNumber(invoiceInfo.So_No))
+                                        && isValidNumber(invoiceInfo.So_No)
+                                        && !salesInvoiceAccess.productModification.exists)
                                 }
                             >Add Product</Button>
                         </div>
@@ -1310,6 +1312,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                             )
                                                         }))
                                                     ]}
+                                                    isDisabled={isValidNumber(invoiceInfo.So_No) && !salesInvoiceAccess.productModification.exists}
                                                     styles={customSelectStyles}
                                                     isSearchable
                                                     placeholder="Select Product"
@@ -1370,6 +1373,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
+                                                    disabled={isValidNumber(invoiceInfo.So_No) && !salesInvoiceAccess.productModification.exists}
                                                     required
                                                 />
                                             </td>

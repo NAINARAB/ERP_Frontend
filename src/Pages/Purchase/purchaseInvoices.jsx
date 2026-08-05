@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { getSessionFiltersByPageId, isEqualNumber, ISOString, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -336,6 +336,17 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         }).catch(e => console.error(e))
     }
 
+    const totalValues = useMemo(() => {
+        return purchaseOrder.filter(inv => isEqualNumber(inv.Cancel_status, 0)).reduce((acc, item) => {
+            const invoiceValue = Addition(acc.totalInvoiceValue, item.Total_Invoice_value)
+            return {
+                totalInvoiceValue: invoiceValue
+            }
+        }, {
+            totalInvoiceValue: 0
+        });
+    }, [purchaseOrder])
+
     return (
         <>
             <FilterableTable
@@ -364,6 +375,12 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
                         >
                             {'Add'}
                         </Button>
+                        
+                        {purchaseOrder.length > 0 && (
+                            <>
+                                <span className="me-4"> Total: {NumberFormat(totalValues.totalInvoiceValue)} </span>
+                            </>
+                        )}
                     </>
                 }
             />

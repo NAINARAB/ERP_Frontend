@@ -322,7 +322,6 @@ const AddPaymentReference = ({ loadingOn, loadingOff, AddRights, EditRights, Del
                         startIcon={<Save />}
                         disabled={
                             !checkIsNumber(paymentGeneralInfo.pay_id)
-                            || paymentBillInfo.length === 0
                         }
                         onClick={SavePayment}
                     >Save</Button>

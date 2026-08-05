@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button, Card, CardContent } from "@mui/material";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject, stringCompare, toNumber } from "../../../Components/functions";
+import { ISOString, checkIsNumber, isEqualNumber, rid, Addition, isValidObject, stringCompare, getSessionUser } from "../../../Components/functions";
 import { journalGeneralInfoIV, journalEntriesInfoIV, journalBillReferenceIV, journalStaffInvolvedInfo } from "./variable";
 
 import JournalGeneralInfo from "./journalGeneralInfo";
@@ -88,6 +88,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         const Entries = stateDetails?.Entries;
         const billReferenceInfoData = stateDetails?.billReferenceInfo;
         const staffInvolvedData = stateDetails?.staffDetails;
+        const userDetails = getSessionUser().user;
         if (
             isValidObject(stateDetails)
             && Array.isArray(Entries)
@@ -97,6 +98,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 Object.fromEntries(
                     Object.entries(journalGeneralInfoIV).map(([key, value]) => {
                         if (key === 'JournalDate') return [key, stateDetails[key] ? ISOString(stateDetails[key]) : value]
+                        if (key === 'CreatedBy') return [key, checkIsNumber(userDetails?.UserId) ? userDetails?.UserId : value]
                         return [key, stateDetails[key] ?? value]
                     })
                 )
