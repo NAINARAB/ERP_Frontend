@@ -920,10 +920,15 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
 
     const isStockMixed = useMemo(() => {
         if (invoiceProducts.length === 0) return false;
-        const hasPositive = invoiceProducts.some(item => toNumber(item?.Godown_Stock) >= 0);
-        const hasNegative = invoiceProducts.some(item => toNumber(item?.Godown_Stock) < 0);
+        const getStock = (item) => toNumber(baseData.stockInGodown.find(
+            god => isEqualNumber(god.Product_Id, item?.Item_Id)
+        )?.Bal_Qty);
+        const hasPositive = invoiceProducts.some(item => getStock(item) >= 0);
+        const hasNegative = invoiceProducts.some(item => getStock(item) < 0);
         return hasPositive && hasNegative;
-    }, [invoiceProducts]);
+    }, [invoiceProducts, baseData.stockInGodown]);
+
+    console.log(invoiceProducts)
 
     const isBatchMissing = useMemo(() => {
         if (invoiceProducts.length === 0) return false;
@@ -1373,7 +1378,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                     type="number"
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
-                                                    disabled={isValidNumber(invoiceInfo.So_No) && !salesInvoiceAccess.productModification.exists}
                                                     required
                                                 />
                                             </td>
@@ -1474,6 +1478,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                         invoiceProducts={invoiceProducts}
                         findProductDetails={findProductDetails}
                         products={baseData.products}
+                        isEdit={isEdit}
                     />
 
                     <br />

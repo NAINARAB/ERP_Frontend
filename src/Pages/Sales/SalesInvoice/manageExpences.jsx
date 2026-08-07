@@ -16,7 +16,8 @@ const ExpencesOfSalesInvoice = ({
     productTotal = 0,
     invoiceProducts = [],
     findProductDetails,
-    products = []
+    products = [],
+    isEdit = false
 }) => {
 
     const coolieExp = useMemo(() => {
@@ -38,6 +39,7 @@ const ExpencesOfSalesInvoice = ({
                 const updated = { ...item, [field]: value };
 
                 if (field === 'Expence_Value') {
+                    updated.isManuallyModified = true;
                     const
                         Cgst = item.Cgst ? toNumber(item.Cgst) : 0,
                         Sgst = item.Sgst ? toNumber(item.Sgst) : 0,
@@ -112,9 +114,13 @@ const ExpencesOfSalesInvoice = ({
     };
 
     useEffect(() => {
+        if (isEdit) return;
+
         setInvoiceExpences(prev => {
             let hasChanges = false;
             const newExpenses = prev.map(item => {
+                if (item.isManuallyModified) return item;
+
                 const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, item.Expense_Id));
                 if (!selected) return item;
 
@@ -146,7 +152,7 @@ const ExpencesOfSalesInvoice = ({
             });
             return hasChanges ? newExpenses : prev;
         });
-    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences]);
+    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences, isEdit]);
 
     const addNewRow = () => {
         setInvoiceExpences(prev => [...prev, { ...salesInvoiceExpencesInfo, Sno: prev.length }]);

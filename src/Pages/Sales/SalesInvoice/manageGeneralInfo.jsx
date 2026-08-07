@@ -1,15 +1,14 @@
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { checkIsNumber, getNextDate, getPreviousDate, isEqualNumber, ISOString, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
+import { checkIsNumber, getNextDate, isEqualNumber, isValidNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import RequiredStar from '../../../Components/requiredStar';
 import { commonGodownForProducts, retailerDeliveryAddressInfo, setAddress } from "./variable";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import AppTabs from "../../../Components/appTabsComponent";
 import LedgerBasedClosingStock from "../../Reports/CRM/ledgerWise";
 import AppDialog from "../../../Components/appDialogComponent";
-import { Button, Dialog, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { Close, InfoOutlined, ReceiptLong, Visibility } from "@mui/icons-material";
-import { fetchLink } from '../../../Components/fetchComponent';
+import { IconButton, Tooltip } from "@mui/material";
+import { InfoOutlined, ReceiptLong } from "@mui/icons-material";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -142,16 +141,20 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                     />
                                                 </div>
                                                 <Tooltip title='Closing Stock'>
-                                                    <IconButton
-                                                        onClick={() => setOpen(true)}
-                                                        disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
-                                                    ><InfoOutlined /></IconButton>
+                                                    <span>
+                                                        <IconButton
+                                                            onClick={() => setOpen(true)}
+                                                            disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
+                                                        ><InfoOutlined /></IconButton>
+                                                    </span>
                                                 </Tooltip>
                                                 <Tooltip title="Preview Previous Invoice">
-                                                    <IconButton
-                                                        onClick={onPreviewOpen}
-                                                        disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
-                                                    ><ReceiptLong /></IconButton>
+                                                    <span>
+                                                        <IconButton
+                                                            onClick={onPreviewOpen}
+                                                            disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
+                                                        ><ReceiptLong /></IconButton>
+                                                    </span>
                                                 </Tooltip>
                                             </div>
                                         </div>
