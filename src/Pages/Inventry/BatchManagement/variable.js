@@ -28,6 +28,7 @@ export const batchMasterTransaction = {
 export const batchListingColumns = [
     { Field_Name: 'trans_date', Fied_Data: 'date', ColumnHeader: 'Date' },
     { Field_Name: 'batch', Fied_Data: 'string', ColumnHeader: 'Batch' },
+    { Field_Name: 'batch_alias', Fied_Data: 'string', ColumnHeader: 'Alias' },
     { Field_Name: 'productNameGet', Fied_Data: 'string', ColumnHeader: 'Product' },
     { Field_Name: 'godownName', Fied_Data: 'string', ColumnHeader: 'Godown' },
     { Field_Name: 'stockDays', Fied_Data: 'number', ColumnHeader: 'Stock Days' },

@@ -85,7 +85,7 @@ const ChooseBatch = ({
 
     const totalPages = Math.ceil(journalData.length / PAGE_SIZE);
 
-    const handleInputChange = (row, value) => {
+    const handleInputChange = (row, e) => {
         setInputs(prev => {
             const newInputs = [...prev].filter(item => String(item?.id).length > 0);
 
@@ -96,18 +96,12 @@ const ChooseBatch = ({
                 )
             );
 
-            const batchDetails = batchData.find(
-                batch =>
-                    // isEqualNumber(batch.item_id, row.productId) && 
-                    // isEqualNumber(batch.godown_id, row.godownId) && 
-                    stringCompare(batch.id, value)
-            );
-
             if (index === -1) {
-                newInputs.push({ ...row, batch: batchDetails?.batch || '', id: batchDetails?.id || '' });
+                newInputs.push({ ...row, batch: e.batchIdString, batch_alias: e.label, id: e.value });
             } else {
-                newInputs[index].batch = batchDetails?.batch || '';
-                newInputs[index].id = batchDetails?.id || '';
+                newInputs[index].batch = e.batchIdString;
+                newInputs[index].batch_alias = e.label;
+                newInputs[index].id = e.value;
             }
             return newInputs.filter(item => String(item?.batch).length > 0);
         });
@@ -166,7 +160,8 @@ const ChooseBatch = ({
             )
         ).map(batch => ({
             value: batch.id,
-            label: batch.batch
+            label: batch.batch_alias || batch.batch,
+            batchIdString: batch.batch
         }));
 
     }, [journalData, batchData]);
@@ -175,7 +170,8 @@ const ChooseBatch = ({
         setBulkSelect(e);
         setInputs(journalData.map(item => ({
             ...item,
-            batch: e.label,
+            batch: e.batchIdString,
+            batch_alias: e.label,
             id: e.value
         })))
     }
@@ -225,7 +221,7 @@ const ChooseBatch = ({
                                 {[
                                     'Sno', 'Date', 'Product', 'voucher',
                                     'From', 'To', 'Qty',
-                                    'Rate', 'Amount', 'Batch',
+                                    'Rate', 'Amount', 'Batch Alias',
                                 ].map(
                                     (col, colI) => (
                                         <th key={colI} className="vctr fa-12">{col}</th>
@@ -251,7 +247,8 @@ const ChooseBatch = ({
                                     )
                                 ).map(batch => ({
                                     value: batch.id,
-                                    label: batch.batch
+                                    label: batch.batch_alias || batch.batch,
+                                    batchIdString: batch.batch
                                 }));
 
                                 return (
@@ -271,14 +268,14 @@ const ChooseBatch = ({
                                             <Select
                                                 value={{
                                                     value: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.id || '',
-                                                    label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
+                                                    label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
                                                 }}
                                                 options={[
                                                     { value: '', label: 'select' },
                                                     ...batchDropDown
                                                 ]}
                                                 menuPortalTarget={document.body}
-                                                onChange={e => handleInputChange(item, e.value)}
+                                                onChange={e => handleInputChange(item, e)}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
                                                 isDisabled={batchDropDown.length === 0}

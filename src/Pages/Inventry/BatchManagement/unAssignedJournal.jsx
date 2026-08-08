@@ -75,7 +75,7 @@ const UnAssignedJournals = ({
 
     const handleInputChange = (row, value) => {
         setInputs(prev => {
-            const newInputs = [...prev].filter(item => String(item?.batch)?.length > 0);
+            const newInputs = [...prev].filter(item => String(item?.batch_alias || item?.batch)?.length > 0);
 
             const index = newInputs.findIndex(
                 item => (
@@ -85,11 +85,11 @@ const UnAssignedJournals = ({
             );
 
             if (index === -1) {
-                newInputs.push({ ...row, batch: value });
+                newInputs.push({ ...row, batch: row.suggestBatchName, batch_alias: value });
             } else {
-                newInputs[index].batch = value;
+                newInputs[index].batch_alias = value;
             }
-            return newInputs.filter(item => String(item?.batch).length > 0);
+            return newInputs.filter(item => String(item?.batch_alias || item?.batch).length > 0);
         });
     };
 
@@ -119,15 +119,17 @@ const UnAssignedJournals = ({
         setBulkInput(e.target.value);
         setInputs(journalData.map(item => ({
             ...item,
-            batch: e.target.value
-        })).filter(item => String(item?.batch).length > 0));
+            batch: item.suggestBatchName,
+            batch_alias: e.target.value
+        })).filter(item => String(item?.batch_alias).length > 0));
     }
 
     const handleAutoBatch = () => {
         setBulkInput('');
         setInputs(journalData.map(item => ({
             ...item,
-            batch: item?.suggestBatchName || ''
+            batch: item?.suggestBatchName || '',
+            batch_alias: item?.suggestBatchName || ''
         })).filter(item => String(item?.batch)?.length > 0));
     }
 
@@ -174,7 +176,7 @@ const UnAssignedJournals = ({
                                 {[
                                     'Sno', 'Date', 'Product', 'voucher',
                                     'From', 'To', 'Qty',
-                                    'Rate', 'Amount', 'Batch',
+                                    'Rate', 'Amount', 'Batch Alias',
                                 ].map(
                                     (col, colI) => (
                                         <th key={colI} className="vctr fa-12">{col}</th>
@@ -199,7 +201,7 @@ const UnAssignedJournals = ({
                                     <td className="vctr fa-12 p-0">
                                         <input
                                             placeholder={item?.suggestBatchName || '...'}
-                                            value={inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''}
+                                            value={inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || ''}
                                             onChange={(e) => handleInputChange(item, e.target.value)}
                                             className="cus-inpt"
                                         />
