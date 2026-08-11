@@ -923,8 +923,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         const getStock = (item) => toNumber(baseData.stockInGodown.find(
             god => isEqualNumber(god.Product_Id, item?.Item_Id)
         )?.Bal_Qty);
-        const hasPositive = invoiceProducts.some(item => getStock(item) >= 0);
-        const hasNegative = invoiceProducts.some(item => getStock(item) < 0);
+        const hasPositive = invoiceProducts.some(item => getStock(item) > 0);
+        const hasNegative = invoiceProducts.some(item => getStock(item) <= 0);
         return hasPositive && hasNegative;
     }, [invoiceProducts, baseData.stockInGodown]);
 
