@@ -3,7 +3,9 @@ import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, Dialog
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
-    Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber,
+    Addition, Division, getSessionFiltersByPageId, isEqualNumber, ISOString, 
+    isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic, 
+    setSessionFilters, toArray, toNumber, stringCompare
 } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
 import InvoicePrintPreview from "./invoicePrintPreview";
@@ -442,7 +444,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                 Emp_Type_Id: staff.Cost_Center_Type_Id
             })),
             Expence_Array: toArray(saleOrder?.Expence_Array)
-                .filter(exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name))
+                .filter(exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].some(tax => stringCompare(tax, exp?.Expence_Name)))
                 .map((exp, idx) => ({
                     Id: '',
                     Do_Id: '',

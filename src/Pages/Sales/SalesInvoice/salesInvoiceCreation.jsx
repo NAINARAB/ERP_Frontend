@@ -5,7 +5,8 @@ import {
     isEqualNumber, isValidObject, ISOString, getUniqueData, Addition,
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
     rid, filterableText, generateUUID, reactSelectFilterLogic,
-    Division, Multiplication
+    Division, Multiplication,
+    stringCompare
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete } from "@mui/icons-material";
@@ -255,7 +256,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                 }
             }
             const expences = toArray(Expence_Array).filter(
-                exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name)
+                exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].some(tax => stringCompare(tax, exp?.Expence_Name))
             );
             setInvoiceExpences(
                 expences.map(item => Object.fromEntries(
