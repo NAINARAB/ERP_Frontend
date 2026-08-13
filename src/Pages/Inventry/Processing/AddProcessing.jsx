@@ -27,7 +27,8 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
         voucherType: [],
         uom: [],
         staff: [],
-        staffType: []
+        staffType: [],
+        batchData: []
     });
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [stockJorunalInfo, setStockJorunalInfo] = useState(initialStockJournalInfoValues);
@@ -46,6 +47,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                     uomResponse,
                     staffResponse,
                     staffCategory,
+                    batchResponse,
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products/allProducts` }),
@@ -54,6 +56,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` }),
                 ]);
 
                 const branchData = (branchResponse.success ? branchResponse.data : []).sort(
@@ -77,6 +80,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                 const staffCategoryData = (staffCategory.success ? staffCategory.data : []).sort(
                     (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
                 );
+                const batchData = batchResponse?.success ? batchResponse.data : [];
 
                 setBaseData((pre) => ({
                     ...pre,
@@ -87,6 +91,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                     uom: uomData,
                     staff: staffData,
                     staffType: staffCategoryData,
+                    batchData: batchData
                 }));
             } catch (e) {
                 console.error("Error fetching data:", e);
@@ -158,6 +163,17 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
 
     const saveStockJournal = () => {
         if (checkIsNumber(stockJorunalInfo?.PR_Id) && stringCompare(stockJorunalInfo?.Alter_Reason, '')) return toast.error('Enter Alter Reason');
+        
+        const validSource = sourceList.filter(item => checkIsNumber(item?.Sour_Item_Id));
+        if (validSource.length > 0 && validSource.some(item => !isGraterNumber(item.Sour_Qty, 0) || !checkIsNumber(item.Sour_Goodown_Id))) {
+            return toast.error('Item, Godown and Quantity are mandatory for all Consumption items');
+        }
+
+        const validDest = destinationList.filter(item => checkIsNumber(item?.Dest_Item_Id));
+        if (validDest.length > 0 && validDest.some(item => !isGraterNumber(item.Dest_Qty, 0) || !checkIsNumber(item.Dest_Goodown_Id))) {
+            return toast.error('Item, Godown and Quantity are mandatory for all Production items');
+        }
+
         if (loadingOn) loadingOn();
 
         fetchLink({
@@ -508,6 +524,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                 products={toArray(baseData?.products)}
                                 uom={toArray(baseData?.uom)}
                                 godown={toArray(baseData?.godown)}
+                                batchData={toArray(baseData?.batchData)}
                             />
 
                         </div>

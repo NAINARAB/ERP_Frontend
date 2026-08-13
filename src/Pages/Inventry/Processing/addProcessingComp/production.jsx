@@ -1,5 +1,6 @@
 import RequiredStar from "../../../../Components/requiredStar";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { Button, IconButton } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { customSelectStyles } from "../../../../Components/tablecolumn";
@@ -21,6 +22,7 @@ const ProductionOfProcessing = ({
     products = [],
     uom = [],
     godown = [],
+    batchData = [],
 }) => {
 
     const addRow = () => {
@@ -203,6 +205,8 @@ const ProductionOfProcessing = ({
                                         onChange={e => {
                                             changeDestinationValues(index, 'Dest_Goodown_Id', e.value);
                                             changeDestinationValues(index, 'Godown_Name', e.label);
+                                            changeDestinationValues(index, 'Dest_Batch_Lot_No', '');
+                                            changeDestinationValues(index, 'Dest_Batch_Alias', '');
                                         }}
                                         options={godown.map(g => ({ value: g.Godown_Id, label: g.Godown_Name }))}
                                         menuPortalTarget={document.body}
@@ -215,13 +219,48 @@ const ProductionOfProcessing = ({
                                 </td>
 
                                 <td className="fa-13 px-1 py-0 vctr">
-                                    <input
-                                        value={row?.Dest_Batch_Lot_No ?? ""}
-                                        onChange={(e) =>
-                                            changeDestinationValues(index, "Dest_Batch_Lot_No", e.target.value)
-                                        }
-                                        className="cus-inpt p-2"
-                                    />
+                                    <div style={{ minWidth: '150px' }}>
+                                        {(() => {
+                                            const batchDropDown = batchData.filter(
+                                                batch => isEqualNumber(batch.item_id, row.Dest_Item_Id) && isEqualNumber(batch.godown_id, row.Dest_Goodown_Id)
+                                            ).map(batch => ({
+                                                value: batch.id,
+                                                label: batch.batch_alias || batch.batch,
+                                                batchIdString: batch.batch
+                                            }));
+
+                                            const currentVal = row.Dest_Batch_Lot_No || row.Dest_Batch_Alias ? {
+                                                value: row.Dest_Batch_Lot_No || '',
+                                                label: row.Dest_Batch_Alias || row.Dest_Batch_Lot_No || ''
+                                            } : null;
+
+                                            return (
+                                                <CreatableSelect
+                                                    isDisabled={!checkIsNumber(row.Dest_Goodown_Id, 1)}
+                                                    isClearable
+                                                    placeholder="Batch"
+                                                    options={batchDropDown}
+                                                    value={currentVal}
+                                                    onChange={(e) => {
+                                                        if (!e) {
+                                                            changeDestinationValues(index, "Dest_Batch_Lot_No", "");
+                                                            changeDestinationValues(index, "Dest_Batch_Alias", "");
+                                                            return;
+                                                        }
+                                                        const isExisting = !!e.batchIdString;
+                                                        // For a new batch, just use a temporary ID or generate one. We will use e.value as both for new.
+                                                        const batchVal = isExisting ? e.batchIdString : `PRD_${row.Dest_Item_Id}_${Date.now()}`;
+                                                        const aliasVal = e.label;
+                                                        
+                                                        changeDestinationValues(index, "Dest_Batch_Lot_No", batchVal);
+                                                        changeDestinationValues(index, "Dest_Batch_Alias", aliasVal);
+                                                    }}
+                                                    menuPortalTarget={document.body}
+                                                    styles={customSelectStyles}
+                                                />
+                                            )
+                                        })()}
+                                    </div>
                                 </td>
 
                                 <td className="fa-13 px-1 py-0 p-0 vctr text-center">

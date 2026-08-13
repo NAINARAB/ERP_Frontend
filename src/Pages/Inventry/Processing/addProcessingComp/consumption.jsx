@@ -129,6 +129,7 @@ const SourceItems = memo(function SourceItems({
                     isSearchable
                     placeholder="Select Godown"
                     maxMenuHeight={300}
+                    isDisabled={!checkIsNumber(row?.Sour_Goodown_Id, 1)}
                 />
                 {/* <input 
                     value={row?.Sour_Batch_Lot_No ?? ""}

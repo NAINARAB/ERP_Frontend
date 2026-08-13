@@ -67,7 +67,7 @@ const ChooseBatch = ({
         }).then(data => {
             setData(data);
         }).catch(e => console.error(e));
-    }, [api, reload, search.reloadData]);
+    }, [api, reload, search.reloadData, dateFilter.Fromdate, dateFilter.Todate]);
 
     useEffect(() => {
         fetchLink({

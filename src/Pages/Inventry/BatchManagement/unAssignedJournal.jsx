@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { getSessionUser } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 
 const PAGE_SIZE = 10;
 
@@ -33,7 +34,8 @@ const UnAssignedJournals = ({
     const [uniqueFromGodown, setUniqueFromGodown] = useState([]);
     const [uniqueToGodown, setUniqueToGodown] = useState([]);
     const [uniqueProduct, setUniqueProduct] = useState([]);
-    const [bulkInput, setBulkInput] = useState('')
+    const [batchData, setBatchData] = useState([]);
+    const [bulkInput, setBulkInput] = useState('');
 
     const userDetails = getSessionUser().user;
 
@@ -64,7 +66,16 @@ const UnAssignedJournals = ({
         }).then(data => {
             setData(data);
         }).catch(e => console.error(e))
-    }, [api, reload, search.reloadData])
+    }, [api, reload, search.reloadData, dateFilter.Fromdate, dateFilter.Todate])
+
+    useEffect(() => {
+        fetchLink({
+            address: 'inventory/batchMaster/stockBalance',
+        }).then(data => {
+            if (data.success) setBatchData(data.data);
+            else setBatchData([]);
+        }).catch(e => console.error(e));
+    }, [reload])
 
     const paginated = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE;
@@ -73,7 +84,7 @@ const UnAssignedJournals = ({
 
     const totalPages = Math.ceil(journalData.length / PAGE_SIZE);
 
-    const handleInputChange = (row, value) => {
+    const handleInputChange = (row, e) => {
         setInputs(prev => {
             const newInputs = [...prev].filter(item => String(item?.batch_alias || item?.batch)?.length > 0);
 
@@ -84,10 +95,22 @@ const UnAssignedJournals = ({
                 )
             );
 
+            if (!e) {
+                if (index !== -1) newInputs.splice(index, 1);
+                return newInputs;
+            }
+
+            const isExisting = !!e.batchIdString;
+            const batchVal = isExisting ? e.batchIdString : row.suggestBatchName;
+            const aliasVal = e.label;
+            const idVal = isExisting ? e.value : '';
+
             if (index === -1) {
-                newInputs.push({ ...row, batch: row.suggestBatchName, batch_alias: value });
+                newInputs.push({ ...row, batch: batchVal, batch_alias: aliasVal, id: idVal });
             } else {
-                newInputs[index].batch_alias = value;
+                newInputs[index].batch = batchVal;
+                newInputs[index].batch_alias = aliasVal;
+                newInputs[index].id = idVal;
             }
             return newInputs.filter(item => String(item?.batch_alias || item?.batch).length > 0);
         });
@@ -157,7 +180,7 @@ const UnAssignedJournals = ({
                         onClick={sendToBackend}
                         variant="contained"
                         className="mx-1"
-                        disabled={inputs.some(inpt => String(inpt?.id)?.length === 0) || inputs.length === 0}
+                        disabled={inputs.some(inpt => String(inpt?.batch_alias)?.length === 0) || inputs.length === 0}
                     >Save</Button>
 
                     <Button
@@ -185,7 +208,17 @@ const UnAssignedJournals = ({
                             </tr>
                         </thead>
                         <tbody>
-                            {paginated.map((item, iInd) => (
+                            {paginated.map((item, iInd) => {
+                                const batchDropDown = batchData.filter(
+                                    batch => isEqualNumber(batch.item_id, item.productId)
+                                ).map(batch => ({
+                                    value: batch.id,
+                                    label: batch.batch_alias || batch.batch,
+                                    batchIdString: batch.batch
+                                }));
+                                const val = inputs.find(input => isEqualNumber(input.uniquId, item.uniquId));
+
+                                return (
                                 <tr key={iInd}>
                                     <td className="vctr fa-12">{iInd + 1}</td>
                                     <td className="vctr fa-12">{LocalDate(item.eventDate)}</td>
@@ -199,15 +232,21 @@ const UnAssignedJournals = ({
                                         )
                                     )}
                                     <td className="vctr fa-12 p-0">
-                                        <input
-                                            placeholder={item?.suggestBatchName || '...'}
-                                            value={inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || ''}
-                                            onChange={(e) => handleInputChange(item, e.target.value)}
-                                            className="cus-inpt"
-                                        />
+                                        <div style={{ minWidth: '150px' }}>
+                                            <CreatableSelect
+                                                isClearable
+                                                placeholder={item?.suggestBatchName || '...'}
+                                                options={batchDropDown}
+                                                value={val ? { value: val.id || val.batch_alias, label: val.batch_alias } : null}
+                                                onChange={e => handleInputChange(item, e)}
+                                                styles={customSelectStyles}
+                                                menuPortalTarget={document.body}
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
-                            ))}
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
