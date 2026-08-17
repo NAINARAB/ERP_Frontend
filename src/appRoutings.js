@@ -196,6 +196,7 @@ const ArrivalMaster = lazy(() => import('./Pages/Inventry/TripMaster/arrivalMast
 const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAssign'));
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
 const BatchTransactionView = lazy(() => import('./Pages/Inventry/BatchManagement/batchTransaction'))
+const UnAssignedProcessing = lazy(() => import('./Pages/Inventry/BatchManagement/unAssignedProcessing'));
 const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverReport'));
 const StockJournalAdjustmentCreate = lazy(() => import('./Pages/Inventry/StockJournalAdjustmentCreate'));
 const StockJournalAdjustment = lazy(() => import('./Pages/Inventry/StockJournalAdjustment'));
@@ -343,6 +344,7 @@ const RoutingArray = [
     { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
     { component: <BatchTransactionView />, path: '/erp/batchManagement/batchTransaction' },
     { component: <BatchTraceFlow />, path: '/erp/batchManagement/batchReport' },
+    { component: <UnAssignedProcessing />, path: '/erp/batchManagement/productionBatchCreation' },
 
     // ---------------------------------------------------------------------------
     // ERP - Contra
