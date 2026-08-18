@@ -239,7 +239,7 @@ const AppTableComponent = ({
                             className="text-center"
                             style={{ width: 60, fontSize: bodyFontSizePx }}
                         >
-                            {rowIndex + 1 + (page * rowsPerPage)}
+                            {rowIndex + 1 + (disablePagination ? 0 : page * rowsPerPage)}
                         </TableCell>
                     )}
 
@@ -310,7 +310,7 @@ const AppTableComponent = ({
                                     className="text-center "
                                     style={{ width: 60, fontSize: bodyFontSizePx }}
                                 >
-                                    {idx + 1 + (page * rowsPerPage)}
+                                    {idx + 1 + (disablePagination ? 0 : page * rowsPerPage)}
                                 </TableCell>
                             )}
 
@@ -345,13 +345,13 @@ const AppTableComponent = ({
                         {expanded[key] && (
                             <>
                                 {renderRows(
-                                    row.__rows.slice(
+                                    disablePagination ? row.__rows : row.__rows.slice(
                                         (groupPage[key] || 0) * rowsPerPage,
                                         (groupPage[key] || 0) * rowsPerPage + rowsPerPage
                                     ),
                                     level + 1
                                 )}
-                                {row.__rows.length > rowsPerPage && (
+                                {!disablePagination && row.__rows.length > rowsPerPage && (
                                     <TableRow>
                                         <TableCell
                                             colSpan={
@@ -545,7 +545,7 @@ const AppTableComponent = ({
                     <TableBody>
                         {Array.isArray(groupedData)
                             ? renderRows(
-                                groupedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                disablePagination ? groupedData : groupedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                             )
                             : null}
                     </TableBody>
