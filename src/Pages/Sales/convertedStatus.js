@@ -23,6 +23,11 @@ export const convertedStatus = [
 
 export const dbStatus = [
     {
+        id: 0,
+        label: 'Canceled',
+        color: ' bg-danger text-white '
+    },
+    {
         id: 1,
         label: 'New',
         color: ' bg-info text-white '
