@@ -12,7 +12,8 @@ import Select from 'react-select';
 import { customSelectStyles } from '../../../Components/tablecolumn';
 import {
     reactSelectFilterLogic, formatDateTimeLocal, ISOString,
-    toArray, isEqualNumber
+    toArray, isEqualNumber,
+    RoundNumber
 } from '../../../Components/functions';
 import RequiredStar from '../../../Components/requiredStar';
 
@@ -161,8 +162,8 @@ const TripGroupCreation = () => {
         }
     };
 
-    const totalBags = selectedTrips.reduce((acc, t) => acc + (Number(t.Bags_Qty) || 0), 0);
-    const totalTonnage = selectedTrips.reduce((acc, t) => acc + (Number(t.Tonnage_Qty) || 0), 0);
+    const totalBags = RoundNumber(selectedTrips.reduce((acc, t) => acc + (Number(t.Bags_Qty) || 0), 0));
+    const totalTonnage = RoundNumber(selectedTrips.reduce((acc, t) => acc + (Number(t.Tonnage_Qty) || 0), 0));
 
     return (
         <div className="container-fluid p-3">
@@ -367,7 +368,11 @@ const TripGroupCreation = () => {
             </div>
 
             {/* Dialog for selecting trips */}
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="lg" fullWidth>
+            <Dialog 
+                open={dialogOpen} 
+                onClose={() => setDialogOpen(false)} 
+                fullScreen
+            >
                 <DialogTitle className="d-flex justify-content-between align-items-center">
                     <span>Select Trips to Group</span>
                     <IconButton size="small" onClick={() => setDialogOpen(false)}>
@@ -398,7 +403,6 @@ const TripGroupCreation = () => {
                             <label className="fa-13">Bill Type</label>
                             <Select
                                 options={[
-                                    { label: 'ALL', value: '' },
                                     { label: 'MATERIAL INWARD', value: 'MATERIAL INWARD' },
                                     { label: 'OTHER GODOWN', value: 'OTHER GODOWN' },
                                     { label: 'SALES', value: 'SALES' },

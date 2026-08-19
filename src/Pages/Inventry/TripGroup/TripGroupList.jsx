@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { Edit, Delete, Add } from '@mui/icons-material';
+import { Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip } from '@mui/material';
+import { Edit, Delete, Add, FilterAlt, Search } from '@mui/icons-material';
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
 import { fetchLink } from '../../../Components/fetchComponent';
 import Select from 'react-select';
@@ -18,6 +18,7 @@ const TripGroupList = () => {
         Todate: ISOString(),
         Branch_Id: ''
     });
+    const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
     const fetchBranches = async () => {
         try {
@@ -45,11 +46,13 @@ const TripGroupList = () => {
 
     useEffect(() => {
         fetchBranches();
+        fetchData();
     }, []);
 
-    useEffect(() => {
+    const handleSearch = () => {
+        setFilterDialogOpen(false);
         fetchData();
-    }, [filters]);
+    };
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this trip group?')) {
@@ -76,20 +79,10 @@ const TripGroupList = () => {
         { Field_Name: 'Trip_Nos', ColumnHeader: 'Trip No(s)', isVisible: 1 },
         { Field_Name: 'Total_Bags', ColumnHeader: 'Total Bags', Fied_Data: 'number', isVisible: 1 },
         { Field_Name: 'Total_Tonnage', ColumnHeader: 'Total Tonnage', Fied_Data: 'number', isVisible: 1 },
-        { 
-            Field_Name: 'Staffs_Array', 
-            ColumnHeader: 'Staff Involved', 
+        {
+            Field_Name: 'Action',
+            ColumnHeader: 'Action',
             isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const staffs = row.Staffs_Array || [];
-                return staffs.map(s => s.Emp_Name).join(', ') || 'None';
-            }
-        },
-        { 
-            Field_Name: 'Action', 
-            ColumnHeader: 'Action', 
-            isVisible: 1, 
             isCustomCell: true,
             Cell: ({ row }) => (
                 <div className="d-flex gap-2">
@@ -106,6 +99,8 @@ const TripGroupList = () => {
 
     const ExpandedTripsTable = ({ row }) => {
         const trips = row.Trips_List || [];
+        const staffs = row.Staffs_Array || [];
+
         return (
             <TableContainer component={Paper} elevation={0} style={{ margin: '10px 0', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>
                 <Table size="small">
@@ -138,54 +133,27 @@ const TripGroupList = () => {
                         )}
                     </TableBody>
                 </Table>
+
+                {staffs.length > 0 && (
+                    <div className="p-3 border-top bg-white">
+                        <h6 className="mb-2 text-primary" style={{ fontSize: '14px', fontWeight: 'bold' }}>Staff Involved:</h6>
+                        <div className="d-flex flex-wrap gap-2">
+                            {staffs.map((s, i) => (
+                                <span key={i} className="badge bg-light text-dark border p-2">
+                                    {s.Emp_Name} {s.Involved_Emp_Type ? `(${s.Involved_Emp_Type})` : ''}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </TableContainer>
         );
     };
 
     return (
-        <div className="container-fluid p-3">
-            <div className="card shadow-sm mb-3">
-                <div className="card-body p-2 d-flex align-items-center gap-3 flex-wrap">
-                    <div className="d-flex align-items-center gap-2">
-                        <label className="fa-12 mb-0">From:</label>
-                        <input
-                            type="date"
-                            className="cus-inpt p-2"
-                            value={filters.Fromdate}
-                            onChange={e => setFilters(prev => ({ ...prev, Fromdate: e.target.value }))}
-                        />
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                        <label className="fa-12 mb-0">To:</label>
-                        <input
-                            type="date"
-                            className="cus-inpt p-2"
-                            value={filters.Todate}
-                            onChange={e => setFilters(prev => ({ ...prev, Todate: e.target.value }))}
-                        />
-                    </div>
-                    <div style={{ width: 220, zIndex: 100 }}>
-                        <Select 
-                            options={[{ label: 'ALL BRANCHES', value: '' }, ...branches.map(b => ({ label: b.BranchName, value: b.BranchId }))]}
-                            value={{
-                                label: branches.find(b => isEqualNumber(b.BranchId, filters.Branch_Id))?.BranchName || 'ALL BRANCHES',
-                                value: filters.Branch_Id
-                            }}
-                            onChange={e => setFilters(prev => ({ ...prev, Branch_Id: e ? e.value : '' }))}
-                            styles={customSelectStyles}
-                            filterOption={reactSelectFilterLogic}
-                        />
-                    </div>
-                    <Button 
-                        variant="contained" 
-                        color="primary" 
-                        startIcon={<Add />}
-                        onClick={() => navigate('/erp/inventory/tripGroup/create')}
-                        className="ms-auto"
-                    >
-                        Create Trip Group
-                    </Button>
-                </div>
+        <>
+            <div className="d-flex justify-content-end mb-3 gap-2">
+
             </div>
 
             <AppTableComponent
@@ -196,8 +164,80 @@ const TripGroupList = () => {
                 expandableComp={ExpandedTripsTable}
                 EnableSerialNumber={true}
                 enableGlobalSearch={true}
+                ButtonArea={
+                    <>
+                        <Button
+                            startIcon={<Add />}
+                            onClick={() => navigate('/erp/inventory/tripGroup/create')}
+                        >
+                            New
+                        </Button>
+                        <Tooltip title="Filters">
+                            <IconButton onClick={() => setFilterDialogOpen(true)}>
+                                <FilterAlt />
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                }
             />
-        </div>
+
+            <Dialog
+                open={filterDialogOpen}
+                onClose={() => setFilterDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Filter Trip Groups</DialogTitle>
+                <DialogContent dividers>
+                    <div className="d-flex flex-column gap-3 py-2">
+                        <div className="d-flex flex-column gap-1">
+                            <label className="fa-13 fw-bold">From Date</label>
+                            <input
+                                type="date"
+                                className="cus-inpt p-2"
+                                value={filters.Fromdate}
+                                onChange={e => setFilters(prev => ({ ...prev, Fromdate: e.target.value }))}
+                            />
+                        </div>
+                        <div className="d-flex flex-column gap-1">
+                            <label className="fa-13 fw-bold">To Date</label>
+                            <input
+                                type="date"
+                                className="cus-inpt p-2"
+                                value={filters.Todate}
+                                onChange={e => setFilters(prev => ({ ...prev, Todate: e.target.value }))}
+                            />
+                        </div>
+                        <div className="d-flex flex-column gap-1">
+                            <label className="fa-13 fw-bold">Branch</label>
+                            <Select
+                                options={[{ label: 'ALL BRANCHES', value: '' }, ...branches.map(b => ({ label: b.BranchName, value: b.BranchId }))]}
+                                value={{
+                                    label: branches.find(b => isEqualNumber(b.BranchId, filters.Branch_Id))?.BranchName || 'ALL BRANCHES',
+                                    value: filters.Branch_Id
+                                }}
+                                onChange={e => setFilters(prev => ({ ...prev, Branch_Id: e ? e.value : '' }))}
+                                styles={customSelectStyles}
+                                filterOption={reactSelectFilterLogic}
+                                menuPortalTarget={document.body}
+                                maxMenuHeight={250}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setFilterDialogOpen(false)} color="inherit">Cancel</Button>
+                    <Button
+                        onClick={handleSearch}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<Search />}
+                    >
+                        Search
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
 
