@@ -16,8 +16,14 @@ export const fetchLink = async ({
 
     const isFormData = bodyData instanceof FormData;
 
-    const defaultHeaders = {
-        "Content-Type": "application/json",
+    // const defaultHeaders = {
+    //     "Content-Type": "application/json",
+    //     'Authorization': token,
+    // }
+
+     const defaultHeaders = {
+      
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         'Authorization': token,
     }
 
@@ -51,7 +57,9 @@ export const fetchLink = async ({
             const json = await response.json();
             return { ...json, statusCode: response.status };
         } else {
-            return response;
+            // return response;
+             const json = await response.json();
+            return { ...json, statusCode: response.status };
         }
     } catch (e) {
         console.error('Fetch Error', e);

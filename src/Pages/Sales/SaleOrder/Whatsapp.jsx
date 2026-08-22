@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
     checkIsNumber, isEqualNumber, ISOString, toArray, toNumber,
@@ -25,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import { useReactToPrint } from "react-to-print";
+import html2canvas from "html2canvas";
 import { DotPeWhatsAppService } from "../../../Components/dotpeWhatsappService";
 import { Dot_Pe_Number } from "../../../encryptionKey";
 import api from "../../../API";
@@ -52,6 +51,7 @@ const TAB_TO_WHATSAPP_TYPE = {
     shetsheet: "shetsheet",
 };
 
+
 const TEMPLATE_MAP = {
     sale_invoice: {
         dotpe: { english: "sales_invoice_en", tamil: "sales_invoice_order" },
@@ -75,7 +75,12 @@ const TEMPLATE_MAP = {
     },
     pending_bills: {
         dotpe: { english: "pending_bills", tamil: "pending_bills" },
-        askeva: { english: "pendingbill_english", tamil: "pendingbilll_tamil" },  	
+        askeva: { english: "pendingbill_english", tamil: "pendingbilll_tamil" },
+      
+        pdf: {
+            tamil: "pending_bill_pdf",
+             english: "pending_bill_pdf_english", 
+        },
     },
      shetsheet: {  
         dotpe: { english: "sheetsheet", tamil: "sheetsheet" },
@@ -158,11 +163,7 @@ const getRowKey = (row, tab) => {
     return `${tab}_${id}`;
 };
 
-// Every candidate phone number available for a row, deduplicated, labelled by
-// source (A1, Party Mobile 1, etc). Pure function (no React state) — used both
-// by PhoneSelectCell to populate its dropdown and by resolveSendPhone (inside
-// the Whatsapp component) as the default fallback chain when no manual
-// override exists yet.
+
 const getPhoneCandidates = (row, phoneMap) => {
     const list = [];
     const push = (label, v) => {
@@ -171,7 +172,7 @@ const getPhoneCandidates = (row, phoneMap) => {
         if (!norm || !isValidPhone(norm)) return;
         if (!list.some((c) => c.value === norm)) list.push({ label, value: norm });
     };
-    // A1 first — this is the default that pre-fills the field on initial load.
+   
     push("A1", phoneMap?.get?.(Number(row.Retailer_Id)));
     push("A1", row.A1_Phone);
     push("A1", row.A1);
@@ -199,7 +200,7 @@ const PhoneSelectCell = ({ row, tab, phoneMap, selectedPhones, setSelectedPhones
         if (selectedPhones[rowKey] === undefined) {
             setLocalValue(defaultPhone);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, [defaultPhone]);
 
     const commit = (value) => {
@@ -247,10 +248,10 @@ const PhoneSelectCell = ({ row, tab, phoneMap, selectedPhones, setSelectedPhones
     );
 };
 
-const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams, evatoken, imageUrl = null }) => {
+const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams, evatoken, imageUrl = null,documentUrl = null, documentFilename = "Pending_Bills.pdf" }) => {
     const components = [];
     
-    // Add header with image if imageUrl is provided
+  
     if (imageUrl) {
         components.push({
             type: "header",
@@ -262,6 +263,14 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
                     }
                 }
             ]
+        });
+   } else if (documentUrl) {
+        components.push({
+            type: "header",
+            parameters: [{
+                type: "document",
+                document: { link: documentUrl, filename: documentFilename },
+            }],
         });
     }
 
@@ -281,7 +290,7 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
         type: "template",
         template: {
             name: templateName,
-            language: { code: language },
+            language: { policy: "deterministic",code: language },
             components: components
         },
     };
@@ -297,7 +306,21 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
 };
 
 
-const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, clientRefId }) => {
+// const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, clientRefId }) => {
+//     const payload = {
+//         template: { name: templateName, language },
+//         source: "crm",
+//         wabaNumber: Dot_Pe_Number,
+//         recipients: [phone],
+//         clientRefId,
+//         params: { body: bodyParams.map(String) },
+//     };
+//     const resp = await DotPeWhatsAppService.sendTemplateMessage(payload);
+//     if (!resp?.status) throw new Error(resp?.message || "DotPe send failed");
+//     return resp;
+// };
+
+const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, clientRefId, imageUrl = null, documentUrl = null }) => {
     const payload = {
         template: { name: templateName, language },
         source: "crm",
@@ -305,6 +328,8 @@ const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, 
         recipients: [phone],
         clientRefId,
         params: { body: bodyParams.map(String) },
+        ...(documentUrl ? { attachment: { type: "document", link: documentUrl } } : {}),
+        ...(imageUrl ? { attachment: { type: "image", link: imageUrl } } : {}),
     };
     const resp = await DotPeWhatsAppService.sendTemplateMessage(payload);
     if (!resp?.status) throw new Error(resp?.message || "DotPe send failed");
@@ -1747,7 +1772,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [whatsappCounts, setWhatsappCounts] = useState({});
     const [countsLoaded, setCountsLoaded] = useState(false);
 
-    // Sheetsheet state variables
+
     const [sheetsheetFromDate, setSheetsheetFromDate] = useState(today);
     const [sheetsheetToDate, setSheetsheetToDate] = useState(today);
     const [sheetsheetData, setSheetsheetData] = useState([]);
@@ -1755,11 +1780,19 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [isSheetsheetLoading, setIsSheetsheetLoading] = useState(false);
     const [sheetsheetFilters, setSheetsheetFilters] = useState({});
 
-    // ---- Fetch guard refs (prevents flicker from duplicate / overlapping fetches) ----
-    // tabFetchedRef: marks a tab's data as already loaded once, so clicking back into
-    // it just reuses cached state instead of re-fetching and re-rendering.
-    // tabFetchingRef: prevents two overlapping fetches for the same tab from firing
-    // when a user clicks rapidly (2-3 times) before the first request resolves.
+    const [pdfAttachDialog, setPdfAttachDialog] = useState({
+    open: false,
+    row: null,
+    documentUrl: "",
+    documentFilename: "",
+    bodyParams: [],
+    clientRefId: "",
+});
+
+  
+    const pdfCaptureRef = useRef(null);
+    const [pdfCaptureData, setPdfCaptureData] = useState(null);
+
     const tabFetchedRef = useRef({});
     const tabFetchingRef = useRef({});
 
@@ -1777,6 +1810,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
     const [multipleCostCenterUpdateValues, setMultipleCostCenterUpdateValues] = useState(STAFF_INIT);
     const [multipleStaffRemoveValues, setMultipleStaffRemoveValues] = useState(STAFF_INIT);
+    const didInitialLoadRef = useRef(false);
 
     const [receiptFilters, setReceiptFilters] = useState({
         Fromdate: ISOString(), Todate: ISOString(),
@@ -1876,9 +1910,15 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         } catch (e) { console.error("Error fetching tab settings:", e); }
     }, []);
 
-    const resolveTemplate = useCallback((tab, serviceName, langName) => {
+   
+    const resolveTemplate = useCallback((tab, serviceName, langName, usePdf = false) => {
         const svcKey = (serviceName || "dotpe").toLowerCase();
         const langKey = (langName || "english").toLowerCase();
+
+        if (usePdf) {
+            return TEMPLATE_MAP[tab]?.pdf?.[langKey] || null;
+        }
+
         return (
             TEMPLATE_MAP[tab]?.[svcKey]?.[langKey] ||
             TEMPLATE_MAP[tab]?.[svcKey]?.["english"] ||
@@ -1888,8 +1928,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     }, []);
 
 const sendWhatsAppMessage = useCallback(
-    async ({ tab, phone, bodyParams, clientRefId, imageUrl = null }) => {
-        
+    async ({ tab, phone, bodyParams, clientRefId, imageUrl = null, documentUrl = null, documentFilename = null, usePdfTemplate = false}) => {
         const safeParams = bodyParams.map((p) => {
             const s = p === undefined || p === null ? "" : String(p).trim();
             return s === "" ? "N/A" : s;
@@ -1898,22 +1937,31 @@ const sendWhatsAppMessage = useCallback(
         const svcKey = serviceName.toLowerCase();
         const langKey = langName.toLowerCase();
         const langCode = LANG_CODE_MAP[langKey] || "en";
-        const templateName = resolveTemplate(tab, svcKey, langKey);
+        const templateName = resolveTemplate(tab, svcKey, langKey, usePdfTemplate);
+
+       
+        if (usePdfTemplate && !templateName) {
+            throw new Error(`No PDF-attachment WhatsApp template configured for "${langKey}". Add one to TEMPLATE_MAP.${tab}.pdf`);
+        }
+
         if (svcKey === "askeva") return sendViaAskeva({
-            phone, 
-            templateName, 
-            language: langCode, 
+            phone,
+            templateName,
+            language: langCode,
             bodyParams: safeParams,
             evatoken: String(evatoken),
-            imageUrl
+            imageUrl,
+            documentUrl,
+            ...(documentFilename ? { documentFilename } : {}),
         });
-        return sendViaDotPe({ 
-            phone, 
-            templateName, 
-            language: langCode, 
-            bodyParams: safeParams, 
+        return sendViaDotPe({
+            phone,
+            templateName,
+            language: langCode,
+            bodyParams: safeParams,
             clientRefId,
-            imageUrl 
+            imageUrl,
+            documentUrl,
         });
     },
     [tabMethodSettings, resolveTemplate, evatoken]
@@ -2066,6 +2114,112 @@ const sendWhatsAppMessage = useCallback(
         return `${print_app}/salesOrder/downloadPdf?So_Inv_No=${btoa(formattedSalesNo)}&Company_id=${btoa(storage?.Company_id)}`;
     };
 
+ 
+
+    const generatePdfBlobFromElement = async (element) => {
+        if (!element) throw new Error("Nothing to render — capture element is empty");
+        const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        return pdf.output("blob");
+    };
+
+    const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result).split(",")[1]); 
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+});
+
+
+const uploadPdfToServer = async (blob, filename) => {
+    const formData = new FormData();
+    formData.append("pdfFile", blob, filename); 
+    if (storage?.Company_id) formData.append("Company_id", storage.Company_id);
+
+    const response = await fetchLink({
+        address: "masters/whatsapp/uploadPendingBillsPdf",
+        method: "POST",
+        bodyData: formData,
+        loadingOn: () => {}, loadingOff: () => {},
+    });
+
+    if (!response?.success || !response?.data?.url) {
+        throw new Error(response?.message || "PDF upload failed");
+    }
+    return response.data.url;
+};
+
+
+
+
+ const [pdfBuildInFlight, setPdfBuildInFlight] = useState(false);
+
+const buildPendingBillsPdfBlob = (row) =>
+    new Promise((resolve, reject) => {
+        if (pdfBuildInFlight) {
+            reject(new Error("A PDF is already being prepared. Please wait for it to finish."));
+            return;
+        }
+        setPdfBuildInFlight(true);
+       
+
+        let settled = false;
+        const safeResolve = (v) => { if (!settled) { settled = true; setPdfBuildInFlight(false); resolve(v); } };
+        const safeReject = (e) => { if (!settled) { settled = true; setPdfBuildInFlight(false); reject(e); } };
+
+        const timeoutId = setTimeout(() => {
+            console.error("[PendingBillsPdf] TIMED OUT — onReady/onError never fired for Acc_Id", row?.Acc_Id);
+            setPdfCaptureData(null);
+            safeReject(new Error("Timed out preparing Pending Bills PDF (component never signaled ready)."));
+        }, 20000);
+
+        setPdfCaptureData({
+            row,
+            fromDate: pendingBillsFromDate,
+            toDate: pendingBillsToDate,
+            companyInfo,
+            onReady: async () => {
+              
+                clearTimeout(timeoutId);
+                try {
+                    const blob = await generatePdfBlobFromElement(pdfCaptureRef.current);
+                   
+                    setPdfCaptureData(null);
+                    safeResolve(blob);
+                } catch (e) {
+                    console.error("[PendingBillsPdf] html2canvas/jsPDF failed:", e);
+                    setPdfCaptureData(null);
+                    safeReject(e);
+                }
+            },
+            onError: (err) => {
+                console.error("[PendingBillsPdf] onError fired for Acc_Id", row?.Acc_Id, err);
+                clearTimeout(timeoutId);
+                setPdfCaptureData(null);
+                safeReject(err instanceof Error ? err : new Error(String(err)));
+            },
+        });
+    });
     const processInvoice = (invoice, phoneMapRef) => ({
         ...invoice,
         DocumentType: "SalesInvoice",
@@ -2108,10 +2262,8 @@ const sendWhatsAppMessage = useCallback(
                 }
                 setCostTypes(toArray(response?.others?.costTypes));
                 setUniqueInvolvedCost(toArray(response?.others?.uniqeInvolvedStaffs));
-                // Show the actual count returned for this date range, so it's always
-                // clear whether a low number is coming from the server or from an
-                // active filter (see onSearch above for the filter-clearing fix).
-                toast.success(`Loaded ${si.length} sale invoice(s) for ${saleInvoiceFromDate} to ${saleInvoiceToDate}`);
+           
+                // toast.success(`Loaded ${si.length} sale invoice(s) for ${saleInvoiceFromDate} to ${saleInvoiceToDate}`);
             } else {
                 setAllSalesInvoices([]);
                 if (activeTab === "sale_invoice") setFilteredData([]);
@@ -2172,10 +2324,7 @@ const sendWhatsAppMessage = useCallback(
         }
     };
 
-    // NOTE: Sale orders are already loaded once by the big init() effect below.
-    // The duplicate `useEffect(() => { fetchSaleOrders(); }, [])` calls that used to
-    // live here and further down (which caused sale orders to be fetched 2-3 times
-    // on mount and produced the tab-click flicker) have been removed.
+  
 
     const fetchSaleOrders = async (reqDate) => {
         if (tabFetchingRef.current.sale_order) return;
@@ -2647,12 +2796,17 @@ const sendWhatsAppMessage = useCallback(
         init();
     }, []);
 
-    useEffect(() => {
-        if (initialDataLoaded) {
-            if (viewMode === "normal") fetchAllInvoices(true);
-            else fetchPendingInvoices();
-        }
-    }, [filters.fetchTrigger, filters.staffStatus, filters.reqDate, viewMode, initialDataLoaded]);
+useEffect(() => {
+    if (!initialDataLoaded) return;
+
+    if (!didInitialLoadRef.current) {
+        didInitialLoadRef.current = true;
+        return;
+    }
+
+    if (viewMode === "normal") fetchAllInvoices(true);
+    else fetchPendingInvoices();
+}, [filters.fetchTrigger, filters.staffStatus, filters.reqDate, viewMode, initialDataLoaded]);
 
     useEffect(() => {
         if (multiPrint.open) {
@@ -2730,6 +2884,173 @@ const sendWhatsAppMessage = useCallback(
         const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
         return { bodyParams: [companyname, customerName, `₹${amount}`, statementLink], clientRefId: generateUniqueClientRefId("outstanding", row.DocumentId) };
     };
+
+    
+    const buildPendingBillsPDFParams = async (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+        const amount = NumberFormat(row.Bal_Amount || 0);
+
+        let billCount = "0";
+        try {
+            const response = await fetchLink({
+                address: `journal/accountPendingReference?Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}`,
+                loadingOn: () => {}, loadingOff: () => {},
+            });
+            if (response?.success && response.data) {
+                const transactions = toArray(response.data);
+                const uniqueBills = new Set();
+                transactions.forEach((item) => {
+                    if (item.voucherNumber || item.invoice_no) uniqueBills.add(item.voucherNumber || item.invoice_no);
+                });
+                billCount = String(uniqueBills.size || transactions.length);
+            }
+        } catch (e) { billCount = "0"; }
+
+        const blob = await buildPendingBillsPdfBlob(row);
+        const filename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+            .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+        const documentUrl = await uploadPdfToServer(blob, filename);
+         const fifthParam = companyInfo[0]?.Company_Name || "Company";
+        return {
+        
+            bodyParams: [companyname, customerName, billCount, `₹${amount}`,fifthParam],
+            clientRefId: generateUniqueClientRefId("pending_bill_pdf", row.DocumentId),
+            documentUrl,
+        };
+    };
+
+const PendingBillsAttachmentDialog = ({ open, onClose, documentUrl, documentFilename, bodyParams, onSend, sending }) => {
+    const [companyname, customerName, billCount, amount] = bodyParams || [];
+
+    return (
+        <Dialog open={open} onClose={sending ? undefined : onClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                Send Pending Bills PDF
+                <IconButton onClick={onClose} size="small" disabled={sending}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <Stack spacing={2}>
+                    <Paper variant="outlined" sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <PictureAsPdf color="error" sx={{ fontSize: 36, flexShrink: 0 }} />
+                        <Box sx={{ overflow: "hidden", minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight="bold" noWrap>
+                                {documentFilename}
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                color="primary"
+                                component="a"
+                                href={documentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                sx={{ wordBreak: "break-all", display: "block" }}
+                            >
+                                {documentUrl}
+                            </Typography>
+                        </Box>
+                    </Paper>
+
+                    <Typography variant="subtitle2" color="text.secondary">Message Details</Typography>
+                    <Table size="small">
+                        <TableBody>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 600, border: 0, width: 140 }}>Company</TableCell>
+                                <TableCell sx={{ border: 0 }}>{companyname || "-"}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Customer</TableCell>
+                                <TableCell sx={{ border: 0 }}>{customerName || "-"}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Bill Count</TableCell>
+                                <TableCell sx={{ border: 0 }}>{billCount || "0"}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Amount</TableCell>
+                                <TableCell sx={{ border: 0 }}>{amount || "-"}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </Stack>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose} disabled={sending} variant="outlined">Cancel</Button>
+                <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={sending ? <CircularProgress size={18} color="inherit" /> : <WhatsAppIcon />}
+                    onClick={onSend}
+                    disabled={sending}
+                >
+                    {sending ? "Sending…" : "Send via WhatsApp"}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+const openPendingBillsAttachmentDialog = async (row) => {
+    try {
+        const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
+        setPdfAttachDialog({
+            open: true,
+            row,
+            documentUrl,
+            documentFilename: `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+                .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+            bodyParams,
+            clientRefId,
+        });
+    } catch (e) {
+        console.error(e);
+        toast.error(`Failed to prepare Pending Bills PDF: ${e.message}`);
+    }
+};
+
+
+const confirmSendPendingBillsAttachment = async () => {
+    const { row, documentUrl, documentFilename, bodyParams, clientRefId } = pdfAttachDialog;
+    if (!row) return;
+    const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
+
+ const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
+if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
+    toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"...`);
+    return;
+}
+
+    setSendingStates((p) => ({ ...p, [rowKey]: true }));
+    try {
+        let phone = resolveSendPhone(row, "pending_bills");
+        if (!phone || !isValidPhone(phone)) {
+            toast.error("Valid phone number not found");
+            return;
+        }
+        phone = normalizePhone(phone);
+        await sendWhatsAppMessage({
+            tab: "pending_bills",
+            phone, bodyParams, clientRefId, documentUrl,
+            documentFilename,
+             usePdfTemplate: true,
+        });
+        toast.success("Pending bills PDF sent via WhatsApp!");
+        await logWhatsappSend(row, "pending_bills");
+        // await cleanupPdf(documentUrl);
+        setPdfAttachDialog({ open: false, row: null, documentUrl: "", documentFilename: "", bodyParams: [], clientRefId: "" });
+    } catch (e) {
+        toast.error(`Failed: ${e.message}`);
+    } finally {
+        setSendingStates((p) => ({ ...p, [rowKey]: false }));
+    }
+};
+
+const closePendingBillsAttachmentDialog = () => {
+    setPdfAttachDialog({ open: false, row: null, documentUrl: "", documentFilename: "", bodyParams: [], clientRefId: "" });
+};
+
 
     const buildPendingBillsParams = async (row) => {
         const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
@@ -2933,6 +3254,12 @@ const sendWhatsAppMessage = useCallback(
                     return;
                 }
                 phone = normalizePhone(phone);
+                      if (activeTab === "shetsheet") {
+                const imageUrl = row.Imageurl || null;
+                if (!imageUrl) {
+                    increment(false);
+                    return;
+                }
                 
 
                   const companyname = companyInfo[0]?.Company_Name || "Company";
@@ -2941,13 +3268,7 @@ const sendWhatsAppMessage = useCallback(
     const invoiceno=row.Do_Inv_No;
     const bodyParams1 = [companyname, customerName,invoicedate,invoiceno]; 
 
-                     if (activeTab === "shetsheet") {
-                const imageUrl = row.Imageurl || null;
-                if (!imageUrl) {
-                    increment(false);
-                    return;
-                }
-                
+               
                 await sendWhatsAppMessage({ 
                     tab: "shetsheet", 
                     phone, 
@@ -3011,11 +3332,7 @@ const sendWhatsAppMessage = useCallback(
         }
     };
 
-    // Single source of truth for "what number do we actually send to". Every send
-    // path (single-row send, bulk send, outstanding/pending-bills send) calls this
-    // instead of resolving phone fields itself, so a manual override made via the
-    // Phone column dropdown/text entry (PhoneSelectCell, module-level component
-    // above) is respected everywhere consistently.
+  
     const resolveSendPhone = useCallback((row, tab) => {
         const rowKey = getRowKey(row, tab);
         const override = selectedPhones[rowKey];
@@ -3055,6 +3372,22 @@ const sendWhatsAppMessage = useCallback(
                         </IconButton>
                     </span>
                 </Tooltip>
+                 {tab === "pending_bills" && (
+    <Tooltip title="Preview & send Pending Bills PDF via WhatsApp">
+        <span>
+          <IconButton
+    size="small"
+    onClick={() => openPendingBillsAttachmentDialog(row)}
+    disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || pdfBuildInFlight}
+    color={hasPhone ? "success" : "default"}
+>
+                {sendingStates[`${rowKey}_pdf`]
+                    ? <CircularProgress size={20} />
+                    : <PictureAsPdf fontSize="small" />}
+            </IconButton>
+        </span>
+    </Tooltip>
+)}
 
                 {sentCount > 0 && (
                     <Tooltip title={`Sent ${sentCount} time${sentCount > 1 ? 's' : ''}`}>
@@ -4038,12 +4371,38 @@ const sendWhatsAppMessage = useCallback(
                 sending={!!sendingStates[getRowKey(previewDialog.row || {}, previewDialog.tab)]}
             />
 
+            <PendingBillsAttachmentDialog
+    open={pdfAttachDialog.open}
+    onClose={closePendingBillsAttachmentDialog}
+    documentUrl={pdfAttachDialog.documentUrl}
+    documentFilename={pdfAttachDialog.documentFilename}
+    bodyParams={pdfAttachDialog.bodyParams}
+    onSend={confirmSendPendingBillsAttachment}
+    sending={!!sendingStates[`${getRowKey(pdfAttachDialog.row || {}, "pending_bills")}_pdf`]}
+/>
+
             <WhatsAppColumnSettings open={columnSettingsOpen} onClose={() => setColumnSettingsOpen(false)}
                 companyId={companyId} onSave={handleColumnSettingsSave} activeTab={activeTab} />
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>
                 <Alert severity={snackbar.severity} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>{snackbar.message}</Alert>
             </Snackbar>
+
+           
+            <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+            <div ref={pdfCaptureRef}>
+            {pdfCaptureData && (
+              <Pendingbills
+                row={pdfCaptureData.row}
+                fromDate={pdfCaptureData.fromDate}
+                toDate={pdfCaptureData.toDate}
+                companyInfo={pdfCaptureData.companyInfo}
+                onReady={pdfCaptureData.onReady}
+                onError={pdfCaptureData.onError}
+            />
+        )}
+    </div>
+</Box>
         </>
     );
 
@@ -4090,14 +4449,7 @@ const sendWhatsAppMessage = useCallback(
                         setFromDate={setSaleInvoiceFromDate}
                         setToDate={setSaleInvoiceToDate}
                         onSearch={() => {
-                            // A new date search should show exactly what that date range
-                            // returns. Leftover Ledger/City/GSTIN/Phone selections (or
-                            // WhatsApp column filters) from a PREVIOUS search were staying
-                            // active and silently cutting down the row count for the new
-                            // range without any visible warning — that's why a wider range
-                            // could show fewer rows than a narrower one. Clearing both filter
-                            // sets here means the count you see right after Search always
-                            // matches the raw data fetched for the dates you picked.
+                          
                             setSaleInvoiceFilters({});
                             setColumnFilters({});
                             fetchSaleInvoices();
