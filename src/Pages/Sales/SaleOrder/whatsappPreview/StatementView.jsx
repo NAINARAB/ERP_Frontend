@@ -64,7 +64,7 @@ const StatementView = () => {
   const [pdfGenerated, setPdfGenerated] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [companyId, setCompanyId] = useState(null);
-
+  const [accountName, setAccountName] = useState('');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -110,74 +110,105 @@ const StatementView = () => {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-        const decoded = atob(encodedData);
-        const params = new URLSearchParams(decoded);
+    const decoded = atob(encodedData);
+    const params = new URLSearchParams(decoded);
 
-        const accId = params.get('Acc_Id') || '';
-        const fromDate = params.get('fromDate') || params.get('Fromdate') || params.get('FromDate') || '';
-        const toDate = params.get('toDate') || params.get('Todate') || params.get('ToDate') || '';
-        const companyIdFromParams = params.get('Company_id') || '';
-        const retailerName = params.get('Retailer_Name') || '';
+    const accId = params.get('Acc_Id') || '';
+    const fromDate = params.get('fromDate') || params.get('Fromdate') || params.get('FromDate') || '';
+    const toDate = params.get('toDate') || params.get('Todate') || params.get('ToDate') || '';
+    const companyIdFromParams = params.get('Company_id') || '';
 
-        setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate,Retailer_Name: retailerName });
-        setCompanyId(companyIdFromParams);
+    setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate });
+    setCompanyId(companyIdFromParams);
 
-        if (!accId) {
-          throw new Error('Missing Acc_Id in decoded parameters.');
-        }
+    if (!accId) {
+      throw new Error('Missing Acc_Id in decoded parameters.');
+    }
 
-        let compInfo = CACHE.get(`ci_${companyIdFromParams}`);
-        if (!compInfo && companyIdFromParams) {
-          const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdFromParams}`);
-          const d = await r.json();
-          if (d.success && d.data) {
-            compInfo = d.data;
-            CACHE.set(`ci_${companyIdFromParams}`, compInfo);
-            setCompanyInfo(compInfo);
-          }
-        }
-
-        const base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
-
-        const isOutstanding = decoded.includes('fromDate') && !decoded.includes('Fromdate');
-
-        let apiUrl;
-        if (isOutstanding) {
-          apiUrl = `${base}/payment/transactions?Acc_Id=${accId}&fromDate=${fromDate}&toDate=${toDate}`;
-        } else {
-          apiUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
-        }
-
-        const response = await fetch(apiUrl);
-        const result = await response.json();
-
-        const data = result?.data || result || [];
-        const dataArray = Array.isArray(data) ? data : [data];
-
-        const transformedData = dataArray.map(item => ({
-          invoice_no: item.invoice_no || "-",
-          Ledger_Date: formatDateForDisplay(item.Ledger_Date),
-          Particulars: item.Particulars || "-",
-          Debit_Amt: item.Debit_Amt || 0,
-          Credit_Amt: item.Credit_Amt || 0,
-          raw_Debit_Amt: item.Debit_Amt || 0,
-          raw_Credit_Amt: item.Credit_Amt || 0
-        }));
-
-        setStatementData(transformedData);
-      } catch (err) {
-        console.error('Error fetching statement:', err);
-        setError(err.message || 'Failed to load statement data');
-        toast.error('Failed to fetch statement data');
-      } finally {
-        setLoading(false);
+    let compInfo = CACHE.get(`ci_${companyIdFromParams}`);
+    if (!compInfo && companyIdFromParams) {
+      const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdFromParams}`);
+      const d = await r.json();
+      if (d.success && d.data) {
+        compInfo = d.data;
+        CACHE.set(`ci_${companyIdFromParams}`, compInfo);
+        setCompanyInfo(compInfo);
       }
-    };
+    }
+
+    const base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
+
+    const isOutstanding = decoded.includes('fromDate') && !decoded.includes('Fromdate');
+
+    let apiUrl;
+    if (isOutstanding) {
+      apiUrl = `${base}/payment/transactions?Acc_Id=${accId}&fromDate=${fromDate}&toDate=${toDate}`;
+    } else {
+      apiUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
+    }
+
+    const accountMasterUrl = `${base}/masters/accountMaster`;
+
+    const [statementResp, accountResp] = await Promise.all([
+      fetch(apiUrl),
+      fetch(accountMasterUrl),
+    ]);
+
+    const result = await statementResp.json();
+
+    const data = result?.data || result || [];
+    const dataArray = Array.isArray(data) ? data : [data];
+
+    const transformedData = dataArray.map(item => ({
+      invoice_no: item.invoice_no || "-",
+      Ledger_Date: formatDateForDisplay(item.Ledger_Date),
+      Particulars: item.Particulars || "-",
+      Debit_Amt: item.Debit_Amt || 0,
+      Credit_Amt: item.Credit_Amt || 0,
+      raw_Debit_Amt: item.Debit_Amt || 0,
+      raw_Credit_Amt: item.Credit_Amt || 0
+    }));
+
+    setStatementData(transformedData);
+
+    // Resolve account name by matching Acc_Id
+    try {
+      const accountResult = await accountResp.json();
+      const accountList = accountResult?.data || accountResult || [];
+      const accountArray = Array.isArray(accountList) ? accountList : [accountList];
+
+      const matchedAccount = accountArray.find(
+        (a) => String(a.Acc_Id ?? a.Account_Id ?? a.Id) === String(accId)
+      );
+
+      const resolvedName =
+        matchedAccount?.Account_Name ||
+        matchedAccount?.Account_name ||
+        matchedAccount?.Ledger_Name ||
+        matchedAccount?.Retailer_Name ||
+        matchedAccount?.Party_Name ||
+        '';
+
+      setAccountName(resolvedName);
+    } catch (accErr) {
+      console.error('Error fetching account master:', accErr);
+      // Non-fatal — page still works without the account name
+    }
+
+  } catch (err) {
+    console.error('Error fetching statement:', err);
+    setError(err.message || 'Failed to load statement data');
+    toast.error('Failed to fetch statement data');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     fetchData();
   }, [location.search]);
@@ -280,7 +311,11 @@ const StatementView = () => {
           <Typography variant="h5" sx={{ fontWeight: 700, fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
             Transaction Statement
           </Typography>
-          
+          {accountName && (
+  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#333' }}>
+    {accountName}
+  </Typography>
+)}
           
 {/* 
           {!isPreview && (
