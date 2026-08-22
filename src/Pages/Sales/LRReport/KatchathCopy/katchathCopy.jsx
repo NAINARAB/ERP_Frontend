@@ -308,7 +308,7 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
                                     <br />
                                     <p className="m-0">{invoice.mailingName ? `${invoice.mailingName},` : " "}</p>
                                     <p className="m-0">{invoice.mailingAddress ? `${invoice.mailingAddress},` : " "}</p>
-                                    <p className="m-0">{invoice.mailingCity ? `${invoice.mailingCity},` : " "}</p>
+                                    {/* <p className="m-0">{invoice.mailingCity ? `${invoice.mailingCity},` : " "}</p> */}
                                     <p className="m-0">{invoice.mailingNumber ? invoice.mailingNumber : " "}</p>
                                 </div>
 
@@ -361,7 +361,12 @@ const KatchathCopy = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPri
 
                             <div>
                                 <p className="m-0 mt-4">Lorry: {findStaffName(invoice.staffDetails, "Transport")}</p>
-                                <p className="m-0">LoadMan: {findStaffName(invoice.staffDetails, "Load Man")}</p>
+                    <div className="d-flex justify-content-between mt-4 px-4">
+    <p className="m-0">Taken</p>
+    <p className="m-0">Checked</p>
+    <p className="m-0">Delivery</p>
+</div>
+                                {/* <p className="m-0">LoadMan: {findStaffName(invoice.staffDetails, "Load Man")}</p> */}
                             </div>
                         </div>
                         
@@ -412,7 +417,7 @@ className="border py-4 px-4"
                                     <br />
                                     <p className="m-0">{invoice.mailingName ? `${invoice.mailingName},` : " "}</p>
                                     <p className="m-0">{invoice.mailingAddress ? `${invoice.mailingAddress},` : " "}</p>
-                                    <p className="m-0">{invoice.mailingCity ? `${invoice.mailingCity},` : " "}</p>
+                                    {/* <p className="m-0">{invoice.mailingCity ? `${invoice.mailingCity},` : " "}</p> */}
                                     <p className="m-0">{invoice.mailingNumber ? invoice.mailingNumber : " "}</p>
                                 </div>
 
@@ -444,7 +449,13 @@ className="border py-4 px-4"
 
                             <div>
                                 <p className="m-0">Lorry: {findStaffName(invoice.staffDetails, "Transport")}</p>
-                                <p className="m-0">LoadMan: {findStaffName(invoice.staffDetails, "Load Man")}</p>
+                                {/* <p className="m-0">LoadMan: {findStaffName(invoice.staffDetails, "Load Man")}</p> */}
+ <div className="d-flex justify-content-between mt-4 px-4">
+    <p className="m-0">Taken</p>
+    <p className="m-0">Checked</p>
+    <p className="m-0">Delivery</p>
+</div>
+
                             </div>
                         </div>
                         

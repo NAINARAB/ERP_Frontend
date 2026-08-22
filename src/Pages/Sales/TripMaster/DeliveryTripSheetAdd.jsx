@@ -561,7 +561,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                 setDeliveryPerson(null);
             }
         }
-    }, [selectedItems, isEditMode, initialized]);
+    }, [ isEditMode, initialized]);
 
 
     const searchTransaction = (e) => {
