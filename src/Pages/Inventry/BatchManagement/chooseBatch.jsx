@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { getSessionUser } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 
 const PAGE_SIZE = 10;
 
@@ -97,11 +98,11 @@ const ChooseBatch = ({
             );
 
             if (index === -1) {
-                newInputs.push({ ...row, batch: e.batchIdString, batch_alias: e.label, id: e.value });
+                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.label || '', id: e?.value || '' });
             } else {
-                newInputs[index].batch = e.batchIdString;
-                newInputs[index].batch_alias = e.label;
-                newInputs[index].id = e.value;
+                newInputs[index].batch = e?.batchIdString || e?.value || '';
+                newInputs[index].batch_alias = e?.label || '';
+                newInputs[index].id = e?.value || '';
             }
             return newInputs.filter(item => String(item?.batch).length > 0);
         });
@@ -170,9 +171,9 @@ const ChooseBatch = ({
         setBulkSelect(e);
         setInputs(journalData.map(item => ({
             ...item,
-            batch: e.batchIdString,
-            batch_alias: e.label,
-            id: e.value
+            batch: e?.batchIdString || e?.value || '',
+            batch_alias: e?.label || '',
+            id: e?.value || ''
         })))
     }
 
@@ -191,7 +192,7 @@ const ChooseBatch = ({
                     ><FilterAlt /></IconButton>
 
                     <div style={{ minWidth: '300px' }}>
-                        <Select
+                        <CreatableSelect
                             value={bulkSelect}
                             options={[
                                 { value: '', label: 'select' },
@@ -202,6 +203,7 @@ const ChooseBatch = ({
                             onChange={onChangeSelect}
                             styles={customSelectStyles}
                             isSearchable={true}
+                            isClearable={true}
                             filterOption={reactSelectFilterLogic}
                         />
                     </div>
@@ -265,7 +267,7 @@ const ChooseBatch = ({
                                             )
                                         )}
                                         <td className="vctr fa-12 p-0">
-                                            <Select
+                                            <CreatableSelect
                                                 value={{
                                                     value: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.id || '',
                                                     label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
@@ -278,6 +280,7 @@ const ChooseBatch = ({
                                                 onChange={e => handleInputChange(item, e)}
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
+                                                isClearable={true}
                                                 isDisabled={batchDropDown.length === 0}
                                             />
                                         </td>

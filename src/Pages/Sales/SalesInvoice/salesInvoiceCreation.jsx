@@ -12,6 +12,7 @@ import { Close } from "@mui/icons-material";
 import { Add, Delete } from "@mui/icons-material";
 import { fetchLink } from '../../../Components/fetchComponent';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { customSelectStyles } from '../../../Components/tablecolumn';
 
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
@@ -1419,26 +1420,42 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                 />
                                             </td>
                                             <td className={tdStyle} style={{ minWidth: 200 }}>
-                                                <Select
+                                                <CreatableSelect
                                                     value={{
                                                         value: row?.Batch_Name || '',
-                                                        label: row?.Batch_Name || ''
+                                                        label: row?.Batch_Alias || row?.Batch_Name || ''
                                                     }}
-                                                    onChange={e => changeSelectedObjects(i, 'Batch_Name', e.value)}
+                                                    onChange={e => {
+                                                        if (!e) {
+                                                            changeSelectedObjects(i, 'Batch_Name', '');
+                                                            changeSelectedObjects(i, 'Batch_Alias', '');
+                                                            return;
+                                                        }
+                                                        const isExisting = !!e.batchIdString;
+                                                        const batchVal = isExisting ? e.batchIdString : e.value;
+                                                        const aliasVal = isExisting ? e.alias : e.value;
+                                                        changeSelectedObjects(i, 'Batch_Name', batchVal);
+                                                        changeSelectedObjects(i, 'Batch_Alias', aliasVal);
+                                                    }}
                                                     options={
                                                         baseData.batchDetails.filter(
                                                             bat => (
                                                                 isEqualNumber(bat.item_id, row?.Item_Id)
                                                                 && isEqualNumber(bat?.godown_id, commonGodown?.value)
-                                                                && toNumber(bat.pendingQuantity) >= toNumber(row?.Bill_Qty)
                                                             )
                                                         ).map(
-                                                            bat => ({ value: bat.batch, label: bat.batch })
+                                                            bat => ({ 
+                                                                value: bat.id, 
+                                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                batchIdString: bat.batch,
+                                                                alias: bat.batch_alias || bat.batch
+                                                            })
                                                         )
                                                     }
                                                     styles={customSelectStyles}
                                                     isSearchable={true}
-                                                    placeholder={"Select Batch"}
+                                                    isClearable
+                                                    placeholder={"Select or Create Batch"}
                                                     menuPortalTarget={document.body}
                                                     isDisabled={
                                                         !checkIsNumber(row?.Item_Id)

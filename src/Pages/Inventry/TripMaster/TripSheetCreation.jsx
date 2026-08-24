@@ -10,6 +10,7 @@ import {
     isValidNumber
 } from "../../../Components/functions";
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Close, Delete } from "@mui/icons-material";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
@@ -651,39 +652,43 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <td className='fa-12'>{arrival?.QTY}</td>
                                             <td className='fa-12'>
                                                 {/* {arrival?.Batch_No} */}
-                                                {tripSheetInfo.BillType === 'OTHER GODOWN' && (
-                                                    <Select
-                                                        value={{
-                                                            value: batchValue?.Batch_No || '',
-                                                            label: batchValue?.Batch_No || ''
-                                                        }}
-                                                        onChange={e => changeTripDetails({ ...arrival, Batch_No: e.value })}
-                                                        options={
-                                                            batchDetails.filter(
-                                                                bat => (
-                                                                    isEqualNumber(bat.item_id, arrival.Product_Id)
-                                                                    && toNumber(bat.pendingQuantity) >= toNumber(arrival.QTY)
-                                                                    && isEqualNumber(bat?.godown_id, arrival?.From_Location)
-                                                                )
-                                                            ).map(
-                                                                bat => ({ value: bat.batch, label: bat.batch })
-                                                            )
+                                                <CreatableSelect
+                                                    value={{
+                                                        value: batchValue?.Batch_No || '',
+                                                        label: batchValue?.Batch_Alias || batchValue?.Batch_No || ''
+                                                    }}
+                                                    onChange={e => {
+                                                        if (!e) {
+                                                            changeTripDetails({ ...arrival, Batch_No: '', Batch_Alias: '' });
+                                                            return;
                                                         }
-                                                        styles={customSelectStyles}
-                                                        isSearchable={true}
-                                                        placeholder={"Select Batch"}
-                                                        menuPortalTarget={document.body}
-                                                        isDisabled={!isChecked}
-                                                    />
-                                                )}
-                                                {tripSheetInfo.BillType === 'MATERIAL INWARD' && (
-                                                    <input
-                                                        value={batchValue?.Batch_No || ''}
-                                                        onChange={e => changeTripDetails({ ...arrival, Batch_No: e.target.value })}
-                                                        className="cus-inpt p-2"
-                                                        disabled={!isChecked}
-                                                    />
-                                                )}
+                                                        const isExisting = !!e.batchIdString;
+                                                        const batchVal = isExisting ? e.batchIdString : e.value;
+                                                        const aliasVal = isExisting ? e.alias : e.value;
+                                                        changeTripDetails({ ...arrival, Batch_No: batchVal, Batch_Alias: aliasVal });
+                                                    }}
+                                                    options={
+                                                        batchDetails.filter(
+                                                            bat => (
+                                                                isEqualNumber(bat.item_id, arrival.Product_Id)
+                                                                && isEqualNumber(bat?.godown_id, arrival?.From_Location)
+                                                            )
+                                                        ).map(
+                                                            bat => ({ 
+                                                                value: bat.id, 
+                                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                batchIdString: bat.batch,
+                                                                alias: bat.batch_alias || bat.batch
+                                                            })
+                                                        )
+                                                    }
+                                                    styles={customSelectStyles}
+                                                    isSearchable={true}
+                                                    isClearable
+                                                    placeholder={"Select or Create Batch"}
+                                                    menuPortalTarget={document.body}
+                                                    isDisabled={!isChecked}
+                                                />
                                             </td>
                                         </tr>
                                     )

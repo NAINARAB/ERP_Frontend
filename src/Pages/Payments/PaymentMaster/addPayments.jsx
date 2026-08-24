@@ -59,7 +59,7 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
             );
 
             setPaymentStaffInvolved(
-                editValues.staffDetails.map(staffDetails => ({
+                toArray(editValues?.staffDetails).map(staffDetails => ({
                     ...paymentStaffInvolvedStaffInitialValue,
                     ...staffDetails,
                 }))

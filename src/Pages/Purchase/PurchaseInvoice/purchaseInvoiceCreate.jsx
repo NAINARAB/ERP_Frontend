@@ -6,6 +6,9 @@ import { Addition, checkIsNumber, Division, getUniqueData, isEqualNumber, ISOStr
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
+import Select from "react-select";
+import CreatableSelect from 'react-select/creatable';
+import { customSelectStyles } from "../../../Components/tablecolumn";
 import { calculateGSTDetails } from '../../../Components/taxCalculator';
 import { initialInvoiceValue, invoiceTripInfo, itemsRowDetails, staffRowDetails } from "./variable";
 import AddItemsDialog from "./addToCart";
@@ -142,7 +145,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     godownLocationsResponse,
                     staffResponse,
                     staffCategory,
-                    defaultAccountMasterResponse
+                    defaultAccountMasterResponse,
+                    batchDetailsResponse
                 ] = await Promise.all([
                     fetchLink({ address: `masters/retailers/dropDown` }),
                     fetchLink({ address: `masters/branch/dropDown` }),
@@ -153,7 +157,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
                     fetchLink({ address: `dataEntry/costCenter/category` }),
-                    fetchLink({ address: `masters/defaultAccountMaster?Type=PURCHASE_INVOICE` })
+                    fetchLink({ address: `masters/defaultAccountMaster?Type=PURCHASE_INVOICE` }),
+                    fetchLink({ address: `inventory/batchMaster/stockBalance` })
                 ]);
 
                 const retailersData = (retailerResponse.success ? retailerResponse.data : []).sort(
@@ -198,6 +203,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                     godown: godownLocations,
                     staff: staffData,
                     staffType: staffCategoryData,
+                    defaultAccountMaster: defaultAccountMasterData,
+                    batchDetails: batchDetailsResponse.success ? batchDetailsResponse.data : [],
                     brand: getUniqueData(productsData, 'Brand', ['Brand_Name']),
                     defaultAccounts: defaultAccountMasterData.map(exp => ({
                         Id: exp.Acc_Id,
@@ -645,12 +652,51 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                 </select>
                                             </td>
                                             <td className={tdStyle}>
-                                                <input
-                                                    value={row?.Batch_No}
-                                                    className={inputStyle}
-                                                    onChange={e => changeSelectedObjects(i, 'Batch_No', e.target.value)}
-                                                    disabled={toNumber(row?.DeliveryId)}
-                                                />
+                                                <div style={{minWidth: '200px'}}>
+                                                    <CreatableSelect
+                                                        value={{
+                                                            value: row?.Batch_No || '',
+                                                            label: row?.Batch_Alias || row?.Batch_No || ''
+                                                        }}
+                                                        onChange={e => {
+                                                            if (!e) {
+                                                                changeSelectedObjects(i, 'Batch_No', '');
+                                                                changeSelectedObjects(i, 'Batch_Alias', '');
+                                                                return;
+                                                            }
+                                                            const isExisting = !!e.batchIdString;
+                                                            const batchVal = isExisting ? e.batchIdString : e.value;
+                                                            const aliasVal = isExisting ? e.alias : e.value;
+                                                            changeSelectedObjects(i, 'Batch_No', batchVal);
+                                                            changeSelectedObjects(i, 'Batch_Alias', aliasVal);
+                                                        }}
+                                                        options={
+                                                            baseData.batchDetails.filter(
+                                                                bat => (
+                                                                    isEqualNumber(bat.item_id, row?.Item_Id)
+                                                                    && isEqualNumber(bat?.godown_id, row?.Location_Id)
+                                                                )
+                                                            ).map(
+                                                                bat => ({ 
+                                                                    value: bat.id, 
+                                                                    label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                    batchIdString: bat.batch,
+                                                                    alias: bat.batch_alias || bat.batch
+                                                                })
+                                                            )
+                                                        }
+                                                        styles={customSelectStyles}
+                                                        isSearchable={true}
+                                                        isClearable
+                                                        placeholder={"Select or Create Batch"}
+                                                        menuPortalTarget={document.body}
+                                                        isDisabled={
+                                                            toNumber(row?.DeliveryId) ||
+                                                            !checkIsNumber(row?.Item_Id) ||
+                                                            !checkIsNumber(row?.Location_Id)
+                                                        }
+                                                    />
+                                                </div>
                                             </td>
                                             <td className={tdStyle}>
                                                 <IconButton

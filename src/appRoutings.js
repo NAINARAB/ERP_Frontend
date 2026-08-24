@@ -197,6 +197,7 @@ const ProcessingListLRReport = lazy(() => import('./Pages/Inventry/Processing/Pr
 const ArrivalMaster = lazy(() => import('./Pages/Inventry/TripMaster/arrivalMaster'));
 const BatchAssign = lazy(() => import('./Pages/Inventry/BatchManagement/batchAssign'));
 const BatchListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchList'));
+const BatchDetailsListing = lazy(() => import('./Pages/Inventry/BatchManagement/batchDetailsList'));
 const BatchTransactionView = lazy(() => import('./Pages/Inventry/BatchManagement/batchTransaction'))
 const UnAssignedProcessing = lazy(() => import('./Pages/Inventry/BatchManagement/unAssignedProcessing'));
 const InventoryTrunoverReport = lazy(() => import('./Pages/Inventry/turnOverReport'));
@@ -343,7 +344,7 @@ const RoutingArray = [
     // ---------------------------------------------------------------------------
     { component: <DisplayNavigations />, path: '/erp/batchManagement' },
     { component: <BatchAssign />, path: '/erp/batchManagement/batchCreation' },
-    { component: <BatchListing />, path: '/erp/batchManagement/batchList' },
+    { component: <BatchDetailsListing />, path: '/erp/batchManagement/batchList' },
     { component: <BatchTransactionView />, path: '/erp/batchManagement/batchTransaction' },
     { component: <BatchTraceFlow />, path: '/erp/batchManagement/batchReport' },
     { component: <UnAssignedProcessing />, path: '/erp/batchManagement/productionBatchCreation' },

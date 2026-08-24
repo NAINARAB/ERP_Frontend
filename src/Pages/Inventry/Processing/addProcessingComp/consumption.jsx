@@ -1,6 +1,7 @@
 import RequiredStar from '../../../../Components/requiredStar';
 import { initialSoruceValue } from './variables'
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { customSelectStyles } from "../../../../Components/tablecolumn";
 import { Addition, checkIsNumber, Division, isEqualNumber, Multiplication, onlynum, rid, toNumber, reactSelectFilterLogic } from '../../../../Components/functions';
 import { Button, IconButton } from '@mui/material';
@@ -107,13 +108,17 @@ const SourceItems = memo(function SourceItems({
             </td>
 
             <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                <Select
+                <CreatableSelect
                     value={{ value: row?.Sour_Batch_Lot_No, label: row?.Sour_Batch_Lot_No }}
                     onChange={e => {
                         const selectedBatch = batchDetails.find(b => b.id === e.value);
-                        changeSourceValue(index, 'Sour_Batch_Lot_No', selectedBatch?.batch || '');
-                        changeSourceValue(index, 'Sour_Goodown_Id', selectedBatch?.godown_id || '');
-                        changeSourceValue(index, 'Godown_Name', selectedBatch?.godownName || '');
+                        if (selectedBatch) {
+                            changeSourceValue(index, 'Sour_Batch_Lot_No', selectedBatch.batch_alias || selectedBatch.batch || '');
+                            changeSourceValue(index, 'Sour_Goodown_Id', selectedBatch.godown_id || '');
+                            changeSourceValue(index, 'Godown_Name', selectedBatch.godownName || '');
+                        } else {
+                            changeSourceValue(index, 'Sour_Batch_Lot_No', e.value || '');
+                        }
                     }}
                     options={
                         batchDetails
@@ -122,20 +127,15 @@ const SourceItems = memo(function SourceItems({
                                     ? isEqualNumber(b.godown_id, row?.Sour_Goodown_Id)
                                     : true
                             )
-                            .map(b => ({ value: b.id, label: `${b?.batch} (${toNumber(b?.pendingQuantity)})` }))
+                            .map(b => ({ value: b.id, label: `${b?.batch_alias} (${toNumber(b?.pendingQuantity)})` }))
                     }
                     menuPortalTarget={document.body}
                     styles={customSelectStyles}
                     isSearchable
-                    placeholder="Select Godown"
+                    placeholder="Select or Create Batch"
                     maxMenuHeight={300}
                     isDisabled={!checkIsNumber(row?.Sour_Goodown_Id, 1)}
                 />
-                {/* <input 
-                    value={row?.Sour_Batch_Lot_No ?? ""}
-                    onChange={e => changeSourceValue(index, 'Sour_Batch_Lot_No', e.target.value)}
-                    className='cus-inpt p-2'
-                /> */}
             </td>
 
             <td className='fa-13 px-1 py-0 p-0 vctr text-center'>

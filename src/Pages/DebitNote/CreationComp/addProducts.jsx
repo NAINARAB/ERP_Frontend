@@ -5,6 +5,7 @@ import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
 import { fetchLink } from "../../../Components/fetchComponent";
@@ -525,28 +526,45 @@ const AddProductFormDebitNote = ({
                             {/* Batch */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Batch</label>
-                                <Select
+                                <CreatableSelect
                                     value={{
                                         value: productDetails?.Batch_Name || '',
-                                        label: productDetails?.Batch_Name || ''
+                                        label: productDetails?.Batch_Alias || productDetails?.Batch_Name || ''
                                     }}
-                                    onChange={e => setProductDetails(pre => ({ ...pre, Batch_Name: e.value }))}
+                                    onChange={e => {
+                                        if (!e) {
+                                            setProductDetails(pre => ({ ...pre, Batch_Name: '', Batch_Alias: '' }));
+                                            return;
+                                        }
+                                        const isExisting = !!e.batchIdString;
+                                        const batchVal = isExisting ? e.batchIdString : e.value;
+                                        const aliasVal = isExisting ? e.alias : e.value;
+                                        setProductDetails(pre => ({ ...pre, Batch_Name: batchVal, Batch_Alias: aliasVal }));
+                                    }}
                                     options={
                                         batchDetails.filter(
                                             bat => (
                                                 isEqualNumber(bat.item_id, productDetails?.Item_Id)
                                                 && isEqualNumber(bat?.godown_id, productDetails?.GoDown_Id)
-                                                && toNumber(bat.pendingQuantity) >= toNumber(productDetails?.Bill_Qty)
                                             )
                                         ).map(
-                                            bat => ({ value: bat.batch, label: bat.batch })
+                                            bat => ({ 
+                                                value: bat.id, 
+                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                batchIdString: bat.batch,
+                                                alias: bat.batch_alias || bat.batch
+                                            })
                                         )
                                     }
                                     styles={customSelectStyles}
                                     isSearchable={true}
-                                    placeholder={"Select Batch"}
+                                    isClearable
+                                    placeholder={"Select or Create Batch"}
                                     menuPortalTarget={document.body}
-                                    // isDisabled={true}
+                                    isDisabled={
+                                        !checkIsNumber(productDetails?.Item_Id)
+                                        || !checkIsNumber(productDetails?.GoDown_Id)
+                                    }
                                 />
                             </div>
 

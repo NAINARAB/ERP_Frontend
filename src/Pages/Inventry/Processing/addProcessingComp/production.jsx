@@ -13,6 +13,7 @@ import {
     onlynum,
     reactSelectFilterLogic,
     rid,
+    toNumber,
 } from "../../../../Components/functions";
 import { initialDestinationValue } from "./variables";
 
@@ -225,8 +226,9 @@ const ProductionOfProcessing = ({
                                                 batch => isEqualNumber(batch.item_id, row.Dest_Item_Id) && isEqualNumber(batch.godown_id, row.Dest_Goodown_Id)
                                             ).map(batch => ({
                                                 value: batch.id,
-                                                label: batch.batch_alias || batch.batch,
-                                                batchIdString: batch.batch
+                                                label: `${batch.batch_alias || batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                                batchIdString: batch.batch,
+                                                alias: batch.batch_alias || batch.batch
                                             }));
 
                                             const currentVal = row.Dest_Batch_Lot_No || row.Dest_Batch_Alias ? {
@@ -248,9 +250,8 @@ const ProductionOfProcessing = ({
                                                             return;
                                                         }
                                                         const isExisting = !!e.batchIdString;
-                                                        // For a new batch, just use a temporary ID or generate one. We will use e.value as both for new.
-                                                        const batchVal = isExisting ? e.batchIdString : `PRD_${row.Dest_Item_Id}_${Date.now()}`;
-                                                        const aliasVal = e.label;
+                                                        const batchVal = isExisting ? e.batchIdString : e.value;
+                                                        const aliasVal = isExisting ? e.alias : e.value;
                                                         
                                                         changeDestinationValues(index, "Dest_Batch_Lot_No", batchVal);
                                                         changeDestinationValues(index, "Dest_Batch_Alias", aliasVal);

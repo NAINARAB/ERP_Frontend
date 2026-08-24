@@ -237,7 +237,7 @@ const UnAssignedJournals = ({
                                                 isClearable
                                                 placeholder={item?.suggestBatchName || '...'}
                                                 options={batchDropDown}
-                                                value={val ? { value: val.id || val.batch_alias, label: val.batch_alias } : null}
+                                                value={val ? { value: val.id || val.batch, label: val.batch_alias || val.batch } : null}
                                                 onChange={e => handleInputChange(item, e)}
                                                 styles={customSelectStyles}
                                                 menuPortalTarget={document.body}
