@@ -14,9 +14,17 @@ import { useMediaQuery, useTheme } from '@mui/material';
 
 const CACHE = new Map();
 
-const Pendingbills = () => {
+const Pendingbills = ({
+    row = null,
+    fromDate: fromDateProp,
+    toDate: toDateProp,
+    companyInfo: companyInfoProp = null,
+    onReady,   // called once data has loaded and the DOM is ready to screenshot
+    onError,   // called if data fetch fails (props mode only)
+}) => {
     const location = useLocation();
     const contentRef = useRef(null);
+    const isPropsMode = Boolean(row);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -24,18 +32,16 @@ const Pendingbills = () => {
     const [decodedParams, setDecodedParams] = useState({});
     const [downloading, setDownloading] = useState(false);
     const [autoDownloadTriggered, setAutoDownloadTriggered] = useState(false);
-    const [companyInfo, setCompanyInfo] = useState(null);
+    const [companyInfo, setCompanyInfo] = useState(companyInfoProp);
+    const [accountName, setAccountName] = useState('');
 
-    
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // preview=1 lives in the OUTER query string (alongside `data`, not inside
     // the base64-encoded blob) — set by the WhatsApp table's Preview popup
-    // when it embeds this page in an iframe. In that case we skip the
-    // auto-download entirely; the popup has its own Send button.
-    const isPreview = new URLSearchParams(location.search).get('preview') === '1';
-
+    // when it embeds this page in an iframe. Only relevant in URL mode.
+    const isPreview = !isPropsMode && new URLSearchParams(location.search).get('preview') === '1';
 
     const calculatePendingDays = (eventDate) => {
         if (!eventDate) return 0;
@@ -48,7 +54,6 @@ const Pendingbills = () => {
         return diffDays > 0 ? diffDays : 0;
     };
 
-    // Format date for display
     const formatDate = (dateString) => {
         if (!dateString) return '-';
         const date = new Date(dateString);
@@ -59,7 +64,6 @@ const Pendingbills = () => {
         });
     };
 
-    // Format date for PDF (DD-MM-YYYY)
     const formatDateForPDF = (dateString) => {
         if (!dateString) return "-";
         const dateOnly = dateString.split('T')[0];
@@ -70,10 +74,8 @@ const Pendingbills = () => {
         return dateOnly;
     };
 
-    // Transform data to required format
     const transformData = (data) => {
         if (!Array.isArray(data)) return [];
-
         return data.map(item => {
             const voucherNumber = item.voucherNumber || item.VoucherNumber || item.Voucher_No || item.voucher_no || item.invoice_no || '-';
             const dateValue = item.eventDate || item.Ledger_Date || item.Date || item.TransDate || item.TransactionDate;
@@ -81,29 +83,92 @@ const Pendingbills = () => {
             const total = item.totalValue || item.TotalValue || item.Total || item.total || item.Debit_Amt || 0;
             const pending = item.BalanceAmount || item.balanceAmount || item.Pending || item.pending || item.Credit_Amt || 0;
 
-          return {
-    voucherNumber: voucherNumber,
-    date: dateValue,
-    formattedDate: formatDateForPDF(dateValue),
-    source: source,
-    pendingDays: calculatePendingDays(dateValue),
-    pending: Number(pending) || 0,
-    accountSide: item.accountSide || ""
-};
+            return {
+                voucherNumber: voucherNumber,
+                date: dateValue,
+                formattedDate: formatDateForPDF(dateValue),
+                source: source,
+                pendingDays: calculatePendingDays(dateValue),
+                pending: Number(pending) || 0,
+                accountSide: item.accountSide || ""
+            };
         });
     };
 
- const formatAmount = (amount) => {
-    const num = Number(amount) || 0;
+    const formatAmount = (amount) => {
+        const num = Number(amount) || 0;
+        if (num === 0) return "-";
+        return `₹${num.toLocaleString("en-IN", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        })}`;
+    };
 
-    if (num === 0) return "-";
+    // ---- Props-mode data loading: uses the row/dates/companyInfo handed
+    // to us directly from the WhatsApp table (Whatsapp.jsx's hidden capture)
+    // instead of decoding a URL. This is what makes the off-screen capture
+    // show the correct customer's data instead of an empty/error state.
+    const resolveApiBase = async () => {
+        let compInfo = Array.isArray(companyInfoProp) ? companyInfoProp[0] : companyInfoProp;
+        let base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
+        if (base) {
+            setCompanyInfo(compInfo);
+            return base;
+        }
 
-    return `₹${num.toLocaleString("en-IN", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    })}`;
-};
-    useEffect(() => {
+        const storage = JSON.parse(localStorage.getItem('user') || '{}');
+        const companyIdLocal = compInfo?.Company_id || storage?.Company_id;
+        if (!companyIdLocal) return '';
+
+        const cacheKey = `ci_${companyIdLocal}`;
+        let urlInfo = CACHE.get(cacheKey);
+        if (!urlInfo) {
+            const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdLocal}`);
+            const d = await r.json();
+            if (d.success && d.data) {
+                urlInfo = d.data;
+                CACHE.set(cacheKey, urlInfo);
+            }
+        }
+        base = urlInfo?.Back_End_API ? urlInfo.Back_End_API.replace(/\/+$/, '') : '';
+        setCompanyInfo(urlInfo);
+        return base;
+    };
+
+    const fetchDataFromProps = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const accId = row?.Acc_Id;
+            const fromDate = fromDateProp || '';
+            const toDate = toDateProp || '';
+            setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate });
+
+            if (!accId) throw new Error('Missing Acc_Id on the selected row.');
+
+            const base = await resolveApiBase();
+            if (!base) throw new Error('Could not determine API base URL');
+
+            const pendingRefUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
+            const resp = await fetch(pendingRefUrl);
+            const result = await resp.json();
+            const data = result?.data || result || [];
+            setStatementData(Array.isArray(data) ? data : [data]);
+
+            setAccountName(row.retailerNameGet || row.Retailer_Name || row.Party_Name || '');
+        } catch (err) {
+            console.error('Error fetching statement (props mode):', err);
+            setError(err.message || 'Failed to load statement data');
+            onError?.(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ---- Existing URL-mode data loading, used by the standalone
+    // print_app/pendingbills route (e.g. the Preview iframe) — unchanged.
+    const fetchDataFromUrl = async () => {
         const query = new URLSearchParams(location.search);
         const encodedData = query.get('data');
 
@@ -113,94 +178,118 @@ const Pendingbills = () => {
             return;
         }
 
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+        try {
+            setLoading(true);
+            setError(null);
 
-                const decoded = atob(encodedData);
-     
+            const decoded = atob(encodedData);
+            const params = new URLSearchParams(decoded);
 
-                const params = new URLSearchParams(decoded);
+            const accId = params.get('Acc_Id') || '';
+            const fromDate = params.get('fromDate') || params.get('Fromdate') || params.get('FromDate') || '';
+            const toDate = params.get('toDate') || params.get('Todate') || params.get('ToDate') || '';
+            const companyIdFromParams = params.get('Company_id') || '';
 
-                const accId = params.get('Acc_Id') || '';
-                const fromDate = params.get('fromDate') || params.get('Fromdate') || params.get('FromDate') || '';
-                const toDate = params.get('toDate') || params.get('Todate') || params.get('ToDate') || '';
-                const companyIdFromParams = params.get('Company_id') || '';
+            setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate });
 
-               
-
-                setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate });
-
-                if (!accId) {
-                    throw new Error('Missing Acc_Id in decoded parameters.');
-                }
-
-                // Fetch company info using companyId from decoded params
-                let compInfo = CACHE.get(`ci_${companyIdFromParams}`);
-                if (!compInfo && companyIdFromParams) {
-                    const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdFromParams}`);
-                    const d = await r.json();
-                  
-                    if (d.success && d.data) {
-                        compInfo = d.data;
-                        CACHE.set(`ci_${companyIdFromParams}`, compInfo);
-                        setCompanyInfo(compInfo);
-                    }
-                }
-
-                const base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
-             
-
-                if (!base) {
-                    throw new Error('Could not determine API base URL');
-                }
-
-                const apiUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
-               
-
-                const response = await fetch(apiUrl);
-                const result = await response.json();
-     
-                const data = result?.data || result || [];
-                setStatementData(Array.isArray(data) ? data : [data]);
-
-            } catch (err) {
-                console.error('Error fetching statement:', err);
-                setError(err.message || 'Failed to load statement data');
-                toast.error('Failed to fetch statement data');
-            } finally {
-                setLoading(false);
+            if (!accId) {
+                throw new Error('Missing Acc_Id in decoded parameters.');
             }
-        };
 
-        fetchData();
-    }, [location.search]);
+            let compInfo = CACHE.get(`ci_${companyIdFromParams}`);
+            if (!compInfo && companyIdFromParams) {
+                const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdFromParams}`);
+                const d = await r.json();
+                if (d.success && d.data) {
+                    compInfo = d.data;
+                    CACHE.set(`ci_${companyIdFromParams}`, compInfo);
+                    setCompanyInfo(compInfo);
+                }
+            }
 
-    // useEffect(() => {
-    //     if (isPreview) return;
-    //     if (!loading && statementData.length > 0 && !autoDownloadTriggered && contentRef.current) {
-    //         const timer = setTimeout(() => {
-    //             autoDownloadPDF();
-    //         }, 1500);
-    //         return () => clearTimeout(timer);
-    //     }
-    // }, [loading, statementData, autoDownloadTriggered, isPreview]);
+            const base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
+
+            if (!base) {
+                throw new Error('Could not determine API base URL');
+            }
+
+            const pendingRefUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
+            const accountMasterUrl = `${base}/masters/accountMaster`;
+
+            const [pendingResp, accountResp] = await Promise.all([
+                fetch(pendingRefUrl),
+                fetch(accountMasterUrl),
+            ]);
+
+            const result = await pendingResp.json();
+            const data = result?.data || result || [];
+            setStatementData(Array.isArray(data) ? data : [data]);
+
+            try {
+                const accountResult = await accountResp.json();
+                const accountList = accountResult?.data || accountResult || [];
+                const accountArray = Array.isArray(accountList) ? accountList : [accountList];
+
+                const matchedAccount = accountArray.find(
+                    (a) => String(a.Acc_Id ?? a.Account_Id ?? a.Id) === String(accId)
+                );
+
+                const resolvedName =
+                    matchedAccount?.Account_Name ||
+                    matchedAccount?.Account_name ||
+                    matchedAccount?.Ledger_Name ||
+                    matchedAccount?.Retailer_Name ||
+                    matchedAccount?.Party_Name ||
+                    '';
+
+                setAccountName(resolvedName);
+            } catch (accErr) {
+                console.error('Error fetching account master:', accErr);
+            }
+
+        } catch (err) {
+            console.error('Error fetching statement:', err);
+            setError(err.message || 'Failed to load statement data');
+            toast.error('Failed to fetch statement data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isPropsMode) {
+            fetchDataFromProps();
+        } else {
+            fetchDataFromUrl();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isPropsMode, row, fromDateProp, toDateProp, location.search]);
+
+    // Signal readiness to the caller once loading finishes successfully —
+    // this is what Whatsapp.jsx's buildPendingBillsPdfBlob awaits before
+    // screenshotting, instead of guessing a fixed delay.
+    useEffect(() => {
+        if (isPropsMode && !loading && !error) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    onReady?.();
+                });
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isPropsMode, loading, error]);
 
     const transformedData = transformData(statementData);
-  const drTotal = transformedData.reduce((sum, item) => {
-    return item.accountSide === "Dr"
-        ? sum + Number(item.pending || 0)
-        : sum;
-}, 0);
+    const drTotal = transformedData.reduce((sum, item) => {
+        return item.accountSide === "Dr" ? sum + Number(item.pending || 0) : sum;
+    }, 0);
 
-const crTotal = transformedData.reduce((sum, item) => {
-    return item.accountSide === "Cr"
-        ? sum + Number(item.pending || 0)
-        : sum;
-}, 0);
+    const crTotal = transformedData.reduce((sum, item) => {
+        return item.accountSide === "Cr" ? sum + Number(item.pending || 0) : sum;
+    }, 0);
 
-const finalTotal = drTotal - crTotal;
+    const finalTotal = drTotal - crTotal;
+
     const autoDownloadPDF = async () => {
         if (!contentRef.current || autoDownloadTriggered) return;
         setAutoDownloadTriggered(true);
@@ -233,22 +322,16 @@ const finalTotal = drTotal - crTotal;
             const startIdx = page * rowsPerPage;
             const endIdx = Math.min(startIdx + rowsPerPage, transformedData.length);
             const pageData = transformedData.slice(startIdx, endIdx);
-            const isLastPage = page === totalPages - 1;
 
-            const pageTotal = pageData.reduce((sum, item) => sum + item.total, 0);
             const pageDrTotal = pageData.reduce((sum, item) => {
-    return item.accountSide === "Dr"
-        ? sum + Number(item.pending || 0)
-        : sum;
-}, 0);
+                return item.accountSide === "Dr" ? sum + Number(item.pending || 0) : sum;
+            }, 0);
 
-const pageCrTotal = pageData.reduce((sum, item) => {
-    return item.accountSide === "Cr"
-        ? sum + Number(item.pending || 0)
-        : sum;
-}, 0);
+            const pageCrTotal = pageData.reduce((sum, item) => {
+                return item.accountSide === "Cr" ? sum + Number(item.pending || 0) : sum;
+            }, 0);
 
-const pageFinalTotal = pageDrTotal - pageCrTotal;
+            const pageFinalTotal = pageDrTotal - pageCrTotal;
 
             const wrapperDiv = document.createElement('div');
             wrapperDiv.style.backgroundColor = 'white';
@@ -256,7 +339,6 @@ const pageFinalTotal = pageDrTotal - pageCrTotal;
             wrapperDiv.style.width = '1200px';
             wrapperDiv.style.fontFamily = 'Arial, sans-serif';
             wrapperDiv.style.color = 'black';
-
             wrapperDiv.style.position = 'fixed';
             wrapperDiv.style.top = '-10000px';
             wrapperDiv.style.left = '-10000px';
@@ -268,15 +350,14 @@ const pageFinalTotal = pageDrTotal - pageCrTotal;
             headerDiv.style.padding = '10px';
             headerDiv.style.borderBottom = '2px solid #1976d2';
             headerDiv.innerHTML = `
-                <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #1976d2;">Account Pending Details</h1>
-
-                <p style="margin: 5px 0; font-size: 12px;">Period: ${decodedParams.Fromdate} to ${decodedParams.Todate}</p>
-             
-            `;
+            <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #000000;">Account Pending Details</h1>
+            ${accountName ? `<h2 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #000000;">${accountName}</h2>` : ''}
+            <p style="margin: 5px 0; font-size: 12px; color: #000000;">Period: ${decodedParams.Fromdate} to ${decodedParams.Todate}</p>
+        `;
 
             const table = document.createElement('table');
             table.style.width = '100%';
-            table.style.tableLayout = 'fixed'; 
+            table.style.tableLayout = 'fixed';
             table.style.borderCollapse = 'collapse';
             table.style.fontSize = '10px';
             table.style.fontFamily = 'Arial, sans-serif';
@@ -289,8 +370,6 @@ const pageFinalTotal = pageDrTotal - pageCrTotal;
                 colgroup.appendChild(col);
             });
             table.appendChild(colgroup);
-
-
 
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
@@ -351,82 +430,76 @@ const pageFinalTotal = pageDrTotal - pageCrTotal;
                 td5.style.fontWeight = 'bold';
                 tr.appendChild(td5);
 
-            
+                const td7 = document.createElement('td');
+                td7.textContent = `${formatAmount(row.pending)} ${row.accountSide}`;
+                td7.style.padding = '6px';
+                td7.style.textAlign = 'right';
+                td7.style.border = '1px solid #ddd';
+                td7.style.fontWeight = 'bold';
 
-              const td7 = document.createElement('td');
-td7.textContent = `${formatAmount(row.pending)} ${row.accountSide}`;
-td7.style.padding = '6px';
-td7.style.textAlign = 'right';
-td7.style.border = '1px solid #ddd';
-td7.style.fontWeight = 'bold';
+                if (row.accountSide === "Cr") {
+                    td7.style.color = "#2e7d32";
+                    td7.style.backgroundColor = "#e8f5e9";
+                } else {
+                    td7.style.color = "#d32f2f";
+                }
 
-if (row.accountSide === "Cr") {
-    td7.style.color = "#2e7d32";
-    td7.style.backgroundColor = "#e8f5e9";
-} else {
-    td7.style.color = "#d32f2f";
-}
-
-tr.appendChild(td7);
-
+                tr.appendChild(td7);
                 tbody.appendChild(tr);
             });
 
-          const createTotalRow = (label, value, bgColor = '#f5f5f5') => {
-    const tr = document.createElement('tr');
-    tr.style.backgroundColor = bgColor;
+            const createTotalRow = (label, value, bgColor = '#f5f5f5') => {
+                const tr = document.createElement('tr');
+                tr.style.backgroundColor = bgColor;
 
-    const tdLabel = document.createElement('td');
-    tdLabel.colSpan = 5;
-    tdLabel.textContent = label;
-    tdLabel.style.padding = '6px';
-    tdLabel.style.textAlign = 'right';
-    tdLabel.style.fontWeight = 'bold';
-    tdLabel.style.border = '1px solid #ddd';
-    tr.appendChild(tdLabel);
+                const tdLabel = document.createElement('td');
+                tdLabel.colSpan = 5;
+                tdLabel.textContent = label;
+                tdLabel.style.padding = '6px';
+                tdLabel.style.textAlign = 'right';
+                tdLabel.style.fontWeight = 'bold';
+                tdLabel.style.border = '1px solid #ddd';
+                tr.appendChild(tdLabel);
 
-    const tdValue = document.createElement('td');
-    tdValue.textContent = formatAmount(value);
-    tdValue.style.padding = '6px';
-    tdValue.style.textAlign = 'right';
-    tdValue.style.fontWeight = 'bold';
-    tdValue.style.border = '1px solid #ddd';
-    tr.appendChild(tdValue);
+                const tdValue = document.createElement('td');
+                tdValue.textContent = formatAmount(value);
+                tdValue.style.padding = '6px';
+                tdValue.style.textAlign = 'right';
+                tdValue.style.fontWeight = 'bold';
+                tdValue.style.border = '1px solid #ddd';
+                tr.appendChild(tdValue);
 
-    return tr;
-};
+                return tr;
+            };
 
-
-tbody.appendChild(createTotalRow('TOTAL', pageFinalTotal, '#e3f2fd'));
+            tbody.appendChild(createTotalRow('TOTAL', pageFinalTotal, '#e3f2fd'));
             table.appendChild(tbody);
             wrapperDiv.appendChild(headerDiv);
             wrapperDiv.appendChild(table);
 
+            document.body.appendChild(wrapperDiv);
 
+            try {
+                const canvas = await html2canvas(wrapperDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true
+                });
 
-           document.body.appendChild(wrapperDiv);
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 280;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-try {
-    const canvas = await html2canvas(wrapperDiv, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 280;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-} catch (err) {
-    console.error('Error generating page:', err);
-    throw err; 
-} finally {
-    if (wrapperDiv.parentNode) {
-        wrapperDiv.parentNode.removeChild(wrapperDiv); 
-    }
-}
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            } catch (err) {
+                console.error('Error generating page:', err);
+                throw err;
+            } finally {
+                if (wrapperDiv.parentNode) {
+                    wrapperDiv.parentNode.removeChild(wrapperDiv);
+                }
+            }
         }
 
         pdf.save(`Pending_Bills_${decodedParams.Acc_Id}_${decodedParams.Fromdate}_to_${decodedParams.Todate}.pdf`);
@@ -468,9 +541,11 @@ try {
         return (
             <Container sx={{ mt: 4, maxWidth: 600 }}>
                 <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-                <Button variant="contained" onClick={() => window.location.reload()}>
-                    Retry
-                </Button>
+                {!isPropsMode && (
+                    <Button variant="contained" onClick={() => window.location.reload()}>
+                        Retry
+                    </Button>
+                )}
             </Container>
         );
     }
@@ -482,113 +557,74 @@ try {
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976d2' }}>
                         Account Pending Reference
                     </Typography>
-
-                    {/* {!isPreview && (
-                        <Tooltip title="Download PDF">
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<DownloadIcon />}
-                                endIcon={<PictureAsPdfIcon />}
-                                onClick={downloadAsPDF}
-                                disabled={transformedData.length === 0 || downloading}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                {downloading ? 'Downloading...' : 'Download PDF'}
-                            </Button>
-                        </Tooltip>
-                    )} */}
+                    {accountName && (
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, textAlign: 'center', color: '#333' }}>
+                            {accountName}
+                        </Typography>
+                    )}
                 </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
-                    <Box sx={{ display: 'flex',  flexWrap: 'wrap' }}>
-
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                         <Chip label={`From: ${decodedParams.Fromdate}`} variant="outlined" size="small" />
                         <Chip label={`To: ${decodedParams.Todate}`} variant="outlined" size="small" />
                     </Box>
-                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-   <Chip
-    label={`DR : ${formatAmount(drTotal)}`}
-    color="success"
-    variant="filled"
-    size="small"
-/>
-
-<Chip
-    label={`CR : ${formatAmount(crTotal)}`}
-    color="warning"
-    variant="filled"
-    size="small"
-/>
-
-<Chip
-    label={`Final : ${formatAmount(finalTotal)}`}
-    color="error"
-    variant="filled"
-    size="small"
-/>
-</Box>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip label={`DR : ${formatAmount(drTotal)}`} color="success" variant="filled" size="small" />
+                        <Chip label={`CR : ${formatAmount(crTotal)}`} color="warning" variant="filled" size="small" />
+                        <Chip label={`Final : ${formatAmount(finalTotal)}`} color="error" variant="filled" size="small" />
+                    </Box>
                 </Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-    Total Records: {transformedData.length}
-</Typography>
-
+                    Total Records: {transformedData.length}
+                </Typography>
 
                 <div ref={contentRef} style={{ display: 'none' }} />
 
                 <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'hidden' }}>
-                        <Table
-        size="small"
-        sx={{
-            tableLayout: 'fixed',
-            width: '100%',
-            '& .MuiTableCell-root': {
-                fontSize: isMobile ? '0.6rem' : '0.875rem',
-                padding: isMobile ? '2px 2px' : '6px 16px',
-                whiteSpace: isMobile ? 'normal' : 'nowrap',
-                wordBreak: 'break-word',
-            },
-        }}
-    >
-        
+                    <Table
+                        size="small"
+                        sx={{
+                            tableLayout: 'fixed',
+                            width: '100%',
+                            '& .MuiTableCell-root': {
+                                fontSize: isMobile ? '0.6rem' : '0.875rem',
+                                padding: isMobile ? '2px 2px' : '6px 16px',
+                                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                wordBreak: 'break-word',
+                            },
+                        }}
+                    >
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#1976d2' }}>
-                                {/* <TableCell sx={{ color: '#fff', fontWeight: 700 }}>#</TableCell> */}
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Voucher</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Date</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Source</TableCell>
-                                {/* <TableCell sx={{ color: '#fff', fontWeight: 800 }} align="right">Total (₹)</TableCell> */}
                                 <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending (₹)</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 500 }} align="right">Pending Days</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {transformedData.map((row, index) => (
-                               <TableRow
-    key={index}
-    sx={{
-        backgroundColor:
-            row.accountSide === "Cr" ? "#e8f5e9" : "inherit",
-    }}
->
-                                    {/* <TableCell>{index + 1}</TableCell> */}
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        backgroundColor: row.accountSide === "Cr" ? "#e8f5e9" : "inherit",
+                                    }}
+                                >
                                     <TableCell>{row.voucherNumber}</TableCell>
                                     <TableCell>{formatDate(row.date)}</TableCell>
                                     <TableCell>{row.source}</TableCell>
-                                    {/* <TableCell align="left">{formatAmount(row.total)}</TableCell> */}
-                              <TableCell
-    align="right"
-    sx={{
-        fontWeight: 700,
-        color:
-            row.accountSide === "Cr"
-                ? "#2e7d32"
-                : "#d32f2f",
-    }}
->
-    {formatAmount(row.pending)} {row.accountSide}
-</TableCell>
-                                     <TableCell align="right">
+                                    <TableCell
+                                        align="right"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: row.accountSide === "Cr" ? "#2e7d32" : "#d32f2f",
+                                        }}
+                                    >
+                                        {formatAmount(row.pending)} {row.accountSide}
+                                    </TableCell>
+                                    <TableCell align="right">
                                         <Chip
                                             label={`${row.pendingDays} `}
                                             size="small"
@@ -598,17 +634,16 @@ try {
                                     </TableCell>
                                 </TableRow>
                             ))}
-           
 
-<TableRow sx={{ backgroundColor: '#e3f2fd' }}>
-    <TableCell colSpan={3} align="right">
-        <strong> TOTAL</strong>
-    </TableCell>
-    <TableCell align="right">
-        <strong>{formatAmount(finalTotal)}</strong>
-    </TableCell>
-    <TableCell />
-</TableRow>
+                            <TableRow sx={{ backgroundColor: '#e3f2fd' }}>
+                                <TableCell colSpan={3} align="right">
+                                    <strong> TOTAL</strong>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <strong>{formatAmount(finalTotal)}</strong>
+                                </TableCell>
+                                <TableCell />
+                            </TableRow>
                         </TableBody>
                     </Table>
                 </TableContainer>
