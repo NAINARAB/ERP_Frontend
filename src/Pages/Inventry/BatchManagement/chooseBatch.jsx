@@ -98,11 +98,11 @@ const ChooseBatch = ({
             );
 
             if (index === -1) {
-                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.label || '', id: e?.value || '' });
+                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.batchAliasString || '', batch_id: e?.__isNew__ ? '' : e?.value || '' });
             } else {
                 newInputs[index].batch = e?.batchIdString || e?.value || '';
-                newInputs[index].batch_alias = e?.label || '';
-                newInputs[index].id = e?.value || '';
+                newInputs[index].batch_alias = e?.batchAliasString || '';
+                newInputs[index].batch_id = e?.__isNew__ ? '' : e?.value || '';
             }
             return newInputs.filter(item => String(item?.batch).length > 0);
         });
@@ -160,9 +160,9 @@ const ChooseBatch = ({
                 && (toNumber(batch.pendingQuantity) >= totalQuantity)
             )
         ).map(batch => ({
-            value: batch.id,
-            label: batch.batch_alias || batch.batch,
-            batchIdString: batch.batch
+            label: batch.batch,
+            batchIdString: batch.batch,
+            batchAliasString: batch.batch_alias
         }));
 
     }, [journalData, batchData]);
@@ -172,8 +172,8 @@ const ChooseBatch = ({
         setInputs(journalData.map(item => ({
             ...item,
             batch: e?.batchIdString || e?.value || '',
-            batch_alias: e?.label || '',
-            id: e?.value || ''
+            batch_alias: e?.batchAliasString || '',
+            id: e?.__isNew__ ? '' : e?.value || ''
         })))
     }
 
@@ -223,7 +223,7 @@ const ChooseBatch = ({
                                 {[
                                     'Sno', 'Date', 'Product', 'voucher',
                                     'From', 'To', 'Qty',
-                                    'Rate', 'Amount', 'Batch Alias',
+                                    'Rate', 'Amount', 'Batch',
                                 ].map(
                                     (col, colI) => (
                                         <th key={colI} className="vctr fa-12">{col}</th>
@@ -238,19 +238,13 @@ const ChooseBatch = ({
                                     batch => (
                                         isEqualNumber(batch.item_id, item.productId)
                                         && isEqualNumber(batch.godown_id, item[compareGodown])
-                                        && (toNumber(batch.pendingQuantity) >= paginated.reduce(
-                                            (acc, itm) => {
-                                                if (isEqualNumber(itm.productId, batch.item_id) && isEqualNumber(itm.godownId, batch.godown_id)) {
-                                                    return acc + toNumber(itm.quantity);
-                                                }
-                                                return acc;
-                                            }, 0
-                                        ))
+                                        && toNumber(batch.pendingQuantity) !== 0
                                     )
-                                ).map(batch => ({
+                                ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                     value: batch.id,
-                                    label: batch.batch_alias || batch.batch,
-                                    batchIdString: batch.batch
+                                    label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                    batchIdString: batch.batch,
+                                    batchAliasString: batch.batch_alias
                                 }));
 
                                 return (
@@ -269,8 +263,8 @@ const ChooseBatch = ({
                                         <td className="vctr fa-12 p-0">
                                             <CreatableSelect
                                                 value={{
-                                                    value: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.id || '',
-                                                    label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
+                                                    value: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_id || inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || '',
+                                                    label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
                                                 }}
                                                 options={[
                                                     { value: '', label: 'select' },

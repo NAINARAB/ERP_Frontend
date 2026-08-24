@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, isEqualNumber, ISOString, Subraction } from '../../../Components/functions';
+import { checkIsNumber, isEqualNumber, ISOString, Subraction, toNumber } from '../../../Components/functions';
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { FilterAlt, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
@@ -124,16 +124,16 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                 return newInputs;
             }
 
-            const batchVal = e.batchIdString || e.label || e.value;
-            const aliasVal = e.label;
-            const idVal = e.value;
+            const batchVal = e.batchIdString || e.value;
+            const aliasVal = e.batchAliasString || '';
+            const idVal = e.batchIdString ? e.value : '';
 
             if (index !== -1) {
                 newInputs[index] = {
                     ...newInputs[index],
                     batch: batchVal,
                     batch_alias: aliasVal,
-                    id: idVal
+                    batch_id: idVal
                 };
             } else {
                 newInputs.push({
@@ -146,7 +146,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                     rate: rowObj.Sour_Rate,
                     batch: batchVal,
                     batch_alias: aliasVal,
-                    id: idVal
+                    batch_id: idVal
                 });
             }
             return newInputs;
@@ -163,9 +163,9 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                 return newInputs;
             }
 
-            const isExisting = !!e.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : (rowObj.suggestBatchName || `PRD_${rowObj.Dest_Item_Id}_${Date.now()}`);
-            const aliasVal = e.label;
+            const isExisting = !!e?.batchIdString;
+            const batchVal = isExisting ? e.batchIdString : e?.value || '';
+            const aliasVal = isExisting ? e.batchAliasString : '';
             const idVal = isExisting ? e.value : '';
 
             if (index !== -1) {
@@ -173,7 +173,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                     ...newInputs[index],
                     batch: batchVal,
                     batch_alias: aliasVal,
-                    id: idVal
+                    batch_id: idVal
                 };
             } else {
                 newInputs.push({
@@ -185,7 +185,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                     rate: rowObj.Dest_Rate,
                     batch: batchVal,
                     batch_alias: aliasVal,
-                    id: idVal
+                    batch_id: idVal
                 });
             }
             return newInputs;
@@ -272,22 +272,23 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
 
                 const sDropDown = batchData.filter(b => 
                     isEqualNumber(b.item_id, srcObj.Sour_Item_Id) && 
-                    isEqualNumber(b.godown_id, srcObj.Sour_Goodown_Id)
-                ).map(b => ({
+                    isEqualNumber(b.godown_id, srcObj.Sour_Goodown_Id) &&
+                    toNumber(b.pendingQuantity) !== 0
+                ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(b => ({
                     value: b.id,
-                    label: b.batch_alias || b.batch,
-                    batchIdString: b.batch
+                    label: `${b.batch} (${toNumber(b.pendingQuantity)})`,
+                    batchIdString: b.batch,
+                    batchAliasString: b.batch_alias
                 }));
 
-                const val = sourceBatches.find(b => isEqualNumber(b.uniquId, srcObj.PRS_Id));
-                
+                const val = sourceBatches.find(input => isEqualNumber(input.uniquId, srcObj.PRS_Id));
+
                 return (
                     <div style={{ minWidth: '150px' }}>
-                        <Select
+                        <CreatableSelect
                             isClearable
-                            placeholder="Select Batch"
                             options={sDropDown}
-                            value={val ? { value: val.id || val.batch, label: val.batch_alias || val.batch } : null}
+                            value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
                             onChange={e => handleSourceBatchChange(srcObj, e)}
                             styles={customSelectStyles}
                             menuPortalTarget={document.body}
@@ -316,22 +317,24 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
 
                 const dDropDown = batchData.filter(b => 
                     isEqualNumber(b.item_id, destObj.Dest_Item_Id) && 
-                    isEqualNumber(b.godown_id, destObj.Dest_Goodown_Id)
-                ).map(b => ({
+                    isEqualNumber(b.godown_id, destObj.Dest_Goodown_Id) &&
+                    toNumber(b.pendingQuantity) !== 0
+                ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(b => ({
                     value: b.id,
-                    label: b.batch_alias || b.batch,
-                    batchIdString: b.batch
+                    label: `${b.batch} (${toNumber(b.pendingQuantity)})`,
+                    batchIdString: b.batch,
+                    batchAliasString: b.batch_alias
                 }));
 
-                const val = destBatches.find(b => isEqualNumber(b.uniquId, destObj.PRD_Id));
-                
+                const val = destBatches.find(input => isEqualNumber(input.uniquId, destObj.PRD_Id));
+
                 return (
                     <div style={{ minWidth: '150px' }}>
                         <CreatableSelect
                             isClearable
-                            placeholder={destObj.suggestBatchName || 'Batch'}
+                            placeholder={destObj.suggestBatchName || '...'}
                             options={dDropDown}
-                            value={val ? { value: val.id || val.batch, label: val.batch_alias || val.batch } : null}
+                            value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
                             onChange={e => handleDestBatchChange(destObj, e)}
                             styles={customSelectStyles}
                             menuPortalTarget={document.body}

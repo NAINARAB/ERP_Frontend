@@ -529,7 +529,7 @@ const AddProductFormCreditNote = ({
                                 <CreatableSelect
                                     value={{
                                         value: productDetails?.Batch_Name || '',
-                                        label: productDetails?.Batch_Alias || productDetails?.Batch_Name || ''
+                                        label: productDetails?.Batch_Name || ''
                                     }}
                                     onChange={e => {
                                         if (!e) {
@@ -539,18 +539,20 @@ const AddProductFormCreditNote = ({
                                         const isExisting = !!e.batchIdString;
                                         const batchVal = isExisting ? e.batchIdString : e.value;
                                         const aliasVal = isExisting ? e.alias : e.value;
-                                        setProductDetails(pre => ({ ...pre, Batch_Name: batchVal, Batch_Alias: aliasVal }));
+                                        const batchIdVal = isExisting ? e.value : '';
+                                        setProductDetails(pre => ({ ...pre, Batch_Name: batchVal, Batch_Alias: aliasVal, Batch_Id: batchIdVal }));
                                     }}
                                     options={
                                         batchDetails.filter(
                                             bat => (
                                                 isEqualNumber(bat.item_id, productDetails?.Item_Id)
                                                 && isEqualNumber(bat?.godown_id, productDetails?.GoDown_Id)
+                                                && toNumber(bat.pendingQuantity) !== 0
                                             )
-                                        ).map(
+                                        ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                             bat => ({ 
                                                 value: bat.id, 
-                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
                                                 batchIdString: bat.batch,
                                                 alias: bat.batch_alias || bat.batch
                                             })

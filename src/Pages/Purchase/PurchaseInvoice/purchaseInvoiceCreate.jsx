@@ -478,6 +478,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 products={baseData.products}
                 brands={baseData.brand}
                 uom={baseData.uom}
+                batchDetails={baseData.batchDetails}
                 godowns={baseData.godown}
                 GST_Inclusive={isInclusive}
                 IS_IGST={IS_IGST}
@@ -656,7 +657,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                     <CreatableSelect
                                                         value={{
                                                             value: row?.Batch_No || '',
-                                                            label: row?.Batch_Alias || row?.Batch_No || ''
+                                                            label: row?.Batch_No || ''
                                                         }}
                                                         onChange={e => {
                                                             if (!e) {
@@ -679,7 +680,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                             ).map(
                                                                 bat => ({ 
                                                                     value: bat.id, 
-                                                                    label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                    label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
                                                                     batchIdString: bat.batch,
                                                                     alias: bat.batch_alias || bat.batch
                                                                 })

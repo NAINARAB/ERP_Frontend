@@ -1446,7 +1446,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                         ).map(
                                                             bat => ({ 
                                                                 value: bat.id, 
-                                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
                                                                 batchIdString: bat.batch,
                                                                 alias: bat.batch_alias || bat.batch
                                                             })

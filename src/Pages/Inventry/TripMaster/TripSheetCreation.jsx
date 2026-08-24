@@ -655,7 +655,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                 <CreatableSelect
                                                     value={{
                                                         value: batchValue?.Batch_No || '',
-                                                        label: batchValue?.Batch_Alias || batchValue?.Batch_No || ''
+                                                        label: batchValue?.Batch_No || ''
                                                     }}
                                                     onChange={e => {
                                                         if (!e) {
@@ -665,18 +665,20 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         const isExisting = !!e.batchIdString;
                                                         const batchVal = isExisting ? e.batchIdString : e.value;
                                                         const aliasVal = isExisting ? e.alias : e.value;
-                                                        changeTripDetails({ ...arrival, Batch_No: batchVal, Batch_Alias: aliasVal });
+                                                        const batchIdVal = isExisting ? e.value : '';
+                                                        changeTripDetails({ ...arrival, Batch_No: batchVal, Batch_Alias: aliasVal, Batch_Id: batchIdVal });
                                                     }}
                                                     options={
                                                         batchDetails.filter(
                                                             bat => (
                                                                 isEqualNumber(bat.item_id, arrival.Product_Id)
                                                                 && isEqualNumber(bat?.godown_id, arrival?.From_Location)
+                                                                && toNumber(bat.pendingQuantity) !== 0
                                                             )
-                                                        ).map(
+                                                        ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                                             bat => ({ 
                                                                 value: bat.id, 
-                                                                label: `${bat.batch_alias || bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
                                                                 batchIdString: bat.batch,
                                                                 alias: bat.batch_alias || bat.batch
                                                             })

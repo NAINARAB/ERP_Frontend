@@ -223,17 +223,19 @@ const ProductionOfProcessing = ({
                                     <div style={{ minWidth: '150px' }}>
                                         {(() => {
                                             const batchDropDown = batchData.filter(
-                                                batch => isEqualNumber(batch.item_id, row.Dest_Item_Id) && isEqualNumber(batch.godown_id, row.Dest_Goodown_Id)
-                                            ).map(batch => ({
+                                                batch => isEqualNumber(batch.item_id, row.Dest_Item_Id) 
+                                                && isEqualNumber(batch.godown_id, row.Dest_Goodown_Id)
+                                                && toNumber(batch.pendingQuantity) !== 0
+                                            ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                                 value: batch.id,
-                                                label: `${batch.batch_alias || batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                                label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
                                                 batchIdString: batch.batch,
                                                 alias: batch.batch_alias || batch.batch
                                             }));
 
                                             const currentVal = row.Dest_Batch_Lot_No || row.Dest_Batch_Alias ? {
                                                 value: row.Dest_Batch_Lot_No || '',
-                                                label: row.Dest_Batch_Alias || row.Dest_Batch_Lot_No || ''
+                                                label: row.Dest_Batch_Lot_No || ''
                                             } : null;
 
                                             return (
@@ -252,9 +254,11 @@ const ProductionOfProcessing = ({
                                                         const isExisting = !!e.batchIdString;
                                                         const batchVal = isExisting ? e.batchIdString : e.value;
                                                         const aliasVal = isExisting ? e.alias : e.value;
+                                                        const batchIdVal = isExisting ? e.value : '';
                                                         
                                                         changeDestinationValues(index, "Dest_Batch_Lot_No", batchVal);
                                                         changeDestinationValues(index, "Dest_Batch_Alias", aliasVal);
+                                                        changeDestinationValues(index, "Batch_Id", batchIdVal);
                                                     }}
                                                     menuPortalTarget={document.body}
                                                     styles={customSelectStyles}

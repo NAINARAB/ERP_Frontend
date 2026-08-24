@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchLink } from '../../../Components/fetchComponent';
-import { checkIsNumber, isEqualNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, LocalDate, reactSelectFilterLogic, stringCompare, toArray, toNumber } from "../../../Components/functions";
 import { Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight, FilterAlt, Search } from "@mui/icons-material";
 import { useMemo } from "react";
@@ -100,17 +100,17 @@ const UnAssignedJournals = ({
                 return newInputs;
             }
 
-            const isExisting = !!e.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : row.suggestBatchName;
-            const aliasVal = e.label;
+            const isExisting = !!e?.batchIdString;
+            const batchVal = isExisting ? e.batchIdString : e?.value || '';
+            const aliasVal = isExisting ? e.batchAliasString : '';
             const idVal = isExisting ? e.value : '';
 
             if (index === -1) {
-                newInputs.push({ ...row, batch: batchVal, batch_alias: aliasVal, id: idVal });
+                newInputs.push({ ...row, batch: batchVal, batch_alias: aliasVal, batch_id: idVal });
             } else {
                 newInputs[index].batch = batchVal;
                 newInputs[index].batch_alias = aliasVal;
-                newInputs[index].id = idVal;
+                newInputs[index].batch_id = idVal;
             }
             return newInputs.filter(item => String(item?.batch_alias || item?.batch).length > 0);
         });
@@ -199,7 +199,7 @@ const UnAssignedJournals = ({
                                 {[
                                     'Sno', 'Date', 'Product', 'voucher',
                                     'From', 'To', 'Qty',
-                                    'Rate', 'Amount', 'Batch Alias',
+                                    'Rate', 'Amount', 'Batch',
                                 ].map(
                                     (col, colI) => (
                                         <th key={colI} className="vctr fa-12">{col}</th>
@@ -210,11 +210,12 @@ const UnAssignedJournals = ({
                         <tbody>
                             {paginated.map((item, iInd) => {
                                 const batchDropDown = batchData.filter(
-                                    batch => isEqualNumber(batch.item_id, item.productId)
-                                ).map(batch => ({
+                                    batch => isEqualNumber(batch.item_id, item.productId) && toNumber(batch.pendingQuantity) !== 0
+                                ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                     value: batch.id,
-                                    label: batch.batch_alias || batch.batch,
-                                    batchIdString: batch.batch
+                                    label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                    batchIdString: batch.batch,
+                                    batchAliasString: batch.batch_alias
                                 }));
                                 const val = inputs.find(input => isEqualNumber(input.uniquId, item.uniquId));
 
@@ -237,7 +238,7 @@ const UnAssignedJournals = ({
                                                 isClearable
                                                 placeholder={item?.suggestBatchName || '...'}
                                                 options={batchDropDown}
-                                                value={val ? { value: val.id || val.batch, label: val.batch_alias || val.batch } : null}
+                                                value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
                                                 onChange={e => handleInputChange(item, e)}
                                                 styles={customSelectStyles}
                                                 menuPortalTarget={document.body}

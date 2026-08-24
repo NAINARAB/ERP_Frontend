@@ -83,7 +83,7 @@ function SearchPanel({ onSearch, loading, initialForm }) {
     ).sort((a, b) => a.label.localeCompare(b.label));
 
     const batchOptions = Array.from(
-        new Map(getFilteredData('batch').map(r => [r.batch, { value: r.batch, label: r.batch_alias || r.batch }])).values()
+        new Map(getFilteredData('batch').map(r => [r.batch, { value: r.batch, label: r.batch }])).values()
     ).sort((a, b) => a.label.localeCompare(b.label));
 
     const canSearch = form.batch && form.item;

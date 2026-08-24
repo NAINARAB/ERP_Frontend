@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray } from "../../../Components/functions";
+import { checkIsNumber, Division, isEqualNumber, isValidNumber, isValidObject, Multiplication, onlynum, reactSelectFilterLogic, toArray, toNumber } from "../../../Components/functions";
 import { ClearAll } from "@mui/icons-material";
 import RequiredStar from "../../../Components/requiredStar";
 import { calculateGSTDetails } from "../../../Components/taxCalculator";
 import Select from "react-select";
+import CreatableSelect from 'react-select/creatable';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { toast } from "react-toastify";
 
@@ -18,6 +19,7 @@ const AddItemsDialog = ({
     brands = [],
     uom = [],
     godowns = [],
+    batchDetails = [],
     GST_Inclusive,
     IS_IGST,
     editValues = null,
@@ -447,14 +449,44 @@ const AddItemsDialog = ({
                             {/* Batch */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Batch</label>
-                                <input
-                                    value={productDetails.Batch_No ? productDetails.Batch_No : ''}
-                                    disabled={!checkIsNumber(productDetails.Item_Id)}
-                                    onChange={e => setProductDetails(pre => ({
-                                        ...pre,
-                                        Batch_No: e.target.value
-                                    }))}
-                                    className="cus-inpt"
+                                <CreatableSelect
+                                    value={{
+                                        value: productDetails.Batch_No || '',
+                                        label: productDetails.Batch_No || ''
+                                    }}
+                                    onChange={e => {
+                                        if (!e) {
+                                            setProductDetails(pre => ({ ...pre, Batch_No: '', Batch_Alias: '' }));
+                                            return;
+                                        }
+                                        const isExisting = !!e.batchIdString;
+                                        const batchVal = isExisting ? e.batchIdString : e.value;
+                                        const aliasVal = isExisting ? e.alias : e.value;
+                                        const batchIdVal = isExisting ? e.value : '';
+                                        setProductDetails(pre => ({ ...pre, Batch_No: batchVal, Batch_Alias: aliasVal, Batch_Id: batchIdVal }));
+                                    }}
+                                    options={
+                                        batchDetails.filter(
+                                            bat => (
+                                                isEqualNumber(bat.item_id, productDetails?.Item_Id)
+                                                && isEqualNumber(bat?.godown_id, productDetails?.Location_Id)
+                                                && toNumber(bat.pendingQuantity) !== 0
+                                            )
+                                        ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
+                                            bat => ({ 
+                                                value: bat.id, 
+                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                batchIdString: bat.batch,
+                                                alias: bat.batch_alias || bat.batch
+                                            })
+                                        )
+                                    }
+                                    styles={customSelectStyles}
+                                    isSearchable={true}
+                                    isClearable
+                                    placeholder={"Select or Create Batch"}
+                                    menuPortalTarget={document.body}
+                                    isDisabled={!checkIsNumber(productDetails.Item_Id) || !checkIsNumber(productDetails.Location_Id)}
                                 />
                             </div>
                             
