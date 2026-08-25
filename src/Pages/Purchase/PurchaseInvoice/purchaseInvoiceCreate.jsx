@@ -663,21 +663,25 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                                             if (!e) {
                                                                 changeSelectedObjects(i, 'Batch_No', '');
                                                                 changeSelectedObjects(i, 'Batch_Alias', '');
+                                                                changeSelectedObjects(i, 'Batch_Id', '');
                                                                 return;
                                                             }
                                                             const isExisting = !!e.batchIdString;
                                                             const batchVal = isExisting ? e.batchIdString : e.value;
                                                             const aliasVal = isExisting ? e.alias : e.value;
+                                                            const batchIdVal = isExisting ? e.value : '';
                                                             changeSelectedObjects(i, 'Batch_No', batchVal);
                                                             changeSelectedObjects(i, 'Batch_Alias', aliasVal);
+                                                            changeSelectedObjects(i, 'Batch_Id', batchIdVal);
                                                         }}
                                                         options={
                                                             baseData.batchDetails.filter(
                                                                 bat => (
                                                                     isEqualNumber(bat.item_id, row?.Item_Id)
                                                                     && isEqualNumber(bat?.godown_id, row?.Location_Id)
+                                                                    && toNumber(bat.pendingQuantity) !== 0
                                                                 )
-                                                            ).map(
+                                                            ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                                                 bat => ({ 
                                                                     value: bat.id, 
                                                                     label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,

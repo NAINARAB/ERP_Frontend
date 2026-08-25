@@ -157,10 +157,11 @@ const ChooseBatch = ({
             batch => (
                 isEqualNumber(batch.item_id, itemId)
                 && isEqualNumber(batch.godown_id, godownId)
-                && (toNumber(batch.pendingQuantity) >= totalQuantity)
+                && toNumber(batch.pendingQuantity) !== 0
             )
-        ).map(batch => ({
-            label: batch.batch,
+        ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
+            value: batch.id,
+            label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
             batchIdString: batch.batch,
             batchAliasString: batch.batch_alias
         }));

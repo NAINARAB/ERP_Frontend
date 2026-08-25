@@ -659,7 +659,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                     }}
                                                     onChange={e => {
                                                         if (!e) {
-                                                            changeTripDetails({ ...arrival, Batch_No: '', Batch_Alias: '' });
+                                                            changeTripDetails({ ...arrival, Batch_No: '', Batch_Alias: '', Batch_Id: '' });
                                                             return;
                                                         }
                                                         const isExisting = !!e.batchIdString;

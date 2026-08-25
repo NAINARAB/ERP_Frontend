@@ -932,8 +932,6 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         return hasPositive && hasNegative;
     }, [invoiceProducts, baseData.stockInGodown]);
 
-    console.log(invoiceProducts)
-
     const isBatchMissing = useMemo(() => {
         if (invoiceProducts.length === 0) return false;
         return invoiceProducts.some(item => !isValidNumber(item?.Batch_Id) && !Boolean(item?.Batch_Name));
@@ -1428,27 +1426,31 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                 <CreatableSelect
                                                     value={{
                                                         value: row?.Batch_Name || '',
-                                                        label: row?.Batch_Alias || row?.Batch_Name || ''
+                                                        label: row?.Batch_Name || ''
                                                     }}
                                                     onChange={e => {
                                                         if (!e) {
                                                             changeSelectedObjects(i, 'Batch_Name', '');
                                                             changeSelectedObjects(i, 'Batch_Alias', '');
+                                                            changeSelectedObjects(i, 'Batch_Id', '');
                                                             return;
                                                         }
                                                         const isExisting = !!e.batchIdString;
                                                         const batchVal = isExisting ? e.batchIdString : e.value;
                                                         const aliasVal = isExisting ? e.alias : e.value;
+                                                        const batchIdVal = isExisting ? e.value : '';
                                                         changeSelectedObjects(i, 'Batch_Name', batchVal);
                                                         changeSelectedObjects(i, 'Batch_Alias', aliasVal);
+                                                        changeSelectedObjects(i, 'Batch_Id', batchIdVal);
                                                     }}
                                                     options={
                                                         baseData.batchDetails.filter(
                                                             bat => (
                                                                 isEqualNumber(bat.item_id, row?.Item_Id)
                                                                 && isEqualNumber(bat?.godown_id, commonGodown?.value)
+                                                                && toNumber(bat.pendingQuantity) !== 0
                                                             )
-                                                        ).map(
+                                                        ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                                             bat => ({
                                                                 value: bat.id,
                                                                 label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,

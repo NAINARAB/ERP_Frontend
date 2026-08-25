@@ -535,7 +535,7 @@ const AddProductForm = ({
                                     }}
                                     onChange={e => {
                                         if (!e) {
-                                            setProductDetails(pre => ({ ...pre, Batch_Name: '', Batch_Alias: '' }));
+                                            setProductDetails(pre => ({ ...pre, Batch_Name: '', Batch_Alias: '', Batch_Id: '' }));
                                             return;
                                         }
                                         const isExisting = !!e.batchIdString;

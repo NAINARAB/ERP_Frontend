@@ -249,6 +249,7 @@ const ProductionOfProcessing = ({
                                                         if (!e) {
                                                             changeDestinationValues(index, "Dest_Batch_Lot_No", "");
                                                             changeDestinationValues(index, "Dest_Batch_Alias", "");
+                                                            changeDestinationValues(index, "Batch_Id", "");
                                                             return;
                                                         }
                                                         const isExisting = !!e.batchIdString;

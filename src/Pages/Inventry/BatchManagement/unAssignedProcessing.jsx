@@ -267,7 +267,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                 const existingBatch = String(srcObj.Sour_Batch_Lot_No || '').trim();
                 if (existingBatch && existingBatch !== 'null' && existingBatch !== 'undefined') {
                     const aliasObj = batchData.find(b => b.batch === existingBatch);
-                    return <span>{aliasObj?.batch_alias || existingBatch}</span>;
+                    return <span>{existingBatch}</span>;
                 }
 
                 const sDropDown = batchData.filter(b => 
@@ -312,7 +312,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                 const existingBatch = String(destObj.Dest_Batch_Lot_No || '').trim();
                 if (existingBatch && existingBatch !== 'null' && existingBatch !== 'undefined') {
                     const aliasObj = batchData.find(b => b.batch === existingBatch);
-                    return <span>{aliasObj?.batch_alias || existingBatch}</span>;
+                    return <span>{existingBatch}</span>;
                 }
 
                 const dDropDown = batchData.filter(b => 

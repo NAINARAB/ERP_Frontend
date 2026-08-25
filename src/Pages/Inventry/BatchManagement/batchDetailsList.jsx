@@ -68,11 +68,11 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
     const columns = useMemo(() => {
         return [
             { Field_Name: 'transDate', Fied_Data: 'date', ColumnHeader: 'Trans Date', isVisible: 1 },
-            { Field_Name: 'batch', Fied_Data: 'string', ColumnHeader: 'Batch', isVisible: 1 },
-            { Field_Name: 'batch_alias', Fied_Data: 'string', ColumnHeader: 'System Alias', isVisible: 0 },
+            { Field_Name: 'batchNo', Fied_Data: 'string', ColumnHeader: 'Batch', isVisible: 1 },
+            { Field_Name: 'batchAlias', Fied_Data: 'string', ColumnHeader: 'System Alias', isVisible: 0 },
             { Field_Name: 'productName', Fied_Data: 'string', ColumnHeader: 'Product', isVisible: 1 },
             { Field_Name: 'godownName', Fied_Data: 'string', ColumnHeader: 'Godown', isVisible: 1 },
-            { Field_Name: 'inwardQty', Fied_Data: 'number', ColumnHeader: 'Inward Qty', isVisible: 1 },
+            { Field_Name: 'inwardQty', Fied_Data: 'number', ColumnHeader: 'Inward Qty', isVisible: 0 },
             { Field_Name: 'consumedQty', Fied_Data: 'number', ColumnHeader: 'Consumed Qty', isVisible: 1 },
             { 
                 Field_Name: 'availableQty', 

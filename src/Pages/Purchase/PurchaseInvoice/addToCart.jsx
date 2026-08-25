@@ -456,7 +456,7 @@ const AddItemsDialog = ({
                                     }}
                                     onChange={e => {
                                         if (!e) {
-                                            setProductDetails(pre => ({ ...pre, Batch_No: '', Batch_Alias: '' }));
+                                            setProductDetails(pre => ({ ...pre, Batch_No: '', Batch_Alias: '', Batch_Id: '' }));
                                             return;
                                         }
                                         const isExisting = !!e.batchIdString;
