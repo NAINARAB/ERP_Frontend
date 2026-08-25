@@ -358,7 +358,7 @@ const initializeRowConfigs = () => {
                 credit_ledger_name: credit_ledger_name,
                 amount: amount,
                 original_amount: amount,
-                remarks: '',
+                remarks: txn.TranParticulars || '', 
                 selectedInvoices: [],
                 check_no: txn.ChequeNum || '',
                 check_date: '',
