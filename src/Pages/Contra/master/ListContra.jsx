@@ -11,6 +11,8 @@ import { customSelectStyles } from "../../../Components/tablecolumn";
 import { contraStatus } from "./contraVariables";
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
 
@@ -31,6 +33,8 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
     });
 
     const [contraData, setContraData] = useState([]);
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [moduleRules, setModuleRules] = useState([]);
 
     const [filterDropDown, setFilterDropDown] = useState({
         voucherType: [],
@@ -114,6 +118,15 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                 setContraData(data.data)
             }
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=CONTRA`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
+        }).catch(e => console.error(e));
+
     }, [sessionValue, pageID]);
 
     const TotalAmount = useMemo(() => contraData.filter(
@@ -123,6 +136,15 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
     ), [contraData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
+
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) return true;
+        const rule = moduleRules.find(r => r.ruleCode === 'CON_1');
+        if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        const dateObj = new Date(orderDate);
+        return Math.floor((new Date() - dateObj) / (1000 * 60 * 60 * 24)) <= 3;
+    }
 
     const statusColor = {
         NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
@@ -201,7 +223,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, page
                                         name: 'Edit',
                                         icon: <Edit />,
                                         onclick: () => navigate('create', { state: row }),
-                                        disabled: !EditRights
+                                        disabled: (!EditRights || !canEditNow(row.ContraDate))
                                     }
                                 ]}
                             />

@@ -13,6 +13,8 @@ import { Close } from "@mui/icons-material";
 import AlterHistoryTable from "../../Components/alterHistoryTable";
 // NOTE: Print components could be added here if needed for Credit/Debit Notes in the future
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -28,6 +30,7 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
     const navigate = useNavigate();
     const location = useLocation();
     const [creditNoteData, setCreditNoteData] = useState([]);
+    const [moduleRules, setModuleRules] = useState([]);
     const [filtersDropDown, setFiltersDropDown] = useState({
         voucherType: [],
         retailers: [],
@@ -105,6 +108,14 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
             setCreditNoteData([]);
         });
 
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=CREDIT_NOTE`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
+        }).catch(e => console.error(e));
+
     }, [sessionValue, pageID, reload, location]);
 
     const ExpendableComponent = ({ row }) => {
@@ -152,6 +163,15 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
             ...dialog,
             filters: false
         });
+    }
+
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) return true;
+        const rule = moduleRules.find(r => r.ruleCode === 'CN_1');
+        if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        const dateObj = new Date(orderDate);
+        return Math.floor((new Date() - dateObj) / (1000 * 60 * 60 * 24)) <= 3;
     }
 
     const totalValues = useMemo(() => {
@@ -218,7 +238,7 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                                                 });
                                             },
                                             icon: <Edit fontSize="small" color="primary" />,
-                                            disabled: !EditRights,
+                                            disabled: (!EditRights || !canEditNow(row.CR_Date)),
                                         }
                                     ]}
                                 />

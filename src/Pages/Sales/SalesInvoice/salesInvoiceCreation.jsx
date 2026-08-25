@@ -830,6 +830,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
         'SI_5': true,   // Retailer Credit Days Limit - prevent
         'SI_6': false,  // Voucher Based Godown - ignore (warning only if active)
         'SI_7': true,   // Credit Bill Count Limit - prevent
+        'SI_13': true,  // only 6 products per invoice
     };
 
     const getRuleOptions = useCallback((code) => {
@@ -849,7 +850,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
             creditDaysLimit: getRuleOptions('SI_5'),
             voucherBasedGodown: getRuleOptions('SI_6'),
             creditBillCountLimit: getRuleOptions('SI_7'),
-            productModification: getRuleOptions('SI_11')
+            productModification: getRuleOptions('SI_11'),
+            onlySixItemPerInvoice: getRuleOptions('SI_13')
         };
     }, [getRuleOptions]);
 
@@ -1249,6 +1251,9 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                     || (invoiceProducts.length > 0
                                         && isValidNumber(invoiceInfo.So_No)
                                         && !salesInvoiceAccess.productModification.exists)
+                                    || (salesInvoiceAccess.onlySixItemPerInvoice?.exists
+                                        && salesInvoiceAccess.onlySixItemPerInvoice?.block
+                                        && invoiceProducts.length >= 6)
                                 }
                             >Add Product</Button>
                         </div>
@@ -1444,8 +1449,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                                 && isEqualNumber(bat?.godown_id, commonGodown?.value)
                                                             )
                                                         ).map(
-                                                            bat => ({ 
-                                                                value: bat.id, 
+                                                            bat => ({
+                                                                value: bat.id,
                                                                 label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
                                                                 batchIdString: bat.batch,
                                                                 alias: bat.batch_alias || bat.batch
@@ -1537,7 +1542,16 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     <Button
                         onClick={saveSalesInvoice}
                         variant="contained"
-                        disabled={(isStockMixed && salesInvoiceAccess.stockSeparation.block) || (isBatchMissing && salesInvoiceAccess.batchUsage.block) || (!isSingleGodownValid && salesInvoiceAccess.singleGodown.block) || !activeInvoiceCreationStatus.valid || (isCreditBillLimitExceeded && salesInvoiceAccess.creditBillCountLimit.block) || !voucherCrLimitValid || isLoading}
+                        disabled={(
+                            isStockMixed && salesInvoiceAccess.stockSeparation.block
+                        ) || (
+                                isBatchMissing && salesInvoiceAccess.batchUsage.block
+                            ) || (
+                                !isSingleGodownValid && salesInvoiceAccess.singleGodown.block
+                            ) || !activeInvoiceCreationStatus.valid || (
+                                isCreditBillLimitExceeded && salesInvoiceAccess.creditBillCountLimit.block
+                            ) || !voucherCrLimitValid || isLoading
+                        }
                     >submit</Button>
                 </CardActions>
             </Card>

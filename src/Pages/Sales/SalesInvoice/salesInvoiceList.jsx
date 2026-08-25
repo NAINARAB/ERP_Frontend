@@ -56,6 +56,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         taxInvoice: false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [moduleRules, setModuleRules] = useState([]);
 
     useEffect(() => {
         fetchLink({
@@ -68,6 +69,14 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     createdBy: toArray(data?.others?.createdBy),
                     salesPerson: toArray(data?.others?.salesPerson),
                 });
+            }
+        }).catch(e => console.error(e));
+
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=SALE_INVOICE`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
             }
         }).catch(e => console.error(e));
     }, []);
@@ -216,9 +225,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         if (isAllowedUser) {
             return true;
         }
+
+        const rule12 = moduleRules.find(r => r.ruleCode === 'SI_12');
+        if (rule12 && isEqualNumber(rule12.updateOption, 1)) {
+            return true;
+        }
+
         const invoiceDateObj = new Date(invoiceDate);
         const today = new Date();
         const diffInDays = Math.floor((today - invoiceDateObj) / (1000 * 60 * 60 * 24));
+        console.log(diffInDays)
         return diffInDays <= 3;
     }
 
@@ -267,16 +283,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                             },
                                             icon: <Visibility fontSize="small" color="primary" />,
                                         },
-                                        // {
-                                        //     name: 'View Order',
-                                        //     onclick: () => {
-                                        //         setViewOrder({
-                                        //             orderDetails: row,
-                                        //             orderProducts: row?.Products_List ? row?.Products_List : [],
-                                        //         })
-                                        //     },
-                                        //     icon: <Visibility fontSize="small" color="primary" />,
-                                        // },
                                         {
                                             name: 'Print Invoice',
                                             onclick: () => {

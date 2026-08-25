@@ -26,6 +26,8 @@ const createCol = (field = '', type = 'string', ColumnHeader = '', align = 'left
     ...(ColumnHeader && { ColumnHeader })
 });
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -45,6 +47,7 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
     const storage = JSON.parse(localStorage.getItem("user"));
     const navigate = useNavigate();
     const [saleOrders, setSaleOrders] = useState([]);
+    const [moduleRules, setModuleRules] = useState([]);
     const [baseData, setBaseData] = useState({
         retailers: [],
         salesPerson: [],
@@ -110,7 +113,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     voucherRes,
                     productsRes,
                     godownRes,
-                    ledgerRes
+                    ledgerRes,
+                    moduleRulesRes
                 ] = await Promise.all([
                     fetchLink({ address: `sales/saleOrder/retailers` }),
                     fetchLink({ address: `masters/users/salesPerson/dropDown?Company_id=${storage?.Company_id}` }),
@@ -118,9 +122,13 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                     fetchLink({ address: `masters/voucher` }),
                     fetchLink({ address: `masters/products` }),
                     fetchLink({ address: `dataEntry/godownLocationMaster` }),
-                    fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` })
+                    fetchLink({ address: `purchase/stockItemLedgerName?type=SALES` }),
+                    fetchLink({ address: `authorization/moduleRules?moduleName=SALE_ORDER` })
                 ]);
 
+                if (moduleRulesRes && moduleRulesRes.success) {
+                    setModuleRules(moduleRulesRes.data || []);
+                }
                 setBaseData({
                     retailers: retailersRes.success ? retailersRes.data : [],
                     salesPerson: salesPersonRes.success ? salesPersonRes.data : [],
@@ -490,6 +498,23 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
         [selectedOrders]
     );
 
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(toNumber(storage.UserTypeId));
+        if (isAllowedUser) {
+            return true;
+        }
+
+        const rule1 = moduleRules.find(r => r.ruleCode === 'SO_1');
+        if (rule1 && isEqualNumber(rule1.updateOption, 1)) {
+            return true;
+        }
+
+        const orderDateObj = new Date(orderDate);
+        const today = new Date();
+        const diffInDays = Math.floor((today - orderDateObj) / (1000 * 60 * 60 * 24));
+        return diffInDays <= 3;
+    }
+
     return (
         <>
             <AppTableComponent
@@ -694,7 +719,8 @@ const SaleOrderList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID })
                                                         isEdit: true,
                                                     },
                                                 })
-                                            }
+                                            },
+                                            disabled: !EditRights || !canEditNow(row.So_Date)
                                         },
                                         {
                                             name: "Convert to Invoice",

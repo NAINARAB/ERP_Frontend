@@ -17,10 +17,14 @@ const defaultFilters = {
     Todate: ISOString(),
 };
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const TripSheets = ({ loadingOn, loadingOff }) => {
 
     const nav = useNavigate();
     const location = useLocation();
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [moduleRules, setModuleRules] = useState([]);
     const query = useQuery();
     const [tripData, setTripData] = useState([]);
     const [filters, setFilters] = useState({
@@ -54,6 +58,17 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         }).finally(() => {
             if (loadingOff) loadingOff();
         }).catch(e => console.error(e))
+
+        Promise.all([
+            fetchLink({ address: `authorization/moduleRules?moduleName=MATERIAL_INWARD` }),
+            fetchLink({ address: `authorization/moduleRules?moduleName=OTHER_GODOWN` })
+        ]).then(([miData, ogData]) => {
+            let rules = [];
+            if (miData.success) rules = [...rules, ...(miData.data || [])];
+            if (ogData.success) rules = [...rules, ...(ogData.data || [])];
+            setModuleRules(rules);
+        }).catch(e => console.error(e));
+
     }, [filters?.fetchFrom, filters?.fetchTo]);
 
     useEffect(() => {
@@ -78,6 +93,22 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             ...filters,
             filterDialog: false,
         });
+    }
+
+    const canEditNow = (recordDate, billType) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) return true;
+
+        if (billType === 'MATERIAL_INWARD') {
+            const rule = moduleRules.find(r => r.ruleCode === 'MI_1');
+            if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        } else if (billType === 'OTHER_GODOWN') {
+            const rule = moduleRules.find(r => r.ruleCode === 'OG_1');
+            if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        }
+
+        const dateObj = new Date(recordDate);
+        return Math.floor((new Date() - dateObj) / (1000 * 60 * 60 * 24)) <= 3;
     }
 
     const printProductsList = useMemo(() => {
@@ -481,7 +512,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                                 isEditable: false,
                                             },
                                         }),
-                                        disabled: toNumber(row?.ConvertedPurchaseOrders?.length) > 0 ? true : false
+                                        disabled: (toNumber(row?.ConvertedPurchaseOrders?.length) > 0) || !canEditNow(row.Trip_Date, row.BillType)
                                     },
                                     {
                                         name: 'Preview',

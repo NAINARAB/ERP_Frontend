@@ -10,6 +10,8 @@ import Select from 'react-select';
 import ProcessingView from "./normalView";
 
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const transformStockJournalData = (data) => {
     let transformedData = [];
 
@@ -66,6 +68,8 @@ const transformStockJournalData = (data) => {
 
 const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [moduleRules, setModuleRules] = useState([]);
     const defaultFiltes = {
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -150,9 +154,17 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
             if (data.success) {
                 setResponseData(data.data)
             }
+        }).catch(e => console.error(e)).finally(() => loadingOff())
+
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=PROCESSING`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
         }).catch(e => console.error(e));
 
-    }, [sessionValue, pageID]);
+    }, [sessionValue, pageID, filters?.refresh]);
 
     const closeDialog = () => {
         setFilters({
@@ -172,6 +184,15 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
     const uniqueBranch = useMemo(() => {
         return [...new Set(responseData.map(sj => sj.BranchName))].map(branch => ({ value: branch, label: branch }));
     }, [responseData]);
+
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) return true;
+        const rule = moduleRules.find(r => r.ruleCode === 'PRO_2');
+        if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        const dateObj = new Date(orderDate);
+        return Math.floor((new Date() - dateObj) / (1000 * 60 * 60 * 24)) <= 3;
+    }
 
     const filteredData = useMemo(() => {
         return responseData.filter((stj) => {
@@ -300,7 +321,8 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                                 isEditable: true
                                             }
                                         })
-                                    }}>
+                                    }}
+                                    disabled={(!EditRights || !canEditNow(row.Date))}>
                                         <Edit className="fa-20" />
                                     </IconButton>
                                 </>

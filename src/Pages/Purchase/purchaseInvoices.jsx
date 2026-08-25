@@ -11,6 +11,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AlterHistoryTable from "../../Components/alterHistoryTable";
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const defaultFilters = {
     Fromdate: ISOString(),
     Todate: ISOString(),
@@ -24,12 +26,14 @@ const defaultFilters = {
 
 const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
+    const storage = JSON.parse(localStorage.getItem("user"));
     const [purchaseOrder, setPurchaseOrder] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [voucher, setVoucher] = useState([]);
     const [viewOrder, setViewOrder] = useState({});
     const navigate = useNavigate();
     const location = useLocation();
+    const [moduleRules, setModuleRules] = useState([]);
 
     const [baseData, setBaseData] = useState({
         Employees: [],
@@ -155,10 +159,35 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
             }
         }).catch(e => console.error(e))
 
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=PURCHASE_INVOICE`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
+        }).catch(e => console.error(e))
+
     }, []);
 
     const navigateToPageWithState = ({ page = '', stateToTransfer = {} }) => {
         navigate(page, { state: stateToTransfer });
+    }
+
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) {
+            return true;
+        }
+
+        const rule = moduleRules.find(r => r.ruleCode === 'PI_1');
+        if (rule && isEqualNumber(rule.updateOption, 1)) {
+            return true;
+        }
+
+        const orderDateObj = new Date(orderDate);
+        const today = new Date();
+        const diffInDays = Math.floor((today - orderDateObj) / (1000 * 60 * 60 * 24));
+        return diffInDays <= 3;
     }
 
     const purchaseOrderColumn = [
@@ -227,6 +256,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
                                         }
                                     })
                                 }}
+                                disabled={!canEditNow(row.Po_Entry_Date)}
                                 size="small"
                             >
                                 <Edit className="fa-16" />

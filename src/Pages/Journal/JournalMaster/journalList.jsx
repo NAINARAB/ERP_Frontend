@@ -11,8 +11,12 @@ import { journalStatus } from "./variable";
 import { useMemo } from "react";
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) => {
     const nav = useNavigate();
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [moduleRules, setModuleRules] = useState([]);
     // const [dataArray, setDataArray] = useState([]);
     const [generalInfo, setGeneralInfo] = useState([]);
     const [entriesInfo, setEntriesInfo] = useState([]);
@@ -98,6 +102,15 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                 setAlterDetails(toArray(data.others?.alterHistory));
             }
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=JOURNAL`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
+        }).catch(e => console.error(e));
+
     }, [sessionValue, pageID]);
 
     useEffect(() => {
@@ -201,6 +214,23 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
 
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) {
+            return true;
+        }
+
+        const rule = moduleRules.find(r => r.ruleCode === 'JO_3');
+        if (rule && isEqualNumber(rule.updateOption, 1)) {
+            return true;
+        }
+
+        const orderDateObj = new Date(orderDate);
+        const today = new Date();
+        const diffInDays = Math.floor((today - orderDateObj) / (1000 * 60 * 60 * 24));
+        return diffInDays <= 3;
+    }
+
     return (
         <>
 
@@ -262,7 +292,8 @@ const JournalList = ({ loadingOn, loadingOff, pageID, AddRights, EditRights }) =
                                             ...row.journalObject,
                                         }
                                     })
-                                }}>
+                                }}
+                                disabled={!canEditNow(row.date)}>
                                     <Edit className="fa-20" />
                                 </IconButton>
                             </>

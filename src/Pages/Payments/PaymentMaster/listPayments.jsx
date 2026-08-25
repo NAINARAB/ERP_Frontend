@@ -11,12 +11,16 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
 
+export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
+
 const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
 
     const navigate = useNavigate();
     const location = useLocation();
     const locationState = location.state || {};
+    const storage = JSON.parse(localStorage.getItem("user"));
+    const [moduleRules, setModuleRules] = useState([]);
 
     // const defaultFilters = {
     //     Fromdate: locationState.Fromdate || ISOString(),
@@ -195,6 +199,14 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                 setPaymentData(data.data)
             }
         }).catch(e => console.error(e))
+
+        fetchLink({
+            address: `authorization/moduleRules?moduleName=PAYMENT`
+        }).then(data => {
+            if (data.success) {
+                setModuleRules(data.data || []);
+            }
+        }).catch(e => console.error(e));
     }, [sessionValue, pageID]);
 
     const TotalPayment = useMemo(() => paymentData.filter(
@@ -204,6 +216,15 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
     ), [paymentData]);
 
     const closeDialog = () => setFilters(pre => ({ ...pre, filterDialog: false }));
+
+    const canEditNow = (orderDate) => {
+        const isAllowedUser = allowedUserTypesForPreviousDateSalesEdit.includes(Number(storage?.UserTypeId));
+        if (isAllowedUser) return true;
+        const rule = moduleRules.find(r => r.ruleCode === 'PAY_1');
+        if (rule && isEqualNumber(rule.updateOption, 1)) return true;
+        const dateObj = new Date(orderDate);
+        return Math.floor((new Date() - dateObj) / (1000 * 60 * 60 * 24)) <= 3;
+    }
 
     const statusColor = {
         NewOrder: ' bg-info fw-bold fa-11 px-2 py-1 rounded-3 ',
@@ -315,7 +336,7 @@ const PaymentsMasterList = ({ loadingOn, loadingOff, AddRights, EditRights, Dele
                                         name: 'Edit',
                                         icon: <Edit />,
                                         onclick: () => navigate('create', { state: row }),
-                                        disabled: !EditRights
+                                        disabled: (!EditRights || !canEditNow(row.payment_date))
                                     },
                                     {
                                         name: 'Add Reference',
