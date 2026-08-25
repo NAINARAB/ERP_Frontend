@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, Subraction, toArray } from '../../../Components/functions';
 import FilterableTable, { formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { Edit, FilterAlt, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
+import { Edit, FilterAlt,Print, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from 'react-select';
 import ProcessingView from "./normalView";
-
+import  GodownChallanPrintTemplate  from "./GodownChallanPrintPreview";
 
 export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
 
@@ -324,7 +324,14 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                                     }}
                                     disabled={(!EditRights || !canEditNow(row.Date))}>
                                         <Edit className="fa-20" />
-                                    </IconButton>
+                                    </IconButton>   
+                                     <GodownChallanPrintTemplate entryDetails={row.processObjecet} download>
+                                        <Tooltip title='Print Preview'>
+                                            <IconButton size="small">
+                                                <Print className="fa-20" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </GodownChallanPrintTemplate>
                                 </>
                             )
                         }
