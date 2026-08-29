@@ -161,7 +161,7 @@ const ChooseBatch = ({
             )
         ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
             value: batch.id,
-            label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+            label: (toNumber(batch.packValue) > 0) ? `${batch.batch}: ${toNumber(batch.pendingQuantity)}(${toNumber(batch.pendingQuantity) / toNumber(batch.packValue)})` : `${batch.batch}: ${toNumber(batch.pendingQuantity)}`,
             batchIdString: batch.batch,
             batchAliasString: batch.batch_alias
         }));
@@ -243,7 +243,7 @@ const ChooseBatch = ({
                                     )
                                 ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                     value: batch.id,
-                                    label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                    label: (toNumber(batch.packValue) > 0) ? `${batch.batch}: ${toNumber(batch.pendingQuantity)}(${toNumber(batch.pendingQuantity) / toNumber(batch.packValue)})` : `${batch.batch}: ${toNumber(batch.pendingQuantity)}`,
                                     batchIdString: batch.batch,
                                     batchAliasString: batch.batch_alias
                                 }));
@@ -264,8 +264,16 @@ const ChooseBatch = ({
                                         <td className="vctr fa-12 p-0">
                                             <CreatableSelect
                                                 value={{
-                                                    value: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_id || inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || '',
-                                                    label: inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
+                                                    value: inputs.find(input =>
+                                                        isEqualNumber(input.uniquId, item.uniquId))?.batch_id ||
+                                                        inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch ||
+                                                        '',
+                                                    label: inputs.find(input =>
+                                                        isEqualNumber(input.uniquId, item.uniquId))?.batch_id ?
+                                                        inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch : (
+                                                            inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias ||
+                                                            inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
+                                                        )
                                                 }}
                                                 options={[
                                                     { value: '', label: 'select' },

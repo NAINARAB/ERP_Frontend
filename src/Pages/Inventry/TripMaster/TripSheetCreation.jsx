@@ -477,7 +477,52 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 isCustomCell: true,
                                 Cell: ({ row }) => findProductDetails(products, row.Product_Id)?.Product_Name
                             },
-                            createCol('Batch_No', 'string', 'Batch'),
+                            {
+                                ...createCol('Batch_No', 'string', 'Batch'),
+                                isCustomCell: true,
+                                Cell: ({ row }) => (
+                                    <div style={{ minWidth: '150px' }}>
+                                        <CreatableSelect
+                                            value={row?.Batch_No ? {
+                                                value: row.Batch_Id || row.Batch_No,
+                                                label: row.Batch_Id ? row.Batch_No : (row.Batch_Alias || row.Batch_No)
+                                            } : null}
+                                            onChange={e => {
+                                                if (!e) {
+                                                    setSelectedItems(prev => prev.map(o => isEqualNumber(o.Arrival_Id, row.Arrival_Id) ? { ...o, Batch_No: '', Batch_Alias: '', Batch_Id: '' } : o));
+                                                    return;
+                                                }
+                                                const isExisting = !!e.batchIdString;
+                                                const batchVal = isExisting ? e.batchIdString : e.value;
+                                                const aliasVal = isExisting ? e.alias : e.value;
+                                                const batchIdVal = isExisting ? e.value : '';
+                                                setSelectedItems(prev => prev.map(o => isEqualNumber(o.Arrival_Id, row.Arrival_Id) ? { ...o, Batch_No: batchVal, Batch_Alias: aliasVal, Batch_Id: batchIdVal } : o));
+                                            }}
+                                            options={
+                                                batchDetails.filter(
+                                                    bat => (
+                                                        isEqualNumber(bat.item_id, row.Product_Id)
+                                                        && isEqualNumber(bat?.godown_id, row?.From_Location)
+                                                        && toNumber(bat.pendingQuantity) !== 0
+                                                    )
+                                                ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
+                                                    bat => ({ 
+                                                        value: bat.id, 
+                                                        label: (toNumber(bat.packValue) > 0) ? `${bat.batch}: ${toNumber(bat.pendingQuantity)}(${toNumber(bat.pendingQuantity) / toNumber(bat.packValue)})` : `${bat.batch}: ${toNumber(bat.pendingQuantity)}`,
+                                                        batchIdString: bat.batch,
+                                                        alias: bat.batch_alias || bat.batch
+                                                    })
+                                                )
+                                            }
+                                            styles={customSelectStyles}
+                                            isSearchable={true}
+                                            isClearable
+                                            placeholder={"Select or Create Batch"}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </div>
+                                )
+                            },
                             {
                                 isVisible: 1,
                                 ColumnHeader: 'Units',
@@ -653,10 +698,10 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <td className='fa-12'>
                                                 {/* {arrival?.Batch_No} */}
                                                 <CreatableSelect
-                                                    value={{
-                                                        value: batchValue?.Batch_No || '',
-                                                        label: batchValue?.Batch_No || ''
-                                                    }}
+                                                    value={batchValue?.Batch_No ? {
+                                                        value: batchValue.Batch_Id || batchValue.Batch_No,
+                                                        label: batchValue.Batch_Id ? batchValue.Batch_No : (batchValue.Batch_Alias || batchValue.Batch_No)
+                                                    } : null}
                                                     onChange={e => {
                                                         if (!e) {
                                                             changeTripDetails({ ...arrival, Batch_No: '', Batch_Alias: '', Batch_Id: '' });
@@ -678,7 +723,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                                         ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                                             bat => ({ 
                                                                 value: bat.id, 
-                                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                                label: (toNumber(bat.packValue) > 0) ? `${bat.batch}: ${toNumber(bat.pendingQuantity)}(${toNumber(bat.pendingQuantity) / toNumber(bat.packValue)})` : `${bat.batch}: ${toNumber(bat.pendingQuantity)}`,
                                                                 batchIdString: bat.batch,
                                                                 alias: bat.batch_alias || bat.batch
                                                             })

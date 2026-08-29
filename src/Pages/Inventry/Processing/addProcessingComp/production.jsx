@@ -228,7 +228,7 @@ const ProductionOfProcessing = ({
                                                 && toNumber(batch.pendingQuantity) !== 0
                                             ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                                 value: batch.id,
-                                                label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                                label: (toNumber(batch.packValue) > 0) ? `${batch.batch}: ${toNumber(batch.pendingQuantity)}(${toNumber(batch.pendingQuantity) / toNumber(batch.packValue)})` : `${batch.batch}: ${toNumber(batch.pendingQuantity)}`,
                                                 batchIdString: batch.batch,
                                                 alias: batch.batch_alias || batch.batch
                                             }));

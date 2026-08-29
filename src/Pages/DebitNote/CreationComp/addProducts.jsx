@@ -552,7 +552,7 @@ const AddProductFormDebitNote = ({
                                         ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(
                                             bat => ({ 
                                                 value: bat.id, 
-                                                label: `${bat.batch} (${toNumber(bat.pendingQuantity)})`,
+                                                label: (toNumber(bat.packValue) > 0) ? `${bat.batch}: ${toNumber(bat.pendingQuantity)}(${toNumber(bat.pendingQuantity) / toNumber(bat.packValue)})` : `${bat.batch}: ${toNumber(bat.pendingQuantity)}`,
                                                 batchIdString: bat.batch,
                                                 alias: bat.batch_alias || bat.batch
                                             })

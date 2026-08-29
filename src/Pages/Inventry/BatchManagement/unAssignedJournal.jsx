@@ -101,8 +101,8 @@ const UnAssignedJournals = ({
             }
 
             const isExisting = !!e?.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : e?.value || '';
-            const aliasVal = isExisting ? e.batchAliasString : '';
+            const batchVal = isExisting ? e.batchIdString : row.suggestBatchName || '';
+            const aliasVal = isExisting ? e.batchAliasString : e?.value || '';
             const idVal = isExisting ? e.value : '';
 
             if (index === -1) {
@@ -213,7 +213,7 @@ const UnAssignedJournals = ({
                                     batch => isEqualNumber(batch.item_id, item.productId) && toNumber(batch.pendingQuantity) !== 0
                                 ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                     value: batch.id,
-                                    label: `${batch.batch} (${toNumber(batch.pendingQuantity)})`,
+                                    label: (toNumber(batch.packValue) > 0) ? `${batch.batch}: ${toNumber(batch.pendingQuantity)}(${toNumber(batch.pendingQuantity) / toNumber(batch.packValue)})` : `${batch.batch}: ${toNumber(batch.pendingQuantity)}`,
                                     batchIdString: batch.batch,
                                     batchAliasString: batch.batch_alias
                                 }));
@@ -238,7 +238,7 @@ const UnAssignedJournals = ({
                                                 isClearable
                                                 placeholder={item?.suggestBatchName || '...'}
                                                 options={batchDropDown}
-                                                value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
+                                                value={val ? { value: val.batch_id || val.batch, label: val.batch_id ? val.batch : (val.batch_alias || val.batch) } : null}
                                                 onChange={e => handleInputChange(item, e)}
                                                 styles={customSelectStyles}
                                                 menuPortalTarget={document.body}

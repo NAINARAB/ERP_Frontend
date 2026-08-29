@@ -124,8 +124,8 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                 return newInputs;
             }
 
-            const batchVal = e.batchIdString || e.value;
-            const aliasVal = e.batchAliasString || '';
+            const batchVal = e.batchIdString || rowObj.suggestBatchName || e.value;
+            const aliasVal = !!e.batchIdString ? (e.batchAliasString || '') : e.value;
             const idVal = e.batchIdString ? e.value : '';
 
             if (index !== -1) {
@@ -164,8 +164,8 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
             }
 
             const isExisting = !!e?.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : e?.value || '';
-            const aliasVal = isExisting ? e.batchAliasString : '';
+            const batchVal = isExisting ? e.batchIdString : rowObj.suggestBatchName || e?.value || '';
+            const aliasVal = isExisting ? e.batchAliasString : e?.value || '';
             const idVal = isExisting ? e.value : '';
 
             if (index !== -1) {
@@ -276,7 +276,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                     toNumber(b.pendingQuantity) !== 0
                 ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(b => ({
                     value: b.id,
-                    label: `${b.batch} (${toNumber(b.pendingQuantity)})`,
+                    label: (toNumber(b.packValue) > 0) ? `${b.batch}: ${toNumber(b.pendingQuantity)}(${toNumber(b.pendingQuantity) / toNumber(b.packValue)})` : `${b.batch}: ${toNumber(b.pendingQuantity)}`,
                     batchIdString: b.batch,
                     batchAliasString: b.batch_alias
                 }));
@@ -288,7 +288,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                         <CreatableSelect
                             isClearable
                             options={sDropDown}
-                            value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
+                            value={val ? { value: val.batch_id || val.batch, label: val.batch_id ? val.batch : (val.batch_alias || val.batch) } : null}
                             onChange={e => handleSourceBatchChange(srcObj, e)}
                             styles={customSelectStyles}
                             menuPortalTarget={document.body}
@@ -321,7 +321,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                     toNumber(b.pendingQuantity) !== 0
                 ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(b => ({
                     value: b.id,
-                    label: `${b.batch} (${toNumber(b.pendingQuantity)})`,
+                    label: (toNumber(b.packValue) > 0) ? `${b.batch}: ${toNumber(b.pendingQuantity)}(${toNumber(b.pendingQuantity) / toNumber(b.packValue)})` : `${b.batch}: ${toNumber(b.pendingQuantity)}`,
                     batchIdString: b.batch,
                     batchAliasString: b.batch_alias
                 }));
@@ -334,7 +334,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
                             isClearable
                             placeholder={destObj.suggestBatchName || '...'}
                             options={dDropDown}
-                            value={val ? { value: val.batch_id || val.batch, label: val.batch } : null}
+                            value={val ? { value: val.batch_id || val.batch, label: val.batch_id ? val.batch : (val.batch_alias || val.batch) } : null}
                             onChange={e => handleDestBatchChange(destObj, e)}
                             styles={customSelectStyles}
                             menuPortalTarget={document.body}

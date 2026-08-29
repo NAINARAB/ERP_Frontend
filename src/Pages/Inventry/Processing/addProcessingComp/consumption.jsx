@@ -132,7 +132,7 @@ const SourceItems = memo(function SourceItems({
                                     : toNumber(b.pendingQuantity) !== 0
                             )
                             .sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date))
-                            .map(b => ({ value: b.id, label: `${b?.batch} (${toNumber(b?.pendingQuantity)})` }))
+                            .map(b => ({ value: b.id, label: (toNumber(b?.packValue) > 0) ? `${b?.batch}: ${toNumber(b?.pendingQuantity)}(${toNumber(b?.pendingQuantity) / toNumber(b?.packValue)})` : `${b?.batch}: ${toNumber(b?.pendingQuantity)}` }))
                     }
                     menuPortalTarget={document.body}
                     styles={customSelectStyles}
