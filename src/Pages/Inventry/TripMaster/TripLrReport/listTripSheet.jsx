@@ -786,7 +786,7 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
                         />
                     </div>
 
-                    <div className="py-2">
+                    {/* <div className="py-2">
                         <label>Status</label>
                         <select
                             className="cus-inpt p-1"
@@ -798,7 +798,7 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
                             <option value="Completed">Completed</option>
                             <option value="Canceled">Canceled</option>
                         </select>
-                    </div>
+                    </div> */}
 
                     <div className="py-2">
                         <input
@@ -859,7 +859,7 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
                         />
                     </div>
 
-                    <div className="py-2">
+                    {/* <div className="py-2">
                         <label>Status</label>
                         <select
                             className="cus-inpt p-1"
@@ -871,7 +871,7 @@ const TripListLRReport = ({ loadingOn, loadingOff, AddRights, EditRights }) => {
                             <option value="Completed">Completed</option>
                             <option value="Canceled">Canceled</option>
                         </select>
-                    </div>
+                    </div> */}
 
                     <div className="py-2">
                         <input
