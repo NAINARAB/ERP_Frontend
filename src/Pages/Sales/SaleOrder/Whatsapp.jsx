@@ -32,10 +32,11 @@ import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { REACT_APP_ASKEVA_TOKEN, REACT_APP_ASKEVA_API_ENDPOINT, print_app } from '../../../encryptionKey';
 import Pendingbills from "./whatsappPreview/PendingBills";
-import Statement from "./whatsappPreview/StatementView";
-import DownloadSalesOrder from "./whatsappPreview/DownloadSaleOrder";
-import DownloadSalesInvoice from "./whatsappPreview/DownloadPdfView";
 
+
+import SaleOrderTemplate from "./whatsappPreview/SaleOrderPdfView";
+import SaleInvoiceTemplate from "./whatsappPreview/SalesInvoicePdfView";
+import StatementTemplate from "./whatsappPreview/StatementPdfView";
 
 const ASKEVA_CONFIG = {
     apiEndpoint: REACT_APP_ASKEVA_API_ENDPOINT,
@@ -55,7 +56,11 @@ const TAB_TO_WHATSAPP_TYPE = {
 const TEMPLATE_MAP = {
     sale_invoice: {
         dotpe: { english: "sales_invoice_en", tamil: "sales_invoice_order" },
-        askeva: { english: "saleinvoice_english", tamil: "salesinvoice_tamil" },
+        askeva: { english: "saleinvoice_english", tamil: "salesinvoice_tamil" }, //still saleinvoice_tamil is still pending for cerelia
+        pdf: {
+            tamil: "sales_invoice_tamil_pdf",
+             english: "sales_invoice_english_pdf", 
+        },
     },
     price_list: {
         dotpe: { english: "price_list_en", tamil: "price_list" },
@@ -64,6 +69,10 @@ const TEMPLATE_MAP = {
     sale_order: {
         dotpe: { english: "sale_order_new_en", tamil: "sale_order" },
         askeva: { english: "saleorder_english", tamil: "saleorder_tamil" },
+        pdf: {
+            tamil: "sale_order_tamil_pdf",
+             english: "sale_order_english_pdf", 
+        },
     },
     receipt_list: {
         dotpe: { english: "payment_receipt", tamil: "payment_receipt" },
@@ -72,6 +81,10 @@ const TEMPLATE_MAP = {
     outstanding: {
         dotpe: { english: "outstanding", tamil: "outstanding" },
         askeva: { english: "transaction_english", tamil: "transaction_tamil" },
+        pdf:{
+            tamil:"transaction_tamil_pdf",
+            english:"transaction_english_pdf"
+        }
     },
     pending_bills: {
         dotpe: { english: "pending_bills", tamil: "pending_bills" },
@@ -1785,8 +1798,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [countsLoaded, setCountsLoaded] = useState(false);
 
 
-    const [sheetsheetFromDate, setSheetsheetFromDate] = useState(today);
-    const [sheetsheetToDate, setSheetsheetToDate] = useState(today);
+
     const [sheetsheetData, setSheetsheetData] = useState([]);
         const [sheetsheetDate, setSheetsheetDate] = useState(today);
     const [filteredSheetsheetData, setFilteredSheetsheetData] = useState([]);
@@ -1801,6 +1813,15 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
     const tabFetchedRef = useRef({});
     const tabFetchingRef = useRef({});
+
+    const invCaptureRef = useRef(null);
+const [invCaptureData, setInvCaptureData] = useState(null);
+const [invPdfBuildInFlight, setInvPdfBuildInFlight] = useState(false);
+
+
+const stmtCaptureRef = useRef(null);
+const [stmtCaptureData, setStmtCaptureData] = useState(null);
+const [stmtPdfBuildInFlight, setStmtPdfBuildInFlight] = useState(false);
 
     const [filters, setFilters] = useState({
         reqDate: ISOString(),
@@ -1829,7 +1850,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [companyInfo, setCompanyInfo] = useState([]);
     const [evatoken, setEvatoken] = useState("");
 
-    // Helper function to get count key
+
+    const soCaptureRef = useRef(null);
+const [soCaptureData, setSoCaptureData] = useState(null);
+const [soPdfBuildInFlight, setSoPdfBuildInFlight] = useState(false);
+
+
     const getCountKey = useCallback((docType, docId) => `${docType}_${docId}`, []);
 
     useEffect(() => {
@@ -1854,10 +1880,151 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 .catch((e) => console.error("Token fetch error:", e));
         }
     }, []);
+const buildSaleInvoicePdfBlob = (row) =>
+    new Promise((resolve, reject) => {
+        if (invPdfBuildInFlight) {
+            reject(new Error("A Sales Invoice PDF is already being prepared. Please wait for it to finish."));
+            return;
+        }
+        setInvPdfBuildInFlight(true);
+
+        let settled = false;
+        const safeResolve = (v) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); resolve(v); } };
+        const safeReject = (e) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); reject(e); } };
+
+        const timeoutId = setTimeout(() => {
+            setInvCaptureData(null);
+            safeReject(new Error("Timed out preparing Sales Invoice PDF."));
+        }, 20000);
+
+        setInvCaptureData({
+            row,
+            onReady: async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const blob = await generatePdfBlobFromElement(invCaptureRef.current);
+                    setInvCaptureData(null);
+                    safeResolve(blob);
+                } catch (e) {
+                    setInvCaptureData(null);
+                    safeReject(e);
+                }
+            },
+            onError: (err) => {
+                clearTimeout(timeoutId);
+                setInvCaptureData(null);
+                safeReject(err instanceof Error ? err : new Error(String(err)));
+            },
+        });
+    });
+
+    const buildSaleOrderPdfBlob = (row) =>
+    new Promise((resolve, reject) => {
+        if (soPdfBuildInFlight) {
+            reject(new Error("A Sale Order PDF is already being prepared. Please wait for it to finish."));
+            return;
+        }
+        setSoPdfBuildInFlight(true);
+
+        let settled = false;
+        const safeResolve = (v) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); resolve(v); } };
+        const safeReject = (e) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); reject(e); } };
+
+        const timeoutId = setTimeout(() => {
+            setSoCaptureData(null);
+            safeReject(new Error("Timed out preparing Sale Order PDF."));
+        }, 20000);
+
+        setSoCaptureData({
+            row,
+            onReady: async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const blob = await generatePdfBlobFromElement(soCaptureRef.current);
+                    setSoCaptureData(null);
+                    safeResolve(blob);
+                } catch (e) {
+                    setSoCaptureData(null);
+                    safeReject(e);
+                }
+            },
+            onError: (err) => {
+                clearTimeout(timeoutId);
+                setSoCaptureData(null);
+                safeReject(err instanceof Error ? err : new Error(String(err)));
+            },
+        });
+    });
 
     const handleColumnSettingsSave = async (selectedColumnsArray) => {
         setWhatsappColumns(selectedColumnsArray);
     };
+
+
+    const buildOutstandingPdfBlob = (row) =>
+    new Promise((resolve, reject) => {
+        if (stmtPdfBuildInFlight) {
+            reject(new Error("A Transaction PDF is already being prepared. Please wait for it to finish."));
+            return;
+        }
+        setStmtPdfBuildInFlight(true);
+
+        let settled = false;
+        const safeResolve = (v) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); resolve(v); } };
+        const safeReject = (e) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); reject(e); } };
+
+        const timeoutId = setTimeout(() => {
+            setStmtCaptureData(null);
+            safeReject(new Error("Timed out preparing Transaction Statement PDF."));
+        }, 20000);
+
+        setStmtCaptureData({
+            row,
+            fromDate: outstandingFromDate,
+            toDate: outstandingToDate,
+            onReady: async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const blob = await generatePdfBlobFromElement(stmtCaptureRef.current);
+                    setStmtCaptureData(null);
+                    safeResolve(blob);
+                } catch (e) {
+                    setStmtCaptureData(null);
+                    safeReject(e);
+                }
+            },
+            onError: (err) => {
+                clearTimeout(timeoutId);
+                setStmtCaptureData(null);
+                safeReject(err instanceof Error ? err : new Error(String(err)));
+            },
+        });
+    });
+
+
+
+    const buildOutstandingPDFParams = async (row) => {
+    const companyname = companyInfo[0]?.Company_Name || "Company";
+    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+    const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
+
+    const blob = await buildOutstandingPdfBlob(row);
+    const filename = `Statement_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+        .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+    const documentUrl = await uploadPdfToServer("masters/whatsapp/statementpdf", blob, filename, {
+        Acc_Id: row.Acc_Id,
+        Retailer_Id: row.DocumentId,
+    });
+
+    return {
+        bodyParams: [companyname, customerName, `₹${amount}`],
+        clientRefId: generateUniqueClientRefId("outstanding_pdf", row.DocumentId),
+        documentUrl,
+        documentFilename: filename,
+    };
+};
+
+
 
     useEffect(() => {
         if (activeTab === "price_list" && priceListRetailers.length > 0) {
@@ -2156,14 +2323,28 @@ const sendWhatsAppMessage = useCallback(
     reader.readAsDataURL(blob);
 });
 
+const fetchPdfBlobFromUrl = async (url) => {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Failed to fetch PDF (${resp.status})`);
+    const blob = await resp.blob();
+    if (!blob || blob.size === 0) throw new Error("Fetched PDF is empty");
+    return blob;
+};
 
-const uploadPdfToServer = async (blob, filename) => {
+
+const uploadPdfToServer = async (address, blob, filename, extraFields = {}) => {
     const formData = new FormData();
-    formData.append("pdfFile", blob, filename); 
+
     if (storage?.Company_id) formData.append("Company_id", storage.Company_id);
+    Object.entries(extraFields).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) formData.append(k, v);
+    });
+
+    // File LAST
+    formData.append("pdfFile", blob, filename);
 
     const response = await fetchLink({
-        address: "masters/whatsapp/uploadPendingBillsPdf",
+        address,
         method: "POST",
         bodyData: formData,
         loadingOn: () => {}, loadingOff: () => {},
@@ -2175,7 +2356,18 @@ const uploadPdfToServer = async (blob, filename) => {
     return response.data.url;
 };
 
-
+const saveGeneratedPdfToServer = async (address, payload) => {
+    const response = await fetchLink({
+        address,
+        method: "POST",
+        bodyData: payload,
+        loadingOn: () => {}, loadingOff: () => {},
+    });
+    if (!response?.success || !response?.data?.url) {
+        throw new Error(response?.message || "PDF save failed");
+    }
+    return response.data.url;
+};
 
 
  const [pdfBuildInFlight, setPdfBuildInFlight] = useState(false);
@@ -2891,6 +3083,51 @@ useEffect(() => {
         return { bodyParams: [companyname, customerName, `₹${amount}`, statementLink], clientRefId: generateUniqueClientRefId("outstanding", row.DocumentId) };
     };
 
+
+const buildSaleInvoicePdfParams = async (row) => {
+    const companyname = companyInfo[0]?.Company_Name || "Company";
+    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+    const invoiceNo = row.DocumentNumber || "-";
+    const rawDate = new Date(row.Do_Date || row.DocumentDate || row.createdOn);
+    const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
+    const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+    const documentFilename = `Sales_Invoice_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+    const blob = await buildSaleInvoicePdfBlob(row);
+    const documentUrl = await uploadPdfToServer("masters/whatsapp/salesinvoicepdf", blob, documentFilename, {
+        Do_Inv_No: row.DocumentNumber,
+        Do_Id: row.DocumentId,
+    });
+
+    return {
+        bodyParams: [companyname, customerName, date, amount],
+        clientRefId: generateUniqueClientRefId("inv_pdf", invoiceNo),
+        documentUrl,
+        documentFilename,
+    };
+};
+
+const buildSaleOrderPdfParams = async (row) => {
+    const companyname = companyInfo[0]?.Company_Name || "Company";
+    const customerName = row.retailerNameGet || "Customer";
+    const invoiceNo = row.DocumentNumber || "N/A";
+    const date = new Date(row.So_Date || row.DocumentDate || row.createdOn).toLocaleDateString("en-GB");
+    const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+    const documentFilename = `Sale_Order_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+    const blob = await buildSaleOrderPdfBlob(row);
+    const documentUrl = await uploadPdfToServer("masters/whatsapp/saleorderpdf", blob, documentFilename, {
+        So_Inv_No: row.DocumentNumber,
+        So_Id: row.DocumentId,
+    });
+
+    return {
+        bodyParams: [companyname, customerName, date, amount],
+        clientRefId: generateUniqueClientRefId("sord_pdf", invoiceNo),
+        documentUrl,
+        documentFilename,
+    };
+};
     
     const buildPendingBillsPDFParams = async (row) => {
         const companyname = companyInfo[0]?.Company_Name || "Company";
@@ -2916,7 +3153,7 @@ useEffect(() => {
         const blob = await buildPendingBillsPdfBlob(row);
         const filename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
             .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-        const documentUrl = await uploadPdfToServer(blob, filename);
+        const documentUrl = await uploadPdfToServer("masters/whatsapp/uploadPendingBillsPdf", blob, filename);
          const fifthParam = companyInfo[0]?.Company_Name || "Company";
         return {
         
@@ -2926,14 +3163,7 @@ useEffect(() => {
         };
     };
 
-/*
- * NOTE: PendingBillsAttachmentDialog (a confirmation preview before sending the
- * Pending Bills PDF) is kept below but is no longer wired to the PDF button —
- * per request, clicking the PDF icon on the Pending Bills tab now builds and
- * sends immediately (see sendPendingBillsPdfDirect), matching the one-click
- * behaviour of the regular WhatsApp send button. The dialog/state are left in
- * place in case a confirmation step is wanted again later.
- */
+
 const PendingBillsAttachmentDialog = ({ open, onClose, documentUrl, documentFilename, bodyParams, onSend, sending }) => {
     const [companyname, customerName, billCount, amount] = bodyParams || [];
 
@@ -3006,9 +3236,6 @@ const PendingBillsAttachmentDialog = ({ open, onClose, documentUrl, documentFile
     );
 };
 
-// One-click Pending Bills PDF send: builds the PDF, uploads it, and sends via
-// WhatsApp immediately — no confirmation dialog — mirroring the single-click
-// behaviour of the normal "Send via WhatsApp" action button.
 const sendPendingBillsPdfDirect = async (row) => {
     if (pdfBuildInFlight) {
         toast.info("A PDF is already being prepared. Please wait for it to finish.");
@@ -3052,6 +3279,48 @@ const sendPendingBillsPdfDirect = async (row) => {
     }
 };
 
+
+const getPdfParamsForTab = async (row, tab) => {
+    if (tab === "sale_invoice") return buildSaleInvoicePdfParams(row);
+    if (tab === "sale_order") return buildSaleOrderPdfParams(row);
+    if (tab === "pending_bills") return buildPendingBillsPDFParams(row); 
+     if (tab === "outstanding") return buildOutstandingPDFParams(row);
+    throw new Error(`PDF sending not supported for tab "${tab}"`);
+};
+
+const sendPdfDirect = async (row, tab) => {
+    if (tab === "pending_bills" && pdfBuildInFlight) {
+        toast.info("A PDF is already being prepared. Please wait for it to finish.");
+        return;
+    }
+
+    const rowKey = `${getRowKey(row, tab)}_pdf`;
+    const { langName = "english" } = tabMethodSettings[tab] || {};
+    if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
+        toast.error(`No PDF-attachment WhatsApp template configured for "${langName}" on this tab`);
+        return;
+    }
+
+    let phone = resolveSendPhone(row, tab);
+    if (!phone || !isValidPhone(phone)) {
+        toast.error("Valid phone number not found");
+        return;
+    }
+    phone = normalizePhone(phone);
+
+    setSendingStates((p) => ({ ...p, [rowKey]: true }));
+    try {
+        const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
+        await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
+        toast.success("PDF sent via WhatsApp!");
+        await logWhatsappSend(row, tab);
+    } catch (e) {
+        console.error(e);
+        toast.error(`Failed to send PDF: ${e.message}`);
+    } finally {
+        setSendingStates((p) => ({ ...p, [rowKey]: false }));
+    }
+};
 
     const buildPendingBillsParams = async (row) => {
         const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
@@ -3333,66 +3602,104 @@ const sendPendingBillsPdfDirect = async (row) => {
         }
     };
 
-      const handleBulkSendPendingBillsPdf = async () => {
-        setBulkMenuAnchor(null);
-        const rows = getSelectedRows();
-        if (!rows.length) { toast.warning("Select at least one row"); return; }
+    //   const handleBulkSendPendingBillsPdf = async () => {
+    //     setBulkMenuAnchor(null);
+    //     const rows = getSelectedRows();
+    //     if (!rows.length) { toast.warning("Select at least one row"); return; }
 
-        const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
-        if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
-            toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
-            return;
-        }
+    //     const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
+    //     if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
+    //         toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
+    //         return;
+    //     }
 
-        bulkAbortRef.current = false;
-        setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
+    //     bulkAbortRef.current = false;
+    //     setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
 
-        const increment = (success) =>
-            setBulkProgress((p) => ({
-                ...p,
-                sent: success ? p.sent + 1 : p.sent,
-                failed: success ? p.failed : p.failed + 1,
-            }));
-
- 
-        for (const row of rows) {
-            if (bulkAbortRef.current) break;
-
-            const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
-            setSendingStates((p) => ({ ...p, [rowKey]: true }));
-
-            try {
-                let phone = resolveSendPhone(row, "pending_bills");
-                if (!phone || !isValidPhone(phone)) {
-                    increment(false);
-                    continue;
-                }
-                phone = normalizePhone(phone);
-
-                const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
-                const documentFilename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
-                    .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-
-                await sendWhatsAppMessage({
-                    tab: "pending_bills",
-                    phone, bodyParams, clientRefId, documentUrl,
-                    documentFilename,
-                    usePdfTemplate: true,
-                });
-
-                increment(true);
-                await logWhatsappSend(row, "pending_bills");
-            } catch (error) {
-                console.error("Bulk PDF send error:", error);
-                increment(false);
-            } finally {
-                setSendingStates((p) => ({ ...p, [rowKey]: false }));
-            }
+    //     const increment = (success) =>
+    //         setBulkProgress((p) => ({
+    //             ...p,
+    //             sent: success ? p.sent + 1 : p.sent,
+    //             failed: success ? p.failed : p.failed + 1,
+    //         }));
 
  
-            await new Promise((r) => setTimeout(r, 500));
+    //     for (const row of rows) {
+    //         if (bulkAbortRef.current) break;
+
+    //         const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
+    //         setSendingStates((p) => ({ ...p, [rowKey]: true }));
+
+    //         try {
+    //             let phone = resolveSendPhone(row, "pending_bills");
+    //             if (!phone || !isValidPhone(phone)) {
+    //                 increment(false);
+    //                 continue;
+    //             }
+    //             phone = normalizePhone(phone);
+
+    //             const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
+    //             const documentFilename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+    //                 .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+    //             await sendWhatsAppMessage({
+    //                 tab: "pending_bills",
+    //                 phone, bodyParams, clientRefId, documentUrl,
+    //                 documentFilename,
+    //                 usePdfTemplate: true,
+    //             });
+
+    //             increment(true);
+    //             await logWhatsappSend(row, "pending_bills");
+    //         } catch (error) {
+    //             console.error("Bulk PDF send error:", error);
+    //             increment(false);
+    //         } finally {
+    //             setSendingStates((p) => ({ ...p, [rowKey]: false }));
+    //         }
+
+ 
+    //         await new Promise((r) => setTimeout(r, 500));
+    //     }
+    // };
+
+const handleBulkSendPdf = async (tab) => {
+    setBulkMenuAnchor(null);
+    const rows = getSelectedRows();
+    if (!rows.length) { toast.warning("Select at least one row"); return; }
+
+    const { langName = "english" } = tabMethodSettings[tab] || {};
+    if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
+        toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
+        return;
+    }
+
+    bulkAbortRef.current = false;
+    setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
+    const increment = (success) => setBulkProgress((p) => ({ ...p, sent: success ? p.sent + 1 : p.sent, failed: success ? p.failed : p.failed + 1 }));
+
+    for (const row of rows) {
+        if (bulkAbortRef.current) break;
+        const rowKey = `${getRowKey(row, tab)}_pdf`;
+        setSendingStates((p) => ({ ...p, [rowKey]: true }));
+        try {
+            let phone = resolveSendPhone(row, tab);
+            if (!phone || !isValidPhone(phone)) { increment(false); continue; }
+            phone = normalizePhone(phone);
+            const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
+            await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
+            increment(true);
+            await logWhatsappSend(row, tab);
+        } catch (error) {
+            console.error("Bulk PDF send error:", error);
+            increment(false);
+        } finally {
+            setSendingStates((p) => ({ ...p, [rowKey]: false }));
         }
-    };
+        await new Promise((r) => setTimeout(r, 500));
+    }
+};
+
 
 
     const resolveSendPhone = useCallback((row, tab) => {
@@ -3434,7 +3741,7 @@ const sendPendingBillsPdfDirect = async (row) => {
                         </IconButton>
                     </span>
                 </Tooltip>
-                 {tab === "pending_bills" && (
+                 {/* {tab === "pending_bills" && (
     <Tooltip title="Send Pending Bills PDF via WhatsApp">
         <span>
           <IconButton
@@ -3449,7 +3756,23 @@ const sendPendingBillsPdfDirect = async (row) => {
             </IconButton>
         </span>
     </Tooltip>
+)} */}
+
+{["sale_invoice", "sale_order", "pending_bills","outstanding"].includes(tab) && (
+    <Tooltip title="Send PDF via WhatsApp">
+        <span>
+            <IconButton
+                size="small"
+                onClick={() => sendPdfDirect(row, tab)}
+                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight)}
+                color={hasPhone ? "success" : "default"}
+            >
+                {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
+            </IconButton>
+        </span>
+    </Tooltip>
 )}
+
 
                 {sentCount > 0 && (
                     <Tooltip title={`Sent ${sentCount} time${sentCount > 1 ? 's' : ''}`}>
@@ -3551,11 +3874,7 @@ const sendPendingBillsPdfDirect = async (row) => {
         createCol("Narration", "string", "Narration"),
     ], [selectCell, ...columnDeps]);
 
-    // Columns are memoized so switching tabs / other unrelated state changes
-    // don't force FilterableTable to treat every column (and therefore every
-    // row's Cell) as brand new on each render — this is what made tab
-    // navigation feel heavy on large tables. Deps cover everything each
-    // column's Cell closes over (phone data, send state, counts, settings).
+   
     const saleInvoiceColumns = useMemo(
         () => [...baseColumns, { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="sale_invoice" /> }],
         [baseColumns, ...columnDeps]
@@ -4259,7 +4578,7 @@ const sendPendingBillsPdfDirect = async (row) => {
                         <ListItemText primary="Send One by One" secondary="Sequential with progress tracking" />
                     </MenuItem>
                 </Menu>
-                 {activeTab === "pending_bills" && (
+                 {/* {activeTab === "pending_bills" && (
                     <Tooltip title={`Send Pending Bills PDF to ${selectedCount} selected`}>
                         <Button variant="contained" color="error" size="small"
                             startIcon={<PictureAsPdf />}
@@ -4268,7 +4587,17 @@ const sendPendingBillsPdfDirect = async (row) => {
                             Send PDF ({selectedCount})
                         </Button>
                     </Tooltip>
-                )}
+                )} */}
+                {["sale_invoice", "sale_order", "pending_bills","outstanding"].includes(activeTab) && (
+    <Tooltip title={`Send PDF to ${selectedCount} selected`}>
+        <Button variant="contained" color="error" size="small"
+            startIcon={<PictureAsPdf />}
+            onClick={() => handleBulkSendPdf(activeTab)}
+            sx={{ textTransform: "none", ml: 1 }}>
+            Send PDF ({selectedCount})
+        </Button>
+    </Tooltip>
+)}
             </>
         );
     };
@@ -4475,7 +4804,50 @@ const sendPendingBillsPdfDirect = async (row) => {
                 onReady={pdfCaptureData.onReady}
                 onError={pdfCaptureData.onError}
             />
+            
         )}
+
+        <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+    <div ref={soCaptureRef}>
+        {soCaptureData && (
+            <SaleOrderTemplate
+                row={soCaptureData.row}
+                companyInfo={companyInfo}
+                onReady={soCaptureData.onReady}
+                onError={soCaptureData.onError}
+            />
+        )}
+    </div>
+</Box>
+
+<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+    <div ref={invCaptureRef}>
+        {invCaptureData && (
+            <SaleInvoiceTemplate
+                row={invCaptureData.row}
+                companyInfo={companyInfo}
+                onReady={invCaptureData.onReady}
+                onError={invCaptureData.onError}
+            />
+        )}
+    </div>
+</Box>
+
+<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 1000 }}>
+    <div ref={stmtCaptureRef}>
+        {stmtCaptureData && (
+            <StatementTemplate
+                row={stmtCaptureData.row}
+                fromDate={stmtCaptureData.fromDate}
+                toDate={stmtCaptureData.toDate}
+                companyInfo={companyInfo}
+                onReady={stmtCaptureData.onReady}
+                onError={stmtCaptureData.onError}
+            />
+        )}
+    </div>
+</Box>
+
     </div>
 </Box>
         </>
