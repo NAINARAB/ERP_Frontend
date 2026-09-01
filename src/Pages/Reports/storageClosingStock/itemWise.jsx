@@ -30,10 +30,11 @@ const ItemWiseStockReport = ({
     groupingOption = true,
     reportName = "",
     url = "",
+    commonFilters = { stockItemName: '', gradeItemGroup: '', itemNameModified: '' },
 }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
-    const [groupBy, setGroupBy] = useState(defaultGrouping);
+    const [groupBy, setGroupBy] = useState(defaultGrouping || "");
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
@@ -136,10 +137,13 @@ const ItemWiseStockReport = ({
     }, [sortedColumns]);
 
     const showData = useMemo(() => {
-        const filter = Object.keys(filters).length > 0;
-        const grouping = groupBy ? true : false;
+        const hasColumnFilters = Object.keys(filters).length > 0;
+        const hasCommonFilters = Object.values(commonFilters || {}).some(
+            (value) => String(value ?? '').trim() !== ''
+        );
+        const grouping = Boolean(groupBy);
 
-        const filtered = filter ? filteredData : reportData;
+        const filtered = hasColumnFilters || hasCommonFilters ? filteredData : reportData;
         const groupFiltered = grouping ? groupData(filtered, groupBy) : [];
 
         const aggKeys = DisplayColumn.filter(
@@ -162,7 +166,7 @@ const ItemWiseStockReport = ({
         });
 
         return grouping ? groupAggregations : filtered;
-    }, [filters, reportData, filteredData, groupBy, DisplayColumn]);
+    }, [filters, commonFilters, reportData, filteredData, groupBy, DisplayColumn]);
 
     const getDisplayName = (columnName) => {
         if (!columnName) return "";
@@ -190,7 +194,7 @@ const ItemWiseStockReport = ({
 
     useEffect(() => {
         applyFilters();
-    }, [filters]);
+    }, [filters, commonFilters, reportData, sortedColumns]);
 
     const handleFilterChange = (column, value) => {
         setFilters((prevFilters) => ({
@@ -201,6 +205,33 @@ const ItemWiseStockReport = ({
 
     const applyFilters = () => {
         let filtered = [...reportData];
+
+        const normalizeValue = (value) => String(value ?? '').toLowerCase().trim();
+
+        if (commonFilters?.stockItemName) {
+            const stockItemSearch = normalizeValue(commonFilters.stockItemName);
+            filtered = filtered.filter((item) =>
+                normalizeValue(item?.stock_item_name || item?.Item_Name_Modified || item?.Stock_Item)
+                    .includes(stockItemSearch)
+            );
+        }
+
+        if (commonFilters?.gradeItemGroup) {
+            const gradeSearch = normalizeValue(commonFilters.gradeItemGroup);
+            filtered = filtered.filter((item) =>
+                normalizeValue(item?.Grade_Item_Group || item?.Grade_Item_Group_Name || item?.Grade_Group)
+                    .includes(gradeSearch)
+            );
+        }
+
+        if (commonFilters?.itemNameModified) {
+            const modifiedSearch = normalizeValue(commonFilters.itemNameModified);
+            filtered = filtered.filter((item) =>
+                normalizeValue(item?.Item_Name_Modified || item?.Item_Name || item?.stock_item_name)
+                    .includes(modifiedSearch)
+            );
+        }
+
         for (const column of sortedColumns) {
             if (filters[column.Field_Name]) {
                 if (filters[column.Field_Name].type === "range") {

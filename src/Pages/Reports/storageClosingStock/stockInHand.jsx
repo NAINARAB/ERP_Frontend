@@ -15,7 +15,16 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
         Todate: ISOString(),
         FilterFromDate: ISOString(),
         FilterTodate: ISOString(),
-    })
+    });
+    const [commonFilters, setCommonFilters] = useState({
+        stockItemName: '',
+        gradeItemGroup: '',
+        itemNameModified: '',
+    });
+
+    const updateCommonFilter = (key, value) => {
+        setCommonFilters((pre) => ({ ...pre, [key]: value }));
+    };
 
     const tabData = [
         {
@@ -31,6 +40,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     storageStockColumns={storageStockColumnsForItemWise}
                     reportName='stockInHand_itemWise'
                     url='/erp/reports/stockInHand'
+                    commonFilters={commonFilters}
                 />
             )
         },
@@ -43,20 +53,21 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     Fromdate={dateFilter.Fromdate}
                     Todate={dateFilter.Todate}
                     api='godownWise'
-                    defaultGrouping='Godown_Name'
+                    defaultGrouping=''
                     storageStockColumns={storageStockColumnsForGodownWise}
-                    groupingOption={false}
+                    groupingOption={true}
                     reportName='stockInHand_GodownWise'
                     url='/erp/reports/stockInHand'
+                    commonFilters={commonFilters}
                 />
             )
         },
-    ]
+    ];
 
     return (
         <>
 
-            <div className="d-flex align-items-center flex-wrap mb-3">
+            <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
                 <label htmlFor="from" className='me-1 fw-bold '>Fromdate: </label>
                 <input
                     type="date"
@@ -69,7 +80,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                 <input
                     type="date"
                     id='to'
-                    className='cus-inpt p-2 w-auto'
+                    className='cus-inpt p-2 w-auto me-2'
                     value={dateFilter.FilterTodate}
                     onChange={e => setDateFilter(pre => ({ ...pre, FilterTodate: e.target.value }))}
                 />
@@ -81,6 +92,33 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                         Todate: pre.FilterTodate ? pre.FilterTodate : pre.Todate
                     }))}
                 ><Search /></IconButton>
+
+                <label htmlFor="stock-item-name" className='me-1 fw-bold '>Stock Item Name: </label>
+                <input
+                    id='stock-item-name'
+                    className='cus-inpt p-2 w-auto'
+                    value={commonFilters.stockItemName}
+                    onChange={(e) => updateCommonFilter('stockItemName', e.target.value)}
+                    placeholder='Search stock item'
+                />
+
+                <label htmlFor="grade-item-group" className='me-1 fw-bold '>Grade Item Group: </label>
+                <input
+                    id='grade-item-group'
+                    className='cus-inpt p-2 w-auto'
+                    value={commonFilters.gradeItemGroup}
+                    onChange={(e) => updateCommonFilter('gradeItemGroup', e.target.value)}
+                    placeholder='Search grade group'
+                />
+
+                <label htmlFor="item-name-modified" className='me-1 fw-bold '>Item Name Modified: </label>
+                <input
+                    id='item-name-modified'
+                    className='cus-inpt p-2 w-auto'
+                    value={commonFilters.itemNameModified}
+                    onChange={(e) => updateCommonFilter('itemNameModified', e.target.value)}
+                    placeholder='Search item modified'
+                />
             </div>
 
             <TabContext value={tabValue}>
