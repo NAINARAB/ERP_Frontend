@@ -66,7 +66,7 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
             Array.isArray(editValues?.Products_List) &&
             Array.isArray(editValues?.Staff_Involved_List)
         ) {
-            const { Products_List, Staff_Involved_List } = editValues;
+            const { Products_List, Staff_Involved_List, Expence_Array } = editValues;
             setOrderDetails(
                 Object.fromEntries(
                     Object.entries(saleOrderGeneralInfo).map(([key, value]) => {
@@ -89,9 +89,9 @@ const SaleOrderCreation = ({ loadingOn, loadingOff }) => {
                     })
                 ))
             );
-            if (Array.isArray(editValues?.Expence_Array)) {
-                const expences = toArray(editValues?.Expence_Array).filter(
-                    exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].includes(exp?.Expence_Name)
+            if (Array.isArray(Expence_Array)) {
+                const expences = toArray(Expence_Array).filter(
+                    exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].some(tax => stringCompare(tax, exp?.Expence_Name))
                 );
                 setOrderExpences(expences);
             }
