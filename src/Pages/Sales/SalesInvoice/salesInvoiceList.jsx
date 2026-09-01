@@ -4,7 +4,7 @@ import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
+import { Add, Cancel, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
@@ -17,6 +17,7 @@ import DeliverySlipprint from "../LRReport/deliverySlipPrint";
 import { allowedUserTypesForPreviousDateSalesEdit } from "./variable";
 import TaxInvoicePrint from './taxInvoicePrint';
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
+import AppDialog from "../../../Components/appDialogComponent";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -28,7 +29,7 @@ const defaultFilters = {
     Cancel_status: ''
 };
 
-const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const storage = getSessionUser().user;
     const navigate = useNavigate();
@@ -53,7 +54,8 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         orderDetails: false,
         printInvoice: false,
         deliverySlip: false,
-        taxInvoice: false
+        taxInvoice: false,
+        cancelInvoice: false,
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [moduleRules, setModuleRules] = useState([]);
@@ -238,6 +240,31 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
         return diffInDays <= 3;
     }
 
+    const cancelInvoice = () => {
+        fetchLink({
+            address: `sales/salesInvoice`,
+            method: 'DELETE',
+            bodyData: {
+                Do_Id: selectedInvoice.Do_Id,
+                Altered_by: toNumber(storage.UserId),
+                Alter_Reason: 'Invoice Cancelled',
+            },
+            loadingOn, loadingOff
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setSelectedInvoice(null);
+                setReload(pre => !pre);
+                setDialog(pre => ({ ...pre, cancelInvoice: false }))
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => {
+            console.error(e);
+            toast.error('Failed to cancel invoice');
+        })
+    }
+
     return (
         <>
             <FilterableTable
@@ -272,6 +299,9 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {
+                            if (toNumber(row?.Cancel_status) === 0) {
+                                return <></>;
+                            }
                             return (
                                 <ButtonActions
                                     buttonsData={[
@@ -282,6 +312,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 setDialog(prev => ({ ...prev, taxInvoice: true }));
                                             },
                                             icon: <Visibility fontSize="small" color="primary" />,
+                                            disabled: toNumber(row?.Cancel_status) === 0,
                                         },
                                         {
                                             name: 'Print Invoice',
@@ -290,6 +321,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 setDialog(pre => ({ ...pre, printInvoice: true }));
                                             },
                                             icon: <Print fontSize="small" color="primary" />,
+                                            disabled: toNumber(row?.Cancel_status) === 0,
                                         },
                                         {
                                             name: 'Edit',
@@ -303,7 +335,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 });
                                             },
                                             icon: <Edit fontSize="small" color="primary" />,
-                                            disabled: !EditRights || !canEditNow(row.Do_Date),
+                                            disabled: !EditRights || !canEditNow(row.Do_Date) || toNumber(row?.Cancel_status) === 0,
                                         },
                                         {
                                             name: 'Delivery Slip',
@@ -312,6 +344,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                                                 setDialog(pre => ({ ...pre, deliverySlip: true }));
                                             },
                                             icon: <Print fontSize="small" color="primary" />,
+                                            disabled: toNumber(row?.Cancel_status) === 0,
+                                        },
+                                        {
+                                            name: 'Cancel Invoice',
+                                            onclick: () => {
+                                                setSelectedInvoice(row);
+                                                setDialog(pre => ({ ...pre, cancelInvoice: true }));
+                                            },
+                                            icon: <Cancel fontSize="small" color="primary" />,
+                                            disabled: !DeleteRights || !canEditNow(row.Do_Date),
                                         },
                                     ]}
                                 />
@@ -637,6 +679,16 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID 
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <AppDialog
+                open={dialog.cancelInvoice}
+                onClose={() => setDialog(pre => ({ ...pre, cancelInvoice: false }))}
+                title="Cancel Invoice"
+                onSubmit={cancelInvoice}
+                submitText="Cancel Invoice"
+            >
+                Do you want to cancel the invoice?
+            </AppDialog>
         </>
     )
 }

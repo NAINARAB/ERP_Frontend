@@ -59,7 +59,8 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
         staff: [],
         staffType: [],
         brand: [],
-        defaultAccounts: []
+        defaultAccounts: [],
+        batchDetails: []
     });
 
     const invExpencesTotal = useMemo(() => {

@@ -189,86 +189,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         const diffInDays = Math.floor((today - orderDateObj) / (1000 * 60 * 60 * 24));
         return diffInDays <= 3;
     }
-
-    const purchaseOrderColumn = [
-        createCol('Po_Inv_No', 'string', 'Order ID'),
-        createCol('Po_Entry_Date', 'date', 'Date', 'center'),
-        createCol('Retailer_Name', 'string', 'Party'),
-        createCol('VoucherTypeGet', 'string', 'Voucher'),
-        createCol('Total_Before_Tax', 'number', 'Before Tax', 'center'),
-        createCol('Total_Tax', 'number', 'Tax', 'center'),
-        createCol('Total_Invoice_value', 'number', 'Invoice Value', 'center'),
-        {
-            ColumnHeader: 'Canceled-?',
-            isVisible: 1,
-            align: 'center',
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                const isCanceled = isEqualNumber(row?.Cancel_status, 1);
-                return (
-                    <Button
-                        className={'fw-bold fa-12 rounded-4 p-1 shadow-0 '}
-                        color={isCanceled ? "error" : 'primary'}
-                        variant={isCanceled ? "contained" : 'text'}
-                        disabled={!DeleteRights}
-                        onClick={() => setDialog(pre => ({
-                            ...pre,
-                            cancelPIN_Id: row.PIN_Id,
-                            cancelDialog: true,
-                            isCanceled: isCanceled
-                        }))}
-                    >
-                        {isCanceled ? 'Yes' : 'No'}
-                    </Button>
-                )
-            },
-        },
-        {
-            Field_Name: 'Action',
-            isVisible: 1,
-            isCustomCell: true,
-            Cell: ({ row }) => {
-                return (
-                    <>
-                        <Tooltip title='View Order'>
-                            <IconButton
-                                onClick={() => {
-                                    setViewOrder({
-                                        orderDetails: row,
-                                        orderProducts: row?.Products_List ? row?.Products_List : [],
-                                    })
-                                }}
-                                color='primary' size="small"
-                            >
-                                <Visibility className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title='Edit'>
-                            <IconButton
-                                onClick={() => {
-                                    navigateToPageWithState({
-                                        page: 'create',
-                                        stateToTransfer: {
-                                            invoiceInfo: row,
-                                            orderInfo: row?.Products_List,
-                                            staffInfo: row?.Staff_List
-                                        }
-                                    })
-                                }}
-                                disabled={!canEditNow(row.Po_Entry_Date)}
-                                size="small"
-                            >
-                                <Edit className="fa-16" />
-                            </IconButton>
-                        </Tooltip>
-
-                    </>
-                )
-            },
-        },
-    ];
-
+    
     const ExpendableComponent = ({ row }) => {
 
         return (
@@ -381,7 +302,84 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         <>
             <FilterableTable
                 dataArray={purchaseOrder}
-                columns={purchaseOrderColumn}
+                columns={[
+                    createCol('Po_Inv_No', 'string', 'Order ID'),
+                    createCol('Po_Entry_Date', 'date', 'Date', 'center'),
+                    createCol('Retailer_Name', 'string', 'Party'),
+                    createCol('VoucherTypeGet', 'string', 'Voucher'),
+                    createCol('Total_Before_Tax', 'number', 'Before Tax', 'center'),
+                    createCol('Total_Tax', 'number', 'Tax', 'center'),
+                    createCol('Total_Invoice_value', 'number', 'Invoice Value', 'center'),
+                    {
+                        ColumnHeader: 'Canceled-?',
+                        isVisible: 1,
+                        align: 'center',
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const isCanceled = isEqualNumber(row?.Cancel_status, 1);
+                            return (
+                                <Button
+                                    className={'fw-bold fa-12 rounded-4 p-1 shadow-0 '}
+                                    color={isCanceled ? "error" : 'primary'}
+                                    variant={isCanceled ? "contained" : 'text'}
+                                    disabled={!DeleteRights}
+                                    onClick={() => setDialog(pre => ({
+                                        ...pre,
+                                        cancelPIN_Id: row.PIN_Id,
+                                        cancelDialog: true,
+                                        isCanceled: isCanceled
+                                    }))}
+                                >
+                                    {isCanceled ? 'Yes' : 'No'}
+                                </Button>
+                            )
+                        },
+                    },
+                    {
+                        Field_Name: 'Action',
+                        isVisible: 1,
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            return (
+                                <>
+                                    <Tooltip title='View Order'>
+                                        <IconButton
+                                            onClick={() => {
+                                                setViewOrder({
+                                                    orderDetails: row,
+                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
+                                                })
+                                            }}
+                                            color='primary' size="small"
+                                        >
+                                            <Visibility className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                    <Tooltip title='Edit'>
+                                        <IconButton
+                                            onClick={() => {
+                                                navigateToPageWithState({
+                                                    page: 'create',
+                                                    stateToTransfer: {
+                                                        invoiceInfo: row,
+                                                        orderInfo: row?.Products_List,
+                                                        staffInfo: row?.Staff_List
+                                                    }
+                                                })
+                                            }}
+                                            disabled={!canEditNow(row.Po_Entry_Date)}
+                                            size="small"
+                                        >
+                                            <Edit className="fa-16" />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                </>
+                            )
+                        },
+                    },
+                ]}
                 title="Purchase Invoices"
                 // EnableSerialNumber={true}
                 isExpendable={true}
@@ -405,7 +403,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
                         >
                             {'Add'}
                         </Button>
-                        
+
                         {purchaseOrder.length > 0 && (
                             <>
                                 <span className="me-4"> Total: {NumberFormat(totalValues.totalInvoiceValue)} </span>
