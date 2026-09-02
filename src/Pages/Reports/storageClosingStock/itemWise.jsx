@@ -4,7 +4,7 @@ import {
     Addition, checkIsNumber, filterableText, groupData, isEqualNumber, stringCompare, toArray, toNumber,
 } from "../../../Components/functions";
 import FilterableTable from "../../../Components/filterableTable2";
-import { 
+import {
     Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent,
     DialogTitle, IconButton, Paper, Switch, TextField, Typography,
     Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow
@@ -18,6 +18,30 @@ import { Close } from "@mui/icons-material";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
+
+// ---- Pack_Qty divided-display helpers ----
+const QTY_FIELD_PATTERN = /qty/i;
+const EXCLUDED_QTY_FIELDS = ["Pack_Qty"];
+
+const isQtyField = (fieldName) =>
+    QTY_FIELD_PATTERN.test(fieldName || "") && !EXCLUDED_QTY_FIELDS.includes(fieldName);
+
+const formatNumberINR = (n, fraction = 2) =>
+    new Intl.NumberFormat("en-IN", {
+        minimumFractionDigits: fraction,
+        maximumFractionDigits: fraction,
+    }).format(Number(n || 0));
+
+const formatQtyWithPack = (value, row, fraction = 2) => {
+    const raw = toNumber(value);
+    if (raw === undefined || raw === null || isNaN(raw)) return "";
+
+    const packQty = toNumber(row?.Pack_Qty);
+    const divisor = packQty && packQty !== 0 ? packQty : 1;
+    const divided = raw / divisor;
+
+    return `${formatNumberINR(raw, fraction)} (${formatNumberINR(divided, fraction)})`;
+};
 
 const ItemWiseStockReport = ({
     loadingOn,
@@ -273,7 +297,7 @@ const ItemWiseStockReport = ({
         let productName = "";
         let godownName = "";
 
-        console.log("row", row);
+   
 
         if (row.groupedData && row.groupedData.length > 0) {
 
@@ -486,25 +510,37 @@ const ItemWiseStockReport = ({
                 })),
                 reportName,
                 reportUrl: url,
-                reportGroup :'STOCK_IN_HAND_ITEM_WISE'
+                reportGroup: 'STOCK_IN_HAND_ITEM_WISE'
             },
         })
             .then((data) => {
                 if (data.success) {
                     toast.success(data.message);
-                    
+
                     setReportVisiblity(
                         visibleColumns.map((col) => ({
                             columnName: col.Field_Name,
                             orderNum: col.OrderBy,
                         }))
                     );
-                      setDialog(false);
+                    setDialog(false);
                 } else {
                     toast.error(data.message);
                 }
             })
             .catch((e) => console.error(e));
+    };
+
+    // Wraps a qty-type numeric column so its cell renders "raw (raw / Pack_Qty)"
+    const withQtyDisplay = (col) => {
+        if (!isQtyField(col.Field_Name) || filterableText(col.Fied_Data) !== "number") {
+            return col;
+        }
+        return {
+            ...col,
+            isCustomCell: true,
+            Cell: ({ row }) => formatQtyWithPack(row[col.Field_Name], row),
+        };
     };
 
     const actionColumn = {
@@ -644,7 +680,7 @@ const ItemWiseStockReport = ({
                                 fil.isEnabled
                         )
                         : DisplayColumn.filter((col) => col.isEnabled)
-                    ).map((col) => ({
+                    ).map((col) => withQtyDisplay({
                         ...col,
                         ColumnHeader: getDisplayName(col.Field_Name),
                     })),
@@ -664,7 +700,7 @@ const ItemWiseStockReport = ({
                                 (clm) =>
                                     !stringCompare(clm.Field_Name, groupBy) &&
                                     clm.isEnabled
-                            ).map((col) => ({
+                            ).map((col) => withQtyDisplay({
                                 ...col,
                                 ColumnHeader: getDisplayName(col.Field_Name),
                             })),
@@ -845,11 +881,11 @@ const ItemWiseStockReport = ({
                                                 <TableCell>{item.Month_Year || ""}</TableCell>
 
                                                 <TableCell align="right">
-                                                    {formatINR(item.In_Qty)}
+                                                    {formatQtyWithPack(item.In_Qty, item)}
                                                 </TableCell>
 
                                                 <TableCell align="right">
-                                                    {formatINR(item.Out_Qty)}
+                                                    {formatQtyWithPack(item.Out_Qty, item)}
                                                 </TableCell>
 
                                                 <TableCell align="right">
