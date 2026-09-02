@@ -169,7 +169,6 @@ const TripSheetGeneralInfo = ({
                                 <option value="New">New</option>
                                 <option value="OnProcess">OnProcess</option>
                                 <option value="Completed">Completed</option>
-                                <option value="Canceled">Canceled</option>
                             </select>
                         </div>
 

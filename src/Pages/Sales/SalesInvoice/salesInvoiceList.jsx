@@ -489,7 +489,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                 </tr>
 
                                 <tr>
-                                    <td style={{ verticalAlign: 'middle' }}>Canceled Order</td>
+                                    <td style={{ verticalAlign: 'middle' }}>Order Status</td>
                                     <td>
                                         <select
                                             type="date"
@@ -498,7 +498,24 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                             className="cus-inpt"
                                         >
                                             <option value={''}>All</option>
-                                            {dbStatus.map((sts, ind) => (
+                                            {[
+                                                {
+                                                    id: 0,
+                                                    label: 'Canceled',
+                                                },
+                                                {
+                                                    id: 1,
+                                                    label: 'New',
+                                                },
+                                                {
+                                                    id: 2,
+                                                    label: 'Progess',
+                                                },
+                                                {
+                                                    id: 3,
+                                                    label: 'Completed',
+                                                }
+                                            ].map((sts, ind) => (
                                                 <option value={sts.id} key={ind}>{sts.label}</option>
                                             ))}
                                         </select>

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, Subraction, toArray } from '../../../Components/functions';
-import FilterableTable, { formatString } from '../../../Components/filterableTable2';
+import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, stringCompare, Subraction, toArray, toNumber } from '../../../Components/functions';
+import FilterableTable, { ButtonActions, formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { Edit, FilterAlt,Print, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
+import { Cancel, Edit, FilterAlt, Print, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import Select from 'react-select';
 import ProcessingView from "./normalView";
-import  GodownChallanPrintTemplate  from "./GodownChallanPrintPreview";
+import GodownChallanPrintTemplate from "./GodownChallanPrintPreview";
+import AppDialog from "../../../Components/appDialogComponent";
+import { toast } from "react-toastify";
 
 export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
 
@@ -89,7 +91,9 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
         refresh: false,
         view: 'listing',
         pagination: false,
-    })
+        cancelDialog: false,
+    });
+    const [selectedRow, setSelectedRow] = useState(null);
 
     useEffect(() => {
 
@@ -164,7 +168,7 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
             }
         }).catch(e => console.error(e));
 
-    }, [sessionValue, pageID, filters?.refresh]);
+    }, [sessionValue, pageID, filters.refresh]);
 
     const closeDialog = () => {
         setFilters({
@@ -263,6 +267,30 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
         </>
     )
 
+    const cancelProcessing = () => {
+        fetchLink({
+            address: `inventory/stockProcessing`,
+            method: 'DELETE',
+            bodyData: {
+                PR_Id: selectedRow?.processObjecet?.PR_Id,
+                Altered_by: toNumber(storage.UserId),
+                Alter_Reason: 'Cancelled',
+            },
+            loadingOn, loadingOff
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setSelectedRow(null);
+                setFilters(pre => ({ ...pre, cancelDialog: false, refresh: !pre.refresh }))
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => {
+            console.error(e);
+            toast.error('Failed to cancel invoice');
+        })
+    }
+
     return (
         <>
             {filters.view === 'listing' && (
@@ -308,33 +336,37 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                         isVisible: 1,
                         ColumnHeader: 'Action',
                         isCustomCell: true,
-                        Cell: ({ row }) => {
-                            return (row?.processObjecet && EditRights) && (
-                                <>
-                                    <IconButton size="small" onClick={() => {
-                                        navigate('create', {
-                                            state: {
-                                                ...row.processObjecet,
-                                                SourceDetails: Array.isArray(row?.processObjecet?.SourceDetails) ? row?.processObjecet?.SourceDetails : [],
-                                                DestinationDetails: Array.isArray(row?.processObjecet?.DestinationDetails) ? row?.processObjecet?.DestinationDetails : [],
-                                                StaffsDetails: Array.isArray(row?.processObjecet?.StaffsDetails) ? row?.processObjecet?.StaffsDetails : [],
-                                                isEditable: true
-                                            }
-                                        })
-                                    }}
-                                    disabled={(!EditRights || !canEditNow(row.Date))}>
-                                        <Edit className="fa-20" />
-                                    </IconButton>   
-                                     <GodownChallanPrintTemplate entryDetails={row.processObjecet} download>
-                                        <Tooltip title='Print Preview'>
-                                            <IconButton size="small">
-                                                <Print className="fa-20" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </GodownChallanPrintTemplate>
-                                </>
-                            )
-                        }
+                        Cell: ({ row }) => stringCompare(row?.processObjecet?.PR_Status, "Canceled") ? <></> : row?.processObjecet ? (
+                            <ButtonActions
+                                buttonsData={[
+                                    {
+                                        name: "Edit",
+                                        onclick: () => {
+                                            navigate('create', {
+                                                state: {
+                                                    ...row.processObjecet,
+                                                    SourceDetails: Array.isArray(row?.processObjecet?.SourceDetails) ? row?.processObjecet?.SourceDetails : [],
+                                                    DestinationDetails: Array.isArray(row?.processObjecet?.DestinationDetails) ? row?.processObjecet?.DestinationDetails : [],
+                                                    StaffsDetails: Array.isArray(row?.processObjecet?.StaffsDetails) ? row?.processObjecet?.StaffsDetails : [],
+                                                    isEditable: true
+                                                }
+                                            })
+                                        },
+                                        icon: <Edit fontSize="small" color="primary" />,
+                                        disabled: !row?.processObjecet || !EditRights || !canEditNow(row.Date)
+                                    },
+                                    {
+                                        name: 'Cancel Trip',
+                                        onclick: () => {
+                                            setSelectedRow(row);
+                                            setFilters(pre => ({ ...pre, cancelDialog: true }));
+                                        },
+                                        icon: <Cancel fontSize="small" color="primary" />,
+                                        disabled: !DeleteRights || !canEditNow(row.Date),
+                                    }
+                                ]}
+                            />
+                        ) : <></>
                     }
                     ]}
                 />
@@ -491,6 +523,16 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                     >Search</Button>
                 </DialogActions>
             </Dialog>
+
+            <AppDialog
+                open={filters.cancelDialog}
+                onClose={() => setFilters(pre => ({ ...pre, cancelDialog: false }))}
+                title="Cancel Processing"
+                onSubmit={cancelProcessing}
+                submitText="Cancel Processing"
+            >
+                Do you want to cancel the Processing?
+            </AppDialog>
         </>
     )
 }

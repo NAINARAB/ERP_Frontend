@@ -241,7 +241,6 @@ const ManageCreditNoteGeneralInfo = ({
                                             <option value="1">New</option>
                                             <option value="2">Progess</option>
                                             <option value="3">Completed</option>
-                                            <option value="0">Canceled</option>
                                         </select>
                                     </div>
 

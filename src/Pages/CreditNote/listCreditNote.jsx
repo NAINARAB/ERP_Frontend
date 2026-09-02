@@ -3,14 +3,14 @@ import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, Dialog
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
-import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Cancel, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../Sales/convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol, ButtonActions } from "../../Components/filterableTable2";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
-import { Close } from "@mui/icons-material";
 import AlterHistoryTable from "../../Components/alterHistoryTable";
+import AppDialog from "../../Components/appDialogComponent";
 // NOTE: Print components could be added here if needed for Credit/Debit Notes in the future
 
 export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
@@ -24,7 +24,7 @@ const defaultFilters = {
     Cancel_status: ''
 };
 
-const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }) => {
+const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const storage = getSessionUser().user;
     const navigate = useNavigate();
@@ -44,7 +44,8 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
     });
 
     const [dialog, setDialog] = useState({
-        filters: false
+        filters: false,
+        cancelInvoice: false,
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -152,7 +153,7 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                         </tr>
                     </tbody>
                 </table>
-                
+
                 <AlterHistoryTable alterationHistory={row.alterHistoryDetails} />
             </>
         )
@@ -191,6 +192,31 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
         }, { totalTonnage: 0, totalBags: 0, totalInvoiceValue: 0 });
     }, [creditNoteData]);
 
+    const cancelInvoice = () => {
+        fetchLink({
+            address: `creditNote`,
+            method: 'DELETE',
+            bodyData: {
+                CR_Id: selectedInvoice.CR_Id,
+                Altered_by: toNumber(storage.UserId),
+                Alter_Reason: 'Invoice Cancelled',
+            },
+            loadingOn, loadingOff
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setSelectedInvoice(null);
+                setReload(pre => !pre);
+                setDialog(pre => ({ ...pre, cancelInvoice: false }))
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => {
+            console.error(e);
+            toast.error('Failed to cancel invoice');
+        })
+    }
+
     return (
         <>
             <FilterableTable
@@ -223,6 +249,9 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {
+                            if (toNumber(row?.Cancel_status) === 0) {
+                                return <></>;
+                            }
                             return (
                                 <ButtonActions
                                     buttonsData={[
@@ -239,7 +268,17 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                                             },
                                             icon: <Edit fontSize="small" color="primary" />,
                                             disabled: (!EditRights || !canEditNow(row.CR_Date)),
-                                        }
+                                        },
+                                        {
+                                            name: 'Cancel Invoice',
+                                            onclick: () => {
+                                                setSelectedInvoice(row);
+                                                setDialog(pre => ({ ...pre, cancelInvoice: true }));
+                                            },
+                                            icon: <Cancel fontSize="small" color="primary" />,
+                                            disabled: !DeleteRights || !canEditNow(row.CR_Date),
+                                        },
+
                                     ]}
                                 />
                             )
@@ -410,6 +449,16 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, pageID }
                     >Search</Button>
                 </DialogActions>
             </Dialog>
+
+            <AppDialog
+                open={dialog.cancelInvoice}
+                onClose={() => setDialog(pre => ({ ...pre, cancelInvoice: false }))}
+                title="Cancel Invoice"
+                onSubmit={cancelInvoice}
+                submitText="Cancel Invoice"
+            >
+                Do you want to cancel the invoice?
+            </AppDialog>
         </>
     )
 }

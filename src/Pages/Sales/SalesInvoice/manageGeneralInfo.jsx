@@ -333,6 +333,42 @@ const ManageSalesInvoiceGeneralInfo = ({
                                             />
                                         </div>
 
+                                        {/* outstanding */}
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Outstanding</label>
+                                            <input
+                                                className="cus-inpt p-2"
+                                                value={retailerSalesStatus?.outstanding}
+                                                readOnly
+                                            />
+                                        </div>
+                                        {/* credit limit */}
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Credit Limit</label>
+                                            <input
+                                                className="cus-inpt p-2"
+                                                value={
+                                                    isEqualNumber(retailerSalesStatus?.creditLimit, 0)
+                                                        ? 'Unlimited'
+                                                        : retailerSalesStatus?.creditLimit
+                                                }
+                                                readOnly
+                                            />
+                                        </div>
+                                        {/* credit days */}
+                                        <div className="col-xl-3 col-md-4 col-sm-6 p-2">
+                                            <label className='fa-13'>Due Days</label>
+                                            <input
+                                                className="cus-inpt p-2"
+                                                value={
+                                                    isEqualNumber(retailerSalesStatus?.creditDays, 0)
+                                                        ? 'Unlimited'
+                                                        : retailerSalesStatus?.creditDays
+                                                }
+                                                readOnly
+                                            />
+                                        </div>
+
                                         {isValidNumber(invoiceInfo?.Do_Id) && (
                                             <div className="col-xl-3 col-md-4 col-sm-6 p-2">
                                                 <label className='fa-13'>Edit Reason <RequiredStar /></label>

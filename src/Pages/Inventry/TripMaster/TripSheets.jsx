@@ -2,14 +2,16 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import FilterableTable, { ButtonActions, createCol } from "../../../Components/filterableTable2";
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Addition, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, Multiplication, NumberFormat, numberToWords, reactSelectFilterLogic, Subraction, timeDuration, toArray, toNumber } from "../../../Components/functions";
-import { Download, Edit, FilterAlt, LocalShipping, Search, Visibility, AddShoppingCart, Receipt } from "@mui/icons-material";
+import { Addition, isEqualNumber, ISOString, isValidDate, isValidObject, LocalDate, LocalTime, Multiplication, NumberFormat, numberToWords, reactSelectFilterLogic, stringCompare, Subraction, timeDuration, toArray, toNumber } from "../../../Components/functions";
+import { Download, Edit, FilterAlt, LocalShipping, Search, Visibility, AddShoppingCart, Receipt, Cancel } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { useReactToPrint } from 'react-to-print';
 import Select from 'react-select';
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import DeliveryChallan from "./deliveryChallan";
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
+import { toast } from "react-toastify";
+import AppDialog from "../../../Components/appDialogComponent";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 const defaultFilters = {
@@ -19,7 +21,7 @@ const defaultFilters = {
 
 export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
 
-const TripSheets = ({ loadingOn, loadingOff }) => {
+const TripSheets = ({ loadingOn, loadingOff, DeleteRights }) => {
 
     const nav = useNavigate();
     const location = useLocation();
@@ -36,6 +38,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         refresh: false,
         printPreviewDialog: false,
         deliveryChallanDialog: false,
+        cancelDialog: false,
         FromGodown: [],
         ToGodown: [],
         Staffs: [],
@@ -45,6 +48,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
     const [selectedRow, setSelectedRow] = useState({});
     const printRef = useRef(null);
     const deliveryChallanPrintRef = useRef(null);
+    const [reload, setReload] = useState(false);
 
     useEffect(() => {
         if (loadingOn) loadingOn();
@@ -69,7 +73,7 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
             setModuleRules(rules);
         }).catch(e => console.error(e));
 
-    }, [filters?.fetchFrom, filters?.fetchTo]);
+    }, [filters?.fetchFrom, filters?.fetchTo, reload]);
 
     useEffect(() => {
         const queryFilters = {
@@ -423,9 +427,33 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
         }
     }
 
+    const cancelTrip = () => {
+        fetchLink({
+            address: `inventory/tripSheet`,
+            method: 'DELETE',
+            bodyData: {
+                Trip_Id: selectedRow.Trip_Id,
+                Updated_By: toNumber(storage.UserId),
+                Alter_Reason: 'Trip Cancelled',
+            },
+            loadingOn, loadingOff
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setSelectedRow({});
+                setReload(pre => !pre);
+                setFilters(pre => ({ ...pre, cancelDialog: false }))
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => {
+            console.error(e);
+            toast.error('Failed to cancel invoice');
+        })
+    }
+
     return (
         <>
-
             <FilterableTable
                 dataArray={(
                     filters.FromGodown.length > 0 ||
@@ -500,7 +528,8 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                         isVisible: 1,
                         ColumnHeader: 'Action',
                         isCustomCell: true,
-                        Cell: ({ row }) => (
+                        Cell: ({ row }) => stringCompare(row?.TripStatus, "Canceled") ? <></> :
+                            (
                             <ButtonActions
                                 buttonsData={[
                                     {
@@ -599,6 +628,16 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                                             }
                                         }),
                                         disabled: row?.BillType !== 'MATERIAL INWARD'
+                                    },
+
+                                    {
+                                        name: 'Cancel Trip',
+                                        onclick: () => {
+                                            setSelectedRow(row);
+                                            setFilters(pre => ({ ...pre, cancelDialog: true }));
+                                        },
+                                        icon: <Cancel fontSize="small" color="primary" />,
+                                        disabled: !DeleteRights || !canEditNow(row.Do_Date),
                                     }
                                 ]}
                             />
@@ -1133,6 +1172,15 @@ const TripSheets = ({ loadingOn, loadingOff }) => {
                 </DialogActions>
             </Dialog>
 
+            <AppDialog
+                open={filters.cancelDialog}
+                onClose={() => setFilters(pre => ({ ...pre, cancelDialog: false }))}
+                title="Cancel Trip sheet"
+                onSubmit={cancelTrip}
+                submitText="Cancel Invoice"
+            >
+                Do you want to cancel the Trip sheet?
+            </AppDialog>
         </>
     )
 }

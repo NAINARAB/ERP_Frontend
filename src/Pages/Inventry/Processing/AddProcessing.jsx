@@ -396,7 +396,6 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                                 <option value="New">New</option>
                                                 <option value="On Process">On Process</option>
                                                 <option value="Completed">Completed</option>
-                                                <option value="Canceled">Canceled</option>
                                             </select>
                                         </div>
 

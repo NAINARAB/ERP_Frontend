@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray } from "../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
-import { Add, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Cancel, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
-import FilterableTable, { createCol } from "../../Components/filterableTable2";
+import FilterableTable, { ButtonActions, createCol } from "../../Components/filterableTable2";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AlterHistoryTable from "../../Components/alterHistoryTable";
@@ -24,7 +24,7 @@ const defaultFilters = {
     Cancel_status: '',
 };
 
-const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
+const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, DeleteRights, pageID }) => {
     const sessionValue = sessionStorage.getItem('filterValues');
     const storage = JSON.parse(localStorage.getItem("user"));
     const [purchaseOrder, setPurchaseOrder] = useState([]);
@@ -107,7 +107,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
             }
         }).catch(e => console.error(e));
 
-    }, [sessionValue, pageID, location])
+    }, [sessionValue, pageID, location, filters.reload])
 
     useEffect(() => {
 
@@ -189,7 +189,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
         const diffInDays = Math.floor((today - orderDateObj) / (1000 * 60 * 60 * 24));
         return diffInDays <= 3;
     }
-    
+
     const ExpendableComponent = ({ row }) => {
 
         return (
@@ -273,8 +273,13 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
 
     const cancelPurchaseInvoice = () => {
         fetchLink({
-            address: `purchase/purchaseOrder?PIN_Id=${dialog.cancelPIN_Id}`,
+            address: `purchase/purchaseOrder`,
             method: 'DELETE',
+            bodyData: {
+                PIN_Id: dialog.cancelPIN_Id,
+                Created_by: storage.UserId,
+                Alter_Reason: "Invoice cancelled"
+            },
             loadingOn, loadingOff
         }).then(data => {
             if (data.success) {
@@ -311,70 +316,69 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, DeleteRights, pageID }) => {
                     createCol('Total_Tax', 'number', 'Tax', 'center'),
                     createCol('Total_Invoice_value', 'number', 'Invoice Value', 'center'),
                     {
-                        ColumnHeader: 'Canceled-?',
-                        isVisible: 1,
-                        align: 'center',
+                        ColumnHeader: "Status",
                         isCustomCell: true,
+                        isVisible: 1,
                         Cell: ({ row }) => {
-                            const isCanceled = isEqualNumber(row?.Cancel_status, 1);
-                            return (
-                                <Button
-                                    className={'fw-bold fa-12 rounded-4 p-1 shadow-0 '}
-                                    color={isCanceled ? "error" : 'primary'}
-                                    variant={isCanceled ? "contained" : 'text'}
-                                    disabled={!DeleteRights}
-                                    onClick={() => setDialog(pre => ({
-                                        ...pre,
-                                        cancelPIN_Id: row.PIN_Id,
-                                        cancelDialog: true,
-                                        isCanceled: isCanceled
-                                    }))}
-                                >
-                                    {isCanceled ? 'Yes' : 'No'}
-                                </Button>
-                            )
-                        },
+                            if (isEqualNumber(row?.Cancel_status, 1)) {
+                                return <span className="badge bg-danger">Cancelled</span>;
+                            }
+                            return <span className="badge bg-success">Active</span>;
+                        }
                     },
                     {
                         Field_Name: 'Action',
                         isVisible: 1,
                         isCustomCell: true,
                         Cell: ({ row }) => {
+                            if (isEqualNumber(row?.Cancel_status, 1)) {
+                                return <></>;
+                            }
                             return (
                                 <>
-                                    <Tooltip title='View Order'>
-                                        <IconButton
-                                            onClick={() => {
-                                                setViewOrder({
-                                                    orderDetails: row,
-                                                    orderProducts: row?.Products_List ? row?.Products_List : [],
-                                                })
-                                            }}
-                                            color='primary' size="small"
-                                        >
-                                            <Visibility className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
+                                    <ButtonActions
+                                        buttonsData={[
+                                            {
+                                                name: 'View Order',
+                                                onclick: () => {
+                                                    setViewOrder({
+                                                        orderDetails: row,
+                                                        orderProducts: row?.Products_List ? row?.Products_List : [],
+                                                    })
+                                                },
+                                                icon: <Visibility fontSize="small" color="primary" />,
+                                                disabled: toNumber(row?.Cancel_status) === 1,
+                                            },
+                                            {
+                                                name: 'Edit Order',
+                                                onclick: () => {
+                                                    navigateToPageWithState({
+                                                        page: 'create',
+                                                        stateToTransfer: {
+                                                            invoiceInfo: row,
+                                                            orderInfo: row?.Products_List,
+                                                            staffInfo: row?.Staff_List
+                                                        }
+                                                    })
+                                                },
+                                                icon: <Edit fontSize="small" color="primary" />,
+                                                disabled: !EditRights || !canEditNow(row.Po_Entry_Date) || isEqualNumber(row?.Cancel_status, 1),
+                                            },
+                                            {
+                                                name: 'Cancel Invoice',
+                                                onclick: () => {
+                                                    setDialog(pre => ({
+                                                        ...pre,
+                                                        cancelPIN_Id: row.PIN_Id,
+                                                        cancelDialog: true,
+                                                    }))
+                                                },
+                                                icon: <Cancel fontSize="small" color="primary" />,
+                                                disabled: !DeleteRights || !canEditNow(row.Po_Entry_Date),
+                                            },
 
-                                    <Tooltip title='Edit'>
-                                        <IconButton
-                                            onClick={() => {
-                                                navigateToPageWithState({
-                                                    page: 'create',
-                                                    stateToTransfer: {
-                                                        invoiceInfo: row,
-                                                        orderInfo: row?.Products_List,
-                                                        staffInfo: row?.Staff_List
-                                                    }
-                                                })
-                                            }}
-                                            disabled={!canEditNow(row.Po_Entry_Date)}
-                                            size="small"
-                                        >
-                                            <Edit className="fa-16" />
-                                        </IconButton>
-                                    </Tooltip>
-
+                                        ]}
+                                    />
                                 </>
                             )
                         },
