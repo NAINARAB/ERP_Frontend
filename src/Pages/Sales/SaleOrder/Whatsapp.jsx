@@ -37,6 +37,7 @@ import Pendingbills from "./whatsappPreview/PendingBills";
 import SaleOrderTemplate from "./whatsappPreview/SaleOrderPdfView";
 import SaleInvoiceTemplate from "./whatsappPreview/SalesInvoicePdfView";
 import StatementTemplate from "./whatsappPreview/StatementPdfView";
+import PriceListTemplate from "./whatsappPreview/PriceListPdfView"; 
 
 const ASKEVA_CONFIG = {
     apiEndpoint: REACT_APP_ASKEVA_API_ENDPOINT,
@@ -65,6 +66,10 @@ const TEMPLATE_MAP = {
     price_list: {
         dotpe: { english: "price_list_en", tamil: "price_list" },
         askeva: { english: "pricelist_english", tamil: "pricelist_tamil" },
+        pdf:{
+              tamil: "pricelist_tamil_pdf",
+             english: "pricelist_english_pdf", 
+        }
     },
     sale_order: {
         dotpe: { english: "sale_order_new_en", tamil: "sale_order" },
@@ -1855,6 +1860,10 @@ const [stmtPdfBuildInFlight, setStmtPdfBuildInFlight] = useState(false);
 const [soCaptureData, setSoCaptureData] = useState(null);
 const [soPdfBuildInFlight, setSoPdfBuildInFlight] = useState(false);
 
+const priceListCaptureRef = useRef(null);
+const [priceListCaptureData, setPriceListCaptureData] = useState(null);
+const [priceListPdfBuildInFlight, setPriceListPdfBuildInFlight] = useState(false);
+
 
     const getCountKey = useCallback((docType, docId) => `${docType}_${docId}`, []);
 
@@ -1956,6 +1965,44 @@ const buildSaleInvoicePdfBlob = (row) =>
         });
     });
 
+    const buildPriceListPdfBlob = (row) =>
+    new Promise((resolve, reject) => {
+        if (priceListPdfBuildInFlight) {
+            reject(new Error("A Price List PDF is already being prepared. Please wait for it to finish."));
+            return;
+        }
+        setPriceListPdfBuildInFlight(true);
+
+        let settled = false;
+        const safeResolve = (v) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); resolve(v); } };
+        const safeReject = (e) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); reject(e); } };
+
+        const timeoutId = setTimeout(() => {
+            setPriceListCaptureData(null);
+            safeReject(new Error("Timed out preparing Price List PDF."));
+        }, 20000);
+
+        setPriceListCaptureData({
+            row,
+            onReady: async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const blob = await generatePdfBlobFromElement(priceListCaptureRef.current);
+                    setPriceListCaptureData(null);
+                    safeResolve(blob);
+                } catch (e) {
+                    setPriceListCaptureData(null);
+                    safeReject(e);
+                }
+            },
+            onError: (err) => {
+                clearTimeout(timeoutId);
+                setPriceListCaptureData(null);
+                safeReject(err instanceof Error ? err : new Error(String(err)));
+            },
+        });
+    });
+
     const handleColumnSettingsSave = async (selectedColumnsArray) => {
         setWhatsappColumns(selectedColumnsArray);
     };
@@ -2026,23 +2073,23 @@ const buildSaleInvoicePdfBlob = (row) =>
 
 
 
-    useEffect(() => {
-        if (activeTab === "price_list" && priceListRetailers.length > 0) {
-            const searchTerm = priceListSearch.toLowerCase().trim();
-            if (!searchTerm) {
-                setFilteredPriceListRetailers(priceListRetailers);
-            } else {
-                const filtered = priceListRetailers.filter(retailer =>
-                    retailer.Retailer_Name?.toLowerCase().includes(searchTerm) ||
-                    retailer.Ret_Code?.toLowerCase().includes(searchTerm) ||
-                    retailer.City?.toLowerCase().includes(searchTerm) ||
-                    retailer.Location?.toLowerCase().includes(searchTerm) ||
-                    retailer.A1?.includes(searchTerm)
-                );
-                setFilteredPriceListRetailers(filtered);
-            }
-        }
-    }, [priceListSearch, priceListRetailers, activeTab]);
+    // useEffect(() => {
+    //     if (activeTab === "price_list" && priceListRetailers.length > 0) {
+    //         const searchTerm = priceListSearch.toLowerCase().trim();
+    //         if (!searchTerm) {
+    //             setFilteredPriceListRetailers(priceListRetailers);
+    //         } else {
+    //             const filtered = priceListRetailers.filter(retailer =>
+    //                 retailer.Retailer_Name?.toLowerCase().includes(searchTerm) ||
+    //                 retailer.Ret_Code?.toLowerCase().includes(searchTerm) ||
+    //                 retailer.City?.toLowerCase().includes(searchTerm) ||
+    //                 retailer.Location?.toLowerCase().includes(searchTerm) ||
+    //                 retailer.A1?.includes(searchTerm)
+    //             );
+    //             setFilteredPriceListRetailers(filtered);
+    //         }
+    //     }
+    // }, [priceListSearch, priceListRetailers, activeTab]);
 
     const fetchAllTabSettings = useCallback(async () => {
         try {
@@ -3129,6 +3176,26 @@ const buildSaleOrderPdfParams = async (row) => {
     };
 };
     
+const buildPriceListPdfParams = async (row) => {
+    const companyname = companyInfo[0]?.Company_Name || "Company";
+    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+    const documentFilename = `Price_List_${(row.Ret_Code || row.DocumentId || "list")
+        .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+    const blob = await buildPriceListPdfBlob(row);
+    const documentUrl = await uploadPdfToServer("masters/whatsapp/pricelistpdf", blob, documentFilename, {
+        Ret_Id: row.Ret_Id || row.DocumentId,
+    });
+
+    return {
+        bodyParams: [companyname, customerName],
+        clientRefId: generateUniqueClientRefId("plist_pdf", row.Ret_Id || row.DocumentId),
+        documentUrl,
+        documentFilename,
+    };
+};
+
+
     const buildPendingBillsPDFParams = async (row) => {
         const companyname = companyInfo[0]?.Company_Name || "Company";
         const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
@@ -3284,7 +3351,8 @@ const getPdfParamsForTab = async (row, tab) => {
     if (tab === "sale_invoice") return buildSaleInvoicePdfParams(row);
     if (tab === "sale_order") return buildSaleOrderPdfParams(row);
     if (tab === "pending_bills") return buildPendingBillsPDFParams(row); 
-     if (tab === "outstanding") return buildOutstandingPDFParams(row);
+    if (tab === "outstanding") return buildOutstandingPDFParams(row);
+    if (tab === "price_list") return buildPriceListPdfParams(row);
     throw new Error(`PDF sending not supported for tab "${tab}"`);
 };
 
@@ -3602,66 +3670,7 @@ const sendPdfDirect = async (row, tab) => {
         }
     };
 
-    //   const handleBulkSendPendingBillsPdf = async () => {
-    //     setBulkMenuAnchor(null);
-    //     const rows = getSelectedRows();
-    //     if (!rows.length) { toast.warning("Select at least one row"); return; }
-
-    //     const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
-    //     if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
-    //         toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
-    //         return;
-    //     }
-
-    //     bulkAbortRef.current = false;
-    //     setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
-
-    //     const increment = (success) =>
-    //         setBulkProgress((p) => ({
-    //             ...p,
-    //             sent: success ? p.sent + 1 : p.sent,
-    //             failed: success ? p.failed : p.failed + 1,
-    //         }));
-
- 
-    //     for (const row of rows) {
-    //         if (bulkAbortRef.current) break;
-
-    //         const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
-    //         setSendingStates((p) => ({ ...p, [rowKey]: true }));
-
-    //         try {
-    //             let phone = resolveSendPhone(row, "pending_bills");
-    //             if (!phone || !isValidPhone(phone)) {
-    //                 increment(false);
-    //                 continue;
-    //             }
-    //             phone = normalizePhone(phone);
-
-    //             const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
-    //             const documentFilename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
-    //                 .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-
-    //             await sendWhatsAppMessage({
-    //                 tab: "pending_bills",
-    //                 phone, bodyParams, clientRefId, documentUrl,
-    //                 documentFilename,
-    //                 usePdfTemplate: true,
-    //             });
-
-    //             increment(true);
-    //             await logWhatsappSend(row, "pending_bills");
-    //         } catch (error) {
-    //             console.error("Bulk PDF send error:", error);
-    //             increment(false);
-    //         } finally {
-    //             setSendingStates((p) => ({ ...p, [rowKey]: false }));
-    //         }
-
- 
-    //         await new Promise((r) => setTimeout(r, 500));
-    //     }
-    // };
+  
 
 const handleBulkSendPdf = async (tab) => {
     setBulkMenuAnchor(null);
@@ -3758,13 +3767,13 @@ const handleBulkSendPdf = async (tab) => {
     </Tooltip>
 )} */}
 
-{["sale_invoice", "sale_order", "pending_bills","outstanding"].includes(tab) && (
+{["sale_invoice", "sale_order", "pending_bills","outstanding","price_list"].includes(tab) && (
     <Tooltip title="Send PDF via WhatsApp">
         <span>
             <IconButton
                 size="small"
                 onClick={() => sendPdfDirect(row, tab)}
-                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight)}
+                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight) || (tab === "price_list" && priceListPdfBuildInFlight) }
                 color={hasPhone ? "success" : "default"}
             >
                 {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
@@ -4098,10 +4107,23 @@ const handleBulkSendPdf = async (tab) => {
 
         let filtered = [...src];
 
-        // Sale Invoice ledger/date filters (Ledger Name, City, State, GSTIN, PAN, Phone)
-        // from SaleInvoiceLedgerFilterBar — applied first, before the WhatsApp
-        // column filters below, so both filter sets combine (AND) instead of
-        // one silently overwriting the other.
+   if (activeTab === "price_list" && priceListSearch.trim()) {
+        const searchTerm = priceListSearch.toLowerCase().trim();
+        filtered = filtered.filter((retailer) => {
+            return Object.entries(retailer).some(([key, value]) => {
+                if (value === undefined || value === null || typeof value === "object") return false;
+                
+                const str = String(value).toLowerCase().trim();
+                
+                if (["not available", "null", "undefined", "[object object]", "na", "n/a", " "].includes(str)) {
+                    return false;
+                }
+                
+                return str === searchTerm; // EXACT MATCH
+            });
+        });
+    }
+       
         if (activeTab === "sale_invoice") {
             for (const [key, values] of Object.entries(saleInvoiceFilters)) {
                 if (!values || values.length === 0) continue;
@@ -4112,6 +4134,8 @@ const handleBulkSendPdf = async (tab) => {
                 });
             }
         }
+
+
 
         const currentFilters = activeTab === "shetsheet" ? sheetsheetFilters : columnFilters;
 
@@ -4138,7 +4162,6 @@ const handleBulkSendPdf = async (tab) => {
                     }
                 }
 
-                // Special mappings for all data types
                 if (itemValue === null || itemValue === undefined || itemValue === "") {
                     const mappings = {
                         'receipt_invoice_no': ['receipt_invoice_no', 'Receipt_No', 'DocumentNumber'],
@@ -4222,6 +4245,17 @@ const handleBulkSendPdf = async (tab) => {
                     if (!filterVal) return false;
                     const filterStr = String(filterVal).toLowerCase().trim();
                     if (!filterStr) return false;
+                      const exactMatchFields = [
+                    'A1', 'A2', 'A3', 'A4', 'A5',
+                    'Party_Group', 'Party_Nature',
+                    'Delivery_Status', 'imageStatus', 'voucherTypeGet',
+                    'transaction_type', 'PayGroup', 'Status'
+                ];
+
+                if (exactMatchFields.includes(colName)) {
+                    return itemStr === filterStr; // EXACT MATCH
+                }
+                
 
                     if (colName.includes('Phone') || colName === 'Customer_Phone' ||
                         colName === 'Alternate_Phone' || colName === 'Landline_Phone' ||
@@ -4588,7 +4622,7 @@ const handleBulkSendPdf = async (tab) => {
                         </Button>
                     </Tooltip>
                 )} */}
-                {["sale_invoice", "sale_order", "pending_bills","outstanding"].includes(activeTab) && (
+                {["sale_invoice", "sale_order", "pending_bills","outstanding","price_list"].includes(activeTab) && (
     <Tooltip title={`Send PDF to ${selectedCount} selected`}>
         <Button variant="contained" color="error" size="small"
             startIcon={<PictureAsPdf />}
@@ -4843,6 +4877,19 @@ const handleBulkSendPdf = async (tab) => {
                 companyInfo={companyInfo}
                 onReady={stmtCaptureData.onReady}
                 onError={stmtCaptureData.onError}
+            />
+        )}
+    </div>
+</Box>
+
+<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+    <div ref={priceListCaptureRef}>
+        {priceListCaptureData && (
+            <PriceListTemplate
+                row={priceListCaptureData.row}
+                companyInfo={companyInfo}
+                onReady={priceListCaptureData.onReady}
+                onError={priceListCaptureData.onError}
             />
         )}
     </div>
