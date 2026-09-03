@@ -1802,7 +1802,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [whatsappCounts, setWhatsappCounts] = useState({});
     const [countsLoaded, setCountsLoaded] = useState(false);
 
-
+const lolDetailsMapRef = useRef(new Map());
 
     const [sheetsheetData, setSheetsheetData] = useState([]);
         const [sheetsheetDate, setSheetsheetDate] = useState(today);
@@ -2315,8 +2315,13 @@ const sendWhatsAppMessage = useCallback(
             const response = await fetchLink({ address: "masters/getlolDetails" });
             if (response?.success && response.data) {
                 const map = new Map();
-                response.data.forEach((item) => { if (item.A1) map.set(Number(item.Ret_Id), item.A1); });
+                 const detailsMap = new Map();
+                response.data.forEach((item) => {
+                if (item.A1) map.set(Number(item.Ret_Id), item.A1);
+                detailsMap.set(Number(item.Ret_Id), item);
+            });
                 setPhoneMap(map);
+                lolDetailsMapRef.current = detailsMap;
                 setIsPhoneMapLoaded(true);
                 return map;
             }
@@ -2704,10 +2709,11 @@ const buildPendingBillsPdfBlob = (row) =>
             
             if (response?.success && response.data) {
                 const processedData = toArray(response.data).map((item) => {
-                    // Get phone number from retailer mapping
-                    const phone = (phoneMapRef || phoneMap).get(Number(item.Retailer_Id)) || 
-                                item.retailerNameGet?.A1 || 
-                                "Not Available";
+                    
+                     const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
+    const phone = (phoneMapRef || phoneMap).get(Number(item.Retailer_Id)) ||
+                lolRecord.A1 ||
+                "Not Available";
                     
                     return {
                         ...item,
@@ -2716,7 +2722,9 @@ const buildPendingBillsPdfBlob = (row) =>
                         DocumentNumber: item.Do_Inv_No,
                         DocumentDate: item.Do_Date,
                         retailerPhone: phone,
-                        lolA1: phone,
+                        A1: phone,
+                        Party_Mobile_1: lolRecord.Party_Mobile_1 || "",
+                        Party_Mobile_2: lolRecord.Party_Mobile_2 || "",
                         formattedDate: item.Do_Date ? new Date(item.Do_Date).toLocaleDateString("en-GB") : "-",
                         totalBillQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Bill_Qty) || 0), 0),
                         totalActQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Act_Qty) || 0), 0),
@@ -2802,6 +2810,8 @@ const buildPendingBillsPdfBlob = (row) =>
                         DocumentNumber: merged.Acc_Id,
                         retailerNameGet: merged.Retailer_Name || merged.Account_name || detail.Retailer_Name,
                         A1_Phone: merged["A1 - LOL-[19]"]?.trim() || phoneMap.get(Number(merged.Retailer_Id)) || "Not Available",
+                        Party_Mobile_1: merged["Party_Mobile_1 - LOL-[10]"]?.trim() || merged.Party_Mobile_1 || merged["A1 - LOL-[19]"]?.trim() || "",
+                        Party_Mobile_2: merged["Party_Mobile_2 - LOL-[11]"]?.trim() || merged.Party_Mobile_2 || merged["A2 - LOL-[20]"]?.trim() || "",
                         Total_Invoice_value: merged.Bal_Amount || 0,
                         Location: merged["Party_Location - LOL-[5]"] || "",
                         District: merged["Party_District - LOL-[12]"] || "",
@@ -3004,10 +3014,12 @@ const buildPendingBillsPdfBlob = (row) =>
             }
 
             if (sheetsheetResp.status === 'fulfilled' && sheetsheetResp.value?.success) {
-                const sheetsheetDataProcessed = toArray(sheetsheetResp.value.data).map((item) => {
-                    const phone = phoneMapResult.get(Number(item.Retailer_Id)) || 
-                                item.retailerNameGet?.A1 || 
-                                "Not Available";
+                   const sheetsheetDataProcessed = toArray(sheetsheetResp.value.data).map((item) => {
+        const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
+        const phone = phoneMapResult.get(Number(item.Retailer_Id)) ||
+                    lolRecord.A1 ||
+                    "Not Available";
+
                     
                     return {
                         ...item,
@@ -3016,7 +3028,9 @@ const buildPendingBillsPdfBlob = (row) =>
                         DocumentNumber: item.Do_Inv_No,
                         DocumentDate: item.Do_Date,
                         retailerPhone: phone,
-                        lolA1: phone,
+                        A1: phone,
+                         Party_Mobile_1: lolRecord.Party_Mobile_1 || "",
+            Party_Mobile_2: lolRecord.Party_Mobile_2 || "",
                         formattedDate: item.Do_Date ? new Date(item.Do_Date).toLocaleDateString("en-GB") : "-",
                         totalBillQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Bill_Qty) || 0), 0),
                         totalActQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Act_Qty) || 0), 0),
@@ -4119,7 +4133,7 @@ const handleBulkSendPdf = async (tab) => {
                     return false;
                 }
                 
-                return str === searchTerm; // EXACT MATCH
+                return str === searchTerm; 
             });
         });
     }

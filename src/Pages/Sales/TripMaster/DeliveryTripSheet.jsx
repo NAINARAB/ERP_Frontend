@@ -1209,16 +1209,17 @@ const handleSaveRoute = () => {
     });
 
 
-    const uniqueStaffs = useMemo(() => {
-        const allStaffs = tripData.flatMap((trip) =>
-            trip.Employees_Involved.map((staff) => staff.Emp_Name)
-        );
-        return [...new Set(allStaffs)].map((name) => ({
-            value: name,
-            label: name,
-        }));
-    }, [tripData]);
+const uniqueStaffs = useMemo(() => {
 
+    const allStaffs = tripData.flatMap((trip) =>
+        (trip?.Delivery_Staff || []).map((staff) => staff.Emp_Name)
+    );
+    return [...new Set(allStaffs)].map((name) => ({
+        value: name,
+        label: name,
+    }));
+}, [tripData]);
+ 
 
     const uniqueLedgers = useMemo(() => {
         const allLedgers = tripData.flatMap((trip) => {
@@ -1397,7 +1398,10 @@ const handleSaveRoute = () => {
                     selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Delivery Man')?.map(staff => staff?.Emp_Name).join(', ') || '',
                     'Start Time:', selectedRow?.StartTime ? LocalTime(new Date(selectedRow.StartTime)) : '', 'Start KM:', selectedRow?.Trip_ST_KM || ''],
                 ['Trip No:', selectedRow?.Trip_No || '', 'LoadMan:',
-                    selectedRow?.Employees_Involved?.filter(staff => staff?.Cost_Category === 'Load Man')?.map(staff => staff?.Emp_Name).join(', ') || '',
+        (selectedRow?.Delivery_Staff || [])?.filter(staff => 
+            staff?.Emp_Type_Name === 'Load Man' || 
+            staff?.Emp_Type_Name === 'LoadMan'
+        )?.map(staff => staff?.Emp_Name).join(', ') || '',
                     'End Time:', selectedRow?.EndTime ? LocalTime(new Date(selectedRow.EndTime)) : '', 'End KM:', selectedRow?.Trip_EN_KM || ''],
                 []
             );
@@ -1769,14 +1773,13 @@ const handleSaveRoute = () => {
                         isCustomCell: true,
                         Cell: ({ row }) => {
 
-                            const employeesInvolved = Array.isArray(row?.Employees_Involved) ? row.Employees_Involved : [];
+                             const deliveryStaff = Array.isArray(row?.Delivery_Staff) ? row.Delivery_Staff : [];
 
 
-                            const loadMen = employeesInvolved.filter(emp =>
-                                emp?.Cost_Category === "Load Man" ||
-                                emp?.Cost_Category === "LoadMan" ||
-                                emp?.Cost_Center_Type_Id === 4
-                            );
+                             const loadMen = deliveryStaff.filter(emp =>
+            emp?.Emp_Type_Name === "Load Man" ||
+            emp?.Emp_Type_Name === "LoadMan"
+        );
 
 
                             const uniqueNames = [...new Set(loadMen.map(emp => emp.Emp_Name?.trim()).filter(Boolean))];
@@ -2390,10 +2393,12 @@ const handleSaveRoute = () => {
                                         <td>{selectedRow?.Trip_No}</td>
                                         <td>LoadMan</td>
                                         <td>
-                                            {selectedRow?.Employees_Involved?.filter(staff => (
-                                                staff?.Cost_Category === 'Load Man'
-                                            ))?.map(staff => staff?.Emp_Name).join(', ')}
-                                        </td>
+    {/* ✅ FIX 5: Use Delivery_Staff and check Emp_Type_Name */}
+    {(selectedRow?.Delivery_Staff || [])?.filter(staff => (
+        staff?.Emp_Type_Name === 'Load Man' || 
+        staff?.Emp_Type_Name === 'LoadMan'
+    ))?.map(staff => staff?.Emp_Name).join(', ') || 'N/A'}
+</td>
                                         <td>End Time</td>
                                         <td>{selectedRow?.EndTime ? LocalTime(new Date(selectedRow.EndTime)) : ''}</td>
                                         <td>End KM</td>
@@ -2477,6 +2482,7 @@ const handleSaveRoute = () => {
                                         >
                                             Total
                                         </td>
+                                        <td></td>
                                         <td className="border fa-14 fw-bold">
                                             {(() => {
                                                 const totalAltActQty = (selectedRow?.Product_Array || [])
