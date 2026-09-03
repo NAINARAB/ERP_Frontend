@@ -213,7 +213,8 @@ const BatchTraceFlow = lazy(() => import('./Pages/Inventry/BatchManagement/Batch
 const JournalListing = lazy(() => import('./Pages/Journal/JournalMaster/journalList'));
 const JournalCreate = lazy(() => import('./Pages/Journal/JournalMaster/journalCreate'));
 const AccountBalance = lazy(() => import('./Pages/Journal/JournalReport/accountBalance'));
-const AccountTransaction = lazy(() => import('./Pages/Journal/JournalReport/accountTransaction'))
+const AccountTransaction = lazy(() => import('./Pages/Journal/JournalReport/accountTransaction'));
+const VoucherInfo = lazy(() => import('./Pages/Journal/JournalReport/VoucherInfo'));
 
 // -----------------------------------------------------------------------------
 // Purchase
@@ -413,6 +414,7 @@ const RoutingArray = [
     { component: <JournalListing />, path: '/erp/journal/journalList' },
     { component: <JournalCreate />, path: '/erp/journal/journalList/create' },
     { component: <AccountTransaction />, path: '/erp/journal/accountTransaction' },
+    { component: <VoucherInfo />, path: '/erp/journal/voucherInfo' },
 
     // ---------------------------------------------------------------------------
     // ERP - Master
