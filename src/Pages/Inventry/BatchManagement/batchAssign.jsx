@@ -28,42 +28,43 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     Todate={dateFilter.Todate}
                     api={`inventory/batchMaster/materialInward`}
                     postApi='inventory/batchMaster/materialInward'
-                    dateFilter={dateFilter}
-                    setDateFilter={setDateFilter}
-                />
-            )
-        },
-        {
-            name: 'Consumption',
-            component: (
-                <ChooseBatch
-                    loadingOn={loadingOn}
-                    loadingOff={loadingOff}
-                    Fromdate={dateFilter.Fromdate}
-                    Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/consumption`}
-                    postApi='inventory/batchMaster/consumption'
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
                 />
             )
         },
-        {
-            name: 'Production',
-            component: (
-                <UnAssignedJournals
-                    loadingOn={loadingOn}
-                    loadingOff={loadingOff}
-                    Fromdate={dateFilter.Fromdate}
-                    Todate={dateFilter.Todate}
-                    api={`inventory/batchMaster/production`}
-                    postApi='inventory/batchMaster/production'
-                    dateFilter={dateFilter}
-                    setDateFilter={setDateFilter}
-                />
-            )
-        },
+        // {
+        //     name: 'Consumption',
+        //     component: (
+        //         <ChooseBatch
+        //             loadingOn={loadingOn}
+        //             loadingOff={loadingOff}
+        //             Fromdate={dateFilter.Fromdate}
+        //             Todate={dateFilter.Todate}
+        //             api={`inventory/batchMaster/consumption`}
+        //             postApi='inventory/batchMaster/consumption'
+        //             compareGodown={'godownId'}
+        //             dateFilter={dateFilter}
+        //             setDateFilter={setDateFilter}
+        //         />
+        //     )
+        // },
+        // {
+        //     name: 'Production',
+        //     component: (
+        //         <UnAssignedJournals
+        //             loadingOn={loadingOn}
+        //             loadingOff={loadingOff}
+        //             Fromdate={dateFilter.Fromdate}
+        //             Todate={dateFilter.Todate}
+        //             api={`inventory/batchMaster/production`}
+        //             postApi='inventory/batchMaster/production'
+        //             dateFilter={dateFilter}
+        //             setDateFilter={setDateFilter}
+        //         />
+        //     )
+        // },
         {
             name: 'Godown Transfer',
             component: (
@@ -106,6 +107,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     Todate={dateFilter.Todate}
                     api={`inventory/batchMaster/purchase`}
                     postApi='inventory/batchMaster/purchase'
+                    compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
                 />
@@ -121,6 +123,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     Todate={dateFilter.Todate}
                     api={`inventory/batchMaster/creditNote`}
                     postApi='inventory/batchMaster/creditNote'
+                    compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
                 />

@@ -18,7 +18,8 @@ const UnAssignedJournals = ({
     api,
     postApi,
     dateFilter,
-    setDateFilter
+    setDateFilter,
+    compareGodown
 }) => {
     const [journalData, setJournalData] = useState([]);
     const [search, setSearch] = useState({
@@ -210,7 +211,11 @@ const UnAssignedJournals = ({
                         <tbody>
                             {paginated.map((item, iInd) => {
                                 const batchDropDown = batchData.filter(
-                                    batch => isEqualNumber(batch.item_id, item.productId) && toNumber(batch.pendingQuantity) !== 0
+                                    batch => (
+                                        isEqualNumber(batch.item_id, item.productId) && 
+                                        isEqualNumber(batch.godown_id, item[compareGodown]) && 
+                                        toNumber(batch.pendingQuantity) !== 0
+                                    )
                                 ).sort((a, b) => new Date(a.trans_date) - new Date(b.trans_date)).map(batch => ({
                                     value: batch.id,
                                     label: (toNumber(batch.packValue) > 0) ? `${batch.batch}: ${toNumber(batch.pendingQuantity)}(${toNumber(batch.pendingQuantity) / toNumber(batch.packValue)})` : `${batch.batch}: ${toNumber(batch.pendingQuantity)}`,
