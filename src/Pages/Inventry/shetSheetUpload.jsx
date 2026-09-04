@@ -67,7 +67,7 @@ const getFullImageUrl = (imageUrl) => {
     const fullUrl = `${BASE_URL}/${relativePath}`;
     return fullUrl;
   }
-  
+
   const filename = cleaned.split("/").pop();
   if (filename) {
     const fullUrl = `${BASE_URL}/uploads/LRReport/${filename}`;
@@ -195,24 +195,24 @@ const ShetSheetUpload = ({ loadingOn, loadingOff, pageID }) => {
 const filteredData = useMemo(() => {
   return tableData.filter((row) => {
     const matchParty = !filters.Party?.value || row.Retailer_Id === filters.Party.value;
-    
+
     // Match Godown - check if any stock detail has matching godown
     let matchGodown = true;
     if (filters.Godown?.value) {
       const stocks = toArray(row?.stockDetails);
       matchGodown = stocks.some(stock => stock.Godown_Name === filters.Godown.value);
     }
-    
+
     // Match Driver - check if any involved staff matches
     let matchDriver = true;
     if (filters.Driver?.value) {
       const staffs = toArray(row?.involvedStaffs);
-      matchDriver = staffs.some(staff => 
+      matchDriver = staffs.some(staff =>
         (staff.Involved_Emp_Type === "Load Man" || staff.Involved_Emp_Type === "Delivery Man" || staff.Involved_Emp_Type === "Delivery_Person") &&
         staff.Emp_Name === filters.Driver.value
       );
     }
-    
+
     const matchVoucher = !filters.Voucher?.value || row.voucherTypeGet === filters.Voucher.value;
 
     let matchUpload = true;
@@ -220,7 +220,7 @@ const filteredData = useMemo(() => {
       // FIXED: Use imageStatus and Image_Name to determine upload status
       const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
       const isUploaded = row.imageStatus === "uploaded";
-      
+
       if (filters.UploadStatus.value === "yes") {
         matchUpload = hasImage && isUploaded;
       } else if (filters.UploadStatus.value === "no") {
@@ -236,7 +236,7 @@ const filteredData = useMemo(() => {
 
   useEffect(() => {
     const saved = getSessionFiltersByPageId(pageID);
-    const { Fromdate, Todate, Party = defaultFilters.Party, Godown = defaultFilters.Godown, 
+    const { Fromdate, Todate, Party = defaultFilters.Party, Godown = defaultFilters.Godown,
             Driver = defaultFilters.Driver, UploadStatus = defaultFilters.UploadStatus,
             Voucher = defaultFilters.Voucher } = saved;
 
@@ -331,40 +331,23 @@ const filteredData = useMemo(() => {
       .finally(() => { if (loadingOff) loadingOff(); });
   };
 
-  // Dialog helpers
-  // const openUploadDialog = (row) => {
-  //   const hasImage = Boolean(row.Imageurl) && row.Imageurl !== "http://192.168.1.6:9001/imageURL/imageNotFound";
-  //   setUploadForm({
-  //     Id: row?.Id || "",
-  //     Do_Id: row?.Do_Id || "",
-  //     invoiceNo: row?.Do_Inv_No || "",
-  //     partyName: row?.retailerNameGet || "",
-  //     uploadStatus: hasImage ? "uploaded" : "pending",
-  //     uploadFile: null,
-  //     existingFile: row?.Image_Name || "",
-  //     Uploaded_By: localStorage.getItem("userId") || "",
-  //   });
-  //   setDialog((pre) => ({ ...pre, upload: true }));
-  // };
+  const openUploadDialog = (row) => {
+    const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
+    const isUploaded = row.imageStatus == "uploaded";
+    const status = (hasImage && isUploaded) ? "uploaded" : "pending";
 
-const openUploadDialog = (row) => {
-  const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
-  const isUploaded = row.imageStatus == "uploaded";
-  const status = (hasImage && isUploaded) ? "uploaded" : "pending";
-  
-  setUploadForm({
-    Id: row?.Id || "",
-    Do_Id: row?.Do_Id || "",
-    invoiceNo: row?.Do_Inv_No || "",
-    partyName: row?.retailerNameGet || "",
-    uploadStatus: status,
-    uploadFile: null,
-    existingFile: row?.Image_Name || "",
-    Uploaded_By: localStorage.getItem("userId") || "",
-  });
-  setDialog((pre) => ({ ...pre, upload: true }));
-};
-
+    setUploadForm({
+      Id: row?.Id || "",
+      Do_Id: row?.Do_Id || "",
+      invoiceNo: row?.Do_Inv_No || "",
+      partyName: row?.retailerNameGet || "",
+      uploadStatus: status,
+      uploadFile: null,
+      existingFile: row?.Image_Name || "",
+      Uploaded_By: localStorage.getItem("userId") || "",
+    });
+    setDialog((pre) => ({ ...pre, upload: true }));
+  };
 
   const closeUploadDialog = () => {
     setDialog((pre) => ({ ...pre, upload: false }));
@@ -377,7 +360,7 @@ const openUploadDialog = (row) => {
   const DriverCell = ({ row }) => {
     const staffs = toArray(row?.involvedStaffs);
     const driverTypes = staffs.filter(
-      (s) => s.Involved_Emp_Type === "Load Man" || 
+      (s) => s.Involved_Emp_Type === "Load Man" ||
              s.Involved_Emp_Type === "Delivery Man" ||
              s.Involved_Emp_Type === "Delivery_Person"
     );
@@ -397,7 +380,7 @@ const openUploadDialog = (row) => {
 const UploadStatusCell = ({ row }) => {
   const hasImage = Boolean(row.Image_Name && row.Image_Name.trim() !== "");
   const isUploaded = row.imageStatus === "uploaded";
-  
+
   let status = "pending";
   if (hasImage && isUploaded) {
     status = "yes";
@@ -406,7 +389,7 @@ const UploadStatusCell = ({ row }) => {
   } else if (row.imageStatus === "pending" && !hasImage) {
     status = "pending";
   }
-  
+
   const st = uploadStatusBadge[status] || uploadStatusBadge.pending;
   return (
     <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${st.cls}`}>
@@ -428,11 +411,36 @@ const UploadStatusCell = ({ row }) => {
     );
   };
 
+  // ---- LAZY PREVIEW CELL ----
+  // Only renders an icon button initially. The actual image is only
+  // requested/loaded by ImagePreviewDialog once the user clicks the icon,
+  // so no image bytes are fetched on page load / table render.
+  const PreviewCell = ({ row }) => {
+    const Imageurl = row.Imageurl;
+    const isNotFoundImage = Imageurl === "http://192.168.1.6:9001/imageURL/imageNotFound";
+
+    if (!Imageurl || isNotFoundImage) {
+      return <span className="text-muted fa-12">No Image</span>;
+    }
+
+    return (
+      <div className="d-flex align-items-center justify-content-center">
+        <ImagePreviewDialog url={Imageurl}>
+          <Tooltip title="View Image">
+            <IconButton size="small" aria-label={`Preview invoice ${row.Do_Inv_No}`}>
+              <Visibility fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+        </ImagePreviewDialog>
+      </div>
+    );
+  };
+
   return (
     <Card component={Paper}>
       <div className="p-3 pb-1 d-flex align-items-center flex-wrap">
         <h6 className="flex-grow-1 fa-18">Shet Sheet Upload</h6>
-        
+
         <Tooltip title="Refresh">
           <Button
             variant="outlined"
@@ -443,7 +451,7 @@ const UploadStatusCell = ({ row }) => {
             Refresh
           </Button>
         </Tooltip>
-        
+
         <Tooltip title="Filters">
           <IconButton
             size="small"
@@ -493,34 +501,7 @@ const UploadStatusCell = ({ row }) => {
               isVisible: 1,
               align: "center",
               isCustomCell: true,
-              Cell: ({ row }) => {
-                const [imgError, setImgError] = useState(false);
-                const Imageurl = row.Imageurl;
-                const isNotFoundImage = Imageurl === "http://192.168.1.6:9001/imageURL/imageNotFound";
-                
-                if (!Imageurl || imgError || isNotFoundImage) {
-                  return <span className="text-muted fa-12">No Image</span>;
-                }
-                return (
-                  <div className="d-flex align-items-center justify-content-center">
-                    <ImagePreviewDialog url={Imageurl}>
-                      <img
-                        src={Imageurl}
-                        alt={`Invoice ${row.Do_Inv_No}`}
-                        style={{
-                          width: '50px',
-                          height: '50px',
-                          objectFit: 'cover',
-                          borderRadius: '4px',
-                          border: '1px solid #ddd',
-                          cursor: 'pointer'
-                        }}
-                        onError={() => setImgError(true)}
-                      />
-                    </ImagePreviewDialog>
-                  </div>
-                );
-              },
+              Cell: PreviewCell,
             },
             {
               ColumnHeader: "Driver",
