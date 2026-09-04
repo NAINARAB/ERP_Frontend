@@ -1767,31 +1767,27 @@ const uniqueStaffs = useMemo(() => {
                     createCol('Trip_Date', 'date', 'Date'),
                     createCol('Trip_No', 'string'),
                     createCol('Challan_No', 'string', 'Challan'),
-                    {
-                        isVisible: 1,
-                        ColumnHeader: 'Load Man',
-                        isCustomCell: true,
-                        Cell: ({ row }) => {
-
-                             const deliveryStaff = Array.isArray(row?.Delivery_Staff) ? row.Delivery_Staff : [];
-
-
-                             const loadMen = deliveryStaff.filter(emp =>
-            emp?.Emp_Type_Name === "Load Man" ||
-            emp?.Emp_Type_Name === "LoadMan"
+                           {
+    isVisible: 1,
+    ColumnHeader: 'Load Man',
+    isCustomCell: true,
+    Cell: ({ row }) => {
+ 
+         const deliveryStaff = Array.isArray(row?.Delivery_Staff) ? row.Delivery_Staff : [];
+ 
+         const loadMen = deliveryStaff.filter(emp =>
+            emp?.Cost_Category === "Load Man"
         );
-
-
-                            const uniqueNames = [...new Set(loadMen.map(emp => emp.Emp_Name?.trim()).filter(Boolean))];
-
-
-                            const loadManNames = uniqueNames.join(', ');
-
-                            return (
-                                <span className="cus-badge bg-light">{loadManNames || 'N/A'}</span>
-                            )
-                        }
-                    },
+ 
+        const uniqueNames = [...new Set(loadMen.map(emp => emp.Emp_Name?.trim()).filter(Boolean))];
+ 
+        const loadManNames = uniqueNames.join(', ');
+ 
+        return (
+            <span className="cus-badge bg-light">{loadManNames || 'N/A'}</span>
+        )
+    }
+},
                     createCol('Vehicle_No', 'string', 'Vehicle'),
                     createCol('StartTime', 'time', 'Start Time'),
                     createCol('EndTime', 'time', 'End Time'),
@@ -2393,10 +2389,10 @@ const uniqueStaffs = useMemo(() => {
                                         <td>{selectedRow?.Trip_No}</td>
                                         <td>LoadMan</td>
                                         <td>
-    {/* ✅ FIX 5: Use Delivery_Staff and check Emp_Type_Name */}
+    
     {(selectedRow?.Delivery_Staff || [])?.filter(staff => (
-        staff?.Emp_Type_Name === 'Load Man' || 
-        staff?.Emp_Type_Name === 'LoadMan'
+        staff?.Cost_Category === 'Load Man' || 
+        staff?.Cost_Category === 'LoadMan'
     ))?.map(staff => staff?.Emp_Name).join(', ') || 'N/A'}
 </td>
                                         <td>End Time</td>
