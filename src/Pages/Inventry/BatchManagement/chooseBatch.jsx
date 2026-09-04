@@ -98,10 +98,10 @@ const ChooseBatch = ({
             );
 
             if (index === -1) {
-                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.batchAliasString || '', batch_id: e?.__isNew__ ? '' : e?.value || '' });
+                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.batchAliasString || e?.value || '', batch_id: e?.__isNew__ ? '' : e?.value || '' });
             } else {
                 newInputs[index].batch = e?.batchIdString || e?.value || '';
-                newInputs[index].batch_alias = e?.batchAliasString || '';
+                newInputs[index].batch_alias = e?.batchAliasString || e?.value || '';
                 newInputs[index].batch_id = e?.__isNew__ ? '' : e?.value || '';
             }
             return newInputs.filter(item => String(item?.batch).length > 0);
@@ -173,7 +173,7 @@ const ChooseBatch = ({
         setInputs(journalData.map(item => ({
             ...item,
             batch: e?.batchIdString || e?.value || '',
-            batch_alias: e?.batchAliasString || '',
+            batch_alias: e?.batchAliasString || e?.value || '',
             id: e?.__isNew__ ? '' : e?.value || ''
         })))
     }

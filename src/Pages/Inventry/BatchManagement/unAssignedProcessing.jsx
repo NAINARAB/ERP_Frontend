@@ -164,7 +164,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
             }
 
             const isExisting = !!e?.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : rowObj.suggestBatchName || e?.value || '';
+            const batchVal = isExisting ? e.batchIdString : e?.value || rowObj.suggestBatchName || '';
             const aliasVal = isExisting ? e.batchAliasString : e?.value || '';
             const idVal = isExisting ? e.value : '';
 

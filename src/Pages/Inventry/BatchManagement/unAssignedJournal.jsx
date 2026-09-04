@@ -101,7 +101,7 @@ const UnAssignedJournals = ({
             }
 
             const isExisting = !!e?.batchIdString;
-            const batchVal = isExisting ? e.batchIdString : row.suggestBatchName || '';
+            const batchVal = isExisting ? e.batchIdString : e?.value || row.suggestBatchName || '';
             const aliasVal = isExisting ? e.batchAliasString : e?.value || '';
             const idVal = isExisting ? e.value : '';
 
