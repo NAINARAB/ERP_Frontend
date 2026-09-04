@@ -2343,10 +2343,26 @@ const sendWhatsAppMessage = useCallback(
 
     const generatePdfBlobFromElement = async (element) => {
         if (!element) throw new Error("Nothing to render — capture element is empty");
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL("image/png");
+        // const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+          const canvas = await html2canvas(element, { 
+        scale: 1,                
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false
+    });
+        // const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.85); 
 
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        // const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+    const pdf = new jsPDF({ 
+        orientation: "portrait", 
+        unit: "mm", 
+        format: "a4",
+        compress: true              
+    });
+
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgWidth = pageWidth;
@@ -2355,7 +2371,8 @@ const sendWhatsAppMessage = useCallback(
         let heightLeft = imgHeight;
         let position = 0;
 
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        // pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+         pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
         while (heightLeft > 0) {
