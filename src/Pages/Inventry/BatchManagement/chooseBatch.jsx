@@ -200,7 +200,6 @@ const ChooseBatch = ({
                                 ...batchDropdownData
                             ]}
                             menuPortalTarget={document.body}
-                            isDisabled={batchDropdownData.length === 0}
                             onChange={onChangeSelect}
                             styles={customSelectStyles}
                             isSearchable={true}
