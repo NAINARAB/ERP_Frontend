@@ -26,7 +26,8 @@ const defaultFilters = {
     CreatedBy: { value: '', label: 'ALL' },
     SalesPerson: { value: '', label: 'ALL' },
     VoucherType: { value: '', label: 'ALL' },
-    Cancel_status: ''
+    Cancel_status: '',
+    withProduct: ''
 };
 
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
@@ -92,13 +93,14 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
             CreatedBy = defaultFilters.CreatedBy,
             SalesPerson = defaultFilters.SalesPerson,
             Cancel_status = defaultFilters.Cancel_status,
+            withProduct = defaultFilters.withProduct,
         } = otherSessionFiler;
 
         setFilters(pre => ({
             ...pre,
             Fromdate: Fromdate || defaultFilters.Fromdate,
             Todate: Todate || defaultFilters.Todate,
-            Retailer, VoucherType, CreatedBy, SalesPerson, Cancel_status
+            Retailer, VoucherType, CreatedBy, SalesPerson, Cancel_status, withProduct
         }));
 
     }, [sessionValue, pageID]);
@@ -111,11 +113,12 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
             Retailer = defaultFilters.Retailer,
             VoucherType = defaultFilters.VoucherType,
             CreatedBy = defaultFilters.CreatedBy,
-            Cancel_status = defaultFilters.Cancel_status
+            Cancel_status = defaultFilters.Cancel_status,
+            withProduct = defaultFilters.withProduct
         } = otherSessionFiler;
 
         fetchLink({
-            address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${VoucherType?.value || ''}&Cancel_status=${Cancel_status}`,
+            address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${VoucherType?.value || ''}&Cancel_status=${Cancel_status}&withProduct=${withProduct}`,
             loadingOn,
             loadingOff
         }).then(data => {
@@ -523,6 +526,25 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                 </tr>
 
                                 <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Product Details</td>
+                                    <td>
+                                        <select
+                                            value={filters.withProduct}
+                                            onChange={e => setFilters({ ...filters, withProduct: e.target.value })}
+                                            className="cus-inpt"
+                                        >
+                                            <option value={''}>All</option>
+                                            {[
+                                                { id: 1, label: 'Only With Product' },
+                                                { id: 2, label: 'Without Product' },
+                                            ].map((sts, ind) => (
+                                                <option value={sts.id} key={ind}>{sts.label}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
+
+                                <tr>
                                     <td style={{ verticalAlign: 'middle' }}>Created By</td>
                                     <td>
                                         <Select
@@ -557,6 +579,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                 CreatedBy: filters.CreatedBy,
                                 VoucherType: filters.VoucherType,
                                 Cancel_status: filters.Cancel_status,
+                                withProduct: filters.withProduct,
                             });
                         }}
                         startIcon={<Search />}

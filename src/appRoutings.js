@@ -215,6 +215,7 @@ const JournalCreate = lazy(() => import('./Pages/Journal/JournalMaster/journalCr
 const AccountBalance = lazy(() => import('./Pages/Journal/JournalReport/accountBalance'));
 const AccountTransaction = lazy(() => import('./Pages/Journal/JournalReport/accountTransaction'));
 const VoucherInfo = lazy(() => import('./Pages/Journal/JournalReport/VoucherInfo'));
+const OverallPartyOutstandings = lazy(() => import('./Pages/Journal/JournalReport/OverallPartyOutstandings'));
 
 // -----------------------------------------------------------------------------
 // Purchase
@@ -415,6 +416,7 @@ const RoutingArray = [
     { component: <JournalCreate />, path: '/erp/journal/journalList/create' },
     { component: <AccountTransaction />, path: '/erp/journal/accountTransaction' },
     { component: <VoucherInfo />, path: '/erp/journal/voucherInfo' },
+    { component: <OverallPartyOutstandings />, path: '/erp/journal/overallPartyOutstandings' },
 
     // ---------------------------------------------------------------------------
     // ERP - Master
