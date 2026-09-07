@@ -4,6 +4,9 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import { NumberFormat } from '../../../Components/functions';
 import AppDialog from '../../../Components/appDialogComponent';
 import AccountBalance from './accountBalance';
+import { IconButton } from '@mui/material';
+import { ArrowRightAlt, KeyboardArrowRight } from '@mui/icons-material';
+import AppTableComponent from '../../../Components/appTable/appTableComponent';
 
 const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
     const [reportData, setReportData] = useState([]);
@@ -31,20 +34,20 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
             ColumnHeader: 'Action',
             isCustomCell: true,
             Cell: ({ row }) => (
-                <button
-                    className="btn btn-sm btn-outline-info"
+                <IconButton
                     onClick={() => setSelectedParty(row)}
                     title="View Details"
+                    color='primary' size='small'
                 >
-                    <i className="fa fa-info-circle"></i>
-                </button>
+                    <KeyboardArrowRight />
+                </IconButton>
             )
         }
     ];
 
     return (
         <>
-            <FilterableTable
+            <AppTableComponent
                 title='Overall Party Outstandings'
                 headerFontSizePx={12}
                 bodyFontSizePx={12}
@@ -53,6 +56,9 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
                 PDFPrintOption
                 dataArray={reportData}
                 columns={columns}
+                enableGlobalSearch={true}
+                stateUrl='/erp/journal/overallPartyOutstandings'
+                stateGroup='overallPartyOutstanding'
             />
 
             <AppDialog
