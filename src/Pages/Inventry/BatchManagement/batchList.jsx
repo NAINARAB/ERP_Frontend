@@ -4,9 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchLink } from "../../../Components/fetchComponent";
 import { isEqualNumber, ISOString, stringCompare } from '../../../Components/functions'
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
-import AppDialog from '../../../Components/appDialogComponent';
 import { Dialog, DialogContent, DialogActions, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
-import { AutoGraph, FilterAlt, QueryStats, Search, Warehouse } from "@mui/icons-material";
+import { FilterAlt, QueryStats, Search, Warehouse } from "@mui/icons-material";
 import { batchListingColumns } from "./variable";
 const IN_MODULES = ["PURCHASE", "PRODUCTION", "CREDIT_NOTE", "MATERIAL_INWARD"];
 const OUT_MODULES = ["SALES", "CONSUMPTION", "DEBIT_NOTE", "OTHER_GODOWN"];
@@ -86,7 +85,7 @@ const BatchSummaryExpander = ({ row }) => {
     );
 };
 
-const BatchListing = ({ loadingOn, loadingOff }) => {
+const BatchListing = ({ loadingOn, loadingOff, ReadRights, EditRights, PrintRights, DeleteRights }) => {
     const navigate = useNavigate();
     const [dataArray, setDataArray] = useState([]);
     const [dateFilter, setDateFilter] = useState({

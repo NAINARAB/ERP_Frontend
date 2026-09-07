@@ -24,7 +24,9 @@ const ProductionOfProcessing = ({
     uom = [],
     godown = [],
     batchData = [],
+    PrintRights
 }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
 
     const addRow = () => {
         setDestinationList((prev) => [
@@ -239,7 +241,7 @@ const ProductionOfProcessing = ({
                                             } : null;
 
                                             return (
-                                                <CreatableSelect
+                                                <SelectComponent
                                                     isDisabled={!checkIsNumber(row.Dest_Goodown_Id, 1)}
                                                     isClearable
                                                     placeholder="Batch"

@@ -19,8 +19,10 @@ const ChooseBatch = ({
     postApi,
     compareGodown,
     dateFilter,
-    setDateFilter
+    setDateFilter,
+    PrintRights
 }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
 
     const [journalData, setJournalData] = useState([]);
     const [batchData, setBatchData] = useState([]);
@@ -193,7 +195,7 @@ const ChooseBatch = ({
                     ><FilterAlt /></IconButton>
 
                     <div style={{ minWidth: '300px' }}>
-                        <CreatableSelect
+                        <SelectComponent
                             value={bulkSelect}
                             options={[
                                 { value: '', label: 'select' },
@@ -261,7 +263,7 @@ const ChooseBatch = ({
                                             )
                                         )}
                                         <td className="vctr fa-12 p-0">
-                                            <CreatableSelect
+                                            <SelectComponent
                                                 value={{
                                                     value: inputs.find(input =>
                                                         isEqualNumber(input.uniquId, item.uniquId))?.batch_id ||

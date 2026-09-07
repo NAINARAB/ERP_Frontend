@@ -33,7 +33,8 @@ const getDistinct = (
 };
 
 
-const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
+const TripSheetGodownSearch = ({ loadingOn, loadingOff, PrintRights }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
     const location = useLocation();
     const stateDetails = location.state;
 
@@ -482,7 +483,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                 isCustomCell: true,
                                 Cell: ({ row }) => (
                                     <div style={{ minWidth: '150px' }}>
-                                        <CreatableSelect
+                                        <SelectComponent
                                             value={row?.Batch_No ? {
                                                 value: row.Batch_Id || row.Batch_No,
                                                 label: row.Batch_Id ? row.Batch_No : (row.Batch_Alias || row.Batch_No)
@@ -697,7 +698,7 @@ const TripSheetGodownSearch = ({ loadingOn, loadingOff }) => {
                                             <td className='fa-12'>{arrival?.QTY}</td>
                                             <td className='fa-12'>
                                                 {/* {arrival?.Batch_No} */}
-                                                <CreatableSelect
+                                                <SelectComponent
                                                     value={batchValue?.Batch_No ? {
                                                         value: batchValue.Batch_Id || batchValue.Batch_No,
                                                         label: batchValue.Batch_Id ? batchValue.Batch_No : (batchValue.Batch_Alias || batchValue.Batch_No)

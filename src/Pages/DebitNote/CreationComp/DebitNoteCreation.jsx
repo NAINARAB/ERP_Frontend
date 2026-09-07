@@ -23,7 +23,7 @@ import AddProductFormDebitNote from "./addProducts";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const CreateDebitNote = ({ loadingOn, loadingOff }) => {
+const CreateDebitNote = ({ loadingOn, loadingOff, PrintRights }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
@@ -456,6 +456,7 @@ const CreateDebitNote = ({ loadingOn, loadingOff }) => {
                 editValues={selectedProductToEdit}
                 initialValue={{ ...debitNoteDetailsInfo, rowId: rid() }}
                 batchDetails={baseData.batchDetails}
+                PrintRights={PrintRights}
             />
 
             <Card>

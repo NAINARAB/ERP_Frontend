@@ -18,7 +18,9 @@ const SourceItems = memo(function SourceItems({
     godown,
     changeSourceValue,
     removeRow,
+    PrintRights
 }) {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
     const [batchDetails, setBatchDetails] = useState([]);
 
     useEffect(() => {
@@ -108,7 +110,7 @@ const SourceItems = memo(function SourceItems({
             </td>
 
             <td className='fa-13 p-0' style={{ minWidth: '200px' }}>
-                <CreatableSelect
+                <SelectComponent
                     value={{ value: row?.Sour_Batch_Lot_No, label: row?.Sour_Batch_Lot_No }}
                     onChange={e => {
                         const selectedBatch = batchDetails.find(b => b.id === e.value);
@@ -158,6 +160,7 @@ const ConsumptionOfProcessing = ({
     products = [],
     uom = [],
     godown = [],
+    PrintRights
 }) => {
 
     const changeSourceValue = (rowIndex, key, value) => {
@@ -270,6 +273,7 @@ const ConsumptionOfProcessing = ({
                                 uom={uom}
                                 godown={godown}
                                 changeSourceValue={changeSourceValue}
+                                PrintRights={PrintRights}
                                 removeRow={() =>
                                     setSourceList(list => list.filter((_, i) => i !== index))
                                 }

@@ -24,7 +24,9 @@ const AddItemsDialog = ({
     IS_IGST,
     editValues = null,
     initialValue = {},
+    PrintRights
 }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
 
     const [productDetails, setProductDetails] = useState(initialValue);
 
@@ -449,7 +451,7 @@ const AddItemsDialog = ({
                             {/* Batch */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Batch</label>
-                                <CreatableSelect
+                                <SelectComponent
                                     value={{
                                         value: productDetails.Batch_No || '',
                                         label: productDetails.Batch_No || ''

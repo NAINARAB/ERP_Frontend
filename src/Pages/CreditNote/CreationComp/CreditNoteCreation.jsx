@@ -24,7 +24,7 @@ import AddProductFormCreditNote from "./addProducts";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const CreateCreditNote = ({ loadingOn, loadingOff }) => {
+const CreateCreditNote = ({ loadingOn, loadingOff, PrintRights }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
@@ -456,6 +456,7 @@ const CreateCreditNote = ({ loadingOn, loadingOff }) => {
                 editValues={selectedProductToEdit}
                 initialValue={{ ...creditNoteDetailsInfo, rowId: rid() }}
                 batchDetails={baseData.batchDetails}
+                PrintRights={PrintRights}
             />
 
             <Card>

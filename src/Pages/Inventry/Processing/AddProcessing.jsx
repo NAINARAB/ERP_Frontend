@@ -17,7 +17,7 @@ import { initialStockJournalInfoValues, initialDestinationValue, initialSoruceVa
 import ConsumptionOfProcessing from './addProcessingComp/consumption'
 import ProductionOfProcessing from "./addProcessingComp/production";
 
-const StockManagementCreate = ({ loadingOn, loadingOff }) => {
+const StockManagementCreate = ({ loadingOn, loadingOff, PrintRights }) => {
     const location = useLocation();
     const stateDetails = location.state;
     const [baseData, setBaseData] = useState({
@@ -514,6 +514,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                 products={toArray(baseData?.products)}
                                 uom={toArray(baseData?.uom)}
                                 godown={toArray(baseData?.godown)}
+                                PrintRights={PrintRights}
                             />
 
                             {/* Destination Entry */}
@@ -524,6 +525,7 @@ const StockManagementCreate = ({ loadingOn, loadingOff }) => {
                                 uom={toArray(baseData?.uom)}
                                 godown={toArray(baseData?.godown)}
                                 batchData={toArray(baseData?.batchData)}
+                                PrintRights={PrintRights}
                             />
 
                         </div>

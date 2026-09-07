@@ -8,14 +8,14 @@ import { Search } from '@mui/icons-material';
 import UnAssignedJournals from './unAssignedJournal';
 import ChooseBatch from './chooseBatch';
 
-const BatchAssign = ({ loadingOn, loadingOff }) => {
+const BatchAssign = ({ loadingOn, loadingOff, PrintRights }) => {
     const [tabValue, setTabValue] = useState(1);
     const [dateFilter, setDateFilter] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
         FilterFromDate: ISOString(),
         FilterTodate: ISOString(),
-    })
+    });
 
     const tabData = [
         {
@@ -31,6 +31,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },
@@ -78,6 +79,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'fromGodownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },
@@ -94,6 +96,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },
@@ -110,6 +113,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },
@@ -126,6 +130,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },
@@ -142,6 +147,7 @@ const BatchAssign = ({ loadingOn, loadingOff }) => {
                     compareGodown={'godownId'}
                     dateFilter={dateFilter}
                     setDateFilter={setDateFilter}
+                    PrintRights={PrintRights}
                 />
             )
         },

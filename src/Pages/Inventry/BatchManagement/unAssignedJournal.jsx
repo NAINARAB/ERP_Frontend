@@ -19,8 +19,11 @@ const UnAssignedJournals = ({
     postApi,
     dateFilter,
     setDateFilter,
-    compareGodown
+    compareGodown,
+    PrintRights
 }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
+
     const [journalData, setJournalData] = useState([]);
     const [search, setSearch] = useState({
         item: { value: '', label: 'select' },
@@ -239,7 +242,7 @@ const UnAssignedJournals = ({
                                     )}
                                     <td className="vctr fa-12 p-0">
                                         <div style={{ minWidth: '150px' }}>
-                                            <CreatableSelect
+                                            <SelectComponent
                                                 isClearable
                                                 placeholder={item?.suggestBatchName || '...'}
                                                 options={batchDropDown}

@@ -72,7 +72,8 @@ const transformStockJournalData = (data) => {
     return transformedData;
 };
 
-const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
+const UnAssignedProcessing = ({ loadingOn, loadingOff, PrintRights }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
     const [responseData, setResponseData] = useState([]);
     const [batchData, setBatchData] = useState([]);
     const [dateFilter, setDateFilter] = useState({
@@ -285,7 +286,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
 
                 return (
                     <div style={{ minWidth: '150px' }}>
-                        <CreatableSelect
+                        <SelectComponent
                             isClearable
                             options={sDropDown}
                             value={val ? { value: val.batch_id || val.batch, label: val.batch_id ? val.batch : (val.batch_alias || val.batch) } : null}
@@ -330,7 +331,7 @@ const UnAssignedProcessing = ({ loadingOn, loadingOff }) => {
 
                 return (
                     <div style={{ minWidth: '150px' }}>
-                        <CreatableSelect
+                        <SelectComponent
                             isClearable
                             placeholder={destObj.suggestBatchName || '...'}
                             options={dDropDown}

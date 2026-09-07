@@ -36,7 +36,9 @@ const AddProductForm = ({
     editValues = null,
     initialValue = {},
     batchDetails = [],
+    PrintRights
 }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
 
     const [productDetails, setProductDetails] = useState(initialValue);
 
@@ -528,7 +530,7 @@ const AddProductForm = ({
                             {/* Batch */}
                             <div className="col-lg-4 col-md-6 p-2">
                                 <label>Batch</label>
-                                <CreatableSelect
+                                <SelectComponent
                                     value={{
                                         value: productDetails?.Batch_Name || '',
                                         label: productDetails?.Batch_Name || ''

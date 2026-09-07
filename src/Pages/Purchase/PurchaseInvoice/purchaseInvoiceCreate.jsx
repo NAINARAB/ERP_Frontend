@@ -23,7 +23,8 @@ const dialogs = {
     selectArrivalDialog: false
 }
 
-const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
+const PurchaseInvoiceManagement = ({ loadingOn, loadingOff, PrintRights }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
     const location = useLocation();
     const navigation = useNavigate();
     const stateDetails = location.state;
@@ -486,6 +487,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                 editValues={selectedProductToEdit}
                 initialValue={itemsRowDetails}
                 stockInGodown={[]}
+                PrintRights={PrintRights}
             />
 
             <form onSubmit={e => {
@@ -655,7 +657,7 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff }) => {
                                             </td>
                                             <td className={tdStyle}>
                                                 <div style={{minWidth: '200px'}}>
-                                                    <CreatableSelect
+                                                    <SelectComponent
                                                         value={{
                                                             value: row?.Batch_No || '',
                                                             label: row?.Batch_No || ''

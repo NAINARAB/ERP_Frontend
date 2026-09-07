@@ -39,7 +39,8 @@ import { useCallback } from "react";
 
 const findProductDetails = (arr = [], productid) => arr.find(obj => isEqualNumber(obj.Product_Id, productid)) ?? {};
 
-const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
+const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) => {
+    const SelectComponent = PrintRights ? CreatableSelect : Select;
     const navigate = useNavigate();
     const location = useLocation();
     const editValues = location.state;
@@ -1058,8 +1059,11 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                     ...salesInvoiceDetailsInfo,
                     Pre_Id: invoiceInfo.So_No,
                     rowId: rid(),
+                    IS_IGST: IS_IGST,
+                    GoDown_Id: Number(commonGodown.GoDown_Id)
                 }}
                 batchDetails={baseData.batchDetails}
+                PrintRights={PrintRights}
                 saleOrderNumber={toNumber(invoiceInfo.So_No)}
                 voucherType={invoiceInfo}
             />
@@ -1423,7 +1427,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading }) => {
                                                 />
                                             </td>
                                             <td className={tdStyle} style={{ minWidth: 200 }}>
-                                                <CreatableSelect
+                                                <SelectComponent
                                                     value={{
                                                         value: row?.Batch_Name || '',
                                                         label: row?.Batch_Name || ''
