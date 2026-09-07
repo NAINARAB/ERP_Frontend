@@ -19,7 +19,6 @@ import { Close } from "@mui/icons-material";
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
 
-// ---- Pack_Qty divided-display helpers ----
 const QTY_FIELD_PATTERN = /qty/i;
 const EXCLUDED_QTY_FIELDS = ["Pack_Qty"];
 
@@ -54,7 +53,8 @@ const ItemWiseStockReport = ({
     groupingOption = true,
     reportName = "",
     url = "",
-    commonFilters = { stockItemName: '', gradeItemGroup: '', itemNameModified: '' },
+  
+    commonFilters = { stockItemName: null, gradeItemGroup: null, itemNameModified: null },
 }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
@@ -162,8 +162,9 @@ const ItemWiseStockReport = ({
 
     const showData = useMemo(() => {
         const hasColumnFilters = Object.keys(filters).length > 0;
+        // ✅ CHANGE 2: Update check to handle null values
         const hasCommonFilters = Object.values(commonFilters || {}).some(
-            (value) => String(value ?? '').trim() !== ''
+            (value) => value !== null && value !== undefined && String(value).trim() !== ''
         );
         const grouping = Boolean(groupBy);
 
@@ -227,11 +228,13 @@ const ItemWiseStockReport = ({
         }));
     };
 
+    // ✅ CHANGE 3: Updated applyFilters to handle null values from dropdowns
     const applyFilters = () => {
         let filtered = [...reportData];
 
         const normalizeValue = (value) => String(value ?? '').toLowerCase().trim();
 
+        // Stock Item Name filter - now works with null or string
         if (commonFilters?.stockItemName) {
             const stockItemSearch = normalizeValue(commonFilters.stockItemName);
             filtered = filtered.filter((item) =>
@@ -240,6 +243,7 @@ const ItemWiseStockReport = ({
             );
         }
 
+        // Grade Item Group filter - now works with null or string
         if (commonFilters?.gradeItemGroup) {
             const gradeSearch = normalizeValue(commonFilters.gradeItemGroup);
             filtered = filtered.filter((item) =>
@@ -248,6 +252,7 @@ const ItemWiseStockReport = ({
             );
         }
 
+        // Item Name Modified filter - now works with null or string
         if (commonFilters?.itemNameModified) {
             const modifiedSearch = normalizeValue(commonFilters.itemNameModified);
             filtered = filtered.filter((item) =>
@@ -256,6 +261,7 @@ const ItemWiseStockReport = ({
             );
         }
 
+        // Apply column-specific filters
         for (const column of sortedColumns) {
             if (filters[column.Field_Name]) {
                 if (filters[column.Field_Name].type === "range") {
