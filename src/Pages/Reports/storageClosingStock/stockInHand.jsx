@@ -1,12 +1,18 @@
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import { Box, IconButton, Tab } from "@mui/material";
-import { useState } from "react";
+import { Box, IconButton, Tab, Autocomplete, TextField, Chip } from "@mui/material";
+import { useState, useEffect } from "react";
 import { ISOString } from '../../../Components/functions';
 import { Search } from '@mui/icons-material';
 import ItemWiseStockReport from './itemWise';
 import { storageStockColumnsForItemWise, storageStockColumnsForGodownWise } from './variable';
+import { fetchLink } from "../../../Components/fetchComponent";
+import {
+     toArray
+} from "../../../Components/functions";
+
+
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
@@ -21,6 +27,59 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
         gradeItemGroup: '',
         itemNameModified: '',
     });
+    // State for dropdown options
+    const [filterOptions, setFilterOptions] = useState({
+        stockItemNames: [],
+        gradeItemGroups: [],
+        itemNameModifieds: [],
+    });
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+    // Fetch data to populate dropdown options
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch item wise data
+                const response = await fetchLink({
+                    address: `reports/storageStock/itemWise?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`,
+                });
+                
+                if (response.success) {
+                    const data = toArray(response.data);
+                    
+                    // Extract distinct values for each filter
+                    const stockItems = new Set();
+                    const gradeGroups = new Set();
+                    const itemModifieds = new Set();
+                    
+                    data.forEach(item => {
+                        // Stock Item Name
+                        const stockName = item?.stock_item_name || item?.Item_Name_Modified || item?.Stock_Item;
+                        if (stockName) stockItems.add(stockName);
+                        
+                        // Grade Item Group
+                        const grade = item?.Grade_Item_Group || item?.Grade_Item_Group_Name || item?.Grade_Group;
+                        if (grade) gradeGroups.add(grade);
+                        
+                        // Item Name Modified
+                        const modified = item?.Item_Name_Modified || item?.Item_Name || item?.stock_item_name;
+                        if (modified) itemModifieds.add(modified);
+                    });
+                    
+                    setFilterOptions({
+                        stockItemNames: Array.from(stockItems).sort(),
+                        gradeItemGroups: Array.from(gradeGroups).sort(),
+                        itemNameModifieds: Array.from(itemModifieds).sort(),
+                    });
+                    setIsDataLoaded(true);
+                }
+            } catch (error) {
+                console.error("Error fetching filter options:", error);
+            }
+        };
+        
+        fetchData();
+    }, [dateFilter.Fromdate, dateFilter.Todate]);
 
     const updateCommonFilter = (key, value) => {
         setCommonFilters((pre) => ({ ...pre, [key]: value }));
@@ -66,7 +125,6 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
 
     return (
         <>
-
             <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
                 <label htmlFor="from" className='me-1 fw-bold '>Fromdate: </label>
                 <input
@@ -93,38 +151,134 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     }))}
                 ><Search /></IconButton>
 
+                {/* Stock Item Name - Autocomplete */}
                 <label htmlFor="stock-item-name" className='me-1 fw-bold '>Stock Item Name: </label>
-                <input
+                <Autocomplete
                     id='stock-item-name'
-                    className='cus-inpt p-2 w-auto'
-                    value={commonFilters.stockItemName}
-                    onChange={(e) => updateCommonFilter('stockItemName', e.target.value)}
-                    placeholder='Search stock item'
+                    options={filterOptions.stockItemNames}
+                    value={commonFilters.stockItemName || ''}
+                    onChange={(event, newValue) => {
+                        updateCommonFilter('stockItemName', newValue || '');
+                    }}
+                    onInputChange={(event, newInputValue) => {
+                        // Allow typing to search
+                        if (event && event.type === 'change') {
+                            // Don't update on every keystroke, only on selection
+                        }
+                    }}
+                    freeSolo
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            placeholder="Search stock item"
+                            size="small"
+                            sx={{ minWidth: 200 }}
+                        />
+                    )}
+                    filterOptions={(options, state) => {
+                        const inputValue = state.inputValue.toLowerCase().trim();
+                        if (!inputValue) return options;
+                        return options.filter(option =>
+                            option?.toLowerCase()?.includes(inputValue)
+                        );
+                    }}
+                    renderOption={(props, option) => (
+                        <li {...props}>
+                            {option}
+                        </li>
+                    )}
+                    isOptionEqualToValue={(option, value) => option === value}
+                    ListboxProps={{
+                        style: { maxHeight: 200 }
+                    }}
                 />
 
+                {/* Grade Item Group - Autocomplete */}
                 <label htmlFor="grade-item-group" className='me-1 fw-bold '>Grade Item Group: </label>
-                <input
+                <Autocomplete
                     id='grade-item-group'
-                    className='cus-inpt p-2 w-auto'
-                    value={commonFilters.gradeItemGroup}
-                    onChange={(e) => updateCommonFilter('gradeItemGroup', e.target.value)}
-                    placeholder='Search grade group'
+                    options={filterOptions.gradeItemGroups}
+                    value={commonFilters.gradeItemGroup || ''}
+                    onChange={(event, newValue) => {
+                        updateCommonFilter('gradeItemGroup', newValue || '');
+                    }}
+                    freeSolo
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            placeholder="Search grade group"
+                            size="small"
+                            sx={{ minWidth: 200 }}
+                        />
+                    )}
+                    filterOptions={(options, state) => {
+                        const inputValue = state.inputValue.toLowerCase().trim();
+                        if (!inputValue) return options;
+                        return options.filter(option =>
+                            option?.toLowerCase()?.includes(inputValue)
+                        );
+                    }}
+                    renderOption={(props, option) => (
+                        <li {...props}>
+                            {option}
+                        </li>
+                    )}
+                    isOptionEqualToValue={(option, value) => option === value}
+                    ListboxProps={{
+                        style: { maxHeight: 200 }
+                    }}
                 />
 
+                {/* Item Name Modified - Autocomplete */}
                 <label htmlFor="item-name-modified" className='me-1 fw-bold '>Item Name Modified: </label>
-                <input
+                <Autocomplete
                     id='item-name-modified'
-                    className='cus-inpt p-2 w-auto'
-                    value={commonFilters.itemNameModified}
-                    onChange={(e) => updateCommonFilter('itemNameModified', e.target.value)}
-                    placeholder='Search item modified'
+                    options={filterOptions.itemNameModifieds}
+                    value={commonFilters.itemNameModified || ''}
+                    onChange={(event, newValue) => {
+                        updateCommonFilter('itemNameModified', newValue || '');
+                    }}
+                    freeSolo
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            placeholder="Search item modified"
+                            size="small"
+                            sx={{ minWidth: 200 }}
+                        />
+                    )}
+                    filterOptions={(options, state) => {
+                        const inputValue = state.inputValue.toLowerCase().trim();
+                        if (!inputValue) return options;
+                        return options.filter(option =>
+                            option?.toLowerCase()?.includes(inputValue)
+                        );
+                    }}
+                    renderOption={(props, option) => (
+                        <li {...props}>
+                            {option}
+                        </li>
+                    )}
+                    isOptionEqualToValue={(option, value) => option === value}
+                    ListboxProps={{
+                        style: { maxHeight: 200 }
+                    }}
                 />
             </div>
 
             <TabContext value={tabValue}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList
-                        indicatorColor='transparant'
+                        indicatorColor='transparent'
                         onChange={(e, n) => setTabValue(n)}
                         variant='scrollable'
                         scrollButtons="auto"
@@ -147,7 +301,6 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                         {tab.component}
                     </TabPanel>
                 ))}
-
             </TabContext>
         </>
     )
