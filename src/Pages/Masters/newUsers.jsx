@@ -745,7 +745,7 @@ const Users = ({ loadingOn, loadingOff }) => {
         fetchLink({
             address: `masters/users`,
             method: "DELETE",
-            bodyData: { UserId: inputValue.UserId, },
+            bodyData: { UserId: inputValue.UserId,Company_id:parseData?.Company_id },
         }).then((data) => {
             if (data.success) {
                 setReload(!reload);
