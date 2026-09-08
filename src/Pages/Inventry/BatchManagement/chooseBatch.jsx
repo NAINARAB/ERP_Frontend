@@ -110,7 +110,7 @@ const ChooseBatch = ({
         });
     };
 
-    const sendToBackend = () => {
+    function sendToBackend() {
         if (inputs.length === 0) return;
 
         fetchLink({
@@ -285,7 +285,7 @@ const ChooseBatch = ({
                                                 styles={customSelectStyles}
                                                 isSearchable={true}
                                                 isClearable={true}
-                                                isDisabled={batchDropDown.length === 0}
+                                                isDisabled={batchDropDown.length === 0 && !PrintRights}
                                             />
                                         </td>
                                     </tr>

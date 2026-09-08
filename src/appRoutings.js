@@ -70,6 +70,7 @@ const StockValueErpSync = lazy(() => import('./Pages/Inventry/stockValueErpSync'
 // Authorization
 // -----------------------------------------------------------------------------
 const UserBased = lazy(() => import('./Pages/Authorization/userBased'));
+const UserBasedTreeView = lazy(() => import('./Pages/Authorization/userBasedTreeView'));
 const UserTypeBased = lazy(() => import('./Pages/Authorization/userTypeBased'));
 const UserBasedBranch = lazy(() => import('./Pages/Authorization/userBasedBranch'));
 const MenuManagement = lazy(() => import('./Pages/Authorization/newMenuManagement'));
@@ -244,6 +245,7 @@ const PaymentAccountTransaction = lazy(() => import('./Pages/Payments/PaymentRep
 const ItemPaymentExpences = lazy(() => import('./Pages/Payments/PaymentReport/itemExpences'));
 const PaymentOutstanding = lazy(() => import('./Pages/Payments/PaymentReport/paymentOutstanding'));
 const PaymentDue = lazy(() => import('./Pages/Payments/PaymentReport/paymentDue'));
+const PaymentChequeTransaction = lazy(() => import('./Pages/Payments/PaymentReport/chequeTransaction'));
 
 // -----------------------------------------------------------------------------
 // Receipts
@@ -472,6 +474,7 @@ const RoutingArray = [
     { component: <PaymentReference />, path: '/erp/payments/pendingReference' },
     { component: <PendingInvoice />, path: '/erp/payments/pendingPayments' },
     { component: <PaymentReport />, path: '/erp/payments/paymentReport' },
+    { component: <PaymentChequeTransaction />, path: '/erp/payments/chequeTransaction' },
 
     // ---------------------------------------------------------------------------
     // ERP - Purchase
@@ -607,7 +610,8 @@ const RoutingArray = [
     { component: <CustomerList />, path: '/userControl/customers' },
     { component: <EmployeeMaster />, path: '/userControl/employees' },
     { component: <UserBasedBranch />, path: '/userControl/userBasedBranchRights' },
-    { component: <UserBased />, path: '/userControl/userRights' },
+    // { component: <UserBased />, path: '/userControl/userRights' },
+    { component: <UserBasedTreeView />, path: '/userControl/userRights' },
     { component: <UserType />, path: '/userControl/userType' },
     { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
     { component: <Users />, path: '/userControl/users' },

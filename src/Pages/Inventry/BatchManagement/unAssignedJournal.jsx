@@ -191,7 +191,7 @@ const UnAssignedJournals = ({
                         onClick={handleAutoBatch}
                         variant="contained"
                         className="mx-1"
-                        disabled={journalData.length === 0}
+                        disabled={journalData.length === 0 || !PrintRights}
                     >Random Batch</Button>
 
                 </div>
