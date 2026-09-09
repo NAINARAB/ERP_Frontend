@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
+import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDate, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../../Components/functions";
 import InvoiceBillTemplate from "../SalesReportComponent/newInvoiceTemplate";
-import { Add, Cancel, Edit, FilterAlt, Search, Sync, Visibility } from "@mui/icons-material";
+import { Add, Cancel, Edit, FilterAlt, Search, Sync, Undo, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../convertedStatus";
 import { fetchLink } from "../../../Components/fetchComponent";
 import FilterableTable, { createCol } from "../../../Components/filterableTable2";
@@ -57,6 +57,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
         deliverySlip: false,
         taxInvoice: false,
         cancelInvoice: false,
+        revokeCancel: false
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [moduleRules, setModuleRules] = useState([]);
@@ -118,7 +119,14 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
         } = otherSessionFiler;
 
         fetchLink({
-            address: `sales/salesInvoice?Fromdate=${Fromdate}&Todate=${Todate}&Retailer_Id=${Retailer?.value || ''}&Created_by=${CreatedBy?.value || ''}&VoucherType=${VoucherType?.value || ''}&Cancel_status=${Cancel_status}&withProduct=${withProduct}`,
+            address: `sales/salesInvoice?
+            Fromdate=${Fromdate}&
+            Todate=${Todate}&
+            Retailer_Id=${Retailer?.value || ''}&
+            Created_by=${CreatedBy?.value || ''}&
+            VoucherType=${VoucherType?.value || ''}&
+            Cancel_status=${Cancel_status}&
+            withProduct=${withProduct}`,
             loadingOn,
             loadingOff
         }).then(data => {
@@ -268,6 +276,31 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
         })
     }
 
+    const revokeCancelInvoice = () => {
+        fetchLink({
+            address: `sales/salesInvoice/revoke`,
+            method: 'PUT',
+            bodyData: {
+                Do_Id: selectedInvoice.Do_Id,
+                Altered_by: toNumber(storage.UserId),
+                Alter_Reason: 'Invoice Cancellation revoke',
+            },
+            loadingOn, loadingOff
+        }).then((data) => {
+            if (data.success) {
+                toast.success(data.message);
+                setSelectedInvoice(null);
+                setReload(pre => !pre);
+                setDialog(pre => ({ ...pre, revokeCancel: false }))
+            } else {
+                toast.error(data.message);
+            }
+        }).catch((e) => {
+            console.error(e);
+            toast.error('Failed to cancel invoice');
+        })
+    }
+
     return (
         <>
             <FilterableTable
@@ -303,7 +336,17 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                         isCustomCell: true,
                         Cell: ({ row }) => {
                             if (toNumber(row?.Cancel_status) === 0) {
-                                return <></>;
+                                return (
+                                    <Tooltip title='Undo Cancel'>
+                                        <IconButton
+                                            onClick={() => {
+                                                setSelectedInvoice(row);
+                                                setDialog(prev => ({ ...prev, revokeCancel: true }));
+                                            }}
+                                            disabled={!canEditNow(row?.Do_Date)}
+                                        ><Undo color="primary" /></IconButton>
+                                    </Tooltip>
+                                );
                             }
                             return (
                                 <ButtonActions
@@ -355,7 +398,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                                 setSelectedInvoice(row);
                                                 setDialog(pre => ({ ...pre, cancelInvoice: true }));
                                             },
-                                            icon: <Cancel fontSize="small" color="primary" />,
+                                            icon: <Cancel fontSize="small" color="error" />,
                                             disabled: !DeleteRights || !canEditNow(row.Do_Date),
                                         },
                                     ]}
@@ -727,7 +770,57 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                 onSubmit={cancelInvoice}
                 submitText="Cancel Invoice"
             >
-                Do you want to cancel the invoice?
+                <p>Do you want to cancel the invoice?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Party</td>
+                            <td>{selectedInvoice?.Retailer_Name || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice No</td>
+                            <td>{selectedInvoice?.Do_Inv_No || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedInvoice?.Do_Date ? LocalDate(selectedInvoice?.Do_Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Amount</td>
+                            <td>{NumberFormat(selectedInvoice?.Total_Invoice_value)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </AppDialog>
+
+            <AppDialog
+                open={dialog.revokeCancel}
+                onClose={() => setDialog(pre => ({ ...pre, revokeCancel: false }))}
+                title="Revoke Cancel Invoice"
+                onSubmit={revokeCancelInvoice}
+                submitText="Revoke Cancel Invoice"
+            >
+                <p>Do you want to revoke the cancel invoice?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Party</td>
+                            <td>{selectedInvoice?.Retailer_Name || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice No</td>
+                            <td>{selectedInvoice?.Do_Inv_No || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedInvoice?.Do_Date ? LocalDate(selectedInvoice?.Do_Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Amount</td>
+                            <td>{NumberFormat(selectedInvoice?.Total_Invoice_value)}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </AppDialog>
         </>
     )
