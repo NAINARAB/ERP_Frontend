@@ -3,11 +3,11 @@ import { fetchLink } from "../../../Components/fetchComponent";
 import {
     Addition, checkIsNumber, filterableText, groupData, isEqualNumber, stringCompare, toArray, toNumber,
 } from "../../../Components/functions";
-import FilterableTable from "../../../Components/filterableTable2";
+import FilterableTable, { formatString } from "../../../Components/filterableTable2";
 import {
     Autocomplete, Button, Card, Checkbox, Dialog, DialogActions, DialogContent,
     DialogTitle, IconButton, Paper, Switch, TextField, Typography,
-    Table, TableBody, TableCell, Tooltip, TableContainer, TableHead, TableRow
+    Table, TableBody, TableCell, TableSortLabel, Tooltip, TableContainer, TableHead, TableRow
 } from "@mui/material";
 import {
     CheckBox, CheckBoxOutlineBlank, FilterAlt, FilterAltOff, Settings,
@@ -24,6 +24,16 @@ const EXCLUDED_QTY_FIELDS = ["Pack_Qty"];
 
 const isQtyField = (fieldName) =>
     QTY_FIELD_PATTERN.test(fieldName || "") && !EXCLUDED_QTY_FIELDS.includes(fieldName);
+
+// Field used to group the Godown Wise report by default on initial load.
+const GODOWN_GROUP_FIELD = "Godown_Name";
+
+// Strips spaces, hyphens, and other special characters so a search like
+// "2000white" or "gramaa" can match "2000 WHITEGRAM-AA 30KG" regardless of
+// how the original string is punctuated/spaced. Kept in sync with the
+// same helper in CustomerClosingStockReport.jsx.
+const normalizeForSearch = (value) =>
+    (value ?? "").toString().toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const formatNumberINR = (n, fraction = 2) =>
     new Intl.NumberFormat("en-IN", {
@@ -53,12 +63,16 @@ const ItemWiseStockReport = ({
     groupingOption = true,
     reportName = "",
     url = "",
-  
+
     commonFilters = { stockItemName: null, gradeItemGroup: null, itemNameModified: null },
 }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
-    const [groupBy, setGroupBy] = useState(defaultGrouping || "");
+    // Godown Wise defaults to grouping by Godown Name on initial load unless
+    // the caller explicitly passed a different defaultGrouping.
+    const [groupBy, setGroupBy] = useState(
+        defaultGrouping || (api === "godownWise" ? GODOWN_GROUP_FIELD : "")
+    );
     const [filteredData, setFilteredData] = useState([]);
     const [dialog, setDialog] = useState(false);
     const [filterDialog, setFilterDialog] = useState(false);
@@ -67,6 +81,11 @@ const ItemWiseStockReport = ({
     const [expenseReportDialog, setExpenseReportDialog] = useState(false);
     const [expenseReportData, setExpenseReportData] = useState([]);
     const [selectedProductInfo, setSelectedProductInfo] = useState({});
+
+    // Sort state for the main table. `field` is a Field_Name, `direction` is
+    // 'asc' | 'desc'. Both the top-level table and the expandable (grouped)
+    // sub-tables are sorted using this same state.
+    const [sortState, setSortState] = useState({ field: null, direction: "asc" });
 
     const propsColumns = storageStockColumns.map((col, colInd) => {
         const columnState =
@@ -175,18 +194,42 @@ const ItemWiseStockReport = ({
             (fil) => filterableText(fil.Fied_Data) === "number"
         ).map((col) => col.Field_Name);
 
+        // Qty-type fields need a second, separately-tracked sum: the total of
+        // each row's own "raw / that row's Pack_Qty" value. Summing the raw
+        // quantity for the group and then dividing by the group's *summed*
+        // Pack_Qty (as a naive re-use of formatQtyWithPack would do) produces
+        // a meaningless number once Pack_Qty itself has been added up across
+        // rows with different pack sizes.
+        const qtyAggKeys = aggKeys.filter((key) => isQtyField(key));
+
         const groupAggregations = groupFiltered.map((grp) => {
+            const rawSums = Object.fromEntries(
+                aggKeys.map((key) => [
+                    key,
+                    grp?.groupedData?.reduce(
+                        (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
+                        0
+                    ),
+                ])
+            );
+
+            const dividedSums = Object.fromEntries(
+                qtyAggKeys.map((key) => [
+                    `__divided_${key}`,
+                    grp?.groupedData?.reduce((acc, colmn) => {
+                        const raw = toNumber(colmn[key]);
+                        if (raw === undefined || raw === null || isNaN(raw)) return acc;
+                        const packQty = toNumber(colmn?.Pack_Qty);
+                        const divisor = packQty && packQty !== 0 ? packQty : 1;
+                        return Addition(acc, raw / divisor);
+                    }, 0),
+                ])
+            );
+
             return {
                 ...grp,
-                ...Object.fromEntries(
-                    aggKeys.map((key) => [
-                        key,
-                        grp?.groupedData?.reduce(
-                            (acc, colmn) => Addition(acc, toNumber(colmn[key]) || 0),
-                            0
-                        ),
-                    ])
-                ),
+                ...rawSums,
+                ...dividedSums,
             };
         });
 
@@ -303,7 +346,7 @@ const ItemWiseStockReport = ({
         let productName = "";
         let godownName = "";
 
-   
+
 
         if (row.groupedData && row.groupedData.length > 0) {
 
@@ -454,6 +497,11 @@ const ItemWiseStockReport = ({
                     onChange={(event, newValue) =>
                         handleFilterChange(Field_Name, newValue)
                     }
+                    filterOptions={(options, state) => {
+                        const inputValue = normalizeForSearch(state.inputValue);
+                        if (!inputValue) return options;
+                        return options.filter((option) => normalizeForSearch(option).includes(inputValue));
+                    }}
                     renderOption={(props, option, { selected }) => (
                         <li {...props}>
                             <Checkbox
@@ -537,7 +585,10 @@ const ItemWiseStockReport = ({
             .catch((e) => console.error(e));
     };
 
-    // Wraps a qty-type numeric column so its cell renders "raw (raw / Pack_Qty)"
+    // Wraps a qty-type numeric column so its cell renders "raw (raw / Pack_Qty)".
+    // For grouped/summary rows, the "raw / Pack_Qty" part uses the precomputed
+    // __divided_<field> sum (sum of each underlying row's own division) rather
+    // than dividing the group's summed raw qty by the group's summed Pack_Qty.
     const withQtyDisplay = (col) => {
         if (!isQtyField(col.Field_Name) || filterableText(col.Fied_Data) !== "number") {
             return col;
@@ -545,9 +596,98 @@ const ItemWiseStockReport = ({
         return {
             ...col,
             isCustomCell: true,
-            Cell: ({ row }) => formatQtyWithPack(row[col.Field_Name], row),
+            Cell: ({ row }) => {
+                const precomputedDivided = row?.[`__divided_${col.Field_Name}`];
+                if (precomputedDivided !== undefined) {
+                    return `${formatNumberINR(row[col.Field_Name])} (${formatNumberINR(precomputedDivided)})`;
+                }
+                return formatQtyWithPack(row[col.Field_Name], row);
+            },
         };
     };
+
+    // --- Sorting (implemented entirely here; filterableTable2.jsx is untouched) ---
+
+    const handleSort = (field) => {
+        setSortState((prev) =>
+            prev.field === field
+                ? { field, direction: prev.direction === "asc" ? "desc" : "asc" }
+                : { field, direction: "asc" }
+        );
+    };
+
+    // Sorts a row array by `field` according to that column's Fied_Data type
+    // (looked up from `columns` state), pushing blank/missing/NaN values to
+    // the end regardless of direction.
+    const sortRows = (rows, field, direction) => {
+        if (!field) return rows;
+        const colDef = columns.find((c) => c.Field_Name === field);
+        const dataType = filterableText(colDef?.Fied_Data);
+
+        const getValue = (row) => {
+            const raw = row[field];
+            if (dataType === "number") return toNumber(raw);
+            if (dataType === "date") return raw ? new Date(raw).getTime() : null;
+            return raw;
+        };
+
+        return [...rows].sort((a, b) => {
+            const aVal = getValue(a);
+            const bVal = getValue(b);
+            const aEmpty = aVal === undefined || aVal === null || aVal === "" || Number.isNaN(aVal);
+            const bEmpty = bVal === undefined || bVal === null || bVal === "" || Number.isNaN(bVal);
+            if (aEmpty && bEmpty) return 0;
+            if (aEmpty) return 1;
+            if (bEmpty) return -1;
+            if (aVal === bVal) return 0;
+            const cmp = aVal > bVal ? 1 : -1;
+            return direction === "asc" ? cmp : -cmp;
+        });
+    };
+
+    // Wraps a column so its header is our own clickable TableSortLabel (driven
+    // by sortState/handleSort) instead of filterableTable2's internal one, and
+    // marks it as a "custom cell" (isCustomCell + Cell) so filterableTable2
+    // never renders its own conflicting sort header alongside ours. Action
+    // columns (no real Field_Name to sort by) are passed through unchanged.
+    const makeSortableColumn = (col) => {
+        if (col.Field_Name === "__action__" || col.Field_Name === "__godown_action__") {
+            return col;
+        }
+
+        const displayLabel = col.ColumnHeader || col.Field_Name?.replace(/_/g, " ");
+        const isActive = sortState.field === col.Field_Name;
+
+        const header = (
+            <TableSortLabel
+                active={isActive}
+                direction={isActive ? sortState.direction : "asc"}
+                onClick={() => handleSort(col.Field_Name)}
+            >
+                {displayLabel}
+            </TableSortLabel>
+        );
+
+        if (col.isCustomCell && col.Cell) {
+            // Already custom (e.g. qty columns from withQtyDisplay) — keep its Cell, swap only the header.
+            return { ...col, ColumnHeader: header };
+        }
+
+        return {
+            ...col,
+            isCustomCell: true,
+            ColumnHeader: header,
+            Cell: ({ row }) => {
+                const hasKey = Object.prototype.hasOwnProperty.call(row, col.Field_Name);
+                return hasKey ? formatString(row[col.Field_Name], col.Fied_Data) : "-";
+            },
+        };
+    };
+
+    const sortedShowData = useMemo(
+        () => sortRows(showData, sortState.field, sortState.direction),
+        [showData, sortState, columns]
+    );
 
     const actionColumn = {
         Field_Name: "__action__",
@@ -676,7 +816,7 @@ const ItemWiseStockReport = ({
                     </>
                 }
                 ExcelPrintOption
-                dataArray={showData}
+                dataArray={sortedShowData}
                 columns={[
                     ...(groupBy
                         ? DisplayColumn.filter(
@@ -686,10 +826,10 @@ const ItemWiseStockReport = ({
                                 fil.isEnabled
                         )
                         : DisplayColumn.filter((col) => col.isEnabled)
-                    ).map((col) => withQtyDisplay({
+                    ).map((col) => makeSortableColumn(withQtyDisplay({
                         ...col,
                         ColumnHeader: getDisplayName(col.Field_Name),
-                    })),
+                    }))),
                     ...(api === "itemWise" ? [actionColumn] : [])
 
                 ]}
@@ -700,16 +840,16 @@ const ItemWiseStockReport = ({
                         EnableSerialNumber
                         headerFontSizePx={12}
                         bodyFontSizePx={12}
-                        dataArray={toArray(row?.groupedData)}
+                        dataArray={sortRows(toArray(row?.groupedData), sortState.field, sortState.direction)}
                         columns={[
                             ...DisplayColumn.filter(
                                 (clm) =>
                                     !stringCompare(clm.Field_Name, groupBy) &&
                                     clm.isEnabled
-                            ).map((col) => withQtyDisplay({
+                            ).map((col) => makeSortableColumn(withQtyDisplay({
                                 ...col,
                                 ColumnHeader: getDisplayName(col.Field_Name),
-                            })),
+                            }))),
 
 
                             ...(api === "godownWise" ? [godownActionColumn] : [])

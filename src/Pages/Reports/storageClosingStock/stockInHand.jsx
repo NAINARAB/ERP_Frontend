@@ -13,6 +13,14 @@ import {
 } from "../../../Components/functions";
 
 
+const normalizeForSearch = (value) =>
+    (value ?? "").toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const getAutocompleteWidth = (value, { min = 200, max = 600, charWidth = 10, padding = 64 } = {}) => {
+    const length = (value || '').toString().length;
+    const calculated = Math.ceil(length * charWidth) + padding;
+    return Math.min(Math.max(calculated, min), max);
+};
 
 const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     const [tabValue, setTabValue] = useState(1);
@@ -27,7 +35,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
         gradeItemGroup: '',
         itemNameModified: '',
     });
-    // State for dropdown options
+
     const [filterOptions, setFilterOptions] = useState({
         stockItemNames: [],
         gradeItemGroups: [],
@@ -35,37 +43,37 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     });
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    // Fetch data to populate dropdown options
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch item wise data
+
                 const response = await fetchLink({
                     address: `reports/storageStock/itemWise?Fromdate=${dateFilter.Fromdate}&Todate=${dateFilter.Todate}`,
                 });
-                
+
                 if (response.success) {
                     const data = toArray(response.data);
-                    
-                    // Extract distinct values for each filter
+
+
                     const stockItems = new Set();
                     const gradeGroups = new Set();
                     const itemModifieds = new Set();
-                    
+
                     data.forEach(item => {
                         // Stock Item Name
                         const stockName = item?.stock_item_name || item?.Item_Name_Modified || item?.Stock_Item;
                         if (stockName) stockItems.add(stockName);
-                        
+
                         // Grade Item Group
                         const grade = item?.Grade_Item_Group || item?.Grade_Item_Group_Name || item?.Grade_Group;
                         if (grade) gradeGroups.add(grade);
-                        
-                        // Item Name Modified
+
+
                         const modified = item?.Item_Name_Modified || item?.Item_Name || item?.stock_item_name;
                         if (modified) itemModifieds.add(modified);
                     });
-                    
+
                     setFilterOptions({
                         stockItemNames: Array.from(stockItems).sort(),
                         gradeItemGroups: Array.from(gradeGroups).sort(),
@@ -77,12 +85,19 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                 console.error("Error fetching filter options:", error);
             }
         };
-        
+
         fetchData();
     }, [dateFilter.Fromdate, dateFilter.Todate]);
 
     const updateCommonFilter = (key, value) => {
         setCommonFilters((pre) => ({ ...pre, [key]: value }));
+    };
+
+    // Shared normalized-match filterOptions used by all three Autocomplete fields below.
+    const normalizedFilterOptions = (options, state) => {
+        const inputValue = normalizeForSearch(state.inputValue);
+        if (!inputValue) return options;
+        return options.filter((option) => normalizeForSearch(option).includes(inputValue));
     };
 
     const tabData = [
@@ -126,7 +141,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
     return (
         <>
             <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
-                <label htmlFor="from" className='me-1 fw-bold '>Fromdate: </label>
+                <label htmlFor="from" className='me-1 fw-bold'>Fromdate: </label>
                 <input
                     type="date"
                     id='from'
@@ -151,7 +166,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     }))}
                 ><Search /></IconButton>
 
-                {/* Stock Item Name - Autocomplete */}
+
                 <label htmlFor="stock-item-name" className='me-1 fw-bold '>Stock Item Name: </label>
                 <Autocomplete
                     id='stock-item-name'
@@ -161,30 +176,27 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                         updateCommonFilter('stockItemName', newValue || '');
                     }}
                     onInputChange={(event, newInputValue) => {
-                        // Allow typing to search
+
                         if (event && event.type === 'change') {
-                            // Don't update on every keystroke, only on selection
+
                         }
                     }}
                     freeSolo
                     selectOnFocus
                     clearOnBlur
                     handleHomeEndKeys
+                    sx={{
+                        width: getAutocompleteWidth(commonFilters.stockItemName),
+                        transition: 'width 0.15s ease',
+                    }}
                     renderInput={(params) => (
                         <TextField
                             {...params}
                             placeholder="Search stock item"
                             size="small"
-                            sx={{ minWidth: 200 }}
                         />
                     )}
-                    filterOptions={(options, state) => {
-                        const inputValue = state.inputValue.toLowerCase().trim();
-                        if (!inputValue) return options;
-                        return options.filter(option =>
-                            option?.toLowerCase()?.includes(inputValue)
-                        );
-                    }}
+                    filterOptions={normalizedFilterOptions}
                     renderOption={(props, option) => (
                         <li {...props}>
                             {option}
@@ -196,7 +208,7 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     }}
                 />
 
-                {/* Grade Item Group - Autocomplete */}
+
                 <label htmlFor="grade-item-group" className='me-1 fw-bold '>Grade Item Group: </label>
                 <Autocomplete
                     id='grade-item-group'
@@ -209,21 +221,18 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     selectOnFocus
                     clearOnBlur
                     handleHomeEndKeys
+                    sx={{
+                        width: getAutocompleteWidth(commonFilters.gradeItemGroup),
+                        transition: 'width 0.15s ease',
+                    }}
                     renderInput={(params) => (
                         <TextField
                             {...params}
                             placeholder="Search grade group"
                             size="small"
-                            sx={{ minWidth: 200 }}
                         />
                     )}
-                    filterOptions={(options, state) => {
-                        const inputValue = state.inputValue.toLowerCase().trim();
-                        if (!inputValue) return options;
-                        return options.filter(option =>
-                            option?.toLowerCase()?.includes(inputValue)
-                        );
-                    }}
+                    filterOptions={normalizedFilterOptions}
                     renderOption={(props, option) => (
                         <li {...props}>
                             {option}
@@ -235,7 +244,6 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     }}
                 />
 
-                {/* Item Name Modified - Autocomplete */}
                 <label htmlFor="item-name-modified" className='me-1 fw-bold '>Item Name Modified: </label>
                 <Autocomplete
                     id='item-name-modified'
@@ -248,21 +256,18 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     selectOnFocus
                     clearOnBlur
                     handleHomeEndKeys
+                    sx={{
+                        width: getAutocompleteWidth(commonFilters.itemNameModified),
+                        transition: 'width 0.15s ease',
+                    }}
                     renderInput={(params) => (
                         <TextField
                             {...params}
                             placeholder="Search item modified"
                             size="small"
-                            sx={{ minWidth: 200 }}
                         />
                     )}
-                    filterOptions={(options, state) => {
-                        const inputValue = state.inputValue.toLowerCase().trim();
-                        if (!inputValue) return options;
-                        return options.filter(option =>
-                            option?.toLowerCase()?.includes(inputValue)
-                        );
-                    }}
+                    filterOptions={normalizedFilterOptions}
                     renderOption={(props, option) => (
                         <li {...props}>
                             {option}

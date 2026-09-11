@@ -302,8 +302,13 @@ const ProjectReports = lazy(() => import('./Pages/ProjectReports/reports'));
 const ModuleRuleComponent = lazy(() => import('./Components/moduleRules'))
 
 const AbstractGroup = lazy(() => import('./Pages/Masters/AbstractGroupType'));
+const MasterList = lazy(() => import('./Pages/Masters/masterlist'));
+const StockGroup=lazy(()=>import('./Pages/Masters/StockGroup'))
 
 const RoutingArray = [
+
+      { component: <MasterList />, path: '/erp/master/masterList' },
+    {component:<StockGroup />,path:'/erp/master/StockGroup'   },
     // ---------------------------------------------------------------------------
     // Root
     // ---------------------------------------------------------------------------
