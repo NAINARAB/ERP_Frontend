@@ -137,7 +137,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                         placeholder={"Select Vendor"}
                                                         maxMenuHeight={300}
                                                         filterOption={reactSelectFilterLogic}
-                                                        isDisabled={isValidNumber(invoiceInfo?.So_No)}
+                                                        isDisabled={isValidNumber(invoiceInfo?.So_No) && salesInvoiceAccess?.saleOrderRestriction?.exists}
                                                     />
                                                 </div>
                                                 <Tooltip title='Closing Stock'>

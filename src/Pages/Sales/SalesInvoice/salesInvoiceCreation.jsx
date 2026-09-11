@@ -852,7 +852,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
             voucherBasedGodown: getRuleOptions('SI_6'),
             creditBillCountLimit: getRuleOptions('SI_7'),
             productModification: getRuleOptions('SI_11'),
-            onlySixItemPerInvoice: getRuleOptions('SI_13')
+            onlySixItemPerInvoice: getRuleOptions('SI_13'),
+            saleOrderRestriction: getRuleOptions('SI_14')
         };
     }, [getRuleOptions]);
 
