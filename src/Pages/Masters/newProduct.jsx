@@ -31,6 +31,7 @@ const initialInputValue = {
     Igst_P: '',
     ERP_Id: '',
     Product_Image: '',
+    Stock_Group: ''
 }
 
 const ProductCard = ({ product, setProductInputValue, setDialog }) => {
@@ -141,6 +142,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
     const [posBrand, setPosBrand] = useState([])
     const [productGroup, setProductGroup] = useState([])
     const [brand, setBrand] = useState([])
+    const [stockGroup, setStockGroup] = useState([])
 
     const [filters, setFilters] = useState({
         Product_Id: '',
@@ -152,7 +154,9 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         ProductGroup_Id: '',
         ProductGroup: 'ALL',
         Brand_Id: '',
-        Brand: 'ALL'
+        Brand: 'ALL',
+        StockGroup_Id: '',
+        StockGroup: 'ALL'
     });
 
     const [dialogFilter, setDialogFilter] = useState({
@@ -232,6 +236,16 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
         }).catch(e => console.error(e))
     }, [])
 
+    useEffect(() => {
+        fetchLink({
+            address: `masters/stockgroup/dropdown`
+        }).then(data => {
+            if (data.success) {
+                setStockGroup(data.data);
+            }
+        }).catch(e => console.error(e))
+    }, [])
+
     const closeDialog = () => {
         setDialogFilter({
             ...dialog,
@@ -259,6 +273,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                         reload={() => setReload(pre => !pre)}
                         loadingOn={loadingOn}
                         loadingOff={loadingOff}
+                        stockGroupOptions={stockGroup}
                         onCloseFun={() => {
                             setProductInputValue(initialInputValue);
                             setDialog(pre => ({ ...pre, createAndUpdate: false }))
@@ -345,6 +360,7 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                     loadingOff={loadingOff}
                     row={productInputValue}
                     openAction={dialog.createAndUpdate}
+                    stockGroupOptions={stockGroup}
                     onCloseFun={() => {
                         setProductInputValue(initialInputValue);
                         setDialog(pre => ({ ...pre, createAndUpdate: false }))
@@ -473,6 +489,30 @@ const ProductsMaster = ({ loadingOn, loadingOff }) => {
                                                 ...brand.map(obj => ({ value: obj?.Brand_Id, label: obj?.Brand_Name }))
                                             ]}
                                             placeholder={"Brand"}
+                                            styles={{
+                                                ...customSelectStyles,
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            isSearchable={true}
+
+                                            menuPortalTarget={document.body}
+                                            menuPosition="fixed"
+                                            menuPlacement="auto"
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Stock Group</td>
+                                    <td>
+                                        <Select
+                                            value={{ value: filters?.StockGroup_Id, label: filters?.StockGroup }}
+                                            onChange={(e) => setFilters({ ...filters, StockGroup_Id: e.value, StockGroup: e.label })}
+                                            options={[
+                                                { value: '', label: 'ALL' },
+                                                ...stockGroup.map(obj => ({ value: obj?.value, label: obj?.label }))
+                                            ]}
+                                            placeholder={"Stock Group"}
                                             styles={{
                                                 ...customSelectStyles,
                                                 menuPortal: base => ({ ...base, zIndex: 9999 })

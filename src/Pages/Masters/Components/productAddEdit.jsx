@@ -22,19 +22,20 @@ const initialInputValue = {
     Sgst_P: '',
     Igst_P: '',
     ERP_Id: '',
-    Pos_Brand_Id:'',
-    IsActive:'',
-    Product_Rate:'',
-    Max_Rate:'',
-    Coolie:'',
-    Packing_CH:'',
-    Other_Expen:'',
-    NagalBrokerage:'',
-    NagalCoolie:''
+    Pos_Brand_Id: '',
+    IsActive: '',
+    Product_Rate: '',
+    Max_Rate: '',
+    Coolie: '',
+    Packing_CH: '',
+    Other_Expen: '',
+    NagalBrokerage: '',
+    NagalCoolie: '',
+    Stock_Group: ''
 
 }
 
-const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loadingOn, loadingOff }) => {
+const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loadingOn, loadingOff, stockGroupOptions = [] }) => {
     const [uom, setUom] = useState([]);
     const [brand, setBrand] = useState([]);
     const [pack, setPack] = useState([]);
@@ -162,6 +163,19 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             value: productInputValue.Product_Group,
         },
         {
+            label: 'Stock Group',
+            elem: 'select',
+            options: [
+                { value: '', label: ' - Select - ', disabled: true, selected: true },
+                ...stockGroupOptions.map(obj => ({
+                    value: Number(obj.St_Group_Id),
+                    label: obj.St_Group
+                }))
+            ],
+            event: e => setProductInputValue(value => ({ ...value, Stock_Group: e.target.value })),
+            value: productInputValue.Stock_Group,
+        },
+        {
             label: 'Pack',
             elem: 'select',
             options: [
@@ -241,18 +255,18 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
                 { value: '0', label: 'Inactive' }
             ],
             event: e => setProductInputValue(value => ({ ...value, IsActive: e.target.value })),
-            value: productInputValue.IsActive , 
+            value: productInputValue.IsActive,
         },
-        
-        
-    
+
+
+
         {
             label: 'Product Rate',
             elem: 'input',
             // oninput: e => onlynum(e),
             placeholder: "Enter Price",
             event: e => setProductInputValue(value => ({ ...value, Product_Rate: e.target.value })),
-         
+
             value: productInputValue.Product_Rate,
         },
         {
@@ -261,10 +275,10 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             // oninput: e => onlynum(e),
             placeholder: "Enter Max_Rate",
             event: e => setProductInputValue(value => ({ ...value, Max_Rate: e.target.value })),
-         
+
             value: productInputValue.Max_Rate,
         },
-          {
+        {
             label: 'Coolie',
             elem: 'input',
             oninput: e => onlynum(e),
@@ -272,7 +286,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             event: e => setProductInputValue(value => ({ ...value, Coolie: e.target.value })),
             value: productInputValue.Coolie,
         },
-          {
+        {
             label: 'Packing',
             elem: 'input',
             oninput: e => onlynum(e),
@@ -280,7 +294,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             event: e => setProductInputValue(value => ({ ...value, Packing_CH: e.target.value })),
             value: productInputValue.Packing_CH,
         },
-          {
+        {
             label: 'Other Exp',
             elem: 'input',
             oninput: e => onlynum(e),
@@ -296,7 +310,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
             event: e => setProductInputValue(value => ({ ...value, NagalBrokerage: e.target.value })),
             value: productInputValue.NagalBrokerage,
         },
-           {
+        {
             label: 'Nagal Coolie',
             elem: 'input',
             oninput: e => onlynum(e),
@@ -393,7 +407,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
                                                     key={optionIndex}
                                                     value={option.value}
                                                     disabled={option.disabled}
-                                                    defaultValue={option.selected} 
+                                                    defaultValue={option.selected}
                                                 >
                                                     {option.label}
                                                 </option>
@@ -403,7 +417,7 @@ const ProductAddEditComp = ({ row, children, openAction, reload, onCloseFun, loa
                                         <textarea
                                             className='cus-inpt b-0'
                                             onChange={field.event}
-                                            rows={4} value={field.value} 
+                                            rows={4} value={field.value}
                                         />
                                     ) : null}
                                 </div>
