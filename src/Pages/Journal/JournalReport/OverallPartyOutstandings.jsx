@@ -2,37 +2,53 @@ import { useEffect, useState } from 'react';
 import { createCol } from '../../../Components/filterableTable2';
 import { fetchLink } from '../../../Components/fetchComponent';
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
+import { ISOString, stringCompare } from '../../../Components/functions';
 
 const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
-    const [reportData, setReportData] = useState([]);
+
+    const [receivables, setReceivables] = useState([]);
+    const [payables, setPayables] = useState([]);
+
+    const [config, setConfig] = useState({
+        view: 'Debtors', // Debtors, Creditors
+        reqDate: ISOString()
+    })
 
     useEffect(() => {
-        setReportData([]);
+        setReceivables([]);
+        setPayables([]);
         fetchLink({
-            address: `journal/overallPartyOutstandings`,
+            address: `journal/overallPartyOutstandingsSP`,
             loadingOn, loadingOff
-        }).then(data => {
-            if (data?.success) {
-                const formattedData = data.data.map(row => ({
-                    ...row,
-                    Dr: row.accountSide === 'Dr' ? Number(row.BalanceAmount) : 0,
-                    Cr: row.accountSide === 'Cr' ? Number(row.BalanceAmount) : 0,
-                }));
-                setReportData(formattedData);
+        }).then(({ others, success }) => {
+            if (success) {
+                setReceivables(others.receivables);
+                setPayables(others.payables);
             } else {
-                setReportData([]);
+                setReceivables([]);
+                setPayables([]);
             }
-        }).catch(e => { console.error(e); setReportData([]); });
-
+        }).catch(e => { console.error(e); setReceivables([]); setPayables([]); });
     }, []);
 
     const columns = [
         createCol('Account_name', 'string', 'Party'),
-        createCol('voucherNumber', 'string', 'Bill No'),
-        createCol('eventDate', 'date', 'Date'),
-        createCol('actualSource', 'string', 'Voucher'),
-        createCol('Dr', 'number', 'Dr'),
-        createCol('Cr', 'number', 'Cr'),
+        createCol('invoice_no', 'string', 'Voucher'),
+        createCol('invoice_date', 'date', 'Date'),
+        createCol('drAmount', 'number', 'Receivable'),
+        createCol('crAmount', 'number', 'Payable'),
+        // {
+        //     isCustomCell: true,
+        //     ColumnHeader: 'Receivable',
+        //     isVisible: 1,
+        //     Cell: ({ row }) => stringCompare(row?.CR_DR, 'DR') ? row?.Bal_Amount : '-'
+        // },
+        // {
+        //     isCustomCell: true,
+        //     ColumnHeader: 'Payable',
+        //     isVisible: 1,
+        //     Cell: ({ row }) => stringCompare(row?.CR_DR, 'CR') ? row?.Bal_Amount : '-'
+        // }
     ];
 
     return (
@@ -44,11 +60,19 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
                 EnableSerialNumber
                 ExcelPrintOption
                 PDFPrintOption
-                dataArray={reportData}
+                dataArray={config.view === 'Debtors' ? receivables : payables}
                 columns={columns}
                 enableGlobalSearch={true}
                 stateUrl='/erp/journal/overallPartyOutstandings'
                 stateGroup='overallPartyOutstanding'
+                ButtonArea={
+                    <>
+                        <select onChange={(e) => setConfig(prev => ({ ...prev, view: e.target.value }))} value={config.view}>
+                            <option value="Debtors">Debtors</option>
+                            <option value="Creditors">Creditors</option>
+                        </select>
+                    </>
+                }
             />
         </>
     )
