@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { generateSmartPdf } from './smartPdfGenerator'
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const LD  = (d) => d ? new Date(d).toLocaleDateString('en-GB') : '-'
@@ -51,41 +52,15 @@ const CACHE = {
 
 
 async function renderElementToPdf(element, { filename, margin = 0.3, orientation = 'portrait', quality = 0.98, allowTaint = true }) {
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    letterRendering: true,
-    useCORS: true,
-    logging: false,
-    allowTaint,
-    backgroundColor: '#ffffff',
+  const marginMm = margin * 25.4
+  return generateSmartPdf(element, {
+    filename,
+    orientation,
+    marginTop: marginMm,
+    marginBottom: marginMm + 2,
+    marginSide: marginMm,
+    quality
   })
-
-  const imgData = canvas.toDataURL('image/jpeg', quality)
-  const pdf = new jsPDF({ unit: 'in', format: 'a4', orientation })
-
-  const pageWidth    = pdf.internal.pageSize.getWidth()
-  const pageHeight   = pdf.internal.pageSize.getHeight()
-  const contentWidth  = pageWidth - margin * 2
-  const contentHeight = pageHeight - margin * 2
-
-  const imgWidth  = contentWidth
-  const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-  let heightLeft = imgHeight
-  let pageIndex  = 0
-
-  pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight)
-  heightLeft -= contentHeight
-
-  while (heightLeft > 0) {
-    pageIndex += 1
-    const position = margin - pageIndex * contentHeight
-    pdf.addPage()
-    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight)
-    heightLeft -= contentHeight
-  }
-
-  pdf.save(filename)
 }
 
 export default function DownloadSalesOrder() {
@@ -95,7 +70,7 @@ export default function DownloadSalesOrder() {
   // preview=1 means this page is embedded in an iframe (the WhatsApp table's
   // Preview popup) rather than opened directly by the customer. In that case
   // we never auto-download or show the WhatsApp-app redirect banner.
-  const isPreview = sp.get('preview') === '1'
+  const isPreview = sp.get('preview') === '1' || sp.get('autodownload') === '0' || sp.get('no_download') === '1'
 
   useEffect(() => {
     if (isPreview) return
