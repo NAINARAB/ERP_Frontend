@@ -14,8 +14,7 @@ import {
   InputLabel,
   Checkbox,
   Chip,
-  ListItemText,
-  Sync
+  ListItemText
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -71,36 +70,36 @@ function OutStandingNew({ loadingOn, loadingOff }) {
 
       const formattedDate = encodeURIComponent(filters.Fromdate);
 
-      
-      const outstandingRes = await fetchLink({ 
-        address: `receipt/outStandingAbove?reqDate=${formattedDate}` 
+
+      const outstandingRes = await fetchLink({
+        address: `receipt/outStandingAbove?reqDate=${formattedDate}`
       });
-      
-  
-      
-      const outstandingData = Array.isArray(outstandingRes) 
-        ? outstandingRes 
+
+
+
+      const outstandingData = Array.isArray(outstandingRes)
+        ? outstandingRes
         : outstandingRes?.data || [];
 
 
       const processedData = processData(outstandingData);
       setAllOutstandingData(processedData);
 
-    
+
       const uniqueFileNos = [...new Set(processedData.map((item) => item.File_No).filter(Boolean))];
       setFileNoOptions(uniqueFileNos);
 
-  
-      const tillBillingData = processedData.filter(item => 
+
+      const tillBillingData = processedData.filter(item =>
         item.Billing === 'Till_Billing'
       );
-      
+
       setSalesReceipts(tillBillingData);
       setTotal_Invoice_value(calculateTotal(tillBillingData));
       setActiveButton("tillBilling");
-      
+
     } catch (error) {
-     
+
       setAllOutstandingData([]);
       setSalesReceipts([]);
       setTotal_Invoice_value(0);
@@ -116,7 +115,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     if (allOutstandingData.length === 0) return;
 
     let sourceData = [];
-    
+
 
     if (activeButton === "tillBilling") {
       sourceData = allOutstandingData.filter(item => item.Billing === 'Till_Billing');
@@ -154,20 +153,20 @@ function OutStandingNew({ loadingOn, loadingOff }) {
     setFilterDialogOpen(false);
   };
 
-      const syncLOS = () => {
-          if (loadingOn) loadingOn();
-         
-          fetchLink({
-              address: `reports/syncPosPending`,
-              method: 'POST',
-              bodyData:allOutstandingData
-          }).then(data => {
-              if (data.success) toast.success(data.message);
-              else toast.error(data.message);
-          }).catch(e => console.error(e)).finally(() => {
-              if (loadingOff) loadingOff();
-          })
-      }
+  const syncLOS = () => {
+    if (loadingOn) loadingOn();
+
+    fetchLink({
+      address: `reports/syncPosPending`,
+      method: 'POST',
+      bodyData: allOutstandingData
+    }).then(data => {
+      if (data.success) toast.success(data.message);
+      else toast.error(data.message);
+    }).catch(e => console.error(e)).finally(() => {
+      if (loadingOff) loadingOff();
+    })
+  }
 
   return (
     <div>
@@ -176,7 +175,7 @@ function OutStandingNew({ loadingOn, loadingOff }) {
           activeButton === "tillBilling" ? "Till Billing" : "OutStanding No Bill"
         }
         ButtonArea={
-          <div style={{ display: "flex",gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
             <input
               type="date"
               value={filters.Fromdate || ""}
@@ -194,15 +193,15 @@ function OutStandingNew({ loadingOn, loadingOff }) {
             >
               Filter
             </Button>
- <Button
-      variant="contained"
-      color="success"
-      onClick={syncLOS}
-      sx={{ height: 40, minWidth: 100 }}
-      disabled={isLoading}
-    >
-      Sync
-    </Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={syncLOS}
+              sx={{ height: 40, minWidth: 100 }}
+              disabled={isLoading}
+            >
+              Sync
+            </Button>
 
             <Tooltip title="Search">
               <IconButton

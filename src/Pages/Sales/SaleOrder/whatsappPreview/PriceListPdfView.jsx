@@ -601,6 +601,7 @@ const PriceListPdfView = ({ row, companyInfo, onReady, onError }) => {
         <div
             style={{
                 padding: "clamp(10px, 2%, 25px)",
+                paddingBottom: "35px",
                 backgroundColor: "#fff",
                 fontSize: "clamp(15px, 1.08vw, 19px)",
                 lineHeight: "1.4",

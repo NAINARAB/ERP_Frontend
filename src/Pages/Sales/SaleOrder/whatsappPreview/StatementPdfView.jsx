@@ -103,59 +103,61 @@ export default function StatementTemplate({ row, fromDate, toDate, companyInfo, 
             fontSize: 11,
             lineHeight: '1.4',
             fontFamily: 'Arial, sans-serif',
-            width: '1000px',
+            width: '100%',
+            maxWidth: '1000px',
             boxSizing: 'border-box',
+            margin: '0 auto'
         }}>
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <h2 style={{ margin: '0 0 5px 0', fontSize: 16, fontWeight: 'bold' }}>
+                <h2 style={{ margin: '0 0 5px 0', fontSize: 16, fontWeight: 'bold', color: '#1976d2' }}>
                     {companyInfoDetails?.Company_Name || 'Transaction'} - Statement
                 </h2>
                 {accountName && (
-                    <h3 style={{ margin: '0 0 5px 0', fontSize: 13, fontWeight: 600 }}>
+                    <h3 style={{ margin: '0 0 5px 0', fontSize: 13, fontWeight: 600, color: '#333' }}>
                         {accountName}
                     </h3>
                 )}
-                <p style={{ margin: '5px 0', fontSize: 12 }}>
+                <p style={{ margin: '5px 0', fontSize: 12, color: '#555' }}>
                     Period: {fromDate} to {toDate}
                 </p>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, border: '1px solid #000', fontSize: 10 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, border: '1px solid #ccc', fontSize: 10, tableLayout: 'fixed' }}>
                 <thead>
-                    <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '1px solid #000' }}>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', fontWeight: 'bold', width: '5%' }}>#</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', fontWeight: 'bold', width: '13%', whiteSpace: 'nowrap' }}>Date</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', fontWeight: 'bold', width: '15%' }}>Invoice No</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', fontWeight: 'bold', width: '40%' }}>Particulars</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', width: '13%', whiteSpace: 'nowrap' }}>Debit (Dr)</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', width: '13%', whiteSpace: 'nowrap' }}>Credit (Cr)</th>
+                    <tr style={{ backgroundColor: '#1976d2', color: '#ffffff', borderBottom: '1px solid #1565c0' }}>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', width: '5%' }}>#</th>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', width: '13%' }}>Date</th>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', width: '18%' }}>Invoice No</th>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', width: '36%' }}>Particulars</th>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'right', fontWeight: 'bold', width: '14%' }}>Debit (Dr)</th>
+                        <th style={{ border: '1px solid #1565c0', padding: '8px 6px', textAlign: 'right', fontWeight: 'bold', width: '14%' }}>Credit (Cr)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {statementData.length > 0 ? statementData.map((row, index) => (
-                        <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
-                            <td style={{ border: '1px solid #ddd', padding: '6px' }}>{index + 1}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '6px', whiteSpace: 'nowrap' }}>{row.Ledger_Date}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '6px', wordBreak: 'break-word' }}>{row.invoice_no}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '6px', wordBreak: 'break-word' }}>{row.Particulars}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '6px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatAmount(row.raw_Debit_Amt)}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '6px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatAmount(row.raw_Credit_Amt)}</td>
+                        <tr key={index} style={{ borderBottom: '1px solid #eee', backgroundColor: index % 2 === 0 ? '#ffffff' : '#fcfcfc' }}>
+                            <td style={{ border: '1px solid #eee', padding: '6px', textAlign: 'center' }}>{index + 1}</td>
+                            <td style={{ border: '1px solid #eee', padding: '6px', whiteSpace: 'nowrap' }}>{row.Ledger_Date}</td>
+                            <td style={{ border: '1px solid #eee', padding: '6px', wordBreak: 'break-word' }}>{row.invoice_no}</td>
+                            <td style={{ border: '1px solid #eee', padding: '6px', wordBreak: 'break-word' }}>{row.Particulars}</td>
+                            <td style={{ border: '1px solid #eee', padding: '6px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatAmount(row.raw_Debit_Amt)}</td>
+                            <td style={{ border: '1px solid #eee', padding: '6px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatAmount(row.raw_Credit_Amt)}</td>
                         </tr>
                     )) : (
                         <tr>
-                            <td colSpan={6} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>
+                            <td colSpan={6} style={{ border: '1px solid #eee', padding: '12px', textAlign: 'center', color: '#777' }}>
                                 No transactions found for the selected period
                             </td>
                         </tr>
                     )}
-                    <tr style={{ backgroundColor: '#f9f9f9', borderTop: '2px solid #000' }}>
+                    <tr style={{ backgroundColor: '#f5f5f5', borderTop: '2px solid #ccc' }}>
                         <td colSpan={4} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>TOTAL</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{formatAmount(totalDebit)}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{formatAmount(totalCredit)}</td>
                     </tr>
                     <tr style={{ backgroundColor: '#e8f4f8' }}>
                         <td colSpan={4} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>NET BALANCE ({balanceType})</td>
-                        <td colSpan={2} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{formatAmount(Math.abs(balance))}</td>
+                        <td colSpan={2} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap', color: '#1976d2' }}>{formatAmount(Math.abs(balance))}</td>
                     </tr>
                 </tbody>
             </table>
