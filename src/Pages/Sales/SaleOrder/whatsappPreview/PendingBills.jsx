@@ -41,7 +41,11 @@ const Pendingbills = ({
     // preview=1 lives in the OUTER query string (alongside `data`, not inside
     // the base64-encoded blob) — set by the WhatsApp table's Preview popup
     // when it embeds this page in an iframe. Only relevant in URL mode.
-    const isPreview = !isPropsMode && new URLSearchParams(location.search).get('preview') === '1';
+    const isPreview = !isPropsMode && (
+        new URLSearchParams(location.search).get('preview') === '1' ||
+        new URLSearchParams(location.search).get('autodownload') === '0' ||
+        new URLSearchParams(location.search).get('no_download') === '1'
+    );
 
     const calculatePendingDays = (eventDate) => {
         if (!eventDate) return 0;

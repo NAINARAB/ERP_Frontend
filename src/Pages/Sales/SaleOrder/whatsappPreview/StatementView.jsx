@@ -11,45 +11,21 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { generateSmartPdf } from './smartPdfGenerator';
 
 const CACHE = new Map();
 
 
 async function renderElementToPdf(element, { filename, margin = 0.5, orientation = 'landscape', quality = 0.98 }) {
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    letterRendering: true,
-    backgroundColor: '#ffffff',
+  const marginMm = margin * 25.4;
+  return generateSmartPdf(element, {
+    filename,
+    orientation,
+    marginTop: marginMm,
+    marginBottom: marginMm + 2,
+    marginSide: marginMm,
+    quality
   });
-
-  const imgData = canvas.toDataURL('image/jpeg', quality);
-  const pdf = new jsPDF({ unit: 'in', format: 'a4', orientation });
-
-  const pageWidth    = pdf.internal.pageSize.getWidth();
-  const pageHeight   = pdf.internal.pageSize.getHeight();
-  const contentWidth  = pageWidth - margin * 2;
-  const contentHeight = pageHeight - margin * 2;
-
-  const imgWidth  = contentWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  let heightLeft = imgHeight;
-  let pageIndex  = 0;
-
-  pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-  heightLeft -= contentHeight;
-
-  while (heightLeft > 0) {
-    pageIndex += 1;
-    const position = margin - pageIndex * contentHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-    heightLeft -= contentHeight;
-  }
-
-  pdf.save(filename);
 }
 
 const StatementView = () => {
@@ -69,7 +45,9 @@ const StatementView = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
 
-  const isPreview = new URLSearchParams(location.search).get('preview') === '1';
+  const isPreview = new URLSearchParams(location.search).get('preview') === '1' ||
+                    new URLSearchParams(location.search).get('autodownload') === '0' ||
+                    new URLSearchParams(location.search).get('no_download') === '1';
 
   // WhatsApp browser detection
   useEffect(() => {
