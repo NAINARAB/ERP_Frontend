@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, startTransition } from "react";
 import {
     checkIsNumber, isEqualNumber, ISOString, toArray, toNumber,
     RoundNumber, NumberFormat, LocalDateWithTime
@@ -12,7 +12,7 @@ import {
     InputLabel, FormControl, CircularProgress, Tab, Tabs, Switch,
     FormControlLabel, Chip, Paper, Stack, RadioGroup, Radio, Menu,
     ListItemIcon, ListItemText, LinearProgress, Table, TableHead,
-    TableRow, TableCell, TableBody, TableContainer,
+    TableRow, TableCell, TableBody, TableContainer, Fade
 } from "@mui/material";
 import {
     CheckBox, CheckBoxOutlineBlank, FilterAlt, Print, Search,
@@ -37,7 +37,8 @@ import Pendingbills from "./whatsappPreview/PendingBills";
 import SaleOrderTemplate from "./whatsappPreview/SaleOrderPdfView";
 import SaleInvoiceTemplate from "./whatsappPreview/SalesInvoicePdfView";
 import StatementTemplate from "./whatsappPreview/StatementPdfView";
-import PriceListTemplate from "./whatsappPreview/PriceListPdfView"; 
+import PriceListTemplate from "./whatsappPreview/PriceListPdfView";
+import { generateSmartPdf } from "./whatsappPreview/smartPdfGenerator";
 
 const ASKEVA_CONFIG = {
     apiEndpoint: REACT_APP_ASKEVA_API_ENDPOINT,
@@ -60,15 +61,15 @@ const TEMPLATE_MAP = {
         askeva: { english: "saleinvoice_english", tamil: "salesinvoice_tamil" }, //still saleinvoice_tamil is still pending for cerelia
         pdf: {
             tamil: "sales_invoice_tamil_pdf",
-             english: "sales_invoice_english_pdf", 
+            english: "sales_invoice_english_pdf",
         },
     },
     price_list: {
         dotpe: { english: "price_list_en", tamil: "price_list" },
         askeva: { english: "pricelist_english", tamil: "pricelist_tamil" },
-        pdf:{
-              tamil: "pricelist_tamil_pdf",
-             english: "pricelist_english_pdf", 
+        pdf: {
+            tamil: "pricelist_tamil_pdf",
+            english: "pricelist_english_pdf",
         }
     },
     sale_order: {
@@ -76,7 +77,7 @@ const TEMPLATE_MAP = {
         askeva: { english: "saleorder_english", tamil: "saleorder_tamil" },
         pdf: {
             tamil: "sale_order_tamil_pdf",
-             english: "sale_order_english_pdf", 
+            english: "sale_order_english_pdf",
         },
     },
     receipt_list: {
@@ -86,21 +87,21 @@ const TEMPLATE_MAP = {
     outstanding: {
         dotpe: { english: "outstanding", tamil: "outstanding" },
         askeva: { english: "transaction_english", tamil: "transaction_tamil" },
-        pdf:{
-            tamil:"transaction_tamil_pdf",
-            english:"transaction_english_pdf"
+        pdf: {
+            tamil: "transaction_tamil_pdf",
+            english: "transaction_english_pdf"
         }
     },
     pending_bills: {
         dotpe: { english: "pending_bills", tamil: "pending_bills" },
         askeva: { english: "pendingbill_english", tamil: "pendingbilll_tamil" },
-      
+
         pdf: {
             tamil: "pending_bill_pdf",
-             english: "pending_bill_pdf_english", 
+            english: "pending_bill_pdf_english",
         },
     },
-     shetsheet: {  
+    shetsheet: {
         dotpe: { english: "sheetsheet", tamil: "sheetsheet" },
         askeva: { english: "sheetsheet_english", tamil: "shetsheet_tamil" },
     },
@@ -165,20 +166,38 @@ const isValidPhone = (phone) => {
     if (!phone) return false;
     const str = String(phone).trim();
     return str !== "" &&
-           str !== "Not Available" &&
-           str !== "null" &&
-           str !== "undefined" &&
-           str !== "NULL" &&
-           str !== "NA" &&
-           str !== "N/A" &&
-           str !== "0" &&
-           str !== "0000000000" &&
-           str.length >= 10;
+        str !== "Not Available" &&
+        str !== "null" &&
+        str !== "undefined" &&
+        str !== "NULL" &&
+        str !== "NA" &&
+        str !== "N/A" &&
+        str !== "0" &&
+        str !== "0000000000" &&
+        str.length >= 10;
 };
 
 const getRowKey = (row, tab) => {
     const id = row?.DocumentId ?? row?.Ret_Id ?? row?.Receipt_Id ?? row?.So_Id ?? row?.Do_Id;
     return `${tab}_${id}`;
+};
+
+const getStoredPriceListPdfUrl = (companyId) => {
+    try {
+        return sessionStorage.getItem(`pricelist_pdf_url_${companyId || 'default'}`) || null;
+    } catch {
+        return null;
+    }
+};
+
+const setStoredPriceListPdfUrl = (companyId, url) => {
+    try {
+        if (url) {
+            sessionStorage.setItem(`pricelist_pdf_url_${companyId || 'default'}`, url);
+        } else {
+            sessionStorage.removeItem(`pricelist_pdf_url_${companyId || 'default'}`);
+        }
+    } catch {}
 };
 
 
@@ -190,7 +209,7 @@ const getPhoneCandidates = (row, phoneMap) => {
         if (!norm || !isValidPhone(norm)) return;
         if (!list.some((c) => c.value === norm)) list.push({ label, value: norm });
     };
-   
+
     push("A1", phoneMap?.get?.(Number(row.Retailer_Id)));
     push("A1", row.A1_Phone);
     push("A1", row.A1);
@@ -213,12 +232,12 @@ const PhoneSelectCell = ({ row, tab, phoneMap, selectedPhones, setSelectedPhones
     const [localValue, setLocalValue] = useState(override ?? defaultPhone);
     const [menuAnchor, setMenuAnchor] = useState(null);
 
- 
+
     useEffect(() => {
         if (selectedPhones[rowKey] === undefined) {
             setLocalValue(defaultPhone);
         }
-     
+
     }, [defaultPhone]);
 
     const commit = (value) => {
@@ -266,10 +285,10 @@ const PhoneSelectCell = ({ row, tab, phoneMap, selectedPhones, setSelectedPhones
     );
 };
 
-const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams, evatoken, imageUrl = null,documentUrl = null, documentFilename = "Pending_Bills.pdf" }) => {
+const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams, evatoken, imageUrl = null, documentUrl = null, documentFilename = "Pending_Bills.pdf" }) => {
     const components = [];
-    
-  
+
+
     if (imageUrl) {
         components.push({
             type: "header",
@@ -282,7 +301,7 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
                 }
             ]
         });
-   } else if (documentUrl) {
+    } else if (documentUrl) {
         components.push({
             type: "header",
             parameters: [{
@@ -292,13 +311,13 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
         });
     }
 
- 
+
     if (bodyParams && bodyParams.length > 0) {
         components.push({
             type: "body",
-            parameters: bodyParams.map((text) => ({ 
-                type: "text", 
-                text: String(text) 
+            parameters: bodyParams.map((text) => ({
+                type: "text",
+                text: String(text)
             }))
         });
     }
@@ -308,11 +327,11 @@ const sendViaAskeva = async ({ phone, templateName, language = "en", bodyParams,
         type: "template",
         template: {
             name: templateName,
-            language: { policy: "deterministic",code: language },
+            language: { policy: "deterministic", code: language },
             components: components
         },
     };
-    
+
     const resp = await fetch(`${ASKEVA_CONFIG.apiEndpoint}?token=${evatoken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -355,59 +374,148 @@ const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, 
 };
 
 
-const PREVIEWABLE_TABS = ["sale_invoice", "sale_order", "outstanding", "pending_bills"];
+const PREVIEWABLE_TABS = ["sale_invoice", "sale_order", "outstanding", "pending_bills", "price_list"];
 
 
-const PreviewSendDialog = ({ open, onClose, url, title, onSend, sending }) => {
-    const [iframeLoading, setIframeLoading] = useState(true);
+const PreviewSendDialog = ({
+    open, onClose, row, tab, title, onSend, sending,
+    companyInfo, outstandingFromDate, outstandingToDate, pendingBillsFromDate, pendingBillsToDate
+}) => {
+    const previewPrintRef = useRef(null);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-    useEffect(() => {
-        if (open) setIframeLoading(true);
-    }, [open, url]);
+    if (!open || !row) return null;
+
+    const isLandscape = tab === "outstanding" || tab === "pending_bills";
+
+    const handleManualDownload = async () => {
+        if (!previewPrintRef.current) return;
+        setDownloadingPdf(true);
+        try {
+            const orientation = isLandscape ? "landscape" : "portrait";
+            const docId = row?.DocumentNumber || row?.Do_Inv_No || row?.So_Inv_No || row?.Acc_Id || 'document';
+            const filename = `${tab}_${docId}.pdf`;
+
+            await generateSmartPdf(previewPrintRef.current, {
+                filename,
+                orientation,
+                marginSide: 8,
+                marginTop: 10,
+                marginBottom: 12
+            });
+            toast.success("PDF downloaded successfully!");
+        } catch (e) {
+            console.error("PDF generation failed:", e);
+            toast.error("Failed to generate PDF download");
+        } finally {
+            setDownloadingPdf(false);
+        }
+    };
+
+    const renderPreviewContent = () => {
+        if (tab === "sale_invoice") {
+            return <SaleInvoiceTemplate row={row} companyInfo={companyInfo} />;
+        }
+        if (tab === "sale_order") {
+            return <SaleOrderTemplate row={row} companyInfo={companyInfo} />;
+        }
+        if (tab === "outstanding") {
+            return (
+                <StatementTemplate
+                    row={row}
+                    fromDate={outstandingFromDate}
+                    toDate={outstandingToDate}
+                    companyInfo={companyInfo}
+                />
+            );
+        }
+        if (tab === "pending_bills") {
+            return (
+                <Pendingbills
+                    row={row}
+                    fromDate={pendingBillsFromDate}
+                    toDate={pendingBillsToDate}
+                    companyInfo={companyInfo}
+                />
+            );
+        }
+        if (tab === "price_list") {
+            return <PriceListTemplate row={row} companyInfo={companyInfo} />;
+        }
+        return (
+            <Box sx={{ p: 4, textAlign: "center" }}>
+                <Typography color="text.secondary">Preview not available for this tab</Typography>
+            </Box>
+        );
+    };
 
     return (
         <Dialog
             open={open}
-            onClose={sending ? undefined : onClose}
-            maxWidth="md"
+            onClose={sending || downloadingPdf ? undefined : onClose}
+            maxWidth={isLandscape ? "lg" : "md"}
             fullWidth
-            PaperProps={{ sx: { height: "85vh" } }}
+            TransitionComponent={Fade}
+            TransitionProps={{ timeout: 250 }}
+            PaperProps={{
+                sx: {
+                    height: "85vh",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+                }
+            }}
         >
-            <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                {title || "Preview"}
-                <IconButton onClick={onClose} size="small" disabled={sending}>
+            <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid", borderColor: "divider", py: 1.5, px: 2.5 }}>
+                <Typography variant="h6" sx={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                    {title || "Preview"}
+                </Typography>
+                <IconButton onClick={onClose} size="small" disabled={sending || downloadingPdf}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 0, position: "relative", display: "flex", flexDirection: "column" }}>
-                {iframeLoading && (
-                    <Box sx={{
-                        position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center", gap: 1, bgcolor: "background.paper", zIndex: 1,
-                    }}>
-                        <CircularProgress />
-                        <Typography variant="caption" color="text.secondary">Loading preview…</Typography>
-                    </Box>
-                )}
-                {url
-                 && (
-                    <iframe
-                        src={url}
-                        title="Document preview"
-                        onLoad={() => setIframeLoading(false)}
-                        style={{ flex: 1, width: "100%", border: "none", minHeight: "60vh" }}
-                    />
-                )
-                }
+            <DialogContent sx={{ p: 2, bgcolor: "#f5f5f5", overflowY: "auto", display: "flex", justifyContent: "center" }}>
+                <Paper
+                    ref={previewPrintRef}
+                    elevation={3}
+                    sx={{
+                        width: "100%",
+                        maxWidth: isLandscape ? 1000 : 800,
+                        height: "fit-content",
+                        minHeight: "auto",
+                        bgcolor: "#ffffff",
+                        p: 3,
+                        borderRadius: 1,
+                        my: 1,
+                        boxSizing: "border-box"
+                    }}
+                >
+                    {renderPreviewContent()}
+                </Paper>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={sending} variant="outlined">Close</Button>
+            <DialogActions sx={{ borderTop: "1px solid", borderColor: "divider", py: 1.5, px: 2.5, gap: 1 }}>
+                <Button onClick={onClose} disabled={sending || downloadingPdf} variant="outlined" size="small">
+                    Close
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    startIcon={downloadingPdf ? <CircularProgress size={16} color="inherit" /> : <Download />}
+                    onClick={handleManualDownload}
+                    disabled={downloadingPdf || sending}
+                    sx={{ textTransform: "none", fontWeight: 600, px: 2 }}
+                >
+                    {downloadingPdf ? "Downloading..." : "Download PDF"}
+                </Button>
                 <Button
                     variant="contained"
                     color="success"
-                    startIcon={sending ? <CircularProgress size={18} color="inherit" /> : <WhatsAppIcon />}
+                    size="small"
+                    startIcon={sending ? <CircularProgress size={16} color="inherit" /> : <WhatsAppIcon />}
                     onClick={onSend}
-                    disabled={sending}
+                    disabled={sending || downloadingPdf}
+                    sx={{ textTransform: "none", fontWeight: 600, px: 2.5 }}
                 >
                     {sending ? "Sending…" : "Send via WhatsApp"}
                 </Button>
@@ -1549,18 +1657,18 @@ const SaleInvoiceLedgerFilterBar = ({ dataSource, columnFilters, setColumnFilter
     );
 };
 
-const SheetsheetFilterBar = ({ 
-    dataSource, 
-    columnFilters, 
-    setColumnFilters, 
+const SheetsheetFilterBar = ({
+    dataSource,
+    columnFilters,
+    setColumnFilters,
     // fromDate, 
     // toDate, 
     // setFromDate, 
     // setToDate, 
     date,
     setDate,
-    onSearch, 
-    isLoading 
+    onSearch,
+    isLoading
 }) => {
     // const dateRangeInvalid = fromDate && toDate && new Date(fromDate) > new Date(toDate);
     const hasActiveFilters = Object.values(columnFilters || {}).some((v) => Array.isArray(v) && v.length > 0);
@@ -1602,13 +1710,13 @@ const SheetsheetFilterBar = ({
                     sx={{ minWidth: 160 }}
                     error={dateRangeInvalid}
                 /> */}
-                  <TextField
-                    label="Date" 
-                    type="date" 
-                    size="small" 
+                <TextField
+                    label="Date"
+                    type="date"
+                    size="small"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }} 
+                    InputLabelProps={{ shrink: true }}
                     sx={{ minWidth: 160 }}
                 />
                 {/* <TextField
@@ -1623,8 +1731,8 @@ const SheetsheetFilterBar = ({
                     helperText={dateRangeInvalid ? "To Date must be after From Date" : ""}
                 /> */}
                 <Button
-                    variant="contained" 
-                    size="small" 
+                    variant="contained"
+                    size="small"
                     startIcon={<Search />}
                     onClick={onSearch}
                     disabled={isLoading || !date}
@@ -1645,11 +1753,11 @@ const SheetsheetFilterBar = ({
                     Reset Date
                 </Button>
                 {hasActiveFilters && (
-                    <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="error" 
-                        startIcon={<CloseIcon />} 
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<CloseIcon />}
                         onClick={handleClearAll}
                     >
                         Clear Filters
@@ -1663,20 +1771,20 @@ const SheetsheetFilterBar = ({
                     return (
                         <Autocomplete
                             key={key}
-                            multiple 
-                            size="small" 
+                            multiple
+                            size="small"
                             options={options}
-                            disableCloseOnSelect 
+                            disableCloseOnSelect
                             getOptionLabel={(o) => o}
                             value={Array.isArray(currentFilter) ? currentFilter : []}
                             onChange={(_, v) => setColumnFilters((p) => ({ ...p, [key]: v }))}
                             renderOption={(props, option, { selected }) => (
                                 <li {...props}>
-                                    <Checkbox 
-                                        icon={icon} 
-                                        checkedIcon={checkedIcon} 
-                                        checked={selected} 
-                                        sx={{ mr: 1 }} 
+                                    <Checkbox
+                                        icon={icon}
+                                        checkedIcon={checkedIcon}
+                                        checked={selected}
+                                        sx={{ mr: 1 }}
                                     />
                                     {option}
                                 </li>
@@ -1692,11 +1800,11 @@ const SheetsheetFilterBar = ({
                                         endAdornment: (
                                             <>
                                                 {options.length > 0 && (
-                                                    <Chip 
-                                                        label={`${options.length}`} 
-                                                        size="small" 
-                                                        color="info" 
-                                                        sx={{ mr: 1, height: 18, fontSize: 9 }} 
+                                                    <Chip
+                                                        label={`${options.length}`}
+                                                        size="small"
+                                                        color="info"
+                                                        sx={{ mr: 1, height: 18, fontSize: 9 }}
                                                     />
                                                 )}
                                                 {params.InputProps.endAdornment}
@@ -1749,18 +1857,18 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [columnFilters, setColumnFilters] = useState({});
     const [filteredData, setFilteredData] = useState([]);
 
-    const [saleOrderFromDate, setSaleOrderFromDate] = useState(() => 
+    const [saleOrderFromDate, setSaleOrderFromDate] = useState(() =>
         new Date().toISOString().split('T')[0]
     );
 
-    const [saleOrderToDate, setSaleOrderToDate] = useState(() => 
+    const [saleOrderToDate, setSaleOrderToDate] = useState(() =>
         new Date().toISOString().split('T')[0]
     );
 
-    const [saleInvoiceFromDate, setSaleInvoiceFromDate] = useState(() => 
+    const [saleInvoiceFromDate, setSaleInvoiceFromDate] = useState(() =>
         new Date().toISOString().split('T')[0]
     );
-    const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() => 
+    const [saleInvoiceToDate, setSaleInvoiceToDate] = useState(() =>
         new Date().toISOString().split('T')[0]
     );
     const [saleInvoiceFilters, setSaleInvoiceFilters] = useState({});
@@ -1802,10 +1910,10 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [whatsappCounts, setWhatsappCounts] = useState({});
     const [countsLoaded, setCountsLoaded] = useState(false);
 
-const lolDetailsMapRef = useRef(new Map());
+    const lolDetailsMapRef = useRef(new Map());
 
     const [sheetsheetData, setSheetsheetData] = useState([]);
-        const [sheetsheetDate, setSheetsheetDate] = useState(today);
+    const [sheetsheetDate, setSheetsheetDate] = useState(today);
     const [filteredSheetsheetData, setFilteredSheetsheetData] = useState([]);
     const [isSheetsheetLoading, setIsSheetsheetLoading] = useState(false);
     const [sheetsheetFilters, setSheetsheetFilters] = useState({});
@@ -1820,13 +1928,13 @@ const lolDetailsMapRef = useRef(new Map());
     const tabFetchingRef = useRef({});
 
     const invCaptureRef = useRef(null);
-const [invCaptureData, setInvCaptureData] = useState(null);
-const [invPdfBuildInFlight, setInvPdfBuildInFlight] = useState(false);
+    const [invCaptureData, setInvCaptureData] = useState(null);
+    const [invPdfBuildInFlight, setInvPdfBuildInFlight] = useState(false);
 
 
-const stmtCaptureRef = useRef(null);
-const [stmtCaptureData, setStmtCaptureData] = useState(null);
-const [stmtPdfBuildInFlight, setStmtPdfBuildInFlight] = useState(false);
+    const stmtCaptureRef = useRef(null);
+    const [stmtCaptureData, setStmtCaptureData] = useState(null);
+    const [stmtPdfBuildInFlight, setStmtPdfBuildInFlight] = useState(false);
 
     const [filters, setFilters] = useState({
         reqDate: ISOString(),
@@ -1857,12 +1965,17 @@ const [stmtPdfBuildInFlight, setStmtPdfBuildInFlight] = useState(false);
 
 
     const soCaptureRef = useRef(null);
-const [soCaptureData, setSoCaptureData] = useState(null);
-const [soPdfBuildInFlight, setSoPdfBuildInFlight] = useState(false);
+    const [soCaptureData, setSoCaptureData] = useState(null);
+    const [soPdfBuildInFlight, setSoPdfBuildInFlight] = useState(false);
 
-const priceListCaptureRef = useRef(null);
-const [priceListCaptureData, setPriceListCaptureData] = useState(null);
-const [priceListPdfBuildInFlight, setPriceListPdfBuildInFlight] = useState(false);
+    const priceListCaptureRef = useRef(null);
+    const [priceListCaptureData, setPriceListCaptureData] = useState(null);
+    const [priceListPdfBuildInFlight, setPriceListPdfBuildInFlight] = useState(false);
+    const [cachedPriceListPdfUrl, setCachedPriceListPdfUrl] = useState(() =>
+        getStoredPriceListPdfUrl(storage?.Company_id)
+    );
+    const [cachedPriceListPdfBlob, setCachedPriceListPdfBlob] = useState(null);
+    const [isUpdatingPriceListPdf, setIsUpdatingPriceListPdf] = useState(false);
 
 
     const getCountKey = useCallback((docType, docId) => `${docType}_${docId}`, []);
@@ -1889,119 +2002,153 @@ const [priceListPdfBuildInFlight, setPriceListPdfBuildInFlight] = useState(false
                 .catch((e) => console.error("Token fetch error:", e));
         }
     }, []);
-const buildSaleInvoicePdfBlob = (row) =>
-    new Promise((resolve, reject) => {
-        if (invPdfBuildInFlight) {
-            reject(new Error("A Sales Invoice PDF is already being prepared. Please wait for it to finish."));
-            return;
-        }
-        setInvPdfBuildInFlight(true);
+    const buildSaleInvoicePdfBlob = (row) =>
+        new Promise((resolve, reject) => {
+            if (invPdfBuildInFlight) {
+                reject(new Error("A Sales Invoice PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setInvPdfBuildInFlight(true);
 
-        let settled = false;
-        const safeResolve = (v) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); resolve(v); } };
-        const safeReject = (e) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); reject(e); } };
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setInvPdfBuildInFlight(false); reject(e); } };
 
-        const timeoutId = setTimeout(() => {
-            setInvCaptureData(null);
-            safeReject(new Error("Timed out preparing Sales Invoice PDF."));
-        }, 20000);
-
-        setInvCaptureData({
-            row,
-            onReady: async () => {
-                clearTimeout(timeoutId);
-                try {
-                    const blob = await generatePdfBlobFromElement(invCaptureRef.current);
-                    setInvCaptureData(null);
-                    safeResolve(blob);
-                } catch (e) {
-                    setInvCaptureData(null);
-                    safeReject(e);
-                }
-            },
-            onError: (err) => {
-                clearTimeout(timeoutId);
+            const timeoutId = setTimeout(() => {
                 setInvCaptureData(null);
-                safeReject(err instanceof Error ? err : new Error(String(err)));
-            },
+                safeReject(new Error("Timed out preparing Sales Invoice PDF."));
+            }, 20000);
+
+            setInvCaptureData({
+                row,
+                onReady: async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(invCaptureRef.current);
+                        setInvCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        setInvCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    clearTimeout(timeoutId);
+                    setInvCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
         });
-    });
 
     const buildSaleOrderPdfBlob = (row) =>
-    new Promise((resolve, reject) => {
-        if (soPdfBuildInFlight) {
-            reject(new Error("A Sale Order PDF is already being prepared. Please wait for it to finish."));
-            return;
-        }
-        setSoPdfBuildInFlight(true);
+        new Promise((resolve, reject) => {
+            if (soPdfBuildInFlight) {
+                reject(new Error("A Sale Order PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setSoPdfBuildInFlight(true);
 
-        let settled = false;
-        const safeResolve = (v) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); resolve(v); } };
-        const safeReject = (e) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); reject(e); } };
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setSoPdfBuildInFlight(false); reject(e); } };
 
-        const timeoutId = setTimeout(() => {
-            setSoCaptureData(null);
-            safeReject(new Error("Timed out preparing Sale Order PDF."));
-        }, 20000);
-
-        setSoCaptureData({
-            row,
-            onReady: async () => {
-                clearTimeout(timeoutId);
-                try {
-                    const blob = await generatePdfBlobFromElement(soCaptureRef.current);
-                    setSoCaptureData(null);
-                    safeResolve(blob);
-                } catch (e) {
-                    setSoCaptureData(null);
-                    safeReject(e);
-                }
-            },
-            onError: (err) => {
-                clearTimeout(timeoutId);
+            const timeoutId = setTimeout(() => {
                 setSoCaptureData(null);
-                safeReject(err instanceof Error ? err : new Error(String(err)));
-            },
+                safeReject(new Error("Timed out preparing Sale Order PDF."));
+            }, 20000);
+
+            setSoCaptureData({
+                row,
+                onReady: async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(soCaptureRef.current);
+                        setSoCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        setSoCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    clearTimeout(timeoutId);
+                    setSoCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
         });
-    });
 
     const buildPriceListPdfBlob = (row) =>
-    new Promise((resolve, reject) => {
-        if (priceListPdfBuildInFlight) {
-            reject(new Error("A Price List PDF is already being prepared. Please wait for it to finish."));
+        new Promise((resolve, reject) => {
+            if (priceListPdfBuildInFlight) {
+                reject(new Error("A Price List PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setPriceListPdfBuildInFlight(true);
+
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); reject(e); } };
+
+            const timeoutId = setTimeout(() => {
+                setPriceListCaptureData(null);
+                safeReject(new Error("Timed out preparing Price List PDF."));
+            }, 20000);
+
+            setPriceListCaptureData({
+                row,
+                onReady: async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(priceListCaptureRef.current);
+                        setPriceListCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        setPriceListCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    clearTimeout(timeoutId);
+                    setPriceListCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
+        });
+
+    const handleUpdatePriceListPdf = async (silent = false) => {
+        if (isUpdatingPriceListPdf || priceListPdfBuildInFlight) {
+            if (!silent) toast.info("Price List PDF update is already in progress...");
             return;
         }
-        setPriceListPdfBuildInFlight(true);
+        setIsUpdatingPriceListPdf(true);
+        try {
+            const sampleRow = filteredPriceListRetailers?.[0] || priceListRetailers?.[0] || {};
+            const blob = await buildPriceListPdfBlob(sampleRow);
+            const documentFilename = `Price_List_Company_${storage?.Company_id || 'default'}.pdf`;
+            const documentUrl = await uploadPdfToServer("masters/whatsapp/pricelistpdf", blob, documentFilename, {
+                Ret_Id: sampleRow.Ret_Id || sampleRow.DocumentId || 0,
+                replaceExisting: true,
+            });
 
-        let settled = false;
-        const safeResolve = (v) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); resolve(v); } };
-        const safeReject = (e) => { if (!settled) { settled = true; setPriceListPdfBuildInFlight(false); reject(e); } };
+            setCachedPriceListPdfBlob(blob);
+            setCachedPriceListPdfUrl(documentUrl);
+            setStoredPriceListPdfUrl(storage?.Company_id, documentUrl);
 
-        const timeoutId = setTimeout(() => {
-            setPriceListCaptureData(null);
-            safeReject(new Error("Timed out preparing Price List PDF."));
-        }, 20000);
-
-        setPriceListCaptureData({
-            row,
-            onReady: async () => {
-                clearTimeout(timeoutId);
-                try {
-                    const blob = await generatePdfBlobFromElement(priceListCaptureRef.current);
-                    setPriceListCaptureData(null);
-                    safeResolve(blob);
-                } catch (e) {
-                    setPriceListCaptureData(null);
-                    safeReject(e);
-                }
-            },
-            onError: (err) => {
-                clearTimeout(timeoutId);
-                setPriceListCaptureData(null);
-                safeReject(err instanceof Error ? err : new Error(String(err)));
-            },
-        });
-    });
+            if (!silent) {
+                toast.success("Price List PDF updated and replaced successfully!");
+            }
+            return { blob, documentUrl, documentFilename };
+        } catch (e) {
+            console.error("Failed to update Price List PDF:", e);
+            if (!silent) {
+                toast.error(`Failed to update Price List PDF: ${e.message}`);
+            }
+            throw e;
+        } finally {
+            setIsUpdatingPriceListPdf(false);
+        }
+    };
 
     const handleColumnSettingsSave = async (selectedColumnsArray) => {
         setWhatsappColumns(selectedColumnsArray);
@@ -2009,67 +2156,67 @@ const buildSaleInvoicePdfBlob = (row) =>
 
 
     const buildOutstandingPdfBlob = (row) =>
-    new Promise((resolve, reject) => {
-        if (stmtPdfBuildInFlight) {
-            reject(new Error("A Transaction PDF is already being prepared. Please wait for it to finish."));
-            return;
-        }
-        setStmtPdfBuildInFlight(true);
+        new Promise((resolve, reject) => {
+            if (stmtPdfBuildInFlight) {
+                reject(new Error("A Transaction PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setStmtPdfBuildInFlight(true);
 
-        let settled = false;
-        const safeResolve = (v) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); resolve(v); } };
-        const safeReject = (e) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); reject(e); } };
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setStmtPdfBuildInFlight(false); reject(e); } };
 
-        const timeoutId = setTimeout(() => {
-            setStmtCaptureData(null);
-            safeReject(new Error("Timed out preparing Transaction Statement PDF."));
-        }, 20000);
-
-        setStmtCaptureData({
-            row,
-            fromDate: outstandingFromDate,
-            toDate: outstandingToDate,
-            onReady: async () => {
-                clearTimeout(timeoutId);
-                try {
-                    const blob = await generatePdfBlobFromElement(stmtCaptureRef.current);
-                    setStmtCaptureData(null);
-                    safeResolve(blob);
-                } catch (e) {
-                    setStmtCaptureData(null);
-                    safeReject(e);
-                }
-            },
-            onError: (err) => {
-                clearTimeout(timeoutId);
+            const timeoutId = setTimeout(() => {
                 setStmtCaptureData(null);
-                safeReject(err instanceof Error ? err : new Error(String(err)));
-            },
+                safeReject(new Error("Timed out preparing Transaction Statement PDF."));
+            }, 20000);
+
+            setStmtCaptureData({
+                row,
+                fromDate: outstandingFromDate,
+                toDate: outstandingToDate,
+                onReady: async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(stmtCaptureRef.current);
+                        setStmtCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        setStmtCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    clearTimeout(timeoutId);
+                    setStmtCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
         });
-    });
 
 
 
     const buildOutstandingPDFParams = async (row) => {
-    const companyname = companyInfo[0]?.Company_Name || "Company";
-    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
-    const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+        const amount = NumberFormat(Math.abs(parseFloat(row.Bal_Amount) || 0));
 
-    const blob = await buildOutstandingPdfBlob(row);
-    const filename = `Statement_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
-        .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-    const documentUrl = await uploadPdfToServer("masters/whatsapp/statementpdf", blob, filename, {
-        Acc_Id: row.Acc_Id,
-        Retailer_Id: row.DocumentId,
-    });
+        const blob = await buildOutstandingPdfBlob(row);
+        const filename = `Statement_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+            .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+        const documentUrl = await uploadPdfToServer("masters/whatsapp/statementpdf", blob, filename, {
+            Acc_Id: row.Acc_Id,
+            Retailer_Id: row.DocumentId,
+        });
 
-    return {
-        bodyParams: [companyname, customerName, `₹${amount}`],
-        clientRefId: generateUniqueClientRefId("outstanding_pdf", row.DocumentId),
-        documentUrl,
-        documentFilename: filename,
+        return {
+            bodyParams: [companyname, customerName, `₹${amount}`],
+            clientRefId: generateUniqueClientRefId("outstanding_pdf", row.DocumentId),
+            documentUrl,
+            documentFilename: filename,
+        };
     };
-};
 
 
 
@@ -2130,7 +2277,7 @@ const buildSaleInvoicePdfBlob = (row) =>
         } catch (e) { console.error("Error fetching tab settings:", e); }
     }, []);
 
-   
+
     const resolveTemplate = useCallback((tab, serviceName, langName, usePdf = false) => {
         const svcKey = (serviceName || "dotpe").toLowerCase();
         const langKey = (langName || "english").toLowerCase();
@@ -2147,45 +2294,45 @@ const buildSaleInvoicePdfBlob = (row) =>
         );
     }, []);
 
-const sendWhatsAppMessage = useCallback(
-    async ({ tab, phone, bodyParams, clientRefId, imageUrl = null, documentUrl = null, documentFilename = null, usePdfTemplate = false}) => {
-        const safeParams = bodyParams.map((p) => {
-            const s = p === undefined || p === null ? "" : String(p).trim();
-            return s === "" ? "N/A" : s;
-        });
-        const { serviceName = "Dotpe", langName = "en" } = tabMethodSettings[tab] || {};
-        const svcKey = serviceName.toLowerCase();
-        const langKey = langName.toLowerCase();
-        const langCode = LANG_CODE_MAP[langKey] || "en";
-        const templateName = resolveTemplate(tab, svcKey, langKey, usePdfTemplate);
+    const sendWhatsAppMessage = useCallback(
+        async ({ tab, phone, bodyParams, clientRefId, imageUrl = null, documentUrl = null, documentFilename = null, usePdfTemplate = false }) => {
+            const safeParams = bodyParams.map((p) => {
+                const s = p === undefined || p === null ? "" : String(p).trim();
+                return s === "" ? "N/A" : s;
+            });
+            const { serviceName = "Dotpe", langName = "en" } = tabMethodSettings[tab] || {};
+            const svcKey = serviceName.toLowerCase();
+            const langKey = langName.toLowerCase();
+            const langCode = LANG_CODE_MAP[langKey] || "en";
+            const templateName = resolveTemplate(tab, svcKey, langKey, usePdfTemplate);
 
-       
-        if (usePdfTemplate && !templateName) {
-            throw new Error(`No PDF-attachment WhatsApp template configured for "${langKey}". Add one to TEMPLATE_MAP.${tab}.pdf`);
-        }
 
-        if (svcKey === "askeva") return sendViaAskeva({
-            phone,
-            templateName,
-            language: langCode,
-            bodyParams: safeParams,
-            evatoken: String(evatoken),
-            imageUrl,
-            documentUrl,
-            ...(documentFilename ? { documentFilename } : {}),
-        });
-        return sendViaDotPe({
-            phone,
-            templateName,
-            language: langCode,
-            bodyParams: safeParams,
-            clientRefId,
-            imageUrl,
-            documentUrl,
-        });
-    },
-    [tabMethodSettings, resolveTemplate, evatoken]
-);
+            if (usePdfTemplate && !templateName) {
+                throw new Error(`No PDF-attachment WhatsApp template configured for "${langKey}". Add one to TEMPLATE_MAP.${tab}.pdf`);
+            }
+
+            if (svcKey === "askeva") return sendViaAskeva({
+                phone,
+                templateName,
+                language: langCode,
+                bodyParams: safeParams,
+                evatoken: String(evatoken),
+                imageUrl,
+                documentUrl,
+                ...(documentFilename ? { documentFilename } : {}),
+            });
+            return sendViaDotPe({
+                phone,
+                templateName,
+                language: langCode,
+                bodyParams: safeParams,
+                clientRefId,
+                imageUrl,
+                documentUrl,
+            });
+        },
+        [tabMethodSettings, resolveTemplate, evatoken]
+    );
 
     const calculateAltActQty = (item) => {
         if (item.Alt_Act_Qty != null) return Number(item.Alt_Act_Qty) || 0;
@@ -2195,7 +2342,7 @@ const sendWhatsAppMessage = useCallback(
         return (Number(item.Bill_Qty) || 0) * (Number(item.PackValue) || 1);
     };
 
-    
+
     const logWhatsappSend = async (row, tab) => {
         try {
             const phone = phoneMap.get(Number(row.Retailer_Id)) || row?.A1_Phone || row?.A1 || row?.Customer_Phone;
@@ -2211,7 +2358,7 @@ const sendWhatsAppMessage = useCallback(
                     messageTemplate: tab,
                     sentBy: storage?.userId || storage?.Id,
                 },
-                loadingOn: () => {}, loadingOff: () => {},
+                loadingOn: () => { }, loadingOff: () => { },
             });
             // Update local count after sending
             setWhatsappCounts((prev) => {
@@ -2249,7 +2396,7 @@ const sendWhatsAppMessage = useCallback(
         try {
             const response = await fetchLink({
                 address: `masters/whatsapp/getWhatsappCounts?documentType=${encodeURIComponent(docType)}&referenceIds=${ids.join(',')}`,
-                loadingOn: () => {}, loadingOff: () => {},
+                loadingOn: () => { }, loadingOff: () => { },
             });
             if (response?.success && response.data) {
                 setWhatsappCounts((prev) => {
@@ -2292,7 +2439,7 @@ const sendWhatsAppMessage = useCallback(
             try {
                 const response = await fetchLink({
                     address: `masters/whatsapp/getWhatsappCounts?documentType=${encodeURIComponent(docType)}&referenceIds=${ids.join(',')}`,
-                    loadingOn: () => {}, loadingOff: () => {},
+                    loadingOn: () => { }, loadingOff: () => { },
                 });
                 if (response?.success && response.data) {
                     response.data.forEach((item) => {
@@ -2315,11 +2462,11 @@ const sendWhatsAppMessage = useCallback(
             const response = await fetchLink({ address: "masters/getlolDetails" });
             if (response?.success && response.data) {
                 const map = new Map();
-                 const detailsMap = new Map();
+                const detailsMap = new Map();
                 response.data.forEach((item) => {
-                if (item.A1) map.set(Number(item.Ret_Id), item.A1);
-                detailsMap.set(Number(item.Ret_Id), item);
-            });
+                    if (item.A1) map.set(Number(item.Ret_Id), item.A1);
+                    detailsMap.set(Number(item.Ret_Id), item);
+                });
                 setPhoneMap(map);
                 lolDetailsMapRef.current = detailsMap;
                 setIsPhoneMapLoaded(true);
@@ -2339,154 +2486,123 @@ const sendWhatsAppMessage = useCallback(
         return `${print_app}/salesOrder/downloadPdf?So_Inv_No=${btoa(formattedSalesNo)}&Company_id=${btoa(storage?.Company_id)}`;
     };
 
- 
+
 
     const generatePdfBlobFromElement = async (element) => {
         if (!element) throw new Error("Nothing to render — capture element is empty");
-        // const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-          const canvas = await html2canvas(element, { 
-        scale: 1,                
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false
-    });
-        // const imgData = canvas.toDataURL("image/png");
-        const imgData = canvas.toDataURL("image/jpeg", 0.85); 
-
-        // const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-    const pdf = new jsPDF({ 
-        orientation: "portrait", 
-        unit: "mm", 
-        format: "a4",
-        compress: true              
-    });
-
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        // pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-         pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-        }
-
+        const isLandscape = activeTab === "outstanding" || activeTab === "pending_bills";
+        const orientation = isLandscape ? "landscape" : "portrait";
+        const pdf = await generateSmartPdf(element, {
+            orientation,
+            marginSide: 8,
+            marginTop: 10,
+            marginBottom: 12
+        });
         return pdf.output("blob");
     };
 
     const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result).split(",")[1]); 
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-});
-
-const fetchPdfBlobFromUrl = async (url) => {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`Failed to fetch PDF (${resp.status})`);
-    const blob = await resp.blob();
-    if (!blob || blob.size === 0) throw new Error("Fetched PDF is empty");
-    return blob;
-};
-
-
-const uploadPdfToServer = async (address, blob, filename, extraFields = {}) => {
-    const formData = new FormData();
-
-    if (storage?.Company_id) formData.append("Company_id", storage.Company_id);
-    Object.entries(extraFields).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) formData.append(k, v);
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
     });
 
-    // File LAST
-    formData.append("pdfFile", blob, filename);
-
-    const response = await fetchLink({
-        address,
-        method: "POST",
-        bodyData: formData,
-        loadingOn: () => {}, loadingOff: () => {},
-    });
-
-    if (!response?.success || !response?.data?.url) {
-        throw new Error(response?.message || "PDF upload failed");
-    }
-    return response.data.url;
-};
-
-const saveGeneratedPdfToServer = async (address, payload) => {
-    const response = await fetchLink({
-        address,
-        method: "POST",
-        bodyData: payload,
-        loadingOn: () => {}, loadingOff: () => {},
-    });
-    if (!response?.success || !response?.data?.url) {
-        throw new Error(response?.message || "PDF save failed");
-    }
-    return response.data.url;
-};
+    const fetchPdfBlobFromUrl = async (url) => {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Failed to fetch PDF (${resp.status})`);
+        const blob = await resp.blob();
+        if (!blob || blob.size === 0) throw new Error("Fetched PDF is empty");
+        return blob;
+    };
 
 
- const [pdfBuildInFlight, setPdfBuildInFlight] = useState(false);
+    const uploadPdfToServer = async (address, blob, filename, extraFields = {}) => {
+        const formData = new FormData();
 
-const buildPendingBillsPdfBlob = (row) =>
-    new Promise((resolve, reject) => {
-        if (pdfBuildInFlight) {
-            reject(new Error("A PDF is already being prepared. Please wait for it to finish."));
-            return;
-        }
-        setPdfBuildInFlight(true);
-       
-
-        let settled = false;
-        const safeResolve = (v) => { if (!settled) { settled = true; setPdfBuildInFlight(false); resolve(v); } };
-        const safeReject = (e) => { if (!settled) { settled = true; setPdfBuildInFlight(false); reject(e); } };
-
-        const timeoutId = setTimeout(() => {
-            console.error("[PendingBillsPdf] TIMED OUT — onReady/onError never fired for Acc_Id", row?.Acc_Id);
-            setPdfCaptureData(null);
-            safeReject(new Error("Timed out preparing Pending Bills PDF (component never signaled ready)."));
-        }, 20000);
-
-        setPdfCaptureData({
-            row,
-            fromDate: pendingBillsFromDate,
-            toDate: pendingBillsToDate,
-            companyInfo,
-            onReady: async () => {
-              
-                clearTimeout(timeoutId);
-                try {
-                    const blob = await generatePdfBlobFromElement(pdfCaptureRef.current);
-                   
-                    setPdfCaptureData(null);
-                    safeResolve(blob);
-                } catch (e) {
-                    console.error("[PendingBillsPdf] html2canvas/jsPDF failed:", e);
-                    setPdfCaptureData(null);
-                    safeReject(e);
-                }
-            },
-            onError: (err) => {
-                console.error("[PendingBillsPdf] onError fired for Acc_Id", row?.Acc_Id, err);
-                clearTimeout(timeoutId);
-                setPdfCaptureData(null);
-                safeReject(err instanceof Error ? err : new Error(String(err)));
-            },
+        if (storage?.Company_id) formData.append("Company_id", storage.Company_id);
+        Object.entries(extraFields).forEach(([k, v]) => {
+            if (v !== undefined && v !== null) formData.append(k, v);
         });
-    });
+
+        // File LAST
+        formData.append("pdfFile", blob, filename);
+
+        const response = await fetchLink({
+            address,
+            method: "POST",
+            bodyData: formData,
+            loadingOn: () => { }, loadingOff: () => { },
+        });
+
+        if (!response?.success || !response?.data?.url) {
+            throw new Error(response?.message || "PDF upload failed");
+        }
+        return response.data.url;
+    };
+
+    const saveGeneratedPdfToServer = async (address, payload) => {
+        const response = await fetchLink({
+            address,
+            method: "POST",
+            bodyData: payload,
+            loadingOn: () => { }, loadingOff: () => { },
+        });
+        if (!response?.success || !response?.data?.url) {
+            throw new Error(response?.message || "PDF save failed");
+        }
+        return response.data.url;
+    };
+
+
+    const [pdfBuildInFlight, setPdfBuildInFlight] = useState(false);
+
+    const buildPendingBillsPdfBlob = (row) =>
+        new Promise((resolve, reject) => {
+            if (pdfBuildInFlight) {
+                reject(new Error("A PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setPdfBuildInFlight(true);
+
+
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setPdfBuildInFlight(false); reject(e); } };
+
+            const timeoutId = setTimeout(() => {
+                console.error("[PendingBillsPdf] TIMED OUT — onReady/onError never fired for Acc_Id", row?.Acc_Id);
+                setPdfCaptureData(null);
+                safeReject(new Error("Timed out preparing Pending Bills PDF (component never signaled ready)."));
+            }, 20000);
+
+            setPdfCaptureData({
+                row,
+                fromDate: pendingBillsFromDate,
+                toDate: pendingBillsToDate,
+                companyInfo,
+                onReady: async () => {
+
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(pdfCaptureRef.current);
+
+                        setPdfCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        console.error("[PendingBillsPdf] html2canvas/jsPDF failed:", e);
+                        setPdfCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    console.error("[PendingBillsPdf] onError fired for Acc_Id", row?.Acc_Id, err);
+                    clearTimeout(timeoutId);
+                    setPdfCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
+        });
     const processInvoice = (invoice, phoneMapRef) => ({
         ...invoice,
         DocumentType: "SalesInvoice",
@@ -2529,7 +2645,7 @@ const buildPendingBillsPdfBlob = (row) =>
                 }
                 setCostTypes(toArray(response?.others?.costTypes));
                 setUniqueInvolvedCost(toArray(response?.others?.uniqeInvolvedStaffs));
-           
+
                 // toast.success(`Loaded ${si.length} sale invoice(s) for ${saleInvoiceFromDate} to ${saleInvoiceToDate}`);
             } else {
                 setAllSalesInvoices([]);
@@ -2550,22 +2666,22 @@ const buildPendingBillsPdfBlob = (row) =>
         try {
             if (!refresh) setIsLoading(true); else setIsRefreshing(true);
             setViewMode("normal");
-            
+
             // Use provided dates or fallback to current date
-            const dateParam = fromDate && toDate ? 
-                `Fromdate=${fromDate}&Todate=${toDate}` : 
+            const dateParam = fromDate && toDate ?
+                `Fromdate=${fromDate}&Todate=${toDate}` :
                 `reqDate=${filters.reqDate}`;
-            
-            const staffParam = fromDate && toDate ? 
-                `&staffStatus=${filters.staffStatus}` : 
+
+            const staffParam = fromDate && toDate ?
+                `&staffStatus=${filters.staffStatus}` :
                 `&staffStatus=${filters.staffStatus}`;
-            
-            const soResp = await fetchLink({ 
-                address: `sales/salesOrder/lrReportWhatsapp?${dateParam}${staffParam}`, 
-                loadingOn, 
-                loadingOff 
+
+            const soResp = await fetchLink({
+                address: `sales/salesOrder/lrReportWhatsapp?${dateParam}${staffParam}`,
+                loadingOn,
+                loadingOff
             });
-            
+
             const so = toArray(soResp?.data).map((x) => processOrder(x, phoneMap));
 
             setAllSalesOrders(so);
@@ -2591,7 +2707,7 @@ const buildPendingBillsPdfBlob = (row) =>
         }
     };
 
-  
+
 
     const fetchSaleOrders = async (reqDate) => {
         if (tabFetchingRef.current.sale_order) return;
@@ -2715,7 +2831,7 @@ const buildPendingBillsPdfBlob = (row) =>
         }
         if (tabFetchingRef.current.shetsheet) return;
         tabFetchingRef.current.shetsheet = true;
-        
+
         try {
             setIsSheetsheetLoading(true);
             const response = await fetchLink({
@@ -2723,15 +2839,15 @@ const buildPendingBillsPdfBlob = (row) =>
                 loadingOn,
                 loadingOff,
             });
-            
+
             if (response?.success && response.data) {
                 const processedData = toArray(response.data).map((item) => {
-                    
-                     const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
-    const phone = (phoneMapRef || phoneMap).get(Number(item.Retailer_Id)) ||
-                lolRecord.A1 ||
-                "Not Available";
-                    
+
+                    const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
+                    const phone = (phoneMapRef || phoneMap).get(Number(item.Retailer_Id)) ||
+                        lolRecord.A1 ||
+                        "Not Available";
+
                     return {
                         ...item,
                         DocumentType: "shetsheet",
@@ -2748,16 +2864,16 @@ const buildPendingBillsPdfBlob = (row) =>
                         involvedStaffNames: toArray(item.involvedStaffs).map(s => s.Emp_Name).filter(Boolean).join(", "),
                     };
                 });
-                
+
                 setSheetsheetData(processedData);
                 setFilteredSheetsheetData(processedData);
-                
+
                 await fetchWhatsappCountsFor(processedData, 'shetsheet');
-                
+
                 if (activeTab === "shetsheet") {
                     setFilteredData(processedData);
                 }
-                
+
                 toast.success(`Loaded ${processedData.length} records`);
                 tabFetchedRef.current.shetsheet = true;
             } else {
@@ -2895,7 +3011,7 @@ const buildPendingBillsPdfBlob = (row) =>
 
             fetchSaleInvoices(phoneMapResult);
             const today = new Date().toISOString().split('T')[0];
-            
+
             const [soResp, retailersResp, receiptsResp, outstandingResp, pendingResp, sheetsheetResp] = await Promise.allSettled([
                 fetchLink({ address: `sales/salesOrder/lrReportWhatsapp?reqDate=${filters.reqDate}&staffStatus=${filters.staffStatus}`, loadingOn, loadingOff }),
                 fetchLink({ address: "masters/retailerswithlol", loadingOn, loadingOff }),
@@ -3031,13 +3147,13 @@ const buildPendingBillsPdfBlob = (row) =>
             }
 
             if (sheetsheetResp.status === 'fulfilled' && sheetsheetResp.value?.success) {
-                   const sheetsheetDataProcessed = toArray(sheetsheetResp.value.data).map((item) => {
-        const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
-        const phone = phoneMapResult.get(Number(item.Retailer_Id)) ||
-                    lolRecord.A1 ||
-                    "Not Available";
+                const sheetsheetDataProcessed = toArray(sheetsheetResp.value.data).map((item) => {
+                    const lolRecord = lolDetailsMapRef.current.get(Number(item.Retailer_Id)) || {};
+                    const phone = phoneMapResult.get(Number(item.Retailer_Id)) ||
+                        lolRecord.A1 ||
+                        "Not Available";
 
-                    
+
                     return {
                         ...item,
                         DocumentType: "shetsheet",
@@ -3046,8 +3162,8 @@ const buildPendingBillsPdfBlob = (row) =>
                         DocumentDate: item.Do_Date,
                         retailerPhone: phone,
                         A1: phone,
-                         Party_Mobile_1: lolRecord.Party_Mobile_1 || "",
-            Party_Mobile_2: lolRecord.Party_Mobile_2 || "",
+                        Party_Mobile_1: lolRecord.Party_Mobile_1 || "",
+                        Party_Mobile_2: lolRecord.Party_Mobile_2 || "",
                         formattedDate: item.Do_Date ? new Date(item.Do_Date).toLocaleDateString("en-GB") : "-",
                         totalBillQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Bill_Qty) || 0), 0),
                         totalActQty: toArray(item.stockDetails).reduce((s, i) => s + (Number(i.Act_Qty) || 0), 0),
@@ -3072,17 +3188,17 @@ const buildPendingBillsPdfBlob = (row) =>
         init();
     }, []);
 
-useEffect(() => {
-    if (!initialDataLoaded) return;
+    useEffect(() => {
+        if (!initialDataLoaded) return;
 
-    if (!didInitialLoadRef.current) {
-        didInitialLoadRef.current = true;
-        return;
-    }
+        if (!didInitialLoadRef.current) {
+            didInitialLoadRef.current = true;
+            return;
+        }
 
-    if (viewMode === "normal") fetchAllInvoices(true);
-    else fetchPendingInvoices();
-}, [filters.fetchTrigger, filters.staffStatus, filters.reqDate, viewMode, initialDataLoaded]);
+        if (viewMode === "normal") fetchAllInvoices(true);
+        else fetchPendingInvoices();
+    }, [filters.fetchTrigger, filters.staffStatus, filters.reqDate, viewMode, initialDataLoaded]);
 
     useEffect(() => {
         if (multiPrint.open) {
@@ -3162,69 +3278,69 @@ useEffect(() => {
     };
 
 
-const buildSaleInvoicePdfParams = async (row) => {
-    const companyname = companyInfo[0]?.Company_Name || "Company";
-    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
-    const invoiceNo = row.DocumentNumber || "-";
-    const rawDate = new Date(row.Do_Date || row.DocumentDate || row.createdOn);
-    const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
-    const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
-    const documentFilename = `Sales_Invoice_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+    const buildSaleInvoicePdfParams = async (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+        const invoiceNo = row.DocumentNumber || "-";
+        const rawDate = new Date(row.Do_Date || row.DocumentDate || row.createdOn);
+        const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
+        const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+        const documentFilename = `Sales_Invoice_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
-    const blob = await buildSaleInvoicePdfBlob(row);
-    const documentUrl = await uploadPdfToServer("masters/whatsapp/salesinvoicepdf", blob, documentFilename, {
-        Do_Inv_No: row.DocumentNumber,
-        Do_Id: row.DocumentId,
-    });
+        const blob = await buildSaleInvoicePdfBlob(row);
+        const documentUrl = await uploadPdfToServer("masters/whatsapp/salesinvoicepdf", blob, documentFilename, {
+            Do_Inv_No: row.DocumentNumber,
+            Do_Id: row.DocumentId,
+        });
 
-    return {
-        bodyParams: [companyname, customerName, date, amount],
-        clientRefId: generateUniqueClientRefId("inv_pdf", invoiceNo),
-        documentUrl,
-        documentFilename,
+        return {
+            bodyParams: [companyname, customerName, date, amount],
+            clientRefId: generateUniqueClientRefId("inv_pdf", invoiceNo),
+            documentUrl,
+            documentFilename,
+        };
     };
-};
 
-const buildSaleOrderPdfParams = async (row) => {
-    const companyname = companyInfo[0]?.Company_Name || "Company";
-    const customerName = row.retailerNameGet || "Customer";
-    const invoiceNo = row.DocumentNumber || "N/A";
-    const date = new Date(row.So_Date || row.DocumentDate || row.createdOn).toLocaleDateString("en-GB");
-    const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
-    const documentFilename = `Sale_Order_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+    const buildSaleOrderPdfParams = async (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || "Customer";
+        const invoiceNo = row.DocumentNumber || "N/A";
+        const date = new Date(row.So_Date || row.DocumentDate || row.createdOn).toLocaleDateString("en-GB");
+        const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+        const documentFilename = `Sale_Order_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
-    const blob = await buildSaleOrderPdfBlob(row);
-    const documentUrl = await uploadPdfToServer("masters/whatsapp/saleorderpdf", blob, documentFilename, {
-        So_Inv_No: row.DocumentNumber,
-        So_Id: row.DocumentId,
-    });
+        const blob = await buildSaleOrderPdfBlob(row);
+        const documentUrl = await uploadPdfToServer("masters/whatsapp/saleorderpdf", blob, documentFilename, {
+            So_Inv_No: row.DocumentNumber,
+            So_Id: row.DocumentId,
+        });
 
-    return {
-        bodyParams: [companyname, customerName, date, amount],
-        clientRefId: generateUniqueClientRefId("sord_pdf", invoiceNo),
-        documentUrl,
-        documentFilename,
+        return {
+            bodyParams: [companyname, customerName, date, amount],
+            clientRefId: generateUniqueClientRefId("sord_pdf", invoiceNo),
+            documentUrl,
+            documentFilename,
+        };
     };
-};
-    
-const buildPriceListPdfParams = async (row) => {
-    const companyname = companyInfo[0]?.Company_Name || "Company";
-    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
-    const documentFilename = `Price_List_${(row.Ret_Code || row.DocumentId || "list")
-        .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
-    const blob = await buildPriceListPdfBlob(row);
-    const documentUrl = await uploadPdfToServer("masters/whatsapp/pricelistpdf", blob, documentFilename, {
-        Ret_Id: row.Ret_Id || row.DocumentId,
-    });
+    const buildPriceListPdfParams = async (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+        const documentFilename = `Price_List_Company_${storage?.Company_id || 'default'}.pdf`;
 
-    return {
-        bodyParams: [companyname, customerName],
-        clientRefId: generateUniqueClientRefId("plist_pdf", row.Ret_Id || row.DocumentId),
-        documentUrl,
-        documentFilename,
+        let documentUrl = cachedPriceListPdfUrl || getStoredPriceListPdfUrl(storage?.Company_id);
+        if (!documentUrl) {
+            const res = await handleUpdatePriceListPdf(true);
+            documentUrl = res?.documentUrl;
+        }
+
+        return {
+            bodyParams: [companyname, customerName],
+            clientRefId: generateUniqueClientRefId("plist_pdf", row.Ret_Id || row.DocumentId),
+            documentUrl,
+            documentFilename,
+        };
     };
-};
 
 
     const buildPendingBillsPDFParams = async (row) => {
@@ -3236,7 +3352,7 @@ const buildPriceListPdfParams = async (row) => {
         try {
             const response = await fetchLink({
                 address: `journal/accountPendingReference?Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}`,
-                loadingOn: () => {}, loadingOff: () => {},
+                loadingOn: () => { }, loadingOff: () => { },
             });
             if (response?.success && response.data) {
                 const transactions = toArray(response.data);
@@ -3252,174 +3368,174 @@ const buildPriceListPdfParams = async (row) => {
         const filename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
             .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
         const documentUrl = await uploadPdfToServer("masters/whatsapp/uploadPendingBillsPdf", blob, filename);
-         const fifthParam = companyInfo[0]?.Company_Name || "Company";
+        const fifthParam = companyInfo[0]?.Company_Name || "Company";
         return {
-        
-            bodyParams: [companyname, customerName, billCount, `₹${amount}`,fifthParam],
+
+            bodyParams: [companyname, customerName, billCount, `₹${amount}`, fifthParam],
             clientRefId: generateUniqueClientRefId("pending_bill_pdf", row.DocumentId),
             documentUrl,
         };
     };
 
 
-const PendingBillsAttachmentDialog = ({ open, onClose, documentUrl, documentFilename, bodyParams, onSend, sending }) => {
-    const [companyname, customerName, billCount, amount] = bodyParams || [];
+    const PendingBillsAttachmentDialog = ({ open, onClose, documentUrl, documentFilename, bodyParams, onSend, sending }) => {
+        const [companyname, customerName, billCount, amount] = bodyParams || [];
 
-    return (
-        <Dialog open={open} onClose={sending ? undefined : onClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                Send Pending Bills PDF
-                <IconButton onClick={onClose} size="small" disabled={sending}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Stack spacing={2}>
-                    <Paper variant="outlined" sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <PictureAsPdf color="error" sx={{ fontSize: 36, flexShrink: 0 }} />
-                        <Box sx={{ overflow: "hidden", minWidth: 0 }}>
-                            <Typography variant="body2" fontWeight="bold" noWrap>
-                                {documentFilename}
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="primary"
-                                component="a"
-                                href={documentUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                sx={{ wordBreak: "break-all", display: "block" }}
-                            >
-                                {documentUrl}
-                            </Typography>
-                        </Box>
-                    </Paper>
+        return (
+            <Dialog open={open} onClose={sending ? undefined : onClose} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    Send Pending Bills PDF
+                    <IconButton onClick={onClose} size="small" disabled={sending}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Stack spacing={2}>
+                        <Paper variant="outlined" sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
+                            <PictureAsPdf color="error" sx={{ fontSize: 36, flexShrink: 0 }} />
+                            <Box sx={{ overflow: "hidden", minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="bold" noWrap>
+                                    {documentFilename}
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    color="primary"
+                                    component="a"
+                                    href={documentUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    sx={{ wordBreak: "break-all", display: "block" }}
+                                >
+                                    {documentUrl}
+                                </Typography>
+                            </Box>
+                        </Paper>
 
-                    <Typography variant="subtitle2" color="text.secondary">Message Details</Typography>
-                    <Table size="small">
-                        <TableBody>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, border: 0, width: 140 }}>Company</TableCell>
-                                <TableCell sx={{ border: 0 }}>{companyname || "-"}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Customer</TableCell>
-                                <TableCell sx={{ border: 0 }}>{customerName || "-"}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Bill Count</TableCell>
-                                <TableCell sx={{ border: 0 }}>{billCount || "0"}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, border: 0 }}>Amount</TableCell>
-                                <TableCell sx={{ border: 0 }}>{amount || "-"}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </Stack>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={sending} variant="outlined">Cancel</Button>
-                <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={sending ? <CircularProgress size={18} color="inherit" /> : <WhatsAppIcon />}
-                    onClick={onSend}
-                    disabled={sending}
-                >
-                    {sending ? "Sending…" : "Send via WhatsApp"}
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-};
+                        <Typography variant="subtitle2" color="text.secondary">Message Details</Typography>
+                        <Table size="small">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, border: 0, width: 140 }}>Company</TableCell>
+                                    <TableCell sx={{ border: 0 }}>{companyname || "-"}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, border: 0 }}>Customer</TableCell>
+                                    <TableCell sx={{ border: 0 }}>{customerName || "-"}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, border: 0 }}>Bill Count</TableCell>
+                                    <TableCell sx={{ border: 0 }}>{billCount || "0"}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, border: 0 }}>Amount</TableCell>
+                                    <TableCell sx={{ border: 0 }}>{amount || "-"}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose} disabled={sending} variant="outlined">Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={sending ? <CircularProgress size={18} color="inherit" /> : <WhatsAppIcon />}
+                        onClick={onSend}
+                        disabled={sending}
+                    >
+                        {sending ? "Sending…" : "Send via WhatsApp"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    };
 
-const sendPendingBillsPdfDirect = async (row) => {
-    if (pdfBuildInFlight) {
-        toast.info("A PDF is already being prepared. Please wait for it to finish.");
-        return;
-    }
+    const sendPendingBillsPdfDirect = async (row) => {
+        if (pdfBuildInFlight) {
+            toast.info("A PDF is already being prepared. Please wait for it to finish.");
+            return;
+        }
 
-    const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
+        const rowKey = `${getRowKey(row, "pending_bills")}_pdf`;
 
-    const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
-    if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
-        toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"...`);
-        return;
-    }
+        const { langName = "english" } = tabMethodSettings["pending_bills"] || {};
+        if (!TEMPLATE_MAP.pending_bills?.pdf?.[langName.toLowerCase()]) {
+            toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"...`);
+            return;
+        }
 
-    let phone = resolveSendPhone(row, "pending_bills");
-    if (!phone || !isValidPhone(phone)) {
-        toast.error("Valid phone number not found");
-        return;
-    }
-    phone = normalizePhone(phone);
+        let phone = resolveSendPhone(row, "pending_bills");
+        if (!phone || !isValidPhone(phone)) {
+            toast.error("Valid phone number not found");
+            return;
+        }
+        phone = normalizePhone(phone);
 
-    setSendingStates((p) => ({ ...p, [rowKey]: true }));
-    try {
-        const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
-        const documentFilename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
-            .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+        setSendingStates((p) => ({ ...p, [rowKey]: true }));
+        try {
+            const { bodyParams, clientRefId, documentUrl } = await buildPendingBillsPDFParams(row);
+            const documentFilename = `Pending_Bills_${(row.retailerNameGet || row.Retailer_Name || row.DocumentId || "customer")
+                .toString().replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
-        await sendWhatsAppMessage({
-            tab: "pending_bills",
-            phone, bodyParams, clientRefId, documentUrl,
-            documentFilename,
-            usePdfTemplate: true,
-        });
-        toast.success("Pending bills PDF sent via WhatsApp!");
-        await logWhatsappSend(row, "pending_bills");
-    } catch (e) {
-        console.error(e);
-        toast.error(`Failed to send Pending Bills PDF: ${e.message}`);
-    } finally {
-        setSendingStates((p) => ({ ...p, [rowKey]: false }));
-    }
-};
+            await sendWhatsAppMessage({
+                tab: "pending_bills",
+                phone, bodyParams, clientRefId, documentUrl,
+                documentFilename,
+                usePdfTemplate: true,
+            });
+            toast.success("Pending bills PDF sent via WhatsApp!");
+            await logWhatsappSend(row, "pending_bills");
+        } catch (e) {
+            console.error(e);
+            toast.error(`Failed to send Pending Bills PDF: ${e.message}`);
+        } finally {
+            setSendingStates((p) => ({ ...p, [rowKey]: false }));
+        }
+    };
 
 
-const getPdfParamsForTab = async (row, tab) => {
-    if (tab === "sale_invoice") return buildSaleInvoicePdfParams(row);
-    if (tab === "sale_order") return buildSaleOrderPdfParams(row);
-    if (tab === "pending_bills") return buildPendingBillsPDFParams(row); 
-    if (tab === "outstanding") return buildOutstandingPDFParams(row);
-    if (tab === "price_list") return buildPriceListPdfParams(row);
-    throw new Error(`PDF sending not supported for tab "${tab}"`);
-};
+    const getPdfParamsForTab = async (row, tab) => {
+        if (tab === "sale_invoice") return buildSaleInvoicePdfParams(row);
+        if (tab === "sale_order") return buildSaleOrderPdfParams(row);
+        if (tab === "pending_bills") return buildPendingBillsPDFParams(row);
+        if (tab === "outstanding") return buildOutstandingPDFParams(row);
+        if (tab === "price_list") return buildPriceListPdfParams(row);
+        throw new Error(`PDF sending not supported for tab "${tab}"`);
+    };
 
-const sendPdfDirect = async (row, tab) => {
-    if (tab === "pending_bills" && pdfBuildInFlight) {
-        toast.info("A PDF is already being prepared. Please wait for it to finish.");
-        return;
-    }
+    const sendPdfDirect = async (row, tab) => {
+        if (tab === "pending_bills" && pdfBuildInFlight) {
+            toast.info("A PDF is already being prepared. Please wait for it to finish.");
+            return;
+        }
 
-    const rowKey = `${getRowKey(row, tab)}_pdf`;
-    const { langName = "english" } = tabMethodSettings[tab] || {};
-    if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
-        toast.error(`No PDF-attachment WhatsApp template configured for "${langName}" on this tab`);
-        return;
-    }
+        const rowKey = `${getRowKey(row, tab)}_pdf`;
+        const { langName = "english" } = tabMethodSettings[tab] || {};
+        if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
+            toast.error(`No PDF-attachment WhatsApp template configured for "${langName}" on this tab`);
+            return;
+        }
 
-    let phone = resolveSendPhone(row, tab);
-    if (!phone || !isValidPhone(phone)) {
-        toast.error("Valid phone number not found");
-        return;
-    }
-    phone = normalizePhone(phone);
+        let phone = resolveSendPhone(row, tab);
+        if (!phone || !isValidPhone(phone)) {
+            toast.error("Valid phone number not found");
+            return;
+        }
+        phone = normalizePhone(phone);
 
-    setSendingStates((p) => ({ ...p, [rowKey]: true }));
-    try {
-        const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
-        await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
-        toast.success("PDF sent via WhatsApp!");
-        await logWhatsappSend(row, tab);
-    } catch (e) {
-        console.error(e);
-        toast.error(`Failed to send PDF: ${e.message}`);
-    } finally {
-        setSendingStates((p) => ({ ...p, [rowKey]: false }));
-    }
-};
+        setSendingStates((p) => ({ ...p, [rowKey]: true }));
+        try {
+            const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
+            await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
+            toast.success("PDF sent via WhatsApp!");
+            await logWhatsappSend(row, tab);
+        } catch (e) {
+            console.error(e);
+            toast.error(`Failed to send PDF: ${e.message}`);
+        } finally {
+            setSendingStates((p) => ({ ...p, [rowKey]: false }));
+        }
+    };
 
     const buildPendingBillsParams = async (row) => {
         const pendingQuery = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
@@ -3453,9 +3569,9 @@ const sendPdfDirect = async (row, tab) => {
         const date = row.formattedDate || "-";
         const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
         const pdfUrl = getPDFUrlSimple(row);
-        return { 
-            bodyParams: [companyname, customerName, date, amount, pdfUrl], 
-            clientRefId: generateUniqueClientRefId("sheetsheet", invoiceNo) 
+        return {
+            bodyParams: [companyname, customerName, date, amount, pdfUrl],
+            clientRefId: generateUniqueClientRefId("sheetsheet", invoiceNo)
         };
     };
 
@@ -3472,26 +3588,30 @@ const sendPdfDirect = async (row, tab) => {
 
 
     const buildPreviewUrl = useCallback((row, tab) => {
-        if (tab === "sale_invoice") return `${getPDFUrlSimple(row)}&preview=1`;
-        if (tab === "sale_order") return `${getPDfUrlSalesOrder(row)}&preview=1`;
+        const noDownloadParams = "&preview=1&autodownload=0&no_download=1";
+        if (tab === "sale_invoice") return `${getPDFUrlSimple(row)}${noDownloadParams}`;
+        if (tab === "sale_order") return `${getPDfUrlSalesOrder(row)}${noDownloadParams}`;
         if (tab === "outstanding") {
             const q = `Acc_Id=${row.Acc_Id}&fromDate=${outstandingFromDate}&toDate=${outstandingToDate}&Company_id=${storage?.Company_id}`;
-            return `${print_app}/statement?data=${btoa(q)}&preview=1`;
+            return `${print_app}/statement?data=${btoa(q)}${noDownloadParams}`;
         }
         if (tab === "pending_bills") {
             const q = `Acc_Id=${row.Acc_Id}&Fromdate=${pendingBillsFromDate}&Todate=${pendingBillsToDate}&Company_id=${storage?.Company_id}`;
-            return `${print_app}/pendingbills?data=${btoa(q)}&preview=1`;
+            return `${print_app}/pendingbills?data=${btoa(q)}${noDownloadParams}`;
+        }
+        if (tab === "price_list") {
+            const q = `Company_id=${storage?.Company_id}&Retailer_Id=${row.Retailer_Id || row.Retailers_Id || row.Id || ''}`;
+            return `${print_app}/rateMaster?data=${btoa(q)}${noDownloadParams}`;
         }
         return null;
     }, [outstandingFromDate, outstandingToDate, pendingBillsFromDate, pendingBillsToDate, storage]);
 
     const openPreview = (row, tab) => {
-        const url = buildPreviewUrl(row, tab);
-        if (!url) return;
-        setPreviewDialog({ open: true, row, tab, url });
+        if (!row) return;
+        setPreviewDialog({ open: true, row, tab });
     };
 
-    const closePreview = () => setPreviewDialog({ open: false, row: null, tab: "", url: "" });
+    const closePreview = () => setPreviewDialog({ open: false, row: null, tab: "" });
 
 
     const handlePreviewSend = async () => {
@@ -3552,32 +3672,32 @@ const sendPdfDirect = async (row, tab) => {
 
             phone = normalizePhone(phone);
 
-        if (tab === "shetsheet") {
-            const imageUrl = row.Imageurl || null;
-            if (!imageUrl) {
-                toast.error("No image available to send");
-                return false;
-            }
-               const companyname = companyInfo[0]?.Company_Name || "Company";
-               const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
-               const invoicedate =row.Do_Date.split('T')[0]
-               const invoiceno=row.Do_Inv_No;
-               const bodyParams = [companyname, customerName,invoicedate,invoiceno]; 
+            if (tab === "shetsheet") {
+                const imageUrl = row.Imageurl || null;
+                if (!imageUrl) {
+                    toast.error("No image available to send");
+                    return false;
+                }
+                const companyname = companyInfo[0]?.Company_Name || "Company";
+                const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+                const invoicedate = row.Do_Date.split('T')[0]
+                const invoiceno = row.Do_Inv_No;
+                const bodyParams = [companyname, customerName, invoicedate, invoiceno];
 
-             await sendWhatsAppMessage({ 
-        tab: "shetsheet", 
-        phone, 
-        clientRefId: generateUniqueClientRefId("shetsheet", row.Do_Inv_No || "unknown"),
-        bodyParams: bodyParams, 
-        imageUrl
-    });
-            toast.success("Image sent via WhatsApp!");
-            await logWhatsappSend(row, tab);
-            return true;
-        }
+                await sendWhatsAppMessage({
+                    tab: "shetsheet",
+                    phone,
+                    clientRefId: generateUniqueClientRefId("shetsheet", row.Do_Inv_No || "unknown"),
+                    bodyParams: bodyParams,
+                    imageUrl
+                });
+                toast.success("Image sent via WhatsApp!");
+                await logWhatsappSend(row, tab);
+                return true;
+            }
 
             const { tab: resolvedTab, bodyParams, clientRefId } = await getTabAndParams(row, tab);
-            await sendWhatsAppMessage({ tab: resolvedTab, phone, bodyParams, clientRefId,imageUrl: null });
+            await sendWhatsAppMessage({ tab: resolvedTab, phone, bodyParams, clientRefId, imageUrl: null });
             toast.success("Sent via WhatsApp!");
             await logWhatsappSend(row, tab);
             return true;
@@ -3624,34 +3744,34 @@ const sendPdfDirect = async (row, tab) => {
                 }
                 phone = normalizePhone(phone);
                 if (activeTab === "shetsheet") {
-                const imageUrl = row.Imageurl || null;
-                if (!imageUrl) {
-                    increment(false);
+                    const imageUrl = row.Imageurl || null;
+                    if (!imageUrl) {
+                        increment(false);
+                        return;
+                    }
+
+
+                    const companyname = companyInfo[0]?.Company_Name || "Company";
+                    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
+                    const invoicedate = row.Do_Date.split('T')[0]
+                    const invoiceno = row.Do_Inv_No;
+                    const bodyParams1 = [companyname, customerName, invoicedate, invoiceno];
+
+
+                    await sendWhatsAppMessage({
+                        tab: "shetsheet",
+                        phone,
+                        clientRefId: generateUniqueClientRefId("shetsheet", row.Do_Inv_No || "unknown"),
+                        bodyParams: bodyParams1,
+                        imageUrl
+                    });
+                    increment(true);
+                    await logWhatsappSend(row, "shetsheet");
                     return;
                 }
-                
 
-                  const companyname = companyInfo[0]?.Company_Name || "Company";
-    const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
-    const invoicedate =row.Do_Date.split('T')[0]
-    const invoiceno=row.Do_Inv_No;
-    const bodyParams1 = [companyname, customerName,invoicedate,invoiceno]; 
 
-               
-                await sendWhatsAppMessage({ 
-                    tab: "shetsheet", 
-                    phone, 
-                    clientRefId: generateUniqueClientRefId("shetsheet", row.Do_Inv_No || "unknown"),
-                    bodyParams:bodyParams1,
-                    imageUrl
-                });
-                increment(true);
-                await logWhatsappSend(row, "shetsheet");
-                return;
-            }
-            
 
-            
                 let tab, bodyParams, clientRefId;
                 if (activeTab === "outstanding") {
                     const companyname = companyInfo[0]?.Company_Name;
@@ -3681,7 +3801,7 @@ const sendPdfDirect = async (row, tab) => {
                     const params = await getTabAndParams(row, activeTab);
                     tab = params.tab; bodyParams = params.bodyParams; clientRefId = params.clientRefId;
                 }
-                await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId ,imageUrl: null });
+                await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, imageUrl: null });
                 increment(true);
                 await logWhatsappSend(row, tab);
             } catch (error) {
@@ -3701,44 +3821,53 @@ const sendPdfDirect = async (row, tab) => {
         }
     };
 
-  
 
-const handleBulkSendPdf = async (tab) => {
-    setBulkMenuAnchor(null);
-    const rows = getSelectedRows();
-    if (!rows.length) { toast.warning("Select at least one row"); return; }
 
-    const { langName = "english" } = tabMethodSettings[tab] || {};
-    if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
-        toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
-        return;
-    }
+    const handleBulkSendPdf = async (tab) => {
+        setBulkMenuAnchor(null);
+        const rows = getSelectedRows();
+        if (!rows.length) { toast.warning("Select at least one row"); return; }
 
-    bulkAbortRef.current = false;
-    setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
-    const increment = (success) => setBulkProgress((p) => ({ ...p, sent: success ? p.sent + 1 : p.sent, failed: success ? p.failed : p.failed + 1 }));
-
-    for (const row of rows) {
-        if (bulkAbortRef.current) break;
-        const rowKey = `${getRowKey(row, tab)}_pdf`;
-        setSendingStates((p) => ({ ...p, [rowKey]: true }));
-        try {
-            let phone = resolveSendPhone(row, tab);
-            if (!phone || !isValidPhone(phone)) { increment(false); continue; }
-            phone = normalizePhone(phone);
-            const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
-            await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
-            increment(true);
-            await logWhatsappSend(row, tab);
-        } catch (error) {
-            console.error("Bulk PDF send error:", error);
-            increment(false);
-        } finally {
-            setSendingStates((p) => ({ ...p, [rowKey]: false }));
+        const { langName = "english" } = tabMethodSettings[tab] || {};
+        if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
+            toast.error(`No PDF-attachment WhatsApp template configured for "${langName}"`);
+            return;
         }
-        await new Promise((r) => setTimeout(r, 500));
-    }
-};
+
+        if (tab === "price_list" && !cachedPriceListPdfUrl) {
+            try {
+                await handleUpdatePriceListPdf(true);
+            } catch (e) {
+                toast.error("Failed to generate Price List PDF for bulk sending.");
+                return;
+            }
+        }
+
+        bulkAbortRef.current = false;
+        setBulkProgress({ open: true, total: rows.length, sent: 0, failed: 0, mode: "sequential" });
+        const increment = (success) => setBulkProgress((p) => ({ ...p, sent: success ? p.sent + 1 : p.sent, failed: success ? p.failed : p.failed + 1 }));
+
+        for (const row of rows) {
+            if (bulkAbortRef.current) break;
+            const rowKey = `${getRowKey(row, tab)}_pdf`;
+            setSendingStates((p) => ({ ...p, [rowKey]: true }));
+            try {
+                let phone = resolveSendPhone(row, tab);
+                if (!phone || !isValidPhone(phone)) { increment(false); continue; }
+                phone = normalizePhone(phone);
+                const { bodyParams, clientRefId, documentUrl, documentFilename } = await getPdfParamsForTab(row, tab);
+                await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
+                increment(true);
+                await logWhatsappSend(row, tab);
+            } catch (error) {
+                console.error("Bulk PDF send error:", error);
+                increment(false);
+            } finally {
+                setSendingStates((p) => ({ ...p, [rowKey]: false }));
+            }
+            await new Promise((r) => setTimeout(r, 500));
+        }
+    };
 
 
 
@@ -3781,7 +3910,7 @@ const handleBulkSendPdf = async (tab) => {
                         </IconButton>
                     </span>
                 </Tooltip>
-                 {/* {tab === "pending_bills" && (
+                {/* {tab === "pending_bills" && (
     <Tooltip title="Send Pending Bills PDF via WhatsApp">
         <span>
           <IconButton
@@ -3798,20 +3927,20 @@ const handleBulkSendPdf = async (tab) => {
     </Tooltip>
 )} */}
 
-{["sale_invoice", "sale_order", "pending_bills","outstanding","price_list"].includes(tab) && (
-    <Tooltip title="Send PDF via WhatsApp">
-        <span>
-            <IconButton
-                size="small"
-                onClick={() => sendPdfDirect(row, tab)}
-                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight) || (tab === "price_list" && priceListPdfBuildInFlight) }
-                color={hasPhone ? "success" : "default"}
-            >
-                {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
-            </IconButton>
-        </span>
-    </Tooltip>
-)}
+                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(tab) && (
+                    <Tooltip title="Send PDF via WhatsApp">
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={() => sendPdfDirect(row, tab)}
+                                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight) || (tab === "price_list" && priceListPdfBuildInFlight)}
+                                color={hasPhone ? "success" : "default"}
+                            >
+                                {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                )}
 
 
                 {sentCount > 0 && (
@@ -3914,7 +4043,7 @@ const handleBulkSendPdf = async (tab) => {
         createCol("Narration", "string", "Narration"),
     ], [selectCell, ...columnDeps]);
 
-   
+
     const saleInvoiceColumns = useMemo(
         () => [...baseColumns, { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="sale_invoice" /> }],
         [baseColumns, ...columnDeps]
@@ -3993,109 +4122,109 @@ const handleBulkSendPdf = async (tab) => {
 
     // Sheetsheet columns
     const sheetsheetColumns = [
-        { 
-            Field_Name: "Select", 
-            isVisible: 1, 
-            isCustomCell: true, 
-            Cell: ({ row }) => selectCell(row) 
+        {
+            Field_Name: "Select",
+            isVisible: 1,
+            isCustomCell: true,
+            Cell: ({ row }) => selectCell(row)
         },
-        { 
-            Field_Name: "Do_Inv_No", 
-            Fied_Data: "string", 
-            ColumnHeader: "Invoice No", 
-            isVisible: 1 
+        {
+            Field_Name: "Do_Inv_No",
+            Fied_Data: "string",
+            ColumnHeader: "Invoice No",
+            isVisible: 1
         },
-        { 
-            Field_Name: "formattedDate", 
-            Fied_Data: "string", 
-            ColumnHeader: "Date", 
-            isVisible: 1 
+        {
+            Field_Name: "formattedDate",
+            Fied_Data: "string",
+            ColumnHeader: "Date",
+            isVisible: 1
         },
-        { 
-            Field_Name: "voucherTypeGet", 
-            Fied_Data: "string", 
-            ColumnHeader: "Voucher Type", 
-            isVisible: 1 
+        {
+            Field_Name: "voucherTypeGet",
+            Fied_Data: "string",
+            ColumnHeader: "Voucher Type",
+            isVisible: 1
         },
-        { 
-            Field_Name: "retailerNameGet", 
-            Fied_Data: "string", 
-            ColumnHeader: "Retailer Name", 
-            isVisible: 1 
+        {
+            Field_Name: "retailerNameGet",
+            Fied_Data: "string",
+            ColumnHeader: "Retailer Name",
+            isVisible: 1
         },
-        { 
-            Field_Name: "retailerPhone", 
-            Fied_Data: "string", 
-            ColumnHeader: "Phone (A1)", 
+        {
+            Field_Name: "retailerPhone",
+            Fied_Data: "string",
+            ColumnHeader: "Phone (A1)",
             isVisible: 1,
             isCustomCell: true,
             Cell: ({ row }) => <PhoneSelectCell row={row} tab="shetsheet" phoneMap={phoneMap} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} />
         },
-        { 
-            Field_Name: "Total_Invoice_value", 
-            Fied_Data: "number", 
-            ColumnHeader: "Invoice Value", 
+        {
+            Field_Name: "Total_Invoice_value",
+            Fied_Data: "number",
+            ColumnHeader: "Invoice Value",
             isVisible: 1,
             isCustomCell: true,
             Cell: ({ row }) => `₹${NumberFormat(row.Total_Invoice_value || 0)}`
         },
-        { 
-            Field_Name: "totalBillQty", 
-            Fied_Data: "number", 
-            ColumnHeader: "Bill Qty", 
-            isVisible: 1 
+        {
+            Field_Name: "totalBillQty",
+            Fied_Data: "number",
+            ColumnHeader: "Bill Qty",
+            isVisible: 1
         },
-        { 
-            Field_Name: "totalActQty", 
-            Fied_Data: "number", 
-            ColumnHeader: "Act Qty", 
-            isVisible: 1 
+        {
+            Field_Name: "totalActQty",
+            Fied_Data: "number",
+            ColumnHeader: "Act Qty",
+            isVisible: 1
         },
-        { 
-            Field_Name: "Delivery_Status", 
-            Fied_Data: "string", 
-            ColumnHeader: "Delivery Status", 
-            isVisible: 1 
+        {
+            Field_Name: "Delivery_Status",
+            Fied_Data: "string",
+            ColumnHeader: "Delivery Status",
+            isVisible: 1
         },
-        { 
-            Field_Name: "Created_BY_Name", 
-            Fied_Data: "string", 
-            ColumnHeader: "Created By", 
-            isVisible: 1 
+        {
+            Field_Name: "Created_BY_Name",
+            Fied_Data: "string",
+            ColumnHeader: "Created By",
+            isVisible: 1
         },
-        { 
-            Field_Name: "LR_Uploaded_By_Name", 
-            Fied_Data: "string", 
-            ColumnHeader: "LR Uploaded By", 
-            isVisible: 1 
+        {
+            Field_Name: "LR_Uploaded_By_Name",
+            Fied_Data: "string",
+            ColumnHeader: "LR Uploaded By",
+            isVisible: 1
         },
-        { 
-            Field_Name: "involvedStaffNames", 
-            Fied_Data: "string", 
-            ColumnHeader: "Involved Staff", 
-            isVisible: 1 
+        {
+            Field_Name: "involvedStaffNames",
+            Fied_Data: "string",
+            ColumnHeader: "Involved Staff",
+            isVisible: 1
         },
-        { 
-            Field_Name: "imageStatus", 
-            Fied_Data: "string", 
-            ColumnHeader: "Image Status", 
+        {
+            Field_Name: "imageStatus",
+            Fied_Data: "string",
+            ColumnHeader: "Image Status",
             isVisible: 1,
             isCustomCell: true,
             Cell: ({ row }) => {
                 const status = row.imageStatus || "not uploaded";
-                return <Chip 
-                    label={status} 
-                    size="small" 
+                return <Chip
+                    label={status}
+                    size="small"
                     color={status === "uploaded" ? "success" : "error"}
                     sx={{ fontSize: 10 }}
                 />;
             }
         },
-        { 
-            Field_Name: "Action", 
-            isVisible: 1, 
-            isCustomCell: true, 
-            Cell: (p) => <ActionCell {...p} tab="shetsheet" /> 
+        {
+            Field_Name: "Action",
+            isVisible: 1,
+            isCustomCell: true,
+            Cell: (p) => <ActionCell {...p} tab="shetsheet" />
         },
     ];
 
@@ -4138,23 +4267,23 @@ const handleBulkSendPdf = async (tab) => {
 
         let filtered = [...src];
 
-   if (activeTab === "price_list" && priceListSearch.trim()) {
-        const searchTerm = priceListSearch.toLowerCase().trim();
-        filtered = filtered.filter((retailer) => {
-            return Object.entries(retailer).some(([key, value]) => {
-                if (value === undefined || value === null || typeof value === "object") return false;
-                
-                const str = String(value).toLowerCase().trim();
-                
-                if (["not available", "null", "undefined", "[object object]", "na", "n/a", " "].includes(str)) {
-                    return false;
-                }
-                
-                return str === searchTerm; 
+        if (activeTab === "price_list" && priceListSearch.trim()) {
+            const searchTerm = priceListSearch.toLowerCase().trim();
+            filtered = filtered.filter((retailer) => {
+                return Object.entries(retailer).some(([key, value]) => {
+                    if (value === undefined || value === null || typeof value === "object") return false;
+
+                    const str = String(value).toLowerCase().trim();
+
+                    if (["not available", "null", "undefined", "[object object]", "na", "n/a", " "].includes(str)) {
+                        return false;
+                    }
+
+                    return str === searchTerm;
+                });
             });
-        });
-    }
-       
+        }
+
         if (activeTab === "sale_invoice") {
             for (const [key, values] of Object.entries(saleInvoiceFilters)) {
                 if (!values || values.length === 0) continue;
@@ -4276,17 +4405,17 @@ const handleBulkSendPdf = async (tab) => {
                     if (!filterVal) return false;
                     const filterStr = String(filterVal).toLowerCase().trim();
                     if (!filterStr) return false;
-                      const exactMatchFields = [
-                    'A1', 'A2', 'A3', 'A4', 'A5',
-                    'Party_Group', 'Party_Nature',
-                    'Delivery_Status', 'imageStatus', 'voucherTypeGet',
-                    'transaction_type', 'PayGroup', 'Status'
-                ];
+                    const exactMatchFields = [
+                        'A1', 'A2', 'A3', 'A4', 'A5',
+                        'Party_Group', 'Party_Nature',
+                        'Delivery_Status', 'imageStatus', 'voucherTypeGet',
+                        'transaction_type', 'PayGroup', 'Status'
+                    ];
 
-                if (exactMatchFields.includes(colName)) {
-                    return itemStr === filterStr; // EXACT MATCH
-                }
-                
+                    if (exactMatchFields.includes(colName)) {
+                        return itemStr === filterStr; // EXACT MATCH
+                    }
+
 
                     if (colName.includes('Phone') || colName === 'Customer_Phone' ||
                         colName === 'Alternate_Phone' || colName === 'Landline_Phone' ||
@@ -4400,17 +4529,19 @@ const handleBulkSendPdf = async (tab) => {
         if (newVal === activeTab) return;
         if (tabFetchingRef.current[newVal]) return;
 
-        setActiveTab(newVal);
-        setSelectAllCheckBox(false);
-        prevSelectAll.current = false;
-        setMultipleCostCenterUpdateValues(STAFF_INIT);
-        setMultipleStaffRemoveValues(STAFF_INIT);
-        setColumnFilters({});
-        setPriceListSearch("");
-        setOutstandingFilter("DR");
-        setPendingBillsFilter("DR");
-        setOutstandingSearch("");
-        setPendingBillsSearch("");
+        startTransition(() => {
+            setActiveTab(newVal);
+            setSelectAllCheckBox(false);
+            prevSelectAll.current = false;
+            setMultipleCostCenterUpdateValues(STAFF_INIT);
+            setMultipleStaffRemoveValues(STAFF_INIT);
+            setColumnFilters({});
+            setPriceListSearch("");
+            setOutstandingFilter("DR");
+            setPendingBillsFilter("DR");
+            setOutstandingSearch("");
+            setPendingBillsSearch("");
+        });
 
         if (newVal === "price_list") {
             if (!tabFetchedRef.current.price_list) {
@@ -4643,7 +4774,7 @@ const handleBulkSendPdf = async (tab) => {
                         <ListItemText primary="Send One by One" secondary="Sequential with progress tracking" />
                     </MenuItem>
                 </Menu>
-                 {/* {activeTab === "pending_bills" && (
+                {/* {activeTab === "pending_bills" && (
                     <Tooltip title={`Send Pending Bills PDF to ${selectedCount} selected`}>
                         <Button variant="contained" color="error" size="small"
                             startIcon={<PictureAsPdf />}
@@ -4653,16 +4784,16 @@ const handleBulkSendPdf = async (tab) => {
                         </Button>
                     </Tooltip>
                 )} */}
-                {["sale_invoice", "sale_order", "pending_bills","outstanding","price_list"].includes(activeTab) && (
-    <Tooltip title={`Send PDF to ${selectedCount} selected`}>
-        <Button variant="contained" color="error" size="small"
-            startIcon={<PictureAsPdf />}
-            onClick={() => handleBulkSendPdf(activeTab)}
-            sx={{ textTransform: "none", ml: 1 }}>
-            Send PDF ({selectedCount})
-        </Button>
-    </Tooltip>
-)}
+                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(activeTab) && (
+                    <Tooltip title={`Send PDF to ${selectedCount} selected`}>
+                        <Button variant="contained" color="error" size="small"
+                            startIcon={<PictureAsPdf />}
+                            onClick={() => handleBulkSendPdf(activeTab)}
+                            sx={{ textTransform: "none", ml: 1 }}>
+                            Send PDF ({selectedCount})
+                        </Button>
+                    </Tooltip>
+                )}
             </>
         );
     };
@@ -4708,11 +4839,27 @@ const handleBulkSendPdf = async (tab) => {
             </Tooltip>
 
             {activeTab === "price_list" && (
-                <TextField size="small" placeholder="Search by Name, Code, City, Location or Phone..."
-                    value={priceListSearch} onChange={(e) => setPriceListSearch(e.target.value)}
-                    sx={{ minWidth: 300, ml: 1 }}
-                    InputProps={{ startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} /> }}
-                />
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 1 }}>
+                    <TextField size="small" placeholder="Search by Name, Code, City, Location or Phone..."
+                        value={priceListSearch} onChange={(e) => setPriceListSearch(e.target.value)}
+                        sx={{ minWidth: 300 }}
+                        InputProps={{ startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'action.active' }} /> }}
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        onClick={() => handleUpdatePriceListPdf(false)}
+                        disabled={isUpdatingPriceListPdf || priceListPdfBuildInFlight}
+                        startIcon={isUpdatingPriceListPdf ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdf />}
+                        sx={{ textTransform: 'none', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                    >
+                        {isUpdatingPriceListPdf ? "Updating PDF..." : "Update Price List"}
+                    </Button>
+                    {cachedPriceListPdfUrl && (
+                        <Chip label="PDF Ready" color="success" size="small" variant="outlined" />
+                    )}
+                </Stack>
             )}
 
             {(activeTab === "outstanding" || activeTab === "pending_bills") && (
@@ -4844,10 +4991,16 @@ const handleBulkSendPdf = async (tab) => {
             <PreviewSendDialog
                 open={previewDialog.open}
                 onClose={closePreview}
-                url={previewDialog.url}
-                title={previewDialog.row ? `Preview — ${previewDialog.row.DocumentNumber || previewDialog.row.retailerNameGet || ""}` : "Preview"}
+                row={previewDialog.row}
+                tab={previewDialog.tab}
+                title={previewDialog.row ? `Preview — ${previewDialog.row.DocumentNumber || previewDialog.row.retailerNameGet || previewDialog.row.Retailer_Name || ""}` : "Preview"}
                 onSend={handlePreviewSend}
                 sending={!!sendingStates[getRowKey(previewDialog.row || {}, previewDialog.tab)]}
+                companyInfo={companyInfo}
+                outstandingFromDate={outstandingFromDate}
+                outstandingToDate={outstandingToDate}
+                pendingBillsFromDate={pendingBillsFromDate}
+                pendingBillsToDate={pendingBillsToDate}
             />
 
             <WhatsAppColumnSettings open={columnSettingsOpen} onClose={() => setColumnSettingsOpen(false)}
@@ -4857,77 +5010,77 @@ const handleBulkSendPdf = async (tab) => {
                 <Alert severity={snackbar.severity} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>{snackbar.message}</Alert>
             </Snackbar>
 
-           
+
             <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
-            <div ref={pdfCaptureRef}>
-            {pdfCaptureData && (
-              <Pendingbills
-                row={pdfCaptureData.row}
-                fromDate={pdfCaptureData.fromDate}
-                toDate={pdfCaptureData.toDate}
-                companyInfo={pdfCaptureData.companyInfo}
-                onReady={pdfCaptureData.onReady}
-                onError={pdfCaptureData.onError}
-            />
-            
-        )}
+                <div ref={pdfCaptureRef}>
+                    {pdfCaptureData && (
+                        <Pendingbills
+                            row={pdfCaptureData.row}
+                            fromDate={pdfCaptureData.fromDate}
+                            toDate={pdfCaptureData.toDate}
+                            companyInfo={pdfCaptureData.companyInfo}
+                            onReady={pdfCaptureData.onReady}
+                            onError={pdfCaptureData.onError}
+                        />
 
-        <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
-    <div ref={soCaptureRef}>
-        {soCaptureData && (
-            <SaleOrderTemplate
-                row={soCaptureData.row}
-                companyInfo={companyInfo}
-                onReady={soCaptureData.onReady}
-                onError={soCaptureData.onError}
-            />
-        )}
-    </div>
-</Box>
+                    )}
 
-<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
-    <div ref={invCaptureRef}>
-        {invCaptureData && (
-            <SaleInvoiceTemplate
-                row={invCaptureData.row}
-                companyInfo={companyInfo}
-                onReady={invCaptureData.onReady}
-                onError={invCaptureData.onError}
-            />
-        )}
-    </div>
-</Box>
+                    <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+                        <div ref={soCaptureRef}>
+                            {soCaptureData && (
+                                <SaleOrderTemplate
+                                    row={soCaptureData.row}
+                                    companyInfo={companyInfo}
+                                    onReady={soCaptureData.onReady}
+                                    onError={soCaptureData.onError}
+                                />
+                            )}
+                        </div>
+                    </Box>
 
-<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 1000 }}>
-    <div ref={stmtCaptureRef}>
-        {stmtCaptureData && (
-            <StatementTemplate
-                row={stmtCaptureData.row}
-                fromDate={stmtCaptureData.fromDate}
-                toDate={stmtCaptureData.toDate}
-                companyInfo={companyInfo}
-                onReady={stmtCaptureData.onReady}
-                onError={stmtCaptureData.onError}
-            />
-        )}
-    </div>
-</Box>
+                    <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+                        <div ref={invCaptureRef}>
+                            {invCaptureData && (
+                                <SaleInvoiceTemplate
+                                    row={invCaptureData.row}
+                                    companyInfo={companyInfo}
+                                    onReady={invCaptureData.onReady}
+                                    onError={invCaptureData.onError}
+                                />
+                            )}
+                        </div>
+                    </Box>
 
-<Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
-    <div ref={priceListCaptureRef}>
-        {priceListCaptureData && (
-            <PriceListTemplate
-                row={priceListCaptureData.row}
-                companyInfo={companyInfo}
-                onReady={priceListCaptureData.onReady}
-                onError={priceListCaptureData.onError}
-            />
-        )}
-    </div>
-</Box>
+                    <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 1000 }}>
+                        <div ref={stmtCaptureRef}>
+                            {stmtCaptureData && (
+                                <StatementTemplate
+                                    row={stmtCaptureData.row}
+                                    fromDate={stmtCaptureData.fromDate}
+                                    toDate={stmtCaptureData.toDate}
+                                    companyInfo={companyInfo}
+                                    onReady={stmtCaptureData.onReady}
+                                    onError={stmtCaptureData.onError}
+                                />
+                            )}
+                        </div>
+                    </Box>
 
-    </div>
-</Box>
+                    <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+                        <div ref={priceListCaptureRef}>
+                            {priceListCaptureData && (
+                                <PriceListTemplate
+                                    row={priceListCaptureData.row}
+                                    companyInfo={companyInfo}
+                                    onReady={priceListCaptureData.onReady}
+                                    onError={priceListCaptureData.onError}
+                                />
+                            )}
+                        </div>
+                    </Box>
+
+                </div>
+            </Box>
         </>
     );
 
@@ -4974,7 +5127,7 @@ const handleBulkSendPdf = async (tab) => {
                         setFromDate={setSaleInvoiceFromDate}
                         setToDate={setSaleInvoiceToDate}
                         onSearch={() => {
-                          
+
                             setSaleInvoiceFilters({});
                             setColumnFilters({});
                             fetchSaleInvoices();
@@ -5092,11 +5245,11 @@ const handleBulkSendPdf = async (tab) => {
                         onSearch={() => fetchSheetsheetData()}
                         isLoading={isSheetsheetLoading}
                     />
-                    <FilterableTable 
+                    <FilterableTable
                         title="LR Report - shetsheet"
-                        columns={sheetsheetColumns} 
-                        dataArray={filteredSheetsheetData} 
-                        EnableSerialNumber 
+                        columns={sheetsheetColumns}
+                        dataArray={filteredSheetsheetData}
+                        EnableSerialNumber
                         ButtonArea={
                             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                                 {sharedButtonArea}

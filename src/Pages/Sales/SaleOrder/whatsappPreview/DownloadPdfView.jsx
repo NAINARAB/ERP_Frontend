@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { generateSmartPdf } from './smartPdfGenerator'
 
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -13,23 +14,44 @@ const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
 const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety']
 
 function n2w(n) {
-  if (!n || n === 0) return 'Zero'
-  const h = (x) => {
-    let r = ''
-    if (x >= 100) { r += ones[Math.floor(x / 100)] + ' Hundred '; x %= 100 }
-    if (x >= 20)  { r += tens[Math.floor(x / 10)]  + ' '; x %= 10 }
-    if (x > 0)    r += ones[x] + ' '
-    return r
+  n = Math.floor(Number(n || 0))
+  if (n <= 0) return 'Zero'
+  if (n < 20) return ones[n]
+  if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '')
+  if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + n2w(n % 100) : '')
+  if (n < 100000) return n2w(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + n2w(n % 1000) : '')
+  if (n < 10000000) return n2w(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + n2w(n % 100000) : '')
+  return n2w(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + n2w(n % 10000000) : '')
+}
+
+function numToWords(amount) {
+  const pts = String(amount || 0).split('.')
+  const main = n2w(pts[0])
+  const paise = pts[1] && Number(pts[1]) > 0 ? n2w(pts[1].substring(0, 2)) : ''
+  return `INR ${main}${paise ? ' and ' + paise + ' Paise' : ''} Only`
+}
+
+function parseJSON(str) {
+  if (!str) return null
+  try { return JSON.parse(str) } catch { return null }
+}
+
+function getStored(key) {
+  const k = `pdf_cache_${key}`
+  try {
+    const raw = sessionStorage.getItem(k)
+    if (raw) {
+      const obj = JSON.parse(raw)
+      if (obj && obj.v) return obj.v
+    }
+  } catch {}
+  return null
+}
+function setStored(key, val) {
+  if (val) {
+    const k = `pdf_cache_${key}`
+    try { sessionStorage.setItem(k, JSON.stringify({ v: val })) } catch {}
   }
-  let r = '', x = Math.abs(Math.round(n))
-  const cr = Math.floor(x / 10000000); x %= 10000000
-  const la = Math.floor(x / 100000);   x %= 100000
-  const th = Math.floor(x / 1000);     x %= 1000
-  if (cr) r += h(cr) + 'Crore '
-  if (la) r += h(la) + 'Lakh '
-  if (th) r += h(th) + 'Thousand '
-  if (x)  r += h(x)
-  return r.trim()
 }
 
 const taxCalc = (method = 0, amount = 0, pct = 0) => {
@@ -51,44 +73,17 @@ const CACHE = {
   }
 }
 
-// Renders a DOM element to a (possibly multi-page) PDF using html2canvas +
-// jsPDF directly, replacing html2pdf.js. Paginates automatically when the
-// captured content is taller than one page, matching html2pdf.js's default
-// auto-pagination behavior.
+// Renders a DOM element to a (possibly multi-page) PDF using smart canvas slicing to prevent cutting text/rows horizontally.
 async function renderElementToPdf(element, { filename, margin = 0.3, orientation = 'portrait', quality = 0.98 }) {
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    letterRendering: true,
-    backgroundColor: '#ffffff',
+  const marginMm = margin * 25.4
+  return generateSmartPdf(element, {
+    filename,
+    orientation,
+    marginTop: marginMm,
+    marginBottom: marginMm + 2,
+    marginSide: marginMm,
+    quality
   })
-
-  const imgData = canvas.toDataURL('image/jpeg', quality)
-  const pdf = new jsPDF({ unit: 'in', format: 'a4', orientation })
-
-  const pageWidth    = pdf.internal.pageSize.getWidth()
-  const pageHeight   = pdf.internal.pageSize.getHeight()
-  const contentWidth  = pageWidth - margin * 2
-  const contentHeight = pageHeight - margin * 2
-
-  const imgWidth  = contentWidth
-  const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-  let heightLeft = imgHeight
-  let pageIndex  = 0
-
-  pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight)
-  heightLeft -= contentHeight
-
-  while (heightLeft > 0) {
-    pageIndex += 1
-    const position = margin - pageIndex * contentHeight
-    pdf.addPage()
-    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight)
-    heightLeft -= contentHeight
-  }
-
-  pdf.save(filename)
 }
 
 export default function DownloadPdfView() {
@@ -99,7 +94,7 @@ export default function DownloadPdfView() {
   // table's Preview popup) rather than opened directly by the customer.
   // In that case we must NOT auto-trigger a PDF download — the page just
   // renders the invoice for the staff member to look at before sending.
-  const isPreview = sp.get('preview') === '1'
+  const isPreview = sp.get('preview') === '1' || sp.get('autodownload') === '0' || sp.get('no_download') === '1'
 
   useEffect(() => {
     if (isPreview) return // never redirect / show the WhatsApp-app banner in preview mode
