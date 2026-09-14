@@ -3927,20 +3927,21 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     </Tooltip>
 )} */}
 
-                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(tab) && (
-                    <Tooltip title="Send PDF via WhatsApp">
-                        <span>
-                            <IconButton
-                                size="small"
-                                onClick={() => sendPdfDirect(row, tab)}
-                                disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight) || (tab === "price_list" && priceListPdfBuildInFlight)}
-                                color={hasPhone ? "success" : "default"}
-                            >
-                                {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                )}
+                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(tab) &&
+                    !(tab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)) && (
+                        <Tooltip title="Send PDF via WhatsApp">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => sendPdfDirect(row, tab)}
+                                    disabled={!hasPhone || !!sendingStates[`${rowKey}_pdf`] || (tab === "pending_bills" && pdfBuildInFlight) || ((tab === "outstanding") && stmtPdfBuildInFlight) || (tab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight))}
+                                    color={hasPhone ? "success" : "default"}
+                                >
+                                    {sendingStates[`${rowKey}_pdf`] ? <CircularProgress size={20} /> : <PictureAsPdf fontSize="small" />}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
 
 
                 {sentCount > 0 && (
@@ -4784,16 +4785,18 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                         </Button>
                     </Tooltip>
                 )} */}
-                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(activeTab) && (
-                    <Tooltip title={`Send PDF to ${selectedCount} selected`}>
-                        <Button variant="contained" color="error" size="small"
-                            startIcon={<PictureAsPdf />}
-                            onClick={() => handleBulkSendPdf(activeTab)}
-                            sx={{ textTransform: "none", ml: 1 }}>
-                            Send PDF ({selectedCount})
-                        </Button>
-                    </Tooltip>
-                )}
+                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(activeTab) &&
+                    !(activeTab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)) && (
+                        <Tooltip title={`Send PDF to ${selectedCount} selected`}>
+                            <Button variant="contained" color="error" size="small"
+                                startIcon={<PictureAsPdf />}
+                                onClick={() => handleBulkSendPdf(activeTab)}
+                                disabled={activeTab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)}
+                                sx={{ textTransform: "none", ml: 1 }}>
+                                Send PDF ({selectedCount})
+                            </Button>
+                        </Tooltip>
+                    )}
             </>
         );
     };
