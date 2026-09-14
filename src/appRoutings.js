@@ -69,9 +69,10 @@ const StockValueErpSync = lazy(() => import('./Pages/Inventry/stockValueErpSync'
 // -----------------------------------------------------------------------------
 // Authorization
 // -----------------------------------------------------------------------------
-const UserBased = lazy(() => import('./Pages/Authorization/userBased'));
+// const UserBased = lazy(() => import('./Pages/Authorization/userBased'));
 const UserBasedTreeView = lazy(() => import('./Pages/Authorization/userBasedTreeView'));
-const UserTypeBased = lazy(() => import('./Pages/Authorization/userTypeBased'));
+// const UserTypeBased = lazy(() => import('./Pages/Authorization/userTypeBased'));
+const UserTypeBasedTreeView = lazy(() => import('./Pages/Authorization/userTypeBasedTreeView'));
 const UserBasedBranch = lazy(() => import('./Pages/Authorization/userBasedBranch'));
 const MenuManagement = lazy(() => import('./Pages/Authorization/newMenuManagement'));
 
@@ -303,12 +304,12 @@ const ModuleRuleComponent = lazy(() => import('./Components/moduleRules'))
 
 const AbstractGroup = lazy(() => import('./Pages/Masters/AbstractGroupType'));
 const MasterList = lazy(() => import('./Pages/Masters/masterlist'));
-const StockGroup=lazy(()=>import('./Pages/Masters/StockGroup'))
+const StockGroup = lazy(() => import('./Pages/Masters/StockGroup'))
 
 const RoutingArray = [
 
-      { component: <MasterList />, path: '/erp/master/masterList' },
-    {component:<StockGroup />,path:'/erp/master/StockGroup'   },
+    { component: <MasterList />, path: '/erp/master/masterList' },
+    { component: <StockGroup />, path: '/erp/master/StockGroup' },
     // ---------------------------------------------------------------------------
     // Root
     // ---------------------------------------------------------------------------
@@ -603,7 +604,7 @@ const RoutingArray = [
     { component: <EmployeeDayAbstract />, path: '/taskManagement/report/todayActivity' },
     { component: <UserActivities />, path: '/taskManagement/report/userActivities' },
     { component: <EmployeeAbstract />, path: '/taskManagement/report/userDetails' },
-    
+
     // ---------------------------------------------------------------------------
     // User Control
     // ---------------------------------------------------------------------------
@@ -618,7 +619,8 @@ const RoutingArray = [
     // { component: <UserBased />, path: '/userControl/userRights' },
     { component: <UserBasedTreeView />, path: '/userControl/userRights' },
     { component: <UserType />, path: '/userControl/userType' },
-    { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
+    // { component: <UserTypeBased />, path: '/userControl/userTypeRights' },
+    { component: <UserTypeBasedTreeView />, path: '/userControl/userTypeRights' },
     { component: <Users />, path: '/userControl/users' },
     { component: <ModuleRuleComponent />, path: '/userControl/moduleConfiguration' },
     { component: <AbstractGroup />, path: '/erp/master/abstractgrouptype' },

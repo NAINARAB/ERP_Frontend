@@ -3,6 +3,7 @@ import { createCol } from '../../../Components/filterableTable2';
 import { fetchLink } from '../../../Components/fetchComponent';
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
 import { ISOString, stringCompare } from '../../../Components/functions';
+import { useMemo } from 'react';
 
 const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
 
@@ -18,7 +19,7 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
         setReceivables([]);
         setPayables([]);
         fetchLink({
-            address: `journal/overallPartyOutstandingsSP`,
+            address: `journal/overallPartyOutstandingsSP?reqDate=${config.reqDate}`,
             loadingOn, loadingOff
         }).then(({ others, success }) => {
             if (success) {
@@ -51,6 +52,44 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
         // }
     ];
 
+    const filteredReceivables = useMemo(() => {
+        return receivables.filter(
+            r => r.invoice_date <= config.reqDate
+        ).sort((a, b) => {
+            const accountCompare = String(a.Account_name).localeCompare(
+                String(b.Account_name)
+            );
+
+            if (accountCompare !== 0) {
+                return accountCompare;
+            }
+
+            return (
+                new Date(a.invoice_date).getTime() -
+                new Date(b.invoice_date).getTime()
+            );
+        })
+    }, [receivables, config.reqDate])
+
+    const filteredPayables = useMemo(() => {
+        return payables.filter(
+            r => r.invoice_date <= config.reqDate
+        ).sort((a, b) => {
+            const accountCompare = String(a.Account_name).localeCompare(
+                String(b.Account_name)
+            );
+
+            if (accountCompare !== 0) {
+                return accountCompare;
+            }
+
+            return (
+                new Date(a.invoice_date).getTime() -
+                new Date(b.invoice_date).getTime()
+            );
+        })
+    }, [payables, config.reqDate])
+
     return (
         <>
             <AppTableComponent
@@ -60,7 +99,7 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
                 EnableSerialNumber
                 ExcelPrintOption
                 PDFPrintOption
-                dataArray={config.view === 'Debtors' ? receivables : payables}
+                dataArray={config.view === 'Debtors' ? filteredReceivables : filteredPayables}
                 columns={columns}
                 enableGlobalSearch={true}
                 stateUrl='/erp/journal/overallPartyOutstandings'
@@ -71,6 +110,11 @@ const OverallPartyOutstandings = ({ loadingOn, loadingOff }) => {
                             <option value="Debtors">Debtors</option>
                             <option value="Creditors">Creditors</option>
                         </select>
+                        <input
+                            type="date"
+                            value={config.reqDate}
+                            onChange={e => setConfig(ex => ({ ...ex, reqDate: e.target.value }))}
+                        />
                     </>
                 }
             />

@@ -2,29 +2,28 @@ import { useState, useEffect, Fragment } from "react";
 import { TableContainer, Table, TableBody, TableCell, TableHead, TableRow, Paper, Checkbox, IconButton } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowRight } from '@mui/icons-material';
 import Select from 'react-select';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { customSelectStyles, MainMenu } from "../../Components/tablecolumn";
 import { fetchLink } from "../../Components/fetchComponent";
 import { isEqualNumber } from '../../Components/functions';
 
-const postCheck = (param, Menu_id, UserId, loadingOn, loadingOff) => {
+const postCheck = (param, Menu_id, UserType, loadingOn, loadingOff) => {
     if (loadingOn) {
         loadingOn()
     }
     fetchLink({
-        address: `authorization/userRights`,
+        address: `authorization/userTypeRights`,
         method: 'POST',
         bodyData: {
             MenuId: Menu_id,
-            User: Number(UserId),
+            UserType: Number(UserType),
             ReadRights: param.readRights === true ? 1 : 0,
             AddRights: param.addRights === true ? 1 : 0,
             EditRights: param.editRights === true ? 1 : 0,
             DeleteRights: param.deleteRights === true ? 1 : 0,
             PrintRights: param.printRights === true ? 1 : 0
         },
-        headers: { 'Content-Type': 'application/json' }
     }).then(data => {
         if (!data.success) {
             toast.error(data.message)
@@ -36,7 +35,7 @@ const postCheck = (param, Menu_id, UserId, loadingOn, loadingOff) => {
     })
 }
 
-const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
+const TreeRow = ({ data, UserTypeId, level, loadingOn, loadingOff, appType }) => {
     const [open, setOpen] = useState(false);
     const [readRights, setReadRights] = useState(data.Read_Rights === 1)
     const [addRights, setAddRights] = useState(data.Add_Rights === 1)
@@ -56,7 +55,7 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
 
     useEffect(() => {
         if (pflag === true) {
-            postCheck({ readRights, addRights, editRights, deleteRights, printRights }, data.id, UserId, loadingOn, loadingOff)
+            postCheck({ readRights, addRights, editRights, deleteRights, printRights }, data.id, UserTypeId, loadingOn, loadingOff)
         }
     }, [readRights, addRights, editRights, deleteRights, printRights])
 
@@ -64,7 +63,7 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
     const hasChildren = data?.SubMenu?.length > 0 || data?.ChildMenu?.length > 0 || data?.SubRoutes?.length > 0;
     const showToggle = hasChildren && level < 3;
 
-    return isEqualNumber(appType, data?.is_active) &&(
+    return isEqualNumber(appType, data?.is_active) && (
         <Fragment>
             <TableRow hover={true} sx={{ backgroundColor: level === 0 ? '#f5f5f5' : 'inherit' }}>
                 <TableCell>{data.id}</TableCell>
@@ -119,7 +118,7 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
                         <TreeRow 
                             key={`sm-${child.id}-${ind}`} 
                             data={child} 
-                            UserId={UserId} 
+                            UserTypeId={UserTypeId} 
                             level={level + 1} 
                             loadingOn={loadingOn} 
                             loadingOff={loadingOff} 
@@ -130,7 +129,7 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
                         <TreeRow 
                             key={`cm-${child.id}-${ind}`} 
                             data={child} 
-                            UserId={UserId} 
+                            UserTypeId={UserTypeId} 
                             level={level + 1} 
                             loadingOn={loadingOn} 
                             loadingOff={loadingOff} 
@@ -141,7 +140,7 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
                         <TreeRow 
                             key={`sr-${child.id}-${ind}`} 
                             data={child} 
-                            UserId={UserId} 
+                            UserTypeId={UserTypeId} 
                             level={level + 1} 
                             loadingOn={loadingOn} 
                             loadingOff={loadingOff} 
@@ -154,48 +153,49 @@ const TreeRow = ({ data, UserId, level, loadingOn, loadingOff, appType }) => {
     );
 }
 
-const UserBasedTreeView = (props) => {
+const UserTypeBasedTreeView = (props) => {
     const [authData, setAuthData] = useState([]);
-    const [users, setUsers] = useState([])
+    const [usersType, setUserTypes] = useState([])
     const localData = localStorage.getItem("user");
     const parseData = JSON.parse(localData);
-    const [currentUserId, setCurrentUserId] = useState({ value: parseData?.UserId, label: parseData?.Name });
-    const [appType, setAppType] = useState({ value: 1, label: 'ERP' }) // 2: Task Management 3: Reports App
+    const [currentTypeId, setCurrentTypeId] = useState({ value: parseData?.UserTypeId, label: parseData?.UserType });
+    const [appType, setAppType] = useState({ value: 1, label: 'ERP' })
 
     useEffect(() => {
         fetchLink({
-            address: `authorization/userRights/userBased?UserId=${currentUserId.value}`,
+            address: `authorization/userTypeRights?UserType=${currentTypeId?.value}`,
             loadingOn: props.loadingOn,
             loadingOff: props.loadingOff
         }).then(data => {
             if (data.success) {
-                setAuthData(data.data);
+                setAuthData(data?.data);
             }
-        })
-    }, [currentUserId.value])
+        }).catch(e => console.error(e));
+    }, [currentTypeId])
 
     useEffect(() => {
         fetchLink({
-            address: `masters/users`
+            address: `masters/userType`
         }).then((data) => {
             if (data.success) {
-                setUsers(data.data);
+                setUserTypes(data.data);
             }
-        }).catch(e => console.log(e))
+        }).catch(e => console.error(e));
     }, [])
 
     return (
         <>
+            <ToastContainer />
             <div className="row">
                 <div className="col-sm-4 pt-1">
-                    <label className="w-100 fw-bold fa-14">User Name</label>
+                    <label className="w-100 fw-bold fa-14">User Type</label>
                     <Select
-                        value={currentUserId}
-                        onChange={(e) => setCurrentUserId(e)}
-                        options={[...users.map(obj => ({ value: obj.UserId, label: obj.Name }))]}
+                        value={currentTypeId}
+                        onChange={(e) => setCurrentTypeId({ value: e.value, label: e.label })}
+                        options={[...usersType.map(obj => ({ value: obj?.Id, label: obj?.UserType }))]}
                         styles={customSelectStyles}
                         isSearchable={true}
-                        placeholder={"Select User"}
+                        placeholder={"Select UserType"}
                     />
                 </div>
                 <div className="col-sm-4 pt-1">
@@ -234,11 +234,11 @@ const UserBasedTreeView = (props) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {authData.filter(obj => isEqualNumber(obj.is_active, appType.value)).map((obj, index) => (
+                        {authData?.filter(obj => isEqualNumber(obj.is_active, appType.value)).map((obj, index) => (
                             <TreeRow
                                 key={index}
                                 data={obj}
-                                UserId={currentUserId.value}
+                                UserTypeId={currentTypeId?.value}
                                 level={0}
                                 loadingOn={props.loadingOn}
                                 loadingOff={props.loadingOff}
@@ -252,4 +252,4 @@ const UserBasedTreeView = (props) => {
     )
 }
 
-export default UserBasedTreeView;
+export default UserTypeBasedTreeView;

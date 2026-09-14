@@ -90,7 +90,7 @@ const ChooseBatch = ({
 
     const handleInputChange = (row, e) => {
         setInputs(prev => {
-            const newInputs = [...prev].filter(item => String(item?.id).length > 0);
+            const newInputs = [...prev].filter(item => String(item?.batch).length > 0);
 
             const index = newInputs.findIndex(
                 item => (
@@ -99,12 +99,18 @@ const ChooseBatch = ({
                 )
             );
 
+            const batch = e?.batchIdString || e?.value || '';
+            const batch_alias = e?.batchAliasString || e?.value || '';
+            const batch_id = e?.__isNew__ ? '' : e?.value || '';
+            const id = batch_id;
+
             if (index === -1) {
-                newInputs.push({ ...row, batch: e?.batchIdString || e?.value || '', batch_alias: e?.batchAliasString || e?.value || '', batch_id: e?.__isNew__ ? '' : e?.value || '' });
+                newInputs.push({ ...row, batch, batch_alias, batch_id, id });
             } else {
-                newInputs[index].batch = e?.batchIdString || e?.value || '';
-                newInputs[index].batch_alias = e?.batchAliasString || e?.value || '';
-                newInputs[index].batch_id = e?.__isNew__ ? '' : e?.value || '';
+                newInputs[index].batch = batch;
+                newInputs[index].batch_alias = batch_alias;
+                newInputs[index].batch_id = batch_id;
+                newInputs[index].id = id;
             }
             return newInputs.filter(item => String(item?.batch).length > 0);
         });
@@ -172,13 +178,19 @@ const ChooseBatch = ({
 
     const onChangeSelect = (e) => {
         setBulkSelect(e);
+        const batch = e?.batchIdString || e?.value || '';
+        const batch_alias = e?.batchAliasString || e?.value || '';
+        const batch_id = e?.__isNew__ ? '' : e?.value || '';
+        const id = batch_id;
+
         setInputs(journalData.map(item => ({
             ...item,
-            batch: e?.batchIdString || e?.value || '',
-            batch_alias: e?.batchAliasString || e?.value || '',
-            id: e?.__isNew__ ? '' : e?.value || ''
-        })))
-    }
+            batch,
+            batch_alias,
+            batch_id,
+            id
+        })).filter(item => String(item?.batch).length > 0));
+    };
 
     return (
         <>
@@ -214,7 +226,7 @@ const ChooseBatch = ({
                         onClick={sendToBackend}
                         variant="contained"
                         className="mx-1"
-                        disabled={inputs.some(inpt => String(inpt?.id)?.length === 0) || inputs.length === 0}
+                        disabled={inputs.some(inpt => String(inpt?.id || inpt?.batch)?.length === 0) || inputs.length === 0}
                     >Save</Button>
                 </div>
 
@@ -267,14 +279,12 @@ const ChooseBatch = ({
                                                 value={{
                                                     value: inputs.find(input =>
                                                         isEqualNumber(input.uniquId, item.uniquId))?.batch_id ||
+                                                        inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.id ||
                                                         inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch ||
                                                         '',
                                                     label: inputs.find(input =>
-                                                        isEqualNumber(input.uniquId, item.uniquId))?.batch_id ?
-                                                        inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch : (
-                                                            inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias ||
-                                                            inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch || ''
-                                                        )
+                                                        isEqualNumber(input.uniquId, item.uniquId))?.batch ||
+                                                        inputs.find(input => isEqualNumber(input.uniquId, item.uniquId))?.batch_alias || ''
                                                 }}
                                                 options={[
                                                     { value: '', label: 'select' },
